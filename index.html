@@ -297,6 +297,10 @@
     tbody td{border:none; padding:6px 12px; display:flex; justify-content:space-between; gap:10px;}
     tbody td::before{content:attr(data-label); font-family:'Jost',sans-serif; font-size:10.5px; text-transform:uppercase; color:var(--gold); font-weight:600;}
     .empty-row td::before{content:none;}
+
+    header{ flex-wrap:wrap; padding-bottom:70px; }
+    .side-switch{ position:static; order:3; margin-top:10px; }
+    .who-logged-in{ position:static; order:4; margin-top:8px; width:100%; }
   }
 </style>
 </head>
@@ -345,15 +349,19 @@
       </div>
       <div class="side-card" onclick="selectSide('admin')">
         <h2>Administrativ</h2>
-        <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Rapporter · Oversikt</p>
+        <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Rapporter</p>
       </div>
       <div class="side-card" onclick="selectSide('pedagogisk')">
         <h2>Pedagogisk</h2>
         <p>Oppmøte · Timeforberedelser</p>
       </div>
-      <div class="side-card" onclick="selectSide('registrering')">
+      <div class="side-card" onclick="promptPasswordAndSelectSide('registrering')">
         <h2>Registrering</h2>
         <p>Søknader — godkjenn, avslå eller sett på venteliste</p>
+      </div>
+      <div class="side-card" onclick="promptPasswordAndSelectSide('oversikt')">
+        <h2>Oversikt</h2>
+        <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
       </div>
     </div>
   </div>
@@ -371,7 +379,7 @@
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
-  <div class="tab" data-tab="overview" data-side="admin">Oversikt</div>
+  <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
 </div>
 
@@ -1639,6 +1647,18 @@
       return `<div class="status-row"><span>${escapeHtml(teacher.navn)}</span>${badge}</div>`;
     }).join('');
   }
+
+  const SENSITIVE_SIDE_PASSWORD = 'AdminEgypt2026';
+
+  window.promptPasswordAndSelectSide = function(side){
+    const pw = prompt('Skriv inn passordet for å åpne denne seksjonen:');
+    if(pw === null) return;
+    if(pw !== SENSITIVE_SIDE_PASSWORD){
+      alert('Feil passord.');
+      return;
+    }
+    selectSide(side);
+  };
 
   window.selectSide = function(side){
     document.getElementById('sideChooseView').style.display = 'none';
