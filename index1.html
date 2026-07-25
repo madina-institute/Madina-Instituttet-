@@ -30,7 +30,7 @@
 
   .field{margin-bottom:16px;}
   .field label{display:block; font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald); margin-bottom:6px; font-weight:600;}
-  .field select, .field input{
+  .field select, .field input, .field textarea{
     width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:6px;
     font-family:'Lora',serif; font-size:15px; background:var(--paper);
   }
@@ -123,6 +123,80 @@
 
       <button class="btn btn-primary" style="margin-top:16px;" onclick="saveAttendance()">Lagre oppmøte</button>
     </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h2>Pedagogisk forberedelse (timeforberedelse)</h2>
+      <div class="sub">Bygget etter skolens undervisningsmodell — sendes til administrasjonen når den er ferdig</div>
+
+      <div class="field-row-2">
+        <div class="field">
+          <label>Fag</label>
+          <select id="lpFag">
+            <option value="Koran">Koran</option>
+            <option value="Islam">Islam</option>
+            <option value="Arabisk">Arabisk</option>
+            <option value="Urdu">Urdu</option>
+            <option value="Madinabarn">Madinabarn</option>
+            <option value="Annet">Annet</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Dato for timen</label>
+          <input type="date" id="lpDato">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Emne / tema for timen</label>
+        <input type="text" id="lpEmne" placeholder="F.eks. Sure Al-Fatiha — tilawah og tajwid">
+      </div>
+
+      <div class="field">
+        <label>Læringsmål</label>
+        <textarea id="lpMal" rows="3" placeholder="Hva skal elevene kunne etter denne timen?"></textarea>
+      </div>
+
+      <div class="field-row-2">
+        <div class="field">
+          <label>Metode</label>
+          <input type="text" id="lpMetode" placeholder="F.eks. forklaring, dialog, gruppearbeid">
+        </div>
+        <div class="field">
+          <label>Hjelpemidler / materiell</label>
+          <input type="text" id="lpMateriell" placeholder="F.eks. tavle, Qaida-bok, bilder">
+        </div>
+      </div>
+
+      <div class="sub" style="margin-top:6px; margin-bottom:10px;">Oppbygging av timen (skolens 5-trinnsmodell)</div>
+
+      <div class="field">
+        <label>1. Oppstart (5–10 min)</label>
+        <textarea id="lpOppstart" rows="2" placeholder="Hilsen, duʿā', presentasjon av dagens mål..."></textarea>
+      </div>
+      <div class="field">
+        <label>2. Repetisjon (10–15 min)</label>
+        <textarea id="lpRepetisjon" rows="2" placeholder="Hva repeteres fra forrige time?"></textarea>
+      </div>
+      <div class="field">
+        <label>3. Nytt læringsstoff</label>
+        <textarea id="lpNyttStoff" rows="3" placeholder="Hovedinnholdet i dagens undervisning"></textarea>
+      </div>
+      <div class="field">
+        <label>4. Øving</label>
+        <textarea id="lpOving" rows="2" placeholder="Hvordan skal elevene øve på stoffet?"></textarea>
+      </div>
+      <div class="field">
+        <label>5. Oppsummering</label>
+        <textarea id="lpOppsummering" rows="2" placeholder="Avslutning, refleksjon, ev. lekser"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Lekser / hjemmeoppgave (valgfritt)</label>
+        <input type="text" id="lpLekser">
+      </div>
+
+      <button class="btn btn-primary" onclick="submitLessonPlan()">Send inn forberedelse</button>
+    </div>
   </div>
 
 </main>
@@ -132,7 +206,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, setDoc, doc
+    getFirestore, collection, onSnapshot, setDoc, doc, addDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -267,6 +341,7 @@
     const rows = [...document.querySelectorAll('#studentList .student-row')];
     if(rows.length === 0){ showToast('Ingen elever å lagre.'); return; }
     try{
+      const summaryLines = [];
       for(const row of rows){
         const studentName = row.dataset.student;
         const status = row.querySelector('.att-status').value;
@@ -275,11 +350,100 @@
         await setDoc(doc(db, 'attendance', safeId), {
           dato: date, elev: studentName, klasse: currentTeacher.tildeltKlasse, status
         });
+        summaryLines.push(studentName + ': ' + status);
       }
       showToast('Oppmøte lagret for ' + rows.length + ' elev(er).');
+      sendAttendanceEmail(date, summaryLines);
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt under lagring.');
+    }
+  };
+
+  async function sendAttendanceEmail(date, summaryLines){
+    try{
+      await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
+          subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' – ' + currentTeacher.tildeltKlasse + ' – ' + date,
+          from_name: 'Madina Skole – Lærerportal',
+          message:
+            'Lærer: ' + currentTeacher.navn + '\n' +
+            'Klasse: ' + currentTeacher.tildeltKlasse + '\n' +
+            'Dato: ' + date + '\n\n' +
+            summaryLines.join('\n')
+        })
+      });
+      // Notification email is a best-effort side effect; attendance is already saved regardless of outcome.
+    } catch(err){
+      console.error('E-postvarsling feilet:', err);
+    }
+  }
+
+  window.submitLessonPlan = async function(){
+    if(!currentTeacher) return;
+
+    const fag = document.getElementById('lpFag').value;
+    const dato = document.getElementById('lpDato').value;
+    const emne = document.getElementById('lpEmne').value.trim();
+    const mal = document.getElementById('lpMal').value.trim();
+    const metode = document.getElementById('lpMetode').value.trim();
+    const materiell = document.getElementById('lpMateriell').value.trim();
+    const oppstart = document.getElementById('lpOppstart').value.trim();
+    const repetisjon = document.getElementById('lpRepetisjon').value.trim();
+    const nyttStoff = document.getElementById('lpNyttStoff').value.trim();
+    const oving = document.getElementById('lpOving').value.trim();
+    const oppsummering = document.getElementById('lpOppsummering').value.trim();
+    const lekser = document.getElementById('lpLekser').value.trim();
+
+    if(!dato || !emne || !mal || !nyttStoff){
+      showToast('Fyll ut minst dato, emne, læringsmål og nytt læringsstoff.');
+      return;
+    }
+
+    const record = {
+      larer: currentTeacher.navn,
+      klasse: currentTeacher.tildeltKlasse,
+      fag, dato, emne, mal, metode, materiell,
+      oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
+    };
+
+    try{
+      await addDoc(collection(db, 'lessonPlans'), record);
+
+      await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
+          subject: 'Undervisningsforberedelse – ' + currentTeacher.navn + ' – ' + fag + ' – ' + dato,
+          from_name: 'Madina Skole – Lærerportal',
+          message:
+            'Lærer: ' + currentTeacher.navn + '\n' +
+            'Klasse: ' + currentTeacher.tildeltKlasse + '\n' +
+            'Fag: ' + fag + '\n' +
+            'Dato: ' + dato + '\n' +
+            'Emne: ' + emne + '\n\n' +
+            'Læringsmål:\n' + mal + '\n\n' +
+            'Metode: ' + (metode || '—') + '\n' +
+            'Hjelpemidler: ' + (materiell || '—') + '\n\n' +
+            '1. Oppstart:\n' + (oppstart || '—') + '\n\n' +
+            '2. Repetisjon:\n' + (repetisjon || '—') + '\n\n' +
+            '3. Nytt læringsstoff:\n' + nyttStoff + '\n\n' +
+            '4. Øving:\n' + (oving || '—') + '\n\n' +
+            '5. Oppsummering:\n' + (oppsummering || '—') + '\n\n' +
+            'Lekser: ' + (lekser || '—')
+        })
+      });
+
+      showToast('Timeforberedelsen er sendt inn.');
+      ['lpEmne','lpMal','lpMetode','lpMateriell','lpOppstart','lpRepetisjon','lpNyttStoff','lpOving','lpOppsummering','lpLekser']
+        .forEach(id => { document.getElementById(id).value = ''; });
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt under innsending.');
     }
   };
 </script>
