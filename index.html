@@ -258,6 +258,10 @@
 <div id="sideChooseView">
   <div class="wrap">
     <div class="side-grid">
+      <div class="side-card" onclick="selectSide('eier')">
+        <h2>Eier / Ledelsen</h2>
+        <p>Ledelse · Møtereferater · Kasse/Økonomi</p>
+      </div>
       <div class="side-card" onclick="selectSide('admin')">
         <h2>Administrativ</h2>
         <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Rapporter · Oversikt</p>
@@ -271,6 +275,9 @@
 </div>
 
 <div class="tabs" id="tabsBar" style="display:none;">
+  <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
+  <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
+  <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
   <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
@@ -487,12 +494,77 @@
         <span>Slett alle timeforberedelser</span>
         <button class="btn btn-danger-solid" onclick="clearCollection('lessonPlans')">Slett</button>
       </div>
+      <div class="danger-row">
+        <span>Slett alle ledelsesmedlemmer</span>
+        <button class="btn btn-danger-solid" onclick="clearCollection('ledelse')">Slett</button>
+      </div>
+      <div class="danger-row">
+        <span>Slett alle møtereferater</span>
+        <button class="btn btn-danger-solid" onclick="clearCollection('meetings')">Slett</button>
+      </div>
+      <div class="danger-row">
+        <span>Slett alle kasse-/økonomiposter</span>
+        <button class="btn btn-danger-solid" onclick="clearCollection('finances')">Slett</button>
+      </div>
       <hr class="divider">
       <div class="danger-row">
         <span><strong>Nullstill HELE databasen</strong> (alt ovenfor på én gang)</span>
         <button class="btn btn-danger-solid" onclick="clearAllData()">Slett alt</button>
       </div>
     </div>
+  </div>
+
+  <!-- LEDELSE -->
+  <div class="panel" id="panel-ledelse">
+    <div class="toolbar">
+      <input class="search" id="searchLedelse" placeholder="Søk etter navn eller rolle...">
+      <span class="count-chip" id="countLedelse">0 ledelsesmedlemmer</span>
+      <button class="btn btn-ghost" onclick="exportCSV('ledelse')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('ledelse')">+ Ny person</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Navn</th><th>Rolle</th><th>Fagområde</th><th>Telefon</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyLedelse"></tbody>
+    </table>
+  </div>
+
+  <!-- MEETINGS -->
+  <div class="panel" id="panel-meetings">
+    <div class="toolbar">
+      <input class="search" id="searchMeetings" placeholder="Søk etter tema, dato eller referent...">
+      <span class="count-chip" id="countMeetings">0 møtereferater</span>
+      <button class="btn btn-ghost" onclick="exportCSV('meetings')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('meetings')">+ Nytt møtereferat</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Dato</th><th>Tema</th><th>Referent</th><th>Til stede (roller)</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyMeetings"></tbody>
+    </table>
+  </div>
+
+  <!-- FINANCES -->
+  <div class="panel" id="panel-finances">
+    <div class="report-grid" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="n" id="finStatInn">0 kr</div><div class="l">Totalt innbetalt</div></div>
+      <div class="stat-card"><div class="n" id="finStatUt">0 kr</div><div class="l">Totalt utbetalt</div></div>
+      <div class="stat-card"><div class="n" id="finStatSaldo">0 kr</div><div class="l">Saldo (kassebeholdning)</div></div>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="searchFinances" placeholder="Søk etter kategori, beskrivelse eller dato...">
+      <span class="count-chip" id="countFinances">0 poster</span>
+      <button class="btn btn-ghost" onclick="exportCSV('finances')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Dato</th><th>Type</th><th>Kategori</th><th>Beløp</th><th>Beskrivelse</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyFinances"></tbody>
+    </table>
   </div>
 
   <!-- TEACHERS -->
@@ -798,6 +870,51 @@
         {key:'lekser', label:'Lekser', type:'text'}
       ],
       cols: ['larer','fag','dato','emne','klasse']
+    },
+    ledelse: {
+      label: 'ledelsesmedlem', collectionName: 'ledelse',
+      fields: [
+        {key:'navn', label:'Fullt navn', type:'text'},
+        {key:'rolle', label:'Rolle', type:'select', options:[
+          'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærer','Assistent','Andre'
+        ]},
+        {key:'fagomrade', label:'Fagområde (for fagkoordinator)', type:'text'},
+        {key:'telefon', label:'Telefon', type:'text'},
+        {key:'epost', label:'E-post', type:'text'}
+      ],
+      cols: ['navn','rolle','fagomrade','telefon']
+    },
+    meetings: {
+      label: 'møtereferat', collectionName: 'meetings',
+      fields: [
+        {key:'dato', label:'Dato', type:'text'},
+        {key:'tema', label:'Møtetema', type:'text'},
+        {key:'referent', label:'Referent (skrevet av)', type:'dynamic-select', source:'ledelse'},
+        {key:'tilstedeRoller', label:'Til stede (roller)', type:'role-checklist', options:[
+          'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærere','Assistenter','Andre'
+        ]},
+        {key:'tilstedeNavn', label:'Til stede (navn)', type:'text'},
+        {key:'andreHvem', label:'Andre — hvem?', type:'text'},
+        {key:'fravar', label:'Fravær (hvem)', type:'text'},
+        {key:'referatInnhold', label:'Referat / diskusjonspunkter', type:'text'},
+        {key:'vedtak', label:'Vedtak og oppfølging', type:'text'}
+      ],
+      cols: ['dato','tema','referent','tilstedeRoller']
+    },
+    finances: {
+      label: 'økonomipost', collectionName: 'finances',
+      fields: [
+        {key:'dato', label:'Dato', type:'text'},
+        {key:'type', label:'Type', type:'select', options:['Innbetaling','Utbetaling']},
+        {key:'kategori', label:'Kategori', type:'select', options:[
+          'Skoleavgift','Gave/Donasjon','Utstyr og materiell','Leie','Lønn','Strøm/drift','Annet'
+        ]},
+        {key:'belop', label:'Beløp (kr)', type:'text'},
+        {key:'beskrivelse', label:'Beskrivelse', type:'text'},
+        {key:'registrertAv', label:'Registrert av', type:'dynamic-select', source:'ledelse'},
+        {key:'kvittering', label:'Kvittering/referanse (valgfritt)', type:'text'}
+      ],
+      cols: ['dato','type','kategori','belop','beskrivelse']
     }
   };
 
@@ -943,7 +1060,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [] };
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -1013,13 +1130,26 @@
         tbody.appendChild(tr);
       });
     }
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser' };
+    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster' };
     document.getElementById('count' + capitalize(type)).textContent = data.length + ' ' + countLabels[type];
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tbodyGuardians')) render('guardians');
     if(type === 'classes') populateAttendanceClassFilter();
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
+    if(type === 'finances') renderFinanceSummary();
     updateStats();
+  }
+
+  function renderFinanceSummary(){
+    const innEl = document.getElementById('finStatInn');
+    if(!innEl) return;
+    const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
+    const totalInn = cache.finances.filter(f => f.type === 'Innbetaling').reduce((s,f) => s + toNum(f.belop), 0);
+    const totalUt = cache.finances.filter(f => f.type === 'Utbetaling').reduce((s,f) => s + toNum(f.belop), 0);
+    const saldo = totalInn - totalUt;
+    innEl.textContent = totalInn.toLocaleString('no-NO') + ' kr';
+    document.getElementById('finStatUt').textContent = totalUt.toLocaleString('no-NO') + ' kr';
+    document.getElementById('finStatSaldo').textContent = saldo.toLocaleString('no-NO') + ' kr';
   }
 
   function renderWeekView(){
@@ -1310,7 +1440,7 @@
 
   function buildFullBackupText(){
     let out = '';
-    ['teachers','guardians','students','classes','hours','attendance','lessonPlans'].forEach(type => {
+    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances'].forEach(type => {
       const schema = SCHEMAS[type];
       const data = cache[type];
       out += '=== ' + schema.label.toUpperCase() + 'E ===\n';
@@ -1326,7 +1456,8 @@
   function hasAnyData(){
     return cache.teachers.length>0 || cache.guardians.length>0 || cache.students.length>0 ||
            cache.classes.length>0 || cache.hours.length>0 || cache.attendance.length>0 ||
-           cache.lessonPlans.length>0;
+           cache.lessonPlans.length>0 || cache.ledelse.length>0 || cache.meetings.length>0 ||
+           cache.finances.length>0;
   }
 
   window.exportFullCSV = function(){
@@ -1484,7 +1615,7 @@
   };
 
   // ---------- Custom report builder (advanced) ----------
-  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser' };
+  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi' };
   const OPERATORS = [
     {value:'equals', label:'Er lik', needsValue:true, valueType:'select'},
     {value:'not_equals', label:'Er ikke lik', needsValue:true, valueType:'select'},
@@ -1760,6 +1891,19 @@
           o.selected = true;
           input.appendChild(o);
         }
+      } else if(f.type === 'role-checklist'){
+        input = document.createElement('div');
+        input.className = 'check-row';
+        const existingRoles = (existing[f.key] || '').split(',').map(s=>s.trim()).filter(Boolean);
+        f.options.forEach(opt => {
+          const lbl = document.createElement('label');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox'; cb.value = opt;
+          if(existingRoles.includes(opt)) cb.checked = true;
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(' ' + opt));
+          input.appendChild(lbl);
+        });
       } else {
         input = document.createElement('input');
         input.type = 'text';
@@ -1781,7 +1925,12 @@
     const schema = SCHEMAS[editingType];
     const entry = {};
     schema.fields.forEach(f => {
-      entry[f.key] = document.getElementById('field_' + f.key).value.trim();
+      if(f.type === 'role-checklist'){
+        const checked = [...document.querySelectorAll('#field_' + f.key + ' input:checked')].map(cb => cb.value);
+        entry[f.key] = checked.join(', ');
+      } else {
+        entry[f.key] = document.getElementById('field_' + f.key).value.trim();
+      }
     });
     if(!entry[schema.fields[0].key]){
       showToast('Fyll ut ' + schema.fields[0].label.toLowerCase());
@@ -1913,7 +2062,7 @@
   });
 
   // Search listeners
-  ['teachers','guardians','students','classes','hours','attendance','lessonPlans'].forEach(type => {
+  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances'].forEach(type => {
     const el = document.getElementById('search' + capitalize(type));
     if(el) el.addEventListener('input', () => render(type));
   });
@@ -1926,6 +2075,9 @@
   attachListener('hours');
   attachListener('attendance');
   attachListener('lessonPlans');
+  attachListener('ledelse');
+  attachListener('meetings');
+  attachListener('finances');
 
   populateCustomTypeDropdown();
 
