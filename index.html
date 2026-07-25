@@ -234,20 +234,6 @@
     .report-grid{grid-template-columns:1fr; }
     body{background:#fff;}
     main{padding:0;}
-
-    body.print-scope-eier #panel-reports{display:none !important;}
-    body.print-scope-eier #panel-eierRapporter{display:block !important;}
-    body.print-scope-eier #panel-eierRapporter .report-header-print{
-      display:block; font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px;
-      color:var(--emerald-d); margin-bottom:4px;
-    }
-
-    body.print-scope-pedagogisk #panel-reports{display:none !important;}
-    body.print-scope-pedagogisk #panel-pedagogiskRapporter{display:block !important;}
-    body.print-scope-pedagogisk #panel-pedagogiskRapporter .report-header-print{
-      display:block; font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px;
-      color:var(--emerald-d); margin-bottom:4px;
-    }
   }
 
   @media (max-width:640px){
@@ -292,7 +278,6 @@
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
-  <div class="tab" data-tab="eierRapporter" data-side="eier">Rapporter</div>
   <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
@@ -300,7 +285,6 @@
   <div class="tab" data-tab="hours" data-side="admin">Timeplan</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
-  <div class="tab" data-tab="pedagogiskRapporter" data-side="pedagogisk">Rapporter</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="overview" data-side="admin">Oversikt</div>
 </div>
@@ -581,76 +565,6 @@
       </tr></thead>
       <tbody id="tbodyFinances"></tbody>
     </table>
-  </div>
-
-  <!-- EIER RAPPORTER -->
-  <div class="panel" id="panel-eierRapporter">
-    <div class="report-header-print">Eier / Ledelsen — Rapport</div>
-    <div class="report-toolbar">
-      <button class="btn btn-primary" onclick="printScopedReport('eier')">🖨 Skriv ut / Lagre som PDF</button>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="n" id="eierStatLedelse">0</div><div class="l">Ledelsesmedlemmer</div></div>
-      <div class="stat-card"><div class="n" id="eierStatMoter">0</div><div class="l">Møtereferater</div></div>
-      <div class="stat-card"><div class="n" id="eierStatSaldo">0 kr</div><div class="l">Saldo (kassebeholdning)</div></div>
-    </div>
-    <div class="report-grid">
-      <div class="report-card">
-        <h3>Ledelse per rolle</h3>
-        <div class="sub">Fordeling av registrerte ledelsesmedlemmer</div>
-        <div id="eierRepLedelseByRolle"></div>
-      </div>
-      <div class="report-card">
-        <h3>Møter per referent</h3>
-        <div class="sub">Hvem har skrevet flest møtereferater</div>
-        <div id="eierRepMoterByReferent"></div>
-      </div>
-      <div class="report-card">
-        <h3>Kasse per kategori</h3>
-        <div class="sub">Sum beløp (kr) fordelt på kategori</div>
-        <div id="eierRepKasseByKategori"></div>
-      </div>
-      <div class="report-card">
-        <h3>Innbetalt vs. utbetalt</h3>
-        <div class="sub">Totalbeløp per type</div>
-        <div id="eierRepKasseByType"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PEDAGOGISK RAPPORTER -->
-  <div class="panel" id="panel-pedagogiskRapporter">
-    <div class="report-header-print">Pedagogisk — Rapport</div>
-    <div class="report-toolbar">
-      <button class="btn btn-primary" onclick="printScopedReport('pedagogisk')">🖨 Skriv ut / Lagre som PDF</button>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="n" id="pedStatAttendance">0</div><div class="l">Oppmøteregistreringer</div></div>
-      <div class="stat-card"><div class="n" id="pedStatLessonPlans">0</div><div class="l">Timeforberedelser</div></div>
-      <div class="stat-card"><div class="n" id="pedStatTeachersSent">0</div><div class="l">Lærere med forberedelse denne uken</div></div>
-    </div>
-    <div class="report-grid">
-      <div class="report-card">
-        <h3>Oppmøte per status</h3>
-        <div class="sub">Til stede / fraværende / syk / permisjon — totalt</div>
-        <div id="pedRepAttendanceByStatus"></div>
-      </div>
-      <div class="report-card">
-        <h3>Forberedelser per lærer</h3>
-        <div class="sub">Antall innsendte forberedelser per lærer</div>
-        <div id="pedRepLessonPlansByTeacher"></div>
-      </div>
-      <div class="report-card">
-        <h3>Forberedelser per fag</h3>
-        <div class="sub">Antall innsendte forberedelser per fagområde</div>
-        <div id="pedRepLessonPlansByFag"></div>
-      </div>
-      <div class="report-card">
-        <h3>Ukentlig status</h3>
-        <div class="sub" id="pedWeekRangeLabel">Hvem har sendt inn forberedelse for denne uken?</div>
-        <div id="pedRepWeeklyStatus"></div>
-      </div>
-    </div>
   </div>
 
   <!-- TEACHERS -->
@@ -1345,8 +1259,6 @@
     document.getElementById('statStudents') && (document.getElementById('statStudents').textContent = cache.students.length);
     document.getElementById('statHours') && (document.getElementById('statHours').textContent = cache.hours.length);
     renderReports();
-    renderEierReports();
-    renderPedagogiskReports();
   }
 
   function countBy(list, key){
@@ -1407,88 +1319,25 @@
   }
 
   function renderWeeklyStatus(){
+    const el = document.getElementById('repWeeklyStatus');
+    const labelEl = document.getElementById('weekRangeLabel');
+    if(!el) return;
     const { start, end, label } = getWeekRange();
+    if(labelEl) labelEl.textContent = 'Hvem har sendt inn forberedelse for uken ' + label + '?';
 
-    const targets = [
-      { list: 'repWeeklyStatus', lbl: 'weekRangeLabel' },
-      { list: 'pedRepWeeklyStatus', lbl: 'pedWeekRangeLabel' }
-    ];
+    if(cache.teachers.length === 0){
+      el.innerHTML = '<div class="report-empty">Ingen lærere registrert ennå.</div>';
+      return;
+    }
 
-    targets.forEach(({list, lbl}) => {
-      const el = document.getElementById(list);
-      const labelEl = document.getElementById(lbl);
-      if(!el) return;
-      if(labelEl) labelEl.textContent = 'Hvem har sendt inn forberedelse for uken ' + label + '?';
-
-      if(cache.teachers.length === 0){
-        el.innerHTML = '<div class="report-empty">Ingen lærere registrert ennå.</div>';
-        return;
-      }
-      el.innerHTML = cache.teachers.map(teacher => {
-        const hasSent = cache.lessonPlans.some(p => p.larer === teacher.navn && p.dato >= start && p.dato <= end);
-        const badge = hasSent
-          ? '<span class="status-badge sent"><span class="dot"></span>Sendt</span>'
-          : '<span class="status-badge notsent"><span class="dot"></span>Ikke sendt</span>';
-        return `<div class="status-row"><span>${escapeHtml(teacher.navn)}</span>${badge}</div>`;
-      }).join('');
-    });
+    el.innerHTML = cache.teachers.map(teacher => {
+      const hasSent = cache.lessonPlans.some(p => p.larer === teacher.navn && p.dato >= start && p.dato <= end);
+      const badge = hasSent
+        ? '<span class="status-badge sent"><span class="dot"></span>Sendt</span>'
+        : '<span class="status-badge notsent"><span class="dot"></span>Ikke sendt</span>';
+      return `<div class="status-row"><span>${escapeHtml(teacher.navn)}</span>${badge}</div>`;
+    }).join('');
   }
-
-  function sumBy(list, groupKey, valueKey){
-    const sums = {};
-    list.forEach(row => {
-      const key = (row[groupKey] || '').trim();
-      if(!key) return;
-      const val = parseFloat((row[valueKey]||'0').toString().replace(/[^\d.-]/g,'')) || 0;
-      sums[key] = (sums[key] || 0) + val;
-    });
-    return Object.entries(sums).sort((a,b) => b[1]-a[1]);
-  }
-
-  function renderEierReports(){
-    const el = document.getElementById('eierStatLedelse');
-    if(!el) return;
-    document.getElementById('eierStatLedelse').textContent = cache.ledelse.length;
-    document.getElementById('eierStatMoter').textContent = cache.meetings.length;
-
-    const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
-    const totalInn = cache.finances.filter(f => f.type === 'Innbetaling').reduce((s,f) => s + toNum(f.belop), 0);
-    const totalUt = cache.finances.filter(f => f.type === 'Utbetaling').reduce((s,f) => s + toNum(f.belop), 0);
-    document.getElementById('eierStatSaldo').textContent = (totalInn - totalUt).toLocaleString('no-NO') + ' kr';
-
-    renderBarList('eierRepLedelseByRolle', countBy(cache.ledelse, 'rolle'));
-    renderBarList('eierRepMoterByReferent', countBy(cache.meetings, 'referent'));
-
-    const kasseByKategori = sumBy(cache.finances, 'kategori', 'belop').map(([k,v]) => [k, Math.round(v)]);
-    renderBarList('eierRepKasseByKategori', kasseByKategori);
-
-    renderBarList('eierRepKasseByType', [['Innbetaling', Math.round(totalInn)], ['Utbetaling', Math.round(totalUt)]]);
-  }
-
-  function renderPedagogiskReports(){
-    const el = document.getElementById('pedStatAttendance');
-    if(!el) return;
-    document.getElementById('pedStatAttendance').textContent = cache.attendance.length;
-    document.getElementById('pedStatLessonPlans').textContent = cache.lessonPlans.length;
-
-    const { start, end } = getWeekRange();
-    const sentCount = cache.teachers.filter(t => cache.lessonPlans.some(p => p.larer === t.navn && p.dato >= start && p.dato <= end)).length;
-    document.getElementById('pedStatTeachersSent').textContent = sentCount + ' / ' + cache.teachers.length;
-
-    renderBarList('pedRepAttendanceByStatus', countBy(cache.attendance, 'status'));
-    renderBarList('pedRepLessonPlansByTeacher', countBy(cache.lessonPlans, 'larer'));
-    renderBarList('pedRepLessonPlansByFag', countBy(cache.lessonPlans, 'fag'));
-    renderWeeklyStatus();
-  }
-
-  window.printScopedReport = function(scope){
-    document.body.classList.add('print-scope-' + scope);
-    window.onafterprint = () => { document.body.classList.remove('print-scope-' + scope); };
-    setTimeout(() => {
-      window.print();
-    }, 150);
-    setTimeout(() => { document.body.classList.remove('print-scope-' + scope); }, 120000);
-  };
 
   window.selectSide = function(side){
     document.getElementById('sideChooseView').style.display = 'none';
