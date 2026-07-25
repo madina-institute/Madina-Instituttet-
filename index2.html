@@ -287,7 +287,7 @@
     </div>
 
     <div class="field">
-      <label>Følges barnet av BBT eller PPT i den ordinære skolen?</label>
+      <label>Følges ditt barn av PPT eller PUP?</label>
       <div class="radio-row">
         <label><input type="radio" name="bbt_ppt" value="nei" required> Nei</label>
         <label><input type="radio" name="bbt_ppt" value="ja" required> Ja</label>
@@ -306,12 +306,12 @@
   <div class="card">
     <div class="tag"><span class="num">05</span> Påmelding</div>
     <h2 class="title">Ønsket program, dag og fag</h2>
-    <p class="hint">Kryss av for programmet(ene) eleven skal delta på. Det er mulig å velge flere.</p>
+    <p class="hint">Velg lørdag, søndag, eller begge dager. Madinabarn kan ikke kombineres med de andre programmene.</p>
     <hr class="rule">
 
     <div class="program-opts">
       <label class="prog-opt">
-        <input type="checkbox" name="program" value="madina_islamske_skole" class="price-trigger">
+        <input type="checkbox" name="program" value="madina_islamske_skole" class="price-trigger day-trigger" id="chkLordag">
         <div class="p-body">
           <div class="p-title">Madina Islamske Skole</div>
           <div class="p-meta">LØRDAG · 09:00–13:00</div>
@@ -320,43 +320,44 @@
       </label>
 
       <label class="prog-opt">
-        <input type="checkbox" name="program" value="sprak_arabisk" class="price-trigger">
+        <input type="checkbox" class="price-trigger day-trigger" id="chkSondag">
         <div class="p-body">
-          <div class="p-title">Tilleggsprogram i språk — Arabisk</div>
+          <div class="p-title">Tilleggsprogram i språk</div>
           <div class="p-meta">SØNDAG · 09:00–12:00</div>
-          <div class="p-sub">Frivillig språkprogram basert på læreverket Al-Mutammim.</div>
+          <div class="p-sub">Frivillig språkprogram — Arabisk eller Urdu (velges under).</div>
         </div>
       </label>
 
-      <label class="prog-opt">
-        <input type="checkbox" name="program" value="sprak_urdu" class="price-trigger">
-        <div class="p-body">
-          <div class="p-title">Tilleggsprogram i språk — Urdu</div>
-          <div class="p-meta">SØNDAG · 09:00–12:00</div>
-          <div class="p-sub">Frivillig språkprogram med egen læreplan.</div>
+      <div class="subject-check" id="sprakValgWrap" style="display:none;">
+        <div class="field" style="margin-bottom:0;">
+          <label>Velg ett språkspor for søndag (kun ett)</label>
+          <div class="radio-row">
+            <label><input type="radio" name="sprak_valg" value="arabisk" id="sprakArabisk" required> Arabisk (etter læreverket Al-Mutammim)</label>
+            <label><input type="radio" name="sprak_valg" value="urdu" id="sprakUrdu" required> Urdu</label>
+          </div>
         </div>
-      </label>
+      </div>
+      <input type="checkbox" name="program" value="sprak_arabisk" id="hiddenSprakArabisk" style="display:none;">
+      <input type="checkbox" name="program" value="sprak_urdu" id="hiddenSprakUrdu" style="display:none;">
 
       <label class="prog-opt">
-        <input type="checkbox" name="program" value="madinabarn" class="price-trigger">
+        <input type="checkbox" name="program" value="madinabarn" class="price-trigger" id="chkMadinabarn">
         <div class="p-body">
           <div class="p-title">Madinabarn</div>
           <div class="p-meta">SØNDAG · 10:30–12:15 · 3–6 ÅR</div>
-          <div class="p-sub">Introduksjonsprogram for de yngste barna.</div>
+          <div class="p-sub">Introduksjonsprogram for de yngste barna. Kan ikke kombineres med lørdag/søndag-programmene.</div>
         </div>
       </label>
 
-      <label class="prog-opt">
-        <input type="checkbox" name="program" value="ekstra_koran_hifz">
+      <label class="prog-opt" style="opacity:0.5; cursor:not-allowed;">
+        <input type="checkbox" name="program" value="ekstra_koran_hifz" disabled>
         <div class="p-body">
           <div class="p-title">Ekstra Koran / Hifz-program</div>
-          <div class="p-meta">ETTER AVTALE</div>
+          <div class="p-meta">IKKE TILGJENGELIG FOR ØYEBLIKKET</div>
           <div class="p-sub">For elever som ønsker fordypning og memorering av Koranen.</div>
         </div>
       </label>
     </div>
-
-    <div class="note-box">Merk: Eleven kan velge kun ett språk i tilleggsprogrammet (Arabisk eller Urdu).</div>
 
     <div class="price-box">
       <div class="price-label">Beregnet semesteravgift</div>
@@ -413,7 +414,7 @@
     <p class="hint">Denne foreløpige kartleggingen hjelper oss å plassere eleven riktig ved oppstart. En fullstendig nivåtest gjennomføres av læreren i forbindelse med skolestart.</p>
     <hr class="rule">
 
-    <div class="kartlegging-block">
+    <div class="kartlegging-block" id="kbKoran">
       <h4>Koran</h4>
       <div class="grid2">
         <div class="field">
@@ -459,7 +460,7 @@
       </div>
     </div>
 
-    <div class="kartlegging-block">
+    <div class="kartlegging-block" id="kbArabisk">
       <h4>Arabisk</h4>
       <div class="grid2">
         <div class="field">
@@ -495,7 +496,7 @@
       <div class="field"><label>Hvilken bok eller hvilket nivå har barnet kommet til?</label><input type="text" name="arabisk_niva"></div>
     </div>
 
-    <div class="kartlegging-block">
+    <div class="kartlegging-block" id="kbUrdu">
       <h4>Urdu <span style="font-weight:400; text-transform:none; letter-spacing:0; font-family:'Lora',serif; font-size:12.5px; color:#5a6860;">(kun dersom barnet skal delta)</span></h4>
       <div class="grid2">
         <div class="field">
@@ -621,22 +622,107 @@
 
   const MULTI_FIELDS = ['program', 'tidligere_studert', 'urdu_ferdighet', 'sprak_hjemme'];
 
+  const chkLordag = document.getElementById('chkLordag');
+  const chkSondag = document.getElementById('chkSondag');
+  const chkMadinabarn = document.getElementById('chkMadinabarn');
+  const sprakValgWrap = document.getElementById('sprakValgWrap');
+  const sprakArabisk = document.getElementById('sprakArabisk');
+  const sprakUrdu = document.getElementById('sprakUrdu');
+  const hiddenSprakArabisk = document.getElementById('hiddenSprakArabisk');
+  const hiddenSprakUrdu = document.getElementById('hiddenSprakUrdu');
+  const kbKoran = document.getElementById('kbKoran');
+  const kbArabisk = document.getElementById('kbArabisk');
+  const kbUrdu = document.getElementById('kbUrdu');
+
   function updatePriceDisplay(){
-    const checked = [...document.querySelectorAll('.price-trigger:checked')].map(cb => cb.value);
-    const hasSaturday = checked.includes('madina_islamske_skole');
-    const hasSunday = checked.includes('sprak_arabisk') || checked.includes('sprak_urdu') || checked.includes('madinabarn');
     const priceEl = document.getElementById('priceAmount');
-    if(hasSaturday && hasSunday){
+    if(chkMadinabarn.checked){
+      priceEl.textContent = '2 000 kr / semester';
+    } else if(chkLordag.checked && chkSondag.checked){
       priceEl.textContent = '4 000 kr / semester';
-    } else if(hasSaturday){
+    } else if(chkLordag.checked){
       priceEl.textContent = '2 500 kr / semester';
-    } else if(hasSunday){
+    } else if(chkSondag.checked){
       priceEl.textContent = '2 000 kr / semester';
     } else {
       priceEl.textContent = 'Velg minst ett program ovenfor';
     }
   }
-  document.querySelectorAll('.price-trigger').forEach(cb => cb.addEventListener('change', updatePriceDisplay));
+
+  function updateKartleggingVisibility(){
+    kbKoran.style.display = chkLordag.checked ? 'block' : 'none';
+    kbArabisk.style.display = (chkSondag.checked && sprakArabisk.checked) ? 'block' : 'none';
+    kbUrdu.style.display = (chkSondag.checked && sprakUrdu.checked) ? 'block' : 'none';
+  }
+
+  function updateMutualExclusivity(dayChanged){
+    if(dayChanged){
+      // Lørdag/Søndag chosen → Madinabarn becomes unavailable
+      const anyDay = chkLordag.checked || chkSondag.checked;
+      chkMadinabarn.disabled = anyDay;
+      if(anyDay) chkMadinabarn.checked = false;
+    } else {
+      // Madinabarn chosen → Lørdag/Søndag become unavailable
+      const madinabarnOn = chkMadinabarn.checked;
+      chkLordag.disabled = madinabarnOn;
+      chkSondag.disabled = madinabarnOn;
+      if(madinabarnOn){
+        chkLordag.checked = false;
+        chkSondag.checked = false;
+        sprakValgWrap.style.display = 'none';
+        hiddenSprakArabisk.checked = false;
+        hiddenSprakUrdu.checked = false;
+        sprakArabisk.checked = false;
+        sprakUrdu.checked = false;
+      }
+    }
+  }
+
+  function onSondagChange(){
+    sprakValgWrap.style.display = chkSondag.checked ? 'block' : 'none';
+    if(!chkSondag.checked){
+      sprakArabisk.checked = false;
+      sprakUrdu.checked = false;
+      hiddenSprakArabisk.checked = false;
+      hiddenSprakUrdu.checked = false;
+    }
+    updateMutualExclusivity(true);
+    updateKartleggingVisibility();
+    updatePriceDisplay();
+  }
+
+  chkLordag.addEventListener('change', () => { updateMutualExclusivity(true); updateKartleggingVisibility(); updatePriceDisplay(); });
+  chkSondag.addEventListener('change', onSondagChange);
+  chkMadinabarn.addEventListener('change', () => { updateMutualExclusivity(false); updateKartleggingVisibility(); updatePriceDisplay(); });
+
+  [sprakArabisk, sprakUrdu].forEach(radio => {
+    radio.addEventListener('change', () => {
+      hiddenSprakArabisk.checked = sprakArabisk.checked;
+      hiddenSprakUrdu.checked = sprakUrdu.checked;
+      updateKartleggingVisibility();
+    });
+  });
+
+  // Conditional "required" on health/detail explanation fields: only required
+  // when the person answered "Ja" — optional when "Nei" or "prefer not to answer".
+  function wireConditionalRequired(radioName, textareaName){
+    const textarea = document.querySelector(`[name="${textareaName}"]`);
+    document.querySelectorAll(`input[name="${radioName}"]`).forEach(radio => {
+      radio.addEventListener('change', () => {
+        textarea.required = (radio.value === 'ja' && radio.checked);
+      });
+    });
+    textarea.required = false;
+  }
+  wireConditionalRequired('allergi', 'allergi_beskriv');
+  wireConditionalRequired('sykdom', 'sykdom_beskriv');
+  wireConditionalRequired('medisin', 'medisin_hvilke');
+  wireConditionalRequired('larevansker', 'larevansker_beskriv');
+  wireConditionalRequired('bbt_ppt', 'bbt_ppt_beskriv');
+
+  // Set correct initial state (everything unchecked at first)
+  updateKartleggingVisibility();
+  updatePriceDisplay();
 
   document.getElementById('paameldingsForm').addEventListener('submit', async function(e){
     e.preventDefault();
