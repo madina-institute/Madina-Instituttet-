@@ -524,11 +524,11 @@
   <div class="panel" id="panel-ledelse">
     <div class="toolbar">
       <input class="search" id="searchLedelse" placeholder="Søk etter navn eller rolle...">
-      <span class="count-chip" id="countLedelse" onclick="toggleRecords(this)">0 ledelsesmedlemmer</span>
+      <span class="count-chip" id="countLedelse" onclick="toggleRecordsById('tableLedelse')">0 ledelsesmedlemmer</span>
       <button class="btn btn-ghost" onclick="exportCSV('ledelse')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('ledelse')">+ Ny person</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableLedelse">
       <thead><tr>
         <th>Navn</th><th>Rolle</th><th>Fagområde</th><th>Telefon</th><th></th>
       </tr></thead>
@@ -540,11 +540,11 @@
   <div class="panel" id="panel-meetings">
     <div class="toolbar">
       <input class="search" id="searchMeetings" placeholder="Søk etter tema, dato eller referent...">
-      <span class="count-chip" id="countMeetings" onclick="toggleRecords(this)">0 møtereferater</span>
+      <span class="count-chip" id="countMeetings" onclick="toggleRecordsById('tableMeetings')">0 møtereferater</span>
       <button class="btn btn-ghost" onclick="exportCSV('meetings')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('meetings')">+ Nytt møtereferat</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableMeetings">
       <thead><tr>
         <th>Dato</th><th>Tema</th><th>Referent</th><th>Til stede (roller)</th><th></th>
       </tr></thead>
@@ -561,11 +561,11 @@
     </div>
     <div class="toolbar">
       <input class="search" id="searchFinances" placeholder="Søk etter kategori, beskrivelse eller dato...">
-      <span class="count-chip" id="countFinances" onclick="toggleRecords(this)">0 poster</span>
+      <span class="count-chip" id="countFinances" onclick="toggleRecordsById('tableFinances')">0 poster</span>
       <button class="btn btn-ghost" onclick="exportCSV('finances')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableFinances">
       <thead><tr>
         <th>Dato</th><th>Type</th><th>Kategori</th><th>Beløp</th><th>Beskrivelse</th><th></th>
       </tr></thead>
@@ -577,11 +577,11 @@
   <div class="panel active" id="panel-teachers">
     <div class="toolbar">
       <input class="search" id="searchTeachers" placeholder="Søk etter navn, fag eller telefon...">
-      <span class="count-chip" id="countTeachers" onclick="toggleRecords(this)">0 lærere</span>
+      <span class="count-chip" id="countTeachers" onclick="toggleRecordsById('tableTeachers')">0 lærere</span>
       <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny lærer</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableTeachers">
       <thead><tr>
         <th>Navn</th><th>Fag</th><th>Dager</th><th>Telefon</th><th>E-post</th><th></th>
       </tr></thead>
@@ -593,11 +593,11 @@
   <div class="panel" id="panel-guardians">
     <div class="toolbar">
       <input class="search" id="searchGuardians" placeholder="Søk etter navn eller telefon...">
-      <span class="count-chip" id="countGuardians" onclick="toggleRecords(this)">0 foresatte</span>
+      <span class="count-chip" id="countGuardians" onclick="toggleRecordsById('tableGuardians')">0 foresatte</span>
       <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('guardians')">+ Ny foresatt</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableGuardians">
       <thead><tr>
         <th>Navn</th><th>Telefon</th><th>E-post</th><th>Antall barn</th><th></th>
       </tr></thead>
@@ -609,11 +609,11 @@
   <div class="panel" id="panel-students">
     <div class="toolbar">
       <input class="search" id="searchStudents" placeholder="Søk etter navn, klasse eller foresatt...">
-      <span class="count-chip" id="countStudents" onclick="toggleRecords(this)">0 elever</span>
+      <span class="count-chip" id="countStudents" onclick="toggleRecordsById('tableStudents')">0 elever</span>
       <button class="btn btn-ghost" onclick="exportCSV('students')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('students')">+ Ny elev</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableStudents">
       <thead><tr>
         <th>Navn</th><th>Program</th><th>Klasse</th><th>Foresatt</th><th>Betalt</th><th></th>
       </tr></thead>
@@ -625,11 +625,11 @@
   <div class="panel" id="panel-classes">
     <div class="toolbar">
       <input class="search" id="searchClasses" placeholder="Søk etter klassenavn...">
-      <span class="count-chip" id="countClasses" onclick="toggleRecords(this)">0 klasser</span>
+      <span class="count-chip" id="countClasses" onclick="toggleRecordsById('tableClasses')">0 klasser</span>
       <button class="btn btn-ghost" onclick="exportCSV('classes')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('classes')">+ Ny klasse</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableClasses">
       <thead><tr>
         <th>Klassenavn</th><th>Trinn/Alder</th><th>Program</th><th>Merknad</th><th></th>
       </tr></thead>
@@ -641,7 +641,7 @@
   <div class="panel" id="panel-hours">
     <div class="toolbar">
       <input class="search" id="searchHours" placeholder="Søk etter dag, fag eller lærer...">
-      <span class="count-chip" id="countHours" onclick="toggleRecords(this)">0 oppføringer</span>
+      <span class="count-chip" id="countHours" onclick="toggleRecordsById('tableHours')">0 oppføringer</span>
       <button class="btn btn-ghost" onclick="toggleWeekView()">Vis ukeplan</button>
       <button class="btn btn-ghost" onclick="seedStandardTimeplan()">Last inn standard timeplan</button>
       <button class="btn btn-ghost" onclick="exportCSV('hours')">Eksporter CSV</button>
@@ -661,7 +661,7 @@
       </div>
     </div>
 
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableHours">
       <thead><tr>
         <th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th><th>Klasse/Gruppe</th><th></th>
       </tr></thead>
@@ -692,10 +692,10 @@
 
     <div class="toolbar" style="margin-top:22px;">
       <input class="search" id="searchAttendance" placeholder="Søk etter elev, klasse eller dato...">
-      <span class="count-chip" id="countAttendance" onclick="toggleRecords(this)">0 registreringer</span>
+      <span class="count-chip" id="countAttendance" onclick="toggleRecordsById('tableAttendance')">0 registreringer</span>
       <button class="btn btn-ghost" onclick="exportCSV('attendance')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden">
+    <table class="records-hidden" id="tableAttendance">
       <thead><tr>
         <th>Dato</th><th>Elev</th><th>Klasse</th><th>Status</th><th></th>
       </tr></thead>
@@ -735,10 +735,10 @@
       <button class="back-link" onclick="showLpChoice()">← Tilbake</button>
       <div class="toolbar">
         <input class="search" id="searchLessonPlans" placeholder="Søk etter lærer, fag eller emne...">
-        <span class="count-chip" id="countLessonPlans" onclick="toggleRecords(this)">0 forberedelser</span>
+        <span class="count-chip" id="countLessonPlans" onclick="toggleRecordsById('tableLessonPlans')">0 forberedelser</span>
         <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
       </div>
-      <table class="records-hidden">
+      <table class="records-hidden" id="tableLessonPlans">
         <thead><tr>
           <th>Lærer</th><th>Fag</th><th>Dato</th><th>Emne</th><th>Klasse</th><th></th>
         </tr></thead>
@@ -1366,12 +1366,13 @@
     document.getElementById('sideSwitchBtn').style.display = 'none';
   };
 
-  window.toggleRecords = function(chipEl){
-    const container = chipEl.closest('.toolbar').parentElement;
-    const table = container.querySelector('table');
+  window.toggleRecordsById = function(tableId){
+    const table = document.getElementById(tableId);
     if(!table) return;
     const nowHidden = table.classList.toggle('records-hidden');
-    chipEl.classList.toggle('expanded', !nowHidden);
+    const chipId = 'count' + tableId.replace('table','');
+    const chip = document.getElementById(chipId);
+    if(chip) chip.classList.toggle('expanded', !nowHidden);
   };
 
   window.showLpChoice = function(){
