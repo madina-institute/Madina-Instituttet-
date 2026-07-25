@@ -874,10 +874,10 @@
     ledelse: {
       label: 'ledelsesmedlem', collectionName: 'ledelse',
       fields: [
-        {key:'navn', label:'Fullt navn', type:'text'},
         {key:'rolle', label:'Rolle', type:'select', options:[
           'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærer','Assistent','Andre'
         ]},
+        {key:'navn', label:'Fullt navn', type:'text'},
         {key:'fagomrade', label:'Fagområde (for fagkoordinator)', type:'text'},
         {key:'telefon', label:'Telefon', type:'text'},
         {key:'epost', label:'E-post', type:'text'}
@@ -907,12 +907,14 @@
         {key:'dato', label:'Dato', type:'text'},
         {key:'type', label:'Type', type:'select', options:['Innbetaling','Utbetaling']},
         {key:'kategori', label:'Kategori', type:'select', options:[
-          'Skoleavgift','Gave/Donasjon','Utstyr og materiell','Leie','Lønn','Strøm/drift','Annet'
+          'Skoleavgift','Gave/Donasjon','Utstyr og materiell','Leie','Lønn','Strøm/drift','Innkjøp','Annet'
         ]},
         {key:'belop', label:'Beløp (kr)', type:'text'},
-        {key:'beskrivelse', label:'Beskrivelse', type:'text'},
-        {key:'registrertAv', label:'Registrert av', type:'dynamic-select', source:'ledelse'},
-        {key:'kvittering', label:'Kvittering/referanse (valgfritt)', type:'text'}
+        {key:'beskrivelse', label:'Beskrivelse / hva ble kjøpt', type:'text'},
+        {key:'kjoptAv', label:'Kjøpt av (ved innkjøp)', type:'dynamic-select', source:['ledelse','teachers']},
+        {key:'kvitteringLink', label:'Kvittering/dokument (lim inn lenke til bilde eller fil)', type:'text'},
+        {key:'refundert', label:'Refundert til kjøper?', type:'select', options:['Ja','Nei','Ikke aktuelt']},
+        {key:'registrertAv', label:'Registrert av', type:'dynamic-select', source:'ledelse'}
       ],
       cols: ['dato','type','kategori','belop','beskrivelse']
     }
@@ -1836,6 +1838,50 @@
     a.click();
     URL.revokeObjectURL(url);
   };
+  function buildLedelseNavnInput(currentRolle, currentValue){
+    const linkedRoles = ['Lærer','Assistent'];
+    let input;
+    if(linkedRoles.includes(currentRolle)){
+      input = document.createElement('select');
+      const blank = document.createElement('option');
+      blank.value = ''; blank.textContent = '— Velg —';
+      input.appendChild(blank);
+      const options = [...new Set(cache.teachers.map(r => r.navn).filter(Boolean))].sort();
+      if(options.length === 0){
+        const none = document.createElement('option');
+        none.value = ''; none.disabled = true;
+        none.textContent = 'Ingen lærere registrert ennå (legg til under Administrativ → Lærere)';
+        input.appendChild(none);
+      }
+      options.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt; o.textContent = opt;
+        if(currentValue === opt) o.selected = true;
+        input.appendChild(o);
+      });
+      if(currentValue && !options.includes(currentValue)){
+        const o = document.createElement('option');
+        o.value = currentValue; o.textContent = currentValue + ' (utgått)';
+        o.selected = true;
+        input.appendChild(o);
+      }
+    } else {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.value = currentValue || '';
+    }
+    input.id = 'field_navn';
+    return input;
+  }
+
+  function updateLedelseNavnField(newRolle){
+    const oldInput = document.getElementById('field_navn');
+    if(!oldInput) return;
+    const currentValue = oldInput.value;
+    const newInput = buildLedelseNavnInput(newRolle, currentValue);
+    oldInput.replaceWith(newInput);
+  }
+
   window.openModal = function(type, id=null){
     editingType = type; editingId = id;
     const schema = SCHEMAS[type];
@@ -1866,16 +1912,22 @@
             }
           });
         }
+        if(type === 'ledelse' && f.key === 'rolle'){
+          input.addEventListener('change', () => updateLedelseNavnField(input.value));
+        }
+      } else if(type === 'ledelse' && f.key === 'navn'){
+        input = buildLedelseNavnInput(existing.rolle, existing.navn);
       } else if(f.type === 'dynamic-select'){
         input = document.createElement('select');
         const blank = document.createElement('option');
         blank.value = ''; blank.textContent = '— Velg —';
         input.appendChild(blank);
-        const options = [...new Set(cache[f.source].map(r => r.navn).filter(Boolean))].sort();
+        const sources = Array.isArray(f.source) ? f.source : [f.source];
+        const options = [...new Set(sources.flatMap(src => cache[src].map(r => r.navn)).filter(Boolean))].sort();
         if(options.length === 0){
           const none = document.createElement('option');
           none.value = ''; none.disabled = true;
-          none.textContent = 'Ingen ' + TYPE_LABELS[f.source].toLowerCase() + ' registrert ennå';
+          none.textContent = 'Ingen ' + sources.map(s => TYPE_LABELS[s].toLowerCase()).join('/') + ' registrert ennå';
           input.appendChild(none);
         }
         options.forEach(opt => {
