@@ -707,15 +707,28 @@
 
       window.print();
 
-      // The person must explicitly confirm the print/PDF step happened before
-      // we submit — this avoids silently sending on browsers where
-      // window.print() does not block until the dialog is dismissed.
-      const confirmed = confirm(t('confirmPrinted'));
-      if(!confirmed){
-        return;
-      }
+      // Give the browser a moment to actually present the print/PDF sheet
+      // before showing the confirm dialog — calling them back-to-back can
+      // make some mobile browsers (notably iOS Safari) show only the confirm
+      // and queue the print sheet until after it's dismissed.
+      setTimeout(() => {
+        const confirmed = confirm(t('confirmPrinted'));
+        if(!confirmed) return;
+        finishLessonPlanSubmission({
+          fag, dato, emne, mal, metode, materiell,
+          oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
+        });
+      }, 600);
+    } catch(err){
+      console.error(err);
+      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+    }
+  };
 
-      // STEP 2 — save + email, runs only after explicit confirmation above.
+  async function finishLessonPlanSubmission(fields){
+    try{
+      const { fag, dato, emne, mal, metode, materiell, oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser } = fields;
+
       const record = {
         larer: currentTeacher.navn,
         klasse: currentTeacher.tildeltKlasse,
@@ -757,7 +770,7 @@
       console.error(err);
       alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
-  };
+  }
 
   // Init
   applyStaticTranslations();
