@@ -57,7 +57,19 @@
     padding:14px 28px; border-radius:4px; cursor:pointer; border:none; font-weight:700;
   }
   .btn-next{background:var(--gold-l); color:var(--emerald-d); margin-inline-start:auto; box-shadow:0 8px 18px rgba(217,189,124,0.3);}
-  .btn-back{background:transparent; border:1px solid var(--line); color:var(--ink);}
+  .btn-back{background:var(--emerald); border:1px solid var(--emerald); color:#fff;}
+
+  .field.field-invalid{
+    background:rgba(168,60,60,0.06); border-left:3px solid #a83c3c; padding:10px 12px; border-radius:0 4px 4px 0; margin-left:-12px;
+  }
+  .field.field-invalid label{color:#a83c3c;}
+  .field.field-invalid input[type=text],
+  .field.field-invalid input[type=date],
+  .field.field-invalid input[type=tel],
+  .field.field-invalid input[type=email],
+  .field.field-invalid textarea{
+    border-bottom-color:#a83c3c;
+  }
   .success-box h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px;}
   .success-box p{font-size:15px; color:#5a6860;}
   .error-msg-top{display:none; background:#fdecec; border:1px solid #e0a0a0; color:#a83c3c; padding:14px 18px; border-radius:6px; font-family:'Jost',sans-serif; font-size:13px; margin-top:16px;}
@@ -778,12 +790,30 @@
     window.scrollTo({top:0, behavior:'smooth'});
   };
 
+  function highlightInvalidField(el){
+    const container = el.closest('.field') || el.closest('.radio-row')?.closest('.field');
+    if(container) container.classList.add('field-invalid');
+  }
+  function clearInvalidHighlight(el){
+    const container = el.closest('.field') || el.closest('.radio-row')?.closest('.field');
+    if(container) container.classList.remove('field-invalid');
+  }
+
   window.tryGoToStep = function(n){
     const currentStepEl = document.querySelector(`.step[data-step="${currentStep}"]`);
-    const invalidField = currentStepEl.querySelector(':invalid');
-    if(invalidField){
-      invalidField.reportValidity();
-      invalidField.scrollIntoView({behavior:'smooth', block:'center'});
+    const invalidFields = [...currentStepEl.querySelectorAll(':invalid')];
+
+    // Clear old highlights in this step, then mark every currently invalid field
+    currentStepEl.querySelectorAll('.field-invalid').forEach(f => f.classList.remove('field-invalid'));
+    invalidFields.forEach(el => {
+      highlightInvalidField(el);
+      el.addEventListener('input', () => { if(el.checkValidity()) clearInvalidHighlight(el); }, {once:false});
+      el.addEventListener('change', () => { if(el.checkValidity()) clearInvalidHighlight(el); }, {once:false});
+    });
+
+    if(invalidFields.length > 0){
+      invalidFields[0].reportValidity();
+      invalidFields[0].scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
     // Extra check specific to the Program step: at least one program must be chosen
@@ -803,6 +833,23 @@
 
   updateProgress();
 
+  // Level/previous-education detail fields: required only when the person
+  // answered "Ja" to the related question — optional when "Nei".
+  function wireRequiredOnJa(radioName, fieldNames){
+    const fields = fieldNames.map(n => document.querySelector(`[name="${n}"]`)).filter(Boolean);
+    document.querySelectorAll(`input[name="${radioName}"]`).forEach(radio => {
+      radio.addEventListener('change', () => {
+        fields.forEach(f => { f.required = (radio.value === 'ja' && radio.checked); });
+      });
+    });
+    fields.forEach(f => { f.required = false; });
+  }
+  wireRequiredOnJa('tidligere_skole', ['tidligere_skole_navn', 'tidligere_skole_ar']);
+  wireRequiredOnJa('koran_qaida', ['koran_qaida_hvilken']);
+  wireRequiredOnJa('koran_memorert', ['koran_memorert_fra', 'koran_memorert_til']);
+  wireRequiredOnJa('arabisk_tidligere', ['arabisk_ar', 'arabisk_niva']);
+  wireRequiredOnJa('urdu_tidligere', ['urdu_ar', 'urdu_niva']);
+
   // Set correct initial state (everything unchecked at first)
   updateKartleggingVisibility();
   updatePriceDisplay();
@@ -816,6 +863,14 @@
     errTopEl.style.display = 'none';
 
     if(!this.checkValidity()){
+      const step6El = document.querySelector('.step[data-step="6"]');
+      const invalidFields = [...this.querySelectorAll(':invalid')];
+      document.querySelectorAll('.field-invalid').forEach(f => f.classList.remove('field-invalid'));
+      invalidFields.forEach(el => {
+        highlightInvalidField(el);
+        el.addEventListener('input', () => { if(el.checkValidity()) clearInvalidHighlight(el); });
+        el.addEventListener('change', () => { if(el.checkValidity()) clearInvalidHighlight(el); });
+      });
       errTopEl.textContent = '⚠ Ett eller flere obligatoriske felt mangler eller er ikke fylt ut riktig. Nettleseren hopper nå til feltet som må rettes.';
       errTopEl.style.display = 'block';
       errTopEl.scrollIntoView({behavior:'smooth', block:'center'});
