@@ -677,6 +677,19 @@
 
       const metaLine = currentTeacher.navn + ' · ' + currentTeacher.tildeltKlasse + ' · ' + I18N[currentLang].fagLabels[fag] + ' · ' + dato;
       const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+      const fieldsJson = JSON.stringify({
+        fag, dato, emne, mal, metode, materiell,
+        oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
+      }).replace(/</g, '\\u003c');
+
+      const submitLabel = currentLang === 'ar' ? 'أرسلت / حفظت التحضير — إرسال للإدارة الآن' : 'Jeg har skrevet ut / lagret — send inn nå';
+      const sentLabel = currentLang === 'ar' ? '✓ تم الإرسال. يمكنك إغلاق هذه النافذة.' : '✓ Sendt. Du kan lukke dette vinduet.';
+      const errLabel = currentLang === 'ar'
+        ? 'تعذّر الإرسال من هنا. ارجع للصفحة الرئيسية وحاول مرة أخرى.'
+        : 'Kunne ikke sende herfra. Gå tilbake til hovedsiden og prøv igjen.';
+      const instructionLabel = currentLang === 'ar'
+        ? 'بعد الطباعة أو حفظ PDF، اضغط الزر أدناه لإرسال التحضير للإدارة.'
+        : 'Etter du har skrevet ut eller lagret PDF, trykk knappen under for å sende forberedelsen til administrasjonen.';
 
       const printDoc = `<!DOCTYPE html>
 <html lang="${currentLang}" dir="${dir}"><head><meta charset="UTF-8">
@@ -689,11 +702,48 @@
   .block .lbl{font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#1f4a3a; margin-bottom:3px; font-family:Arial,sans-serif;}
   .block .val{font-size:14px; white-space:pre-wrap; line-height:1.5;}
   hr{border:none; border-top:1px solid #ccc; margin:18px 0;}
+  .submit-panel{
+    margin-top:30px; padding:18px 20px; background:#f3ecdb; border:1px solid #ddd3be; border-radius:10px;
+    font-family:Arial,sans-serif;
+  }
+  .submit-panel p{font-size:13.5px; color:#333; margin:0 0 12px;}
+  .submit-panel button{
+    font-family:Arial,sans-serif; font-size:14px; font-weight:700; background:#1f4a3a; color:#fff;
+    border:none; border-radius:6px; padding:13px 18px; width:100%; cursor:pointer;
+  }
+  .submit-panel button:disabled{background:#8a9a90; cursor:default;}
+  .submit-panel .status{margin-top:10px; font-size:13px; color:#1f4a3a; font-weight:700;}
+  @media print{ .submit-panel{display:none !important;} }
 </style>
 </head><body>
   <h1>${escapeHtml(t('lessonTitle'))}</h1>
   <div class="meta">${escapeHtml(metaLine)}</div>
   ${bodyHtml}
+
+  <div class="submit-panel">
+    <p>${escapeHtml(instructionLabel)}</p>
+    <button id="submitBtn" onclick="doSubmit()">${escapeHtml(submitLabel)}</button>
+    <div class="status" id="statusMsg"></div>
+  </div>
+
+  <script>
+    const fields = ${fieldsJson};
+    function doSubmit(){
+      const btn = document.getElementById('submitBtn');
+      const statusEl = document.getElementById('statusMsg');
+      try{
+        if(window.opener && window.opener.finishLessonPlanSubmission){
+          window.opener.finishLessonPlanSubmission(fields);
+          btn.disabled = true;
+          statusEl.textContent = ${JSON.stringify(sentLabel)};
+        } else {
+          statusEl.textContent = ${JSON.stringify(errLabel)};
+        }
+      } catch(e){
+        statusEl.textContent = ${JSON.stringify(errLabel)};
+      }
+    }
+  <\/script>
 </body></html>`;
 
       const win = window.open('', '_blank');
@@ -707,25 +757,13 @@
       win.document.write(printDoc);
       win.document.close();
       win.onload = () => { win.focus(); win.print(); };
-
-      // The person must explicitly confirm the print/PDF step happened before
-      // we submit — this avoids silently sending if the print window never
-      // actually opened (e.g. blocked, or dismissed instantly).
-      setTimeout(() => {
-        const confirmed = confirm(t('confirmPrinted'));
-        if(!confirmed) return;
-        finishLessonPlanSubmission({
-          fag, dato, emne, mal, metode, materiell,
-          oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
-        });
-      }, 800);
     } catch(err){
       console.error(err);
       alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   };
 
-  async function finishLessonPlanSubmission(fields){
+  window.finishLessonPlanSubmission = async function(fields){
     try{
       const { fag, dato, emne, mal, metode, materiell, oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser } = fields;
 
