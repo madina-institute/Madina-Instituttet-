@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Påmeldingsskjema – Madina Institute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:      #1c2c24;
+    --emerald:  #1f4a3a;
+    --emerald-d:#0f2b21;
+    --gold:     #b7924a;
+    --gold-l:   #d9bd7c;
+    --paper:    #fbf8f1;
+    --paper-2:  #f3ecdb;
+    --line:     rgba(20,38,31,0.16);
+    --shadow:   0 16px 36px rgba(15,43,33,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--emerald-d);
+    background-image:
+      radial-gradient(1000px 500px at 50% -10%, rgba(183,146,74,0.10), transparent 60%),
+      linear-gradient(180deg,var(--emerald-d),#0b2018 60%,#091a13);
+    font-family:'Lora',serif; color:var(--ink);
+    padding:50px 16px 80px;
+  }
+  .book{max-width:820px; margin:0 auto;}
+
+  /* HEADER */
+  .cover{
+    background:linear-gradient(165deg,var(--emerald) 0%, #163d30 55%, var(--emerald-d) 100%);
+    border-radius:6px; padding:52px 40px; text-align:center; color:var(--paper);
+    box-shadow:var(--shadow); border:1px solid rgba(217,189,124,0.35); position:relative;
+  }
+  .cover::before,.cover::after{content:"";position:absolute;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-l),transparent);}
+  .cover::before{top:18px;} .cover::after{bottom:18px;}
+  .cover .eyebrow{font-family:'Jost',sans-serif;letter-spacing:0.28em;text-transform:uppercase;font-size:11px;color:var(--gold-l);margin-bottom:16px;}
+  .cover h1{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(30px,5.5vw,42px);margin:0 0 8px;}
+  .cover .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:var(--gold-l);}
+  .cover .logo-img{height:56px;width:auto;border-radius:6px;margin:0 auto 18px;display:block;}
+  .success-box{display:none; text-align:center; padding:60px 30px; background:var(--paper); border-radius:6px; box-shadow:var(--shadow); margin-top:20px;}
+  .success-box h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px;}
+  .success-box p{font-size:15px; color:#5a6860;}
+  .error-msg-top{display:none; background:#fdecec; border:1px solid #e0a0a0; color:#a83c3c; padding:14px 18px; border-radius:6px; font-family:'Jost',sans-serif; font-size:13px; margin-top:16px;}
+
+  /* CARD (section) */
+  .card{
+    background:var(--paper); margin-top:20px; border-radius:6px;
+    padding:32px 36px; box-shadow:var(--shadow); border:1px solid var(--line);
+  }
+  .card.admin{background:var(--paper-2); border:1px dashed var(--gold);}
+  .tag{
+    display:inline-flex; align-items:center; gap:10px; font-family:'Jost',sans-serif;
+    font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:8px;
+  }
+  .tag .num{font-family:'Cormorant Garamond',serif;font-weight:700;font-style:italic;font-size:22px;color:var(--emerald);letter-spacing:0;}
+  h2.title{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:24px;color:var(--emerald-d);margin:0 0 4px;}
+  .hint{font-size:13.5px;color:#5a6860;margin:0 0 18px;}
+  hr.rule{border:none;height:1px;background:linear-gradient(90deg,var(--gold),transparent 70%);width:60px;margin:0 0 18px;}
+
+  /* FORM ELEMENTS */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px 24px;}
+  @media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.03em;
+    color:var(--emerald); margin-bottom:6px; font-weight:600;
+  }
+  .field input[type=text], .field input[type=date], .field input[type=tel], .field input[type=email], .field textarea, .field select{
+    width:100%; border:none; border-bottom:1.4px solid var(--line); background:transparent;
+    font-family:'Lora',serif; font-size:15px; padding:7px 2px; color:var(--ink);
+    outline:none; transition:border-color .2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{border-bottom-color:var(--gold);}
+  .field textarea{resize:vertical; min-height:44px; border:1px solid var(--line); border-radius:4px; padding:8px 10px;}
+
+  .radio-row, .check-row{display:flex; gap:22px; flex-wrap:wrap; margin-top:4px;}
+  .radio-row label, .check-row label{
+    display:flex; align-items:center; gap:7px; font-size:14.5px; font-family:'Lora',serif; cursor:pointer;
+  }
+  input[type=radio], input[type=checkbox]{
+    width:16px; height:16px; accent-color:var(--emerald); cursor:pointer;
+  }
+
+  .divider{border:none; border-top:1px dotted var(--line); margin:22px 0;}
+
+  /* PROGRAM SELECTOR — highlighted */
+  .program-opts{display:flex; flex-direction:column; gap:12px;}
+  .prog-opt{
+    display:flex; align-items:flex-start; gap:14px; background:var(--paper-2);
+    border:1px solid var(--line); border-radius:8px; padding:16px 18px; cursor:pointer;
+    transition:border-color .2s, background .2s;
+  }
+  .prog-opt:hover{border-color:var(--gold);}
+  .prog-opt input{margin-top:3px;}
+  .prog-opt .p-body{flex:1;}
+  .prog-opt .p-title{font-family:'Jost',sans-serif; font-weight:600; font-size:14.5px; color:var(--emerald-d);}
+  .prog-opt .p-meta{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold); letter-spacing:0.04em; margin-top:2px;}
+  .prog-opt .p-sub{font-size:13px; color:#5a6860; margin-top:4px;}
+
+  .subject-check{margin-top:14px; padding-left:30px;}
+  .subject-check.hidden-hint{font-size:12.5px; color:#8a9a90; font-style:italic;}
+
+  /* LEVEL SCALE */
+  .level-scale{display:flex; gap:10px; margin-top:6px; flex-wrap:wrap;}
+  .level-scale label{
+    flex:1; min-width:100px; text-align:center; border:1px solid var(--line); border-radius:6px;
+    padding:10px 8px; font-family:'Jost',sans-serif; font-size:12.5px; cursor:pointer; color:var(--ink);
+    transition:background .2s, border-color .2s;
+  }
+  .level-scale input{display:none;}
+  .level-scale input:checked + span{color:var(--emerald-d); font-weight:600;}
+  .level-scale label:has(input:checked){background:var(--gold-xl,#f0e2c2); border-color:var(--gold);}
+
+  .kartlegging-block{background:var(--paper-2); border-radius:8px; padding:20px 22px; margin-bottom:16px;}
+  .kartlegging-block h4{font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--gold); margin:0 0 12px;}
+
+  .note-box{
+    margin-top:6px; padding:12px 16px; background:rgba(183,146,74,0.10); border-left:3px solid var(--gold);
+    font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); line-height:1.6; border-radius:0 4px 4px 0;
+  }
+
+  .sig-row{display:flex; gap:30px; align-items:flex-end; margin-top:20px; flex-wrap:wrap;}
+  .sig-line{flex:1; min-width:220px; border-bottom:1.4px solid var(--ink); padding-bottom:6px; font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;}
+
+  .footer{text-align:center; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:rgba(246,242,231,0.45); margin-top:30px;}
+
+  .submit-wrap{text-align:center; margin-top:28px;}
+  .btn-submit{
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.06em; text-transform:uppercase;
+    background:var(--gold-l); color:var(--emerald-d); font-weight:700; border:none; border-radius:3px;
+    padding:15px 46px; cursor:pointer; box-shadow:0 10px 22px rgba(217,189,124,0.3);
+  }
+
+  @media print{
+    body{background:#fff; padding:0;}
+    .card{box-shadow:none; break-inside:avoid;}
+    .cover{box-shadow:none;}
+    .submit-wrap{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="book">
+
+  <!-- HEADER -->
+  <div class="cover">
+    <img src="data:image/jpeg;base64,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" alt="Madina Institute" class="logo-img">
+    <div class="eyebrow">Madina Institute — Elevadministrasjon</div>
+    <h1>Søknadsskjema</h1>
+    <div class="sub">For skoleåret — vennligst fyll ut alle relevante felt. Søknaden gjennomgås av administrasjonen før endelig opptak.</div>
+  </div>
+
+  <form id="paameldingsForm">
+
+  <!-- 1: ELEVEN -->
+  <div class="card">
+    <div class="tag"><span class="num">01</span> Elevopplysninger</div>
+    <h2 class="title">Informasjon om eleven</h2>
+    <hr class="rule">
+    <div class="grid2">
+      <div class="field"><label>Fullt navn</label><input type="text" name="elev_navn" required></div>
+      <div class="field"><label>Fødselsnummer (11 siffer)</label><input type="text" name="elev_fnr" maxlength="11" pattern="[0-9]{11}"></div>
+      <div class="field"><label>Fødselsdato</label><input type="date" name="elev_fdato"></div>
+      <div class="field">
+        <label>Kjønn</label>
+        <div class="radio-row">
+          <label><input type="radio" name="kjonn" value="gutt"> Gutt</label>
+          <label><input type="radio" name="kjonn" value="jente"> Jente</label>
+        </div>
+      </div>
+      <div class="field"><label>Skole (grunnskole)</label><input type="text" name="grunnskole"></div>
+      <div class="field"><label>Klassetrinn</label><input type="text" name="klassetrinn"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Adresse</label><input type="text" name="adresse"></div>
+      <div class="field"><label>Postnummer og sted</label><input type="text" name="postnr_sted"></div>
+    </div>
+  </div>
+
+  <!-- 2: FORESATTE -->
+  <div class="card">
+    <div class="tag"><span class="num">02</span> Foresatte</div>
+    <h2 class="title">Informasjon om foresatte</h2>
+    <hr class="rule">
+    <p class="hint">Foresatt 1</p>
+    <div class="grid2">
+      <div class="field"><label>Navn</label><input type="text" name="foresatt1_navn"></div>
+      <div class="field">
+        <label>Relasjon til eleven</label>
+        <div class="radio-row">
+          <label><input type="radio" name="foresatt1_relasjon" value="mor"> Mor</label>
+          <label><input type="radio" name="foresatt1_relasjon" value="far"> Far</label>
+          <label><input type="radio" name="foresatt1_relasjon" value="annet"> Annet</label>
+          <input type="text" name="foresatt1_relasjon_annet" placeholder="Spesifiser" style="flex:1; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:'Lora',serif;">
+        </div>
+      </div>
+      <div class="field"><label>Telefon</label><input type="tel" name="foresatt1_tlf"></div>
+      <div class="field"><label>E-post</label><input type="email" name="foresatt1_epost"></div>
+    </div>
+
+    <hr class="divider">
+    <p class="hint">Foresatt 2 (valgfritt)</p>
+    <div class="grid2">
+      <div class="field"><label>Navn</label><input type="text" name="foresatt2_navn"></div>
+      <div class="field">
+        <label>Relasjon til eleven</label>
+        <div class="radio-row">
+          <label><input type="radio" name="foresatt2_relasjon" value="mor"> Mor</label>
+          <label><input type="radio" name="foresatt2_relasjon" value="far"> Far</label>
+          <label><input type="radio" name="foresatt2_relasjon" value="annet"> Annet</label>
+          <input type="text" name="foresatt2_relasjon_annet" placeholder="Spesifiser" style="flex:1; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:'Lora',serif;">
+        </div>
+      </div>
+      <div class="field"><label>Telefon</label><input type="tel" name="foresatt2_tlf"></div>
+      <div class="field"><label>E-post</label><input type="email" name="foresatt2_epost"></div>
+    </div>
+  </div>
+
+  <!-- 3: NØDINFORMASJON -->
+  <div class="card">
+    <div class="tag"><span class="num">03</span> Beredskap</div>
+    <h2 class="title">Nødinformasjon</h2>
+    <p class="hint">Hvem skal kontaktes ved nødstilfelle dersom foresatte ikke kan nås?</p>
+    <hr class="rule">
+    <div class="grid3">
+      <div class="field"><label>Navn</label><input type="text" name="nod_navn"></div>
+      <div class="field"><label>Telefon</label><input type="tel" name="nod_tlf"></div>
+      <div class="field"><label>Relasjon</label><input type="text" name="nod_relasjon"></div>
+    </div>
+  </div>
+
+  <!-- 4: HELSEINFORMASJON -->
+  <div class="card">
+    <div class="tag"><span class="num">04</span> Helse</div>
+    <h2 class="title">Helseinformasjon</h2>
+    <hr class="rule">
+
+    <div class="field">
+      <label>Har barnet allergier?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="allergi" value="nei"> Nei</label>
+        <label><input type="radio" name="allergi" value="ja"> Ja</label>
+      </div>
+      <textarea name="allergi_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Har barnet sykdommer eller medisinske forhold skolen bør kjenne til?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="sykdom" value="nei"> Nei</label>
+        <label><input type="radio" name="sykdom" value="ja"> Ja</label>
+      </div>
+      <textarea name="sykdom_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Bruker barnet medisiner?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="medisin" value="nei"> Nei</label>
+        <label><input type="radio" name="medisin" value="ja"> Ja</label>
+      </div>
+      <textarea name="medisin_hvilke" placeholder="Hvilke?" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Andre opplysninger</label>
+      <textarea name="helse_annet" rows="2"></textarea>
+    </div>
+  </div>
+
+  <!-- 5: PROGRAM, DAG OG FAG (highlighted core section) -->
+  <div class="card">
+    <div class="tag"><span class="num">05</span> Påmelding</div>
+    <h2 class="title">Ønsket program, dag og fag</h2>
+    <p class="hint">Kryss av for programmet(ene) eleven skal delta på. Det er mulig å velge flere.</p>
+    <hr class="rule">
+
+    <div class="program-opts">
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="madina_islamske_skole">
+        <div class="p-body">
+          <div class="p-title">Madina Islamske Skole</div>
+          <div class="p-meta">LØRDAG · 09:00–13:00</div>
+          <div class="p-sub">Hovedprogrammet — Koran og Islam.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="sprak_arabisk">
+        <div class="p-body">
+          <div class="p-title">Tilleggsprogram i språk — Arabisk</div>
+          <div class="p-meta">SØNDAG · 09:00–12:00</div>
+          <div class="p-sub">Frivillig språkprogram basert på læreverket Al-Mutammim.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="sprak_urdu">
+        <div class="p-body">
+          <div class="p-title">Tilleggsprogram i språk — Urdu</div>
+          <div class="p-meta">SØNDAG · 09:00–12:00</div>
+          <div class="p-sub">Frivillig språkprogram med egen læreplan.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="madinabarn">
+        <div class="p-body">
+          <div class="p-title">Madinabarn</div>
+          <div class="p-meta">SØNDAG · 10:30–12:15 · 3–6 ÅR</div>
+          <div class="p-sub">Introduksjonsprogram for de yngste barna.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="ekstra_koran_hifz">
+        <div class="p-body">
+          <div class="p-title">Ekstra Koran / Hifz-program</div>
+          <div class="p-meta">ETTER AVTALE</div>
+          <div class="p-sub">For elever som ønsker fordypning og memorering av Koranen.</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="note-box">Merk: Eleven kan velge kun ett språk i tilleggsprogrammet (Arabisk eller Urdu).</div>
+  </div>
+
+  <!-- 6: TIDLIGERE UNDERVISNING -->
+  <div class="card">
+    <div class="tag"><span class="num">06</span> Bakgrunn</div>
+    <h2 class="title">Tidligere islamsk undervisning</h2>
+    <hr class="rule">
+    <div class="field">
+      <label>Har barnet tidligere gått på islamsk skole?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="tidligere_skole" value="ja"> Ja</label>
+        <label><input type="radio" name="tidligere_skole" value="nei"> Nei</label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Navn på skole (hvis ja)</label><input type="text" name="tidligere_skole_navn"></div>
+      <div class="field"><label>Hvor mange år?</label><input type="text" name="tidligere_skole_ar"></div>
+    </div>
+    <div class="field">
+      <label>Hva har barnet studert?</label>
+      <div class="check-row">
+        <label><input type="checkbox" name="tidligere_studert" value="koran"> Koran</label>
+        <label><input type="checkbox" name="tidligere_studert" value="islam"> Islam</label>
+        <label><input type="checkbox" name="tidligere_studert" value="arabisk"> Arabisk</label>
+        <label><input type="checkbox" name="tidligere_studert" value="tajwid"> Tajwīd</label>
+        <label><input type="checkbox" name="tidligere_studert" value="hifz"> Hifz</label>
+        <label><input type="checkbox" name="tidligere_studert" value="annet"> Annet</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7-9: KARTLEGGING (nivåvurdering) -->
+  <div class="card">
+    <div class="tag"><span class="num">07–09</span> Nivåvurdering</div>
+    <h2 class="title">Kartlegging av barnets nåværende nivå</h2>
+    <p class="hint">Denne foreløpige kartleggingen hjelper oss å plassere eleven riktig ved oppstart. En fullstendig nivåtest gjennomføres av læreren i forbindelse med skolestart.</p>
+    <hr class="rule">
+
+    <div class="kartlegging-block">
+      <h4>Koran</h4>
+      <div class="grid2">
+        <div class="field">
+          <label>Kan barnet lese Koranen?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_lese" value="ja"> Ja</label>
+            <label><input type="radio" name="koran_lese" value="litt"> Litt</label>
+            <label><input type="radio" name="koran_lese" value="nei"> Nei</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Har barnet lært Qaida?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_qaida" value="ja"> Ja</label>
+            <label><input type="radio" name="koran_qaida" value="nei"> Nei</label>
+          </div>
+          <input type="text" name="koran_qaida_hvilken" placeholder="Hvilken Qaida?" style="margin-top:8px;">
+        </div>
+        <div class="field">
+          <label>Kan barnet lese med tajwīd?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_tajwid" value="ja"> Ja</label>
+            <label><input type="radio" name="koran_tajwid" value="delvis"> Delvis</label>
+            <label><input type="radio" name="koran_tajwid" value="nei"> Nei</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Har barnet memorert deler av Koranen?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_memorert" value="nei"> Nei</label>
+            <label><input type="radio" name="koran_memorert" value="ja"> Ja</label>
+          </div>
+        </div>
+        <div class="field"><label>Fra (sure/vers)</label><input type="text" name="koran_memorert_fra"></div>
+        <div class="field"><label>Til (sure/vers)</label><input type="text" name="koran_memorert_til"></div>
+      </div>
+      <div class="field">
+        <label>Har barnet ijāzah eller deltatt i Hifz-program?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="koran_ijazah" value="ja"> Ja</label>
+          <label><input type="radio" name="koran_ijazah" value="nei"> Nei</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="kartlegging-block">
+      <h4>Arabisk</h4>
+      <div class="grid2">
+        <div class="field">
+          <label>Har barnet tidligere lært arabisk?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="arabisk_tidligere" value="ja"> Ja</label>
+            <label><input type="radio" name="arabisk_tidligere" value="nei"> Nei</label>
+          </div>
+        </div>
+        <div class="field"><label>Hvor mange år?</label><input type="text" name="arabisk_ar"></div>
+      </div>
+      <div class="field">
+        <label>Ferdigheter</label>
+        <div class="grid2" style="margin-top:6px;">
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Lese</span>
+            <div class="radio-row"><label><input type="radio" name="ar_lese" value="ja">Ja</label><label><input type="radio" name="ar_lese" value="litt">Litt</label><label><input type="radio" name="ar_lese" value="nei">Nei</label></div>
+          </div>
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Skrive</span>
+            <div class="radio-row"><label><input type="radio" name="ar_skrive" value="ja">Ja</label><label><input type="radio" name="ar_skrive" value="litt">Litt</label><label><input type="radio" name="ar_skrive" value="nei">Nei</label></div>
+          </div>
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Forstå</span>
+            <div class="radio-row"><label><input type="radio" name="ar_forsta" value="ja">Ja</label><label><input type="radio" name="ar_forsta" value="litt">Litt</label><label><input type="radio" name="ar_forsta" value="nei">Nei</label></div>
+          </div>
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Snakke</span>
+            <div class="radio-row"><label><input type="radio" name="ar_snakke" value="ja">Ja</label><label><input type="radio" name="ar_snakke" value="litt">Litt</label><label><input type="radio" name="ar_snakke" value="nei">Nei</label></div>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>Hvilken bok eller hvilket nivå har barnet kommet til?</label><input type="text" name="arabisk_niva"></div>
+    </div>
+
+    <div class="kartlegging-block">
+      <h4>Urdu <span style="font-weight:400; text-transform:none; letter-spacing:0; font-family:'Lora',serif; font-size:12.5px; color:#5a6860;">(kun dersom barnet skal delta)</span></h4>
+      <div class="grid2">
+        <div class="field">
+          <label>Har barnet lært urdu tidligere?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="urdu_tidligere" value="ja"> Ja</label>
+            <label><input type="radio" name="urdu_tidligere" value="nei"> Nei</label>
+          </div>
+        </div>
+        <div class="field"><label>Hvor mange år?</label><input type="text" name="urdu_ar"></div>
+      </div>
+      <div class="field">
+        <label>Ferdigheter</label>
+        <div class="check-row">
+          <label><input type="checkbox" name="urdu_ferdighet" value="lese"> Lese</label>
+          <label><input type="checkbox" name="urdu_ferdighet" value="skrive"> Skrive</label>
+          <label><input type="checkbox" name="urdu_ferdighet" value="forsta"> Forstå</label>
+          <label><input type="checkbox" name="urdu_ferdighet" value="snakke"> Snakke</label>
+        </div>
+      </div>
+      <div class="field"><label>Hvilken bok eller hvilket nivå har barnet kommet til?</label><input type="text" name="urdu_niva"></div>
+    </div>
+  </div>
+
+  <!-- 10: SPRÅK HJEMME -->
+  <div class="card">
+    <div class="tag"><span class="num">10</span> Bakgrunn</div>
+    <h2 class="title">Språk hjemme</h2>
+    <p class="hint">Hvilket språk brukes mest hjemme?</p>
+    <hr class="rule">
+    <div class="check-row">
+      <label><input type="checkbox" name="sprak_hjemme" value="arabisk"> Arabisk</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="urdu"> Urdu</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="norsk"> Norsk</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="engelsk"> Engelsk</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="annet"> Annet</label>
+      <input type="text" name="sprak_hjemme_annet" placeholder="Spesifiser" style="flex:1; min-width:140px; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:'Lora',serif;">
+    </div>
+  </div>
+
+  <!-- 11: SAMTYKKER -->
+  <div class="card">
+    <div class="tag"><span class="num">11</span> Samtykke</div>
+    <h2 class="title">Samtykker og bekreftelse</h2>
+    <hr class="rule">
+
+    <div class="field">
+      <label>Jeg samtykker til at Madina Institute registrerer nødvendige personopplysninger i forbindelse med elevadministrasjon.</label>
+      <div class="radio-row">
+        <label><input type="radio" name="samtykke_personopplysninger" value="ja"> Ja</label>
+        <label><input type="radio" name="samtykke_personopplysninger" value="nei"> Nei</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Jeg samtykker til at bilder eller video av barnet kan brukes i Madina Institutes interne informasjon og markedsføring.</label>
+      <div class="radio-row">
+        <label><input type="radio" name="samtykke_bilder" value="ja"> Ja</label>
+        <label><input type="radio" name="samtykke_bilder" value="nei"> Nei</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Jeg bekrefter at opplysningene er riktige.</label>
+    </div>
+
+    <div class="sig-row">
+      <div class="field" style="flex:1; min-width:180px;"><label>Dato</label><input type="date" name="dato_signatur"></div>
+      <div class="sig-line" style="flex:2;">Foresattes signatur</div>
+    </div>
+  </div>
+
+  <div class="submit-wrap">
+    <button type="submit" class="btn-submit" id="submitBtn">Send søknad</button>
+    <div class="error-msg-top" id="errorMsg"></div>
+  </div>
+
+  </form>
+
+  <div class="success-box" id="successBox">
+    <h2>Søknaden er mottatt</h2>
+    <p>Takk for din søknad til Madina Skole. Administrasjonen vil gjennomgå opplysningene og ta kontakt med deg angående opptak.</p>
+  </div>
+
+  <div class="footer">Madina Institute · Søknadsskjema</div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  function todayISO(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  const MULTI_FIELDS = ['program', 'tidligere_studert', 'urdu_ferdighet', 'sprak_hjemme'];
+
+  document.getElementById('paameldingsForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const errEl = document.getElementById('errorMsg');
+    const btn = document.getElementById('submitBtn');
+    errEl.style.display = 'none';
+
+    if(!this.checkValidity()){
+      this.reportValidity();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Sender...';
+
+    try{
+      const formData = new FormData(this);
+      const record = { status: 'Ny', innsendtDato: todayISO() };
+
+      MULTI_FIELDS.forEach(key => {
+        const values = formData.getAll(key);
+        record[key] = values.join(', ');
+        formData.delete(key);
+      });
+
+      for(const [key, value] of formData.entries()){
+        if(record[key] === undefined) record[key] = value;
+      }
+
+      await addDoc(collection(db, 'registrations'), record);
+
+      // Best-effort email notification to administrasjonen — submission is
+      // already saved above regardless of whether this succeeds.
+      try{
+        await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
+            subject: 'Ny søknad mottatt – ' + (record.elev_navn || 'Ukjent navn'),
+            from_name: 'Madina Skole – Søknadsskjema',
+            message:
+              'Elev: ' + (record.elev_navn || '—') + '\n' +
+              'Foresatt: ' + (record.foresatt1_navn || '—') + ' — ' + (record.foresatt1_tlf || '—') + '\n' +
+              'Ønsket program: ' + (record.program || '—') + '\n\n' +
+              'Gå til administrasjonspanelet (Registrering) for å behandle søknaden.'
+          })
+        });
+      } catch(emailErr){
+        console.error('E-postvarsling feilet:', emailErr);
+      }
+
+      document.getElementById('paameldingsForm').style.display = 'none';
+      document.getElementById('successBox').style.display = 'block';
+      window.scrollTo({top:0, behavior:'smooth'});
+    } catch(err){
+      console.error(err);
+      errEl.textContent = 'Noe gikk galt under innsending. Sjekk internettforbindelsen og prøv igjen.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Send søknad';
+    }
+  });
+</script>
+</body>
+</html>
