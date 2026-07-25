@@ -73,6 +73,20 @@
     border-radius:12px; background:var(--paper-2); color:var(--emerald-d); border:1px solid var(--line);
   }
 
+  .status-row{
+    display:flex; justify-content:space-between; align-items:center; padding:10px 0;
+    border-bottom:1px solid var(--line); font-family:'Jost',sans-serif; font-size:13.5px;
+  }
+  .status-row:last-child{border-bottom:none;}
+  .status-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700;
+    padding:5px 12px; border-radius:14px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .status-badge.sent{background:rgba(46,107,83,0.12); color:var(--emerald);}
+  .status-badge.sent .dot{width:7px; height:7px; border-radius:50%; background:#2e9e5b;}
+  .status-badge.notsent{background:rgba(168,60,60,0.10); color:var(--red);}
+  .status-badge.notsent .dot{width:7px; height:7px; border-radius:50%; background:var(--red);}
+
   /* Modal */
   .overlay{
     display:none; position:fixed; inset:0; background:rgba(15,43,33,0.45); z-index:100;
@@ -174,6 +188,8 @@
     background:var(--red); color:#fff; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;
   }
 
+  #printLessonPlan{display:none;}
+
   @media print{
     header, .tabs, .toolbar, .report-toolbar, .btn, .actions-col, .sync-badge{display:none !important;}
     .panel{display:none !important;}
@@ -185,6 +201,17 @@
     .report-grid{grid-template-columns:1fr; }
     body{background:#fff;}
     main{padding:0;}
+
+    body.printing-lesson-plan #panel-reports{display:none !important;}
+    body.printing-lesson-plan #printLessonPlan{
+      display:block !important; max-width:100%; padding:0; font-family:'Lora',serif; color:#000;
+    }
+    body.printing-lesson-plan #printLessonPlan h1{font-family:'Cormorant Garamond',serif; font-size:22px; margin:0 0 4px;}
+    body.printing-lesson-plan #printLessonPlan .meta{font-size:13px; color:#333; margin-bottom:18px;}
+    body.printing-lesson-plan #printLessonPlan .block{margin-bottom:14px;}
+    body.printing-lesson-plan #printLessonPlan .block .lbl{font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#1f4a3a; margin-bottom:3px;}
+    body.printing-lesson-plan #printLessonPlan .block .val{font-size:14px; white-space:pre-wrap;}
+    body.printing-lesson-plan #printLessonPlan hr{border:none; border-top:1px solid #ccc; margin:16px 0;}
   }
 
   @media (max-width:640px){
@@ -280,6 +307,12 @@
           <button class="btn btn-ghost" onclick="quickPaymentReport('Nei')">Vis ikke-betalte elever</button>
         </div>
       </div>
+    </div>
+
+    <div class="report-card" style="margin-top:20px;">
+      <h3>Ukentlig status — timeforberedelser</h3>
+      <div class="sub" id="weekRangeLabel">Hvem har sendt inn forberedelse for denne uken?</div>
+      <div id="repWeeklyStatus"></div>
     </div>
 
     <div class="report-card" style="margin-top:20px;">
@@ -589,6 +622,12 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div id="printLessonPlan">
+  <h1 id="printTitle"></h1>
+  <div class="meta" id="printMeta"></div>
+  <div id="printBody"></div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -909,6 +948,7 @@
           cellsHtml += `<td data-label="Antall barn">${childCount}</td>`;
         }
         cellsHtml += `<td class="actions-col">
+          ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
           <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
           <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
         </td>`;
@@ -1072,6 +1112,42 @@
     renderBarList('repHoursByDay', countBy(cache.hours, 'dag'));
     renderBarList('repHoursBySubject', countBy(cache.hours, 'fag'));
     renderPaymentStatusReport();
+    renderWeeklyStatus();
+  }
+
+  function getWeekRange(){
+    // Monday–Sunday of the current week
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun..6=Sat
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    monday.setHours(0,0,0,0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const toISO = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    return { start: toISO(monday), end: toISO(sunday), label: monday.toLocaleDateString('no-NO') + ' – ' + sunday.toLocaleDateString('no-NO') };
+  }
+
+  function renderWeeklyStatus(){
+    const el = document.getElementById('repWeeklyStatus');
+    const labelEl = document.getElementById('weekRangeLabel');
+    if(!el) return;
+    const { start, end, label } = getWeekRange();
+    if(labelEl) labelEl.textContent = 'Hvem har sendt inn forberedelse for uken ' + label + '?';
+
+    if(cache.teachers.length === 0){
+      el.innerHTML = '<div class="report-empty">Ingen lærere registrert ennå.</div>';
+      return;
+    }
+
+    el.innerHTML = cache.teachers.map(teacher => {
+      const hasSent = cache.lessonPlans.some(p => p.larer === teacher.navn && p.dato >= start && p.dato <= end);
+      const badge = hasSent
+        ? '<span class="status-badge sent"><span class="dot"></span>Sendt</span>'
+        : '<span class="status-badge notsent"><span class="dot"></span>Ikke sendt</span>';
+      return `<div class="status-row"><span>${escapeHtml(teacher.navn)}</span>${badge}</div>`;
+    }).join('');
   }
 
   function renderPaymentStatusReport(){
@@ -1628,6 +1704,38 @@
   };
 
   window.editEntry = function(type, id){ openModal(type, id); };
+
+  window.printLessonPlanPDF = function(id){
+    const plan = cache.lessonPlans.find(p => p.id === id);
+    if(!plan){ showToast('Fant ikke forberedelsen.'); return; }
+
+    const schema = SCHEMAS.lessonPlans;
+    const labelFor = key => schema.fields.find(f => f.key === key).label;
+    const block = (label, value) =>
+      `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
+
+    document.getElementById('printTitle').textContent = 'Timeforberedelse';
+    document.getElementById('printMeta').textContent =
+      (plan.larer||'—') + ' · ' + (plan.klasse||'—') + ' · ' + (plan.fag||'—') + ' · ' + (plan.dato||'—');
+
+    document.getElementById('printBody').innerHTML =
+      block(labelFor('emne'), plan.emne) +
+      block(labelFor('mal'), plan.mal) +
+      block(labelFor('metode'), plan.metode) +
+      block(labelFor('materiell'), plan.materiell) +
+      '<hr>' +
+      block(labelFor('oppstart'), plan.oppstart) +
+      block(labelFor('repetisjon'), plan.repetisjon) +
+      block(labelFor('nyttStoff'), plan.nyttStoff) +
+      block(labelFor('oving'), plan.oving) +
+      block(labelFor('oppsummering'), plan.oppsummering) +
+      '<hr>' +
+      block(labelFor('lekser'), plan.lekser);
+
+    document.body.classList.add('printing-lesson-plan');
+    window.print();
+    document.body.classList.remove('printing-lesson-plan');
+  };
 
   window.deleteEntry = async function(type, id){
     if(!confirm('Er du sikker på at du vil slette denne oppføringen?')) return;
