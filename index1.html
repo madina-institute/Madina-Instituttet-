@@ -120,6 +120,25 @@
   }
   html[dir="rtl"] .toast{font-family:'Tajawal',sans-serif;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  #printLessonPlan{display:none;}
+  @media print{
+    .lang-switch, header, #loginView, .who-bar, #chooseView, #attendanceView, .back-link, .btn, .toast{
+      display:none !important;
+    }
+    #lessonView{display:none !important;}
+    #printLessonPlan{
+      display:block !important; max-width:100%; padding:0; font-family:'Lora',serif; color:#000;
+    }
+    html[dir="rtl"] #printLessonPlan{font-family:'Tajawal',sans-serif;}
+    #printLessonPlan h1{font-family:'Cormorant Garamond',serif; font-size:22px; margin:0 0 4px;}
+    html[dir="rtl"] #printLessonPlan h1{font-family:'Tajawal',sans-serif;}
+    #printLessonPlan .meta{font-size:13px; color:#333; margin-bottom:18px;}
+    #printLessonPlan .block{margin-bottom:14px;}
+    #printLessonPlan .block .lbl{font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#1f4a3a; margin-bottom:3px;}
+    #printLessonPlan .block .val{font-size:14px; white-space:pre-wrap;}
+    #printLessonPlan hr{border:none; border-top:1px solid #ccc; margin:16px 0;}
+  }
 </style>
 </head>
 <body>
@@ -259,10 +278,18 @@
       </div>
 
       <button class="btn btn-primary" onclick="submitLessonPlan()" data-i18n="submitLesson">Send inn forberedelse</button>
+      <button class="btn btn-ghost" onclick="downloadLessonPlanPDF()" data-i18n="downloadPdf">Last ned som PDF</button>
     </div>
   </div>
 
 </main>
+
+<!-- Hidden printable view, populated just before printing -->
+<div id="printLessonPlan">
+  <h1 id="printTitle"></h1>
+  <div class="meta" id="printMeta"></div>
+  <div id="printBody"></div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -339,6 +366,8 @@
       step5: '5. Oppsummering', step5ph: 'Avslutning, refleksjon, ev. lekser',
       lekserLabel: 'Lekser / hjemmeoppgave (valgfritt)',
       submitLesson: 'Send inn forberedelse',
+      downloadPdf: 'Last ned som PDF',
+      fillRequiredForPdf: 'Fyll ut minst dato, emne, læringsmål og nytt læringsstoff før du laster ned.',
       fillRequiredLesson: 'Fyll ut minst dato, emne, læringsmål og nytt læringsstoff.',
       lessonSent: 'Timeforberedelsen er sendt inn.',
       lessonSendError: 'Noe gikk galt under innsending.',
@@ -393,6 +422,8 @@
       step5: '٥. الخاتمة', step5ph: 'الختام، التأمل، الواجب إن وُجد',
       lekserLabel: 'الواجب المنزلي (اختياري)',
       submitLesson: 'إرسال التحضير',
+      downloadPdf: 'تحميل كملف PDF',
+      fillRequiredForPdf: 'يرجى تعبئة التاريخ، الموضوع، الأهداف، والمحتوى الجديد على الأقل قبل التحميل.',
       fillRequiredLesson: 'يرجى تعبئة التاريخ، الموضوع، الأهداف، والمحتوى الجديد على الأقل.',
       lessonSent: 'تم إرسال التحضير التربوي بنجاح.',
       lessonSendError: 'حدث خطأ أثناء الإرسال.',
@@ -685,6 +716,51 @@
       console.error(err);
       showToast(t('lessonSendError'));
     }
+  };
+
+  window.downloadLessonPlanPDF = function(){
+    if(!currentTeacher) return;
+
+    const fag = document.getElementById('lpFag').value;
+    const dato = document.getElementById('lpDato').value;
+    const emne = document.getElementById('lpEmne').value.trim();
+    const mal = document.getElementById('lpMal').value.trim();
+    const metode = document.getElementById('lpMetode').value.trim();
+    const materiell = document.getElementById('lpMateriell').value.trim();
+    const oppstart = document.getElementById('lpOppstart').value.trim();
+    const repetisjon = document.getElementById('lpRepetisjon').value.trim();
+    const nyttStoff = document.getElementById('lpNyttStoff').value.trim();
+    const oving = document.getElementById('lpOving').value.trim();
+    const oppsummering = document.getElementById('lpOppsummering').value.trim();
+    const lekser = document.getElementById('lpLekser').value.trim();
+
+    if(!dato || !emne || !mal || !nyttStoff){
+      showToast(t('fillRequiredForPdf'));
+      return;
+    }
+
+    const block = (label, value) =>
+      `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
+
+    document.getElementById('printTitle').textContent = t('lessonTitle');
+    document.getElementById('printMeta').textContent =
+      currentTeacher.navn + ' · ' + currentTeacher.tildeltKlasse + ' · ' + I18N[currentLang].fagLabels[fag] + ' · ' + dato;
+
+    document.getElementById('printBody').innerHTML =
+      block(t('emneLabel'), emne) +
+      block(t('malLabel'), mal) +
+      block(t('metodeLabel'), metode) +
+      block(t('materiellLabel'), materiell) +
+      '<hr>' +
+      block(t('step1'), oppstart) +
+      block(t('step2'), repetisjon) +
+      block(t('step3'), nyttStoff) +
+      block(t('step4'), oving) +
+      block(t('step5'), oppsummering) +
+      '<hr>' +
+      block(t('lekserLabel'), lekser);
+
+    window.print();
   };
 
   // Init
