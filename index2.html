@@ -8,15 +8,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:      #1c2c24;
-    --emerald:  #1f4a3a;
-    --emerald-d:#0f2b21;
+    --ink:      #16283a;
+    --emerald:  #2f7cc9;
+    --emerald-d:#1c5490;
     --gold:     #b7924a;
     --gold-l:   #d9bd7c;
     --paper:    #fbf8f1;
-    --paper-2:  #f3ecdb;
-    --line:     rgba(20,38,31,0.16);
-    --shadow:   0 16px 36px rgba(15,43,33,0.12);
+    --paper-2:  #eef4fa;
+    --line:     rgba(22,40,58,0.16);
+    --shadow:   0 16px 36px rgba(28,84,144,0.14);
   }
   *{box-sizing:border-box;}
   body{
@@ -31,7 +31,7 @@
 
   /* HEADER */
   .cover{
-    background:linear-gradient(165deg,var(--emerald) 0%, #163d30 55%, var(--emerald-d) 100%);
+    background:linear-gradient(165deg,var(--emerald) 0%, #2568a8 55%, var(--emerald-d) 100%);
     border-radius:6px; padding:52px 40px; text-align:center; color:var(--paper);
     box-shadow:var(--shadow); border:1px solid rgba(217,189,124,0.35); position:relative;
   }
@@ -374,7 +374,7 @@
         <label><input type="radio" name="allergi" value="ja" required> Ja</label>
         <label><input type="radio" name="allergi" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
       </div>
-      <textarea name="allergi_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+      <textarea name="allergi_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
     </div>
 
     <div class="field">
@@ -384,7 +384,7 @@
         <label><input type="radio" name="sykdom" value="ja" required> Ja</label>
         <label><input type="radio" name="sykdom" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
       </div>
-      <textarea name="sykdom_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+      <textarea name="sykdom_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
     </div>
 
     <div class="field">
@@ -394,7 +394,7 @@
         <label><input type="radio" name="medisin" value="ja" required> Ja</label>
         <label><input type="radio" name="medisin" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
       </div>
-      <textarea name="medisin_hvilke" placeholder="Hvilke? (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+      <textarea name="medisin_hvilke" placeholder="Hvilke?" rows="2" style="margin-top:8px;"></textarea>
     </div>
 
     <div class="field">
@@ -404,7 +404,7 @@
         <label><input type="radio" name="larevansker" value="ja" required> Ja</label>
         <label><input type="radio" name="larevansker" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
       </div>
-      <textarea name="larevansker_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+      <textarea name="larevansker_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
     </div>
 
     <div class="field">
@@ -414,7 +414,7 @@
         <label><input type="radio" name="bbt_ppt" value="ja" required> Ja</label>
         <label><input type="radio" name="bbt_ppt" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
       </div>
-      <textarea name="bbt_ppt_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+      <textarea name="bbt_ppt_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
     </div>
 
     <div class="field">
@@ -631,9 +631,17 @@
       <label>Jeg bekrefter at opplysningene er riktige.</label>
     </div>
 
+    <div class="field">
+      <label>Andre merknader eller tillegg (valgfritt)</label>
+      <textarea name="andre_merknader" rows="3" placeholder="Skriv her hvis du har noe du vil legge til"></textarea>
+    </div>
+
     <div class="sig-row">
       <div class="field" style="flex:1; min-width:180px;"><label>Dato</label><input type="date" name="dato_signatur" required></div>
-      <div class="sig-line" style="flex:2;">Foresattes signatur</div>
+      <div class="field" style="flex:2; min-width:220px;">
+        <label>Foresattes signatur (skriv fullt navn)</label>
+        <input type="text" name="foresatt_signatur" required>
+      </div>
     </div>
   </div>
 
@@ -808,17 +816,13 @@
     });
   });
 
-  // Explanation/detail fields tied to Ja/Nei/Vil ikke svare questions are always
-  // optional — the person can add detail if they want, but it never blocks submission.
-  function makeAlwaysOptional(textareaName){
-    const textarea = document.querySelector(`[name="${textareaName}"]`);
-    if(textarea) textarea.required = false;
-  }
-  makeAlwaysOptional('allergi_beskriv');
-  makeAlwaysOptional('sykdom_beskriv');
-  makeAlwaysOptional('medisin_hvilke');
-  makeAlwaysOptional('larevansker_beskriv');
-  makeAlwaysOptional('bbt_ppt_beskriv');
+  // Explanation/detail fields tied to Ja/Nei/Vil ikke svare questions: required
+  // only when the person answered "Ja" — optional for "Nei" or "Ønsker ikke å svare".
+  wireRequiredOnJa('allergi', ['allergi_beskriv']);
+  wireRequiredOnJa('sykdom', ['sykdom_beskriv']);
+  wireRequiredOnJa('medisin', ['medisin_hvilke']);
+  wireRequiredOnJa('larevansker', ['larevansker_beskriv']);
+  wireRequiredOnJa('bbt_ppt', ['bbt_ppt_beskriv']);
 
   // ---------- Multi-step navigation ----------
   const TOTAL_STEPS = 6;
@@ -873,6 +877,28 @@
         errTopEl.textContent = 'Velg minst ett program før du går videre.';
         errTopEl.style.display = 'block';
         errTopEl.scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+    }
+
+    // Extra checks specific to the Nivåvurdering step (checkbox groups that
+    // need "at least one selected", which native `required` cannot express)
+    if(currentStep === 5){
+      const tidligereSkoleJa = currentStepEl.querySelector('input[name="tidligere_skole"]:checked')?.value === 'ja';
+      const studertChecked = currentStepEl.querySelectorAll('input[name="tidligere_studert"]:checked').length;
+      if(tidligereSkoleJa && studertChecked === 0){
+        const errTopEl = document.getElementById('errorMsgTop');
+        errTopEl.textContent = 'Velg minst ett fag under «Hva har barnet studert?».';
+        errTopEl.style.display = 'block';
+        document.querySelector('input[name="tidligere_studert"]').closest('.field').scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+      const sprakHjemmeChecked = currentStepEl.querySelectorAll('input[name="sprak_hjemme"]:checked').length;
+      if(sprakHjemmeChecked === 0){
+        const errTopEl = document.getElementById('errorMsgTop');
+        errTopEl.textContent = 'Velg minst ett språk under «Språk hjemme».';
+        errTopEl.style.display = 'block';
+        document.querySelector('input[name="sprak_hjemme"]').closest('.field').scrollIntoView({behavior:'smooth', block:'center'});
         return;
       }
     }
@@ -936,6 +962,23 @@
       errEl.textContent = 'Velg minst ett program under «Ønsket program, dag og fag».';
       errEl.style.display = 'block';
       document.querySelector('.program-opts').scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+
+    const tidligereSkoleJaFinal = document.querySelector('input[name="tidligere_skole"]:checked')?.value === 'ja';
+    const studertCheckedFinal = document.querySelectorAll('input[name="tidligere_studert"]:checked').length;
+    if(tidligereSkoleJaFinal && studertCheckedFinal === 0){
+      errEl.textContent = 'Velg minst ett fag under «Hva har barnet studert?».';
+      errEl.style.display = 'block';
+      document.querySelector('input[name="tidligere_studert"]').closest('.field').scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+
+    const sprakHjemmeCheckedFinal = document.querySelectorAll('input[name="sprak_hjemme"]:checked').length;
+    if(sprakHjemmeCheckedFinal === 0){
+      errEl.textContent = 'Velg minst ett språk under «Språk hjemme».';
+      errEl.style.display = 'block';
+      document.querySelector('input[name="sprak_hjemme"]').closest('.field').scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
 
