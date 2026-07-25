@@ -211,6 +211,7 @@
   <div class="tab" data-tab="classes">Klasser</div>
   <div class="tab" data-tab="hours">Timeplan</div>
   <div class="tab" data-tab="attendance">Oppmøte</div>
+  <div class="tab" data-tab="lessonPlans">Forberedelser</div>
   <div class="tab" data-tab="reports">Rapporter</div>
   <div class="tab" data-tab="overview">Oversikt</div>
 </div>
@@ -416,6 +417,10 @@
         <span>Slett all oppmøteregistrering</span>
         <button class="btn btn-danger-solid" onclick="clearCollection('attendance')">Slett</button>
       </div>
+      <div class="danger-row">
+        <span>Slett alle timeforberedelser</span>
+        <button class="btn btn-danger-solid" onclick="clearCollection('lessonPlans')">Slett</button>
+      </div>
       <hr class="divider">
       <div class="danger-row">
         <span><strong>Nullstill HELE databasen</strong> (alt ovenfor på én gang)</span>
@@ -554,6 +559,21 @@
     </table>
   </div>
 
+  <!-- LESSON PLANS -->
+  <div class="panel" id="panel-lessonPlans">
+    <div class="toolbar">
+      <input class="search" id="searchLessonPlans" placeholder="Søk etter lærer, fag eller emne...">
+      <span class="count-chip" id="countLessonPlans">0 forberedelser</span>
+      <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Lærer</th><th>Fag</th><th>Dato</th><th>Emne</th><th>Klasse</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyLessonPlans"></tbody>
+    </table>
+  </div>
+
 </main>
 
 <!-- MODAL -->
@@ -662,6 +682,26 @@
         {key:'merknad', label:'Merknad', type:'text'}
       ],
       cols: ['dato','elev','klasse','status']
+    },
+    lessonPlans: {
+      label: 'timeforberedelse', collectionName: 'lessonPlans',
+      fields: [
+        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
+        {key:'klasse', label:'Klasse', type:'text'},
+        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
+        {key:'dato', label:'Dato', type:'text'},
+        {key:'emne', label:'Emne/tema', type:'text'},
+        {key:'mal', label:'Læringsmål', type:'text'},
+        {key:'metode', label:'Metode', type:'text'},
+        {key:'materiell', label:'Hjelpemidler', type:'text'},
+        {key:'oppstart', label:'1. Oppstart', type:'text'},
+        {key:'repetisjon', label:'2. Repetisjon', type:'text'},
+        {key:'nyttStoff', label:'3. Nytt læringsstoff', type:'text'},
+        {key:'oving', label:'4. Øving', type:'text'},
+        {key:'oppsummering', label:'5. Oppsummering', type:'text'},
+        {key:'lekser', label:'Lekser', type:'text'}
+      ],
+      cols: ['larer','fag','dato','emne','klasse']
     }
   };
 
@@ -807,7 +847,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [] };
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -876,7 +916,7 @@
         tbody.appendChild(tr);
       });
     }
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer' };
+    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser' };
     document.getElementById('count' + capitalize(type)).textContent = data.length + ' ' + countLabels[type];
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tbodyGuardians')) render('guardians');
@@ -1096,7 +1136,7 @@
 
   function buildFullBackupText(){
     let out = '';
-    ['teachers','guardians','students','classes','hours','attendance'].forEach(type => {
+    ['teachers','guardians','students','classes','hours','attendance','lessonPlans'].forEach(type => {
       const schema = SCHEMAS[type];
       const data = cache[type];
       out += '=== ' + schema.label.toUpperCase() + 'E ===\n';
@@ -1111,7 +1151,8 @@
 
   function hasAnyData(){
     return cache.teachers.length>0 || cache.guardians.length>0 || cache.students.length>0 ||
-           cache.classes.length>0 || cache.hours.length>0 || cache.attendance.length>0;
+           cache.classes.length>0 || cache.hours.length>0 || cache.attendance.length>0 ||
+           cache.lessonPlans.length>0;
   }
 
   window.exportFullCSV = function(){
@@ -1269,7 +1310,7 @@
   };
 
   // ---------- Custom report builder (advanced) ----------
-  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte' };
+  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser' };
   const OPERATORS = [
     {value:'equals', label:'Er lik', needsValue:true, valueType:'select'},
     {value:'not_equals', label:'Er ikke lik', needsValue:true, valueType:'select'},
@@ -1632,7 +1673,7 @@
   });
 
   // Search listeners
-  ['teachers','guardians','students','classes','hours','attendance'].forEach(type => {
+  ['teachers','guardians','students','classes','hours','attendance','lessonPlans'].forEach(type => {
     const el = document.getElementById('search' + capitalize(type));
     if(el) el.addEventListener('input', () => render(type));
   });
@@ -1644,6 +1685,7 @@
   attachListener('classes');
   attachListener('hours');
   attachListener('attendance');
+  attachListener('lessonPlans');
 
   populateCustomTypeDropdown();
 
