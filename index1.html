@@ -719,48 +719,56 @@
   };
 
   window.downloadLessonPlanPDF = function(){
-    if(!currentTeacher) return;
+    try{
+      if(!currentTeacher){
+        alert(currentLang === 'ar' ? 'الرجاء تسجيل الدخول أولاً.' : 'Du må logge inn først.');
+        return;
+      }
 
-    const fag = document.getElementById('lpFag').value;
-    const dato = document.getElementById('lpDato').value;
-    const emne = document.getElementById('lpEmne').value.trim();
-    const mal = document.getElementById('lpMal').value.trim();
-    const metode = document.getElementById('lpMetode').value.trim();
-    const materiell = document.getElementById('lpMateriell').value.trim();
-    const oppstart = document.getElementById('lpOppstart').value.trim();
-    const repetisjon = document.getElementById('lpRepetisjon').value.trim();
-    const nyttStoff = document.getElementById('lpNyttStoff').value.trim();
-    const oving = document.getElementById('lpOving').value.trim();
-    const oppsummering = document.getElementById('lpOppsummering').value.trim();
-    const lekser = document.getElementById('lpLekser').value.trim();
+      const fag = document.getElementById('lpFag').value;
+      const dato = document.getElementById('lpDato').value;
+      const emne = document.getElementById('lpEmne').value.trim();
+      const mal = document.getElementById('lpMal').value.trim();
+      const metode = document.getElementById('lpMetode').value.trim();
+      const materiell = document.getElementById('lpMateriell').value.trim();
+      const oppstart = document.getElementById('lpOppstart').value.trim();
+      const repetisjon = document.getElementById('lpRepetisjon').value.trim();
+      const nyttStoff = document.getElementById('lpNyttStoff').value.trim();
+      const oving = document.getElementById('lpOving').value.trim();
+      const oppsummering = document.getElementById('lpOppsummering').value.trim();
+      const lekser = document.getElementById('lpLekser').value.trim();
 
-    if(!dato || !emne || !mal || !nyttStoff){
-      showToast(t('fillRequiredForPdf'));
-      return;
+      if(!dato || !emne || !mal || !nyttStoff){
+        alert(t('fillRequiredForPdf'));
+        return;
+      }
+
+      const block = (label, value) =>
+        `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
+
+      document.getElementById('printTitle').textContent = t('lessonTitle');
+      document.getElementById('printMeta').textContent =
+        currentTeacher.navn + ' · ' + currentTeacher.tildeltKlasse + ' · ' + I18N[currentLang].fagLabels[fag] + ' · ' + dato;
+
+      document.getElementById('printBody').innerHTML =
+        block(t('emneLabel'), emne) +
+        block(t('malLabel'), mal) +
+        block(t('metodeLabel'), metode) +
+        block(t('materiellLabel'), materiell) +
+        '<hr>' +
+        block(t('step1'), oppstart) +
+        block(t('step2'), repetisjon) +
+        block(t('step3'), nyttStoff) +
+        block(t('step4'), oving) +
+        block(t('step5'), oppsummering) +
+        '<hr>' +
+        block(t('lekserLabel'), lekser);
+
+      window.print();
+    } catch(err){
+      console.error(err);
+      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
-
-    const block = (label, value) =>
-      `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
-
-    document.getElementById('printTitle').textContent = t('lessonTitle');
-    document.getElementById('printMeta').textContent =
-      currentTeacher.navn + ' · ' + currentTeacher.tildeltKlasse + ' · ' + I18N[currentLang].fagLabels[fag] + ' · ' + dato;
-
-    document.getElementById('printBody').innerHTML =
-      block(t('emneLabel'), emne) +
-      block(t('malLabel'), mal) +
-      block(t('metodeLabel'), metode) +
-      block(t('materiellLabel'), materiell) +
-      '<hr>' +
-      block(t('step1'), oppstart) +
-      block(t('step2'), repetisjon) +
-      block(t('step3'), nyttStoff) +
-      block(t('step4'), oving) +
-      block(t('step5'), oppsummering) +
-      '<hr>' +
-      block(t('lekserLabel'), lekser);
-
-    window.print();
   };
 
   // Init
