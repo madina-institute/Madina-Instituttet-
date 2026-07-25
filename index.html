@@ -87,6 +87,20 @@
   .status-badge.notsent{background:rgba(168,60,60,0.10); color:var(--red);}
   .status-badge.notsent .dot{width:7px; height:7px; border-radius:50%; background:var(--red);}
 
+  .choice-card{
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:26px 22px;
+    box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s;
+  }
+  .choice-card:hover{border-color:var(--gold);}
+  .choice-card h3{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:20px; color:var(--emerald-d); margin:0 0 6px;
+  }
+  .choice-card .sub{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860;}
+  .back-link{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald);
+    margin-bottom:16px; cursor:pointer; text-decoration:underline; background:none; border:none; padding:0;
+  }
+
   /* Modal */
   .overlay{
     display:none; position:fixed; inset:0; background:rgba(15,43,33,0.45); z-index:100;
@@ -307,12 +321,6 @@
           <button class="btn btn-ghost" onclick="quickPaymentReport('Nei')">Vis ikke-betalte elever</button>
         </div>
       </div>
-    </div>
-
-    <div class="report-card" style="margin-top:20px;">
-      <h3>Ukentlig status — timeforberedelser</h3>
-      <div class="sub" id="weekRangeLabel">Hvem har sendt inn forberedelse for denne uken?</div>
-      <div id="repWeeklyStatus"></div>
     </div>
 
     <div class="report-card" style="margin-top:20px;">
@@ -594,18 +602,48 @@
 
   <!-- LESSON PLANS -->
   <div class="panel" id="panel-lessonPlans">
-    <div class="toolbar">
-      <input class="search" id="searchLessonPlans" placeholder="Søk etter lærer, fag eller emne...">
-      <span class="count-chip" id="countLessonPlans">0 forberedelser</span>
-      <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
+
+    <!-- Choice screen -->
+    <div id="lpChooseView">
+      <div class="report-grid">
+        <div class="choice-card" onclick="showLpWeekly()">
+          <h3>Ukentlig status</h3>
+          <div class="sub">Se hvem som har sendt inn forberedelse for denne uken, og hvem som mangler</div>
+        </div>
+        <div class="choice-card" onclick="showLpList()">
+          <h3>Alle forberedelser</h3>
+          <div class="sub">Bla gjennom, søk, skriv ut eller eksporter innsendte forberedelser</div>
+        </div>
+      </div>
     </div>
-    <table>
-      <thead><tr>
-        <th>Lærer</th><th>Fag</th><th>Dato</th><th>Emne</th><th>Klasse</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyLessonPlans"></tbody>
-    </table>
+
+    <!-- Weekly status sub-view -->
+    <div id="lpWeeklyView" style="display:none;">
+      <button class="back-link" onclick="showLpChoice()">← Tilbake</button>
+      <div class="report-card">
+        <h3>Ukentlig status — timeforberedelser</h3>
+        <div class="sub" id="weekRangeLabel">Hvem har sendt inn forberedelse for denne uken?</div>
+        <div id="repWeeklyStatus"></div>
+      </div>
+    </div>
+
+    <!-- Full list sub-view -->
+    <div id="lpListView" style="display:none;">
+      <button class="back-link" onclick="showLpChoice()">← Tilbake</button>
+      <div class="toolbar">
+        <input class="search" id="searchLessonPlans" placeholder="Søk etter lærer, fag eller emne...">
+        <span class="count-chip" id="countLessonPlans">0 forberedelser</span>
+        <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Lærer</th><th>Fag</th><th>Dato</th><th>Emne</th><th>Klasse</th><th></th>
+        </tr></thead>
+        <tbody id="tbodyLessonPlans"></tbody>
+      </table>
+    </div>
   </div>
+
 
 </main>
 
@@ -1149,6 +1187,26 @@
       return `<div class="status-row"><span>${escapeHtml(teacher.navn)}</span>${badge}</div>`;
     }).join('');
   }
+
+  window.showLpChoice = function(){
+    document.getElementById('lpChooseView').style.display = 'block';
+    document.getElementById('lpWeeklyView').style.display = 'none';
+    document.getElementById('lpListView').style.display = 'none';
+  };
+
+  window.showLpWeekly = function(){
+    document.getElementById('lpChooseView').style.display = 'none';
+    document.getElementById('lpWeeklyView').style.display = 'block';
+    document.getElementById('lpListView').style.display = 'none';
+    renderWeeklyStatus();
+  };
+
+  window.showLpList = function(){
+    document.getElementById('lpChooseView').style.display = 'none';
+    document.getElementById('lpWeeklyView').style.display = 'none';
+    document.getElementById('lpListView').style.display = 'block';
+    render('lessonPlans');
+  };
 
   function renderPaymentStatusReport(){
     const el = document.getElementById('repPaymentStatus');
@@ -1789,6 +1847,7 @@
       document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     });
   });
 
