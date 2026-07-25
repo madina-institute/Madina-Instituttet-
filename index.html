@@ -1739,8 +1739,10 @@
       document.body.classList.add('printing-lesson-plan');
       window.onafterprint = () => { document.body.classList.remove('printing-lesson-plan'); };
       window.print();
-      // Safety net in case 'afterprint' never fires on this browser
-      setTimeout(() => { document.body.classList.remove('printing-lesson-plan'); }, 3000);
+      // Safety net only — much longer than any realistic print-dialog interaction,
+      // so it never reverts the content while the person is still choosing
+      // print settings or a save location.
+      setTimeout(() => { document.body.classList.remove('printing-lesson-plan'); }, 120000);
     } catch(err){
       console.error(err);
       alert('En feil oppstod: ' + err.message);
