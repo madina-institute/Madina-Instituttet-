@@ -42,6 +42,22 @@
   .cover .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:var(--gold-l);}
   .cover .logo-img{height:56px;width:auto;border-radius:6px;margin:0 auto 18px;display:block;}
   .success-box{display:none; text-align:center; padding:60px 30px; background:var(--paper); border-radius:6px; box-shadow:var(--shadow); margin-top:20px;}
+
+  .progress-wrap{margin-top:20px;}
+  .progress-bar{height:6px; background:rgba(246,242,231,0.2); border-radius:3px; overflow:hidden;}
+  .progress-fill{height:100%; width:16.66%; background:var(--gold-l); border-radius:3px; transition:width .3s ease;}
+  .progress-label{
+    margin-top:8px; text-align:center; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--gold-l);
+  }
+
+  .step-nav{display:flex; justify-content:space-between; gap:14px; margin-top:24px;}
+  .btn-step{
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.05em; text-transform:uppercase;
+    padding:14px 28px; border-radius:4px; cursor:pointer; border:none; font-weight:700;
+  }
+  .btn-next{background:var(--gold-l); color:var(--emerald-d); margin-inline-start:auto; box-shadow:0 8px 18px rgba(217,189,124,0.3);}
+  .btn-back{background:transparent; border:1px solid var(--line); color:var(--ink);}
   .success-box h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px;}
   .success-box p{font-size:15px; color:#5a6860;}
   .error-msg-top{display:none; background:#fdecec; border:1px solid #e0a0a0; color:#a83c3c; padding:14px 18px; border-radius:6px; font-family:'Jost',sans-serif; font-size:13px; margin-top:16px;}
@@ -162,8 +178,16 @@
     <div class="sub">For skoleåret — alle felt må fylles ut. Påmeldingen gjennomgås av administrasjonen før endelig opptak.</div>
   </div>
 
+  <div class="error-msg-top" id="errorMsgTop" style="margin-top:20px;"></div>
+
   <form id="paameldingsForm">
 
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">Steg 1 av 6 — Eleven</div>
+  </div>
+<div class="step" data-step="1">
   <!-- 1: ELEVEN -->
   <div class="card">
     <div class="tag"><span class="num">01</span> Elevopplysninger</div>
@@ -188,6 +212,9 @@
     </div>
   </div>
 
+<div class="step-nav"><button type="button" class="btn-step btn-next" onclick="tryGoToStep(2)">Neste →</button></div>
+</div>
+<div class="step" data-step="2" style="display:none;">
   <!-- 2: FORESATTE -->
   <div class="card">
     <div class="tag"><span class="num">02</span> Foresatte</div>
@@ -210,20 +237,20 @@
     </div>
 
     <hr class="divider">
-    <p class="hint">Foresatt 2</p>
+    <p class="hint">Foresatt 2 (valgfritt — fyll ut kun hvis aktuelt)</p>
     <div class="grid2">
-      <div class="field"><label>Navn</label><input type="text" name="foresatt2_navn" required></div>
+      <div class="field"><label>Navn</label><input type="text" name="foresatt2_navn"></div>
       <div class="field">
         <label>Relasjon til eleven</label>
         <div class="radio-row">
-          <label><input type="radio" name="foresatt2_relasjon" value="mor" required> Mor</label>
-          <label><input type="radio" name="foresatt2_relasjon" value="far" required> Far</label>
-          <label><input type="radio" name="foresatt2_relasjon" value="annet" required> Annet</label>
+          <label><input type="radio" name="foresatt2_relasjon" value="mor"> Mor</label>
+          <label><input type="radio" name="foresatt2_relasjon" value="far"> Far</label>
+          <label><input type="radio" name="foresatt2_relasjon" value="annet"> Annet</label>
           <input type="text" name="foresatt2_relasjon_annet" placeholder="Spesifiser" style="flex:1; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:'Lora',serif;">
         </div>
       </div>
-      <div class="field"><label>Telefon</label><input type="tel" name="foresatt2_tlf" required></div>
-      <div class="field"><label>E-post</label><input type="email" name="foresatt2_epost" required></div>
+      <div class="field"><label>Telefon</label><input type="tel" name="foresatt2_tlf"></div>
+      <div class="field"><label>E-post</label><input type="email" name="foresatt2_epost"></div>
     </div>
   </div>
 
@@ -240,68 +267,9 @@
     </div>
   </div>
 
-  <!-- 4: HELSEINFORMASJON -->
-  <div class="card">
-    <div class="tag"><span class="num">04</span> Helse</div>
-    <h2 class="title">Helseinformasjon</h2>
-    <hr class="rule">
-
-    <div class="field">
-      <label>Har barnet allergier?</label>
-      <div class="radio-row">
-        <label><input type="radio" name="allergi" value="nei" required> Nei</label>
-        <label><input type="radio" name="allergi" value="ja" required> Ja</label>
-        <label><input type="radio" name="allergi" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
-      </div>
-      <textarea name="allergi_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;" required></textarea>
-    </div>
-
-    <div class="field">
-      <label>Har barnet sykdommer eller medisinske forhold skolen bør kjenne til?</label>
-      <div class="radio-row">
-        <label><input type="radio" name="sykdom" value="nei" required> Nei</label>
-        <label><input type="radio" name="sykdom" value="ja" required> Ja</label>
-        <label><input type="radio" name="sykdom" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
-      </div>
-      <textarea name="sykdom_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;" required></textarea>
-    </div>
-
-    <div class="field">
-      <label>Bruker barnet medisiner?</label>
-      <div class="radio-row">
-        <label><input type="radio" name="medisin" value="nei" required> Nei</label>
-        <label><input type="radio" name="medisin" value="ja" required> Ja</label>
-        <label><input type="radio" name="medisin" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
-      </div>
-      <textarea name="medisin_hvilke" placeholder="Hvilke?" rows="2" style="margin-top:8px;" required></textarea>
-    </div>
-
-    <div class="field">
-      <label>Har barnet vansker med læring (lærevansker)?</label>
-      <div class="radio-row">
-        <label><input type="radio" name="larevansker" value="nei" required> Nei</label>
-        <label><input type="radio" name="larevansker" value="ja" required> Ja</label>
-        <label><input type="radio" name="larevansker" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
-      </div>
-      <textarea name="larevansker_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;" required></textarea>
-    </div>
-
-    <div class="field">
-      <label>Følges ditt barn av PPT eller PUP?</label>
-      <div class="radio-row">
-        <label><input type="radio" name="bbt_ppt" value="nei" required> Nei</label>
-        <label><input type="radio" name="bbt_ppt" value="ja" required> Ja</label>
-        <label><input type="radio" name="bbt_ppt" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
-      </div>
-      <textarea name="bbt_ppt_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;" required></textarea>
-    </div>
-
-    <div class="field">
-      <label>Andre opplysninger</label>
-      <textarea name="helse_annet" rows="2" required></textarea>
-    </div>
-  </div>
-
+<div class="step-nav"><button type="button" class="btn-step btn-back" onclick="goToStep(1)">← Tilbake</button><button type="button" class="btn-step btn-next" onclick="tryGoToStep(3)">Neste →</button></div>
+</div>
+<div class="step" data-step="3" style="display:none;">
   <!-- 5: PROGRAM, DAG OG FAG (highlighted core section) -->
   <div class="card">
     <div class="tag"><span class="num">05</span> Påmelding</div>
@@ -378,6 +346,74 @@
     </div>
   </div>
 
+<div class="step-nav"><button type="button" class="btn-step btn-back" onclick="goToStep(2)">← Tilbake</button><button type="button" class="btn-step btn-next" onclick="tryGoToStep(4)">Neste →</button></div>
+</div>
+<div class="step" data-step="4" style="display:none;">
+  <!-- 4: HELSEINFORMASJON -->
+  <div class="card">
+    <div class="tag"><span class="num">04</span> Helse</div>
+    <h2 class="title">Helseinformasjon</h2>
+    <hr class="rule">
+
+    <div class="field">
+      <label>Har barnet allergier?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="allergi" value="nei" required> Nei</label>
+        <label><input type="radio" name="allergi" value="ja" required> Ja</label>
+        <label><input type="radio" name="allergi" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
+      </div>
+      <textarea name="allergi_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Har barnet sykdommer eller medisinske forhold skolen bør kjenne til?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="sykdom" value="nei" required> Nei</label>
+        <label><input type="radio" name="sykdom" value="ja" required> Ja</label>
+        <label><input type="radio" name="sykdom" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
+      </div>
+      <textarea name="sykdom_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Bruker barnet medisiner?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="medisin" value="nei" required> Nei</label>
+        <label><input type="radio" name="medisin" value="ja" required> Ja</label>
+        <label><input type="radio" name="medisin" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
+      </div>
+      <textarea name="medisin_hvilke" placeholder="Hvilke? (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Har barnet vansker med læring (lærevansker)?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="larevansker" value="nei" required> Nei</label>
+        <label><input type="radio" name="larevansker" value="ja" required> Ja</label>
+        <label><input type="radio" name="larevansker" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
+      </div>
+      <textarea name="larevansker_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Følges ditt barn av PPT eller PUP?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="bbt_ppt" value="nei" required> Nei</label>
+        <label><input type="radio" name="bbt_ppt" value="ja" required> Ja</label>
+        <label><input type="radio" name="bbt_ppt" value="onsker_ikke_svare" required> Ønsker ikke å svare</label>
+      </div>
+      <textarea name="bbt_ppt_beskriv" placeholder="Beskriv (valgfritt)" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Andre opplysninger</label>
+      <textarea name="helse_annet" rows="2"></textarea>
+    </div>
+  </div>
+
+<div class="step-nav"><button type="button" class="btn-step btn-back" onclick="goToStep(3)">← Tilbake</button><button type="button" class="btn-step btn-next" onclick="tryGoToStep(5)">Neste →</button></div>
+</div>
+<div class="step" data-step="5" style="display:none;">
   <!-- 6: TIDLIGERE UNDERVISNING -->
   <div class="card">
     <div class="tag"><span class="num">06</span> Bakgrunn</div>
@@ -406,6 +442,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- 7-9: KARTLEGGING (nivåvurdering) -->
   <div class="card">
@@ -537,6 +574,9 @@
     </div>
   </div>
 
+<div class="step-nav"><button type="button" class="btn-step btn-back" onclick="goToStep(4)">← Tilbake</button><button type="button" class="btn-step btn-next" onclick="tryGoToStep(6)">Neste →</button></div>
+</div>
+<div class="step" data-step="6" style="display:none;">
   <!-- 11: SAMTYKKER -->
   <div class="card">
     <div class="tag"><span class="num">11</span> Samtykke</div>
@@ -585,11 +625,15 @@
     </div>
   </div>
 
+<div class="step-nav">
+<button type="button" class="btn-step btn-back" onclick="goToStep(5)">← Tilbake</button>
+</div>
   <div class="submit-wrap">
     <button type="submit" class="btn-submit" id="submitBtn">Send påmelding</button>
     <div class="error-msg-top" id="errorMsg"></div>
   </div>
 
+</div>
   </form>
 
   <div class="success-box" id="successBox">
@@ -703,22 +747,61 @@
     });
   });
 
-  // Conditional "required" on health/detail explanation fields: only required
-  // when the person answered "Ja" — optional when "Nei" or "prefer not to answer".
-  function wireConditionalRequired(radioName, textareaName){
+  // Explanation/detail fields tied to Ja/Nei/Vil ikke svare questions are always
+  // optional — the person can add detail if they want, but it never blocks submission.
+  function makeAlwaysOptional(textareaName){
     const textarea = document.querySelector(`[name="${textareaName}"]`);
-    document.querySelectorAll(`input[name="${radioName}"]`).forEach(radio => {
-      radio.addEventListener('change', () => {
-        textarea.required = (radio.value === 'ja' && radio.checked);
-      });
-    });
-    textarea.required = false;
+    if(textarea) textarea.required = false;
   }
-  wireConditionalRequired('allergi', 'allergi_beskriv');
-  wireConditionalRequired('sykdom', 'sykdom_beskriv');
-  wireConditionalRequired('medisin', 'medisin_hvilke');
-  wireConditionalRequired('larevansker', 'larevansker_beskriv');
-  wireConditionalRequired('bbt_ppt', 'bbt_ppt_beskriv');
+  makeAlwaysOptional('allergi_beskriv');
+  makeAlwaysOptional('sykdom_beskriv');
+  makeAlwaysOptional('medisin_hvilke');
+  makeAlwaysOptional('larevansker_beskriv');
+  makeAlwaysOptional('bbt_ppt_beskriv');
+
+  // ---------- Multi-step navigation ----------
+  const TOTAL_STEPS = 6;
+  const STEP_LABELS = ['Eleven', 'Foresatte', 'Program og priser', 'Helse', 'Nivåvurdering', 'Samtykke'];
+  let currentStep = 1;
+
+  function updateProgress(){
+    document.getElementById('progressFill').style.width = (currentStep / TOTAL_STEPS * 100) + '%';
+    document.getElementById('progressLabel').textContent = `Steg ${currentStep} av ${TOTAL_STEPS} — ${STEP_LABELS[currentStep - 1]}`;
+  }
+
+  window.goToStep = function(n){
+    document.querySelectorAll('.step').forEach(stepEl => {
+      stepEl.style.display = (parseInt(stepEl.dataset.step) === n) ? 'block' : 'none';
+    });
+    currentStep = n;
+    updateProgress();
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+
+  window.tryGoToStep = function(n){
+    const currentStepEl = document.querySelector(`.step[data-step="${currentStep}"]`);
+    const invalidField = currentStepEl.querySelector(':invalid');
+    if(invalidField){
+      invalidField.reportValidity();
+      invalidField.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    // Extra check specific to the Program step: at least one program must be chosen
+    if(currentStep === 3){
+      const programChecked = currentStepEl.querySelectorAll('input[name="program"]:checked').length;
+      if(programChecked === 0){
+        const errTopEl = document.getElementById('errorMsgTop');
+        errTopEl.textContent = 'Velg minst ett program før du går videre.';
+        errTopEl.style.display = 'block';
+        errTopEl.scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+    }
+    document.getElementById('errorMsgTop').style.display = 'none';
+    goToStep(n);
+  };
+
+  updateProgress();
 
   // Set correct initial state (everything unchecked at first)
   updateKartleggingVisibility();
@@ -727,11 +810,16 @@
   document.getElementById('paameldingsForm').addEventListener('submit', async function(e){
     e.preventDefault();
     const errEl = document.getElementById('errorMsg');
+    const errTopEl = document.getElementById('errorMsgTop');
     const btn = document.getElementById('submitBtn');
     errEl.style.display = 'none';
+    errTopEl.style.display = 'none';
 
     if(!this.checkValidity()){
-      this.reportValidity();
+      errTopEl.textContent = '⚠ Ett eller flere obligatoriske felt mangler eller er ikke fylt ut riktig. Nettleseren hopper nå til feltet som må rettes.';
+      errTopEl.style.display = 'block';
+      errTopEl.scrollIntoView({behavior:'smooth', block:'center'});
+      setTimeout(() => this.reportValidity(), 400);
       return;
     }
 
