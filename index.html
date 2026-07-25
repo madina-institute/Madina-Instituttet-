@@ -3,778 +3,543 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Madina Skole — Database</title>
+<title>Påmeldingsskjema – Madina Institute</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,500&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#1c2c24; --emerald:#1f4a3a; --emerald-d:#0f2b21; --emerald-l:#2e6b53;
-    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
-    --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10);
-    --red:#a83c3c;
+    --ink:      #1c2c24;
+    --emerald:  #1f4a3a;
+    --emerald-d:#0f2b21;
+    --gold:     #b7924a;
+    --gold-l:   #d9bd7c;
+    --paper:    #fbf8f1;
+    --paper-2:  #f3ecdb;
+    --line:     rgba(20,38,31,0.16);
+    --shadow:   0 16px 36px rgba(15,43,33,0.12);
   }
   *{box-sizing:border-box;}
-  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink);}
+  body{
+    margin:0; background:var(--emerald-d);
+    background-image:
+      radial-gradient(1000px 500px at 50% -10%, rgba(183,146,74,0.10), transparent 60%),
+      linear-gradient(180deg,var(--emerald-d),#0b2018 60%,#091a13);
+    font-family:'Lora',serif; color:var(--ink);
+    padding:50px 16px 80px;
+  }
+  .book{max-width:820px; margin:0 auto;}
 
-  header{
-    background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
-    color:var(--paper); padding:26px 28px; box-shadow:var(--shadow); position:relative;
-    display:flex; align-items:center; gap:18px;
+  /* HEADER */
+  .cover{
+    background:linear-gradient(165deg,var(--emerald) 0%, #163d30 55%, var(--emerald-d) 100%);
+    border-radius:6px; padding:52px 40px; text-align:center; color:var(--paper);
+    box-shadow:var(--shadow); border:1px solid rgba(217,189,124,0.35); position:relative;
   }
-  header .logo-img{ height:56px; width:auto; border-radius:6px; flex-shrink:0; }
-  header .header-text{ flex:1; min-width:0; }
-  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; margin:0 0 4px;}
-  header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold-l); margin:0;}
-  .side-switch{
-    position:absolute; top:22px; right:28px; background:rgba(246,242,231,0.12); border:1px solid rgba(217,189,124,0.4);
-    color:var(--gold-l); font-family:'Jost',sans-serif; font-size:12px; padding:8px 14px; border-radius:6px; cursor:pointer;
-  }
+  .cover::before,.cover::after{content:"";position:absolute;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-l),transparent);}
+  .cover::before{top:18px;} .cover::after{bottom:18px;}
+  .cover .eyebrow{font-family:'Jost',sans-serif;letter-spacing:0.28em;text-transform:uppercase;font-size:11px;color:var(--gold-l);margin-bottom:16px;}
+  .cover h1{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(30px,5.5vw,42px);margin:0 0 8px;}
+  .cover .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:var(--gold-l);}
+  .cover .logo-img{height:56px;width:auto;border-radius:6px;margin:0 auto 18px;display:block;}
+  .success-box{display:none; text-align:center; padding:60px 30px; background:var(--paper); border-radius:6px; box-shadow:var(--shadow); margin-top:20px;}
+  .success-box h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px;}
+  .success-box p{font-size:15px; color:#5a6860;}
+  .error-msg-top{display:none; background:#fdecec; border:1px solid #e0a0a0; color:#a83c3c; padding:14px 18px; border-radius:6px; font-family:'Jost',sans-serif; font-size:13px; margin-top:16px;}
 
-  #sideChooseView{ padding:60px 20px; }
-  #sideChooseView .wrap{ max-width:640px; margin:0 auto; }
-  .side-grid{ display:flex; flex-direction:column; gap:18px; }
-  @media (min-width:640px){ .side-grid{ flex-direction:row; } }
-  .side-card{
-    flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:34px 26px;
-    text-align:center; box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s, transform .2s;
+  /* CARD (section) */
+  .card{
+    background:var(--paper); margin-top:20px; border-radius:6px;
+    padding:32px 36px; box-shadow:var(--shadow); border:1px solid var(--line);
   }
-  .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
-  .side-card h2{
-    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px; line-height:1.3;
+  .card.admin{background:var(--paper-2); border:1px dashed var(--gold);}
+  .tag{
+    display:inline-flex; align-items:center; gap:10px; font-family:'Jost',sans-serif;
+    font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:8px;
   }
-  .side-card h2 .sub-en{
-    font-family:'Jost',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold);
-  }
-  .side-card p{ font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin:0; }
+  .tag .num{font-family:'Cormorant Garamond',serif;font-weight:700;font-style:italic;font-size:22px;color:var(--emerald);letter-spacing:0;}
+  h2.title{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:24px;color:var(--emerald-d);margin:0 0 4px;}
+  .hint{font-size:13.5px;color:#5a6860;margin:0 0 18px;}
+  hr.rule{border:none;height:1px;background:linear-gradient(90deg,var(--gold),transparent 70%);width:60px;margin:0 0 18px;}
 
-  .tabs{
-    display:flex; gap:0; background:var(--paper-2); border-bottom:1px solid var(--line);
-    padding:0 20px; overflow-x:auto;
-  }
-  .tab{
-    font-family:'Jost',sans-serif; font-size:13px; font-weight:600; letter-spacing:0.03em;
-    padding:16px 20px; cursor:pointer; color:#5a6860; border-bottom:3px solid transparent;
-    white-space:nowrap; user-select:none;
-  }
-  .tab.active{color:var(--emerald-d); border-bottom-color:var(--gold);}
+  /* FORM ELEMENTS */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px 24px;}
+  @media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr;}}
 
-  main{max-width:1100px; margin:0 auto; padding:24px 20px 60px;}
-  .panel{display:none;}
-  .panel.active{display:block;}
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.03em;
+    color:var(--emerald); margin-bottom:6px; font-weight:600;
+  }
+  .field input[type=text], .field input[type=date], .field input[type=tel], .field input[type=email], .field textarea, .field select{
+    width:100%; border:none; border-bottom:1.4px solid var(--line); background:transparent;
+    font-family:'Lora',serif; font-size:15px; padding:7px 2px; color:var(--ink);
+    outline:none; transition:border-color .2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{border-bottom-color:var(--gold);}
+  .field textarea{resize:vertical; min-height:44px; border:1px solid var(--line); border-radius:4px; padding:8px 10px;}
 
-  .toolbar{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:18px;}
-  .search{
-    flex:1; min-width:180px; padding:10px 14px; border:1px solid var(--line); border-radius:6px;
-    font-family:'Lora',serif; font-size:14px; background:#fff;
+  .radio-row, .check-row{display:flex; gap:22px; flex-wrap:wrap; margin-top:4px;}
+  .radio-row label, .check-row label{
+    display:flex; align-items:center; gap:7px; font-size:14.5px; font-family:'Lora',serif; cursor:pointer;
   }
-  .btn{
-    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0.03em;
-    padding:10px 18px; border-radius:6px; border:none; cursor:pointer; text-transform:uppercase;
-  }
-  .btn-primary{background:var(--emerald); color:#fff;}
-  .btn-primary:hover{background:var(--emerald-l);}
-  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink);}
-  .btn-danger{background:transparent; color:var(--red); border:1px solid rgba(168,60,60,0.3); padding:6px 10px; font-size:11px;}
-  .btn-edit{background:transparent; color:var(--emerald); border:1px solid rgba(31,74,58,0.25); padding:6px 10px; font-size:11px; margin-right:6px;}
-
-  .count-chip{
-    font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold); background:var(--paper-2);
-    padding:6px 14px; border-radius:20px; border:1px solid var(--line);
-    cursor:pointer; display:inline-flex; align-items:center; gap:6px; user-select:none;
-    transition:background .15s;
-  }
-  .count-chip:hover{background:var(--paper);}
-  .count-chip .toggle-arrow{font-size:9px; transition:transform .2s;}
-  .count-chip.expanded .toggle-arrow{transform:rotate(180deg);}
-  .records-hidden{display:none;}
-
-  table{width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:var(--shadow);}
-  thead th{
-    background:var(--emerald); color:var(--paper); font-family:'Jost',sans-serif; font-size:11.5px;
-    letter-spacing:0.05em; text-transform:uppercase; text-align:left; padding:12px 14px; font-weight:600;
-  }
-  tbody td{padding:11px 14px; border-bottom:1px solid var(--line); font-size:14px; vertical-align:top;}
-  tbody tr:last-child td{border-bottom:none;}
-  tbody tr:hover{background:var(--paper-2);}
-  .empty-row td{text-align:center; color:#8a9a90; font-family:'Jost',sans-serif; font-size:13px; padding:30px;}
-  .actions-col{white-space:nowrap; width:1%;}
-  .tag-pill{
-    display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; padding:3px 9px;
-    border-radius:12px; background:var(--paper-2); color:var(--emerald-d); border:1px solid var(--line);
+  input[type=radio], input[type=checkbox]{
+    width:16px; height:16px; accent-color:var(--emerald); cursor:pointer;
   }
 
-  .status-row{
-    display:flex; justify-content:space-between; align-items:center; padding:10px 0;
-    border-bottom:1px solid var(--line); font-family:'Jost',sans-serif; font-size:13.5px;
-  }
-  .status-row:last-child{border-bottom:none;}
-  .status-badge{
-    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700;
-    padding:5px 12px; border-radius:14px; text-transform:uppercase; letter-spacing:0.03em;
-  }
-  .status-badge.sent{background:rgba(46,107,83,0.12); color:var(--emerald);}
-  .status-badge.sent .dot{width:7px; height:7px; border-radius:50%; background:#2e9e5b;}
-  .status-badge.notsent{background:rgba(168,60,60,0.10); color:var(--red);}
-  .status-badge.notsent .dot{width:7px; height:7px; border-radius:50%; background:var(--red);}
+  .divider{border:none; border-top:1px dotted var(--line); margin:22px 0;}
 
-  .choice-card{
-    background:#fff; border:1px solid var(--line); border-radius:10px; padding:26px 22px;
-    box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s;
+  /* PROGRAM SELECTOR — highlighted */
+  .program-opts{display:flex; flex-direction:column; gap:12px;}
+  .prog-opt{
+    display:flex; align-items:flex-start; gap:14px; background:var(--paper-2);
+    border:1px solid var(--line); border-radius:8px; padding:16px 18px; cursor:pointer;
+    transition:border-color .2s, background .2s;
   }
-  .choice-card:hover{border-color:var(--gold);}
-  .choice-card h3{
-    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:20px; color:var(--emerald-d); margin:0 0 6px;
-  }
-  .choice-card .sub{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860;}
-  .back-link{
-    display:inline-block; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald);
-    margin-bottom:16px; cursor:pointer; text-decoration:underline; background:none; border:none; padding:0;
-  }
+  .prog-opt:hover{border-color:var(--gold);}
+  .prog-opt input{margin-top:3px;}
+  .prog-opt .p-body{flex:1;}
+  .prog-opt .p-title{font-family:'Jost',sans-serif; font-weight:600; font-size:14.5px; color:var(--emerald-d);}
+  .prog-opt .p-meta{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold); letter-spacing:0.04em; margin-top:2px;}
+  .prog-opt .p-sub{font-size:13px; color:#5a6860; margin-top:4px;}
 
-  /* Modal */
-  .overlay{
-    display:none; position:fixed; inset:0; background:rgba(15,43,33,0.45); z-index:100;
-    align-items:center; justify-content:center; padding:20px;
-  }
-  .overlay.open{display:flex;}
-  .modal{
-    background:#fff; border-radius:10px; padding:28px 30px; max-width:480px; width:100%;
-    max-height:88vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.25);
-  }
-  .modal h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; color:var(--emerald-d); margin:0 0 18px;}
-  .field{margin-bottom:14px;}
-  .field label{display:block; font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:5px; font-weight:600;}
-  .field input, .field select, .field textarea{
-    width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px;
-    font-family:'Lora',serif; font-size:14px; background:var(--paper);
-  }
-  .modal-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:20px;}
+  .subject-check{margin-top:14px; padding-left:30px;}
+  .subject-check.hidden-hint{font-size:12.5px; color:#8a9a90; font-style:italic;}
 
-  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;}
-  @media (max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}}
-  .stat-card{background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px 18px; box-shadow:var(--shadow);}
-  .stat-card .n{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:28px; color:var(--emerald-d);}
-  .stat-card .l{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gold);}
-
-  .toast{
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif; font-size:13px;
-    padding:12px 22px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s; z-index:200;
+  /* LEVEL SCALE */
+  .level-scale{display:flex; gap:10px; margin-top:6px; flex-wrap:wrap;}
+  .level-scale label{
+    flex:1; min-width:100px; text-align:center; border:1px solid var(--line); border-radius:6px;
+    padding:10px 8px; font-family:'Jost',sans-serif; font-size:12.5px; cursor:pointer; color:var(--ink);
+    transition:background .2s, border-color .2s;
   }
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .level-scale input{display:none;}
+  .level-scale input:checked + span{color:var(--emerald-d); font-weight:600;}
+  .level-scale label:has(input:checked){background:var(--gold-xl,#f0e2c2); border-color:var(--gold);}
 
-  .storage-note{
-    font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; text-align:center; padding:14px;
+  .kartlegging-block{background:var(--paper-2); border-radius:8px; padding:20px 22px; margin-bottom:16px;}
+  .kartlegging-block h4{font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--gold); margin:0 0 12px;}
+
+  .note-box{
+    margin-top:6px; padding:12px 16px; background:rgba(183,146,74,0.10); border-left:3px solid var(--gold);
+    font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); line-height:1.6; border-radius:0 4px 4px 0;
   }
 
-  .sync-badge{
-    display:inline-flex; align-items:center; gap:6px; font-family:'Jost',sans-serif; font-size:11px;
-    color:var(--gold-l); background:var(--emerald-d); padding:4px 12px; border-radius:12px; margin-left:10px;
-  }
-  .sync-badge .dot{width:7px; height:7px; border-radius:50%; background:#4caf7d;}
-  .sync-badge.offline .dot{background:#c94a4a;}
+  .sig-row{display:flex; gap:30px; align-items:flex-end; margin-top:20px; flex-wrap:wrap;}
+  .sig-line{flex:1; min-width:220px; border-bottom:1.4px solid var(--ink); padding-bottom:6px; font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;}
 
-  .report-toolbar{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;}
-  .report-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
-  @media (max-width:760px){.report-grid{grid-template-columns:1fr;}}
-  .report-card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 22px; box-shadow:var(--shadow);}
-  .report-card h3{
-    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d);
-    margin:0 0 4px;
-  }
-  .report-card .sub{font-family:'Jost',sans-serif; font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:14px;}
-  .bar-row{margin-bottom:12px;}
-  .bar-row:last-child{margin-bottom:0;}
-  .bar-label{
-    display:flex; justify-content:space-between; font-family:'Jost',sans-serif; font-size:12.5px;
-    color:var(--ink); margin-bottom:5px;
-  }
-  .bar-label .n{font-weight:700; color:var(--emerald-d);}
-  .bar-track{background:var(--paper-2); border-radius:6px; height:9px; overflow:hidden;}
-  .bar-fill{background:linear-gradient(90deg,var(--emerald),var(--gold)); height:100%; border-radius:6px; transition:width .4s ease;}
-  .report-empty{font-family:'Jost',sans-serif; font-size:12.5px; color:#8a9a90; text-align:center; padding:16px 0;}
+  .footer{text-align:center; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:rgba(246,242,231,0.45); margin-top:30px;}
 
-  .report-header-print{display:none;}
-
-  .field-row-2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
-  @media (max-width:600px){.field-row-2{grid-template-columns:1fr;}}
-  #customFieldsCheckboxes label{
-    font-family:'Jost',sans-serif; font-size:12.5px; display:inline-flex; align-items:center; gap:6px;
-    background:var(--paper-2); padding:6px 12px; border-radius:16px; border:1px solid var(--line); cursor:pointer;
-    white-space:nowrap; flex-shrink:0;
-  }
-  .check-row{ display:flex; flex-wrap:wrap; gap:8px; }
-  #customFieldsCheckboxes input[type=checkbox], .check-row input[type=checkbox]{
-    width:15px; height:15px; min-width:15px; flex-shrink:0; accent-color:var(--emerald); cursor:pointer; margin:0;
-  }
-  #customReportOutput table{margin-top:4px;}
-
-  .filter-row{
-    display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px;
-  }
-  @media (max-width:700px){.filter-row{grid-template-columns:1fr; }}
-  .filter-row select, .filter-row input[type=text]{
-    padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Lora',serif; font-size:13.5px; background:var(--paper);
-  }
-  .filter-remove{
-    background:transparent; border:1px solid rgba(168,60,60,0.3); color:var(--red); border-radius:6px;
-    width:32px; height:32px; cursor:pointer; font-size:14px; line-height:1;
-  }
-
-  .danger-zone{ border:1px solid rgba(168,60,60,0.35); background:#fdf5f5; }
-  .danger-row{
-    display:flex; justify-content:space-between; align-items:center; padding:10px 0;
-    border-bottom:1px dotted rgba(168,60,60,0.2); font-family:'Jost',sans-serif; font-size:13.5px; color:var(--ink);
-  }
-  .danger-row:last-child{ border-bottom:none; }
-  .btn-danger-solid{
-    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;
-    background:var(--red); color:#fff; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;
+  .submit-wrap{text-align:center; margin-top:28px;}
+  .btn-submit{
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.06em; text-transform:uppercase;
+    background:var(--gold-l); color:var(--emerald-d); font-weight:700; border:none; border-radius:3px;
+    padding:15px 46px; cursor:pointer; box-shadow:0 10px 22px rgba(217,189,124,0.3);
   }
 
   @media print{
-    header, .tabs, .toolbar, .report-toolbar, .btn, .actions-col, .sync-badge{display:none !important;}
-    .panel{display:none !important;}
-    #panel-reports{display:block !important;}
-    #panel-reports .report-header-print{
-      display:block; font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px;
-      color:var(--emerald-d); margin-bottom:4px;
-    }
-    .report-grid{grid-template-columns:1fr; }
-    body{background:#fff;}
-    main{padding:0;}
-  }
-
-  @media (max-width:640px){
-    table, thead, tbody, tr, td, th{display:block;}
-    thead{display:none;}
-    tbody tr{border:1px solid var(--line); border-radius:8px; margin-bottom:10px; padding:8px 4px; background:#fff;}
-    tbody td{border:none; padding:6px 12px; display:flex; justify-content:space-between; gap:10px;}
-    tbody td::before{content:attr(data-label); font-family:'Jost',sans-serif; font-size:10.5px; text-transform:uppercase; color:var(--gold); font-weight:600;}
-    .empty-row td::before{content:none;}
+    body{background:#fff; padding:0;}
+    .card{box-shadow:none; break-inside:avoid;}
+    .cover{box-shadow:none;}
+    .submit-wrap{display:none;}
   }
 </style>
 </head>
 <body>
+<div class="book">
 
-<header>
-  <img src="data:image/jpeg;base64,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" alt="Madina Institute" class="logo-img">
-  <div class="header-text">
-    <h1>Madina Skole — Database <span class="sync-badge offline" id="syncBadge"><span class="dot"></span><span id="syncText">Kobler til...</span></span></h1>
-    <p>Lærere · Elever · Timeplan</p>
+  <!-- HEADER -->
+  <div class="cover">
+    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADKARgDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAUGAwQHAQII/8QAShAAAQMDAgIGBgQJCgYDAAAAAQACAwQFEQYSITEHE0FRYXEUFyKBkZMVMlWhCCNCUmJzkrGyFjU2cnSCg6LB0SQlM0RF8ENUY//EABsBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/8QAOxEAAgECAgUJBgUDBQAAAAAAAAECAxEEIQUSMVHRExRBUmFxkqHhIjSRscHwFTJCcqKBguIGMzVi8f/aAAwDAQACEQMRAD8Ak0RF96fCBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREARYQ2d1w3MH4mOE9Z7Q+sSMcOfLKzFUhUjO+q9jsXnTlC11tVwiIrlAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgNy00dNLHXVUkDXTMhcGyEcR4LTxhb+lqi4h08UdC8s3PET+e7iBnHdxJ9ymKTQeqKmBtQy3t6hzS/rTMzbjmTwK+Y0Hi4qVflJJXlfbvPo9M4WTjR1Fe0bbNxWEXrfaIDQSTyA5lfdRDLTzvgnjfFKw4cx7cEHxC+m7D5yxjRfbYpXML2xSOaObgwkD3r2OnqJNvVwSPyMja0nIU3JszGizGkqh/2s/f8A9N3L4J6LVYz6NNjGc9Wf9lGst4szCiyCCoJcBTyktOHAMJwfgvTS1Q/7Wf5Z/wBkut41WYkRYH1lM2OaR0mGwuDZDj6pPYqVKsKSvOSXebUMLWxD1aMHJ9ib7OjtM6LSZdaB7wxtS0uJwBg81uqKVelWTdOSfc7lsTgsThGliKbg3sumvmERFqcwREQBERAEREARF0To40Bb9QUfp1ddA5rcZp6Z43s/rk8j4LGvXhQjrz2G1ChOvLVhtOdouqXvo5tMepoqaKvjttuEAc901QHSSPJPBoce7t5KwM6KtJS0jRDJWudjhM2pzn3Y2rjelcOknnn2HXHRdeTayy7ThaK/Xjo0uFDeoqf06nbbJDn02ZwYGY7HA/ld2OauNp6LtJTUmfS6mudjjMypAGfAN4K1TSeHgk73vuKU9HV5tq1rbziCLoXSB0by2KkkudrmkqqKPjKx4zJGO/hzCodHSzVdSynha0vcce04NA8STwA8V00cRTrQ14PI561CpRnqTWZhRdf0h0b6ZrLfvq7oblUY/GeiTgRsPdw4nzKqnSVoh2mZGVlE+Sa3SO27n8XRO7j3g9hWNPSFGpU5NPM2qYCtTp8o1kUtEVg0Xpas1LWPDJG01HD7VRUv+qwdw7yuqpUjSi5Tdkjmp05VJKMVdlfWSUN9HiPs7n7gePaDhTurNc6H0vFJatGWiC/3Ro2vuFWN8DHduPzyO4YHiqDbdc6toroLlOaC4xuJMtJU0UfUuHaAGgFvgR96+Zxf+oaCnGKi2r559FmevS0ZKKd5Z/HpRY9MQFzSwXuoa9kb2NAeBgbwd+PzgTtz3Fd16LZZKjo4dNKSXudU5J49p4LgHRxLYbzd5Y5pJKOrmkkcKdzwB7UrZcNOOPtNA8l+l9O2SOwaTmt0VQ+dgbLI1zwAfaBODjuXgaPlC0105W7s/Q+mxjc1CSd1Z378jhfR9drdZdR01bc6MVMAGASMmIn8sDtwpXpav1ovl9a+1QMPUt2yVYGOuPdjuHfzWv0caRg1PVllTdIqZjG56phBmeB2gHkPFTnSfouz6fobc62GRktRUmKSWpny3G3OTwwPgvtp1KCxavfW2dh8hCnXeFdktXb2lTtN2iobbDEyWaOojqZJ2lrA4e1FsAOTx48x3LZp75bgWk0z4oXxtE9M1pLd24uJjdkFmCQRzxkjiMLoOmuiywy26Gqrq+a4GRocDBJsi9xHE/FRGmujq01FXMbtdY2fjXCKjhqGbw0E43Hic47FjLGYSTk7vI0WExUdXZmU6ju8MQtHWTVJNJVvmnxk7mlzXAA54/V7VhN0YKAxCWd8np/pA3ZwWYxgnK6tduiSwzU7jbairo5x9Uvk6xhPiDx+C5Df7RWWS6y26vZsmjOcj6rmnkR4Low1bD4hvU27jHE0K+HS19htzXOnN2bUwy1JikrfSpQRgtGfqDjx7ePksjbvSup6+N758zVhnjcWk7W4eMD2uDva8QtCx2yS6VggE8FLEOMs87w1kY8e8+AXXLX0X6TqLW17K6qrHObwqI5xtz3gAY+KjE1sPh7Kd/6E4ajXr3cLHExy4haM0NS7r3tYN4eeqaJXBjwcZLhnieHBW3XGmarTF3NHM4ywPG6CbGN7fHuI7lALWvQpY6mrt225d1i2Cx1bRtWTjFXy2q+xp71u+BFRRXJszHOpqbaHDJ3k/wCqleHIcl6vFGDwNPCJqDbvvLaU0vV0lKMqsYrV3Jr5thERdp5YREQBERAEREAXS/wfXuGo7kwOO11I0kd5D+a5oulfg/f0nuP9jH8YXHpH3Wf30nZo/wB5gYOnwA6upsgH/gm8x+k5VjSOqLnpy4Rz0073U+4dbASSx7e3h2HxVn6e+OsKXH/02/xFc8zjj3cVXB041MLCMldWJxlSUMVKUXZ3P0R0hClu3RvX1OGujNIKmInsIw4FcDtF0r7RWNqrdVSU8rTnLDgHwI5ELpus7wLZ0S2ez78VddSRNLe0RgAuJ+4LkxHFYaLo6tKSlsbZvpKtrVYuO2yP0ppG7Raq0lFVysaDMx0VQzsDuTvd2+9fnWSkkdc5aKliknf1zo2MYNznYJA4BdO6PrszTvRRcblM7BNTI2Bva55AAA9/7lJ6Z0jXWvQ1RWWzY3UVbBv6544xh3HY09hx2965KM1gp1LbG7L77DqrQeMhT3pXf32lIslvrNH3GG53C701snZg+hsBmmkb2tcxvADzK7JMLfrHR7hH7dNXQZaXDi09nkQV+eKy0XqOvdBU22uNSXHIdC5xcfPtXYeh/rrTSyafudSwVpzVNpBxdAw4BDj3k8cditpKl7CqqV5Ldu9O0ro+p7bouNovfvOJ1lPNS1k1JK3E0MhjcP0gcLF0walnoY4Oju0TdVR0cbX3N7CQamocA5zSfzW5HDv8ldumijjs+t5K9zD1E8batwHaW/Wx+z96/N1z1DUXnUVwu7n9W6tq5J9oYXuaHOJAzjHAYC4dPYqVTD0tV/mzZOAo8lVqJ7VkXLT1rZJh23h2f++4q0VOn9lGw7OHHHxx/sqJZ7i5oGKm5u3HnHHt78do7wrTXXwvo2MFRezgnBxzG4Efldy/PMRCrrqzPbhq2K1fKAQy72ey4Hc0g4LT2EH/AFX6L6ANe1Oq9IXG03abrbra4SHSng6aEtIa4+IIwT5L8yXive7iKmuaSMkSw57BnvVk/Bx1Ibd0qQ0ku1wudJPRkty3Di3e0kHnxbj3r2sBrQkrsybszpfRO5zde2naSMvcD4jYeCv/AOEB/Mdr/tbv4CufdFX9PrR+sP8AAV0Lp/a42C2Oa0kNqnbiBy9gr7zE/wDIU+7ieJh/canfwJnoYc52gKLLiQ2WQNz2DfyXCr3gXuvIAB9Kk44/SK7p0Lf0BpP1sn8S4XfP57uH9qk/iKaP95rd/wBWRj/dqPd9DoPQ7rCtju8VhuFQ+emqPZgc85dG7HAZ7jhbn4QlNEBaKwACVzpIie9oAIVB0Gx8mtLM1g9r0yM57sHKtfS7cTqHWdHY6Bwk9Hd1AxyMryM/DgFadBQx0ZQyVm35kQrOeClGeeaSKLZ7XX3erFJbqSSomPHa0fVHeTyA81edF1kehrqGXK+07xMds9DSgzBp5Bzn8GtI8Mqy6r0pc7ToeK2aWYSQc1xj4TVAx39vHs7lyaksd4q6sUcNrqnS527TC5uPMkYC1jVhjYS1pJR3dPe933mZSpTwc42V5eXqdz6VbK2+6PmlhaHz0o9IgcO0DmB5hfnsYIyF+juj6qjn00y2TVsVbUUAFNVOYctBx9XPbgcM+C4Jqq3m1ajuFvIwIZ3Bv9UnI+4hc+iaji50X0bDfSsFJRrLp2kYiIvaPHCIiAIiIAiIgCIiAKV01f7np2skq7XMyOSRmx+9gcC3OcYKilZ/5M089JTztuDba+dgcxlcMRPyPyZW5b7nYIWVaVNLVqbGa0YzbvDajQ1XqGt1JXxVteyFs0cQi/FAgEAk5x71EM2h7S4Zbn2gO0Kxy6H1MG76e3trY8Z30s7JW/cVqu0nqZrtrtP3LP6gqlOrQjFRjJWXaWqU60pa0ou/cat+utTeLg6rqcDDQyNg5RsAw1o8go9WCPRmpXDdLbHUrfzqmVkQH7RW1TaWt8RAumqbZC7tipM1Mh8PZ4Iq9GCtF/DP5B0as3dr45fMhbhdaiqtlDbRllLRsO1g/Ke45c895/cuvWDpVsJtMEVcyrirGRhjo44S/cQMZBHeqxbdNWhrRJR6ZvV2A5TXCQUdP8Dxwp2hprm0mOir7NaGjgYrPQGplHnJjGV5eLnh6sVFrZ222/F+R6WFjXpNyT29n/i8zHf9X6uvMRp9MaeuVNC7h6Q+I9YR4Z4N8+KrelbJrSxahjvJtTpZRvEjZqljTIHDByS7PPB9yttTYo5RuutfqOrzz9LuEdKz9nOcLWbp3SW7DrfbHHt667ySn/KCsadenCDhCKs9uV/qjadGpOanJu62Z2+jKjr6x671bHKbhRHLonxRildG/qg7uAPH3rmtp6JbZRTmDVN61JaePsyNo2bB554/DK7xJprSW7aKO0xHHAx3SaM/EtwsjLA+OMttN1ukTO1kdZHXxHzY7B+5UrPD14qNSOS2ZWt5v5CNOrTk5Rd2/wCv0XzOeWvoR0NURg0/SVWyNIA2mRjOGc4xkdqkpegvSbYj1nSFXBnaTUMI/iW1e9Ntl6z0mlg3t4uqrfERt8ZaY+0B3lvJV2HTNS2cuq+ripMgMqI29YJ88hEBxeT3Dl24WEdDYOotbWsWljq0MnBMh9VdGWhqCN7YNd3y41BGGsgYxzc+Ljw/eoXR3RleYNRW++Ws3asNFUsna00w2Pwc7S7hgEcPeuw2bTtWxwjt9JFbXDnJLF6XW/sj2IvJSk+nIJXD6ZutdUEcxV3dkI9zGZwtI4TBUVZRu+3PyVl5lXPEVHfZ3et35FWtun9U22/su9tssVM9khfFDLUxuDMgjHFwJHFS2pH9J15ojS1NAPRj9eOl2Hd54JKkY9KaSLc+jWt+OGTdJ3Z94avW6b0tndTxQxub2098LDnyeAuqWKjKSk1mt8f8jOOGkouKdk+3/ErVn1BrbSFIyh+jpYqSMlwZUUZxx4n2gqZWTOqauaocAHSvc9wHIEnK7PDZq6nZm233U1M3sBdHWxe/BJwtGtoaypeYq+m01fnciJGGhqfvAytaWMpxk5KKu9tsvnl5mVXCVJRUXJ2Wy+fr5HMbDc5bRX+nU7Qahkb2wuP5DnDG7zAJXzZblLbb5SXYDrpKedsxDj9fByfirnc9LWEZNTQahsBPbJB6VAP7zeOFCTaT6x3/ACu/2WuHY01Ihk/ZfhdscRQqJt5Xy+2sjldCtCyXR97Np1D1r6YFEJNtaZS3jEIeIPdk8FQNZdI13vrHUtIPo+hdwLGOy+QfpO7vAKGk0dqiPlZKmVv50OJAf2SV8M0lql7sN09cs+MBC56OEwVJ6yafe0b1sXjKq1Wmu5GxozVtbpcV3osMcxqmNAEh4McPysdvNQ93uNZdrjLX18vW1Epy520Dy4BTf8iL3E3fcTQ2yPtdWVTGfcCSVgvNiht1oFXHNNW73hgnbGYoc/obvaf5gABdMZ4flNaOcnl9s5pRr8nqy2IgERF1nKEREAREQBERAEREBt2b0A3Sn+kZZIqUPBkcxm52Bx4DtXRanXGmnEtfDNI1/B01LD1Rd2e3E7LHKp6W1dVWCjkpYLZbapr37t08O53lnuUz6zq/7CsvyF52JoTrTu4XS/7JfQ9DDVYUoW17N9lzLJdtDbt8UTN+c7m0ctO739U8D7l8m+6RzxbWvHc6uqsfDKx+s64fYNl+Qg6Trh9hWUf4Cx5rV6r8Xobc4pdZeH1M0N50G0hxttECO2WmmqD/AJ3YW6Nc2GkPV0TqpjO+npI6Vg94Dnn3KNPSbX/YVlP+AvPWbX/YFl+QqvBzl+aDf9y4ErEwWyaX9r4ks3WOmpXh9RVyB+frGidUP/alcR9yyT6/04XdUw3WrZj61TKY4h5Mjx+5QvrOuB/8DZfkL31m1/2DZfkKvMJdR+JcC3PI9deF8Sbi1tpkEFs0VN+ptQe79p5P7luM19pf/wCS+X93gyJsY+DQFWPWdcPsGy/IT1nXD7CsvyFH4fLqPxLgSscl+tfB8S1O19pEjH0tqEe8n960KnV2jZiT9I3F7u+a3xvPxwD96hB0nXD7CsvyE9Z1w+wrL8hFo+S/Q/EuAeOi9s14XxNuv1jaWtaaWuqJiziwOhe0t/qkk7T5OC0ma0oWFskVCYZyXdbMzI3A/mgY2Z5u24zhejpOrzx+gLL8hB0nXD6v0DZcfqFqsJJK3J/yXAyeJi3/ALn8fUkKbV9gMDY6m4zNb+Yyjc5o8m5a3/KVIU2stHQtw253dh//AAo44v4WqA9Z1w+wbL8hPWdcPsGy/IWbwMn+h+JcDSOMhH9a8L4lp/l9pENwLtqLPfucsc2vdMubht7vRHdNSMlH+YKtes64Yz9BWX5Ces64fYVl+Qq/h0uo/EuBbn666+D4kxJrXTA9sNp6gjmfo91O8/3mO/0X3Fr7TVRE6Oaa8Uo7GPDaqI+Qfk/uUJ6zrh22Gy/IT1m1/wBgWX5CtzCXUfiXArz2PXXhfElv5bWCn40lTMD3wxSUx+DS5v3Lz+W+nK1hNcZH/oVltinJ/vN2lRXrNuH2DZfkLz1m14/8DZfkKVgZdR3/AHLgQ8XF/r/i+JtHUOiGnLbXRjxiing+5rl6dTaQcNppOHjPVOHw3LU9Z1w+wbL8hPWdcPsGy/IVuaVOq/F6Ec5p9ZeH1N6DUmi6b8dBEIpBy9GtoMh8pJXOwva7VmmbpbqmkqOupWTs2ve6F1RUOxyy88GjOOAWh6zq/P8AMFlz+oXvrNr/ALCsp/wFHM53vqO/7lwHOoWtrq37XxKGcZOCDx5jtXinNV6jn1FLA+egoaUwggejRbS7Pf3qDXrQcnG8lZnlTUVK0XdBERXKhERAEREAXo5rxEBPzW+ip9N0t1MRnkmiLCwOOI3l7gJH+4YA5EgrI220P09dKXqfxUDowxu4+yDKxp+4lQ0dwq42hjJiGCEwbdoIMZJO0g8+JJWWS73J7GMdUnDHNcDsbuJb9Xc7GXYxwyVzcnVzzOjXp7iVfZqU1FwnpQ6ahjil2bj7cMjXABr8e/B7R5L7qbJQ/S1YaLdLRwNnZJG52XQPaxxbkjm0kZB9xUBHXVcclS+Od7TUgiYDk8E54jzX0y4VrKyerbUPbNUNe2VzeG8OHEEdyjkqvWHKU+qT1BbbZXVVCynihFMXBk8rpnh7HGJx/GtPL2gSCOGAsFLaopr+23top3w0bC+pcP8AqTgccjsG7gG47Co43q5Ex5qT+L5EMaC72S3LjjLjgkZOVidcq19EKN0x6kMawANGdoOQ3PMgHsyoVKrv+95LqU30fe4sEFmoKKS4xXKOHZBVRMbJLK5jmxPa52W7ebsAcOPJVgQyuifNHFI6BjsOk28Bnlk9iyzV9XLRspJJi6Fm3a3A4bc7ePPhuPxWvk95WtKE43cndszqTjKyiiw1dtoxp2OeCKEVYpYpiGSuMjtzyHEsPDbywR3rcOmoqavs7J6eTq3TNgrOsOGueRuyCOTcHb5tKgY71co4IoWTsDYg1rSIWbsNO4AnGSM8cHgsVJcq2klklp6hzHyPD3kgOy4HIPHtz+9ZclWs/a3+fA15SlfYT8tjopKmtpxtp546ZgayN5fGKlxJDQ48S0tHPvPBItP0baamE7wyb0SodVGQkCGUNa9gOO5ruPjlQJudc6GKJ1Q4siLSwYGQW528cZOMnHcvfpS4f8TmpJNS575S4AlxcMOOfEJyVbrDlaXVJQWqibT0xL4ql0lFVyulic7aXMJ288clvy222P1GLfTU9sdtbLiMTyAlwZlokJOBx7lXae51MFGaYCNw2PjY9zcuY15y8NPj45X1VXm4VTy+WWLeWuaXsgYxzg4YOSACeHeolRqt7d/SFVppbNxJVEdrggvDY7bDM6ldG1j5JJMtLjtcMZGQDnGR5r7utFbrZViJtHFP6RUSMj6+dzI4mtIGMgjjzOSeHBQc9fVz9d1s27rwwSktGX7fq58fFZ23m4tkld6QHda/e5r42vbuxjcA4EA+IVlSqLp83uX1I5WD6PJElWWWnjgBlqKWhk9LLcSzF4MZYxwAc0EH63PxWxeaG10FHI6OGg6z0ioazrZJOsc1jwAGgHHLvVcnrKqZoEs75MSmXLuJ3kAE/cFszXi4TQPgmkika9znEup2FwLjl2HEZGT3FOSq5XkOVp2eRm1A2mM1HFRW+GndLTRTOETnuLnPbnHtE9vJYrZRNNTVCujkApIXTPh+q5xGBt8OeT4LSnnlncx0rtxZG2NvDk1owAvaaonpp2z08r4pW8ntPH/3zWsYSUNW+Zk5Rc72J6x0luus8Uooo6cR1DY5GCV3VStc15AyTkEbeODy7lnZR2F1BLUObSNjEjGSuE7yIyY3Fwh/POQOY7/NQkl2r3yRSde1nVEujayJrGAkYJ2tAGSO1avXSCkNLu/EmTrNuPysYz8Fk6M5P81l3mqqwS2XJqO3UE96ltXCB0sML4JSSQx3Vte4EdxG734XyIrXVUlSLdSsNQTIYo5ZXNeY2t9l0fY48CXA+5aEt2rpJ4Z3ys62Fu1jxE0Oxt28SB7XDhxyvinuVbBRGjim2wkOGNoJaHDDg12MtyOeDxR0qmTvu6fvsI5SG4nzY6KS+QR0gdJAwxirgc47mbmA7h2lhJ9x5rG6z211sBL/AEaoeKcRSOd7G98RcQ7uBI59h8FCR3KujuH0hHUvZVDAEjcA4xtx5Y4L4nraqen9HllLohsw3A/Ibtb8AcKFSq3XtbieVp2fsk1VWynttujrquic+ZkUTHwPcWjrHF+XOxxxhoAAIyVH3ulbAaeZlPFBHPGXNENSJmEg4ODzHdg54r4Zd7iyRrxVOcWxCEB4DwYxyaQcgjzWvW1dTWSiWpl3uA2t4ABo7AAOAHktKcKileT+ZWc4NWSMCIi3MAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIqvqmrqoLlEyGpmiaQMhkhA+5WWnJMEZJJJaMk+Sqnd2Jasrn2iIrEBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQH//Z" alt="Madina Institute" class="logo-img">
+    <div class="eyebrow">Madina Institute — Elevadministrasjon</div>
+    <h1>Søknadsskjema</h1>
+    <div class="sub">For skoleåret — vennligst fyll ut alle relevante felt. Søknaden gjennomgås av administrasjonen før endelig opptak.</div>
   </div>
-  <button class="side-switch" id="sideSwitchBtn" onclick="showSideChoice()" style="display:none;">🏠 Bytt side</button>
-</header>
 
-<!-- SIDE CHOICE -->
-<div id="sideChooseView">
-  <div class="wrap">
-    <div class="side-grid">
-      <div class="side-card" onclick="selectSide('eier')">
-        <h2>Eier / Ledelsen</h2>
-        <p>Ledelse · Møtereferater · Kasse/Økonomi</p>
-      </div>
-      <div class="side-card" onclick="selectSide('admin')">
-        <h2>Administrativ</h2>
-        <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Rapporter · Oversikt</p>
-      </div>
-      <div class="side-card" onclick="selectSide('pedagogisk')">
-        <h2>Pedagogisk</h2>
-        <p>Oppmøte · Timeforberedelser</p>
-      </div>
-    </div>
-  </div>
-</div>
+  <form id="paameldingsForm">
 
-<div class="tabs" id="tabsBar" style="display:none;">
-  <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
-  <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
-  <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
-  <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
-  <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
-  <div class="tab" data-tab="students" data-side="admin">Elever</div>
-  <div class="tab" data-tab="classes" data-side="admin">Klasser</div>
-  <div class="tab" data-tab="hours" data-side="admin">Timeplan</div>
-  <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
-  <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
-  <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
-  <div class="tab" data-tab="overview" data-side="admin">Oversikt</div>
-</div>
-
-<main id="mainContent" style="display:none;">
-
-  <!-- REPORTS -->
-  <div class="panel" id="panel-reports">
-    <div class="report-header-print"><img src="data:image/jpeg;base64,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" alt="Madina Institute" style="height:44px; display:block; margin:0 auto 8px;">Madina Skole — Full rapport</div>
-    <div class="report-toolbar">
-      <button class="btn btn-primary" onclick="window.print()">🖨 Skriv ut / Lagre som PDF</button>
-      <button class="btn btn-ghost" onclick="exportFullCSV()">Eksporter alt (CSV)</button>
-    </div>
-
-    <div class="stat-grid">
-      <div class="stat-card"><div class="n" id="repStatTeachers">0</div><div class="l">Lærere</div></div>
-      <div class="stat-card"><div class="n" id="repStatStudents">0</div><div class="l">Elever</div></div>
-      <div class="stat-card"><div class="n" id="repStatHours">0</div><div class="l">Timeoppføringer</div></div>
-      <div class="stat-card"><div class="n" id="repStatDate">—</div><div class="l">Generert</div></div>
-    </div>
-
-    <div class="report-grid">
-      <div class="report-card">
-        <h3>Elever per program</h3>
-        <div class="sub">Fordeling av påmeldte elever</div>
-        <div id="repStudentsByProgram"></div>
-      </div>
-      <div class="report-card">
-        <h3>Elever per klasse</h3>
-        <div class="sub">Antall elever i hver klasse</div>
-        <div id="repStudentsByClass"></div>
-      </div>
-      <div class="report-card">
-        <h3>Lærere per fag</h3>
-        <div class="sub">Fordeling av lærere etter fagområde</div>
-        <div id="repTeachersBySubject"></div>
-      </div>
-      <div class="report-card">
-        <h3>Lærere per dag</h3>
-        <div class="sub">Hvilke dager lærerne underviser</div>
-        <div id="repTeachersByDay"></div>
-      </div>
-      <div class="report-card">
-        <h3>Timeplan per dag</h3>
-        <div class="sub">Antall timeoppføringer per dag</div>
-        <div id="repHoursByDay"></div>
-      </div>
-      <div class="report-card">
-        <h3>Timeplan per fag</h3>
-        <div class="sub">Antall timeoppføringer per fag</div>
-        <div id="repHoursBySubject"></div>
-      </div>
-    </div>
-
-    <div class="report-grid" style="margin-top:20px;">
-      <div class="report-card">
-        <h3>Betalingsstatus</h3>
-        <div class="sub">Rask oversikt over betalte og ubetalte elever</div>
-        <div id="repPaymentStatus"></div>
-      </div>
-      <div class="report-card">
-        <h3>Hurtigrapporter — betaling</h3>
-        <div class="sub">Åpne en ferdig filtrert liste med datoer</div>
-        <div class="modal-actions" style="justify-content:flex-start;">
-          <button class="btn btn-primary" onclick="quickPaymentReport('Ja')">Vis betalte elever</button>
-          <button class="btn btn-ghost" onclick="quickPaymentReport('Nei')">Vis ikke-betalte elever</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="report-card" style="margin-top:20px;">
-      <h3>Egendefinert rapport</h3>
-      <div class="sub">Bygg din egen rapport med flere filtre og sortering</div>
-
-      <div class="field-row-2">
-        <div class="field">
-          <label>1. Velg datatype</label>
-          <select id="customType"></select>
-        </div>
-        <div class="field">
-          <label>2. Visningsmodus</label>
-          <select id="customMode">
-            <option value="list">Liste over rader</option>
-            <option value="grouped">Gruppert antall (f.eks. antall per fag)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="field" id="customColumnsWrap">
-        <label>3. Velg hvilke kolonner som skal vises</label>
-        <div id="customFieldsCheckboxes" class="check-row"></div>
-      </div>
-
-      <div class="field" id="customGroupWrap" style="display:none;">
-        <label>3. Grupper etter felt</label>
-        <select id="customGroupField"></select>
-      </div>
-
+  <!-- 1: ELEVEN -->
+  <div class="card">
+    <div class="tag"><span class="num">01</span> Elevopplysninger</div>
+    <h2 class="title">Informasjon om eleven</h2>
+    <hr class="rule">
+    <div class="grid2">
+      <div class="field"><label>Fullt navn</label><input type="text" name="elev_navn" required></div>
+      <div class="field"><label>Fødselsnummer (11 siffer)</label><input type="text" name="elev_fnr" maxlength="11" pattern="[0-9]{11}"></div>
+      <div class="field"><label>Fødselsdato</label><input type="date" name="elev_fdato"></div>
       <div class="field">
-        <label>4. Filtre <span style="font-weight:400; color:#8a9a90;">(alle betingelser må stemme)</span></label>
-        <div id="customFiltersList"></div>
-        <button class="btn btn-ghost" style="margin-top:8px;" onclick="addFilterRow()">+ Legg til filter</button>
-      </div>
-
-      <div class="field-row-2">
-        <div class="field">
-          <label>5. Sorter etter</label>
-          <select id="customSortField"><option value="">— Ingen sortering —</option></select>
-        </div>
-        <div class="field">
-          <label>Retning</label>
-          <select id="customSortDir">
-            <option value="asc">Stigende (A→Å / lavest→høyest)</option>
-            <option value="desc">Synkende (Å→A / høyest→lavest)</option>
-          </select>
+        <label>Kjønn</label>
+        <div class="radio-row">
+          <label><input type="radio" name="kjonn" value="gutt"> Gutt</label>
+          <label><input type="radio" name="kjonn" value="jente"> Jente</label>
         </div>
       </div>
-
-      <div class="modal-actions" style="justify-content:flex-start; margin-top:10px;">
-        <button class="btn btn-primary" onclick="generateCustomReport()">Generer rapport</button>
-        <button class="btn btn-ghost" id="exportCustomBtn" style="display:none;" onclick="exportCustomReport()">Eksporter denne rapporten (CSV)</button>
-      </div>
-
-      <div id="customReportOutput" style="margin-top:18px;"></div>
+      <div class="field"><label>Skole (grunnskole)</label><input type="text" name="grunnskole"></div>
+      <div class="field"><label>Klassetrinn</label><input type="text" name="klassetrinn"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Adresse</label><input type="text" name="adresse"></div>
+      <div class="field"><label>Postnummer og sted</label><input type="text" name="postnr_sted"></div>
     </div>
   </div>
 
-  <!-- OVERVIEW -->
-  <div class="panel" id="panel-overview">
-    <div class="stat-grid">
-      <div class="stat-card"><div class="n" id="statTeachers">0</div><div class="l">Lærere</div></div>
-      <div class="stat-card"><div class="n" id="statStudents">0</div><div class="l">Elever</div></div>
-      <div class="stat-card"><div class="n" id="statHours">0</div><div class="l">Timeplanoppføringer</div></div>
-      <div class="stat-card"><div class="n" id="statPrograms">3</div><div class="l">Programmer</div></div>
-    </div>
-    <p style="font-family:'Jost',sans-serif; font-size:13px; color:#5a6860;">
-      Denne siden er koblet til en delt database (Firebase). Alle endringer synkroniseres automatisk
-      og vises umiddelbart hos alle som har siden åpen — uansett enhet.
-    </p>
-    <div class="report-card" style="margin-top:20px;">
-      <h3>Eksempeldata for demo</h3>
-      <div class="sub">Fyll databasen med realistiske eksempeloppføringer (lærere, foresatte, klasser, elever, timeplan og oppmøte)</div>
-      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
-        Nyttig før et møte eller en demonstrasjon. Dette legger til nye oppføringer — det sletter eller endrer ikke eksisterende data.
-      </p>
-      <button class="btn btn-primary" onclick="seedDemoData()">Last inn eksempeldata</button>
-    </div>
-
-    <div class="report-card" style="margin-top:20px;">
-      <h3>Sikkerhetskopi</h3>
-      <div class="sub">Beskytt dere mot utilsiktet sletting — last ned eller send hele databasen jevnlig</div>
-      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
-        Inneholder alt: lærere, foresatte, elever, klasser, timeplan og oppmøte, i ett samlet dokument.
-      </p>
-      <div class="modal-actions" style="justify-content:flex-start;">
-        <button class="btn btn-primary" onclick="exportFullCSV()">Last ned full backup</button>
-        <button class="btn btn-ghost" onclick="emailFullBackup()">Send backup på e-post</button>
-      </div>
-
-      <hr class="divider">
-
-      <h3 style="margin-top:0;">Gjenopprett fra backup</h3>
-      <div class="sub">Last opp backup-filen (.csv), eller lim inn teksten fra e-posten under</div>
-
+  <!-- 2: FORESATTE -->
+  <div class="card">
+    <div class="tag"><span class="num">02</span> Foresatte</div>
+    <h2 class="title">Informasjon om foresatte</h2>
+    <hr class="rule">
+    <p class="hint">Foresatt 1</p>
+    <div class="grid2">
+      <div class="field"><label>Navn</label><input type="text" name="foresatt1_navn"></div>
       <div class="field">
-        <label>Last opp backup-fil</label>
-        <input type="file" id="restoreFile" accept=".csv,.txt" onchange="handleRestoreFile(this)">
+        <label>Relasjon til eleven</label>
+        <div class="radio-row">
+          <label><input type="radio" name="foresatt1_relasjon" value="mor"> Mor</label>
+          <label><input type="radio" name="foresatt1_relasjon" value="far"> Far</label>
+          <label><input type="radio" name="foresatt1_relasjon" value="annet"> Annet</label>
+          <input type="text" name="foresatt1_relasjon_annet" placeholder="Spesifiser" style="flex:1; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:'Lora',serif;">
+        </div>
+      </div>
+      <div class="field"><label>Telefon</label><input type="tel" name="foresatt1_tlf"></div>
+      <div class="field"><label>E-post</label><input type="email" name="foresatt1_epost"></div>
+    </div>
+
+    <hr class="divider">
+    <p class="hint">Foresatt 2 (valgfritt)</p>
+    <div class="grid2">
+      <div class="field"><label>Navn</label><input type="text" name="foresatt2_navn"></div>
+      <div class="field">
+        <label>Relasjon til eleven</label>
+        <div class="radio-row">
+          <label><input type="radio" name="foresatt2_relasjon" value="mor"> Mor</label>
+          <label><input type="radio" name="foresatt2_relasjon" value="far"> Far</label>
+          <label><input type="radio" name="foresatt2_relasjon" value="annet"> Annet</label>
+          <input type="text" name="foresatt2_relasjon_annet" placeholder="Spesifiser" style="flex:1; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:'Lora',serif;">
+        </div>
+      </div>
+      <div class="field"><label>Telefon</label><input type="tel" name="foresatt2_tlf"></div>
+      <div class="field"><label>E-post</label><input type="email" name="foresatt2_epost"></div>
+    </div>
+  </div>
+
+  <!-- 3: NØDINFORMASJON -->
+  <div class="card">
+    <div class="tag"><span class="num">03</span> Beredskap</div>
+    <h2 class="title">Nødinformasjon</h2>
+    <p class="hint">Hvem skal kontaktes ved nødstilfelle dersom foresatte ikke kan nås?</p>
+    <hr class="rule">
+    <div class="grid3">
+      <div class="field"><label>Navn</label><input type="text" name="nod_navn"></div>
+      <div class="field"><label>Telefon</label><input type="tel" name="nod_tlf"></div>
+      <div class="field"><label>Relasjon</label><input type="text" name="nod_relasjon"></div>
+    </div>
+  </div>
+
+  <!-- 4: HELSEINFORMASJON -->
+  <div class="card">
+    <div class="tag"><span class="num">04</span> Helse</div>
+    <h2 class="title">Helseinformasjon</h2>
+    <hr class="rule">
+
+    <div class="field">
+      <label>Har barnet allergier?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="allergi" value="nei"> Nei</label>
+        <label><input type="radio" name="allergi" value="ja"> Ja</label>
+      </div>
+      <textarea name="allergi_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Har barnet sykdommer eller medisinske forhold skolen bør kjenne til?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="sykdom" value="nei"> Nei</label>
+        <label><input type="radio" name="sykdom" value="ja"> Ja</label>
+      </div>
+      <textarea name="sykdom_beskriv" placeholder="Beskriv" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Bruker barnet medisiner?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="medisin" value="nei"> Nei</label>
+        <label><input type="radio" name="medisin" value="ja"> Ja</label>
+      </div>
+      <textarea name="medisin_hvilke" placeholder="Hvilke?" rows="2" style="margin-top:8px;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Andre opplysninger</label>
+      <textarea name="helse_annet" rows="2"></textarea>
+    </div>
+  </div>
+
+  <!-- 5: PROGRAM, DAG OG FAG (highlighted core section) -->
+  <div class="card">
+    <div class="tag"><span class="num">05</span> Påmelding</div>
+    <h2 class="title">Ønsket program, dag og fag</h2>
+    <p class="hint">Kryss av for programmet(ene) eleven skal delta på. Det er mulig å velge flere.</p>
+    <hr class="rule">
+
+    <div class="program-opts">
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="madina_islamske_skole">
+        <div class="p-body">
+          <div class="p-title">Madina Islamske Skole</div>
+          <div class="p-meta">LØRDAG · 09:00–13:00</div>
+          <div class="p-sub">Hovedprogrammet — Koran og Islam.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="sprak_arabisk">
+        <div class="p-body">
+          <div class="p-title">Tilleggsprogram i språk — Arabisk</div>
+          <div class="p-meta">SØNDAG · 09:00–12:00</div>
+          <div class="p-sub">Frivillig språkprogram basert på læreverket Al-Mutammim.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="sprak_urdu">
+        <div class="p-body">
+          <div class="p-title">Tilleggsprogram i språk — Urdu</div>
+          <div class="p-meta">SØNDAG · 09:00–12:00</div>
+          <div class="p-sub">Frivillig språkprogram med egen læreplan.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="madinabarn">
+        <div class="p-body">
+          <div class="p-title">Madinabarn</div>
+          <div class="p-meta">SØNDAG · 10:30–12:15 · 3–6 ÅR</div>
+          <div class="p-sub">Introduksjonsprogram for de yngste barna.</div>
+        </div>
+      </label>
+
+      <label class="prog-opt">
+        <input type="checkbox" name="program" value="ekstra_koran_hifz">
+        <div class="p-body">
+          <div class="p-title">Ekstra Koran / Hifz-program</div>
+          <div class="p-meta">ETTER AVTALE</div>
+          <div class="p-sub">For elever som ønsker fordypning og memorering av Koranen.</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="note-box">Merk: Eleven kan velge kun ett språk i tilleggsprogrammet (Arabisk eller Urdu).</div>
+  </div>
+
+  <!-- 6: TIDLIGERE UNDERVISNING -->
+  <div class="card">
+    <div class="tag"><span class="num">06</span> Bakgrunn</div>
+    <h2 class="title">Tidligere islamsk undervisning</h2>
+    <hr class="rule">
+    <div class="field">
+      <label>Har barnet tidligere gått på islamsk skole?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="tidligere_skole" value="ja"> Ja</label>
+        <label><input type="radio" name="tidligere_skole" value="nei"> Nei</label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Navn på skole (hvis ja)</label><input type="text" name="tidligere_skole_navn"></div>
+      <div class="field"><label>Hvor mange år?</label><input type="text" name="tidligere_skole_ar"></div>
+    </div>
+    <div class="field">
+      <label>Hva har barnet studert?</label>
+      <div class="check-row">
+        <label><input type="checkbox" name="tidligere_studert" value="koran"> Koran</label>
+        <label><input type="checkbox" name="tidligere_studert" value="islam"> Islam</label>
+        <label><input type="checkbox" name="tidligere_studert" value="arabisk"> Arabisk</label>
+        <label><input type="checkbox" name="tidligere_studert" value="tajwid"> Tajwīd</label>
+        <label><input type="checkbox" name="tidligere_studert" value="hifz"> Hifz</label>
+        <label><input type="checkbox" name="tidligere_studert" value="annet"> Annet</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7-9: KARTLEGGING (nivåvurdering) -->
+  <div class="card">
+    <div class="tag"><span class="num">07–09</span> Nivåvurdering</div>
+    <h2 class="title">Kartlegging av barnets nåværende nivå</h2>
+    <p class="hint">Denne foreløpige kartleggingen hjelper oss å plassere eleven riktig ved oppstart. En fullstendig nivåtest gjennomføres av læreren i forbindelse med skolestart.</p>
+    <hr class="rule">
+
+    <div class="kartlegging-block">
+      <h4>Koran</h4>
+      <div class="grid2">
+        <div class="field">
+          <label>Kan barnet lese Koranen?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_lese" value="ja"> Ja</label>
+            <label><input type="radio" name="koran_lese" value="litt"> Litt</label>
+            <label><input type="radio" name="koran_lese" value="nei"> Nei</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Har barnet lært Qaida?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_qaida" value="ja"> Ja</label>
+            <label><input type="radio" name="koran_qaida" value="nei"> Nei</label>
+          </div>
+          <input type="text" name="koran_qaida_hvilken" placeholder="Hvilken Qaida?" style="margin-top:8px;">
+        </div>
+        <div class="field">
+          <label>Kan barnet lese med tajwīd?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_tajwid" value="ja"> Ja</label>
+            <label><input type="radio" name="koran_tajwid" value="delvis"> Delvis</label>
+            <label><input type="radio" name="koran_tajwid" value="nei"> Nei</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Har barnet memorert deler av Koranen?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="koran_memorert" value="nei"> Nei</label>
+            <label><input type="radio" name="koran_memorert" value="ja"> Ja</label>
+          </div>
+        </div>
+        <div class="field"><label>Fra (sure/vers)</label><input type="text" name="koran_memorert_fra"></div>
+        <div class="field"><label>Til (sure/vers)</label><input type="text" name="koran_memorert_til"></div>
       </div>
       <div class="field">
-        <label>...eller lim inn backup-teksten direkte (f.eks. fra e-posten)</label>
-        <textarea id="restoreText" rows="5" placeholder="=== LÆRERE ===&#10;Fullt navn,Fag,..."></textarea>
-      </div>
-      <button class="btn btn-primary" onclick="restoreFromBackup()">Gjenopprett data</button>
-      <p style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin-top:10px;">
-        Merk: dette LEGGER TIL data — det overskriver ikke eksisterende oppføringer. Hvis dataene allerede finnes, bør du slette dem først i Faresonen under.
-      </p>
-    </div>
-
-    <div class="report-card danger-zone" style="margin-top:20px;">
-      <h3 style="color:var(--red);">Faresone — nullstill data</h3>
-      <div class="sub">Disse handlingene sletter data permanent og kan ikke angres</div>
-      <div class="danger-row">
-        <span>Slett alle lærere</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('teachers')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett alle foresatte</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('guardians')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett alle elever</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('students')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett alle klasser</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('classes')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett hele timeplanen</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('hours')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett all oppmøteregistrering</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('attendance')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett alle timeforberedelser</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('lessonPlans')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett alle ledelsesmedlemmer</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('ledelse')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett alle møtereferater</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('meetings')">Slett</button>
-      </div>
-      <div class="danger-row">
-        <span>Slett alle kasse-/økonomiposter</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('finances')">Slett</button>
-      </div>
-      <hr class="divider">
-      <div class="danger-row">
-        <span><strong>Nullstill HELE databasen</strong> (alt ovenfor på én gang)</span>
-        <button class="btn btn-danger-solid" onclick="clearAllData()">Slett alt</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- LEDELSE -->
-  <div class="panel" id="panel-ledelse">
-    <div class="toolbar">
-      <input class="search" id="searchLedelse" placeholder="Søk etter navn eller rolle...">
-      <span class="count-chip" id="countLedelse" onclick="toggleRecordsById('tableLedelse')">0 ledelsesmedlemmer</span>
-      <button class="btn btn-ghost" onclick="exportCSV('ledelse')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('ledelse')">+ Ny person</button>
-    </div>
-    <table class="records-hidden" id="tableLedelse">
-      <thead><tr>
-        <th>Navn</th><th>Rolle</th><th>Fagområde</th><th>Telefon</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyLedelse"></tbody>
-    </table>
-  </div>
-
-  <!-- MEETINGS -->
-  <div class="panel" id="panel-meetings">
-    <div class="toolbar">
-      <input class="search" id="searchMeetings" placeholder="Søk etter tema, dato eller referent...">
-      <span class="count-chip" id="countMeetings" onclick="toggleRecordsById('tableMeetings')">0 møtereferater</span>
-      <button class="btn btn-ghost" onclick="exportCSV('meetings')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('meetings')">+ Nytt møtereferat</button>
-    </div>
-    <table class="records-hidden" id="tableMeetings">
-      <thead><tr>
-        <th>Dato</th><th>Tema</th><th>Referent</th><th>Til stede (roller)</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyMeetings"></tbody>
-    </table>
-  </div>
-
-  <!-- FINANCES -->
-  <div class="panel" id="panel-finances">
-    <div class="report-grid" style="margin-bottom:20px;">
-      <div class="stat-card"><div class="n" id="finStatInn">0 kr</div><div class="l">Totalt innbetalt</div></div>
-      <div class="stat-card"><div class="n" id="finStatUt">0 kr</div><div class="l">Totalt utbetalt</div></div>
-      <div class="stat-card"><div class="n" id="finStatSaldo">0 kr</div><div class="l">Saldo (kassebeholdning)</div></div>
-    </div>
-    <div class="toolbar">
-      <input class="search" id="searchFinances" placeholder="Søk etter kategori, beskrivelse eller dato...">
-      <span class="count-chip" id="countFinances" onclick="toggleRecordsById('tableFinances')">0 poster</span>
-      <button class="btn btn-ghost" onclick="exportCSV('finances')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
-    </div>
-    <table class="records-hidden" id="tableFinances">
-      <thead><tr>
-        <th>Dato</th><th>Type</th><th>Kategori</th><th>Beløp</th><th>Beskrivelse</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyFinances"></tbody>
-    </table>
-  </div>
-
-  <!-- TEACHERS -->
-  <div class="panel active" id="panel-teachers">
-    <div class="toolbar">
-      <input class="search" id="searchTeachers" placeholder="Søk etter navn, fag eller telefon...">
-      <span class="count-chip" id="countTeachers" onclick="toggleRecordsById('tableTeachers')">0 lærere</span>
-      <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny lærer</button>
-    </div>
-    <table class="records-hidden" id="tableTeachers">
-      <thead><tr>
-        <th>Navn</th><th>Fag</th><th>Dager</th><th>Telefon</th><th>E-post</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyTeachers"></tbody>
-    </table>
-  </div>
-
-  <!-- GUARDIANS -->
-  <div class="panel" id="panel-guardians">
-    <div class="toolbar">
-      <input class="search" id="searchGuardians" placeholder="Søk etter navn eller telefon...">
-      <span class="count-chip" id="countGuardians" onclick="toggleRecordsById('tableGuardians')">0 foresatte</span>
-      <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('guardians')">+ Ny foresatt</button>
-    </div>
-    <table class="records-hidden" id="tableGuardians">
-      <thead><tr>
-        <th>Navn</th><th>Telefon</th><th>E-post</th><th>Antall barn</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyGuardians"></tbody>
-    </table>
-  </div>
-
-  <!-- STUDENTS -->
-  <div class="panel" id="panel-students">
-    <div class="toolbar">
-      <input class="search" id="searchStudents" placeholder="Søk etter navn, klasse eller foresatt...">
-      <span class="count-chip" id="countStudents" onclick="toggleRecordsById('tableStudents')">0 elever</span>
-      <button class="btn btn-ghost" onclick="exportCSV('students')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('students')">+ Ny elev</button>
-    </div>
-    <table class="records-hidden" id="tableStudents">
-      <thead><tr>
-        <th>Navn</th><th>Program</th><th>Klasse</th><th>Foresatt</th><th>Betalt</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyStudents"></tbody>
-    </table>
-  </div>
-
-  <!-- CLASSES -->
-  <div class="panel" id="panel-classes">
-    <div class="toolbar">
-      <input class="search" id="searchClasses" placeholder="Søk etter klassenavn...">
-      <span class="count-chip" id="countClasses" onclick="toggleRecordsById('tableClasses')">0 klasser</span>
-      <button class="btn btn-ghost" onclick="exportCSV('classes')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('classes')">+ Ny klasse</button>
-    </div>
-    <table class="records-hidden" id="tableClasses">
-      <thead><tr>
-        <th>Klassenavn</th><th>Trinn/Alder</th><th>Program</th><th>Merknad</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyClasses"></tbody>
-    </table>
-  </div>
-
-  <!-- HOURS -->
-  <div class="panel" id="panel-hours">
-    <div class="toolbar">
-      <input class="search" id="searchHours" placeholder="Søk etter dag, fag eller lærer...">
-      <span class="count-chip" id="countHours" onclick="toggleRecordsById('tableHours')">0 oppføringer</span>
-      <button class="btn btn-ghost" onclick="toggleWeekView()">Vis ukeplan</button>
-      <button class="btn btn-ghost" onclick="seedStandardTimeplan()">Last inn standard timeplan</button>
-      <button class="btn btn-ghost" onclick="exportCSV('hours')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('hours')">+ Ny time</button>
-    </div>
-
-    <div class="report-grid" id="weekView" style="display:none; margin-bottom:22px;">
-      <div class="report-card">
-        <h3>Lørdag</h3>
-        <div class="sub">Sortert etter klokkeslett</div>
-        <div id="weekLordag"></div>
-      </div>
-      <div class="report-card">
-        <h3>Søndag</h3>
-        <div class="sub">Sortert etter klokkeslett</div>
-        <div id="weekSondag"></div>
+        <label>Har barnet ijāzah eller deltatt i Hifz-program?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="koran_ijazah" value="ja"> Ja</label>
+          <label><input type="radio" name="koran_ijazah" value="nei"> Nei</label>
+        </div>
       </div>
     </div>
 
-    <table class="records-hidden" id="tableHours">
-      <thead><tr>
-        <th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th><th>Klasse/Gruppe</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyHours"></tbody>
-    </table>
-  </div>
-
-  <!-- ATTENDANCE -->
-  <div class="panel" id="panel-attendance">
-    <div class="report-card">
-      <h3>Ta oppmøte</h3>
-      <div class="sub">Velg dato og klasse, kryss av for hver elev, og lagre</div>
-      <div class="field-row-2">
+    <div class="kartlegging-block">
+      <h4>Arabisk</h4>
+      <div class="grid2">
         <div class="field">
-          <label>Dato</label>
-          <input type="date" id="attDate">
+          <label>Har barnet tidligere lært arabisk?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="arabisk_tidligere" value="ja"> Ja</label>
+            <label><input type="radio" name="arabisk_tidligere" value="nei"> Nei</label>
+          </div>
         </div>
+        <div class="field"><label>Hvor mange år?</label><input type="text" name="arabisk_ar"></div>
+      </div>
+      <div class="field">
+        <label>Ferdigheter</label>
+        <div class="grid2" style="margin-top:6px;">
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Lese</span>
+            <div class="radio-row"><label><input type="radio" name="ar_lese" value="ja">Ja</label><label><input type="radio" name="ar_lese" value="litt">Litt</label><label><input type="radio" name="ar_lese" value="nei">Nei</label></div>
+          </div>
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Skrive</span>
+            <div class="radio-row"><label><input type="radio" name="ar_skrive" value="ja">Ja</label><label><input type="radio" name="ar_skrive" value="litt">Litt</label><label><input type="radio" name="ar_skrive" value="nei">Nei</label></div>
+          </div>
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Forstå</span>
+            <div class="radio-row"><label><input type="radio" name="ar_forsta" value="ja">Ja</label><label><input type="radio" name="ar_forsta" value="litt">Litt</label><label><input type="radio" name="ar_forsta" value="nei">Nei</label></div>
+          </div>
+          <div>
+            <span style="font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink);">Snakke</span>
+            <div class="radio-row"><label><input type="radio" name="ar_snakke" value="ja">Ja</label><label><input type="radio" name="ar_snakke" value="litt">Litt</label><label><input type="radio" name="ar_snakke" value="nei">Nei</label></div>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>Hvilken bok eller hvilket nivå har barnet kommet til?</label><input type="text" name="arabisk_niva"></div>
+    </div>
+
+    <div class="kartlegging-block">
+      <h4>Urdu <span style="font-weight:400; text-transform:none; letter-spacing:0; font-family:'Lora',serif; font-size:12.5px; color:#5a6860;">(kun dersom barnet skal delta)</span></h4>
+      <div class="grid2">
         <div class="field">
-          <label>Klasse/Gruppe (valgfritt filter)</label>
-          <select id="attClassFilter"><option value="">— Alle elever —</option></select>
+          <label>Har barnet lært urdu tidligere?</label>
+          <div class="radio-row">
+            <label><input type="radio" name="urdu_tidligere" value="ja"> Ja</label>
+            <label><input type="radio" name="urdu_tidligere" value="nei"> Nei</label>
+          </div>
+        </div>
+        <div class="field"><label>Hvor mange år?</label><input type="text" name="urdu_ar"></div>
+      </div>
+      <div class="field">
+        <label>Ferdigheter</label>
+        <div class="check-row">
+          <label><input type="checkbox" name="urdu_ferdighet" value="lese"> Lese</label>
+          <label><input type="checkbox" name="urdu_ferdighet" value="skrive"> Skrive</label>
+          <label><input type="checkbox" name="urdu_ferdighet" value="forsta"> Forstå</label>
+          <label><input type="checkbox" name="urdu_ferdighet" value="snakke"> Snakke</label>
         </div>
       </div>
-      <div id="attTakingList" style="margin-top:10px;"></div>
-      <div class="modal-actions" style="justify-content:flex-start; margin-top:16px;">
-        <button class="btn btn-primary" onclick="saveAttendance()">Lagre oppmøte</button>
-      </div>
-    </div>
-
-    <div class="toolbar" style="margin-top:22px;">
-      <input class="search" id="searchAttendance" placeholder="Søk etter elev, klasse eller dato...">
-      <span class="count-chip" id="countAttendance" onclick="toggleRecordsById('tableAttendance')">0 registreringer</span>
-      <button class="btn btn-ghost" onclick="exportCSV('attendance')">Eksporter CSV</button>
-    </div>
-    <table class="records-hidden" id="tableAttendance">
-      <thead><tr>
-        <th>Dato</th><th>Elev</th><th>Klasse</th><th>Status</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyAttendance"></tbody>
-    </table>
-  </div>
-
-  <!-- LESSON PLANS -->
-  <div class="panel" id="panel-lessonPlans">
-
-    <!-- Choice screen -->
-    <div id="lpChooseView">
-      <div class="report-grid">
-        <div class="choice-card" onclick="showLpWeekly()">
-          <h3>Ukentlig status</h3>
-          <div class="sub">Se hvem som har sendt inn forberedelse for denne uken, og hvem som mangler</div>
-        </div>
-        <div class="choice-card" onclick="showLpList()">
-          <h3>Alle forberedelser</h3>
-          <div class="sub">Bla gjennom, søk, skriv ut eller eksporter innsendte forberedelser</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Weekly status sub-view -->
-    <div id="lpWeeklyView" style="display:none;">
-      <button class="back-link" onclick="showLpChoice()">← Tilbake</button>
-      <div class="report-card">
-        <h3>Ukentlig status — timeforberedelser</h3>
-        <div class="sub" id="weekRangeLabel">Hvem har sendt inn forberedelse for denne uken?</div>
-        <div id="repWeeklyStatus"></div>
-      </div>
-    </div>
-
-    <!-- Full list sub-view -->
-    <div id="lpListView" style="display:none;">
-      <button class="back-link" onclick="showLpChoice()">← Tilbake</button>
-      <div class="toolbar">
-        <input class="search" id="searchLessonPlans" placeholder="Søk etter lærer, fag eller emne...">
-        <span class="count-chip" id="countLessonPlans" onclick="toggleRecordsById('tableLessonPlans')">0 forberedelser</span>
-        <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
-      </div>
-      <table class="records-hidden" id="tableLessonPlans">
-        <thead><tr>
-          <th>Lærer</th><th>Fag</th><th>Dato</th><th>Emne</th><th>Klasse</th><th></th>
-        </tr></thead>
-        <tbody id="tbodyLessonPlans"></tbody>
-      </table>
+      <div class="field"><label>Hvilken bok eller hvilket nivå har barnet kommet til?</label><input type="text" name="urdu_niva"></div>
     </div>
   </div>
 
-
-</main>
-
-<!-- MODAL -->
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h3 id="modalTitle">Ny oppføring</h3>
-    <div id="modalFields"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
-      <button class="btn btn-primary" onclick="saveEntry()">Lagre</button>
+  <!-- 10: SPRÅK HJEMME -->
+  <div class="card">
+    <div class="tag"><span class="num">10</span> Bakgrunn</div>
+    <h2 class="title">Språk hjemme</h2>
+    <p class="hint">Hvilket språk brukes mest hjemme?</p>
+    <hr class="rule">
+    <div class="check-row">
+      <label><input type="checkbox" name="sprak_hjemme" value="arabisk"> Arabisk</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="urdu"> Urdu</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="norsk"> Norsk</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="engelsk"> Engelsk</label>
+      <label><input type="checkbox" name="sprak_hjemme" value="annet"> Annet</label>
+      <input type="text" name="sprak_hjemme_annet" placeholder="Spesifiser" style="flex:1; min-width:140px; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:'Lora',serif;">
     </div>
   </div>
+
+  <!-- 11: SAMTYKKER -->
+  <div class="card">
+    <div class="tag"><span class="num">11</span> Samtykke</div>
+    <h2 class="title">Samtykker og bekreftelse</h2>
+    <hr class="rule">
+
+    <div class="field">
+      <label>Jeg samtykker til at Madina Institute registrerer nødvendige personopplysninger i forbindelse med elevadministrasjon.</label>
+      <div class="radio-row">
+        <label><input type="radio" name="samtykke_personopplysninger" value="ja"> Ja</label>
+        <label><input type="radio" name="samtykke_personopplysninger" value="nei"> Nei</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Jeg samtykker til at bilder eller video av barnet kan brukes i Madina Institutes interne informasjon og markedsføring.</label>
+      <div class="radio-row">
+        <label><input type="radio" name="samtykke_bilder" value="ja"> Ja</label>
+        <label><input type="radio" name="samtykke_bilder" value="nei"> Nei</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Jeg bekrefter at opplysningene er riktige.</label>
+    </div>
+
+    <div class="sig-row">
+      <div class="field" style="flex:1; min-width:180px;"><label>Dato</label><input type="date" name="dato_signatur"></div>
+      <div class="sig-line" style="flex:2;">Foresattes signatur</div>
+    </div>
+  </div>
+
+  <div class="submit-wrap">
+    <button type="submit" class="btn-submit" id="submitBtn">Send søknad</button>
+    <div class="error-msg-top" id="errorMsg"></div>
+  </div>
+
+  </form>
+
+  <div class="success-box" id="successBox">
+    <h2>Søknaden er mottatt</h2>
+    <p>Takk for din søknad til Madina Skole. Administrasjonen vil gjennomgå opplysningene og ta kontakt med deg angående opptak.</p>
+  </div>
+
+  <div class="footer">Madina Institute · Søknadsskjema</div>
 </div>
-
-<div class="toast" id="toast"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import {
-    getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc
-  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
@@ -784,1389 +549,78 @@
     messagingSenderId: "174564736838",
     appId: "1:174564736838:web:033f873c8b420d4bc96f47"
   };
-
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
-  const LOGO_DATA_URI = "data:image/jpeg;base64,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";
-
-  const SCHEMAS = {
-    teachers: {
-      label: 'lærer', collectionName: 'teachers',
-      fields: [
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
-        {key:'dager', label:'Dager', type:'select', options:['Lørdag','Søndag','Lørdag og søndag']},
-        {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'},
-        {key:'tildeltKlasse', label:'Tildelt klasse (for Lærerportal)', type:'dynamic-select', source:'classes'},
-        {key:'pin', label:'PIN-kode (4 sifre, for Lærerportal)', type:'text'}
-      ],
-      cols: ['navn','fag','dager','telefon','epost']
-    },
-    guardians: {
-      label: 'foresatt', collectionName: 'guardians',
-      fields: [
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'}
-      ],
-      cols: ['navn','telefon','epost']
-    },
-    students: {
-      label: 'elev', collectionName: 'students',
-      fields: [
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'program', label:'Program', type:'select', options:[
-          'Madina Islamske Skole (Lørdag)',
-          'Tilleggsprogram i språk – Arabisk (Søndag)',
-          'Tilleggsprogram i språk – Urdu (Søndag)',
-          'Kombinert – Islamske Skole + Språk (Lørdag og søndag)',
-          'Madinabarn (Søndag)'
-        ]},
-        {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes'},
-        {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians'},
-        {key:'telefon', label:'Telefon (elev/direkte)', type:'text'},
-        {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
-        {key:'belop', label:'Beløp (kr)', type:'text'},
-        {key:'betalingsdato', label:'Betalingsdato', type:'text'}
-      ],
-      cols: ['navn','program','klasse','foresatt','betalt']
-    },
-    classes: {
-      label: 'klasse', collectionName: 'classes',
-      fields: [
-        {key:'navn', label:'Klassenavn', type:'text'},
-        {key:'trinn', label:'Trinn/Alder', type:'text'},
-        {key:'program', label:'Program', type:'select', options:['Madina Islamske Skole','Tilleggsprogram i språk','Madinabarn']},
-        {key:'merknad', label:'Merknad', type:'text'}
-      ],
-      cols: ['navn','trinn','program','merknad']
-    },
-    hours: {
-      label: 'time', collectionName: 'hours',
-      fields: [
-        {key:'dag', label:'Dag', type:'select', options:['Lørdag','Søndag']},
-        {key:'tid', label:'Klokkeslett', type:'text'},
-        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Repetisjon']},
-        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
-        {key:'klasse', label:'Klasse/Gruppe', type:'dynamic-select', source:'classes'}
-      ],
-      cols: ['dag','tid','fag','larer','klasse']
-    },
-    attendance: {
-      label: 'oppmøteregistrering', collectionName: 'attendance',
-      fields: [
-        {key:'dato', label:'Dato', type:'text'},
-        {key:'elev', label:'Elev', type:'dynamic-select', source:'students'},
-        {key:'klasse', label:'Klasse', type:'text'},
-        {key:'status', label:'Status', type:'select', options:['Til stede','Fraværende','Syk','Permisjon']},
-        {key:'merknad', label:'Merknad', type:'text'}
-      ],
-      cols: ['dato','elev','klasse','status']
-    },
-    lessonPlans: {
-      label: 'timeforberedelse', collectionName: 'lessonPlans',
-      fields: [
-        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
-        {key:'klasse', label:'Klasse', type:'text'},
-        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
-        {key:'dato', label:'Dato', type:'text'},
-        {key:'emne', label:'Emne/tema', type:'text'},
-        {key:'mal', label:'Læringsmål', type:'text'},
-        {key:'metode', label:'Metode', type:'text'},
-        {key:'materiell', label:'Hjelpemidler', type:'text'},
-        {key:'oppstart', label:'1. Oppstart', type:'text'},
-        {key:'repetisjon', label:'2. Repetisjon', type:'text'},
-        {key:'nyttStoff', label:'3. Nytt læringsstoff', type:'text'},
-        {key:'oving', label:'4. Øving', type:'text'},
-        {key:'oppsummering', label:'5. Oppsummering', type:'text'},
-        {key:'lekser', label:'Lekser', type:'text'}
-      ],
-      cols: ['larer','fag','dato','emne','klasse']
-    },
-    ledelse: {
-      label: 'ledelsesmedlem', collectionName: 'ledelse',
-      fields: [
-        {key:'rolle', label:'Rolle', type:'select', options:[
-          'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærer','Assistent','Andre'
-        ]},
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'fagomrade', label:'Fagområde (for fagkoordinator)', type:'text'},
-        {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'}
-      ],
-      cols: ['navn','rolle','fagomrade','telefon']
-    },
-    meetings: {
-      label: 'møtereferat', collectionName: 'meetings',
-      fields: [
-        {key:'dato', label:'Dato', type:'text'},
-        {key:'tema', label:'Møtetema', type:'text'},
-        {key:'referent', label:'Referent (skrevet av)', type:'dynamic-select', source:'ledelse'},
-        {key:'tilstedeRoller', label:'Til stede (roller)', type:'role-checklist', options:[
-          'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærere','Assistenter','Andre'
-        ]},
-        {key:'tilstedeNavn', label:'Til stede (navn)', type:'text'},
-        {key:'andreHvem', label:'Andre — hvem?', type:'text'},
-        {key:'fravar', label:'Fravær (hvem)', type:'text'},
-        {key:'referatInnhold', label:'Referat / diskusjonspunkter', type:'text'},
-        {key:'vedtak', label:'Vedtak og oppfølging', type:'text'}
-      ],
-      cols: ['dato','tema','referent','tilstedeRoller']
-    },
-    finances: {
-      label: 'økonomipost', collectionName: 'finances',
-      fields: [
-        {key:'dato', label:'Dato', type:'text'},
-        {key:'type', label:'Type', type:'select', options:['Innbetaling','Utbetaling']},
-        {key:'kategori', label:'Kategori', type:'select', options:[
-          'Skoleavgift','Gave/Donasjon','Utstyr og materiell','Leie','Lønn','Strøm/drift','Innkjøp','Annet'
-        ]},
-        {key:'belop', label:'Beløp (kr)', type:'text'},
-        {key:'beskrivelse', label:'Beskrivelse / hva ble kjøpt', type:'text'},
-        {key:'kjoptAv', label:'Kjøpt av (ved innkjøp)', type:'dynamic-select', source:['ledelse','teachers']},
-        {key:'kvitteringLink', label:'Kvittering/dokument (lim inn lenke til bilde eller fil)', type:'text'},
-        {key:'refundert', label:'Refundert til kjøper?', type:'select', options:['Ja','Nei','Ikke aktuelt']},
-        {key:'registrertAv', label:'Registrert av', type:'dynamic-select', source:'ledelse'}
-      ],
-      cols: ['dato','type','kategori','belop','beskrivelse']
-    }
-  };
-
-  // Standard Saturday/Sunday schedule matching the school's teaching model
-  const SEED_HOURS = [
-    {dag:'Lørdag', tid:'09:00–09:10', fag:'Repetisjon', larer:'', klasse:'Felles oppstart'},
-    {dag:'Lørdag', tid:'09:10–10:00', fag:'Koran', larer:'', klasse:'Klasse A'},
-    {dag:'Lørdag', tid:'09:10–10:00', fag:'Islam', larer:'', klasse:'Klasse B'},
-    {dag:'Lørdag', tid:'10:00–10:45', fag:'Repetisjon', larer:'', klasse:'Klasse A'},
-    {dag:'Lørdag', tid:'10:00–10:45', fag:'Repetisjon', larer:'', klasse:'Klasse B'},
-    {dag:'Lørdag', tid:'10:45–11:45', fag:'Islam', larer:'', klasse:'Klasse A'},
-    {dag:'Lørdag', tid:'10:45–11:45', fag:'Koran', larer:'', klasse:'Klasse B'},
-    {dag:'Lørdag', tid:'12:30–13:00', fag:'Repetisjon', larer:'', klasse:'Felles avslutning'},
-    {dag:'Søndag', tid:'09:00–09:10', fag:'Repetisjon', larer:'', klasse:'Felles oppstart'},
-    {dag:'Søndag', tid:'09:10–12:00', fag:'Arabisk', larer:'', klasse:'Språkgruppe A'},
-    {dag:'Søndag', tid:'09:10–12:00', fag:'Urdu', larer:'', klasse:'Språkgruppe U'},
-    {dag:'Søndag', tid:'10:30–12:15', fag:'Madinabarn', larer:'', klasse:'Madinabarn'}
-  ];
-
-  // Suggested payment amounts per program (kr) — shown as a hint, editable by admin
-  const PROGRAM_PRICES = {
-    'Madina Islamske Skole (Lørdag)': '2500',
-    'Tilleggsprogram i språk – Arabisk (Søndag)': '2000',
-    'Tilleggsprogram i språk – Urdu (Søndag)': '2000',
-    'Kombinert – Islamske Skole + Språk (Lørdag og søndag)': '4000',
-    'Madinabarn (Søndag)': '2000'
-  };
-
-  // Realistic demo/sample data for demonstrations and meetings
-  const DEMO_DATA = {
-    classes: [
-      {navn:'Klasse A', trinn:'7–9 år', program:'Madina Islamske Skole', merknad:'Nybegynnere'},
-      {navn:'Klasse B', trinn:'10–12 år', program:'Madina Islamske Skole', merknad:'Viderekommen'},
-      {navn:'Språkgruppe A', trinn:'8–13 år', program:'Tilleggsprogram i språk', merknad:'Arabisk'},
-      {navn:'Madinabarn', trinn:'3–6 år', program:'Madinabarn', merknad:''}
-    ],
-    teachers: [
-      {navn:'Ahmed Ali', fag:'Koran', dager:'Lørdag', telefon:'+47 401 23 456', epost:'ahmed@madina.no'},
-      {navn:'Yusuf Hassan', fag:'Islam', dager:'Lørdag', telefon:'+47 402 34 567', epost:'yusuf@madina.no'},
-      {navn:'Maryam Said', fag:'Arabisk', dager:'Søndag', telefon:'+47 403 45 678', epost:'maryam@madina.no'},
-      {navn:'Amina Farah', fag:'Madinabarn', dager:'Søndag', telefon:'+47 404 56 789', epost:'amina@madina.no'}
-    ],
-    guardians: [
-      {navn:'Hassan Ali', telefon:'+47 911 22 334', epost:'hassan.ali@eksempel.no'},
-      {navn:'Layla Ahmed', telefon:'+47 922 33 445', epost:'layla.ahmed@eksempel.no'},
-      {navn:'Omar Said', telefon:'+47 933 44 556', epost:'omar.said@eksempel.no'}
-    ],
-    students: [
-      {navn:'Yusuf Hassan Ali', program:'Madina Islamske Skole (Lørdag)', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'2500', betalingsdato:'2026-08-15'},
-      {navn:'Amina Hassan Ali', program:'Madina Islamske Skole (Lørdag)', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'2500', betalingsdato:'2026-08-15'},
-      {navn:'Ibrahim Ahmed', program:'Kombinert – Islamske Skole + Språk (Lørdag og søndag)', klasse:'Klasse B', foresatt:'Layla Ahmed', telefon:'', betalt:'Nei', belop:'4000', betalingsdato:''},
-      {navn:'Zainab Ahmed', program:'Madinabarn (Søndag)', klasse:'Madinabarn', foresatt:'Layla Ahmed', telefon:'', betalt:'Ja', belop:'2000', betalingsdato:'2026-08-10'},
-      {navn:'Hamza Said', program:'Tilleggsprogram i språk – Arabisk (Søndag)', klasse:'Språkgruppe A', foresatt:'Omar Said', telefon:'', betalt:'Nei', belop:'2000', betalingsdato:''}
-    ],
-    attendance: [
-      {elev:'Yusuf Hassan Ali', klasse:'Klasse A', status:'Til stede'},
-      {elev:'Amina Hassan Ali', klasse:'Klasse A', status:'Til stede'},
-      {elev:'Ibrahim Ahmed', klasse:'Klasse B', status:'Fraværende'},
-      {elev:'Zainab Ahmed', klasse:'Madinabarn', status:'Til stede'},
-      {elev:'Hamza Said', klasse:'Språkgruppe A', status:'Syk'}
-    ]
-  };
-
-  window.seedDemoData = async function(){
-    const alreadyLoaded = cache.teachers.some(t => t.navn === 'Ahmed Ali') ||
-                           cache.guardians.some(g => g.navn === 'Hassan Ali');
-    const warning = alreadyLoaded
-      ? 'Det ser ut som eksempeldata allerede er lastet inn tidligere. Å trykke igjen legger til EN NY KOPI av alt (duplikater). Er du sikker på at du vil fortsette?'
-      : 'Dette legger til eksempeldata (lærere, foresatte, klasser, elever, timeplan og oppmøte) i databasen. Fortsett?';
-    const ok = confirm(warning);
-    if(!ok) return;
-    try{
-      for(const t of DEMO_DATA.classes) await addDoc(collection(db, 'classes'), t);
-      for(const t of DEMO_DATA.teachers) await addDoc(collection(db, 'teachers'), t);
-      for(const t of DEMO_DATA.guardians) await addDoc(collection(db, 'guardians'), t);
-      for(const t of DEMO_DATA.students) await addDoc(collection(db, 'students'), t);
-      for(const t of SEED_HOURS) await addDoc(collection(db, 'hours'), t);
-      const today = todayISO();
-      for(const t of DEMO_DATA.attendance) await addDoc(collection(db, 'attendance'), { dato: today, ...t });
-      showToast('Eksempeldata er lagt inn (inkl. timeplan og oppmøte).');
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt under innlasting av eksempeldata.');
-    }
-  };
-
-  const ADMIN_DELETE_PASSWORD = 'AdminEgypt2026';
-
-  function checkAdminPassword(){
-    const pw = prompt('Skriv inn admin-passordet for å bekrefte sletting:');
-    if(pw === null) return false; // cancelled
-    if(pw !== ADMIN_DELETE_PASSWORD){
-      showToast('Feil passord. Sletting avbrutt.');
-      return false;
-    }
-    return true;
-  }
-
-  window.clearCollection = async function(type){
-    const count = cache[type].length;
-    if(count === 0){
-      showToast('Det er allerede tomt.');
-      return;
-    }
-    if(!checkAdminPassword()) return;
-    const label = TYPE_LABELS[type].toLowerCase();
-    const ok = confirm(`Dette sletter PERMANENT ${count} oppføring(er) fra ${label}. Dette kan ikke angres. Fortsett?`);
-    if(!ok) return;
-    try{
-      for(const row of cache[type]){
-        await deleteDoc(doc(db, SCHEMAS[type].collectionName, row.id));
-      }
-      showToast(TYPE_LABELS[type] + ' er nullstilt.');
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt under sletting.');
-    }
-  };
-
-  window.clearAllData = async function(){
-    const totalCount = Object.keys(SCHEMAS).reduce((sum, t) => sum + cache[t].length, 0);
-    if(totalCount === 0){
-      showToast('Databasen er allerede tom.');
-      return;
-    }
-    if(!checkAdminPassword()) return;
-    const typed = prompt(`ADVARSEL: Dette sletter PERMANENT alle ${totalCount} oppføringer i hele databasen (lærere, foresatte, elever, klasser, timeplan, oppmøte).\n\nSkriv "SLETT ALT" (med store bokstaver) for å bekrefte:`);
-    if(typed !== 'SLETT ALT'){
-      showToast('Sletting avbrutt.');
-      return;
-    }
-    try{
-      for(const type of Object.keys(SCHEMAS)){
-        for(const row of cache[type]){
-          await deleteDoc(doc(db, SCHEMAS[type].collectionName, row.id));
-        }
-      }
-      showToast('Hele databasen er nullstilt.');
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt under nullstilling.');
-    }
-  };
-
-  // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [] };
-  let editingId = null;
-  let editingType = null;
-  const readyCollections = new Set();
-
-  function setSyncStatus(ok){
-    const badge = document.getElementById('syncBadge');
-    const text = document.getElementById('syncText');
-    if(ok){
-      badge.classList.remove('offline');
-      text.textContent = 'Synkronisert';
-    } else {
-      badge.classList.add('offline');
-      text.textContent = 'Kobler til...';
-    }
-  }
-
-  function attachListener(type){
-    const colRef = collection(db, SCHEMAS[type].collectionName);
-    onSnapshot(colRef, (snapshot) => {
-      cache[type] = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      render(type);
-      readyCollections.add(type);
-      if(readyCollections.size >= Object.keys(SCHEMAS).length) setSyncStatus(true);
-    }, (err) => {
-      console.error(err);
-      setSyncStatus(false);
-      showToast('Kunne ikke koble til databasen.');
-    });
-  }
-
-  function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
-  function escapeHtml(str){
-    const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
-  }
-
-  function render(type){
-    const schema = SCHEMAS[type];
-    const searchEl = document.getElementById('search' + capitalize(type));
-    const query = (searchEl ? searchEl.value : '').toLowerCase();
-    let data = cache[type];
-    if(query){
-      data = data.filter(row => schema.cols.some(c => (row[c]||'').toLowerCase().includes(query)));
-    }
-    const tbody = document.getElementById('tbody' + capitalize(type));
-    tbody.innerHTML = '';
-    if(data.length === 0){
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="${schema.cols.length+1}">Ingen ${schema.label}e registrert ennå.</td></tr>`;
-    } else {
-      data.forEach(row => {
-        const tr = document.createElement('tr');
-        let cellsHtml = schema.cols.map((c,i) => {
-          const field = schema.fields.find(f=>f.key===c);
-          const val = row[c] || '—';
-          const display = (i===1 && field && field.type==='select') ? `<span class="tag-pill">${escapeHtml(val)}</span>` : escapeHtml(val);
-          return `<td data-label="${field.label}">${display}</td>`;
-        }).join('');
-        if(type === 'guardians'){
-          const childCount = cache.students.filter(s => (s.foresatt||'') === row.navn).length;
-          cellsHtml += `<td data-label="Antall barn">${childCount}</td>`;
-        }
-        cellsHtml += `<td class="actions-col">
-          ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
-          <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
-          <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
-        </td>`;
-        tr.innerHTML = cellsHtml;
-        tbody.appendChild(tr);
-      });
-    }
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster' };
-    document.getElementById('count' + capitalize(type)).innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
-    if(type === 'hours') renderWeekView();
-    if(type === 'students' && document.getElementById('tbodyGuardians')) render('guardians');
-    if(type === 'classes') populateAttendanceClassFilter();
-    if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
-    if(type === 'finances') renderFinanceSummary();
-    updateStats();
-  }
-
-  function renderFinanceSummary(){
-    const innEl = document.getElementById('finStatInn');
-    if(!innEl) return;
-    const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
-    const totalInn = cache.finances.filter(f => f.type === 'Innbetaling').reduce((s,f) => s + toNum(f.belop), 0);
-    const totalUt = cache.finances.filter(f => f.type === 'Utbetaling').reduce((s,f) => s + toNum(f.belop), 0);
-    const saldo = totalInn - totalUt;
-    innEl.textContent = totalInn.toLocaleString('no-NO') + ' kr';
-    document.getElementById('finStatUt').textContent = totalUt.toLocaleString('no-NO') + ' kr';
-    document.getElementById('finStatSaldo').textContent = saldo.toLocaleString('no-NO') + ' kr';
-  }
-
-  function renderWeekView(){
-    const lordagEl = document.getElementById('weekLordag');
-    const sondagEl = document.getElementById('weekSondag');
-    if(!lordagEl || !sondagEl) return;
-    const sortByTid = (a,b) => (a.tid||'').localeCompare(b.tid||'');
-    const lordag = cache.hours.filter(h => h.dag === 'Lørdag').sort(sortByTid);
-    const sondag = cache.hours.filter(h => h.dag === 'Søndag').sort(sortByTid);
-    const cardHtml = (h) => `
-      <div class="bar-row" style="border-bottom:1px solid var(--line); padding-bottom:10px;">
-        <div class="bar-label"><span><strong>${escapeHtml(h.tid||'—')}</strong> · ${escapeHtml(h.fag||'—')}</span></div>
-        <div style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;">
-          ${escapeHtml(h.larer || 'Ingen lærer')} · ${escapeHtml(h.klasse || 'Ingen klasse')}
-        </div>
-      </div>`;
-    lordagEl.innerHTML = lordag.length ? lordag.map(cardHtml).join('') : '<div class="report-empty">Ingen timer registrert for lørdag.</div>';
-    sondagEl.innerHTML = sondag.length ? sondag.map(cardHtml).join('') : '<div class="report-empty">Ingen timer registrert for søndag.</div>';
-  }
-
-  window.toggleWeekView = function(){
-    const el = document.getElementById('weekView');
-    el.style.display = el.style.display === 'none' ? 'grid' : 'none';
-  };
-
-  // ---------- Attendance (Oppmøte) ----------
-  const STATUS_OPTIONS = ['Til stede','Fraværende','Syk','Permisjon'];
 
   function todayISO(){
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
-  function populateAttendanceClassFilter(){
-    const sel = document.getElementById('attClassFilter');
-    if(!sel) return;
-    const current = sel.value;
-    const names = [...new Set(cache.classes.map(c => c.navn).filter(Boolean))].sort();
-    sel.innerHTML = '<option value="">— Alle elever —</option>' +
-      names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-    if(names.includes(current)) sel.value = current;
-  }
+  const MULTI_FIELDS = ['program', 'tidligere_studert', 'urdu_ferdighet', 'sprak_hjemme'];
 
-  function renderAttendanceTakingList(){
-    const listEl = document.getElementById('attTakingList');
-    if(!listEl) return;
-    const date = document.getElementById('attDate').value;
-    const classFilter = document.getElementById('attClassFilter').value;
+  document.getElementById('paameldingsForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const errEl = document.getElementById('errorMsg');
+    const btn = document.getElementById('submitBtn');
+    errEl.style.display = 'none';
 
-    let students = cache.students;
-    if(classFilter) students = students.filter(s => s.klasse === classFilter);
-
-    if(students.length === 0){
-      listEl.innerHTML = '<div class="report-empty">Ingen elever funnet for dette filteret.</div>';
-      return;
-    }
-    if(!date){
-      listEl.innerHTML = '<div class="report-empty">Velg en dato for å ta oppmøte.</div>';
+    if(!this.checkValidity()){
+      this.reportValidity();
       return;
     }
 
-    const existingForDate = {};
-    cache.attendance.filter(a => a.dato === date).forEach(a => { existingForDate[a.elev] = a.status; });
+    btn.disabled = true;
+    btn.textContent = 'Sender...';
 
-    listEl.innerHTML = students.map(s => {
-      const currentStatus = existingForDate[s.navn] || 'Til stede';
-      const optionsHtml = STATUS_OPTIONS.map(opt => `<option value="${opt}" ${opt===currentStatus?'selected':''}>${opt}</option>`).join('');
-      return `
-        <div class="filter-row" style="grid-template-columns:2fr 1fr;" data-student="${escapeHtml(s.navn)}" data-klasse="${escapeHtml(s.klasse||'')}">
-          <div style="font-family:'Jost',sans-serif; font-size:13.5px; display:flex; align-items:center;">${escapeHtml(s.navn)} <span style="color:#8a9a90; margin-left:6px; font-size:11.5px;">(${escapeHtml(s.klasse||'—')})</span></div>
-          <select class="att-status">${optionsHtml}</select>
-        </div>`;
-    }).join('');
-  }
-
-  window.saveAttendance = async function(){
-    const date = document.getElementById('attDate').value;
-    if(!date){
-      showToast('Velg en dato først.');
-      return;
-    }
-    const rows = [...document.querySelectorAll('#attTakingList .filter-row')];
-    if(rows.length === 0){
-      showToast('Ingen elever å lagre oppmøte for.');
-      return;
-    }
     try{
-      for(const row of rows){
-        const studentName = row.dataset.student;
-        const klasse = row.dataset.klasse;
-        const status = row.querySelector('.att-status').value;
-        const student = cache.students.find(s => s.navn === studentName);
-        const safeId = date + '_' + (student ? student.id : studentName.replace(/[^a-zA-Z0-9]/g,''));
-        await setDoc(doc(db, 'attendance', safeId), { dato: date, elev: studentName, klasse, status });
-      }
-      showToast('Oppmøte lagret for ' + rows.length + ' elev(er).');
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt under lagring av oppmøte.');
-    }
-  };
+      const formData = new FormData(this);
+      const record = { status: 'Ny', innsendtDato: todayISO() };
 
-  function updateStats(){
-    document.getElementById('statTeachers') && (document.getElementById('statTeachers').textContent = cache.teachers.length);
-    document.getElementById('statStudents') && (document.getElementById('statStudents').textContent = cache.students.length);
-    document.getElementById('statHours') && (document.getElementById('statHours').textContent = cache.hours.length);
-    renderReports();
-  }
-
-  function countBy(list, key){
-    const counts = {};
-    list.forEach(row => {
-      const val = (row[key] || '').trim();
-      if(!val) return;
-      counts[val] = (counts[val] || 0) + 1;
-    });
-    return Object.entries(counts).sort((a,b) => b[1]-a[1]);
-  }
-
-  function renderBarList(containerId, entries){
-    const el = document.getElementById(containerId);
-    if(!el) return;
-    if(entries.length === 0){
-      el.innerHTML = '<div class="report-empty">Ingen data ennå.</div>';
-      return;
-    }
-    const max = Math.max(...entries.map(e => e[1]));
-    el.innerHTML = entries.map(([label, count]) => `
-      <div class="bar-row">
-        <div class="bar-label"><span>${escapeHtml(label)}</span><span class="n">${count}</span></div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((count/max)*100)}%"></div></div>
-      </div>
-    `).join('');
-  }
-
-  function renderReports(){
-    document.getElementById('repStatTeachers') && (document.getElementById('repStatTeachers').textContent = cache.teachers.length);
-    document.getElementById('repStatStudents') && (document.getElementById('repStatStudents').textContent = cache.students.length);
-    document.getElementById('repStatHours') && (document.getElementById('repStatHours').textContent = cache.hours.length);
-    const dateEl = document.getElementById('repStatDate');
-    if(dateEl) dateEl.textContent = new Date().toLocaleDateString('no-NO');
-
-    renderBarList('repStudentsByProgram', countBy(cache.students, 'program'));
-    renderBarList('repStudentsByClass', countBy(cache.students, 'klasse'));
-    renderBarList('repTeachersBySubject', countBy(cache.teachers, 'fag'));
-    renderBarList('repTeachersByDay', countBy(cache.teachers, 'dager'));
-    renderBarList('repHoursByDay', countBy(cache.hours, 'dag'));
-    renderBarList('repHoursBySubject', countBy(cache.hours, 'fag'));
-    renderPaymentStatusReport();
-    renderWeeklyStatus();
-  }
-
-  function getWeekRange(){
-    // Monday–Sunday of the current week
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun..6=Sat
-    const diffToMonday = (day === 0 ? -6 : 1 - day);
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0,0,0,0);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const toISO = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    return { start: toISO(monday), end: toISO(sunday), label: monday.toLocaleDateString('no-NO') + ' – ' + sunday.toLocaleDateString('no-NO') };
-  }
-
-  function renderWeeklyStatus(){
-    const el = document.getElementById('repWeeklyStatus');
-    const labelEl = document.getElementById('weekRangeLabel');
-    if(!el) return;
-    const { start, end, label } = getWeekRange();
-    if(labelEl) labelEl.textContent = 'Hvem har sendt inn forberedelse for uken ' + label + '?';
-
-    if(cache.teachers.length === 0){
-      el.innerHTML = '<div class="report-empty">Ingen lærere registrert ennå.</div>';
-      return;
-    }
-
-    el.innerHTML = cache.teachers.map(teacher => {
-      const hasSent = cache.lessonPlans.some(p => p.larer === teacher.navn && p.dato >= start && p.dato <= end);
-      const badge = hasSent
-        ? '<span class="status-badge sent"><span class="dot"></span>Sendt</span>'
-        : '<span class="status-badge notsent"><span class="dot"></span>Ikke sendt</span>';
-      return `<div class="status-row"><span>${escapeHtml(teacher.navn)}</span>${badge}</div>`;
-    }).join('');
-  }
-
-  window.selectSide = function(side){
-    document.getElementById('sideChooseView').style.display = 'none';
-    document.getElementById('tabsBar').style.display = 'flex';
-    document.getElementById('mainContent').style.display = 'block';
-    document.getElementById('sideSwitchBtn').style.display = 'inline-block';
-
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.style.display = tab.dataset.side === side ? '' : 'none';
-    });
-
-    const firstTab = document.querySelector('.tab[data-side="' + side + '"]');
-    if(firstTab) firstTab.click();
-  };
-
-  window.showSideChoice = function(){
-    document.getElementById('sideChooseView').style.display = 'block';
-    document.getElementById('tabsBar').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('sideSwitchBtn').style.display = 'none';
-  };
-
-  window.toggleRecordsById = function(tableId){
-    const table = document.getElementById(tableId);
-    if(!table) return;
-    const nowHidden = table.classList.toggle('records-hidden');
-    const chipId = 'count' + tableId.replace('table','');
-    const chip = document.getElementById(chipId);
-    if(chip) chip.classList.toggle('expanded', !nowHidden);
-  };
-
-  window.showLpChoice = function(){
-    document.getElementById('lpChooseView').style.display = 'block';
-    document.getElementById('lpWeeklyView').style.display = 'none';
-    document.getElementById('lpListView').style.display = 'none';
-  };
-
-  window.showLpWeekly = function(){
-    document.getElementById('lpChooseView').style.display = 'none';
-    document.getElementById('lpWeeklyView').style.display = 'block';
-    document.getElementById('lpListView').style.display = 'none';
-    renderWeeklyStatus();
-  };
-
-  window.showLpList = function(){
-    document.getElementById('lpChooseView').style.display = 'none';
-    document.getElementById('lpWeeklyView').style.display = 'none';
-    document.getElementById('lpListView').style.display = 'block';
-    render('lessonPlans');
-  };
-
-  function renderPaymentStatusReport(){
-    const el = document.getElementById('repPaymentStatus');
-    if(!el) return;
-    const total = cache.students.length;
-    const paid = cache.students.filter(s => s.betalt === 'Ja').length;
-    const unpaid = cache.students.filter(s => s.betalt === 'Nei').length;
-    const unset = total - paid - unpaid;
-    if(total === 0){
-      el.innerHTML = '<div class="report-empty">Ingen elever registrert ennå.</div>';
-      return;
-    }
-    const rows = [['Betalt', paid], ['Ikke betalt', unpaid]];
-    if(unset > 0) rows.push(['Ikke angitt', unset]);
-    const max = Math.max(...rows.map(r=>r[1]), 1);
-    el.innerHTML = rows.map(([label,count]) => `
-      <div class="bar-row">
-        <div class="bar-label"><span>${escapeHtml(label)}</span><span class="n">${count} av ${total}</span></div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((count/max)*100)}%"></div></div>
-      </div>
-    `).join('');
-  }
-
-  window.quickPaymentReport = function(status){
-    document.getElementById('customType').value = 'students';
-    document.getElementById('customMode').value = 'list';
-    onModeChange();
-    populateCustomFields();
-
-    // Only keep the most relevant columns checked
-    const keep = ['navn','program','betalingsdato','belop'];
-    document.querySelectorAll('#customFieldsCheckboxes input').forEach(cb => {
-      cb.checked = keep.includes(cb.value);
-    });
-
-    // Set the single filter row to betalt = status
-    const row = document.querySelector('#customFiltersList .filter-row');
-    row.querySelector('.f-field').value = 'betalt';
-    row.querySelector('.f-op').value = 'equals';
-    renderFilterValueInput(row, 'students', 'betalt', 'equals');
-    const valEl = row.querySelector('.f-value');
-    if(valEl) valEl.value = status;
-
-    generateCustomReport();
-    document.getElementById('customReportOutput').scrollIntoView({behavior:'smooth', block:'start'});
-  };
-
-  window.seedStandardTimeplan = async function(){
-    const ok = confirm('Dette legger til ' + SEED_HOURS.length + ' faste oppføringer i timeplanen (standard lørdag/søndag-modell). Fortsett?');
-    if(!ok) return;
-    try{
-      for(const entry of SEED_HOURS){
-        await addDoc(collection(db, 'hours'), entry);
-      }
-      showToast('Standard timeplan lagt inn.');
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt under innlasting av timeplanen.');
-    }
-  };
-
-  function buildFullBackupText(){
-    let out = '';
-    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances'].forEach(type => {
-      const schema = SCHEMAS[type];
-      const data = cache[type];
-      out += '=== ' + schema.label.toUpperCase() + 'E ===\n';
-      out += schema.fields.map(f=>f.label).join(',') + '\n';
-      data.forEach(row => {
-        out += schema.fields.map(f => '"' + (row[f.key]||'').replace(/"/g,'""') + '"').join(',') + '\n';
+      MULTI_FIELDS.forEach(key => {
+        const values = formData.getAll(key);
+        record[key] = values.join(', ');
+        formData.delete(key);
       });
-      out += '\n';
-    });
-    return out;
-  }
 
-  function hasAnyData(){
-    return cache.teachers.length>0 || cache.guardians.length>0 || cache.students.length>0 ||
-           cache.classes.length>0 || cache.hours.length>0 || cache.attendance.length>0 ||
-           cache.lessonPlans.length>0 || cache.ledelse.length>0 || cache.meetings.length>0 ||
-           cache.finances.length>0;
-  }
-
-  window.exportFullCSV = function(){
-    if(!hasAnyData()){
-      showToast('Ingen data å eksportere.');
-      return;
-    }
-    const out = '\uFEFF' + buildFullBackupText();
-    const blob = new Blob([out], {type: 'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.download = 'madina_backup_' + todayISO() + '.csv';
-    a.href = url;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  window.emailFullBackup = async function(){
-    if(!hasAnyData()){
-      showToast('Ingen data å sende.');
-      return;
-    }
-    const ok = confirm('Dette sender en fullstendig sikkerhetskopi av databasen til administrasjonens e-post. Fortsette?');
-    if(!ok) return;
-    try{
-      const backupText = buildFullBackupText();
-      const res = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
-          subject: 'Sikkerhetskopi av Madina Skole database – ' + todayISO(),
-          from_name: 'Madina Skole – Database',
-          message: backupText
-        })
-      });
-      const result = await res.json();
-      if(result.success){
-        showToast('Sikkerhetskopi sendt på e-post.');
-      } else {
-        showToast('Kunne ikke sende e-post. Prøv å laste ned i stedet.');
-      }
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt. Sjekk internettforbindelsen.');
-    }
-  };
-
-  window.handleRestoreFile = function(input){
-    const file = input.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => { document.getElementById('restoreText').value = e.target.result; };
-    reader.readAsText(file, 'utf-8');
-  };
-
-  function parseCSVLine(line){
-    const result = [];
-    let cur = '';
-    let inQuotes = false;
-    for(let i=0; i<line.length; i++){
-      const ch = line[i];
-      if(inQuotes){
-        if(ch === '"'){
-          if(line[i+1] === '"'){ cur += '"'; i++; }
-          else { inQuotes = false; }
-        } else { cur += ch; }
-      } else {
-        if(ch === '"'){ inQuotes = true; }
-        else if(ch === ','){ result.push(cur); cur = ''; }
-        else { cur += ch; }
-      }
-    }
-    result.push(cur);
-    return result;
-  }
-
-  function parseBackupText(text){
-    const sectionHeaderFor = {};
-    Object.keys(SCHEMAS).forEach(type => {
-      sectionHeaderFor['=== ' + SCHEMAS[type].label.toUpperCase() + 'E ==='] = type;
-    });
-
-    const results = {};
-    Object.keys(SCHEMAS).forEach(type => { results[type] = []; });
-
-    const lines = text.split(/\r?\n/);
-    let currentType = null;
-    let currentFieldKeys = null;
-
-    for(const rawLine of lines){
-      const line = rawLine.trim();
-      if(line === ''){ currentType = null; currentFieldKeys = null; continue; }
-
-      if(sectionHeaderFor[line] !== undefined){
-        currentType = sectionHeaderFor[line];
-        currentFieldKeys = null;
-        continue;
+      for(const [key, value] of formData.entries()){
+        if(record[key] === undefined) record[key] = value;
       }
 
-      if(currentType === null) continue;
+      await addDoc(collection(db, 'registrations'), record);
 
-      if(currentFieldKeys === null){
-        const labels = line.split(',').map(s => s.trim());
-        const schema = SCHEMAS[currentType];
-        currentFieldKeys = labels.map(label => {
-          const field = schema.fields.find(f => f.label === label);
-          return field ? field.key : null;
+      // Best-effort email notification to administrasjonen — submission is
+      // already saved above regardless of whether this succeeds.
+      try{
+        await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
+            subject: 'Ny søknad mottatt – ' + (record.elev_navn || 'Ukjent navn'),
+            from_name: 'Madina Skole – Søknadsskjema',
+            message:
+              'Elev: ' + (record.elev_navn || '—') + '\n' +
+              'Foresatt: ' + (record.foresatt1_navn || '—') + ' — ' + (record.foresatt1_tlf || '—') + '\n' +
+              'Ønsket program: ' + (record.program || '—') + '\n\n' +
+              'Gå til administrasjonspanelet (Registrering) for å behandle søknaden.'
+          })
         });
-        continue;
+      } catch(emailErr){
+        console.error('E-postvarsling feilet:', emailErr);
       }
 
-      const values = parseCSVLine(line);
-      const record = {};
-      currentFieldKeys.forEach((key, i) => {
-        if(key) record[key] = values[i] || '';
-      });
-      if(Object.keys(record).length > 0) results[currentType].push(record);
-    }
-    return results;
-  }
-
-  window.restoreFromBackup = async function(){
-    const text = document.getElementById('restoreText').value.trim();
-    if(!text){
-      showToast('Last opp en fil eller lim inn backup-tekst først.');
-      return;
-    }
-    const parsed = parseBackupText(text);
-    const totalCount = Object.values(parsed).reduce((sum, arr) => sum + arr.length, 0);
-    if(totalCount === 0){
-      showToast('Fant ingen gjenkjennbare data i denne teksten.');
-      return;
-    }
-    const summary = Object.keys(parsed)
-      .filter(t => parsed[t].length > 0)
-      .map(t => '• ' + TYPE_LABELS[t] + ': ' + parsed[t].length)
-      .join('\n');
-    const ok = confirm('Følgende blir lagt til i databasen:\n\n' + summary + '\n\nDette LEGGER TIL data og kan skape duplikater hvis de allerede finnes. Fortsette?');
-    if(!ok) return;
-
-    try{
-      for(const type of Object.keys(parsed)){
-        for(const record of parsed[type]){
-          await addDoc(collection(db, SCHEMAS[type].collectionName), record);
-        }
-      }
-      showToast('Gjenoppretting fullført (' + totalCount + ' oppføringer).');
-      document.getElementById('restoreText').value = '';
-      document.getElementById('restoreFile').value = '';
+      document.getElementById('paameldingsForm').style.display = 'none';
+      document.getElementById('successBox').style.display = 'block';
+      window.scrollTo({top:0, behavior:'smooth'});
     } catch(err){
       console.error(err);
-      showToast('Noe gikk galt under gjenoppretting.');
+      errEl.textContent = 'Noe gikk galt under innsending. Sjekk internettforbindelsen og prøv igjen.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Send søknad';
     }
-  };
-
-  // ---------- Custom report builder (advanced) ----------
-  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi' };
-  const OPERATORS = [
-    {value:'equals', label:'Er lik', needsValue:true, valueType:'select'},
-    {value:'not_equals', label:'Er ikke lik', needsValue:true, valueType:'select'},
-    {value:'contains', label:'Inneholder', needsValue:true, valueType:'text'},
-    {value:'is_empty', label:'Er tom', needsValue:false},
-    {value:'not_empty', label:'Er ikke tom', needsValue:false}
-  ];
-  let lastCustomReport = null; // {columns:[{key,label}], rows:[...], mode}
-  let filterRowSeq = 0;
-
-  function populateCustomTypeDropdown(){
-    const sel = document.getElementById('customType');
-    if(!sel) return;
-    sel.innerHTML = '';
-    Object.keys(TYPE_LABELS).forEach(t => {
-      const o = document.createElement('option');
-      o.value = t; o.textContent = TYPE_LABELS[t];
-      sel.appendChild(o);
-    });
-    sel.addEventListener('change', populateCustomFields);
-    document.getElementById('customMode').addEventListener('change', onModeChange);
-    populateCustomFields();
-  }
-
-  function onModeChange(){
-    const mode = document.getElementById('customMode').value;
-    document.getElementById('customColumnsWrap').style.display = mode === 'list' ? 'block' : 'none';
-    document.getElementById('customGroupWrap').style.display = mode === 'grouped' ? 'block' : 'none';
-    populateSortField();
-  }
-
-  function populateCustomFields(){
-    const type = document.getElementById('customType').value;
-    const schema = SCHEMAS[type];
-
-    const box = document.getElementById('customFieldsCheckboxes');
-    box.innerHTML = schema.fields.map(f => `
-      <label><input type="checkbox" value="${f.key}" checked> ${escapeHtml(f.label)}</label>
-    `).join('');
-
-    const groupSel = document.getElementById('customGroupField');
-    groupSel.innerHTML = schema.fields.map(f => `<option value="${f.key}">${escapeHtml(f.label)}</option>`).join('');
-
-    populateSortField();
-
-    // Reset filters to a single empty row
-    document.getElementById('customFiltersList').innerHTML = '';
-    filterRowSeq = 0;
-    addFilterRow();
-
-    document.getElementById('customReportOutput').innerHTML = '';
-    document.getElementById('exportCustomBtn').style.display = 'none';
-  }
-
-  function populateSortField(){
-    const type = document.getElementById('customType').value;
-    const schema = SCHEMAS[type];
-    const mode = document.getElementById('customMode').value;
-    const sortSel = document.getElementById('customSortField');
-    if(mode === 'grouped'){
-      sortSel.innerHTML = '<option value="__count__">Antall</option>';
-    } else {
-      sortSel.innerHTML = '<option value="">— Ingen sortering —</option>' +
-        schema.fields.map(f => `<option value="${f.key}">${escapeHtml(f.label)}</option>`).join('');
-    }
-  }
-
-  window.addFilterRow = function(){
-    const id = 'frow_' + (filterRowSeq++);
-    const type = document.getElementById('customType').value;
-    const schema = SCHEMAS[type];
-    const wrap = document.createElement('div');
-    wrap.className = 'filter-row';
-    wrap.id = id;
-    wrap.innerHTML = `
-      <select class="f-field">${schema.fields.map(f=>`<option value="${f.key}">${escapeHtml(f.label)}</option>`).join('')}</select>
-      <select class="f-op">${OPERATORS.map(o=>`<option value="${o.value}">${escapeHtml(o.label)}</option>`).join('')}</select>
-      <span class="f-value-wrap"></span>
-      <button type="button" class="filter-remove" onclick="document.getElementById('${id}').remove()">✕</button>
-    `;
-    document.getElementById('customFiltersList').appendChild(wrap);
-    const fieldSel = wrap.querySelector('.f-field');
-    const opSel = wrap.querySelector('.f-op');
-    const refreshValueInput = () => renderFilterValueInput(wrap, type, fieldSel.value, opSel.value);
-    fieldSel.addEventListener('change', refreshValueInput);
-    opSel.addEventListener('change', refreshValueInput);
-    refreshValueInput();
-  };
-
-  function renderFilterValueInput(rowEl, type, field, opValue){
-    const op = OPERATORS.find(o => o.value === opValue);
-    const wrap = rowEl.querySelector('.f-value-wrap');
-    if(!op.needsValue){
-      wrap.innerHTML = '';
-      return;
-    }
-    if(op.valueType === 'text'){
-      wrap.innerHTML = `<input type="text" class="f-value" placeholder="Skriv verdi...">`;
-    } else {
-      const values = [...new Set(cache[type].map(r => (r[field]||'').trim()).filter(Boolean))].sort();
-      wrap.innerHTML = `<select class="f-value">${values.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('') || '<option value="">Ingen data</option>'}</select>`;
-    }
-  }
-
-  function readFilters(){
-    return [...document.querySelectorAll('#customFiltersList .filter-row')].map(row => {
-      const field = row.querySelector('.f-field').value;
-      const opValue = row.querySelector('.f-op').value;
-      const valEl = row.querySelector('.f-value');
-      const value = valEl ? valEl.value : '';
-      return { field, opValue, value };
-    });
-  }
-
-  function applyFilters(rows, filters){
-    return rows.filter(row => {
-      return filters.every(f => {
-        const cellRaw = (row[f.field] || '').trim();
-        const cell = cellRaw.toLowerCase();
-        const val = (f.value || '').toLowerCase();
-        switch(f.opValue){
-          case 'equals': return cellRaw === f.value;
-          case 'not_equals': return cellRaw !== f.value;
-          case 'contains': return cell.includes(val);
-          case 'is_empty': return cellRaw === '';
-          case 'not_empty': return cellRaw !== '';
-          default: return true;
-        }
-      });
-    });
-  }
-
-  window.generateCustomReport = function(){
-    const type = document.getElementById('customType').value;
-    const schema = SCHEMAS[type];
-    const mode = document.getElementById('customMode').value;
-    const filters = readFilters();
-    let rows = applyFilters(cache[type], filters);
-
-    const out = document.getElementById('customReportOutput');
-
-    if(mode === 'grouped'){
-      const groupField = document.getElementById('customGroupField').value;
-      const groupLabel = schema.fields.find(f=>f.key===groupField).label;
-      let entries = countBy(rows, groupField);
-      const sortDir = document.getElementById('customSortDir').value;
-      entries.sort((a,b) => sortDir === 'asc' ? a[1]-b[1] : b[1]-a[1]);
-
-      lastCustomReport = {
-        mode:'grouped',
-        columns:[{key:'label', label: groupLabel}, {key:'count', label:'Antall'}],
-        rows: entries.map(([label,count]) => ({label, count: String(count)})),
-        typeLabel: TYPE_LABELS[type]
-      };
-
-      if(entries.length === 0){
-        out.innerHTML = '<div class="report-empty">Ingen resultater for disse filtrene.</div>';
-        document.getElementById('exportCustomBtn').style.display = 'none';
-        return;
-      }
-      const max = Math.max(...entries.map(e=>e[1]));
-      out.innerHTML = `<p style="font-family:'Jost',sans-serif; font-size:12px; color:#8a9a90; margin-bottom:10px;">${entries.length} gruppe(r)</p>` +
-        entries.map(([label,count]) => `
-          <div class="bar-row">
-            <div class="bar-label"><span>${escapeHtml(label)}</span><span class="n">${count}</span></div>
-            <div class="bar-track"><div class="bar-fill" style="width:${Math.round((count/max)*100)}%"></div></div>
-          </div>`).join('');
-      document.getElementById('exportCustomBtn').style.display = 'inline-block';
-      return;
-    }
-
-    // List mode
-    const checked = [...document.querySelectorAll('#customFieldsCheckboxes input:checked')].map(cb => cb.value);
-    if(checked.length === 0){
-      showToast('Velg minst én kolonne.');
-      return;
-    }
-    const sortField = document.getElementById('customSortField').value;
-    const sortDir = document.getElementById('customSortDir').value;
-    if(sortField){
-      rows = [...rows].sort((a,b) => {
-        const av = (a[sortField]||'').toLowerCase();
-        const bv = (b[sortField]||'').toLowerCase();
-        const cmp = av.localeCompare(bv, 'no', {numeric:true});
-        return sortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-
-    const columns = checked.map(key => ({ key, label: schema.fields.find(f=>f.key===key).label }));
-    lastCustomReport = { mode:'list', columns, rows, typeLabel: TYPE_LABELS[type] };
-
-    if(rows.length === 0){
-      out.innerHTML = '<div class="report-empty">Ingen resultater for disse filtrene.</div>';
-      document.getElementById('exportCustomBtn').style.display = 'none';
-      return;
-    }
-    let html = `<p style="font-family:'Jost',sans-serif; font-size:12px; color:#8a9a90; margin-bottom:8px;">${rows.length} resultat(er)</p>`;
-    html += '<table><thead><tr>' + columns.map(c=>`<th>${escapeHtml(c.label)}</th>`).join('') + '</tr></thead><tbody>';
-    rows.forEach(r => {
-      html += '<tr>' + columns.map(c=>`<td data-label="${escapeHtml(c.label)}">${escapeHtml(r[c.key]||'—')}</td>`).join('') + '</tr>';
-    });
-    html += '</tbody></table>';
-    out.innerHTML = html;
-    document.getElementById('exportCustomBtn').style.display = 'inline-block';
-  };
-
-  window.exportCustomReport = function(){
-    if(!lastCustomReport || lastCustomReport.rows.length === 0) return;
-    const { columns, rows, typeLabel } = lastCustomReport;
-    let csv = '\uFEFF' + columns.map(c=>c.label).join(',') + '\n';
-    rows.forEach(r => {
-      csv += columns.map(c => '"' + (r[c.key]||'').replace(/"/g,'""') + '"').join(',') + '\n';
-    });
-    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'madina_rapport_' + typeLabel.toLowerCase() + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  function buildLedelseNavnInput(currentRolle, currentValue){
-    const linkedRoles = ['Lærer','Assistent'];
-    let input;
-    if(linkedRoles.includes(currentRolle)){
-      input = document.createElement('select');
-      const blank = document.createElement('option');
-      blank.value = ''; blank.textContent = '— Velg —';
-      input.appendChild(blank);
-      const options = [...new Set(cache.teachers.map(r => r.navn).filter(Boolean))].sort();
-      if(options.length === 0){
-        const none = document.createElement('option');
-        none.value = ''; none.disabled = true;
-        none.textContent = 'Ingen lærere registrert ennå (legg til under Administrativ → Lærere)';
-        input.appendChild(none);
-      }
-      options.forEach(opt => {
-        const o = document.createElement('option');
-        o.value = opt; o.textContent = opt;
-        if(currentValue === opt) o.selected = true;
-        input.appendChild(o);
-      });
-      if(currentValue && !options.includes(currentValue)){
-        const o = document.createElement('option');
-        o.value = currentValue; o.textContent = currentValue + ' (utgått)';
-        o.selected = true;
-        input.appendChild(o);
-      }
-    } else {
-      input = document.createElement('input');
-      input.type = 'text';
-      input.value = currentValue || '';
-    }
-    input.id = 'field_navn';
-    return input;
-  }
-
-  function updateLedelseNavnField(newRolle){
-    const oldInput = document.getElementById('field_navn');
-    if(!oldInput) return;
-    const currentValue = oldInput.value;
-    const newInput = buildLedelseNavnInput(newRolle, currentValue);
-    oldInput.replaceWith(newInput);
-  }
-
-  window.openModal = function(type, id=null){
-    editingType = type; editingId = id;
-    const schema = SCHEMAS[type];
-    document.getElementById('modalTitle').textContent = (id ? 'Rediger ' : 'Ny ') + schema.label;
-    const container = document.getElementById('modalFields');
-    container.innerHTML = '';
-    const existing = id ? (cache[type].find(r=>r.id===id) || {}) : {};
-    schema.fields.forEach(f => {
-      const wrap = document.createElement('div');
-      wrap.className = 'field';
-      const label = document.createElement('label');
-      label.textContent = f.label;
-      wrap.appendChild(label);
-      let input;
-      if(f.type === 'select'){
-        input = document.createElement('select');
-        f.options.forEach(opt => {
-          const o = document.createElement('option');
-          o.value = opt; o.textContent = opt;
-          if(existing[f.key] === opt) o.selected = true;
-          input.appendChild(o);
-        });
-        if(type === 'students' && f.key === 'program'){
-          input.addEventListener('change', () => {
-            const belopEl = document.getElementById('field_belop');
-            if(belopEl && !belopEl.value){
-              belopEl.value = PROGRAM_PRICES[input.value] || '';
-            }
-          });
-        }
-        if(type === 'ledelse' && f.key === 'rolle'){
-          input.addEventListener('change', () => updateLedelseNavnField(input.value));
-        }
-      } else if(type === 'ledelse' && f.key === 'navn'){
-        input = buildLedelseNavnInput(existing.rolle, existing.navn);
-      } else if(f.type === 'dynamic-select'){
-        input = document.createElement('select');
-        const blank = document.createElement('option');
-        blank.value = ''; blank.textContent = '— Velg —';
-        input.appendChild(blank);
-        const sources = Array.isArray(f.source) ? f.source : [f.source];
-        const options = [...new Set(sources.flatMap(src => cache[src].map(r => r.navn)).filter(Boolean))].sort();
-        if(options.length === 0){
-          const none = document.createElement('option');
-          none.value = ''; none.disabled = true;
-          none.textContent = 'Ingen ' + sources.map(s => TYPE_LABELS[s].toLowerCase()).join('/') + ' registrert ennå';
-          input.appendChild(none);
-        }
-        options.forEach(opt => {
-          const o = document.createElement('option');
-          o.value = opt; o.textContent = opt;
-          if(existing[f.key] === opt) o.selected = true;
-          input.appendChild(o);
-        });
-        // Preserve a previously typed value even if it's not in the current list
-        if(existing[f.key] && !options.includes(existing[f.key])){
-          const o = document.createElement('option');
-          o.value = existing[f.key]; o.textContent = existing[f.key] + ' (utgått)';
-          o.selected = true;
-          input.appendChild(o);
-        }
-      } else if(f.type === 'role-checklist'){
-        input = document.createElement('div');
-        input.className = 'check-row';
-        const existingRoles = (existing[f.key] || '').split(',').map(s=>s.trim()).filter(Boolean);
-        f.options.forEach(opt => {
-          const lbl = document.createElement('label');
-          const cb = document.createElement('input');
-          cb.type = 'checkbox'; cb.value = opt;
-          if(existingRoles.includes(opt)) cb.checked = true;
-          lbl.appendChild(cb);
-          lbl.appendChild(document.createTextNode(' ' + opt));
-          input.appendChild(lbl);
-        });
-      } else {
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = existing[f.key] || '';
-      }
-      input.id = 'field_' + f.key;
-      wrap.appendChild(input);
-      container.appendChild(wrap);
-    });
-    document.getElementById('overlay').classList.add('open');
-  };
-
-  window.closeModal = function(){
-    document.getElementById('overlay').classList.remove('open');
-    editingId = null; editingType = null;
-  };
-
-  window.saveEntry = async function(){
-    const schema = SCHEMAS[editingType];
-    const entry = {};
-    schema.fields.forEach(f => {
-      if(f.type === 'role-checklist'){
-        const checked = [...document.querySelectorAll('#field_' + f.key + ' input:checked')].map(cb => cb.value);
-        entry[f.key] = checked.join(', ');
-      } else {
-        entry[f.key] = document.getElementById('field_' + f.key).value.trim();
-      }
-    });
-    if(!entry[schema.fields[0].key]){
-      showToast('Fyll ut ' + schema.fields[0].label.toLowerCase());
-      return;
-    }
-    try{
-      if(editingId){
-        await updateDoc(doc(db, schema.collectionName, editingId), entry);
-      } else {
-        await addDoc(collection(db, schema.collectionName), entry);
-      }
-      closeModal();
-      showToast('Lagret.');
-    } catch(err){
-      console.error(err);
-      showToast('Kunne ikke lagre. Sjekk internettforbindelsen.');
-    }
-  };
-
-  window.editEntry = function(type, id){ openModal(type, id); };
-
-  window.printLessonPlanPDF = function(id){
-    try{
-      const plan = cache.lessonPlans.find(p => p.id === id);
-      if(!plan){ alert('Fant ikke forberedelsen (id: ' + id + ').'); return; }
-
-      const schema = SCHEMAS.lessonPlans;
-      const labelFor = key => {
-        const f = schema.fields.find(f => f.key === key);
-        return f ? f.label : key;
-      };
-      const block = (label, value) =>
-        `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
-
-      const bodyHtml =
-        block(labelFor('emne'), plan.emne) +
-        block(labelFor('mal'), plan.mal) +
-        block(labelFor('metode'), plan.metode) +
-        block(labelFor('materiell'), plan.materiell) +
-        '<hr>' +
-        block(labelFor('oppstart'), plan.oppstart) +
-        block(labelFor('repetisjon'), plan.repetisjon) +
-        block(labelFor('nyttStoff'), plan.nyttStoff) +
-        block(labelFor('oving'), plan.oving) +
-        block(labelFor('oppsummering'), plan.oppsummering) +
-        '<hr>' +
-        block(labelFor('lekser'), plan.lekser);
-
-      const metaLine = (plan.larer||'—') + ' · ' + (plan.klasse||'—') + ' · ' + (plan.fag||'—') + ' · ' + (plan.dato||'—');
-
-      const printDoc = `<!DOCTYPE html>
-<html lang="no"><head><meta charset="UTF-8">
-<title>Timeforberedelse</title>
-<style>
-  body{font-family:Georgia,'Times New Roman',serif; color:#000; padding:30px 36px; max-width:720px; margin:0 auto;}
-  .logo-print{height:56px; display:block; margin:0 auto 16px;}
-  h1{font-size:22px; margin:0 0 4px; text-align:center;}
-  .meta{font-size:13px; color:#333; margin-bottom:22px; text-align:center;}
-  .block{margin-bottom:14px;}
-  .block .lbl{font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#1f4a3a; margin-bottom:3px; font-family:Arial,sans-serif;}
-  .block .val{font-size:14px; white-space:pre-wrap; line-height:1.5;}
-  hr{border:none; border-top:1px solid #ccc; margin:18px 0;}
-</style>
-</head><body>
-  <img src="${LOGO_DATA_URI}" alt="Madina Institute" class="logo-print">
-  <h1>Timeforberedelse</h1>
-  <div class="meta">${escapeHtml(metaLine)}</div>
-  ${bodyHtml}
-</body></html>`;
-
-      const win = window.open('', '_blank');
-      if(!win){
-        alert('Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for denne siden og prøv igjen.');
-        return;
-      }
-      win.document.open();
-      win.document.write(printDoc);
-      win.document.close();
-      win.onload = () => {
-        win.focus();
-        win.print();
-      };
-    } catch(err){
-      console.error(err);
-      alert('En feil oppstod: ' + err.message);
-    }
-  };
-
-  window.deleteEntry = async function(type, id){
-    if(!confirm('Er du sikker på at du vil slette denne oppføringen?')) return;
-    try{
-      await deleteDoc(doc(db, SCHEMAS[type].collectionName, id));
-      showToast('Slettet.');
-    } catch(err){
-      console.error(err);
-      showToast('Kunne ikke slette. Sjekk internettforbindelsen.');
-    }
-  };
-
-  window.exportCSV = function(type){
-    const schema = SCHEMAS[type];
-    const data = cache[type];
-    if(data.length === 0){ showToast('Ingen data å eksportere.'); return; }
-    const headers = schema.fields.map(f => f.label);
-    const rows = data.map(row => schema.fields.map(f => '"' + (row[f.key]||'').replace(/"/g,'""') + '"'));
-    const csv = [headers.join(','), ...rows.map(r=>r.join(','))].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'madina_' + type + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  function showToast(msg){
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'), 2200);
-  }
-
-  // Tabs
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-      if(tab.dataset.tab === 'lessonPlans') showLpChoice();
-    });
   });
-
-  // Search listeners
-  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances'].forEach(type => {
-    const el = document.getElementById('search' + capitalize(type));
-    if(el) el.addEventListener('input', () => render(type));
-  });
-
-  // Init: attach real-time listeners for all 3 collections
-  attachListener('teachers');
-  attachListener('guardians');
-  attachListener('students');
-  attachListener('classes');
-  attachListener('hours');
-  attachListener('attendance');
-  attachListener('lessonPlans');
-  attachListener('ledelse');
-  attachListener('meetings');
-  attachListener('finances');
-
-  populateCustomTypeDropdown();
-
-  // Attendance panel init
-  const attDateEl = document.getElementById('attDate');
-  if(attDateEl){
-    attDateEl.value = todayISO();
-    attDateEl.addEventListener('change', renderAttendanceTakingList);
-    document.getElementById('attClassFilter').addEventListener('change', renderAttendanceTakingList);
-    populateAttendanceClassFilter();
-    renderAttendanceTakingList();
-  }
 </script>
 </body>
 </html>
