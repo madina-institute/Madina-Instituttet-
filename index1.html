@@ -367,6 +367,7 @@
       submitLesson: 'Send inn forberedelse',
       downloadPdf: 'Last ned som PDF',
       printAndSubmit: 'Skriv ut og send inn forberedelse',
+      confirmPrinted: 'Har utskriften/PDF-en åpnet seg? Trykk OK for å sende inn forberedelsen til administrasjonen. Trykk Avbryt for å prøve utskrift på nytt uten å sende.',
       fillRequiredForPdf: 'Fyll ut minst dato, emne, læringsmål og nytt læringsstoff før du laster ned.',
       fillRequiredLesson: 'Fyll ut minst dato, emne, læringsmål og nytt læringsstoff.',
       lessonSent: 'Timeforberedelsen er sendt inn.',
@@ -424,6 +425,7 @@
       submitLesson: 'إرسال التحضير',
       downloadPdf: 'تحميل كملف PDF',
       printAndSubmit: 'طباعة وإرسال التحضير',
+      confirmPrinted: 'هل فُتحت نافذة الطباعة أو ملف PDF؟ اضغط "موافق" لإرسال التحضير للإدارة. اضغط "إلغاء" لإعادة محاولة الطباعة بدون إرسال.',
       fillRequiredForPdf: 'يرجى تعبئة التاريخ، الموضوع، الأهداف، والمحتوى الجديد على الأقل قبل التحميل.',
       fillRequiredLesson: 'يرجى تعبئة التاريخ، الموضوع، الأهداف، والمحتوى الجديد على الأقل.',
       lessonSent: 'تم إرسال التحضير التربوي بنجاح.',
@@ -705,7 +707,15 @@
 
       window.print();
 
-      // STEP 2 — save + email, runs right after the print dialog closes.
+      // The person must explicitly confirm the print/PDF step happened before
+      // we submit — this avoids silently sending on browsers where
+      // window.print() does not block until the dialog is dismissed.
+      const confirmed = confirm(t('confirmPrinted'));
+      if(!confirmed){
+        return;
+      }
+
+      // STEP 2 — save + email, runs only after explicit confirmation above.
       const record = {
         larer: currentTeacher.navn,
         klasse: currentTeacher.tildeltKlasse,

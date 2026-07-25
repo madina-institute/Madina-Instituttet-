@@ -1706,35 +1706,45 @@
   window.editEntry = function(type, id){ openModal(type, id); };
 
   window.printLessonPlanPDF = function(id){
-    const plan = cache.lessonPlans.find(p => p.id === id);
-    if(!plan){ showToast('Fant ikke forberedelsen.'); return; }
+    try{
+      const plan = cache.lessonPlans.find(p => p.id === id);
+      if(!plan){ alert('Fant ikke forberedelsen (id: ' + id + ').'); return; }
 
-    const schema = SCHEMAS.lessonPlans;
-    const labelFor = key => schema.fields.find(f => f.key === key).label;
-    const block = (label, value) =>
-      `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
+      const schema = SCHEMAS.lessonPlans;
+      const labelFor = key => {
+        const f = schema.fields.find(f => f.key === key);
+        return f ? f.label : key;
+      };
+      const block = (label, value) =>
+        `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
 
-    document.getElementById('printTitle').textContent = 'Timeforberedelse';
-    document.getElementById('printMeta').textContent =
-      (plan.larer||'—') + ' · ' + (plan.klasse||'—') + ' · ' + (plan.fag||'—') + ' · ' + (plan.dato||'—');
+      document.getElementById('printTitle').textContent = 'Timeforberedelse';
+      document.getElementById('printMeta').textContent =
+        (plan.larer||'—') + ' · ' + (plan.klasse||'—') + ' · ' + (plan.fag||'—') + ' · ' + (plan.dato||'—');
 
-    document.getElementById('printBody').innerHTML =
-      block(labelFor('emne'), plan.emne) +
-      block(labelFor('mal'), plan.mal) +
-      block(labelFor('metode'), plan.metode) +
-      block(labelFor('materiell'), plan.materiell) +
-      '<hr>' +
-      block(labelFor('oppstart'), plan.oppstart) +
-      block(labelFor('repetisjon'), plan.repetisjon) +
-      block(labelFor('nyttStoff'), plan.nyttStoff) +
-      block(labelFor('oving'), plan.oving) +
-      block(labelFor('oppsummering'), plan.oppsummering) +
-      '<hr>' +
-      block(labelFor('lekser'), plan.lekser);
+      document.getElementById('printBody').innerHTML =
+        block(labelFor('emne'), plan.emne) +
+        block(labelFor('mal'), plan.mal) +
+        block(labelFor('metode'), plan.metode) +
+        block(labelFor('materiell'), plan.materiell) +
+        '<hr>' +
+        block(labelFor('oppstart'), plan.oppstart) +
+        block(labelFor('repetisjon'), plan.repetisjon) +
+        block(labelFor('nyttStoff'), plan.nyttStoff) +
+        block(labelFor('oving'), plan.oving) +
+        block(labelFor('oppsummering'), plan.oppsummering) +
+        '<hr>' +
+        block(labelFor('lekser'), plan.lekser);
 
-    document.body.classList.add('printing-lesson-plan');
-    window.print();
-    document.body.classList.remove('printing-lesson-plan');
+      document.body.classList.add('printing-lesson-plan');
+      window.onafterprint = () => { document.body.classList.remove('printing-lesson-plan'); };
+      window.print();
+      // Safety net in case 'afterprint' never fires on this browser
+      setTimeout(() => { document.body.classList.remove('printing-lesson-plan'); }, 3000);
+    } catch(err){
+      console.error(err);
+      alert('En feil oppstod: ' + err.message);
+    }
   };
 
   window.deleteEntry = async function(type, id){
