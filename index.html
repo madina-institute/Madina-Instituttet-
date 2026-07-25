@@ -1367,7 +1367,8 @@
   };
 
   window.toggleRecords = function(chipEl){
-    const table = chipEl.parentElement.querySelector('table');
+    const container = chipEl.closest('.toolbar').parentElement;
+    const table = container.querySelector('table');
     if(!table) return;
     const nowHidden = table.classList.toggle('records-hidden');
     chipEl.classList.toggle('expanded', !nowHidden);
