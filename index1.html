@@ -705,20 +705,26 @@
         '<hr>' +
         block(t('lekserLabel'), lekser);
 
-      window.print();
-
-      // Give the browser a moment to actually present the print/PDF sheet
-      // before showing the confirm dialog — calling them back-to-back can
-      // make some mobile browsers (notably iOS Safari) show only the confirm
-      // and queue the print sheet until after it's dismissed.
+      // Give the browser a moment to repaint the new content into
+      // #printLessonPlan before opening the print dialog — calling print()
+      // in the same tick as the content change can make some mobile
+      // browsers snapshot the OLD page state instead.
       setTimeout(() => {
-        const confirmed = confirm(t('confirmPrinted'));
-        if(!confirmed) return;
-        finishLessonPlanSubmission({
-          fag, dato, emne, mal, metode, materiell,
-          oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
-        });
-      }, 600);
+        window.print();
+
+        // Give the browser a moment to actually present the print/PDF sheet
+        // before showing the confirm dialog — calling them back-to-back can
+        // make some mobile browsers (notably iOS Safari) show only the confirm
+        // and queue the print sheet until after it's dismissed.
+        setTimeout(() => {
+          const confirmed = confirm(t('confirmPrinted'));
+          if(!confirmed) return;
+          finishLessonPlanSubmission({
+            fag, dato, emne, mal, metode, materiell,
+            oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
+          });
+        }, 600);
+      }, 150);
     } catch(err){
       console.error(err);
       alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
