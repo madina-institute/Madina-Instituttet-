@@ -135,6 +135,18 @@
   }
   .menu-card.has-new .dot{display:block;}
 
+  .day-card{
+    background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%); border-radius:10px;
+    padding:22px 20px; box-shadow:var(--shadow); cursor:pointer; transition:transform .2s; color:#fff;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .day-card:hover{transform:translateY(-2px);}
+  .day-card .dn{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:20px;}
+  html[dir="rtl"] .day-card .dn{font-family:'Tajawal',sans-serif; font-size:17px;}
+  .day-card .dt{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold-l); margin-top:3px;}
+  html[dir="rtl"] .day-card .dt{font-family:'Tajawal',sans-serif;}
+  .day-card .arrow{font-size:20px; color:var(--gold-l);}
+
   .back-link{
     display:inline-block; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald);
     margin-bottom:16px; cursor:pointer; text-decoration:underline; background:none; border:none; padding:0;
@@ -283,14 +295,27 @@
     <!-- TIMEPLAN -->
     <div class="sub-view" id="view-schedule">
       <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
-      <div class="card">
-        <h2 data-i18n="menuSchedule">Timeplan</h2>
-        <div class="sub" data-i18n="scheduleSub">Ukentlig skjema for barnets klasse</div>
-        <div id="scheduleList"></div>
+
+      <!-- Day selector -->
+      <div id="scheduleDayChoose">
+        <div class="card">
+          <h2 data-i18n="menuSchedule">Timeplan</h2>
+          <div class="sub" data-i18n="scheduleSub">Velg dag for å se detaljert skjema</div>
+          <div class="menu-grid" id="scheduleDayGrid" style="grid-template-columns:1fr;"></div>
+        </div>
       </div>
-      <div class="card">
-        <h2 data-i18n="teachersTitle">Lærere denne dagen</h2>
-        <div id="teachersList"></div>
+
+      <!-- Day detail -->
+      <div id="scheduleDayDetail" style="display:none;">
+        <button class="back-link" onclick="closeScheduleDay()" data-i18n="backToDays">← Tilbake til dagene</button>
+        <div class="card">
+          <h2 id="scheduleDayTitle"></h2>
+          <div id="scheduleList"></div>
+        </div>
+        <div class="card">
+          <h2 data-i18n="teachersTitle">Lærere denne dagen</h2>
+          <div id="teachersList"></div>
+        </div>
       </div>
     </div>
 
@@ -438,7 +463,8 @@
       menuPayment: 'Betaling', menuPaymentDesc: 'Beløp og betal nå',
       menuContact: 'Kontaktinfo', menuContactDesc: 'Meld endring',
       back: '← Tilbake', regStatusTitle: 'Status på søknad', downloadReg: 'Last ned søknaden min',
-      scheduleSub: 'Ukentlig skjema for barnets klasse', teachersTitle: 'Lærere denne dagen',
+      scheduleSub: 'Velg dag for å se detaljert skjema', teachersTitle: 'Lærere denne dagen',
+      saturday: 'Lørdag', sunday: 'Søndag', backToDays: '← Tilbake til dagene',
       submitHwSub: 'Lever besvarelse (lim inn lenke til bilde/dokument etter opplasting på f.eks. Google Drive)',
       whichHw: 'Hvilken lekse gjelder dette?', linkLabel: 'Lenke til besvarelse', submitHwBtn: 'Send inn besvarelse',
       absenceSub: 'Send en melding til læreren om barnets fravær', dateLabel: 'Dato', reasonLabel: 'Årsak', sendAbsence: 'Send fraværsmelding',
@@ -471,7 +497,8 @@
       menuPayment: 'الدفع', menuPaymentDesc: 'المبلغ والدفع الآن',
       menuContact: 'معلومات التواصل', menuContactDesc: 'طلب تعديل',
       back: '→ رجوع', regStatusTitle: 'حالة الطلب', downloadReg: 'تحميل طلب التسجيل',
-      scheduleSub: 'الجدول الأسبوعي لصف الطالب', teachersTitle: 'المعلمون في هذا اليوم',
+      scheduleSub: 'اختر اليوم لعرض الجدول التفصيلي', teachersTitle: 'المعلمون في هذا اليوم',
+      saturday: 'السبت', sunday: 'الأحد', backToDays: '→ رجوع إلى الأيام',
       submitHwSub: 'تسليم الإجابة (الصق رابط الصورة أو الملف بعد رفعه على Google Drive مثلاً)',
       whichHw: 'ما هو الواجب المعني؟', linkLabel: 'رابط الإجابة', submitHwBtn: 'إرسال الإجابة',
       absenceSub: 'أرسل رسالة إلى المعلم بخصوص غياب الطالب', dateLabel: 'التاريخ', reasonLabel: 'السبب', sendAbsence: 'إرسال إشعار الغياب',
@@ -662,12 +689,42 @@
     document.getElementById('homeView').style.display = 'none';
     document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + name).style.display = 'block';
+    if(name === 'schedule') closeScheduleDay();
     markSeen(name);
     updateBadges();
   };
   window.closeSection = function(){
     document.getElementById('homeView').style.display = 'block';
     document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
+  };
+
+  let currentChildDays = [];
+  window.showScheduleDay = function(day){
+    document.getElementById('scheduleDayChoose').style.display = 'none';
+    document.getElementById('scheduleDayDetail').style.display = 'block';
+    document.getElementById('scheduleDayTitle').textContent = day === 'Lørdag' ? t('saturday') : t('sunday');
+    const child = myChildren[currentChildIndex];
+    const dayHours = hours.filter(h => h.dag === day && (h.klasse === child.klasse || h.klasse === 'Felles oppstart' || h.klasse === 'Felles avslutning'))
+      .sort((a,b) => (a.tid||'').localeCompare(b.tid||''));
+    if(dayHours.length === 0){
+      document.getElementById('scheduleList').innerHTML = `<div class="empty-msg">${t('noSchedule')}</div>`;
+    } else {
+      document.getElementById('scheduleList').innerHTML = dayHours.map(h => `
+        <div class="sched-block"><span class="tm">${escapeHtml(h.tid)}</span><span>${escapeHtml(h.fag)}</span></div>
+      `).join('');
+    }
+    const dayTeachers = teachers.filter(tc => (tc.dager||'').includes(day));
+    if(dayTeachers.length === 0){
+      document.getElementById('teachersList').innerHTML = `<div class="empty-msg">${t('noTeachers')}</div>`;
+    } else {
+      document.getElementById('teachersList').innerHTML = dayTeachers.map(tc => `
+        <div class="info-row"><span class="lbl">${escapeHtml(tc.navn)} (${escapeHtml(tc.fag||'')})</span><span>${escapeHtml(tc.telefon||'')}</span></div>
+      `).join('');
+    }
+  };
+  window.closeScheduleDay = function(){
+    document.getElementById('scheduleDayChoose').style.display = 'block';
+    document.getElementById('scheduleDayDetail').style.display = 'none';
   };
 
   function seenKey(type){ return 'ps_seen_' + type + '_' + (currentGuardian ? currentGuardian.navn : ''); }
@@ -783,25 +840,26 @@
       `).join('');
     }
 
-    // Timeplan
-    const klasseHours = hours.filter(h => h.klasse === child.klasse || h.klasse === 'Felles oppstart' || h.klasse === 'Felles avslutning')
-      .sort((a,b) => (a.tid||'').localeCompare(b.tid||''));
-    if(klasseHours.length === 0){
-      document.getElementById('scheduleList').innerHTML = `<div class="empty-msg">${t('noSchedule')}</div>`;
+    // Timeplan — dag-velger
+    const relevantDays = [];
+    if((child.program||'').includes('Lørdag')) relevantDays.push('Lørdag');
+    if((child.program||'').includes('Søndag')) relevantDays.push('Søndag');
+    currentChildDays = relevantDays;
+    const dayGrid = document.getElementById('scheduleDayGrid');
+    if(relevantDays.length === 0){
+      dayGrid.innerHTML = `<div class="empty-msg">${t('noSchedule')}</div>`;
     } else {
-      document.getElementById('scheduleList').innerHTML = klasseHours.map(h => `
-        <div class="sched-block"><span class="tm">${escapeHtml(h.dag)} · ${escapeHtml(h.tid)}</span><span>${escapeHtml(h.fag)}</span></div>
-      `).join('');
+      dayGrid.innerHTML = relevantDays.map(d => {
+        const dayHours = hours.filter(h => h.dag === d).sort((a,b) => (a.tid||'').localeCompare(b.tid||''));
+        const range = dayHours.length ? (dayHours[0].tid.split('–')[0] + '–' + dayHours[dayHours.length-1].tid.split('–')[1]) : '';
+        return `
+        <div class="day-card" onclick="showScheduleDay('${d}')">
+          <div><div class="dn">${d === 'Lørdag' ? t('saturday') : t('sunday')}</div><div class="dt">${escapeHtml(range)}</div></div>
+          <div class="arrow">${currentLang === 'ar' ? '←' : '→'}</div>
+        </div>`;
+      }).join('');
     }
-    const relevantDay = klasseHours.length ? klasseHours[0].dag : null;
-    const dayTeachers = relevantDay ? teachers.filter(tc => (tc.dager||'').includes(relevantDay)) : [];
-    if(dayTeachers.length === 0){
-      document.getElementById('teachersList').innerHTML = `<div class="empty-msg">${t('noTeachers')}</div>`;
-    } else {
-      document.getElementById('teachersList').innerHTML = dayTeachers.map(tc => `
-        <div class="info-row"><span class="lbl">${escapeHtml(tc.navn)} (${escapeHtml(tc.fag||'')})</span><span>${escapeHtml(tc.telefon||'')}</span></div>
-      `).join('');
-    }
+
 
     // Betaling
     document.getElementById('paymentInfo').innerHTML = `
