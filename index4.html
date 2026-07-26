@@ -135,6 +135,10 @@
         <div class="summary-item"><div class="n" id="sumRemaining">0 kr</div><div class="l">Gjenstår</div></div>
         <div class="summary-item"><div class="n" id="sumChildren">0</div><div class="l">Antall barn</div></div>
       </div>
+      <div class="summary-item" id="sumSavingsWrap" style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.15); display:none;">
+        <div class="n" id="sumSavings" style="color:var(--gold-l);">0 kr</div>
+        <div class="l">Spart på søskenrabatt</div>
+      </div>
     </div>
 
     <div class="child-tabs" id="childTabs"></div>
@@ -207,6 +211,14 @@
   const db = getFirestore(app);
 
   let guardians = [], students = [], attendance = [], registrations = [], homework = [];
+
+  const PROGRAM_PRICES = {
+    'Madina Islamske Skole (Lørdag)': '2500',
+    'Tilleggsprogram i språk – Arabisk (Søndag)': '2000',
+    'Tilleggsprogram i språk – Urdu (Søndag)': '2000',
+    'Kombinert – Islamske Skole + Språk (Lørdag og søndag)': '4000',
+    'Madinabarn (Søndag)': '2000'
+  };
   let currentGuardian = null;
   let currentChildIndex = 0;
   let myChildren = [];
@@ -289,10 +301,19 @@
   function renderSummary(){
     const total = myChildren.reduce((s,c) => s + toNum(c.belop), 0);
     const paid = myChildren.reduce((s,c) => s + toNum(c.belopBetalt), 0);
+    const totalBase = myChildren.reduce((s,c) => s + (parseFloat(PROGRAM_PRICES[c.program] || 0) || 0), 0);
+    const savings = totalBase - total;
     document.getElementById('sumTotal').textContent = total.toLocaleString('no-NO') + ' kr';
     document.getElementById('sumPaid').textContent = paid.toLocaleString('no-NO') + ' kr';
     document.getElementById('sumRemaining').textContent = (total-paid).toLocaleString('no-NO') + ' kr';
     document.getElementById('sumChildren').textContent = myChildren.length;
+    const savingsWrap = document.getElementById('sumSavingsWrap');
+    if(savings > 0){
+      savingsWrap.style.display = 'block';
+      document.getElementById('sumSavings').textContent = savings.toLocaleString('no-NO') + ' kr';
+    } else {
+      savingsWrap.style.display = 'none';
+    }
   }
 
   function renderChildTabs(){
