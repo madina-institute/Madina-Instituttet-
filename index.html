@@ -377,6 +377,7 @@
   <div class="tab" data-tab="classes" data-side="admin">Klasser</div>
   <div class="tab" data-tab="hours" data-side="admin">Timeplan</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
+  <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
@@ -826,6 +827,15 @@
     </table>
   </div>
 
+  <!-- ABSENCE REQUESTS -->
+  <div class="panel" id="panel-absenceRequests">
+    <div class="report-card">
+      <h3>Fraværsmeldinger fra foresatte</h3>
+      <div class="sub">Ubehandlede meldinger — velg riktig status for hver</div>
+      <div id="absenceRequestsList"></div>
+    </div>
+  </div>
+
   <!-- LESSON PLANS -->
   <div class="panel" id="panel-lessonPlans">
 
@@ -1015,27 +1025,76 @@
       fields: [
         {key:'navn', label:'Fullt navn', type:'text'},
         {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'}
+        {key:'epost', label:'E-post', type:'text'},
+        {key:'tilgangskode', label:'Tilgangskode (foreldreportal)', type:'text'}
       ],
       cols: ['navn','telefon','epost']
     },
     students: {
       label: 'elev', collectionName: 'students',
       fields: [
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'program', label:'Program', type:'select', options:[
+        {key:'navn', label:'Fullt navn', type:'text', essential:true},
+        {key:'elev_fdato', label:'Fødselsdato', type:'text', essential:true},
+        {key:'program', label:'Program', type:'select', essential:true, options:[
           'Madina Islamske Skole (Lørdag)',
           'Tilleggsprogram i språk – Arabisk (Søndag)',
           'Tilleggsprogram i språk – Urdu (Søndag)',
           'Kombinert – Islamske Skole + Språk (Lørdag og søndag)',
           'Madinabarn (Søndag)'
         ]},
-        {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes'},
-        {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians'},
+        {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
+        {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
+        {key:'foresattTlf', label:'Foresatt — telefon', type:'text', essential:true},
+        {key:'foresattEpost', label:'Foresatt — e-post', type:'text', essential:true},
+
         {key:'telefon', label:'Telefon (elev/direkte)', type:'text'},
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
-        {key:'belop', label:'Beløp (kr)', type:'text'},
-        {key:'betalingsdato', label:'Betalingsdato', type:'text'}
+        {key:'belop', label:'Beløp totalt (kr)', type:'text'},
+        {key:'belopBetalt', label:'Beløp betalt så langt (kr)', type:'text'},
+        {key:'betalingsdato', label:'Betalingsdato', type:'text'},
+        {key:'soskenrekkefolge', label:'Søskenrekkefølge (auto)', type:'text'},
+
+        {key:'kjonn', label:'Kjønn', type:'text'},
+        {key:'grunnskole', label:'Grunnskole', type:'text'},
+        {key:'klassetrinn', label:'Klassetrinn', type:'text'},
+        {key:'adresse', label:'Adresse', type:'text'},
+        {key:'postnr_sted', label:'Postnummer og sted', type:'text'},
+        {key:'foresatt2_navn', label:'Foresatt 2 — navn', type:'text'},
+        {key:'foresatt2_relasjon', label:'Foresatt 2 — relasjon', type:'text'},
+        {key:'foresatt2_tlf', label:'Foresatt 2 — telefon', type:'text'},
+        {key:'foresatt2_epost', label:'Foresatt 2 — e-post', type:'text'},
+        {key:'nod_navn', label:'Nødkontakt — navn', type:'text'},
+        {key:'nod_tlf', label:'Nødkontakt — telefon', type:'text'},
+        {key:'nod_relasjon', label:'Nødkontakt — relasjon', type:'text'},
+        {key:'allergi', label:'Allergier', type:'text'},
+        {key:'allergi_beskriv', label:'Allergier — beskrivelse', type:'text'},
+        {key:'sykdom', label:'Sykdommer/medisinske forhold', type:'text'},
+        {key:'sykdom_beskriv', label:'Sykdommer — beskrivelse', type:'text'},
+        {key:'medisin', label:'Bruker medisiner', type:'text'},
+        {key:'medisin_hvilke', label:'Medisiner — hvilke', type:'text'},
+        {key:'helse_annet', label:'Andre helseopplysninger', type:'text'},
+        {key:'larevansker', label:'Lærevansker', type:'text'},
+        {key:'larevansker_beskriv', label:'Lærevansker — beskrivelse', type:'text'},
+        {key:'bbt_ppt', label:'Følges av BBT/PPT', type:'text'},
+        {key:'bbt_ppt_beskriv', label:'BBT/PPT — beskrivelse', type:'text'},
+        {key:'tidligere_skole', label:'Tidligere islamsk skole', type:'text'},
+        {key:'tidligere_skole_navn', label:'Tidligere skole — navn', type:'text'},
+        {key:'tidligere_skole_ar', label:'Tidligere skole — antall år', type:'text'},
+        {key:'tidligere_studert', label:'Tidligere studert', type:'text'},
+        {key:'koran_lese', label:'Koran — kan lese', type:'text'},
+        {key:'koran_qaida', label:'Koran — lært Qaida', type:'text'},
+        {key:'koran_tajwid', label:'Koran — leser med tajwīd', type:'text'},
+        {key:'koran_memorert', label:'Koran — memorert deler', type:'text'},
+        {key:'koran_ijazah', label:'Koran — ijāzah/Hifz', type:'text'},
+        {key:'arabisk_tidligere', label:'Arabisk — lært tidligere', type:'text'},
+        {key:'arabisk_niva', label:'Arabisk — nivå/bok', type:'text'},
+        {key:'urdu_tidligere', label:'Urdu — lært tidligere', type:'text'},
+        {key:'urdu_niva', label:'Urdu — nivå/bok', type:'text'},
+        {key:'sprak_hjemme', label:'Språk hjemme', type:'text'},
+        {key:'samtykke_personopplysninger', label:'Samtykke personopplysninger', type:'text'},
+        {key:'samtykke_bilder', label:'Samtykke bilder/video (internt)', type:'text'},
+        {key:'samtykke_fotografering', label:'Samtykke fotografering', type:'text'},
+        {key:'samtykke_publisering_nett', label:'Samtykke publisering på nett/sosiale medier', type:'text'}
       ],
       cols: ['navn','program','klasse','foresatt','betalt']
     },
@@ -1160,6 +1219,43 @@
         {key:'dato_signatur', label:'Dato signatur', type:'text'}
       ],
       cols: ['elev_navn','foresatt1_navn','program','status']
+    },
+    homework: {
+      label: 'lekse', collectionName: 'homework',
+      fields: [
+        {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes'},
+        {key:'tittel', label:'Tittel / emne', type:'text'},
+        {key:'beskrivelse', label:'Beskrivelse av leksen', type:'text'},
+        {key:'frist', label:'Frist (valgfritt)', type:'text'},
+        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
+        {key:'dato', label:'Dato lagt ut', type:'text'}
+      ],
+      cols: ['klasse','tittel','larer','dato']
+    },
+    homeworkSubmissions: {
+      label: 'leksesvar', collectionName: 'homeworkSubmissions',
+      fields: [
+        {key:'homeworkTittel', label:'Lekse', type:'text'},
+        {key:'klasse', label:'Klasse', type:'text'},
+        {key:'elevNavn', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'lenke', label:'Lenke til besvarelse', type:'text'},
+        {key:'innsendtDato', label:'Innsendt dato', type:'text'}
+      ],
+      cols: ['elevNavn','homeworkTittel','klasse','innsendtDato']
+    },
+    absenceRequests: {
+      label: 'fraværsmelding', collectionName: 'absenceRequests',
+      fields: [
+        {key:'elevNavn', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'klasse', label:'Klasse', type:'text'},
+        {key:'dato', label:'Dato for fravær', type:'text'},
+        {key:'arsak', label:'Årsak (fra foresatt)', type:'text'},
+        {key:'status', label:'Status', type:'select', options:['Ny','Behandlet']},
+        {key:'behandletSom', label:'Behandlet som', type:'select', options:['','Syk','Permisjon','Ugyldig']},
+        {key:'innsendtDato', label:'Innsendt dato', type:'text'},
+        {key:'behandletAv', label:'Behandlet av', type:'text'}
+      ],
+      cols: ['elevNavn','klasse','dato','status']
     },
     ledelse: {
       label: 'ledelsesmedlem', collectionName: 'ledelse',
@@ -1352,7 +1448,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [], registrations: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [] };
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -1441,7 +1537,7 @@
         tbody.appendChild(tr);
       });
     }
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster', registrations:'søknader' };
+    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger' };
     document.getElementById('count' + capitalize(type)).innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tbodyGuardians')) render('guardians');
@@ -1568,6 +1664,7 @@
     document.getElementById('statStudents') && (document.getElementById('statStudents').textContent = cache.students.length);
     document.getElementById('statHours') && (document.getElementById('statHours').textContent = cache.hours.length);
     renderReports();
+    renderAbsenceRequests();
   }
 
   function countBy(list, key){
@@ -1772,7 +1869,7 @@
 
   function buildFullBackupText(){
     let out = '';
-    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations'].forEach(type => {
+    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests'].forEach(type => {
       const schema = SCHEMAS[type];
       const data = cache[type];
       out += '=== ' + schema.label.toUpperCase() + 'E ===\n';
@@ -1947,7 +2044,7 @@
   };
 
   // ---------- Custom report builder (advanced) ----------
-  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader' };
+  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger' };
   const OPERATORS = [
     {value:'equals', label:'Er lik', needsValue:true, valueType:'select'},
     {value:'not_equals', label:'Er ikke lik', needsValue:true, valueType:'select'},
@@ -2300,8 +2397,27 @@
       }
       input.id = 'field_' + f.key;
       wrap.appendChild(input);
+      const hasEssentialFields = schema.fields.some(ff => ff.essential);
+      if(hasEssentialFields && !f.essential){
+        wrap.classList.add('extra-field');
+        wrap.style.display = 'none';
+      }
       container.appendChild(wrap);
     });
+    if(schema.fields.some(f => f.essential)){
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'btn btn-ghost';
+      toggleBtn.textContent = 'Vis mer';
+      toggleBtn.style.marginTop = '4px';
+      toggleBtn.onclick = () => {
+        const hidden = container.querySelectorAll('.extra-field');
+        const nowShow = hidden.length && hidden[0].style.display === 'none';
+        hidden.forEach(el => { el.style.display = nowShow ? 'block' : 'none'; });
+        toggleBtn.textContent = nowShow ? 'Vis mindre' : 'Vis mer';
+      };
+      container.appendChild(toggleBtn);
+    }
     document.getElementById('overlay').classList.add('open');
   };
 
@@ -2343,6 +2459,47 @@
 
   window.editEntry = function(type, id){ openModal(type, id); };
 
+  function renderAbsenceRequests(){
+    const el = document.getElementById('absenceRequestsList');
+    if(!el) return;
+    const pending = cache.absenceRequests.filter(r => r.status !== 'Behandlet');
+    if(pending.length === 0){
+      el.innerHTML = '<div class="report-empty">Ingen ubehandlede fraværsmeldinger.</div>';
+      return;
+    }
+    el.innerHTML = pending.map(r => `
+      <div class="status-row" style="flex-wrap:wrap; gap:10px;">
+        <span>
+          <strong>${escapeHtml(r.elevNavn||'')}</strong> (${escapeHtml(r.klasse||'—')}) — ${escapeHtml(r.dato||'')}<br>
+          <span style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;">${escapeHtml(r.arsak||'')}</span>
+        </span>
+        <div class="reg-actions">
+          <button class="btn-approve" onclick="processAbsenceRequest('${r.id}','Syk')">Syk</button>
+          <button class="btn-waitlist" onclick="processAbsenceRequest('${r.id}','Permisjon')">Permisjon</button>
+          <button class="btn-reject" onclick="processAbsenceRequest('${r.id}','Ugyldig')">Ugyldig</button>
+        </div>
+      </div>`).join('');
+  }
+
+  window.processAbsenceRequest = async function(id, statusValue){
+    const req = cache.absenceRequests.find(r => r.id === id);
+    if(!req){ showToast('Fant ikke meldingen.'); return; }
+    try{
+      const student = cache.students.find(s => s.navn === req.elevNavn);
+      const safeId = req.dato + '_' + (student ? student.id : req.elevNavn.replace(/[^a-zA-Z0-9]/g,''));
+      await setDoc(doc(db, 'attendance', safeId), {
+        dato: req.dato, elev: req.elevNavn, klasse: req.klasse, status: statusValue
+      });
+      await updateDoc(doc(db, 'absenceRequests', id), {
+        status: 'Behandlet', behandletSom: statusValue, behandletAv: currentUserEmail || 'ukjent'
+      });
+      showToast('Fravær registrert som ' + statusValue + '.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt.');
+    }
+  };
+
   function mapRegistrationProgram(codesStr){
     const codes = (codesStr || '').split(',').map(s => s.trim());
     const hasSkole = codes.includes('madina_islamske_skole');
@@ -2379,18 +2536,40 @@
       }
 
       const program = mapRegistrationProgram(reg.program);
-      await addDoc(collection(db, 'students'), {
-        navn: reg.elev_navn || '',
-        program: program,
-        klasse: '',
-        foresatt: guardianName,
-        telefon: '',
-        betalt: 'Nei',
-        belop: PROGRAM_PRICES[program] || '',
-        betalingsdato: '',
-        sistEndretAv: currentUserEmail || 'ukjent',
-        sistEndretDato: new Date().toISOString().slice(0,10)
-      });
+      const basePrice = parseFloat(PROGRAM_PRICES[program] || 0) || 0;
+
+      // Sibling discount: existing children of the same guardian already in
+      // Administrativ determine this child's position (1st = full price,
+      // 2nd = 30% off, 3rd+ = 50% off).
+      const existingSiblings = guardianName ? cache.students.filter(s => s.foresatt === guardianName).length : 0;
+      let discountedPrice = basePrice;
+      let soskenPos = existingSiblings + 1;
+      if(soskenPos === 2) discountedPrice = Math.round(basePrice * 0.7);
+      else if(soskenPos >= 3) discountedPrice = Math.round(basePrice * 0.5);
+
+      // Copy every field from the registration into the new student record,
+      // then layer on the school-specific fields (program, class, payment).
+      const studentRecord = { ...reg };
+      delete studentRecord.status;
+      delete studentRecord.innsendtDato;
+      delete studentRecord.behandletAv;
+
+      studentRecord.navn = reg.elev_navn || '';
+      studentRecord.program = program;
+      studentRecord.klasse = '';
+      studentRecord.foresatt = guardianName;
+      studentRecord.foresattTlf = reg.foresatt1_tlf || '';
+      studentRecord.foresattEpost = reg.foresatt1_epost || '';
+      studentRecord.telefon = '';
+      studentRecord.betalt = 'Nei';
+      studentRecord.belop = String(discountedPrice);
+      studentRecord.belopBetalt = '0';
+      studentRecord.betalingsdato = '';
+      studentRecord.soskenrekkefolge = String(soskenPos);
+      studentRecord.sistEndretAv = currentUserEmail || 'ukjent';
+      studentRecord.sistEndretDato = new Date().toISOString().slice(0,10);
+
+      await addDoc(collection(db, 'students'), studentRecord);
 
       await updateDoc(doc(db, 'registrations', id), { status: 'Godkjent', behandletAv: currentUserEmail || 'ukjent' });
       showToast('Søknaden er godkjent og eleven er lagt til i Administrativ.');
@@ -2538,7 +2717,7 @@
   });
 
   // Search listeners
-  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations'].forEach(type => {
+  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests'].forEach(type => {
     const el = document.getElementById('search' + capitalize(type));
     if(el) el.addEventListener('input', () => render(type));
   });
@@ -2555,6 +2734,9 @@
   attachListener('meetings');
   attachListener('finances');
   attachListener('registrations');
+  attachListener('homework');
+  attachListener('homeworkSubmissions');
+  attachListener('absenceRequests');
 
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
     const list = snap.docs.map(d => d.data()).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));

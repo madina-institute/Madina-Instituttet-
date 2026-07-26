@@ -173,6 +173,14 @@
           <div class="title" data-i18n="chooseLesson">Timeforberedelse</div>
           <div class="desc" data-i18n="chooseLessonDesc">Send inn pedagogisk forberedelse for en time</div>
         </div>
+        <div class="choice-card" onclick="showHomework()">
+          <div class="title">Lekser</div>
+          <div class="desc">Legg ut en lekse til klassen din</div>
+        </div>
+        <div class="choice-card" onclick="showAbsenceReview()">
+          <div class="title">Fraværsmeldinger</div>
+          <div class="desc">Behandle fraværsmeldinger fra foresatte</div>
+        </div>
       </div>
     </div>
 
@@ -262,6 +270,34 @@
 
       <button class="btn btn-primary" onclick="printAndSubmitLessonPlan()" data-i18n="printAndSubmit">Skriv ut og send inn forberedelse</button>
     </div>
+
+    <!-- HOMEWORK VIEW -->
+    <div class="card" id="homeworkView" style="display:none;">
+      <button class="back-link" onclick="showChoice()">← Tilbake</button>
+      <h2>Legg ut lekse</h2>
+      <div class="sub" id="homeworkClassSub"></div>
+      <div class="field">
+        <label>Tittel / emne</label>
+        <input type="text" id="hwTittel">
+      </div>
+      <div class="field">
+        <label>Beskrivelse av leksen</label>
+        <textarea id="hwBeskrivelse" rows="3"></textarea>
+      </div>
+      <div class="field">
+        <label>Frist (valgfritt)</label>
+        <input type="date" id="hwFrist">
+      </div>
+      <button class="btn btn-primary" onclick="submitHomework()">Legg ut lekse</button>
+    </div>
+
+    <!-- ABSENCE REVIEW VIEW -->
+    <div class="card" id="absenceReviewView" style="display:none;">
+      <button class="back-link" onclick="showChoice()">← Tilbake</button>
+      <h2>Fraværsmeldinger</h2>
+      <div class="sub">Ubehandlede meldinger fra foresatte for din klasse</div>
+      <div id="absenceReviewList"></div>
+    </div>
   </div>
 
 </main>
@@ -271,7 +307,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, setDoc, doc, addDoc
+    getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -499,6 +535,12 @@
     if(currentTeacher) renderStudentList();
   });
 
+  let absenceRequests = [];
+  onSnapshot(collection(db, 'absenceRequests'), (snap) => {
+    absenceRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher) renderAbsenceReviewList();
+  });
+
   window.doLogin = function(){
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
@@ -542,6 +584,8 @@
     document.getElementById('chooseView').style.display = 'block';
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'none';
+    document.getElementById('homeworkView').style.display = 'none';
+    document.getElementById('absenceReviewView').style.display = 'none';
   };
 
   window.showAttendance = function(){
@@ -557,6 +601,85 @@
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'block';
+  };
+
+  window.showHomework = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('homeworkView').style.display = 'block';
+    document.getElementById('homeworkClassSub').textContent =
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + currentTeacher.tildeltKlasse;
+  };
+
+  window.showAbsenceReview = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('absenceReviewView').style.display = 'block';
+    renderAbsenceReviewList();
+  };
+
+  window.submitHomework = async function(){
+    const tittel = document.getElementById('hwTittel').value.trim();
+    const beskrivelse = document.getElementById('hwBeskrivelse').value.trim();
+    const frist = document.getElementById('hwFrist').value;
+    if(!tittel || !beskrivelse){
+      alert(currentLang === 'ar' ? 'يرجى تعبئة العنوان والوصف.' : 'Fyll ut tittel og beskrivelse.');
+      return;
+    }
+    try{
+      await addDoc(collection(db, 'homework'), {
+        klasse: currentTeacher.tildeltKlasse,
+        tittel, beskrivelse, frist,
+        larer: currentTeacher.navn,
+        dato: todayISO()
+      });
+      showToast(currentLang === 'ar' ? 'تم إرسال الواجب.' : 'Leksen er lagt ut.');
+      document.getElementById('hwTittel').value = '';
+      document.getElementById('hwBeskrivelse').value = '';
+      document.getElementById('hwFrist').value = '';
+    } catch(err){
+      console.error(err);
+      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+    }
+  };
+
+  function renderAbsenceReviewList(){
+    const el = document.getElementById('absenceReviewList');
+    if(!el || !currentTeacher) return;
+    const pending = absenceRequests.filter(r => r.status !== 'Behandlet' && r.klasse === currentTeacher.tildeltKlasse);
+    if(pending.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد طلبات غياب معلّقة.' : 'Ingen ubehandlede fraværsmeldinger.'}</div>`;
+      return;
+    }
+    el.innerHTML = pending.map(r => `
+      <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
+        <span class="name">
+          <strong>${escapeHtml(r.elevNavn||'')}</strong> — ${escapeHtml(r.dato||'')}<br>
+          <span style="font-size:12px; color:#5a6860;">${escapeHtml(r.arsak||'')}</span>
+        </span>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+          <button class="btn-login" style="width:auto; padding:8px 12px; font-size:11px;" onclick="processAbsenceRequestTeacher('${r.id}','Syk')">Syk</button>
+          <button class="btn-login" style="width:auto; padding:8px 12px; font-size:11px; background:#5a6860;" onclick="processAbsenceRequestTeacher('${r.id}','Permisjon')">Permisjon</button>
+          <button class="btn-login" style="width:auto; padding:8px 12px; font-size:11px; background:#a83c3c;" onclick="processAbsenceRequestTeacher('${r.id}','Ugyldig')">Ugyldig</button>
+        </div>
+      </div>`).join('');
+  }
+
+  window.processAbsenceRequestTeacher = async function(id, statusValue){
+    const req = absenceRequests.find(r => r.id === id);
+    if(!req) return;
+    try{
+      const student = students.find(s => s.navn === req.elevNavn);
+      const safeId = req.dato + '_' + (student ? student.id : req.elevNavn.replace(/[^a-zA-Z0-9]/g,''));
+      await setDoc(doc(db, 'attendance', safeId), {
+        dato: req.dato, elev: req.elevNavn, klasse: req.klasse, status: statusValue
+      });
+      await updateDoc(doc(db, 'absenceRequests', id), {
+        status: 'Behandlet', behandletSom: statusValue, behandletAv: currentTeacher.navn
+      });
+      showToast(currentLang === 'ar' ? 'تم تسجيل الحالة.' : 'Fravær registrert.');
+    } catch(err){
+      console.error(err);
+      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+    }
   };
 
   document.getElementById('attDate').addEventListener('change', renderStudentList);
