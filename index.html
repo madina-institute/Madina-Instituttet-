@@ -2346,6 +2346,28 @@
     oldInput.replaceWith(newInput);
   }
 
+  function computeSoskenPrice(program, guardianName, excludeId){
+    const basePrice = parseFloat(PROGRAM_PRICES[program] || 0) || 0;
+    if(!guardianName) return { price: basePrice, pos: 1 };
+    const siblingCount = cache.students.filter(s => s.foresatt === guardianName && s.id !== excludeId).length;
+    const pos = siblingCount + 1;
+    let price = basePrice;
+    if(pos === 2) price = Math.round(basePrice * 0.7);
+    else if(pos >= 3) price = Math.round(basePrice * 0.5);
+    return { price, pos };
+  }
+
+  function applyStudentDiscountPricing(){
+    const programEl = document.getElementById('field_program');
+    const foresattEl = document.getElementById('field_foresatt');
+    const belopEl = document.getElementById('field_belop');
+    const soskenEl = document.getElementById('field_soskenrekkefolge');
+    if(!programEl || !belopEl) return;
+    const { price, pos } = computeSoskenPrice(programEl.value, foresattEl ? foresattEl.value : '', editingId);
+    belopEl.value = price;
+    if(soskenEl) soskenEl.value = pos;
+  }
+
   window.openModal = function(type, id=null){
     editingType = type; editingId = id;
     const schema = SCHEMAS[type];
@@ -2376,12 +2398,7 @@
           input.appendChild(o);
         });
         if(type === 'students' && f.key === 'program'){
-          input.addEventListener('change', () => {
-            const belopEl = document.getElementById('field_belop');
-            if(belopEl && !belopEl.value){
-              belopEl.value = PROGRAM_PRICES[input.value] || '';
-            }
-          });
+          input.addEventListener('change', () => applyStudentDiscountPricing());
         }
         if(type === 'ledelse' && f.key === 'rolle'){
           input.addEventListener('change', () => updateLedelseNavnField(input.value));
@@ -2413,6 +2430,9 @@
           o.value = existing[f.key]; o.textContent = existing[f.key] + ' (utgått)';
           o.selected = true;
           input.appendChild(o);
+        }
+        if(type === 'students' && f.key === 'foresatt'){
+          input.addEventListener('change', () => applyStudentDiscountPricing());
         }
       } else if(f.type === 'role-checklist'){
         input = document.createElement('div');
@@ -2573,16 +2593,11 @@
       }
 
       const program = mapRegistrationProgram(reg.program);
-      const basePrice = parseFloat(PROGRAM_PRICES[program] || 0) || 0;
 
       // Sibling discount: existing children of the same guardian already in
       // Administrativ determine this child's position (1st = full price,
       // 2nd = 30% off, 3rd+ = 50% off).
-      const existingSiblings = guardianName ? cache.students.filter(s => s.foresatt === guardianName).length : 0;
-      let discountedPrice = basePrice;
-      let soskenPos = existingSiblings + 1;
-      if(soskenPos === 2) discountedPrice = Math.round(basePrice * 0.7);
-      else if(soskenPos >= 3) discountedPrice = Math.round(basePrice * 0.5);
+      const { price: discountedPrice, pos: soskenPos } = computeSoskenPrice(program, guardianName, null);
 
       // Copy every field from the registration into the new student record,
       // then layer on the school-specific fields (program, class, payment).
