@@ -379,6 +379,7 @@
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
+  <div class="tab" data-tab="homework" data-side="pedagogisk">Lekser</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
@@ -878,6 +879,33 @@
         <tbody id="tbodyLessonPlans"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- HOMEWORK -->
+  <div class="panel" id="panel-homework">
+    <div class="toolbar">
+      <input class="search" id="searchHomework" placeholder="Søk etter klasse, tittel eller lærer...">
+      <span class="count-chip" id="countHomework" onclick="toggleRecordsById('tableHomework')">0 lekser</span>
+      <button class="btn btn-ghost" onclick="exportCSV('homework')">Eksporter CSV</button>
+    </div>
+    <table class="records-hidden" id="tableHomework">
+      <thead><tr>
+        <th>Klasse</th><th>Tittel</th><th>Lærer</th><th>Dato</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyHomework"></tbody>
+    </table>
+
+    <div class="toolbar" style="margin-top:22px;">
+      <input class="search" id="searchHomeworkSubmissions" placeholder="Søk etter elev, lekse eller klasse...">
+      <span class="count-chip" id="countHomeworkSubmissions" onclick="toggleRecordsById('tableHomeworkSubmissions')">0 leksesvar</span>
+      <button class="btn btn-ghost" onclick="exportCSV('homeworkSubmissions')">Eksporter CSV</button>
+    </div>
+    <table class="records-hidden" id="tableHomeworkSubmissions">
+      <thead><tr>
+        <th>Elev</th><th>Lekse</th><th>Klasse</th><th>Innsendt</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyHomeworkSubmissions"></tbody>
+    </table>
   </div>
 
 
@@ -1501,6 +1529,7 @@
       data = data.filter(row => schema.cols.some(c => (row[c]||'').toLowerCase().includes(query)));
     }
     const tbody = document.getElementById('tbody' + capitalize(type));
+    if(!tbody) return;
     tbody.innerHTML = '';
     if(data.length === 0){
       tbody.innerHTML = `<tr class="empty-row"><td colspan="${schema.cols.length+1}">Ingen ${schema.label}e registrert ennå.</td></tr>`;
