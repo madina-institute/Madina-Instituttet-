@@ -88,6 +88,11 @@
     white-space:nowrap; user-select:none;
   }
   .tab.active{color:var(--emerald-d); border-bottom-color:var(--gold);}
+  .back-to-cards{
+    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; color:var(--emerald);
+    background:none; border:none; border-inline-end:1px solid var(--line); padding:16px 18px 16px 0;
+    margin-inline-end:6px; cursor:pointer; white-space:nowrap;
+  }
 
   main{max-width:1100px; margin:0 auto; padding:24px 20px 60px;}
   .panel{display:none;}
@@ -367,7 +372,16 @@
   </div>
 </div>
 
+<!-- SUB-SECTION CHOICE (big cards, same style as the main side choice) -->
+<div id="subChooseView" style="display:none;">
+  <div class="wrap">
+    <button class="side-switch" style="position:static; display:inline-block; margin-bottom:18px;" onclick="showSideChoice()">🏠 Bytt side</button>
+    <div class="side-grid" id="subChooseGrid"></div>
+  </div>
+</div>
+
 <div class="tabs" id="tabsBar" style="display:none;">
+  <button class="back-to-cards" onclick="backToSubChoice()">⬅ Bytt seksjon</button>
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
@@ -386,6 +400,7 @@
 </div>
 
 <main id="mainContent" style="display:none;">
+
 
   <!-- REPORTS -->
   <div class="panel" id="panel-reports">
@@ -1794,26 +1809,71 @@
     selectSide(side);
   };
 
+  const TAB_DESCRIPTIONS = {
+    ledelse: 'Ledelsesmedlemmer og deres roller',
+    meetings: 'Referater fra styremøter',
+    finances: 'Inntekter, utgifter og saldo',
+    teachers: 'Registrer og administrer lærere',
+    guardians: 'Oversikt over foresatte',
+    students: 'Elevregister, program og betaling',
+    classes: 'Klasseinndeling og trinn',
+    hours: 'Ukentlig timeplan',
+    attendance: 'Registrer daglig oppmøte',
+    absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
+    lessonPlans: 'Lærernes pedagogiske forberedelser',
+    homework: 'Lekser og innleverte besvarelser',
+    reports: 'Statistikk og tilpassede rapporter',
+    overview: 'Eksempeldata, sikkerhetskopi, brukere og faresone',
+    registrations: 'Nye søknader — godkjenn, avslå eller sett på venteliste'
+  };
+
+  let currentSideForBack = null;
+
   window.selectSide = function(side){
+    currentSideForBack = side;
     document.getElementById('sideChooseView').style.display = 'none';
+    document.getElementById('tabsBar').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('sideSwitchBtn').style.display = 'inline-block';
+    document.getElementById('subChooseView').style.display = 'block';
+
+    const grid = document.getElementById('subChooseGrid');
+    const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side="' + side + '"]'));
+    grid.innerHTML = tabsForSide.map(tab => `
+      <div class="side-card" onclick="selectSubTab('${tab.dataset.tab}')">
+        <h2>${tab.textContent}</h2>
+        <p>${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}</p>
+      </div>
+    `).join('');
+  };
+
+  window.selectSubTab = function(tabName){
+    document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'flex';
     document.getElementById('mainContent').style.display = 'block';
-    document.getElementById('sideSwitchBtn').style.display = 'inline-block';
 
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.style.display = tab.dataset.side === side ? '' : 'none';
+    document.querySelectorAll('.tab').forEach(t => {
+      t.style.display = t.dataset.side === currentSideForBack ? '' : 'none';
     });
 
-    const firstTab = document.querySelector('.tab[data-side="' + side + '"]');
-    if(firstTab) firstTab.click();
+    const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
+    if(targetTab) targetTab.click();
+  };
+
+  window.backToSubChoice = function(){
+    document.getElementById('tabsBar').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('subChooseView').style.display = 'block';
   };
 
   window.showSideChoice = function(){
     document.getElementById('sideChooseView').style.display = 'block';
+    document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'none';
   };
+
 
   window.toggleRecordsById = function(tableId){
     const table = document.getElementById(tableId);
