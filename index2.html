@@ -218,6 +218,28 @@
     <div class="sub">For skoleåret 2026/2027 — alle felt må fylles ut. Påmeldingen gjennomgås av administrasjonen før endelig opptak.</div>
   </div>
 
+  <!-- INTRO — obligatoriske innledende spørsmål -->
+  <div class="card" id="introScreen">
+    <div class="field">
+      <label>Er du medlem av Madina-moskeen?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="intro_moske_medlem" value="ja" required> Ja</label>
+        <label><input type="radio" name="intro_moske_medlem" value="nei" required> Nei</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Er dette barnet en tidligere elev hos oss i skoleåret 2025/2026, eller er det en ny elev?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="intro_elev_status" value="tidligere" required> Tidligere elev (2025/2026)</label>
+        <label><input type="radio" name="intro_elev_status" value="ny" required> Ny elev</label>
+      </div>
+    </div>
+    <div class="submit-wrap">
+      <button type="button" class="btn-submit" id="startPaameldingBtn" disabled onclick="startPaamelding()">Start påmelding</button>
+    </div>
+  </div>
+
+  <div id="formWrap" style="display:none;">
   <div class="error-msg-top" id="errorMsgTop" style="margin-top:20px;"></div>
 
   <form id="paameldingsForm">
@@ -760,6 +782,7 @@
 
 </div>
   </form>
+  </div>
 
   <div class="success-box" id="successBox">
     <h2>Påmeldingen er mottatt</h2>
@@ -1088,6 +1111,21 @@
     });
   }
 
+  function checkIntroComplete(){
+    const moske = document.querySelector('input[name="intro_moske_medlem"]:checked');
+    const status = document.querySelector('input[name="intro_elev_status"]:checked');
+    document.getElementById('startPaameldingBtn').disabled = !(moske && status);
+  }
+  document.querySelectorAll('input[name="intro_moske_medlem"], input[name="intro_elev_status"]').forEach(radio => {
+    radio.addEventListener('change', checkIntroComplete);
+  });
+
+  window.startPaamelding = function(){
+    document.getElementById('introScreen').style.display = 'none';
+    document.getElementById('formWrap').style.display = 'block';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  };
+
   window.togglePolicyText = function(){
     const box = document.getElementById('policyBox');
     const label = document.getElementById('policyToggleLabel');
@@ -1200,6 +1238,9 @@
       for(const [key, value] of formData.entries()){
         if(record[key] === undefined) record[key] = value;
       }
+
+      record.intro_moske_medlem = document.querySelector('input[name="intro_moske_medlem"]:checked')?.value || '';
+      record.intro_elev_status = document.querySelector('input[name="intro_elev_status"]:checked')?.value || '';
 
       await addDoc(collection(db, 'registrations'), record);
 
