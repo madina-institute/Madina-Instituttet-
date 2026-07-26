@@ -97,8 +97,9 @@
   .checkbox-row input[type="checkbox"]{ margin-top:4px; width:18px; height:18px; flex-shrink:0; }
   .checkbox-row a{ color:var(--emerald-d); }
   .back-link{
-    background:none; border:none; color:var(--emerald-d); font-family:'Jost',sans-serif; font-size:12.5px;
-    cursor:pointer; padding:0; text-decoration:underline;
+    background:var(--emerald); border:1px solid var(--emerald); color:#fff;
+    font-family:'Jost',sans-serif; font-size:12px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase;
+    cursor:pointer; padding:12px 18px; border-radius:3px;
   }
   .policy-toggle{
     width:100%; text-align:start; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
@@ -248,8 +249,6 @@
 
   <form id="paameldingsForm">
 
-  <button type="button" class="back-link" onclick="backToIntro()" style="margin-bottom:12px;">← Tilbake til de innledende spørsmålene</button>
-
   <div class="progress-wrap">
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="progress-label" id="progressLabel">Steg 1 av 6 — Eleven</div>
@@ -292,7 +291,7 @@
     </div>
   </div>
 
-<div class="step-nav"><button type="button" class="btn-step btn-next" onclick="tryGoToStep(2)">Neste →</button></div>
+<div class="step-nav"><button type="button" class="back-link" onclick="backToIntro()">← Tilbake til de innledende spørsmålene</button><button type="button" class="btn-step btn-next" onclick="tryGoToStep(2)">Neste →</button></div>
 </div>
 <div class="step" data-step="2" style="display:none;">
   <!-- 2: FORESATTE -->
