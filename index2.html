@@ -483,6 +483,18 @@
       <div class="field"><label>Navn på skole (hvis ja)</label><input type="text" name="tidligere_skole_navn"></div>
       <div class="field"><label>Hvor mange år?</label><input type="text" name="tidligere_skole_ar"></div>
     </div>
+    <div class="grid2">
+      <div class="field">
+        <label>Hvilket land studerte barnet i? (hvis ja)</label>
+        <select name="tidligere_skole_land" id="tidligereSkoleLand">
+          <option value="">— Velg land —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Hvor lenge har barnet bodd i Norge?</label>
+        <input type="text" name="botid_norge" placeholder="f.eks. «siden fødsel» eller «3 år»">
+      </div>
+    </div>
     <div class="field">
       <label>Hva har barnet studert?</label>
       <div class="check-row">
@@ -1025,7 +1037,7 @@
     });
     fields.forEach(f => { f.required = false; });
   }
-  wireRequiredOnJa('tidligere_skole', ['tidligere_skole_navn', 'tidligere_skole_ar']);
+  wireRequiredOnJa('tidligere_skole', ['tidligere_skole_navn', 'tidligere_skole_ar', 'tidligere_skole_land']);
   wireRequiredOnJa('koran_qaida', ['koran_qaida_hvilken']);
   wireRequiredOnJa('koran_memorert', ['koran_memorert_fra', 'koran_memorert_til']);
   wireRequiredOnJa('arabisk_tidligere', ['arabisk_ar', 'arabisk_niva']);
@@ -1038,6 +1050,43 @@
   markRequiredFields(kbUrdu);
   updateKartleggingVisibility();
   updatePriceDisplay();
+
+  const COUNTRIES_NO = [
+    'Afghanistan','Albania','Algerie','Andorra','Angola','Antigua og Barbuda','Argentina','Armenia',
+    'Australia','Aserbajdsjan','Bahamas','Bahrain','Bangladesh','Barbados','Belgia','Belize','Benin',
+    'Bhutan','Bolivia','Bosnia-Hercegovina','Botswana','Brasil','Brunei','Bulgaria','Burkina Faso',
+    'Burundi','Kambodsja','Kamerun','Canada','Kapp Verde','Den sentralafrikanske republikk','Tsjad',
+    'Chile','Kina','Colombia','Komorene','Kongo-Brazzaville','Kongo-Kinshasa','Costa Rica',
+    'Elfenbenskysten','Kroatia','Cuba','Kypros','Tsjekkia','Danmark','Djibouti','Dominica',
+    'Den dominikanske republikk','Ecuador','Egypt','El Salvador','Ekvatorial-Guinea','Eritrea',
+    'Estland','Eswatini','Etiopia','Fiji','Filippinene','Finland','Frankrike','Gabon','Gambia',
+    'Georgia','Ghana','Hellas','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti',
+    'Honduras','Hong Kong','Ungarn','Island','India','Indonesia','Iran','Irak','Irland','Israel',
+    'Italia','Jamaica','Japan','Jemen','Jordan','Kasakhstan','Kenya','Kirgisistan','Kiribati',
+    'Kosovo','Kuwait','Laos','Latvia','Libanon','Lesotho','Liberia','Libya','Liechtenstein',
+    'Litauen','Luxembourg','Madagaskar','Malawi','Malaysia','Maldivene','Mali','Malta',
+    'Marshalløyene','Mauritania','Mauritius','Mexico','Mikronesiaføderasjonen','Moldova','Monaco',
+    'Mongolia','Montenegro','Marokko','Mosambik','Myanmar','Namibia','Nauru','Nepal','Nederland',
+    'New Zealand','Nicaragua','Niger','Nigeria','Nord-Korea','Nord-Makedonia','Norge','Oman',
+    'Pakistan','Palau','Palestina','Panama','Papua Ny-Guinea','Paraguay','Peru','Polen','Portugal',
+    'Qatar','Romania','Russland','Rwanda','Saint Kitts og Nevis','Saint Lucia',
+    'Saint Vincent og Grenadinene','Samoa','San Marino','São Tomé og Príncipe','Saudi-Arabia',
+    'Senegal','Serbia','Seychellene','Sierra Leone','Singapore','Slovakia','Slovenia',
+    'Salomonøyene','Somalia','Sør-Afrika','Sør-Korea','Sør-Sudan','Spania','Sri Lanka','Sudan',
+    'Surinam','Sverige','Sveits','Syria','Taiwan','Tadsjikistan','Tanzania','Thailand',
+    'Øst-Timor','Togo','Tonga','Trinidad og Tobago','Tunisia','Tyrkia','Turkmenistan','Tuvalu',
+    'Uganda','Ukraina','De forente arabiske emirater','Storbritannia','USA','Uruguay',
+    'Usbekistan','Vanuatu','Vatikanstaten','Venezuela','Vietnam','Zambia','Zimbabwe','Annet land'
+  ];
+
+  const landSelect = document.getElementById('tidligereSkoleLand');
+  if(landSelect){
+    COUNTRIES_NO.forEach(land => {
+      const o = document.createElement('option');
+      o.value = land; o.textContent = land;
+      landSelect.appendChild(o);
+    });
+  }
 
   window.togglePolicyText = function(){
     const box = document.getElementById('policyBox');
