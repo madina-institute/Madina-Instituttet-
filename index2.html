@@ -91,6 +91,20 @@
 
   /* FORM ELEMENTS */
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  .checkbox-row{
+    display:flex; align-items:flex-start; gap:10px; font-size:14.5px; line-height:1.6; cursor:pointer;
+  }
+  .checkbox-row input[type="checkbox"]{ margin-top:4px; width:18px; height:18px; flex-shrink:0; }
+  .checkbox-row a{ color:var(--emerald-d); }
+  .full-row{grid-column: 1 / -1;}
+  .age-confirm-box{
+    background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:14px 16px;
+  }
+  .age-confirm-box p{margin:0 0 10px; font-size:14.5px;}
+  .age-warning{
+    background:rgba(168,60,60,0.08); border:1px solid rgba(168,60,60,0.3); border-radius:6px;
+    padding:9px 12px; margin-top:10px; font-family:'Jost',sans-serif; font-size:12.5px; color:#a83c3c;
+  }
   .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px 24px;}
   @media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr;}}
 
@@ -187,7 +201,7 @@
     <img src="data:image/jpeg;base64,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" alt="Madina Institute" class="logo-img">
     <div class="eyebrow">Madina Institute — Elevadministrasjon</div>
     <h1>Påmeldingsskjema</h1>
-    <div class="sub">For skoleåret — alle felt må fylles ut. Påmeldingen gjennomgås av administrasjonen før endelig opptak.</div>
+    <div class="sub">For skoleåret 2026/2027 — alle felt må fylles ut. Påmeldingen gjennomgås av administrasjonen før endelig opptak.</div>
   </div>
 
   <div class="error-msg-top" id="errorMsgTop" style="margin-top:20px;"></div>
@@ -207,7 +221,20 @@
     <hr class="rule">
     <div class="grid2">
       <div class="field"><label>Fullt navn</label><input type="text" name="elev_navn" required></div>
-      <div class="field"><label>Fødselsdato</label><input type="date" name="elev_fdato" required></div>
+      <div class="field"><label>Fødselsdato</label><input type="date" name="elev_fdato" id="elevFdato" required></div>
+      <div class="field full-row" id="ageConfirmField" style="display:none;">
+        <label>Bekreft alder</label>
+        <div class="age-confirm-box">
+          <p>Beregnet alder ut fra fødselsdatoen du skrev inn: <strong id="calculatedAgeText">—</strong> år. Stemmer dette?</p>
+          <div class="radio-row">
+            <label><input type="radio" name="alder_bekreftet" id="alderJa" value="ja"> Ja, alderen stemmer</label>
+            <label><input type="radio" name="alder_bekreftet" id="alderNei" value="nei"> Nei, det stemmer ikke</label>
+          </div>
+          <div class="age-warning" id="ageWarningMsg" style="display:none;">
+            Gå tilbake og rett opp fødselsdatoen slik at alderen blir riktig. Du må bekrefte med «Ja» før du kan gå videre.
+          </div>
+        </div>
+      </div>
       <div class="field">
         <label>Kjønn</label>
         <div class="radio-row">
@@ -596,6 +623,15 @@
     <hr class="rule">
 
     <div class="field">
+      <label class="checkbox-row">
+        <input type="checkbox" name="samtykke_personvernerklaering" value="ja" required>
+        Jeg har lest og godtar
+        <a href="index5.html" target="_blank" rel="noopener">personvernerklæringen</a>
+        til Madina Institute, inkludert behandling av eventuelle helseopplysninger jeg har delt frivillig.
+      </label>
+    </div>
+
+    <div class="field">
       <label>Jeg samtykker til at Madina Institute registrerer nødvendige personopplysninger i forbindelse med elevadministrasjon.</label>
       <div class="radio-row">
         <label><input type="radio" name="samtykke_personopplysninger" value="ja" required> Ja</label>
@@ -869,6 +905,19 @@
       invalidFields[0].scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
+    // Extra check specific to Elevopplysninger step: confirmed age must be "ja"
+    if(currentStep === 1){
+      const alderVal = currentStepEl.querySelector('input[name="alder_bekreftet"]:checked')?.value;
+      if(alderVal !== 'ja'){
+        document.getElementById('ageWarningMsg').style.display = 'block';
+        const errTopEl = document.getElementById('errorMsgTop');
+        errTopEl.textContent = 'Bekreft at alderen stemmer (velg «Ja») før du går videre.';
+        errTopEl.style.display = 'block';
+        document.getElementById('ageConfirmField').scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+    }
+
     // Extra check specific to the Program step: at least one program must be chosen
     if(currentStep === 3){
       const programChecked = currentStepEl.querySelectorAll('input[name="program"]:checked').length;
@@ -932,6 +981,43 @@
   markRequiredFields(kbUrdu);
   updateKartleggingVisibility();
   updatePriceDisplay();
+
+  function calculateAge(dateStr){
+    const dob = new Date(dateStr);
+    if(isNaN(dob.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if(m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    return age;
+  }
+
+  document.getElementById('elevFdato').addEventListener('change', function(){
+    const ageField = document.getElementById('ageConfirmField');
+    const age = calculateAge(this.value);
+    if(this.value && age !== null){
+      document.getElementById('calculatedAgeText').textContent = age;
+      ageField.style.display = 'block';
+      document.getElementById('alderJa').checked = false;
+      document.getElementById('alderNei').checked = false;
+      document.getElementById('ageWarningMsg').style.display = 'none';
+    } else {
+      ageField.style.display = 'none';
+    }
+  });
+
+  document.querySelectorAll('input[name="alder_bekreftet"]').forEach(radio => {
+    radio.addEventListener('change', function(){
+      const warn = document.getElementById('ageWarningMsg');
+      const errTopEl = document.getElementById('errorMsgTop');
+      if(this.value === 'nei'){
+        warn.style.display = 'block';
+      } else {
+        warn.style.display = 'none';
+        errTopEl.style.display = 'none';
+      }
+    });
+  });
 
   document.getElementById('paameldingsForm').addEventListener('submit', async function(e){
     e.preventDefault();
