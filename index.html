@@ -1471,11 +1471,19 @@
       cache[type] = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       render(type);
       readyCollections.add(type);
-      if(readyCollections.size >= Object.keys(SCHEMAS).length) setSyncStatus(true);
+      const allTypes = Object.keys(SCHEMAS);
+      if(readyCollections.size >= allTypes.length){
+        setSyncStatus(true);
+      } else {
+        const missing = allTypes.filter(t => !readyCollections.has(t));
+        const textEl = document.getElementById('syncText');
+        if(textEl) textEl.textContent = 'Kobler til... (mangler: ' + missing.join(', ') + ')';
+      }
     }, (err) => {
-      console.error(err);
-      setSyncStatus(false);
-      showToast('Kunne ikke koble til databasen.');
+      console.error(type, err);
+      showToast('Kunne ikke koble til: ' + type + ' (' + err.code + ')');
+      const textEl = document.getElementById('syncText');
+      if(textEl) textEl.textContent = 'Feil: ' + type + ' (' + err.code + ')';
     });
   }
 
