@@ -96,6 +96,20 @@
   }
   .checkbox-row input[type="checkbox"]{ margin-top:4px; width:18px; height:18px; flex-shrink:0; }
   .checkbox-row a{ color:var(--emerald-d); }
+  .policy-toggle{
+    width:100%; text-align:start; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
+    padding:12px 16px; font-family:'Jost',sans-serif; font-size:13.5px; font-weight:600; color:var(--emerald-d);
+    cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+  }
+  .policy-box{
+    background:#fff; border:1px solid var(--line); border-top:none; border-radius:0 0 8px 8px;
+    padding:18px 20px; margin-top:-1px; max-height:340px; overflow-y:auto;
+  }
+  .policy-box h4{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16.5px; color:var(--emerald-d); margin:16px 0 5px;}
+  .policy-box h4:first-child{margin-top:0;}
+  .policy-box p, .policy-box li{font-size:13.5px; line-height:1.6;}
+  .policy-box ul{padding-inline-start:20px; margin:4px 0;}
+  .policy-updated{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin:0 0 6px;}
   .full-row{grid-column: 1 / -1;}
   .age-confirm-box{
     background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:14px 16px;
@@ -623,11 +637,54 @@
     <hr class="rule">
 
     <div class="field">
+      <button type="button" class="policy-toggle" onclick="togglePolicyText()">
+        <span id="policyToggleLabel">Vis personvernerklæringen</span> <span id="policyToggleArrow">▾</span>
+      </button>
+      <div class="policy-box" id="policyBox" style="display:none;">
+        <p class="policy-updated">Sist oppdatert: [dato]</p>
+
+        <h4>1. Hvem vi er</h4>
+        <p>Madina Institute er ansvarlig for innsamling og behandling av opplysningene beskrevet i dette dokumentet, gjennom påmeldingsskjemaet til Madina Islamske Skole og tilhørende programmer.</p>
+
+        <h4>2. Hvilke opplysninger vi samler inn</h4>
+        <ul>
+          <li>Elevopplysninger: navn, fødselsdato, klasse, valgt program</li>
+          <li>Foresattes opplysninger: navn, telefonnummer, e-post, adresse</li>
+          <li>Nødkontaktinformasjon</li>
+          <li>Helseopplysninger (helt frivillig å oppgi): allergier, sykdommer, medisiner, lærevansker — du kan velge «ønsker ikke å svare» på ethvert slikt spørsmål uten at det påvirker vurderingen av søknaden</li>
+          <li>Tidligere islamsk undervisning og språkkunnskaper (Koran, arabisk/urdu)</li>
+          <li>Samtykker knyttet til fotografering og publisering</li>
+        </ul>
+
+        <h4>3. Hvorfor vi samler inn disse opplysningene</h4>
+        <ul>
+          <li>For å behandle påmeldingen og ta en beslutning om opptak</li>
+          <li>For å sikre elevens trygghet i undervisningen (spesielt helseopplysninger)</li>
+          <li>For å kommunisere med foresatte om oppmøte, forberedelser og betaling</li>
+          <li>For fakturering og oppfølging av betaling</li>
+        </ul>
+
+        <h4>4. Hvem som har tilgang til opplysningene</h4>
+        <p>Fullstendige opplysninger (inkludert helseopplysninger og faglig vurdering) er kun tilgjengelig for administrasjonen, via et passordbeskyttet administrasjonspanel med personlig innlogging. Lærere har ikke tilgang til disse opplysningene; deres tilgang er begrenset til elevens navn samt oppmøte- og forberedelsesregistrering for egen klasse.</p>
+
+        <h4>5. Hvor lenge opplysningene oppbevares</h4>
+        <p>Opplysningene oppbevares så lenge eleven er tilknyttet skolen, og i [ett år] etter avsluttet elevforhold, med mindre du ber om tidligere sletting, jf. punkt 7 under.</p>
+
+        <h4>6. Tekniske leverandører vi bruker</h4>
+        <p>Opplysningene lagres via tjenesten Google Firebase, og tjenesten Web3Forms brukes til å sende administrative e-postvarsler. Disse leverandørene bruker ikke opplysningene til noe annet formål enn å levere den tekniske tjenesten til Madina Institute.</p>
+
+        <h4>7. Dine rettigheter</h4>
+        <p>Du har til enhver tid rett til å: få innsyn i registrerte opplysninger om barnet, be om retting, be om sletting, eller trekke tilbake samtykket til behandling av helseopplysninger spesifikt. For henvendelser: [e-post/telefon]</p>
+
+        <h4>8. Samtykke</h4>
+        <p>Ved å sende inn påmeldingsskjemaet bekrefter du å ha lest denne erklæringen og samtykker til behandling av opplysningene beskrevet ovenfor til de nevnte formålene, inkludert eventuelle helseopplysninger du har delt frivillig.</p>
+      </div>
+    </div>
+
+    <div class="field">
       <label class="checkbox-row">
         <input type="checkbox" name="samtykke_personvernerklaering" value="ja" required>
-        Jeg har lest og godtar
-        <a href="index5.html" target="_blank" rel="noopener">personvernerklæringen</a>
-        til Madina Institute, inkludert behandling av eventuelle helseopplysninger jeg har delt frivillig.
+        Jeg har lest og godtar personvernerklæringen til Madina Institute ovenfor, inkludert behandling av eventuelle helseopplysninger jeg har delt frivillig.
       </label>
     </div>
 
@@ -981,6 +1038,16 @@
   markRequiredFields(kbUrdu);
   updateKartleggingVisibility();
   updatePriceDisplay();
+
+  window.togglePolicyText = function(){
+    const box = document.getElementById('policyBox');
+    const label = document.getElementById('policyToggleLabel');
+    const arrow = document.getElementById('policyToggleArrow');
+    const isHidden = box.style.display === 'none';
+    box.style.display = isHidden ? 'block' : 'none';
+    label.textContent = isHidden ? 'Skjul personvernerklæringen' : 'Vis personvernerklæringen';
+    arrow.textContent = isHidden ? '▴' : '▾';
+  };
 
   function calculateAge(dateStr){
     const dob = new Date(dateStr);
