@@ -354,11 +354,11 @@
       </div>
       <div class="side-card" onclick="selectSide('admin')">
         <h2>Administrativ</h2>
-        <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Rapporter</p>
+        <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Kontaktendringer · Betaling · Rapporter</p>
       </div>
       <div class="side-card" onclick="selectSide('pedagogisk')">
         <h2>Pedagogisk</h2>
-        <p>Oppmøte · Timeforberedelser</p>
+        <p>Oppmøte · Timeforberedelser · Lekser · Kunngjøringer · Elevnotater</p>
       </div>
       <div class="side-card" onclick="promptPasswordAndSelectSide('registrering')">
         <h2>Registrering</h2>
@@ -394,6 +394,10 @@
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
   <div class="tab" data-tab="homework" data-side="pedagogisk">Lekser</div>
+  <div class="tab" data-tab="announcements" data-side="pedagogisk">Kunngjøringer</div>
+  <div class="tab" data-tab="studentNotes" data-side="pedagogisk">Elevnotater</div>
+  <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
+  <div class="tab" data-tab="betaling" data-side="admin">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
@@ -923,6 +927,66 @@
     </table>
   </div>
 
+  <!-- ANNOUNCEMENTS -->
+  <div class="panel" id="panel-announcements">
+    <div class="toolbar">
+      <input class="search" id="searchAnnouncements" placeholder="Søk etter tittel eller innhold...">
+      <span class="count-chip" id="countAnnouncements" onclick="toggleRecordsById('tableAnnouncements')">0 kunngjøringer</span>
+      <button class="btn btn-ghost" onclick="exportCSV('announcements')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('announcements')">+ Ny kunngjøring</button>
+    </div>
+    <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
+      Kunngjøringer vises for alle foresatte i Foreldreportalen, sortert etter dato (nyeste øverst).
+    </div>
+    <table class="records-hidden" id="tableAnnouncements">
+      <thead><tr>
+        <th>Tittel</th><th>Målgruppe</th><th>Dato</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyAnnouncements"></tbody>
+    </table>
+  </div>
+
+  <!-- STUDENT NOTES -->
+  <div class="panel" id="panel-studentNotes">
+    <div class="toolbar">
+      <input class="search" id="searchStudentNotes" placeholder="Søk etter elev, klasse eller lærer...">
+      <span class="count-chip" id="countStudentNotes" onclick="toggleRecordsById('tableStudentNotes')">0 elevnotater</span>
+      <button class="btn btn-ghost" onclick="exportCSV('studentNotes')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('studentNotes')">+ Nytt notat</button>
+    </div>
+    <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
+      Notater om fremgang skrives vanligvis av læreren i Lærerportalen, og vises for foresatte i Foreldreportalen.
+    </div>
+    <table class="records-hidden" id="tableStudentNotes">
+      <thead><tr>
+        <th>Elev</th><th>Klasse</th><th>Dato</th><th>Lærer</th><th></th>
+      </tr></thead>
+      <tbody id="tbodyStudentNotes"></tbody>
+    </table>
+  </div>
+
+  <!-- CONTACT UPDATE REQUESTS -->
+  <div class="panel" id="panel-contactUpdateRequests">
+    <div class="report-card">
+      <h3>Forespørsler om endring av kontaktinfo</h3>
+      <div class="sub">Sendt inn av foresatte via Foreldreportalen — godkjenn for å oppdatere registeret automatisk</div>
+      <div id="contactUpdateRequestsList"></div>
+    </div>
+  </div>
+
+  <!-- BETALINGSINNSTILLINGER -->
+  <div class="panel" id="panel-betaling">
+    <div class="report-card">
+      <h3>Betalingslenke (Vipps)</h3>
+      <div class="sub">Denne lenken vises som «Betal nå»-knapp for foresatte i Foreldreportalen. La stå tom til Vipps-løsningen er klar.</div>
+      <div class="field">
+        <label>Vipps betalingslenke</label>
+        <input type="text" id="vippsLinkInput" placeholder="https://vipps.no/...">
+      </div>
+      <button class="btn btn-primary" style="width:auto;" onclick="saveBetalingSettings()">Lagre</button>
+    </div>
+  </div>
+
 
 </main>
 
@@ -1300,6 +1364,40 @@
       ],
       cols: ['elevNavn','klasse','dato','status']
     },
+    announcements: {
+      label: 'kunngjøring', collectionName: 'announcements',
+      fields: [
+        {key:'tittel', label:'Tittel', type:'text'},
+        {key:'innhold', label:'Innhold', type:'text'},
+        {key:'malgruppe', label:'Målgruppe', type:'select', options:['Alle foresatte','Kun Lørdag','Kun Søndag']},
+        {key:'dato', label:'Dato', type:'text'},
+        {key:'forfatter', label:'Skrevet av', type:'text'}
+      ],
+      cols: ['tittel','malgruppe','dato']
+    },
+    studentNotes: {
+      label: 'elevnotat', collectionName: 'studentNotes',
+      fields: [
+        {key:'elevNavn', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'klasse', label:'Klasse', type:'text'},
+        {key:'tekst', label:'Notat', type:'text'},
+        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
+        {key:'dato', label:'Dato', type:'text'}
+      ],
+      cols: ['elevNavn','klasse','dato','larer']
+    },
+    contactUpdateRequests: {
+      label: 'kontaktendringsforespørsel', collectionName: 'contactUpdateRequests',
+      fields: [
+        {key:'guardianNavn', label:'Foresatt', type:'text'},
+        {key:'nyTelefon', label:'Ny telefon', type:'text'},
+        {key:'nyEpost', label:'Ny e-post', type:'text'},
+        {key:'melding', label:'Melding', type:'text'},
+        {key:'status', label:'Status', type:'select', options:['Ny','Behandlet']},
+        {key:'dato', label:'Dato', type:'text'}
+      ],
+      cols: ['guardianNavn','nyTelefon','nyEpost','status']
+    },
     ledelse: {
       label: 'ledelsesmedlem', collectionName: 'ledelse',
       fields: [
@@ -1491,7 +1589,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [] };
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -1589,7 +1687,7 @@
         tbody.appendChild(tr);
       });
     }
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger' };
+    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater' };
     document.getElementById('count' + capitalize(type)).innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tbodyGuardians')) render('guardians');
@@ -1717,6 +1815,7 @@
     document.getElementById('statHours') && (document.getElementById('statHours').textContent = cache.hours.length);
     renderReports();
     renderAbsenceRequests();
+    renderContactUpdateRequests();
   }
 
   function countBy(list, key){
@@ -1822,6 +1921,10 @@
     absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
     lessonPlans: 'Lærernes pedagogiske forberedelser',
     homework: 'Lekser og innleverte besvarelser',
+    announcements: 'Kunngjøringer som vises for foresatte',
+    studentNotes: 'Fremgangsnotater for enkeltelever',
+    contactUpdateRequests: 'Forespørsler om endring av kontaktinfo fra foresatte',
+    betaling: 'Betalingslenke som vises i Foreldreportalen',
     reports: 'Statistikk og tilpassede rapporter',
     overview: 'Eksempeldata, sikkerhetskopi, brukere og faresone',
     registrations: 'Nye søknader — godkjenn, avslå eller sett på venteliste'
@@ -1966,7 +2069,7 @@
 
   function buildFullBackupText(){
     let out = '';
-    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests'].forEach(type => {
+    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes','contactUpdateRequests'].forEach(type => {
       const schema = SCHEMAS[type];
       const data = cache[type];
       out += '=== ' + schema.label.toUpperCase() + 'E ===\n';
@@ -2141,7 +2244,7 @@
   };
 
   // ---------- Custom report builder (advanced) ----------
-  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger' };
+  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger', announcements:'Kunngjøringer', studentNotes:'Elevnotater', contactUpdateRequests:'Kontaktendringer' };
   const OPERATORS = [
     {value:'equals', label:'Er lik', needsValue:true, valueType:'select'},
     {value:'not_equals', label:'Er ikke lik', needsValue:true, valueType:'select'},
@@ -2617,6 +2720,71 @@
     }
   };
 
+  function renderContactUpdateRequests(){
+    const el = document.getElementById('contactUpdateRequestsList');
+    if(!el) return;
+    const pending = (cache.contactUpdateRequests || []).filter(r => r.status !== 'Behandlet');
+    if(pending.length === 0){
+      el.innerHTML = '<div class="report-empty">Ingen ubehandlede forespørsler.</div>';
+      return;
+    }
+    el.innerHTML = pending.map(r => `
+      <div class="status-row" style="flex-wrap:wrap; gap:10px;">
+        <span>
+          <strong>${escapeHtml(r.guardianNavn||'')}</strong> — ${escapeHtml(r.dato||'')}<br>
+          <span style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;">
+            ${r.nyTelefon ? 'Ny telefon: ' + escapeHtml(r.nyTelefon) + '<br>' : ''}
+            ${r.nyEpost ? 'Ny e-post: ' + escapeHtml(r.nyEpost) + '<br>' : ''}
+            ${escapeHtml(r.melding||'')}
+          </span>
+        </span>
+        <div class="reg-actions">
+          <button class="btn-approve" onclick="processContactUpdateRequest('${r.id}', true)">Godkjenn og oppdater</button>
+          <button class="btn-reject" onclick="processContactUpdateRequest('${r.id}', false)">Avvis</button>
+        </div>
+      </div>`).join('');
+  }
+
+  window.processContactUpdateRequest = async function(id, apply){
+    const req = (cache.contactUpdateRequests || []).find(r => r.id === id);
+    if(!req){ showToast('Fant ikke forespørselen.'); return; }
+    try{
+      if(apply){
+        const guardian = cache.guardians.find(g => g.navn === req.guardianNavn);
+        if(guardian){
+          const updates = {};
+          if(req.nyTelefon) updates.telefon = req.nyTelefon;
+          if(req.nyEpost) updates.epost = req.nyEpost;
+          if(Object.keys(updates).length){
+            await updateDoc(doc(db, 'guardians', guardian.id), updates);
+          }
+        }
+      }
+      await updateDoc(doc(db, 'contactUpdateRequests', id), { status: 'Behandlet' });
+      showToast(apply ? 'Kontaktinfo oppdatert.' : 'Forespørsel avvist.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt.');
+    }
+  };
+
+  // ---------- Betalingsinnstillinger ----------
+  onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
+    const input = document.getElementById('vippsLinkInput');
+    if(input && snap.exists()) input.value = snap.data().lenke || '';
+  }, (err) => console.error('settings/betaling', err));
+
+  window.saveBetalingSettings = async function(){
+    const lenke = document.getElementById('vippsLinkInput').value.trim();
+    try{
+      await setDoc(doc(db, 'settings', 'betaling'), { lenke });
+      showToast('Betalingslenke lagret.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt under lagring.');
+    }
+  };
+
   function mapRegistrationProgram(codesStr){
     const codes = (codesStr || '').split(',').map(s => s.trim());
     const hasSkole = codes.includes('madina_islamske_skole');
@@ -2829,7 +2997,7 @@
   });
 
   // Search listeners
-  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests'].forEach(type => {
+  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes'].forEach(type => {
     const el = document.getElementById('search' + capitalize(type));
     if(el) el.addEventListener('input', () => render(type));
   });
@@ -2849,6 +3017,9 @@
   attachListener('homework');
   attachListener('homeworkSubmissions');
   attachListener('absenceRequests');
+  attachListener('announcements');
+  attachListener('studentNotes');
+  attachListener('contactUpdateRequests');
 
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
     const list = snap.docs.map(d => d.data()).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));

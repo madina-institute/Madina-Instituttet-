@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Madina Skole — Foreldreportal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#1c2c24; --emerald:#1f4a3a; --emerald-d:#0f2b21; --emerald-l:#2e6b53;
@@ -14,43 +14,61 @@
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
+  html[dir="rtl"] body{font-family:'Tajawal','Lora',serif;}
 
   header{
     background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
-    color:var(--paper); padding:22px 20px; text-align:center; box-shadow:var(--shadow);
+    color:var(--paper); padding:22px 20px; text-align:center; box-shadow:var(--shadow); position:relative;
   }
   header .logo-img{ height:48px; width:auto; border-radius:5px; margin:0 auto 10px; display:block; }
   header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; margin:0 0 4px;}
+  html[dir="rtl"] header h1{font-family:'Tajawal',sans-serif; font-size:20px;}
   header p{font-family:'Jost',sans-serif; font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold-l); margin:0;}
+  html[dir="rtl"] header p{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
 
-  main{max-width:560px; margin:0 auto; padding:22px 18px 60px;}
+  .lang-switch{position:absolute; top:18px; inset-inline-end:16px; display:flex; border:1px solid rgba(255,255,255,0.3); border-radius:6px; overflow:hidden;}
+  .lang-switch button{
+    background:transparent; border:none; color:#fff; font-family:'Jost',sans-serif; font-size:11px;
+    padding:6px 10px; cursor:pointer;
+  }
+  .lang-switch button.active{background:var(--gold-l); color:var(--emerald-d);}
+
+  main{max-width:600px; margin:0 auto; padding:22px 18px 60px;}
 
   .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:26px 24px; box-shadow:var(--shadow); margin-bottom:18px;}
   .card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d); margin:0 0 6px;}
+  html[dir="rtl"] .card h2{font-family:'Tajawal',sans-serif; font-size:17px;}
   .card .sub{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:18px;}
+  html[dir="rtl"] .card .sub{font-family:'Tajawal',sans-serif;}
 
   .field{margin-bottom:16px;}
   .field label{display:block; font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald); margin-bottom:6px; font-weight:600;}
+  html[dir="rtl"] .field label{font-family:'Tajawal',sans-serif;}
   .field input, .field select, .field textarea{
     width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:6px;
     font-family:'Lora',serif; font-size:15px; background:var(--paper);
   }
+  html[dir="rtl"] .field input, html[dir="rtl"] .field select, html[dir="rtl"] .field textarea{font-family:'Tajawal','Lora',serif;}
 
   .btn{
     font-family:'Jost',sans-serif; font-size:13px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;
     padding:12px 20px; border-radius:6px; border:none; cursor:pointer; width:100%;
   }
+  html[dir="rtl"] .btn{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
   .btn-primary{background:var(--emerald); color:#fff;}
   .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink); margin-top:10px;}
 
   .error-msg{font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); margin-top:10px; display:none;}
+  html[dir="rtl"] .error-msg{font-family:'Tajawal',sans-serif;}
 
   #appView{display:none;}
   .who-bar{
     display:flex; justify-content:space-between; align-items:center; background:var(--paper-2);
     border-radius:8px; padding:12px 16px; margin-bottom:18px; font-family:'Jost',sans-serif; font-size:13px;
   }
+  html[dir="rtl"] .who-bar{font-family:'Tajawal',sans-serif;}
   .who-bar .logout{color:var(--red); cursor:pointer; font-size:12px; text-decoration:underline; background:none; border:none; font-family:'Jost',sans-serif;}
+  html[dir="rtl"] .who-bar .logout{font-family:'Tajawal',sans-serif;}
 
   .summary-box{
     background:var(--emerald); border-radius:10px; padding:20px 22px; margin-bottom:20px; color:#fff;
@@ -58,16 +76,20 @@
   .summary-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   .summary-item{text-align:center;}
   .summary-item .n{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:24px;}
+  html[dir="rtl"] .summary-item .n{font-family:'Tajawal',sans-serif;}
   .summary-item .l{font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gold-l); margin-top:2px;}
+  html[dir="rtl"] .summary-item .l{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
 
   .child-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
   .child-tab{
     font-family:'Jost',sans-serif; font-size:12.5px; padding:8px 14px; border-radius:20px;
     border:1px solid var(--line); background:var(--paper-2); cursor:pointer; color:var(--ink);
   }
+  html[dir="rtl"] .child-tab{font-family:'Tajawal',sans-serif;}
   .child-tab.active{background:var(--emerald); color:#fff; border-color:var(--emerald);}
 
   .info-row{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-family:'Jost',sans-serif; font-size:13.5px;}
+  html[dir="rtl"] .info-row{font-family:'Tajawal',sans-serif;}
   .info-row:last-child{border-bottom:none;}
   .info-row .lbl{color:var(--emerald); font-weight:600;}
 
@@ -86,6 +108,7 @@
   .hw-item .meta{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:6px;}
 
   .empty-msg{font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:16px 0;}
+  html[dir="rtl"] .empty-msg{font-family:'Tajawal',sans-serif;}
 
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -93,31 +116,76 @@
     padding:12px 22px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s; z-index:200; max-width:90%; text-align:center;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* Home menu grid */
+  .menu-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;}
+  .menu-card{
+    position:relative; background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 16px;
+    box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s, transform .2s; text-align:center;
+  }
+  .menu-card:hover{border-color:var(--gold); transform:translateY(-2px);}
+  .menu-card .ic{font-size:26px; margin-bottom:8px;}
+  .menu-card .t{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--emerald-d); line-height:1.25;}
+  html[dir="rtl"] .menu-card .t{font-family:'Tajawal',sans-serif; font-size:14px;}
+  .menu-card .d{font-family:'Jost',sans-serif; font-size:10.5px; color:#5a6860; margin-top:4px; line-height:1.4;}
+  html[dir="rtl"] .menu-card .d{font-family:'Tajawal',sans-serif;}
+  .menu-card .dot{
+    position:absolute; top:10px; inset-inline-end:10px; width:9px; height:9px; border-radius:50%; background:var(--red);
+    display:none;
+  }
+  .menu-card.has-new .dot{display:block;}
+
+  .back-link{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald);
+    margin-bottom:16px; cursor:pointer; text-decoration:underline; background:none; border:none; padding:0;
+  }
+  html[dir="rtl"] .back-link{font-family:'Tajawal',sans-serif;}
+
+  .sub-view{display:none;}
+
+  .ann-item{background:var(--paper-2); border-radius:8px; padding:14px 16px; margin-bottom:10px;}
+  .ann-item .t{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px; color:var(--emerald-d);}
+  html[dir="rtl"] .ann-item .t{font-family:'Tajawal',sans-serif; font-size:14.5px;}
+  .ann-item .d{font-size:13.5px; margin-top:6px;}
+  .ann-item .meta{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:6px;}
+
+  .sched-block{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-family:'Jost',sans-serif; font-size:13px;}
+  html[dir="rtl"] .sched-block{font-family:'Tajawal',sans-serif;}
+  .sched-block:last-child{border-bottom:none;}
+  .sched-block .tm{color:var(--emerald); font-weight:700; min-width:92px;}
+
+  .note-item{background:var(--paper-2); border-radius:8px; padding:14px 16px; margin-bottom:10px;}
+  .note-item .d{font-size:13.5px;}
+  .note-item .meta{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:6px;}
 </style>
 </head>
 <body>
 
 <header>
-  <img src="data:image/jpeg;base64,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" alt="Madina Institute" class="logo-img">
-  <h1>Madina Skole — Foreldreportal</h1>
-  <p>Kun for foresatte</p>
+  <div class="lang-switch">
+    <button id="btnLangNo" class="active" onclick="switchLang('no')">NO</button>
+    <button id="btnLangAr" onclick="switchLang('ar')">AR</button>
+  </div>
+  <img src="data:image/jpeg;base64,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" alt="Madina Institute" class="logo-img">
+  <h1 data-i18n="headerTitle">Madina Skole — Foreldreportal</h1>
+  <p data-i18n="headerSub">Kun for foresatte</p>
 </header>
 
 <main>
 
   <!-- LOGIN -->
   <div class="card" id="loginView">
-    <h2>Logg inn</h2>
-    <div class="sub">Skriv inn telefonnummeret ditt og tilgangskoden du har fått fra skolen.</div>
+    <h2 data-i18n="loginTitle">Logg inn</h2>
+    <div class="sub" data-i18n="loginSub">Skriv inn telefonnummeret ditt og tilgangskoden du har fått fra skolen.</div>
     <div class="field">
-      <label>Telefonnummer</label>
+      <label data-i18n="phoneLabel">Telefonnummer</label>
       <input type="tel" id="loginPhone" inputmode="tel">
     </div>
     <div class="field">
-      <label>Tilgangskode</label>
+      <label data-i18n="codeLabel">Tilgangskode</label>
       <input type="password" id="loginCode">
     </div>
-    <button class="btn btn-primary" onclick="doParentLogin()">Logg inn</button>
+    <button class="btn btn-primary" onclick="doParentLogin()" data-i18n="loginBtn">Logg inn</button>
     <div class="error-msg" id="loginError"></div>
   </div>
 
@@ -125,68 +193,210 @@
   <div id="appView">
     <div class="who-bar">
       <span id="whoText"></span>
-      <button class="logout" onclick="doParentLogout()">Logg ut</button>
+      <button class="logout" onclick="doParentLogout()" data-i18n="logout">Logg ut</button>
     </div>
 
     <div class="summary-box">
       <div class="summary-grid">
-        <div class="summary-item"><div class="n" id="sumTotal">0 kr</div><div class="l">Totalt</div></div>
-        <div class="summary-item"><div class="n" id="sumPaid">0 kr</div><div class="l">Betalt</div></div>
-        <div class="summary-item"><div class="n" id="sumRemaining">0 kr</div><div class="l">Gjenstår</div></div>
-        <div class="summary-item"><div class="n" id="sumChildren">0</div><div class="l">Antall barn</div></div>
+        <div class="summary-item"><div class="n" id="sumTotal">0 kr</div><div class="l" data-i18n="sumTotalLbl">Totalt</div></div>
+        <div class="summary-item"><div class="n" id="sumPaid">0 kr</div><div class="l" data-i18n="sumPaidLbl">Betalt</div></div>
+        <div class="summary-item"><div class="n" id="sumRemaining">0 kr</div><div class="l" data-i18n="sumRemainingLbl">Gjenstår</div></div>
+        <div class="summary-item"><div class="n" id="sumChildren">0</div><div class="l" data-i18n="sumChildrenLbl">Antall barn</div></div>
       </div>
       <div class="summary-item" id="sumSavingsWrap" style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.15); display:none;">
         <div class="n" id="sumSavings" style="color:var(--gold-l);">0 kr</div>
-        <div class="l">Spart på søskenrabatt</div>
+        <div class="l" data-i18n="sumSavingsLbl">Spart på søskenrabatt</div>
       </div>
     </div>
 
     <div class="child-tabs" id="childTabs"></div>
 
-    <div class="card" id="childInfoCard">
-      <h2>Elevinformasjon</h2>
-      <div id="childInfo"></div>
+    <!-- HOME MENU -->
+    <div id="homeView">
+      <div class="menu-grid">
+        <div class="menu-card" onclick="openSection('info')">
+          <div class="dot" id="dotInfo"></div>
+          <div class="ic">👤</div>
+          <div class="t" data-i18n="menuInfo">Elevinformasjon</div>
+          <div class="d" data-i18n="menuInfoDesc">Status og detaljer</div>
+        </div>
+        <div class="menu-card" onclick="openSection('schedule')">
+          <div class="ic">📅</div>
+          <div class="t" data-i18n="menuSchedule">Timeplan</div>
+          <div class="d" data-i18n="menuScheduleDesc">Ukentlig skjema og lærere</div>
+        </div>
+        <div class="menu-card" onclick="openSection('attendance')">
+          <div class="ic">✅</div>
+          <div class="t" data-i18n="menuAttendance">Oppmøte</div>
+          <div class="d" data-i18n="menuAttendanceDesc">Historikk</div>
+        </div>
+        <div class="menu-card" onclick="openSection('homework')">
+          <div class="dot" id="dotHomework"></div>
+          <div class="ic">📚</div>
+          <div class="t" data-i18n="menuHomework">Lekser</div>
+          <div class="d" data-i18n="menuHomeworkDesc">Se og lever besvarelse</div>
+        </div>
+        <div class="menu-card" onclick="openSection('absence')">
+          <div class="ic">🚫</div>
+          <div class="t" data-i18n="menuAbsence">Meld fravær</div>
+          <div class="d" data-i18n="menuAbsenceDesc">Send melding til læreren</div>
+        </div>
+        <div class="menu-card" onclick="openSection('notes')">
+          <div class="dot" id="dotNotes"></div>
+          <div class="ic">📝</div>
+          <div class="t" data-i18n="menuNotes">Notater</div>
+          <div class="d" data-i18n="menuNotesDesc">Fremgang fra læreren</div>
+        </div>
+        <div class="menu-card" onclick="openSection('announcements')">
+          <div class="dot" id="dotAnnouncements"></div>
+          <div class="ic">📢</div>
+          <div class="t" data-i18n="menuAnnouncements">Kunngjøringer</div>
+          <div class="d" data-i18n="menuAnnouncementsDesc">Nytt fra skolen</div>
+        </div>
+        <div class="menu-card" onclick="openSection('payment')">
+          <div class="ic">💳</div>
+          <div class="t" data-i18n="menuPayment">Betaling</div>
+          <div class="d" data-i18n="menuPaymentDesc">Beløp og betal nå</div>
+        </div>
+        <div class="menu-card" onclick="openSection('contact')">
+          <div class="ic">✏️</div>
+          <div class="t" data-i18n="menuContact">Kontaktinfo</div>
+          <div class="d" data-i18n="menuContactDesc">Meld endring</div>
+        </div>
+      </div>
     </div>
 
-    <div class="card" id="regStatusCard" style="display:none;">
-      <h2>Status på søknad</h2>
-      <div id="regStatus"></div>
+    <!-- ELEVINFORMASJON -->
+    <div class="sub-view" id="view-info">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuInfo">Elevinformasjon</h2>
+        <div id="childInfo"></div>
+      </div>
+      <div class="card" id="regStatusCard" style="display:none;">
+        <h2 data-i18n="regStatusTitle">Status på søknad</h2>
+        <div id="regStatus"></div>
+      </div>
+      <button class="btn btn-ghost" onclick="downloadRegistration()" data-i18n="downloadReg">Last ned søknaden min</button>
     </div>
 
-    <div class="card">
-      <h2>Oppmøtehistorikk</h2>
-      <div id="attendanceHistory"></div>
+    <!-- TIMEPLAN -->
+    <div class="sub-view" id="view-schedule">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuSchedule">Timeplan</h2>
+        <div class="sub" data-i18n="scheduleSub">Ukentlig skjema for barnets klasse</div>
+        <div id="scheduleList"></div>
+      </div>
+      <div class="card">
+        <h2 data-i18n="teachersTitle">Lærere denne dagen</h2>
+        <div id="teachersList"></div>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>Lekser</h2>
-      <div id="homeworkList"></div>
-      <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
-      <div class="sub" style="margin-bottom:10px;">Lever besvarelse (lim inn lenke til bilde/dokument etter opplasting på f.eks. Google Drive)</div>
-      <div class="field">
-        <label>Hvilken lekse gjelder dette?</label>
-        <select id="hwSubmitTitle"></select>
+    <!-- OPPMØTE -->
+    <div class="sub-view" id="view-attendance">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuAttendance">Oppmøtehistorikk</h2>
+        <div id="attendanceHistory"></div>
       </div>
-      <div class="field">
-        <label>Lenke til besvarelse</label>
-        <input type="text" id="hwSubmitLink" placeholder="https://...">
-      </div>
-      <button class="btn btn-primary" onclick="submitHomeworkAnswer()">Send inn besvarelse</button>
     </div>
 
-    <div class="card">
-      <h2>Meld fravær</h2>
-      <div class="sub">Send en melding til læreren om barnets fravær</div>
-      <div class="field">
-        <label>Dato</label>
-        <input type="date" id="absDate">
+    <!-- LEKSER -->
+    <div class="sub-view" id="view-homework">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuHomework">Lekser</h2>
+        <div id="homeworkList"></div>
+        <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
+        <div class="sub" style="margin-bottom:10px;" data-i18n="submitHwSub">Lever besvarelse (lim inn lenke til bilde/dokument etter opplasting på f.eks. Google Drive)</div>
+        <div class="field">
+          <label data-i18n="whichHw">Hvilken lekse gjelder dette?</label>
+          <select id="hwSubmitTitle"></select>
+        </div>
+        <div class="field">
+          <label data-i18n="linkLabel">Lenke til besvarelse</label>
+          <input type="text" id="hwSubmitLink" placeholder="https://...">
+        </div>
+        <button class="btn btn-primary" onclick="submitHomeworkAnswer()" data-i18n="submitHwBtn">Send inn besvarelse</button>
       </div>
-      <div class="field">
-        <label>Årsak</label>
-        <textarea id="absReason" rows="3"></textarea>
-      </div>
-      <button class="btn btn-primary" onclick="submitAbsenceRequest()">Send fraværsmelding</button>
     </div>
+
+    <!-- FRAVÆR -->
+    <div class="sub-view" id="view-absence">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuAbsence">Meld fravær</h2>
+        <div class="sub" data-i18n="absenceSub">Send en melding til læreren om barnets fravær</div>
+        <div class="field">
+          <label data-i18n="dateLabel">Dato</label>
+          <input type="date" id="absDate">
+        </div>
+        <div class="field">
+          <label data-i18n="reasonLabel">Årsak</label>
+          <textarea id="absReason" rows="3"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="submitAbsenceRequest()" data-i18n="sendAbsence">Send fraværsmelding</button>
+      </div>
+    </div>
+
+    <!-- NOTATER -->
+    <div class="sub-view" id="view-notes">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuNotes">Notater fra læreren</h2>
+        <div class="sub" data-i18n="notesSub">Fremgangsnotater om barnet ditt</div>
+        <div id="notesList"></div>
+      </div>
+    </div>
+
+    <!-- KUNNGJØRINGER -->
+    <div class="sub-view" id="view-announcements">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuAnnouncements">Kunngjøringer</h2>
+        <div id="announcementsList"></div>
+      </div>
+    </div>
+
+    <!-- BETALING -->
+    <div class="sub-view" id="view-payment">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuPayment">Betaling</h2>
+        <div id="paymentInfo"></div>
+        <div id="paymentBtnWrap" style="margin-top:16px; display:none;">
+          <a id="paymentLink" href="#" target="_blank" style="text-decoration:none;">
+            <button class="btn btn-primary" data-i18n="payNowBtn">Betal nå</button>
+          </a>
+        </div>
+        <div class="empty-msg" id="paymentComingSoon" style="display:none;" data-i18n="paymentComingSoon">Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.</div>
+      </div>
+    </div>
+
+    <!-- KONTAKTINFO -->
+    <div class="sub-view" id="view-contact">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuContact">Meld endring av kontaktinfo</h2>
+        <div class="sub" data-i18n="contactSub">Sendes til administrasjonen for godkjenning</div>
+        <div class="field">
+          <label data-i18n="newPhone">Ny telefon (valgfritt)</label>
+          <input type="tel" id="contactNewPhone">
+        </div>
+        <div class="field">
+          <label data-i18n="newEmail">Ny e-post (valgfritt)</label>
+          <input type="email" id="contactNewEmail">
+        </div>
+        <div class="field">
+          <label data-i18n="messageLabel">Melding (valgfritt)</label>
+          <textarea id="contactMessage" rows="3"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="submitContactUpdate()" data-i18n="sendContactUpdate">Send forespørsel</button>
+      </div>
+    </div>
+
   </div>
 
 </main>
@@ -196,7 +406,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc
+    getFirestore, collection, onSnapshot, addDoc, doc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -210,7 +420,96 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  let guardians = [], students = [], attendance = [], registrations = [], homework = [];
+  // ---------- I18N ----------
+  let currentLang = 'no';
+  const I18N = {
+    no: {
+      headerTitle: 'Madina Skole — Foreldreportal', headerSub: 'Kun for foresatte',
+      loginTitle: 'Logg inn', loginSub: 'Skriv inn telefonnummeret ditt og tilgangskoden du har fått fra skolen.',
+      phoneLabel: 'Telefonnummer', codeLabel: 'Tilgangskode', loginBtn: 'Logg inn', logout: 'Logg ut',
+      sumTotalLbl: 'Totalt', sumPaidLbl: 'Betalt', sumRemainingLbl: 'Gjenstår', sumChildrenLbl: 'Antall barn', sumSavingsLbl: 'Spart på søskenrabatt',
+      menuInfo: 'Elevinformasjon', menuInfoDesc: 'Status og detaljer',
+      menuSchedule: 'Timeplan', menuScheduleDesc: 'Ukentlig skjema og lærere',
+      menuAttendance: 'Oppmøte', menuAttendanceDesc: 'Historikk',
+      menuHomework: 'Lekser', menuHomeworkDesc: 'Se og lever besvarelse',
+      menuAbsence: 'Meld fravær', menuAbsenceDesc: 'Send melding til læreren',
+      menuNotes: 'Notater', menuNotesDesc: 'Fremgang fra læreren',
+      menuAnnouncements: 'Kunngjøringer', menuAnnouncementsDesc: 'Nytt fra skolen',
+      menuPayment: 'Betaling', menuPaymentDesc: 'Beløp og betal nå',
+      menuContact: 'Kontaktinfo', menuContactDesc: 'Meld endring',
+      back: '← Tilbake', regStatusTitle: 'Status på søknad', downloadReg: 'Last ned søknaden min',
+      scheduleSub: 'Ukentlig skjema for barnets klasse', teachersTitle: 'Lærere denne dagen',
+      submitHwSub: 'Lever besvarelse (lim inn lenke til bilde/dokument etter opplasting på f.eks. Google Drive)',
+      whichHw: 'Hvilken lekse gjelder dette?', linkLabel: 'Lenke til besvarelse', submitHwBtn: 'Send inn besvarelse',
+      absenceSub: 'Send en melding til læreren om barnets fravær', dateLabel: 'Dato', reasonLabel: 'Årsak', sendAbsence: 'Send fraværsmelding',
+      notesSub: 'Fremgangsnotater om barnet ditt',
+      payNowBtn: 'Betal nå', paymentComingSoon: 'Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.',
+      contactSub: 'Sendes til administrasjonen for godkjenning', newPhone: 'Ny telefon (valgfritt)', newEmail: 'Ny e-post (valgfritt)',
+      messageLabel: 'Melding (valgfritt)', sendContactUpdate: 'Send forespørsel',
+      noChildren: 'Ingen barn registrert ennå.', noAttendance: 'Ingen oppmøteregistreringer ennå.',
+      noHomework: 'Ingen lekser lagt ut ennå.', noHwOptions: 'Ingen lekser tilgjengelig',
+      noNotes: 'Ingen notater ennå.', noAnnouncements: 'Ingen kunngjøringer ennå.',
+      noSchedule: 'Ingen timer registrert for denne dagen.', noTeachers: 'Ingen lærerinfo tilgjengelig for denne dagen.',
+      fillHwFields: 'Velg lekse og lim inn en lenke til besvarelsen.', hwSent: 'Besvarelsen er sendt inn.',
+      fillAbsFields: 'Fyll ut dato og årsak.', absSent: 'Fraværsmeldingen er sendt til læreren.',
+      contactSent: 'Forespørselen er sendt til administrasjonen.',
+      wrongLogin: 'Feil telefonnummer eller tilgangskode.', fillLogin: 'Fyll ut telefonnummer og tilgangskode.',
+      errorOccurred: 'En feil oppstod: '
+    },
+    ar: {
+      headerTitle: 'مدرسة المدينة — بوابة أولياء الأمور', headerSub: 'خاص بأولياء الأمور فقط',
+      loginTitle: 'تسجيل الدخول', loginSub: 'أدخل رقم هاتفك ورمز الدخول الذي حصلت عليه من المدرسة.',
+      phoneLabel: 'رقم الهاتف', codeLabel: 'رمز الدخول', loginBtn: 'دخول', logout: 'تسجيل خروج',
+      sumTotalLbl: 'الإجمالي', sumPaidLbl: 'المدفوع', sumRemainingLbl: 'المتبقي', sumChildrenLbl: 'عدد الأبناء', sumSavingsLbl: 'التوفير بخصم الإخوة',
+      menuInfo: 'معلومات الطالب', menuInfoDesc: 'الحالة والتفاصيل',
+      menuSchedule: 'الجدول الزمني', menuScheduleDesc: 'الجدول الأسبوعي والمعلمون',
+      menuAttendance: 'الحضور', menuAttendanceDesc: 'السجل',
+      menuHomework: 'الواجبات', menuHomeworkDesc: 'عرض وتسليم الإجابة',
+      menuAbsence: 'الإبلاغ عن غياب', menuAbsenceDesc: 'إرسال رسالة للمعلم',
+      menuNotes: 'الملاحظات', menuNotesDesc: 'تقدّم الطالب من المعلم',
+      menuAnnouncements: 'الإعلانات', menuAnnouncementsDesc: 'جديد المدرسة',
+      menuPayment: 'الدفع', menuPaymentDesc: 'المبلغ والدفع الآن',
+      menuContact: 'معلومات التواصل', menuContactDesc: 'طلب تعديل',
+      back: '→ رجوع', regStatusTitle: 'حالة الطلب', downloadReg: 'تحميل طلب التسجيل',
+      scheduleSub: 'الجدول الأسبوعي لصف الطالب', teachersTitle: 'المعلمون في هذا اليوم',
+      submitHwSub: 'تسليم الإجابة (الصق رابط الصورة أو الملف بعد رفعه على Google Drive مثلاً)',
+      whichHw: 'ما هو الواجب المعني؟', linkLabel: 'رابط الإجابة', submitHwBtn: 'إرسال الإجابة',
+      absenceSub: 'أرسل رسالة إلى المعلم بخصوص غياب الطالب', dateLabel: 'التاريخ', reasonLabel: 'السبب', sendAbsence: 'إرسال إشعار الغياب',
+      notesSub: 'ملاحظات تقدّم عن طالبك',
+      payNowBtn: 'ادفع الآن', paymentComingSoon: 'وسيلة الدفع الإلكتروني قادمة قريبًا. تواصل مع المدرسة لمعرفة طريقة الدفع.',
+      contactSub: 'يُرسل إلى الإدارة للموافقة', newPhone: 'رقم هاتف جديد (اختياري)', newEmail: 'بريد إلكتروني جديد (اختياري)',
+      messageLabel: 'رسالة (اختياري)', sendContactUpdate: 'إرسال الطلب',
+      noChildren: 'لا يوجد أبناء مسجلون بعد.', noAttendance: 'لا يوجد سجل حضور بعد.',
+      noHomework: 'لا توجد واجبات بعد.', noHwOptions: 'لا توجد واجبات متاحة',
+      noNotes: 'لا توجد ملاحظات بعد.', noAnnouncements: 'لا توجد إعلانات بعد.',
+      noSchedule: 'لا توجد حصص مسجلة لهذا اليوم.', noTeachers: 'لا توجد معلومات معلمين لهذا اليوم.',
+      fillHwFields: 'اختر واجبًا والصق رابط الإجابة.', hwSent: 'تم إرسال الإجابة.',
+      fillAbsFields: 'يرجى تعبئة التاريخ والسبب.', absSent: 'تم إرسال إشعار الغياب إلى المعلم.',
+      contactSent: 'تم إرسال الطلب إلى الإدارة.',
+      wrongLogin: 'رقم الهاتف أو رمز الدخول غير صحيح.', fillLogin: 'يرجى تعبئة رقم الهاتف ورمز الدخول.',
+      errorOccurred: 'حدث خطأ: '
+    }
+  };
+
+  function t(key){ return I18N[currentLang][key]; }
+
+  window.switchLang = function(lang){
+    currentLang = lang;
+    document.getElementById('htmlRoot').setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.getElementById('htmlRoot').setAttribute('lang', lang);
+    document.getElementById('btnLangNo').classList.toggle('active', lang === 'no');
+    document.getElementById('btnLangAr').classList.toggle('active', lang === 'ar');
+    applyStaticTranslations();
+    if(currentGuardian) renderChild();
+  };
+
+  function applyStaticTranslations(){
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      const val = I18N[currentLang][key];
+      if(typeof val === 'string') el.textContent = val;
+    });
+  }
 
   const PROGRAM_PRICES = {
     'Madina Islamske Skole (Lørdag)': '2500',
@@ -219,6 +518,10 @@
     'Kombinert – Islamske Skole + Språk (Lørdag og søndag)': '4000',
     'Madinabarn (Søndag)': '2000'
   };
+
+  let guardians = [], students = [], attendance = [], registrations = [], homework = [];
+  let announcements = [], studentNotes = [], hours = [], teachers = [];
+  let paymentLink = '';
   let currentGuardian = null;
   let currentChildIndex = 0;
   let myChildren = [];
@@ -256,6 +559,26 @@
     homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
+  onSnapshot(collection(db, 'announcements'), (snap) => {
+    announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  onSnapshot(collection(db, 'studentNotes'), (snap) => {
+    studentNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  onSnapshot(collection(db, 'hours'), (snap) => {
+    hours = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  onSnapshot(collection(db, 'teachers'), (snap) => {
+    teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
+    paymentLink = snap.exists() ? (snap.data().lenke || '') : '';
+    if(currentGuardian) renderChild();
+  }, (err) => console.error('settings/betaling', err));
 
   window.doParentLogin = function(){
     const errEl = document.getElementById('loginError');
@@ -263,13 +586,13 @@
     const phone = document.getElementById('loginPhone').value.trim();
     const code = document.getElementById('loginCode').value.trim();
     if(!phone || !code){
-      errEl.textContent = 'Fyll ut telefonnummer og tilgangskode.';
+      errEl.textContent = t('fillLogin');
       errEl.style.display = 'block';
       return;
     }
     const guardian = guardians.find(g => (g.telefon||'').trim() === phone && (g.tilgangskode||'').trim() === code);
     if(!guardian){
-      errEl.textContent = 'Feil telefonnummer eller tilgangskode.';
+      errEl.textContent = t('wrongLogin');
       errEl.style.display = 'block';
       return;
     }
@@ -278,6 +601,7 @@
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = guardian.navn;
     document.getElementById('absDate').value = todayISO();
+    closeSection();
     refreshMyChildren();
   };
 
@@ -333,9 +657,45 @@
     renderChild();
   };
 
+  // ---------- Section navigation ----------
+  window.openSection = function(name){
+    document.getElementById('homeView').style.display = 'none';
+    document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
+    document.getElementById('view-' + name).style.display = 'block';
+    markSeen(name);
+    updateBadges();
+  };
+  window.closeSection = function(){
+    document.getElementById('homeView').style.display = 'block';
+    document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
+  };
+
+  function seenKey(type){ return 'ps_seen_' + type + '_' + (currentGuardian ? currentGuardian.navn : ''); }
+  function markSeen(name){
+    const map = { homework: 'homework', notes: 'studentNotes', announcements: 'announcements' };
+    const type = map[name];
+    if(type) localStorage.setItem(seenKey(type), new Date().toISOString());
+  }
+  function hasNew(type, dateField, list){
+    try{
+      const seen = localStorage.getItem(seenKey(type));
+      if(!seen) return list.length > 0;
+      return list.some(item => (item[dateField]||'') > seen.slice(0,10));
+    } catch(e){ return false; }
+  }
+  function updateBadges(){
+    if(myChildren.length === 0) return;
+    const child = myChildren[currentChildIndex];
+    const myHw = homework.filter(h => h.klasse === child.klasse);
+    const myNotes = studentNotes.filter(n => n.elevNavn === child.navn);
+    document.getElementById('dotHomework').parentElement.classList.toggle('has-new', hasNew('homework','dato', myHw));
+    document.getElementById('dotNotes').parentElement.classList.toggle('has-new', hasNew('studentNotes','dato', myNotes));
+    document.getElementById('dotAnnouncements').parentElement.classList.toggle('has-new', hasNew('announcements','dato', announcements));
+  }
+
   function renderChild(){
     if(myChildren.length === 0){
-      document.getElementById('childInfo').innerHTML = '<div class="empty-msg">Ingen barn registrert ennå.</div>';
+      document.getElementById('childInfo').innerHTML = `<div class="empty-msg">${t('noChildren')}</div>`;
       document.getElementById('attendanceHistory').innerHTML = '';
       document.getElementById('homeworkList').innerHTML = '';
       document.getElementById('regStatusCard').style.display = 'none';
@@ -361,13 +721,15 @@
       document.getElementById('regStatus').innerHTML =
         `<span class="status-pill ${statusClass}">${escapeHtml(reg.status||'Ny')}</span>
          <div class="sub" style="margin-top:10px;">Innsendt: ${escapeHtml(reg.innsendtDato||'')}</div>`;
+      currentRegForDownload = reg;
     } else {
       regCard.style.display = 'none';
+      currentRegForDownload = null;
     }
 
     const myAttendance = attendance.filter(a => a.elev === child.navn).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(myAttendance.length === 0){
-      document.getElementById('attendanceHistory').innerHTML = '<div class="empty-msg">Ingen oppmøteregistreringer ennå.</div>';
+      document.getElementById('attendanceHistory').innerHTML = `<div class="empty-msg">${t('noAttendance')}</div>`;
     } else {
       const statusClassMap = { 'Til stede':'tilstede', 'Fraværende':'fravar', 'Syk':'syk', 'Permisjon':'permisjon' };
       document.getElementById('attendanceHistory').innerHTML = myAttendance.slice(0,30).map(a => `
@@ -377,7 +739,7 @@
 
     const myHomework = homework.filter(h => h.klasse === child.klasse).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(myHomework.length === 0){
-      document.getElementById('homeworkList').innerHTML = '<div class="empty-msg">Ingen lekser lagt ut ennå.</div>';
+      document.getElementById('homeworkList').innerHTML = `<div class="empty-msg">${t('noHomework')}</div>`;
     } else {
       document.getElementById('homeworkList').innerHTML = myHomework.map(h => `
         <div class="hw-item">
@@ -389,8 +751,98 @@
     }
     const submitSelect = document.getElementById('hwSubmitTitle');
     submitSelect.innerHTML = myHomework.map(h => `<option value="${escapeHtml(h.tittel)}">${escapeHtml(h.tittel)} (${escapeHtml(h.dato)})</option>`).join('')
-      || '<option value="">Ingen lekser tilgjengelig</option>';
+      || `<option value="">${t('noHwOptions')}</option>`;
+
+    // Notater
+    const myNotes = studentNotes.filter(n => n.elevNavn === child.navn).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(myNotes.length === 0){
+      document.getElementById('notesList').innerHTML = `<div class="empty-msg">${t('noNotes')}</div>`;
+    } else {
+      document.getElementById('notesList').innerHTML = myNotes.map(n => `
+        <div class="note-item">
+          <div class="d">${escapeHtml(n.tekst)}</div>
+          <div class="meta">${escapeHtml(n.dato)} · ${escapeHtml(n.larer||'')}</div>
+        </div>
+      `).join('');
+    }
+
+    // Kunngjøringer
+    const dayFilter = (child.program||'').includes('Lørdag') && !(child.program||'').includes('Søndag') ? 'Kun Lørdag'
+      : (child.program||'').includes('Søndag') && !(child.program||'').includes('Lørdag') ? 'Kun Søndag' : null;
+    const relevantAnnouncements = announcements.filter(a => !dayFilter || !a.malgruppe || a.malgruppe === 'Alle foresatte' || a.malgruppe === dayFilter)
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(relevantAnnouncements.length === 0){
+      document.getElementById('announcementsList').innerHTML = `<div class="empty-msg">${t('noAnnouncements')}</div>`;
+    } else {
+      document.getElementById('announcementsList').innerHTML = relevantAnnouncements.map(a => `
+        <div class="ann-item">
+          <div class="t">${escapeHtml(a.tittel)}</div>
+          <div class="d">${escapeHtml(a.innhold)}</div>
+          <div class="meta">${escapeHtml(a.dato)}${a.forfatter ? ' · ' + escapeHtml(a.forfatter) : ''}</div>
+        </div>
+      `).join('');
+    }
+
+    // Timeplan
+    const klasseHours = hours.filter(h => h.klasse === child.klasse || h.klasse === 'Felles oppstart' || h.klasse === 'Felles avslutning')
+      .sort((a,b) => (a.tid||'').localeCompare(b.tid||''));
+    if(klasseHours.length === 0){
+      document.getElementById('scheduleList').innerHTML = `<div class="empty-msg">${t('noSchedule')}</div>`;
+    } else {
+      document.getElementById('scheduleList').innerHTML = klasseHours.map(h => `
+        <div class="sched-block"><span class="tm">${escapeHtml(h.dag)} · ${escapeHtml(h.tid)}</span><span>${escapeHtml(h.fag)}</span></div>
+      `).join('');
+    }
+    const relevantDay = klasseHours.length ? klasseHours[0].dag : null;
+    const dayTeachers = relevantDay ? teachers.filter(tc => (tc.dager||'').includes(relevantDay)) : [];
+    if(dayTeachers.length === 0){
+      document.getElementById('teachersList').innerHTML = `<div class="empty-msg">${t('noTeachers')}</div>`;
+    } else {
+      document.getElementById('teachersList').innerHTML = dayTeachers.map(tc => `
+        <div class="info-row"><span class="lbl">${escapeHtml(tc.navn)} (${escapeHtml(tc.fag||'')})</span><span>${escapeHtml(tc.telefon||'')}</span></div>
+      `).join('');
+    }
+
+    // Betaling
+    document.getElementById('paymentInfo').innerHTML = `
+      <div class="info-row"><span class="lbl">Totalt</span><span>${toNum(child.belop).toLocaleString('no-NO')} kr</span></div>
+      <div class="info-row"><span class="lbl">Betalt</span><span>${toNum(child.belopBetalt).toLocaleString('no-NO')} kr</span></div>
+      <div class="info-row"><span class="lbl">Gjenstår</span><span>${(toNum(child.belop)-toNum(child.belopBetalt)).toLocaleString('no-NO')} kr</span></div>
+    `;
+    if(paymentLink){
+      document.getElementById('paymentBtnWrap').style.display = 'block';
+      document.getElementById('paymentComingSoon').style.display = 'none';
+      document.getElementById('paymentLink').href = paymentLink;
+    } else {
+      document.getElementById('paymentBtnWrap').style.display = 'none';
+      document.getElementById('paymentComingSoon').style.display = 'block';
+    }
+
+    updateBadges();
   }
+
+  let currentRegForDownload = null;
+  window.downloadRegistration = function(){
+    if(!currentRegForDownload){
+      showToast(currentLang === 'ar' ? 'لا يوجد طلب تسجيل لتحميله.' : 'Ingen søknad å laste ned.');
+      return;
+    }
+    const reg = currentRegForDownload;
+    let text = 'MADINA SKOLE — SØKNAD\n\n';
+    Object.keys(reg).forEach(k => {
+      if(k === 'id') return;
+      text += k + ': ' + (reg[k] || '') + '\n';
+    });
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'soknad-' + (reg.elev_navn || 'elev').replace(/[^a-zA-Z0-9]/g,'_') + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   window.submitHomeworkAnswer = async function(){
     if(myChildren.length === 0) return;
@@ -398,7 +850,7 @@
     const tittel = document.getElementById('hwSubmitTitle').value;
     const lenke = document.getElementById('hwSubmitLink').value.trim();
     if(!tittel || !lenke){
-      alert('Velg lekse og lim inn en lenke til besvarelsen.');
+      alert(t('fillHwFields'));
       return;
     }
     try{
@@ -406,11 +858,11 @@
         homeworkTittel: tittel, klasse: child.klasse, elevNavn: child.navn,
         lenke, innsendtDato: todayISO()
       });
-      showToast('Besvarelsen er sendt inn.');
+      showToast(t('hwSent'));
       document.getElementById('hwSubmitLink').value = '';
     } catch(err){
       console.error(err);
-      alert('En feil oppstod: ' + err.message);
+      alert(t('errorOccurred') + err.message);
     }
   };
 
@@ -420,7 +872,7 @@
     const dato = document.getElementById('absDate').value;
     const arsak = document.getElementById('absReason').value.trim();
     if(!dato || !arsak){
-      alert('Fyll ut dato og årsak.');
+      alert(t('fillAbsFields'));
       return;
     }
     try{
@@ -428,13 +880,38 @@
         elevNavn: child.navn, klasse: child.klasse, dato, arsak,
         status: 'Ny', innsendtDato: todayISO()
       });
-      showToast('Fraværsmeldingen er sendt til læreren.');
+      showToast(t('absSent'));
       document.getElementById('absReason').value = '';
     } catch(err){
       console.error(err);
-      alert('En feil oppstod: ' + err.message);
+      alert(t('errorOccurred') + err.message);
     }
   };
+
+  window.submitContactUpdate = async function(){
+    if(!currentGuardian) return;
+    const nyTelefon = document.getElementById('contactNewPhone').value.trim();
+    const nyEpost = document.getElementById('contactNewEmail').value.trim();
+    const melding = document.getElementById('contactMessage').value.trim();
+    if(!nyTelefon && !nyEpost && !melding){
+      alert(currentLang === 'ar' ? 'يرجى تعبئة حقل واحد على الأقل.' : 'Fyll ut minst ett felt.');
+      return;
+    }
+    try{
+      await addDoc(collection(db, 'contactUpdateRequests'), {
+        guardianNavn: currentGuardian.navn, nyTelefon, nyEpost, melding,
+        status: 'Ny', dato: todayISO()
+      });
+      showToast(t('contactSent'));
+      document.getElementById('contactNewPhone').value = '';
+      document.getElementById('contactNewEmail').value = '';
+      document.getElementById('contactMessage').value = '';
+    } catch(err){
+      console.error(err);
+      alert(t('errorOccurred') + err.message);
+    }
+  };
+  applyStaticTranslations();
 </script>
 </body>
 </html>

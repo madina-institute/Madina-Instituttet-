@@ -181,6 +181,10 @@
           <div class="title">Fraværsmeldinger</div>
           <div class="desc">Behandle fraværsmeldinger fra foresatte</div>
         </div>
+        <div class="choice-card" onclick="showStudentNotes()">
+          <div class="title">Elevnotater</div>
+          <div class="desc">Skriv en fremgangsnotat om en elev — synlig for foresatte</div>
+        </div>
       </div>
     </div>
 
@@ -297,6 +301,25 @@
       <h2>Fraværsmeldinger</h2>
       <div class="sub">Ubehandlede meldinger fra foresatte for din klasse</div>
       <div id="absenceReviewList"></div>
+    </div>
+
+    <!-- STUDENT NOTES VIEW -->
+    <div class="card" id="studentNotesView" style="display:none;">
+      <button class="back-link" onclick="showChoice()">← Tilbake</button>
+      <h2>Elevnotater</h2>
+      <div class="sub" id="notesClassSub">Skriv et fremgangsnotat om en elev — vises for foresatte i Foreldreportalen</div>
+      <div class="field">
+        <label>Elev</label>
+        <select id="noteElevSelect"></select>
+      </div>
+      <div class="field">
+        <label>Notat</label>
+        <textarea id="noteTekst" rows="3" placeholder="F.eks. Har memorert Sure Al-Fatiha denne uken, veldig god fremgang."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="submitStudentNote()">Send notat</button>
+      <hr style="border:none; border-top:1px dotted var(--line); margin:20px 0;">
+      <div class="sub" style="margin-bottom:10px;">Tidligere notater for klassen</div>
+      <div id="studentNotesList"></div>
     </div>
   </div>
 
@@ -492,6 +515,7 @@
   let teachers = [];
   let students = [];
   let attendance = [];
+  let classes = [];
   let currentTeacher = null;
 
   function todayISO(){
@@ -525,6 +549,10 @@
     populateLoginNames();
   });
 
+  onSnapshot(collection(db, 'classes'), (snap) => {
+    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
+
   onSnapshot(collection(db, 'students'), (snap) => {
     students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentTeacher) renderStudentList();
@@ -539,6 +567,12 @@
   onSnapshot(collection(db, 'absenceRequests'), (snap) => {
     absenceRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentTeacher) renderAbsenceReviewList();
+  });
+
+  let studentNotes = [];
+  onSnapshot(collection(db, 'studentNotes'), (snap) => {
+    studentNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher) renderStudentNotesList();
   });
 
   window.doLogin = function(){
@@ -567,7 +601,9 @@
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = teacher.navn + ' · ' + teacher.tildeltKlasse;
-    document.getElementById('attDate').value = todayISO();
+    const allowedDays = getAllowedWeekdays(teacher.tildeltKlasse);
+    document.getElementById('attDate').value = allowedDays ? nearestValidDate(allowedDays) : todayISO();
+    lastValidAttDate = document.getElementById('attDate').value;
     document.getElementById('lpDato').value = todayISO();
     populateFagSelect();
     showChoice();
@@ -586,6 +622,7 @@
     document.getElementById('lessonView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
+    document.getElementById('studentNotesView').style.display = 'none';
   };
 
   window.showAttendance = function(){
@@ -682,7 +719,99 @@
     }
   };
 
-  document.getElementById('attDate').addEventListener('change', renderStudentList);
+  window.showStudentNotes = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('studentNotesView').style.display = 'block';
+    document.getElementById('notesClassSub').textContent =
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + currentTeacher.tildeltKlasse;
+    const sel = document.getElementById('noteElevSelect');
+    const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse);
+    sel.innerHTML = myStudents.map(s => `<option value="${escapeHtml(s.navn)}">${escapeHtml(s.navn)}</option>`).join('')
+      || `<option value="">${currentLang === 'ar' ? 'لا يوجد طلاب في هذا الصف' : 'Ingen elever i denne klassen'}</option>`;
+    renderStudentNotesList();
+  };
+
+  window.submitStudentNote = async function(){
+    const elevNavn = document.getElementById('noteElevSelect').value;
+    const tekst = document.getElementById('noteTekst').value.trim();
+    if(!elevNavn || !tekst){
+      alert(currentLang === 'ar' ? 'اختر طالبًا واكتب الملاحظة.' : 'Velg en elev og skriv et notat.');
+      return;
+    }
+    try{
+      await addDoc(collection(db, 'studentNotes'), {
+        elevNavn, klasse: currentTeacher.tildeltKlasse, tekst,
+        larer: currentTeacher.navn, dato: todayISO()
+      });
+      showToast(currentLang === 'ar' ? 'تم إرسال الملاحظة.' : 'Notatet er sendt.');
+      document.getElementById('noteTekst').value = '';
+    } catch(err){
+      console.error(err);
+      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+    }
+  };
+
+  function renderStudentNotesList(){
+    const el = document.getElementById('studentNotesList');
+    if(!el || !currentTeacher) return;
+    const mine = studentNotes.filter(n => n.klasse === currentTeacher.tildeltKlasse)
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد ملاحظات بعد.' : 'Ingen notater ennå.'}</div>`;
+      return;
+    }
+    el.innerHTML = mine.slice(0,30).map(n => `
+      <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
+        <span class="name">
+          <strong>${escapeHtml(n.elevNavn||'')}</strong> — ${escapeHtml(n.dato||'')}<br>
+          <span style="font-size:12px; color:#5a6860;">${escapeHtml(n.tekst||'')}</span>
+        </span>
+      </div>`).join('');
+  }
+
+  function getAllowedWeekdays(className){
+    const cls = classes.find(c => c.navn === className || c.klassenavn === className);
+    const program = (cls && (cls.program || '')) || '';
+    const hasLordag = program.includes('Lørdag');
+    const hasSondag = program.includes('Søndag');
+    if(hasLordag && hasSondag) return null; // combined program — no restriction
+    if(hasLordag) return [6]; // Saturday only
+    if(hasSondag) return [0]; // Sunday only
+    return null; // unknown program — don't restrict
+  }
+
+  function nearestValidDate(allowedDays){
+    const d = new Date();
+    for(let i = 0; i < 8; i++){
+      if(allowedDays.includes(d.getDay())) break;
+      d.setDate(d.getDate() + 1);
+    }
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  let lastValidAttDate = null;
+
+  document.getElementById('attDate').addEventListener('change', function(){
+    if(!currentTeacher){ renderStudentList(); return; }
+    const allowedDays = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    if(allowedDays){
+      const picked = new Date(this.value + 'T00:00:00');
+      if(!allowedDays.includes(picked.getDay())){
+        const dayNames = currentLang === 'ar'
+          ? {0:'الأحد',6:'السبت'}
+          : {0:'søndag',6:'lørdag'};
+        const allowedNames = allowedDays.map(d => dayNames[d]).join('/');
+        alert(currentLang === 'ar'
+          ? `هذا الصف يدرس فقط يوم ${allowedNames}. اختر تاريخًا يوافق هذا اليوم.`
+          : `Denne klassen har kun undervisning på ${allowedNames}. Velg en dato som faller på den dagen.`);
+        this.value = lastValidAttDate || todayISO();
+        renderStudentList();
+        return;
+      }
+    }
+    lastValidAttDate = this.value;
+    renderStudentList();
+  });
 
   function renderStudentList(){
     if(!currentTeacher) return;
