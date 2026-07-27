@@ -139,6 +139,14 @@
   }
   .menu-card.has-new .dot{display:block;}
 
+  .menu-card .msg-badge{
+    display:none; font-family:'Jost',sans-serif; font-size:9.5px; font-weight:700; padding:3px 9px;
+    border-radius:12px; text-transform:uppercase; letter-spacing:0.03em; margin-top:6px;
+  }
+  html[dir="rtl"] .menu-card .msg-badge{font-family:'Tajawal',sans-serif; text-transform:none; letter-spacing:0;}
+  .menu-card .msg-badge.unread{display:inline-block; background:rgba(168,60,60,0.12); color:var(--red);}
+  .menu-card .msg-badge.read{display:inline-block; background:rgba(90,104,96,0.14); color:#5a6860;}
+
   .day-card{
     background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%); border-radius:10px;
     padding:22px 20px; box-shadow:var(--shadow); cursor:pointer; transition:transform .2s; color:#fff;
@@ -280,10 +288,10 @@
           <div class="d" data-i18n="menuContactDesc">Meld endring</div>
         </div>
         <div class="menu-card" onclick="openSection('teacherMsg')">
-          <div class="dot" id="dotTeacherMsg"></div>
           <div class="ic">📩</div>
           <div class="t" data-i18n="menuTeacherMsg">Kontakt lærer</div>
           <div class="d" data-i18n="menuTeacherMsgDesc">Send og motta meldinger</div>
+          <div class="msg-badge" id="teacherMsgBadge"></div>
         </div>
       </div>
     </div>
@@ -548,6 +556,7 @@
       menuTeacherMsg: 'Kontakt lærer', menuTeacherMsgDesc: 'Send og motta meldinger',
       yourMessage: 'Din melding', attachmentLabel: 'Vedlegg (lenke til bilde/dokument, valgfritt)', sendMessageBtn: 'Send melding',
       noMessages: 'Ingen meldinger ennå. Skriv den første meldingen under.', teacherMsgFill: 'Skriv en melding.', teacherMsgSent: 'Meldingen er sendt til læreren.',
+      unreadBadge: 'Ulest', readBadge: 'Lest',
       you: 'Deg',
       noChildren: 'Ingen barn registrert ennå.', noAttendance: 'Ingen oppmøteregistreringer ennå.',
       noHomework: 'Ingen lekser lagt ut ennå.', noHwOptions: 'Ingen lekser tilgjengelig',
@@ -591,6 +600,7 @@
       menuTeacherMsg: 'التواصل مع المعلم', menuTeacherMsgDesc: 'إرسال واستقبال الرسائل',
       yourMessage: 'رسالتك', attachmentLabel: 'مرفق (رابط صورة أو ملف، اختياري)', sendMessageBtn: 'إرسال الرسالة',
       noMessages: 'لا توجد رسائل بعد. اكتب أول رسالة بالأسفل.', teacherMsgFill: 'اكتب نص الرسالة.', teacherMsgSent: 'تم إرسال الرسالة إلى المعلم.',
+      unreadBadge: 'غير مقروءة', readBadge: 'مقروءة',
       you: 'أنت',
       noChildren: 'لا يوجد أبناء مسجلون بعد.', noAttendance: 'لا يوجد سجل حضور بعد.',
       noHomework: 'لا توجد واجبات بعد.', noHwOptions: 'لا توجد واجبات متاحة',
@@ -844,7 +854,16 @@
     document.getElementById('dotHomework').parentElement.classList.toggle('has-new', hasNew('homework','dato', myHw));
     document.getElementById('dotNotes').parentElement.classList.toggle('has-new', hasNew('studentNotes','dato', myNotes));
     document.getElementById('dotAnnouncements').parentElement.classList.toggle('has-new', hasNew('announcements','dato', announcements));
-    document.getElementById('dotTeacherMsg').parentElement.classList.toggle('has-new', hasNewTeacherMsg());
+    const unread = hasNewTeacherMsg();
+    const badge = document.getElementById('teacherMsgBadge');
+    const hasAnyMsg = messages.some(m => m.klasse === child.klasse && m.guardianNavn === currentGuardian.navn);
+    if(!hasAnyMsg){
+      badge.className = 'msg-badge';
+      badge.textContent = '';
+    } else {
+      badge.className = 'msg-badge ' + (unread ? 'unread' : 'read');
+      badge.textContent = unread ? t('unreadBadge') : t('readBadge');
+    }
   }
 
   function msgSeenKey(klasse){ return 'ps_seen_messages_' + (currentGuardian ? currentGuardian.navn : '') + '_' + klasse; }
