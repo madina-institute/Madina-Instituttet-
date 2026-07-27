@@ -135,6 +135,27 @@
   }
   .menu-card:hover{border-color:var(--gold); transform:translateY(-2px);}
   .menu-card .ic{font-size:26px; margin-bottom:8px;}
+
+  /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
+  .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
+  .school-cal-popover{
+    position:fixed; z-index:2000; background:#fff; border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 14px 32px rgba(15,43,33,0.22); padding:14px; width:270px; display:none;
+  }
+  .school-cal-popover.open{display:block;}
+  .school-cal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .school-cal-header .month-label{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--emerald-d);}
+  html[dir="rtl"] .school-cal-header .month-label{font-family:'Tajawal',sans-serif; font-size:14px;}
+  .school-cal-header button{background:var(--paper-2); border:none; border-radius:6px; width:26px; height:26px; font-size:14px; color:var(--emerald-d); cursor:pointer;}
+  .school-cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center;}
+  .school-cal-grid .wd{font-family:'Jost',sans-serif; font-size:9px; color:#8a9a90; padding:4px 0 6px; font-weight:600;}
+  html[dir="rtl"] .school-cal-grid .wd{font-family:'Tajawal',sans-serif;}
+  .school-cal-grid .day{font-family:'Jost',sans-serif; font-size:12px; padding:7px 0; border-radius:6px;}
+  .school-cal-grid .day.empty{visibility:hidden;}
+  .school-cal-grid .day.disabled{color:#cdd4cd; cursor:not-allowed;}
+  .school-cal-grid .day.enabled{cursor:pointer; color:var(--ink); font-weight:600;}
+  .school-cal-grid .day.enabled:hover{background:var(--paper-2);}
+  .school-cal-grid .day.selected{background:var(--emerald); color:#fff;}
   .menu-card .t{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--emerald-d); line-height:1.25;}
   html[dir="rtl"] .menu-card .t{font-family:'Tajawal',sans-serif; font-size:14px;}
   .menu-card .d{font-family:'Jost',sans-serif; font-size:10.5px; color:#5a6860; margin-top:4px; line-height:1.4;}
@@ -385,7 +406,7 @@
         <div class="sub" data-i18n="absenceSub">Send en melding til læreren om barnets fravær</div>
         <div class="field">
           <label data-i18n="dateLabel">Dato</label>
-          <input type="date" id="absDate">
+          <input type="text" id="absDate" class="school-date-input" readonly placeholder="Velg dato" autocomplete="off">
         </div>
         <div class="field">
           <label data-i18n="reasonLabel">Årsak</label>
@@ -660,6 +681,16 @@
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
+  // The school only ever teaches on Saturday and Sunday, all year.
+  const SCHOOL_WEEKDAYS = [0, 6]; // Sunday, Saturday
+  function nearestSchoolDate(){
+    const d = new Date();
+    for(let i = 0; i < 8; i++){
+      if(SCHOOL_WEEKDAYS.includes(d.getDay())) break;
+      d.setDate(d.getDate() + 1);
+    }
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
   function escapeHtml(str){
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
   }
@@ -752,7 +783,7 @@
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = guardian.navn;
-    document.getElementById('absDate').value = todayISO();
+    document.getElementById('absDate').value = nearestSchoolDate();
     closeSection();
     refreshMyChildren();
   };
@@ -1264,6 +1295,89 @@
       alert(t('errorOccurred') + err.message);
     }
   };
+
+  // ---------- Custom calendar (only Sat/Sun are ever selectable) ----------
+  // Native <input type="date"> can't gray out individual weekdays across
+  // browsers, so this replaces the native picker with a small month-grid
+  // popover: every day is shown, but only Saturday/Sunday are clickable.
+  function createSchoolCalendar(inputEl, getAllowedDaysFn){
+    const pop = document.createElement('div');
+    pop.className = 'school-cal-popover';
+    document.body.appendChild(pop);
+    let viewDate = new Date();
+
+    const monthNamesNo = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+    const monthNamesAr = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    const wdNo = ['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+    const wdAr = ['إث','ثلا','أر','خم','جم','سب','أح'];
+
+    function render(){
+      const allowed = getAllowedDaysFn();
+      const year = viewDate.getFullYear(), month = viewDate.getMonth();
+      const monthNames = currentLang === 'ar' ? monthNamesAr : monthNamesNo;
+      const wdLabels = currentLang === 'ar' ? wdAr : wdNo;
+      const firstDay = new Date(year, month, 1);
+      const startOffset = (firstDay.getDay() + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const selectedVal = inputEl.value;
+      let html = `<div class="school-cal-header">
+        <button type="button" data-nav="-1">${currentLang === 'ar' ? '›' : '‹'}</button>
+        <span class="month-label">${monthNames[month]} ${year}</span>
+        <button type="button" data-nav="1">${currentLang === 'ar' ? '‹' : '›'}</button>
+      </div><div class="school-cal-grid">`;
+      wdLabels.forEach(w => { html += `<div class="wd">${w}</div>`; });
+      for(let i = 0; i < startOffset; i++) html += `<div class="day empty"></div>`;
+      for(let d = 1; d <= daysInMonth; d++){
+        const iso = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        const dow = new Date(year, month, d).getDay();
+        const isAllowed = allowed.includes(dow);
+        const isSelected = iso === selectedVal;
+        html += `<div class="day ${isAllowed ? 'enabled' : 'disabled'}${isSelected ? ' selected' : ''}" data-date="${iso}">${d}</div>`;
+      }
+      html += `</div>`;
+      pop.innerHTML = html;
+      pop.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewDate.setMonth(viewDate.getMonth() + parseInt(btn.dataset.nav, 10));
+        render();
+      }));
+      pop.querySelectorAll('.day.enabled').forEach(cell => cell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        inputEl.value = cell.dataset.date;
+        inputEl.dispatchEvent(new Event('change'));
+        closePopover();
+      }));
+    }
+
+    function positionPopover(){
+      const rect = inputEl.getBoundingClientRect();
+      const top = rect.bottom + 6;
+      let left = rect.left;
+      const maxLeft = window.innerWidth - 270 - 10;
+      if(left > maxLeft) left = Math.max(10, maxLeft);
+      pop.style.top = top + 'px';
+      pop.style.left = left + 'px';
+    }
+    function openPopover(){
+      if(inputEl.value){
+        const d = new Date(inputEl.value + 'T00:00:00');
+        viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+      } else {
+        viewDate = new Date();
+      }
+      render();
+      positionPopover();
+      pop.classList.add('open');
+    }
+    function closePopover(){ pop.classList.remove('open'); }
+
+    inputEl.addEventListener('click', (e) => { e.stopPropagation(); openPopover(); });
+    document.addEventListener('click', (e) => { if(!pop.contains(e.target) && e.target !== inputEl) closePopover(); });
+    window.addEventListener('resize', () => { if(pop.classList.contains('open')) positionPopover(); });
+    window.addEventListener('scroll', () => { if(pop.classList.contains('open')) positionPopover(); }, true);
+  }
+
+  createSchoolCalendar(document.getElementById('absDate'), () => SCHOOL_WEEKDAYS);
 
   applyStaticTranslations();
 </script>
