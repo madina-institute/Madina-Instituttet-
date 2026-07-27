@@ -101,6 +101,11 @@
   html[dir="rtl"] .student-row select{font-family:'Tajawal','Lora',serif;}
 
   .empty-msg{font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:20px 0;}
+  .tag-pill{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d);
+    background:var(--paper-2); border-radius:10px; padding:2px 9px;
+  }
+  html[dir="rtl"] .tag-pill{font-family:'Tajawal',sans-serif;}
   .upload-status{font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald); margin:-8px 0 14px;}
   html[dir="rtl"] .upload-status{font-family:'Tajawal',sans-serif;}
   .upload-status.err{color:var(--red);}
@@ -261,6 +266,7 @@
       <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <h2 data-i18n="lessonTitle">Pedagogisk forberedelse (timeforberedelse)</h2>
       <div class="sub" data-i18n="lessonSub">Bygget etter skolens undervisningsmodell — sendes til administrasjonen når den er ferdig</div>
+      <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="showLessonArchive()">📁 <span data-i18n="lessonArchiveLink">Se tidligere innsendte forberedelser</span></button>
 
       <div class="field-row-2">
         <div class="field">
@@ -323,6 +329,14 @@
       </div>
 
       <button class="btn btn-primary" onclick="printAndSubmitLessonPlan()" data-i18n="printAndSubmit">Skriv ut og send inn forberedelse</button>
+    </div>
+
+    <!-- LESSON PLAN ARCHIVE -->
+    <div class="card" id="lessonArchiveView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← <span data-i18n="back">Tilbake</span></button>
+      <h2 data-i18n="lessonArchiveTitle">Tidligere forberedelser</h2>
+      <div class="sub" data-i18n="lessonArchiveSub">Alle forberedelser du har sendt inn, nyeste først</div>
+      <div id="lessonArchiveList"></div>
     </div>
 
     <!-- HOMEWORK VIEW -->
@@ -479,6 +493,9 @@
       attendanceSaveError: 'Noe gikk galt under lagring.',
       lessonTitle: 'Pedagogisk forberedelse (timeforberedelse)',
       lessonSub: 'Bygget etter skolens undervisningsmodell — sendes til administrasjonen når den er ferdig',
+      lessonArchiveLink: 'Se tidligere innsendte forberedelser',
+      lessonArchiveTitle: 'Tidligere forberedelser',
+      lessonArchiveSub: 'Alle forberedelser du har sendt inn, nyeste først',
       fagLabel: 'Fag',
       dateForLesson: 'Dato for timen',
       emneLabel: 'Emne / tema for timen',
@@ -537,6 +554,9 @@
       attendanceSaveError: 'حدث خطأ أثناء الحفظ.',
       lessonTitle: 'التحضير التربوي للحصة',
       lessonSub: 'مبني حسب النموذج التربوي المعتمد بالمدرسة — يُرسل للإدارة فور الانتهاء',
+      lessonArchiveLink: 'عرض التحضيرات المرسلة سابقًا',
+      lessonArchiveTitle: 'التحضيرات السابقة',
+      lessonArchiveSub: 'كل التحضيرات اللي أرسلتها، الأحدث أولًا',
       fagLabel: 'المادة',
       dateForLesson: 'تاريخ الحصة',
       emneLabel: 'عنوان / موضوع الدرس',
@@ -670,6 +690,12 @@
     if(currentTeacher) renderStudentNotesList();
   });
 
+  let lessonPlans = [];
+  onSnapshot(collection(db, 'lessonPlans'), (snap) => {
+    lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('lessonArchiveView').style.display !== 'none') renderLessonArchive();
+  });
+
   let messages = [];
   onSnapshot(collection(db, 'messages'), (snap) => {
     messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -738,6 +764,7 @@
     const view = (e.state && e.state.appView) || 'choice';
     if(view === 'attendance') showAttendance();
     else if(view === 'lesson') showLesson();
+    else if(view === 'lessonArchive') showLessonArchive();
     else if(view === 'homework') showHomework();
     else if(view === 'absenceReview') showAbsenceReview();
     else if(view === 'studentNotes') showStudentNotes();
@@ -755,6 +782,7 @@
     document.getElementById('chooseView').style.display = 'block';
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'none';
+    document.getElementById('lessonArchiveView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
     document.getElementById('studentNotesView').style.display = 'none';
@@ -777,8 +805,47 @@
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'block';
+    document.getElementById('lessonArchiveView').style.display = 'none';
     pushAppView('lesson');
   };
+
+  const WEEKDAY_NAMES_NO = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+  const WEEKDAY_NAMES_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  function weekdayNameFor(dateStr){
+    if(!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    if(isNaN(d.getTime())) return '';
+    return (currentLang === 'ar' ? WEEKDAY_NAMES_AR : WEEKDAY_NAMES_NO)[d.getDay()];
+  }
+
+  window.showLessonArchive = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('lessonView').style.display = 'none';
+    document.getElementById('lessonArchiveView').style.display = 'block';
+    renderLessonArchive();
+    pushAppView('lessonArchive');
+  };
+
+  function renderLessonArchive(){
+    const el = document.getElementById('lessonArchiveList');
+    if(!el || !currentTeacher) return;
+    const mine = lessonPlans.filter(p => p.larer === currentTeacher.id)
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد تحضيرات مرسلة بعد.' : 'Ingen forberedelser sendt inn ennå.'}</div>`;
+      return;
+    }
+    el.innerHTML = mine.map(p => `
+      <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
+        <span class="name" style="width:100%;">
+          <strong>${escapeHtml(p.dato||'—')}</strong>
+          <span class="tag-pill" style="margin-inline-start:8px;">${escapeHtml(weekdayNameFor(p.dato))}</span>
+          <span class="tag-pill" style="margin-inline-start:6px;">${escapeHtml((I18N[currentLang].fagLabels && I18N[currentLang].fagLabels[p.fag]) || p.fag || '—')}</span>
+          <br>
+          <span style="font-size:13px; color:#5a6860;">${escapeHtml(p.emne||'—')}</span>
+        </span>
+      </div>`).join('');
+  }
 
   window.showHomework = function(){
     document.getElementById('chooseView').style.display = 'none';
