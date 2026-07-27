@@ -112,17 +112,18 @@
   .msg-open-link{display:block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);}
   html[dir="rtl"] .msg-open-link{font-family:'Tajawal',sans-serif;}
 
-  /* CHOICE SCREEN */
-  .choice-grid{display:flex; flex-direction:column; gap:14px;}
+  /* CHOICE SCREEN — matches the Foreldreportal menu-card style */
+  .choice-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .choice-card{
-    position:relative; background:var(--paper-2); border:1px solid var(--line); border-radius:10px; padding:20px 18px;
-    cursor:pointer; text-align:start; transition:border-color .2s;
+    position:relative; background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 16px;
+    box-shadow:var(--shadow); cursor:pointer; text-align:center; transition:border-color .2s, transform .2s;
   }
-  .choice-card .dot{position:absolute; top:14px; inset-inline-end:14px; width:9px; height:9px; border-radius:50%; background:var(--red);}
-  .choice-card:hover{border-color:var(--gold);}
-  .choice-card .title{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d); margin-bottom:4px;}
-  html[dir="rtl"] .choice-card .title{font-family:'Tajawal',sans-serif; font-size:17px; font-weight:700;}
-  .choice-card .desc{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860;}
+  .choice-card .dot{position:absolute; top:10px; inset-inline-end:10px; width:9px; height:9px; border-radius:50%; background:var(--red);}
+  .choice-card:hover{border-color:var(--gold); transform:translateY(-2px);}
+  .choice-card .ic{font-size:26px; margin-bottom:8px;}
+  .choice-card .title{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--emerald-d); margin-bottom:4px; line-height:1.25;}
+  html[dir="rtl"] .choice-card .title{font-family:'Tajawal',sans-serif; font-size:14px; font-weight:700;}
+  .choice-card .desc{font-family:'Jost',sans-serif; font-size:10.5px; color:#5a6860; line-height:1.4;}
   html[dir="rtl"] .choice-card .desc{font-family:'Tajawal',sans-serif;}
 
   .back-link{
@@ -183,27 +184,33 @@
       <h2 data-i18n="chooseTitle">Hva vil du gjøre?</h2>
       <div class="choice-grid">
         <div class="choice-card" onclick="showAttendance()">
+          <div class="ic">✅</div>
           <div class="title" data-i18n="chooseAttendance">Ta oppmøte</div>
           <div class="desc" data-i18n="chooseAttendanceDesc">Registrer hvem som er til stede i dag</div>
         </div>
         <div class="choice-card" onclick="showLesson()">
+          <div class="ic">📅</div>
           <div class="title" data-i18n="chooseLesson">Timeforberedelse</div>
           <div class="desc" data-i18n="chooseLessonDesc">Send inn pedagogisk forberedelse for en time</div>
         </div>
         <div class="choice-card" onclick="showHomework()">
+          <div class="ic">📚</div>
           <div class="title">Lekser</div>
           <div class="desc">Legg ut en lekse til klassen din</div>
         </div>
         <div class="choice-card" onclick="showAbsenceReview()">
+          <div class="ic">🚫</div>
           <div class="title">Fraværsmeldinger</div>
           <div class="desc">Behandle fraværsmeldinger fra foresatte</div>
         </div>
         <div class="choice-card" onclick="showStudentNotes()">
+          <div class="ic">✍️</div>
           <div class="title">Elevnotater</div>
           <div class="desc">Skriv en fremgangsnotat om en elev — synlig for foresatte</div>
         </div>
         <div class="choice-card" onclick="showMessages()">
           <div class="dot" id="msgDot" style="display:none;"></div>
+          <div class="ic">📩</div>
           <div class="title">Meldinger fra foresatte</div>
           <div class="desc">Svar på meldinger — arkiveres for begge parter</div>
         </div>
