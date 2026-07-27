@@ -3338,10 +3338,33 @@
   populateCustomTypeDropdown();
 
   // Attendance panel init
+  // The school only ever teaches on Saturday and Sunday, all year — so the
+  // admin attendance calendar is restricted the same way the teacher portal is.
+  const SCHOOL_WEEKDAYS = [0, 6]; // Sunday, Saturday
+  function nearestSchoolDate(){
+    const d = new Date();
+    for(let i = 0; i < 8; i++){
+      if(SCHOOL_WEEKDAYS.includes(d.getDay())) break;
+      d.setDate(d.getDate() + 1);
+    }
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  let lastValidAdminAttDate = null;
   const attDateEl = document.getElementById('attDate');
   if(attDateEl){
-    attDateEl.value = todayISO();
-    attDateEl.addEventListener('change', renderAttendanceTakingList);
+    attDateEl.value = nearestSchoolDate();
+    lastValidAdminAttDate = attDateEl.value;
+    attDateEl.addEventListener('change', function(){
+      const picked = new Date(this.value + 'T00:00:00');
+      if(!SCHOOL_WEEKDAYS.includes(picked.getDay())){
+        alert('Skolen har kun undervisning på lørdag og søndag. Velg en dato som faller på en av disse dagene.');
+        this.value = lastValidAdminAttDate || todayISO();
+        renderAttendanceTakingList();
+        return;
+      }
+      lastValidAdminAttDate = this.value;
+      renderAttendanceTakingList();
+    });
     document.getElementById('attClassFilter').addEventListener('change', renderAttendanceTakingList);
     populateAttendanceClassFilter();
     renderAttendanceTakingList();
