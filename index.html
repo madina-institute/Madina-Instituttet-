@@ -76,6 +76,7 @@
     text-align:center; box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s, transform .2s;
   }
   .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .side-card .ic{ font-size:30px; margin-bottom:10px; }
   .side-card h2{
     font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px; line-height:1.3;
   }
@@ -360,22 +361,27 @@
   <div class="wrap">
     <div class="side-grid">
       <div class="side-card" onclick="selectSide('eier')">
+        <div class="ic">🏛️</div>
         <h2>Eier / Ledelsen</h2>
         <p>Ledelse · Møtereferater · Kasse/Økonomi</p>
       </div>
       <div class="side-card" onclick="selectSide('admin')">
+        <div class="ic">🗂️</div>
         <h2>Administrativ</h2>
         <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Kontaktendringer · Betaling · Rapporter</p>
       </div>
       <div class="side-card" onclick="selectSide('pedagogisk')">
+        <div class="ic">🎓</div>
         <h2>Pedagogisk</h2>
         <p>Oppmøte · Timeforberedelser · Lekser · Kunngjøringer · Elevnotater</p>
       </div>
       <div class="side-card" onclick="promptPasswordAndSelectSide('registrering')">
+        <div class="ic">📝</div>
         <h2>Registrering</h2>
         <p>Søknader — godkjenn, avslå eller sett på venteliste</p>
       </div>
       <div class="side-card" onclick="promptPasswordAndSelectSide('oversikt')">
+        <div class="ic">⚙️</div>
         <h2>Oversikt</h2>
         <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
       </div>
@@ -2110,6 +2116,15 @@
     registrations: 'Nye søknader — godkjenn, avslå eller sett på venteliste'
   };
 
+  const TAB_ICONS = {
+    ledelse: '👑', meetings: '🗒️', finances: '💰',
+    teachers: '🧑‍🏫', guardians: '👪', students: '🎒', classes: '🏫', hours: '📅',
+    attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', homework: '📚',
+    announcements: '📢', studentNotes: '✍️',
+    contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
+    betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝'
+  };
+
   let currentSideForBack = null;
 
   window.selectSide = function(side){
@@ -2124,6 +2139,7 @@
     const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side="' + side + '"]'));
     grid.innerHTML = tabsForSide.map(tab => `
       <div class="side-card" onclick="selectSubTab('${tab.dataset.tab}')">
+        <div class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</div>
         <h2>${tab.textContent}</h2>
         <p>${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}</p>
       </div>
