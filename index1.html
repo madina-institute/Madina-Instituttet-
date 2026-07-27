@@ -1086,6 +1086,9 @@
           dato: todayISO()
         });
         showToast(currentLang === 'ar' ? 'تم إرسال الواجب.' : 'Leksen er lagt ut.');
+        notifyClassGuardians(currentTeacher.tildeltKlasse,
+          (currentLang === 'ar' ? 'واجب جديد: ' : 'Ny lekse: ') + tittel,
+          beskrivelse + (frist ? '\n\n' + (currentLang === 'ar' ? 'الموعد النهائي: ' : 'Frist: ') + frist : ''));
       }
       document.getElementById('hwTittel').value = '';
       document.getElementById('hwBeskrivelse').value = '';
@@ -1236,6 +1239,32 @@
     return g ? (g.navn || '') : guardianId; // fallback: legacy/un-migrated value
   }
 
+  // Sends an email via the "mail" collection (watched by the Firebase Trigger
+  // Email extension). Silently does nothing if the guardian has no email on
+  // file — email is optional data, not everyone will have filled it in.
+  async function notifyGuardianByEmail(guardianId, subject, text){
+    if(!guardianId) return;
+    const g = guardians.find(x => x.id === guardianId);
+    if(!g || !g.epost) return;
+    try{
+      await addDoc(collection(db, 'mail'), { to: [g.epost], message: { subject, text } });
+    } catch(err){
+      console.error('E-postvarsling til foresatt feilet:', err);
+    }
+  }
+
+  // Notifies every guardian with children in a given class (used for
+  // homework and class-wide broadcast posts). Skips guardians with no
+  // email on file and de-duplicates so a guardian with two kids in the
+  // same class only gets one email.
+  async function notifyClassGuardians(classId, subject, text){
+    if(!classId) return;
+    const guardianIds = [...new Set(students.filter(s => s.klasse === classId && s.foresatt).map(s => s.foresatt))];
+    for(const gId of guardianIds){
+      await notifyGuardianByEmail(gId, subject, text);
+    }
+  }
+
   function populateNewMessagePicker(){
     const sel = document.getElementById('newMsgGuardianSelect');
     if(!sel || !currentTeacher) return;
@@ -1347,6 +1376,8 @@
         fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
+      notifyGuardianByEmail(currentThreadGuardianId, currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny melding fra læreren',
+        (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentTeacher.navn + '\n\n' + tekst);
       showToast(currentLang === 'ar' ? 'تم إرسال الرد.' : 'Svaret er sendt.');
       document.getElementById('msgReplyText').value = '';
       document.getElementById('msgReplyLink').value = '';
@@ -1388,6 +1419,8 @@
       document.getElementById('classPostText').value = '';
       document.getElementById('classPostAllowComments').checked = true;
       showToast(currentLang === 'ar' ? 'تم النشر للصف.' : 'Publisert til klassen.');
+      notifyClassGuardians(currentTeacher.tildeltKlasse,
+        (currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny klassemelding fra læreren'), tekst);
     } catch(err){
       console.error(err);
       alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
@@ -1695,19 +1728,16 @@
 
   async function sendAttendanceEmail(date, summaryLines){
     try{
-      await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
+      await addDoc(collection(db, 'mail'), {
+        to: ['madina.institute.norway@gmail.com'],
+        message: {
           subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' – ' + resolveClassName(currentTeacher.tildeltKlasse) + ' – ' + date,
-          from_name: 'Madina Skole – Lærerportal',
-          message:
+          text:
             'Lærer: ' + currentTeacher.navn + '\n' +
             'Klasse: ' + resolveClassName(currentTeacher.tildeltKlasse) + '\n' +
             'Dato: ' + date + '\n\n' +
             summaryLines.join('\n')
-        })
+        }
       });
     } catch(err){
       console.error('E-postvarsling feilet:', err);
@@ -1960,14 +1990,11 @@ ${extraScript || ''}
 
       await addDoc(collection(db, 'lessonPlans'), record);
 
-      await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
+      await addDoc(collection(db, 'mail'), {
+        to: ['madina.institute.norway@gmail.com'],
+        message: {
           subject: 'Undervisningsforberedelse – ' + currentTeacher.navn + ' – ' + fag + ' – ' + dato,
-          from_name: 'Madina Skole – Lærerportal',
-          message:
+          text:
             'Lærer: ' + currentTeacher.navn + '\n' +
             'Klasse: ' + resolveClassName(currentTeacher.tildeltKlasse) + '\n' +
             'Fag: ' + fag + '\n' +
@@ -1982,7 +2009,7 @@ ${extraScript || ''}
             '4. Øving:\n' + (oving || '—') + '\n\n' +
             '5. Oppsummering:\n' + (oppsummering || '—') + '\n\n' +
             'Lekser: ' + (lekser || '—')
-        })
+        }
       });
 
       showToast(t('lessonSent'));
