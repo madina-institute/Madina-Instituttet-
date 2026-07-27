@@ -99,6 +99,13 @@
   html[dir="rtl"] .upload-status{font-family:'Tajawal',sans-serif;}
   .upload-status.err{color:var(--red);}
 
+  .msg-badge{display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:12px; text-transform:uppercase; letter-spacing:0.03em;}
+  html[dir="rtl"] .msg-badge{font-family:'Tajawal',sans-serif; text-transform:none; letter-spacing:0;}
+  .msg-badge.unread{background:rgba(168,60,60,0.12); color:var(--red);}
+  .msg-badge.read{background:rgba(90,104,96,0.14); color:#5a6860;}
+  .msg-open-link{display:block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);}
+  html[dir="rtl"] .msg-open-link{font-family:'Tajawal',sans-serif;}
+
   /* CHOICE SCREEN */
   .choice-grid{display:flex; flex-direction:column; gap:14px;}
   .choice-card{
@@ -845,11 +852,16 @@
   }
 
   function msgSeenKey(){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.navn : ''); }
+  function threadSeenKey(guardianNavn){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.navn : '') + '_' + guardianNavn; }
+  function isThreadUnread(guardianNavn){
+    const seen = localStorage.getItem(threadSeenKey(guardianNavn));
+    return myClassMessages().some(m => m.guardianNavn === guardianNavn && m.fra === 'Foresatt' && (!seen || (m.dato||'') > seen));
+  }
   function updateMsgDot(){
     const dot = document.getElementById('msgDot');
     if(!dot || !currentTeacher) return;
-    const seen = localStorage.getItem(msgSeenKey());
-    const hasNew = myClassMessages().some(m => m.fra === 'Foresatt' && (!seen || (m.dato||'') > seen));
+    const guardianNames = [...new Set(myClassMessages().map(m => m.guardianNavn))];
+    const hasNew = guardianNames.some(g => isThreadUnread(g));
     dot.style.display = hasNew ? 'block' : 'none';
   }
 
@@ -858,9 +870,8 @@
     document.getElementById('messagesListView').style.display = 'block';
     document.getElementById('messageThreadView').style.display = 'none';
     currentThreadGuardian = null;
-    localStorage.setItem(msgSeenKey(), new Date().toISOString());
-    updateMsgDot();
     renderMessageThreads();
+    updateMsgDot();
   };
 
   function renderMessageThreads(){
@@ -874,14 +885,14 @@
     }
     const rows = guardianNames.map(g => {
       const thread = mine.filter(m => m.guardianNavn === g).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-      const last = thread[0];
-      return { g, last };
+      return { g, last: thread[0], unread: isThreadUnread(g) };
     }).sort((a,b) => (b.last.dato||'').localeCompare(a.last.dato||''));
     el.innerHTML = rows.map(r => `
       <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openMessageThread('${r.g.replace(/'/g,"\\'")}')">
         <span class="name">
-          <strong>${escapeHtml(r.g)}</strong><br>
-          <span style="font-size:12px; color:#5a6860;">${escapeHtml((r.last.tekst||'').slice(0,60))}</span>
+          <strong>${escapeHtml(r.g)}</strong>
+          <span class="msg-badge ${r.unread ? 'unread' : 'read'}">${r.unread ? (currentLang === 'ar' ? 'غير مقروءة' : 'Ulest') : (currentLang === 'ar' ? 'مقروءة' : 'Lest')}</span>
+          <span class="msg-open-link">${currentLang === 'ar' ? 'افتح الرسالة' : 'Åpne meldingen'}</span>
         </span>
       </div>`).join('');
   }
@@ -891,7 +902,9 @@
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'block';
     document.getElementById('messageThreadTitle').textContent = guardianNavn;
+    localStorage.setItem(threadSeenKey(guardianNavn), new Date().toISOString());
     renderMessageThreadHistory();
+    updateMsgDot();
   };
 
   function renderMessageThreadHistory(){
