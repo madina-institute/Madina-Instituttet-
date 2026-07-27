@@ -1,4 +1,4 @@
-const CACHE_NAME = 'madina-shell-v1';
+const CACHE_NAME = 'madina-shell-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -15,7 +15,9 @@ self.addEventListener('activate', (event) => {
 
 // Network-first for HTML (so users always get the latest published version
 // when online), falling back to the last cached copy when offline.
-// Cache-first for static assets like icons.
+// Cache-first for static assets like icons — but only ever cache
+// successful (200 OK) responses, so a temporary 404 (e.g. a file that
+// hadn't been uploaded yet) never gets stuck in the cache permanently.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -26,8 +28,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
           return res;
         })
         .catch(() => caches.match(req))
@@ -39,8 +43,10 @@ self.addEventListener('fetch', (event) => {
     caches.match(req).then((cached) => {
       if (cached) return cached;
       return fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+        }
         return res;
       });
     })
