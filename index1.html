@@ -688,7 +688,8 @@
     const allowedDays = getAllowedWeekdays(teacher.tildeltKlasse);
     document.getElementById('attDate').value = allowedDays ? nearestValidDate(allowedDays) : todayISO();
     lastValidAttDate = document.getElementById('attDate').value;
-    document.getElementById('lpDato').value = todayISO();
+    document.getElementById('lpDato').value = nearestValidDate(allowedDays);
+    lastValidLpDato = document.getElementById('lpDato').value;
     populateFagSelect();
     showChoice();
     updateMsgDot();
@@ -989,15 +990,22 @@
     return cls ? (cls.navn || cls.klassenavn || '') : classId; // fallback: legacy/un-migrated value
   }
 
+  // The school only ever holds classes on Saturday and Sunday — no exceptions,
+  // all year. This is always the outer limit, regardless of what a class's
+  // program field says: a combined program still means "Saturday OR Sunday",
+  // never a weekday, and an unrecognized/missing program falls back to the
+  // same Sat/Sun-only limit rather than lifting the restriction entirely.
+  const SCHOOL_WEEKDAYS = [0, 6]; // Sunday, Saturday
+
   function getAllowedWeekdays(classId){
     const cls = classes.find(c => c.id === classId || c.navn === classId || c.klassenavn === classId);
     const program = (cls && (cls.program || '')) || '';
     const hasLordag = program.includes('Lørdag');
     const hasSondag = program.includes('Søndag');
-    if(hasLordag && hasSondag) return null; // combined program — no restriction
+    if(hasLordag && hasSondag) return SCHOOL_WEEKDAYS; // combined program — still Sat/Sun only
     if(hasLordag) return [6]; // Saturday only
     if(hasSondag) return [0]; // Sunday only
-    return null; // unknown program — don't restrict
+    return SCHOOL_WEEKDAYS; // unknown program — still restricted to Sat/Sun
   }
 
   function nearestValidDate(allowedDays){
@@ -1010,6 +1018,29 @@
   }
 
   let lastValidAttDate = null;
+  let lastValidLpDato = null;
+
+  function enforceWeekdayOnDateInput(input, getLastValid, setLastValid, afterChange){
+    input.addEventListener('change', function(){
+      if(!currentTeacher){ if(afterChange) afterChange(); return; }
+      const allowedDays = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+      const picked = new Date(this.value + 'T00:00:00');
+      if(!allowedDays.includes(picked.getDay())){
+        const dayNames = currentLang === 'ar'
+          ? {0:'الأحد',6:'السبت'}
+          : {0:'søndag',6:'lørdag'};
+        const allowedNames = allowedDays.map(d => dayNames[d]).join('/');
+        alert(currentLang === 'ar'
+          ? `التدريس يكون فقط يوم ${allowedNames}. اختر تاريخًا يوافق هذا اليوم.`
+          : `Undervisningen er kun på ${allowedNames}. Velg en dato som faller på den dagen.`);
+        this.value = getLastValid() || todayISO();
+        if(afterChange) afterChange();
+        return;
+      }
+      setLastValid(this.value);
+      if(afterChange) afterChange();
+    });
+  }
 
   document.getElementById('attDate').addEventListener('change', function(){
     if(!currentTeacher){ renderStudentList(); return; }
@@ -1032,6 +1063,12 @@
     lastValidAttDate = this.value;
     renderStudentList();
   });
+
+  enforceWeekdayOnDateInput(
+    document.getElementById('lpDato'),
+    () => lastValidLpDato,
+    (v) => { lastValidLpDato = v; }
+  );
 
   function renderStudentList(){
     if(!currentTeacher) return;
