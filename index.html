@@ -77,6 +77,25 @@
   }
   .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
   .side-card .ic{ font-size:30px; margin-bottom:10px; }
+
+  /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
+  .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
+  .school-cal-popover{
+    position:fixed; z-index:2000; background:#fff; border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 14px 32px rgba(15,43,33,0.22); padding:14px; width:270px; display:none;
+  }
+  .school-cal-popover.open{display:block;}
+  .school-cal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .school-cal-header .month-label{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--emerald-d);}
+  .school-cal-header button{background:var(--paper-2); border:none; border-radius:6px; width:26px; height:26px; font-size:14px; color:var(--emerald-d); cursor:pointer;}
+  .school-cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center;}
+  .school-cal-grid .wd{font-family:'Jost',sans-serif; font-size:9px; color:#8a9a90; padding:4px 0 6px; font-weight:600;}
+  .school-cal-grid .day{font-family:'Jost',sans-serif; font-size:12px; padding:7px 0; border-radius:6px;}
+  .school-cal-grid .day.empty{visibility:hidden;}
+  .school-cal-grid .day.disabled{color:#cdd4cd; cursor:not-allowed;}
+  .school-cal-grid .day.enabled{cursor:pointer; color:var(--ink); font-weight:600;}
+  .school-cal-grid .day.enabled:hover{background:var(--paper-2);}
+  .school-cal-grid .day.selected{background:var(--emerald); color:#fff;}
   .side-card h2{
     font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px; line-height:1.3;
   }
@@ -851,7 +870,7 @@
       <div class="field-row-2">
         <div class="field">
           <label>Dato</label>
-          <input type="date" id="attDate">
+          <input type="text" id="attDate" class="school-date-input" readonly placeholder="Velg dato" autocomplete="off">
         </div>
         <div class="field">
           <label>Klasse/Gruppe (valgfritt filter)</label>
@@ -3368,6 +3387,79 @@
     document.getElementById('attClassFilter').addEventListener('change', renderAttendanceTakingList);
     populateAttendanceClassFilter();
     renderAttendanceTakingList();
+
+    // Custom calendar — native <input type="date"> can't gray out individual
+    // weekdays reliably, so every day is shown but only Sat/Sun are clickable.
+    (function(){
+      const pop = document.createElement('div');
+      pop.className = 'school-cal-popover';
+      document.body.appendChild(pop);
+      let viewDate = new Date();
+      const monthNamesNo = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+      const wdNo = ['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+
+      function render(){
+        const year = viewDate.getFullYear(), month = viewDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const startOffset = (firstDay.getDay() + 6) % 7;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const selectedVal = attDateEl.value;
+        let html = `<div class="school-cal-header">
+          <button type="button" data-nav="-1">‹</button>
+          <span class="month-label">${monthNamesNo[month]} ${year}</span>
+          <button type="button" data-nav="1">›</button>
+        </div><div class="school-cal-grid">`;
+        wdNo.forEach(w => { html += `<div class="wd">${w}</div>`; });
+        for(let i = 0; i < startOffset; i++) html += `<div class="day empty"></div>`;
+        for(let d = 1; d <= daysInMonth; d++){
+          const iso = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+          const dow = new Date(year, month, d).getDay();
+          const isAllowed = SCHOOL_WEEKDAYS.includes(dow);
+          const isSelected = iso === selectedVal;
+          html += `<div class="day ${isAllowed ? 'enabled' : 'disabled'}${isSelected ? ' selected' : ''}" data-date="${iso}">${d}</div>`;
+        }
+        html += `</div>`;
+        pop.innerHTML = html;
+        pop.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          viewDate.setMonth(viewDate.getMonth() + parseInt(btn.dataset.nav, 10));
+          render();
+        }));
+        pop.querySelectorAll('.day.enabled').forEach(cell => cell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          attDateEl.value = cell.dataset.date;
+          attDateEl.dispatchEvent(new Event('change'));
+          closePopover();
+        }));
+      }
+
+      function positionPopover(){
+        const rect = attDateEl.getBoundingClientRect();
+        const top = rect.bottom + 6;
+        let left = rect.left;
+        const maxLeft = window.innerWidth - 270 - 10;
+        if(left > maxLeft) left = Math.max(10, maxLeft);
+        pop.style.top = top + 'px';
+        pop.style.left = left + 'px';
+      }
+      function openPopover(){
+        if(attDateEl.value){
+          const d = new Date(attDateEl.value + 'T00:00:00');
+          viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+        } else {
+          viewDate = new Date();
+        }
+        render();
+        positionPopover();
+        pop.classList.add('open');
+      }
+      function closePopover(){ pop.classList.remove('open'); }
+
+      attDateEl.addEventListener('click', (e) => { e.stopPropagation(); openPopover(); });
+      document.addEventListener('click', (e) => { if(!pop.contains(e.target) && e.target !== attDateEl) closePopover(); });
+      window.addEventListener('resize', () => { if(pop.classList.contains('open')) positionPopover(); });
+      window.addEventListener('scroll', () => { if(pop.classList.contains('open')) positionPopover(); }, true);
+    })();
   }
 </script>
 <script>
