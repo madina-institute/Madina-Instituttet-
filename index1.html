@@ -551,7 +551,7 @@
     populateFagSelect();
     if(currentTeacher){
       document.getElementById('classSub').textContent =
-        (lang === 'ar' ? 'الصف: ' : 'Klasse: ') + currentTeacher.tildeltKlasse;
+        (lang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
       renderStudentList();
     }
   };
@@ -677,7 +677,7 @@
     currentTeacher = teacher;
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
-    document.getElementById('whoText').textContent = teacher.navn + ' · ' + teacher.tildeltKlasse;
+    document.getElementById('whoText').textContent = teacher.navn + ' · ' + resolveClassName(teacher.tildeltKlasse);
     const allowedDays = getAllowedWeekdays(teacher.tildeltKlasse);
     document.getElementById('attDate').value = allowedDays ? nearestValidDate(allowedDays) : todayISO();
     lastValidAttDate = document.getElementById('attDate').value;
@@ -711,7 +711,7 @@
     document.getElementById('attendanceView').style.display = 'block';
     document.getElementById('lessonView').style.display = 'none';
     document.getElementById('classSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + currentTeacher.tildeltKlasse;
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
     renderStudentList();
   };
 
@@ -725,7 +725,7 @@
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'block';
     document.getElementById('homeworkClassSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + currentTeacher.tildeltKlasse;
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
   };
 
   window.showAbsenceReview = function(){
@@ -746,7 +746,7 @@
       await addDoc(collection(db, 'homework'), {
         klasse: currentTeacher.tildeltKlasse,
         tittel, beskrivelse, frist,
-        larer: currentTeacher.navn,
+        larer: currentTeacher.id,
         dato: todayISO()
       });
       showToast(currentLang === 'ar' ? 'تم إرسال الواجب.' : 'Leksen er lagt ut.');
@@ -804,7 +804,7 @@
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('studentNotesView').style.display = 'block';
     document.getElementById('notesClassSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + currentTeacher.tildeltKlasse;
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
     const sel = document.getElementById('noteElevSelect');
     const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse);
     sel.innerHTML = myStudents.map(s => `<option value="${escapeHtml(s.navn)}">${escapeHtml(s.navn)}</option>`).join('')
@@ -822,7 +822,7 @@
     try{
       await addDoc(collection(db, 'studentNotes'), {
         elevNavn, klasse: currentTeacher.tildeltKlasse, tekst,
-        larer: currentTeacher.navn, dato: todayISO()
+        larer: currentTeacher.id, dato: todayISO()
       });
       showToast(currentLang === 'ar' ? 'تم إرسال الملاحظة.' : 'Notatet er sendt.');
       document.getElementById('noteTekst').value = '';
@@ -851,24 +851,31 @@
   }
 
   // ---------- Messages (Meldinger fra foresatte) ----------
-  let currentThreadGuardian = null;
+  // Threads are keyed by the guardian's stable id when available (guardianId),
+  // falling back to their name for older messages sent before this field existed
+  // — so a thread never splits or gets "lost" just because a guardian was renamed.
+  let currentThreadGuardian = null; // the thread's identity key (id or legacy name)
+  let currentThreadGuardianName = ''; // current display name for the header/reply
+  let currentThreadGuardianId = ''; // stable id, once known from the thread's messages
+
+  function threadKey(m){ return m.guardianId || m.guardianNavn; }
 
   function myClassMessages(){
     if(!currentTeacher) return [];
     return messages.filter(m => m.klasse === currentTeacher.tildeltKlasse);
   }
 
-  function msgSeenKey(){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.navn : ''); }
-  function threadSeenKey(guardianNavn){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.navn : '') + '_' + guardianNavn; }
-  function isThreadUnread(guardianNavn){
-    const seen = localStorage.getItem(threadSeenKey(guardianNavn));
-    return myClassMessages().some(m => m.guardianNavn === guardianNavn && m.fra === 'Foresatt' && (!seen || (m.dato||'') > seen));
+  function msgSeenKey(){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.id : ''); }
+  function threadSeenKey(key){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.id : '') + '_' + key; }
+  function isThreadUnread(key){
+    const seen = localStorage.getItem(threadSeenKey(key));
+    return myClassMessages().some(m => threadKey(m) === key && m.fra === 'Foresatt' && (!seen || (m.dato||'') > seen));
   }
   function updateMsgDot(){
     const dot = document.getElementById('msgDot');
     if(!dot || !currentTeacher) return;
-    const guardianNames = [...new Set(myClassMessages().map(m => m.guardianNavn))];
-    const hasNew = guardianNames.some(g => isThreadUnread(g));
+    const keys = [...new Set(myClassMessages().map(threadKey))];
+    const hasNew = keys.some(k => isThreadUnread(k));
     dot.style.display = hasNew ? 'block' : 'none';
   }
 
@@ -885,31 +892,34 @@
     const el = document.getElementById('messageThreadsList');
     if(!el || !currentTeacher) return;
     const mine = myClassMessages();
-    const guardianNames = [...new Set(mine.map(m => m.guardianNavn))];
-    if(guardianNames.length === 0){
+    const keys = [...new Set(mine.map(threadKey))];
+    if(keys.length === 0){
       el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد رسائل بعد.' : 'Ingen meldinger ennå.'}</div>`;
       return;
     }
-    const rows = guardianNames.map(g => {
-      const thread = mine.filter(m => m.guardianNavn === g).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-      return { g, last: thread[0], unread: isThreadUnread(g) };
+    const rows = keys.map(k => {
+      const thread = mine.filter(m => threadKey(m) === k).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      return { k, displayName: thread[0].guardianNavn, last: thread[0], unread: isThreadUnread(k) };
     }).sort((a,b) => (b.last.dato||'').localeCompare(a.last.dato||''));
     el.innerHTML = rows.map(r => `
-      <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openMessageThread('${r.g.replace(/'/g,"\\'")}')">
+      <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openMessageThread('${r.k.replace(/'/g,"\\'")}', '${(r.displayName||'').replace(/'/g,"\\'")}')">
         <span class="name">
-          <strong>${escapeHtml(r.g)}</strong>
+          <strong>${escapeHtml(r.displayName)}</strong>
           <span class="msg-badge ${r.unread ? 'unread' : 'read'}">${r.unread ? (currentLang === 'ar' ? 'غير مقروءة' : 'Ulest') : (currentLang === 'ar' ? 'مقروءة' : 'Lest')}</span>
           <span class="msg-open-link">${currentLang === 'ar' ? 'افتح الرسالة' : 'Åpne meldingen'}</span>
         </span>
       </div>`).join('');
   }
 
-  window.openMessageThread = function(guardianNavn){
-    currentThreadGuardian = guardianNavn;
+  window.openMessageThread = function(key, displayName){
+    currentThreadGuardian = key;
+    currentThreadGuardianName = displayName;
+    const withId = myClassMessages().find(m => threadKey(m) === key && m.guardianId);
+    currentThreadGuardianId = withId ? withId.guardianId : '';
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'block';
-    document.getElementById('messageThreadTitle').textContent = guardianNavn;
-    localStorage.setItem(threadSeenKey(guardianNavn), new Date().toISOString());
+    document.getElementById('messageThreadTitle').textContent = displayName;
+    localStorage.setItem(threadSeenKey(key), new Date().toISOString());
     renderMessageThreadHistory();
     updateMsgDot();
   };
@@ -917,7 +927,7 @@
   function renderMessageThreadHistory(){
     const el = document.getElementById('messageThreadHistory');
     if(!el || !currentThreadGuardian) return;
-    const thread = myClassMessages().filter(m => m.guardianNavn === currentThreadGuardian)
+    const thread = myClassMessages().filter(m => threadKey(m) === currentThreadGuardian)
       .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     el.innerHTML = thread.map(m => `
       <div class="student-row" style="flex-wrap:wrap; align-items:flex-start; background:${m.fra === 'Lærer' ? 'var(--paper-2)' : 'transparent'};">
@@ -949,7 +959,7 @@
         vedleggLenke = await uploadAttachment(file, 'message-attachments');
       }
       await addDoc(collection(db, 'messages'), {
-        klasse: currentTeacher.tildeltKlasse, guardianNavn: currentThreadGuardian,
+        klasse: currentTeacher.tildeltKlasse, guardianId: currentThreadGuardianId || '', guardianNavn: currentThreadGuardianName,
         fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
@@ -966,8 +976,14 @@
     }
   };
 
-  function getAllowedWeekdays(className){
-    const cls = classes.find(c => c.navn === className || c.klassenavn === className);
+  function resolveClassName(classId){
+    if(!classId) return '';
+    const cls = classes.find(c => c.id === classId);
+    return cls ? (cls.navn || cls.klassenavn || '') : classId; // fallback: legacy/un-migrated value
+  }
+
+  function getAllowedWeekdays(classId){
+    const cls = classes.find(c => c.id === classId || c.navn === classId || c.klassenavn === classId);
     const program = (cls && (cls.program || '')) || '';
     const hasLordag = program.includes('Lørdag');
     const hasSondag = program.includes('Søndag');
@@ -1069,11 +1085,11 @@
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
-          subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' – ' + currentTeacher.tildeltKlasse + ' – ' + date,
+          subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' – ' + resolveClassName(currentTeacher.tildeltKlasse) + ' – ' + date,
           from_name: 'Madina Skole – Lærerportal',
           message:
             'Lærer: ' + currentTeacher.navn + '\n' +
-            'Klasse: ' + currentTeacher.tildeltKlasse + '\n' +
+            'Klasse: ' + resolveClassName(currentTeacher.tildeltKlasse) + '\n' +
             'Dato: ' + date + '\n\n' +
             summaryLines.join('\n')
         })
@@ -1128,7 +1144,7 @@
         '<hr>' +
         block(t('lekserLabel'), lekser);
 
-      const metaLine = currentTeacher.navn + ' · ' + currentTeacher.tildeltKlasse + ' · ' + I18N[currentLang].fagLabels[fag] + ' · ' + dato;
+      const metaLine = currentTeacher.navn + ' · ' + resolveClassName(currentTeacher.tildeltKlasse) + ' · ' + I18N[currentLang].fagLabels[fag] + ' · ' + dato;
       const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       const fieldsJson = JSON.stringify({
         fag, dato, emne, mal, metode, materiell,
@@ -1223,7 +1239,7 @@
       const { fag, dato, emne, mal, metode, materiell, oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser } = fields;
 
       const record = {
-        larer: currentTeacher.navn,
+        larer: currentTeacher.id,
         klasse: currentTeacher.tildeltKlasse,
         fag, dato, emne, mal, metode, materiell,
         oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
@@ -1240,7 +1256,7 @@
           from_name: 'Madina Skole – Lærerportal',
           message:
             'Lærer: ' + currentTeacher.navn + '\n' +
-            'Klasse: ' + currentTeacher.tildeltKlasse + '\n' +
+            'Klasse: ' + resolveClassName(currentTeacher.tildeltKlasse) + '\n' +
             'Fag: ' + fag + '\n' +
             'Dato: ' + dato + '\n' +
             'Emne: ' + emne + '\n\n' +
