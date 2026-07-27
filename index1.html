@@ -405,6 +405,14 @@
       <button class="back-link" onclick="history.back()">← Tilbake</button>
       <h2>Meldinger fra foresatte</h2>
       <div class="sub">Velg en foresatt for å se og svare på meldinger</div>
+      <div class="field-row-2" style="align-items:flex-end;">
+        <div class="field" style="margin-bottom:0;">
+          <label data-i18n="newMsgLabel">Ny melding til</label>
+          <select id="newMsgGuardianSelect"></select>
+        </div>
+        <button type="button" class="btn btn-ghost" style="margin-bottom:0;" onclick="startNewMessageThread()" data-i18n="newMsgStart">Start melding</button>
+      </div>
+      <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
       <div id="messageThreadsList"></div>
     </div>
 
@@ -529,6 +537,9 @@
       noComments: 'Ingen kommentarer ennå.',
       writeReply: 'Skriv et svar...',
       sendReply: 'Send',
+      newMsgLabel: 'Ny melding til',
+      newMsgStart: 'Start melding',
+      newMsgPick: '— Velg en foresatt —',
       chooseLesson: 'Timeforberedelse',
       chooseLessonDesc: 'Send inn pedagogisk forberedelse for en time',
       back: '← Tilbake',
@@ -609,6 +620,9 @@
       noComments: 'لا توجد تعليقات بعد.',
       writeReply: 'اكتب ردًا...',
       sendReply: 'إرسال',
+      newMsgLabel: 'رسالة جديدة إلى',
+      newMsgStart: 'ابدأ الرسالة',
+      newMsgPick: '— اختر ولي أمر —',
       chooseLesson: 'التحضير التربوي',
       chooseLessonDesc: 'أرسل تحضيرك التربوي لحصة معينة',
       back: '→ رجوع',
@@ -701,6 +715,7 @@
   let students = [];
   let attendance = [];
   let classes = [];
+  let guardians = [];
   let currentTeacher = null;
 
   function todayISO(){
@@ -736,6 +751,11 @@
 
   onSnapshot(collection(db, 'classes'), (snap) => {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
+
+  onSnapshot(collection(db, 'guardians'), (snap) => {
+    guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') populateNewMessagePicker();
   });
 
   onSnapshot(collection(db, 'students'), (snap) => {
@@ -1205,8 +1225,43 @@
     document.getElementById('messageThreadView').style.display = 'none';
     currentThreadGuardian = null;
     renderMessageThreads();
+    populateNewMessagePicker();
     updateMsgDot();
     pushAppView('messages');
+  };
+
+  function resolveGuardianName(guardianId){
+    if(!guardianId) return '';
+    const g = guardians.find(x => x.id === guardianId);
+    return g ? (g.navn || '') : guardianId; // fallback: legacy/un-migrated value
+  }
+
+  function populateNewMessagePicker(){
+    const sel = document.getElementById('newMsgGuardianSelect');
+    if(!sel || !currentTeacher) return;
+    const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse && s.foresatt);
+    const seen = new Set();
+    const options = [];
+    myStudents.forEach(s => {
+      if(seen.has(s.foresatt)) return;
+      seen.add(s.foresatt);
+      const gName = resolveGuardianName(s.foresatt) || '—';
+      options.push({ guardianId: s.foresatt, label: gName + ' (' + s.navn + ')' });
+    });
+    options.sort((a,b) => a.label.localeCompare(b.label));
+    sel.innerHTML = '<option value="">' + t('newMsgPick') + '</option>' +
+      options.map(o => `<option value="${escapeHtml(o.guardianId)}">${escapeHtml(o.label)}</option>`).join('');
+  }
+
+  window.startNewMessageThread = function(){
+    const sel = document.getElementById('newMsgGuardianSelect');
+    const guardianId = sel ? sel.value : '';
+    if(!guardianId){
+      alert(currentLang === 'ar' ? 'اختر ولي أمر أول.' : 'Velg en foresatt først.');
+      return;
+    }
+    const guardianName = resolveGuardianName(guardianId);
+    openMessageThread(guardianId, guardianName);
   };
 
   function renderMessageThreads(){
@@ -1236,7 +1291,14 @@
     currentThreadGuardian = key;
     currentThreadGuardianName = displayName;
     const withId = myClassMessages().find(m => threadKey(m) === key && m.guardianId);
-    currentThreadGuardianId = withId ? withId.guardianId : '';
+    if(withId){
+      currentThreadGuardianId = withId.guardianId;
+    } else if(guardians.some(g => g.id === key)){
+      // No messages yet (a freshly-started thread) — key is already the guardian's real id.
+      currentThreadGuardianId = key;
+    } else {
+      currentThreadGuardianId = '';
+    }
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'block';
     document.getElementById('messageThreadTitle').textContent = displayName;
