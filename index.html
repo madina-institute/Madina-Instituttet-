@@ -3292,9 +3292,17 @@
     text-align:center; margin-top:26px; padding-top:14px; border-top:1px solid #e4d9bc;
     font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:#8a9a90;
   }
-  @media print{ body{background:#fff;} .page-frame{border-width:1.5px;} }
+  .top-actions{ max-width:760px; margin:0 auto 14px; padding:0 6px; }
+  .top-actions button{
+    background:#fff; border:1.5px solid #1f4a3a; color:#1f4a3a; font-family:'Jost',sans-serif; font-weight:700;
+    font-size:12.5px; padding:10px 18px; border-radius:6px; cursor:pointer;
+  }
+  @media print{ body{background:#fff;} .page-frame{border-width:1.5px;} .top-actions{display:none !important;} }
 </style>
 </head><body>
+<div class="top-actions">
+  <button type="button" onclick="closeAndReturn()">← Tilbake til Administrativ</button>
+</div>
 <div class="page-frame">
   <div class="header-band">
     <div class="logo-frame"><img src="${LOGO_DATA_URI}" alt="Madina Institute"></div>
@@ -3310,6 +3318,14 @@
   ${bodyHtml}
   <div class="footer-note">Madina Skole — Kunnskap · Barmhjertighet · Opplysning</div>
 </div>
+<script>
+  function closeAndReturn(){
+    try{ window.close(); }catch(e){}
+    setTimeout(function(){
+      alert('Kunne ikke lukke vinduet automatisk. Bruk nettleserens tilbake-knapp, eller lukk denne fanen manuelt for å gå tilbake til Administrativ.');
+    }, 300);
+  }
+<\/script>
 </body></html>`;
 
       const win = window.open('', '_blank');
