@@ -1,4 +1,4 @@
-const CACHE_NAME = 'madina-shell-v2';
+const CACHE_NAME = 'madina-shell-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -21,6 +21,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  // Only ever manage requests to our own site. Cross-origin requests (like
+  // the publish tool's calls to api.github.com to check a file's current
+  // version before saving) must always go straight to the network —
+  // caching them meant the publish tool could see a stale, outdated
+  // version and fail to publish with a 409 conflict. This is the fix for
+  // that: never intercept or cache anything that isn't our own origin.
+  if (new URL(req.url).origin !== self.location.origin) return;
 
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
 
