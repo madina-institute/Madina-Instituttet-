@@ -391,6 +391,20 @@
       <div class="card">
         <h2 data-i18n="menuPayment">Betaling</h2>
         <div id="paymentInfo"></div>
+
+        <hr style="border:none; border-top:1px dotted var(--line); margin:18px 0;">
+        <div class="sub" style="margin-bottom:10px;" data-i18n="howMuchSub">Hvor mye ønsker du å betale?</div>
+        <div class="field" style="display:flex; gap:8px; margin-bottom:10px;">
+          <button class="btn btn-ghost" id="payChoiceAllBtn" style="margin-top:0;" onclick="choosePayAmount('Alt')" data-i18n="payAllBtn">Alt gjenstående</button>
+          <button class="btn btn-ghost" id="payChoicePartialBtn" style="margin-top:0;" onclick="choosePayAmount('Delvis')" data-i18n="payPartialBtn">Annet beløp</button>
+        </div>
+        <div class="field" id="payAmountFieldWrap" style="display:none;">
+          <label data-i18n="amountLabel">Beløp (kr)</label>
+          <input type="number" id="payAmountInput" min="1">
+        </div>
+        <button class="btn btn-primary" id="payChoiceSubmitBtn" style="display:none;" onclick="submitPaymentChoice()" data-i18n="confirmAmountBtn">Bekreft beløp</button>
+        <div class="empty-msg" id="payChoiceSentMsg" style="display:none;" data-i18n="payChoiceSent">Takk! Beløpet er registrert. Fullfør betalingen under.</div>
+
         <div id="paymentBtnWrap" style="margin-top:16px; display:none;">
           <a id="paymentLink" href="#" target="_blank" style="text-decoration:none;">
             <button class="btn btn-primary" data-i18n="payNowBtn">Betal nå</button>
@@ -470,6 +484,9 @@
       absenceSub: 'Send en melding til læreren om barnets fravær', dateLabel: 'Dato', reasonLabel: 'Årsak', sendAbsence: 'Send fraværsmelding',
       notesSub: 'Fremgangsnotater om barnet ditt',
       payNowBtn: 'Betal nå', paymentComingSoon: 'Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.',
+      howMuchSub: 'Hvor mye ønsker du å betale?', payAllBtn: 'Alt gjenstående', payPartialBtn: 'Annet beløp',
+      amountLabel: 'Beløp (kr)', confirmAmountBtn: 'Bekreft beløp', payChoiceSent: 'Takk! Beløpet er registrert. Fullfør betalingen under.',
+      invalidAmount: 'Skriv inn et gyldig beløp.', noRemaining: 'Det er ikke noe utestående beløp for dette barnet.',
       contactSub: 'Sendes til administrasjonen for godkjenning', newPhone: 'Ny telefon (valgfritt)', newEmail: 'Ny e-post (valgfritt)',
       messageLabel: 'Melding (valgfritt)', sendContactUpdate: 'Send forespørsel',
       noChildren: 'Ingen barn registrert ennå.', noAttendance: 'Ingen oppmøteregistreringer ennå.',
@@ -504,6 +521,9 @@
       absenceSub: 'أرسل رسالة إلى المعلم بخصوص غياب الطالب', dateLabel: 'التاريخ', reasonLabel: 'السبب', sendAbsence: 'إرسال إشعار الغياب',
       notesSub: 'ملاحظات تقدّم عن طالبك',
       payNowBtn: 'ادفع الآن', paymentComingSoon: 'وسيلة الدفع الإلكتروني قادمة قريبًا. تواصل مع المدرسة لمعرفة طريقة الدفع.',
+      howMuchSub: 'كم تريد أن تدفع؟', payAllBtn: 'كل المبلغ المتبقي', payPartialBtn: 'مبلغ آخر',
+      amountLabel: 'المبلغ (كرونة)', confirmAmountBtn: 'تأكيد المبلغ', payChoiceSent: 'شكرًا! تم تسجيل المبلغ. أكمل الدفع بالأسفل.',
+      invalidAmount: 'أدخل مبلغًا صحيحًا.', noRemaining: 'لا يوجد مبلغ مستحق لهذا الطالب.',
       contactSub: 'يُرسل إلى الإدارة للموافقة', newPhone: 'رقم هاتف جديد (اختياري)', newEmail: 'بريد إلكتروني جديد (اختياري)',
       messageLabel: 'رسالة (اختياري)', sendContactUpdate: 'إرسال الطلب',
       noChildren: 'لا يوجد أبناء مسجلون بعد.', noAttendance: 'لا يوجد سجل حضور بعد.',
@@ -690,6 +710,7 @@
     document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + name).style.display = 'block';
     if(name === 'schedule') closeScheduleDay();
+    if(name === 'payment') resetPaymentChoiceUI();
     markSeen(name);
     updateBadges();
   };
@@ -969,6 +990,59 @@
       alert(t('errorOccurred') + err.message);
     }
   };
+
+  let selectedPayType = null;
+  function resetPaymentChoiceUI(){
+    selectedPayType = null;
+    document.getElementById('payAmountFieldWrap').style.display = 'none';
+    document.getElementById('payChoiceSubmitBtn').style.display = 'none';
+    document.getElementById('payChoiceSentMsg').style.display = 'none';
+  }
+  window.choosePayAmount = function(payType){
+    selectedPayType = payType;
+    document.getElementById('payChoiceSentMsg').style.display = 'none';
+    document.getElementById('payChoiceSubmitBtn').style.display = 'block';
+    if(payType === 'Delvis'){
+      document.getElementById('payAmountFieldWrap').style.display = 'block';
+      document.getElementById('payAmountInput').value = '';
+      document.getElementById('payAmountInput').focus();
+    } else {
+      document.getElementById('payAmountFieldWrap').style.display = 'none';
+    }
+  };
+
+  window.submitPaymentChoice = async function(){
+    if(myChildren.length === 0 || !currentGuardian) return;
+    const child = myChildren[currentChildIndex];
+    const remaining = toNum(child.belop) - toNum(child.belopBetalt);
+    let belop;
+    if(selectedPayType === 'Alt'){
+      if(remaining <= 0){
+        alert(t('noRemaining'));
+        return;
+      }
+      belop = remaining;
+    } else {
+      belop = parseFloat(document.getElementById('payAmountInput').value);
+      if(!belop || belop <= 0){
+        alert(t('invalidAmount'));
+        return;
+      }
+    }
+    try{
+      await addDoc(collection(db, 'paymentRequests'), {
+        elevNavn: child.navn, guardianNavn: currentGuardian.navn,
+        belop: String(belop), type: selectedPayType, status: 'Ny', dato: todayISO()
+      });
+      document.getElementById('payChoiceSentMsg').style.display = 'block';
+      document.getElementById('payChoiceSubmitBtn').style.display = 'none';
+      document.getElementById('payAmountFieldWrap').style.display = 'none';
+    } catch(err){
+      console.error(err);
+      alert(t('errorOccurred') + err.message);
+    }
+  };
+
   applyStaticTranslations();
 </script>
 </body>
