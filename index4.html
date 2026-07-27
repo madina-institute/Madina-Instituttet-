@@ -751,6 +751,20 @@
     const t = teachers.find(x => x.id === teacherId);
     return t ? (t.navn || '') : teacherId; // fallback: legacy/un-migrated value
   }
+
+  // Sends an email via the "mail" collection (watched by the Firebase Trigger
+  // Email extension) to whichever teacher is assigned to a class. Silently
+  // does nothing if that teacher has no email on file.
+  async function notifyClassTeacherByEmail(classId, subject, text){
+    if(!classId) return;
+    const teacher = teachers.find(x => x.tildeltKlasse === classId);
+    if(!teacher || !teacher.epost) return;
+    try{
+      await addDoc(collection(db, 'mail'), { to: [teacher.epost], message: { subject, text } });
+    } catch(err){
+      console.error('E-postvarsling til lærer feilet:', err);
+    }
+  }
   function resolveClassName(classId){
     if(!classId) return '';
     const c = classes.find(x => x.id === classId);
@@ -1065,6 +1079,9 @@
         fra: 'Foresatt', avsenderNavn: currentGuardian.navn, tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
+      notifyClassTeacherByEmail(child.klasse,
+        (currentLang === 'ar' ? 'رسالة جديدة من ولي أمر' : 'Ny melding fra foresatt'),
+        (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentGuardian.navn + '\n\n' + tekst);
       showToast(t('teacherMsgSent'));
       document.getElementById('teacherMsgText').value = '';
       document.getElementById('teacherMsgLink').value = '';
@@ -1441,6 +1458,12 @@
         dato: new Date().toISOString()
       });
       input.value = '';
+      const post = classPosts.find(p => p.id === postId);
+      if(post){
+        notifyClassTeacherByEmail(post.klasse,
+          (currentLang === 'ar' ? 'تعليق جديد من ولي أمر' : 'Ny kommentar fra foresatt'),
+          (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentGuardian.navn + '\n\n' + tekst);
+      }
     } catch(err){
       console.error(err);
       alert(t('errorOccurred') + err.message);
