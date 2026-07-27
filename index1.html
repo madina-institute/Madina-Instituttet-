@@ -240,6 +240,11 @@
           <div class="title">Meldinger fra foresatte</div>
           <div class="desc">Svar på meldinger — arkiveres for begge parter</div>
         </div>
+        <div class="choice-card" onclick="showClassPosts()">
+          <div class="ic">📣</div>
+          <div class="title" data-i18n="chooseClassPosts">Klassemelding</div>
+          <div class="desc" data-i18n="chooseClassPostsDesc">Send en melding til hele klassen — foresatte kan kommentere</div>
+        </div>
       </div>
     </div>
 
@@ -342,8 +347,9 @@
     <!-- HOMEWORK VIEW -->
     <div class="card" id="homeworkView" style="display:none;">
       <button class="back-link" onclick="history.back()">← Tilbake</button>
-      <h2>Legg ut lekse</h2>
+      <h2 id="homeworkFormTitle">Legg ut lekse</h2>
       <div class="sub" id="homeworkClassSub"></div>
+      <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="showHomeworkArchive()">📁 <span data-i18n="homeworkArchiveLink">Se tidligere lekser</span></button>
       <div class="field">
         <label>Tittel / emne</label>
         <input type="text" id="hwTittel">
@@ -356,7 +362,15 @@
         <label>Frist (valgfritt)</label>
         <input type="date" id="hwFrist">
       </div>
-      <button class="btn btn-primary" onclick="submitHomework()">Legg ut lekse</button>
+      <button class="btn btn-primary" id="hwSubmitBtn" onclick="submitHomework()">Legg ut lekse</button>
+    </div>
+
+    <!-- HOMEWORK ARCHIVE -->
+    <div class="card" id="homeworkArchiveView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← <span data-i18n="back">Tilbake</span></button>
+      <h2 data-i18n="homeworkArchiveTitle">Tidligere lekser</h2>
+      <div class="sub" data-i18n="homeworkArchiveSub">Alt du har lagt ut, nyeste først — trykk for å redigere</div>
+      <div id="homeworkArchiveList"></div>
     </div>
 
     <!-- ABSENCE REVIEW VIEW -->
@@ -414,6 +428,24 @@
       <button class="btn btn-primary" onclick="sendTeacherReply()">Send svar</button>
       <hr style="border:none; border-top:1px dotted var(--line); margin:20px 0;">
       <div id="messageThreadHistory"></div>
+    </div>
+
+    <!-- CLASS POSTS (broadcast + forum comments) -->
+    <div class="card" id="classPostsView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← <span data-i18n="back">Tilbake</span></button>
+      <h2 data-i18n="classPostsTitle">Klassemeldinger</h2>
+      <div class="sub" data-i18n="classPostsSub">Send en melding til alle foresatte i klassen. De kan kommentere med mindre du stenger det.</div>
+      <div class="field">
+        <textarea id="classPostText" rows="3" data-i18n-ph="classPostPlaceholder" placeholder="Skriv en melding til klassen..."></textarea>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; font-family:'Jost',sans-serif; font-size:13px; margin-bottom:14px;">
+        <input type="checkbox" id="classPostAllowComments" checked style="width:auto;">
+        <span data-i18n="allowComments">Tillat kommentarer fra foresatte</span>
+      </label>
+      <button class="btn btn-primary" onclick="publishClassPost()" data-i18n="publishClassPost">Publiser til klassen</button>
+      <hr style="border:none; border-top:1px dotted var(--line); margin:22px 0;">
+      <h2 style="font-size:17px;" data-i18n="classPostsArchiveTitle">Tidligere klassemeldinger</h2>
+      <div id="classPostsList"></div>
     </div>
   </div>
 
@@ -481,6 +513,22 @@
       chooseTitle: 'Hva vil du gjøre?',
       chooseAttendance: 'Ta oppmøte',
       chooseAttendanceDesc: 'Registrer hvem som er til stede i dag',
+      chooseClassPosts: 'Klassemelding',
+      chooseClassPostsDesc: 'Send en melding til hele klassen — foresatte kan kommentere',
+      classPostsTitle: 'Klassemeldinger',
+      classPostsSub: 'Send en melding til alle foresatte i klassen. De kan kommentere med mindre du stenger det.',
+      classPostPlaceholder: 'Skriv en melding til klassen...',
+      allowComments: 'Tillat kommentarer fra foresatte',
+      publishClassPost: 'Publiser til klassen',
+      classPostsArchiveTitle: 'Tidligere klassemeldinger',
+      noClassPosts: 'Ingen klassemeldinger sendt ennå.',
+      commentsOpenLabel: 'Kommentarer åpne',
+      commentsClosedLabel: 'Kommentarer stengt',
+      closeComments: 'Steng kommentarer',
+      openComments: 'Åpne kommentarer',
+      noComments: 'Ingen kommentarer ennå.',
+      writeReply: 'Skriv et svar...',
+      sendReply: 'Send',
       chooseLesson: 'Timeforberedelse',
       chooseLessonDesc: 'Send inn pedagogisk forberedelse for en time',
       back: '← Tilbake',
@@ -496,6 +544,9 @@
       lessonArchiveLink: 'Se tidligere innsendte forberedelser',
       lessonArchiveTitle: 'Tidligere forberedelser',
       lessonArchiveSub: 'Alle forberedelser du har sendt inn, nyeste først',
+      homeworkArchiveLink: 'Se tidligere lekser',
+      homeworkArchiveTitle: 'Tidligere lekser',
+      homeworkArchiveSub: 'Alt du har lagt ut, nyeste først — trykk for å redigere',
       fagLabel: 'Fag',
       dateForLesson: 'Dato for timen',
       emneLabel: 'Emne / tema for timen',
@@ -542,6 +593,22 @@
       chooseTitle: 'ماذا تريد أن تفعل؟',
       chooseAttendance: 'تسجيل الحضور',
       chooseAttendanceDesc: 'سجّل حضور وغياب طلابك اليوم',
+      chooseClassPosts: 'رسالة للصف',
+      chooseClassPostsDesc: 'أرسل رسالة لكل الصف — يقدر الأولياء يعلّقون عليها',
+      classPostsTitle: 'رسائل الصف',
+      classPostsSub: 'أرسل رسالة لكل أولياء أمور الصف. يقدرون يعلّقون إلا لو أوقفت التعليقات.',
+      classPostPlaceholder: 'اكتب رسالة للصف...',
+      allowComments: 'السماح بتعليقات الأولياء',
+      publishClassPost: 'نشر للصف',
+      classPostsArchiveTitle: 'رسائل الصف السابقة',
+      noClassPosts: 'ما فيه رسائل صف مرسلة بعد.',
+      commentsOpenLabel: 'التعليقات مفتوحة',
+      commentsClosedLabel: 'التعليقات مقفلة',
+      closeComments: 'إيقاف التعليقات',
+      openComments: 'فتح التعليقات',
+      noComments: 'لا توجد تعليقات بعد.',
+      writeReply: 'اكتب ردًا...',
+      sendReply: 'إرسال',
       chooseLesson: 'التحضير التربوي',
       chooseLessonDesc: 'أرسل تحضيرك التربوي لحصة معينة',
       back: '→ رجوع',
@@ -557,6 +624,9 @@
       lessonArchiveLink: 'عرض التحضيرات المرسلة سابقًا',
       lessonArchiveTitle: 'التحضيرات السابقة',
       lessonArchiveSub: 'كل التحضيرات اللي أرسلتها، الأحدث أولًا',
+      homeworkArchiveLink: 'عرض الواجبات السابقة',
+      homeworkArchiveTitle: 'الواجبات السابقة',
+      homeworkArchiveSub: 'كل الواجبات اللي نشرتها، الأحدث أولًا — اضغط للتعديل',
       fagLabel: 'المادة',
       dateForLesson: 'تاريخ الحصة',
       emneLabel: 'عنوان / موضوع الدرس',
@@ -696,6 +766,23 @@
     if(currentTeacher && document.getElementById('lessonArchiveView').style.display !== 'none') renderLessonArchive();
   });
 
+  let homework = [];
+  onSnapshot(collection(db, 'homework'), (snap) => {
+    homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('homeworkArchiveView').style.display !== 'none') renderHomeworkArchive();
+  });
+
+  let classPosts = [];
+  onSnapshot(collection(db, 'classPosts'), (snap) => {
+    classPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+  });
+  let classPostComments = [];
+  onSnapshot(collection(db, 'classPostComments'), (snap) => {
+    classPostComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+  });
+
   let messages = [];
   onSnapshot(collection(db, 'messages'), (snap) => {
     messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -771,9 +858,11 @@
       else if(view === 'lesson') showLesson();
       else if(view === 'lessonArchive') showLessonArchive();
       else if(view === 'homework') showHomework();
+      else if(view === 'homeworkArchive') showHomeworkArchive();
       else if(view === 'absenceReview') showAbsenceReview();
       else if(view === 'studentNotes') showStudentNotes();
       else if(view === 'messages') showMessages();
+      else if(view === 'classPosts') showClassPosts();
       else if(view === 'messageThread' && currentThreadGuardian){
         document.getElementById('messagesListView').style.display = 'none';
         document.getElementById('messageThreadView').style.display = 'block';
@@ -793,10 +882,12 @@
     document.getElementById('lessonView').style.display = 'none';
     document.getElementById('lessonArchiveView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'none';
+    document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
     document.getElementById('studentNotesView').style.display = 'none';
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'none';
+    document.getElementById('classPostsView').style.display = 'none';
     currentThreadGuardian = null;
   };
 
@@ -877,11 +968,73 @@
       </div>`).join('');
   }
 
+  let editingHomeworkId = null;
+
   window.showHomework = function(){
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'block';
+    document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('homeworkClassSub').textContent =
       (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+    editingHomeworkId = null;
+    document.getElementById('homeworkFormTitle').textContent = currentLang === 'ar' ? 'انشر واجبًا' : 'Legg ut lekse';
+    document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'نشر الواجب' : 'Legg ut lekse';
+    document.getElementById('hwTittel').value = '';
+    document.getElementById('hwBeskrivelse').value = '';
+    document.getElementById('hwFrist').value = '';
+    pushAppView('homework');
+  };
+
+  window.showHomeworkArchive = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('homeworkView').style.display = 'none';
+    document.getElementById('homeworkArchiveView').style.display = 'block';
+    renderHomeworkArchive();
+    pushAppView('homeworkArchive');
+  };
+
+  function renderHomeworkArchive(){
+    const el = document.getElementById('homeworkArchiveList');
+    if(!el || !currentTeacher) return;
+    const mine = homework.filter(h => h.larer === currentTeacher.id)
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد واجبات منشورة بعد.' : 'Ingen lekser lagt ut ennå.'}</div>`;
+      return;
+    }
+    el.innerHTML = mine.map(h => `
+      <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
+        <details style="width:100%;">
+          <summary style="cursor:pointer;">
+            <span class="name">
+              <strong>${escapeHtml(h.tittel||'—')}</strong>
+              <span class="tag-pill" style="margin-inline-start:8px;">${escapeHtml(h.dato||'—')}</span>
+              ${h.frist ? `<span class="tag-pill" style="margin-inline-start:6px;">${currentLang === 'ar' ? 'الموعد النهائي' : 'Frist'}: ${escapeHtml(h.frist)}</span>` : ''}
+              <br>
+              <span style="font-size:13px; color:#5a6860;">${escapeHtml((h.beskrivelse||'').slice(0,80))}${(h.beskrivelse||'').length > 80 ? '…' : ''}</span>
+            </span>
+          </summary>
+          <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);">
+            <div style="font-size:13.5px; white-space:pre-wrap; line-height:1.6; margin-bottom:12px;">${escapeHtml(h.beskrivelse||'—')}</div>
+            <button type="button" class="btn btn-ghost" onclick="editHomeworkEntry('${h.id}')">✏️ ${currentLang === 'ar' ? 'تعديل' : 'Rediger'}</button>
+          </div>
+        </details>
+      </div>`).join('');
+  }
+
+  window.editHomeworkEntry = function(id){
+    const hw = homework.find(h => h.id === id);
+    if(!hw) return;
+    editingHomeworkId = id;
+    document.getElementById('homeworkArchiveView').style.display = 'none';
+    document.getElementById('homeworkView').style.display = 'block';
+    document.getElementById('homeworkClassSub').textContent =
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+    document.getElementById('homeworkFormTitle').textContent = currentLang === 'ar' ? 'تعديل الواجب' : 'Rediger lekse';
+    document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'حفظ التعديل' : 'Lagre endring';
+    document.getElementById('hwTittel').value = hw.tittel || '';
+    document.getElementById('hwBeskrivelse').value = hw.beskrivelse || '';
+    document.getElementById('hwFrist').value = hw.frist || '';
     pushAppView('homework');
   };
 
@@ -901,16 +1054,24 @@
       return;
     }
     try{
-      await addDoc(collection(db, 'homework'), {
-        klasse: currentTeacher.tildeltKlasse,
-        tittel, beskrivelse, frist,
-        larer: currentTeacher.id,
-        dato: todayISO()
-      });
-      showToast(currentLang === 'ar' ? 'تم إرسال الواجب.' : 'Leksen er lagt ut.');
+      if(editingHomeworkId){
+        await updateDoc(doc(db, 'homework', editingHomeworkId), { tittel, beskrivelse, frist });
+        showToast(currentLang === 'ar' ? 'تم حفظ التعديل.' : 'Endringen er lagret.');
+        editingHomeworkId = null;
+      } else {
+        await addDoc(collection(db, 'homework'), {
+          klasse: currentTeacher.tildeltKlasse,
+          tittel, beskrivelse, frist,
+          larer: currentTeacher.id,
+          dato: todayISO()
+        });
+        showToast(currentLang === 'ar' ? 'تم إرسال الواجب.' : 'Leksen er lagt ut.');
+      }
       document.getElementById('hwTittel').value = '';
       document.getElementById('hwBeskrivelse').value = '';
       document.getElementById('hwFrist').value = '';
+      document.getElementById('homeworkFormTitle').textContent = currentLang === 'ar' ? 'انشر واجبًا' : 'Legg ut lekse';
+      document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'نشر الواجب' : 'Legg ut lekse';
     } catch(err){
       console.error(err);
       alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
@@ -1136,6 +1297,115 @@
       statusEl.textContent = (currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message;
     }
   };
+
+  // ---------- Class posts (broadcast message + forum-style comments) ----------
+  window.showClassPosts = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('classPostsView').style.display = 'block';
+    document.getElementById('classPostText').value = '';
+    document.getElementById('classPostAllowComments').checked = true;
+    renderClassPosts();
+    pushAppView('classPosts');
+  };
+
+  window.publishClassPost = async function(){
+    const tekst = document.getElementById('classPostText').value.trim();
+    if(!tekst){
+      alert(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
+      return;
+    }
+    const commentsEnabled = document.getElementById('classPostAllowComments').checked;
+    try{
+      await addDoc(collection(db, 'classPosts'), {
+        klasse: currentTeacher.tildeltKlasse,
+        larer: currentTeacher.id,
+        tekst,
+        commentsEnabled,
+        dato: new Date().toISOString()
+      });
+      document.getElementById('classPostText').value = '';
+      document.getElementById('classPostAllowComments').checked = true;
+      showToast(currentLang === 'ar' ? 'تم النشر للصف.' : 'Publisert til klassen.');
+    } catch(err){
+      console.error(err);
+      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+    }
+  };
+
+  window.toggleClassPostComments = async function(postId, newState){
+    try{
+      await updateDoc(doc(db, 'classPosts', postId), { commentsEnabled: newState });
+    } catch(err){
+      console.error(err);
+      showToast(currentLang === 'ar' ? 'حدث خطأ.' : 'Noe gikk galt.');
+    }
+  };
+
+  window.submitTeacherComment = async function(postId){
+    const input = document.getElementById('classPostReply_' + postId);
+    if(!input) return;
+    const tekst = input.value.trim();
+    if(!tekst) return;
+    try{
+      await addDoc(collection(db, 'classPostComments'), {
+        postId, fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst,
+        dato: new Date().toISOString()
+      });
+      input.value = '';
+    } catch(err){
+      console.error(err);
+      showToast(currentLang === 'ar' ? 'حدث خطأ.' : 'Noe gikk galt.');
+    }
+  };
+
+  function renderClassPosts(){
+    const el = document.getElementById('classPostsList');
+    if(!el || !currentTeacher) return;
+    const mine = classPosts.filter(p => p.klasse === currentTeacher.tildeltKlasse)
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${t('noClassPosts')}</div>`;
+      return;
+    }
+    el.innerHTML = mine.map(p => {
+      const comments = classPostComments.filter(c => c.postId === p.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const commentsHtml = comments.length === 0
+        ? `<div class="empty-msg">${t('noComments')}</div>`
+        : comments.map(c => `
+            <div class="student-row" style="background:${c.fra === 'Lærer' ? 'var(--paper-2)' : 'transparent'};">
+              <span class="name">
+                <strong>${escapeHtml(c.fra === 'Lærer' ? currentTeacher.navn : (c.guardianNavn||''))}</strong>
+                <span style="font-size:11px; color:#8a9a90;"> — ${escapeHtml((c.dato||'').slice(0,16).replace('T',' · '))}</span><br>
+                <span style="font-size:13px;">${escapeHtml(c.tekst||'')}</span>
+              </span>
+            </div>`).join('');
+      const toggleLabel = p.commentsEnabled ? t('closeComments') : t('openComments');
+      const statusLabel = p.commentsEnabled ? t('commentsOpenLabel') : t('commentsClosedLabel');
+      return `
+      <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
+        <details style="width:100%;">
+          <summary style="cursor:pointer;">
+            <span class="name">
+              <span class="tag-pill">${escapeHtml((p.dato||'').slice(0,10))}</span>
+              <span class="tag-pill" style="margin-inline-start:6px;">${escapeHtml(statusLabel)}</span>
+              <br><span style="font-size:13.5px;">${escapeHtml((p.tekst||'').slice(0,90))}${(p.tekst||'').length > 90 ? '…' : ''}</span>
+            </span>
+          </summary>
+          <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);">
+            <div style="font-size:14px; white-space:pre-wrap; line-height:1.6; margin-bottom:14px;">${escapeHtml(p.tekst||'')}</div>
+            <button type="button" class="btn btn-ghost" style="margin-bottom:14px;" onclick="toggleClassPostComments('${p.id}', ${!p.commentsEnabled})">${escapeHtml(toggleLabel)}</button>
+            <div style="margin-bottom:10px;">${commentsHtml}</div>
+            ${p.commentsEnabled ? `
+              <div class="field" style="margin-bottom:8px;">
+                <textarea id="classPostReply_${p.id}" rows="2" data-i18n-ph="writeReply" placeholder="${escapeHtml(t('writeReply'))}"></textarea>
+              </div>
+              <button type="button" class="btn btn-primary" onclick="submitTeacherComment('${p.id}')">${escapeHtml(t('sendReply'))}</button>
+            ` : ''}
+          </div>
+        </details>
+      </div>`;
+    }).join('');
+  }
 
   function resolveClassName(classId){
     if(!classId) return '';
