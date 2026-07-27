@@ -110,6 +110,10 @@
   .empty-msg{font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:16px 0;}
   html[dir="rtl"] .empty-msg{font-family:'Tajawal',sans-serif;}
 
+  .upload-status{font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald); margin:-8px 0 14px;}
+  html[dir="rtl"] .upload-status{font-family:'Tajawal',sans-serif;}
+  .upload-status.err{color:var(--red);}
+
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif; font-size:13px;
@@ -275,6 +279,12 @@
           <div class="t" data-i18n="menuContact">Kontaktinfo</div>
           <div class="d" data-i18n="menuContactDesc">Meld endring</div>
         </div>
+        <div class="menu-card" onclick="openSection('teacherMsg')">
+          <div class="dot" id="dotTeacherMsg"></div>
+          <div class="ic">📩</div>
+          <div class="t" data-i18n="menuTeacherMsg">Kontakt lærer</div>
+          <div class="d" data-i18n="menuTeacherMsgDesc">Send og motta meldinger</div>
+        </div>
       </div>
     </div>
 
@@ -335,15 +345,20 @@
         <h2 data-i18n="menuHomework">Lekser</h2>
         <div id="homeworkList"></div>
         <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
-        <div class="sub" style="margin-bottom:10px;" data-i18n="submitHwSub">Lever besvarelse (lim inn lenke til bilde/dokument etter opplasting på f.eks. Google Drive)</div>
+        <div class="sub" style="margin-bottom:10px;" data-i18n="submitHwSub">Lever besvarelse — last opp et bilde eller dokument</div>
         <div class="field">
           <label data-i18n="whichHw">Hvilken lekse gjelder dette?</label>
           <select id="hwSubmitTitle"></select>
         </div>
         <div class="field">
-          <label data-i18n="linkLabel">Lenke til besvarelse</label>
+          <label data-i18n="fileLabel">Last opp fil (bilde/dokument)</label>
+          <input type="file" id="hwSubmitFile" accept="image/*,.pdf,.doc,.docx">
+        </div>
+        <div class="field">
+          <label data-i18n="orLinkLabel">Eller lim inn en lenke (valgfritt)</label>
           <input type="text" id="hwSubmitLink" placeholder="https://...">
         </div>
+        <div class="upload-status" id="hwUploadStatus" style="display:none;"></div>
         <button class="btn btn-primary" onclick="submitHomeworkAnswer()" data-i18n="submitHwBtn">Send inn besvarelse</button>
       </div>
     </div>
@@ -436,6 +451,30 @@
       </div>
     </div>
 
+    <!-- KONTAKT LÆRER -->
+    <div class="sub-view" id="view-teacherMsg">
+      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuTeacherMsg">Kontakt lærer</h2>
+        <div class="sub" id="teacherMsgSub"></div>
+        <div id="teacherMsgHistory" style="margin-bottom:16px;"></div>
+        <div class="field">
+          <label data-i18n="yourMessage">Din melding</label>
+          <textarea id="teacherMsgText" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label data-i18n="attachFileLabel">Legg ved bilde/dokument (valgfritt)</label>
+          <input type="file" id="teacherMsgFile" accept="image/*,.pdf,.doc,.docx">
+        </div>
+        <div class="field">
+          <label data-i18n="orLinkLabel">Eller lim inn en lenke (valgfritt)</label>
+          <input type="text" id="teacherMsgLink" placeholder="https://...">
+        </div>
+        <div class="upload-status" id="teacherMsgUploadStatus" style="display:none;"></div>
+        <button class="btn btn-primary" onclick="sendTeacherMessage()" data-i18n="sendMessageBtn">Send melding</button>
+      </div>
+    </div>
+
   </div>
 
 </main>
@@ -447,6 +486,9 @@
   import {
     getFirestore, collection, onSnapshot, addDoc, doc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import {
+    getStorage, ref as storageRef, uploadBytes, getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
@@ -458,6 +500,18 @@
   };
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  const MAX_FILE_MB = 10;
+  async function uploadAttachment(file, folder){
+    if(file.size > MAX_FILE_MB * 1024 * 1024){
+      throw new Error(t('fileTooLarge'));
+    }
+    const safeName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const fRef = storageRef(storage, folder + '/' + safeName);
+    await uploadBytes(fRef, file);
+    return await getDownloadURL(fRef);
+  }
 
   // ---------- I18N ----------
   let currentLang = 'no';
@@ -481,6 +535,8 @@
       saturday: 'Lørdag', sunday: 'Søndag', backToDays: '← Tilbake til dagene',
       submitHwSub: 'Lever besvarelse (lim inn lenke til bilde/dokument etter opplasting på f.eks. Google Drive)',
       whichHw: 'Hvilken lekse gjelder dette?', linkLabel: 'Lenke til besvarelse', submitHwBtn: 'Send inn besvarelse',
+      fileLabel: 'Last opp fil (bilde/dokument)', orLinkLabel: 'Eller lim inn en lenke (valgfritt)', attachFileLabel: 'Legg ved bilde/dokument (valgfritt)',
+      uploading: 'Laster opp...', fileTooLarge: 'Filen er for stor (maks 10 MB).',
       absenceSub: 'Send en melding til læreren om barnets fravær', dateLabel: 'Dato', reasonLabel: 'Årsak', sendAbsence: 'Send fraværsmelding',
       notesSub: 'Fremgangsnotater om barnet ditt',
       payNowBtn: 'Betal nå', paymentComingSoon: 'Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.',
@@ -489,6 +545,10 @@
       invalidAmount: 'Skriv inn et gyldig beløp.', noRemaining: 'Det er ikke noe utestående beløp for dette barnet.',
       contactSub: 'Sendes til administrasjonen for godkjenning', newPhone: 'Ny telefon (valgfritt)', newEmail: 'Ny e-post (valgfritt)',
       messageLabel: 'Melding (valgfritt)', sendContactUpdate: 'Send forespørsel',
+      menuTeacherMsg: 'Kontakt lærer', menuTeacherMsgDesc: 'Send og motta meldinger',
+      yourMessage: 'Din melding', attachmentLabel: 'Vedlegg (lenke til bilde/dokument, valgfritt)', sendMessageBtn: 'Send melding',
+      noMessages: 'Ingen meldinger ennå. Skriv den første meldingen under.', teacherMsgFill: 'Skriv en melding.', teacherMsgSent: 'Meldingen er sendt til læreren.',
+      you: 'Deg',
       noChildren: 'Ingen barn registrert ennå.', noAttendance: 'Ingen oppmøteregistreringer ennå.',
       noHomework: 'Ingen lekser lagt ut ennå.', noHwOptions: 'Ingen lekser tilgjengelig',
       noNotes: 'Ingen notater ennå.', noAnnouncements: 'Ingen kunngjøringer ennå.',
@@ -518,6 +578,8 @@
       saturday: 'السبت', sunday: 'الأحد', backToDays: '→ رجوع إلى الأيام',
       submitHwSub: 'تسليم الإجابة (الصق رابط الصورة أو الملف بعد رفعه على Google Drive مثلاً)',
       whichHw: 'ما هو الواجب المعني؟', linkLabel: 'رابط الإجابة', submitHwBtn: 'إرسال الإجابة',
+      fileLabel: 'رفع ملف (صورة/مستند)', orLinkLabel: 'أو الصق رابطًا (اختياري)', attachFileLabel: 'إرفاق صورة/مستند (اختياري)',
+      uploading: 'جارِ الرفع...', fileTooLarge: 'الملف كبير جدًا (الحد الأقصى 10 ميجابايت).',
       absenceSub: 'أرسل رسالة إلى المعلم بخصوص غياب الطالب', dateLabel: 'التاريخ', reasonLabel: 'السبب', sendAbsence: 'إرسال إشعار الغياب',
       notesSub: 'ملاحظات تقدّم عن طالبك',
       payNowBtn: 'ادفع الآن', paymentComingSoon: 'وسيلة الدفع الإلكتروني قادمة قريبًا. تواصل مع المدرسة لمعرفة طريقة الدفع.',
@@ -526,6 +588,10 @@
       invalidAmount: 'أدخل مبلغًا صحيحًا.', noRemaining: 'لا يوجد مبلغ مستحق لهذا الطالب.',
       contactSub: 'يُرسل إلى الإدارة للموافقة', newPhone: 'رقم هاتف جديد (اختياري)', newEmail: 'بريد إلكتروني جديد (اختياري)',
       messageLabel: 'رسالة (اختياري)', sendContactUpdate: 'إرسال الطلب',
+      menuTeacherMsg: 'التواصل مع المعلم', menuTeacherMsgDesc: 'إرسال واستقبال الرسائل',
+      yourMessage: 'رسالتك', attachmentLabel: 'مرفق (رابط صورة أو ملف، اختياري)', sendMessageBtn: 'إرسال الرسالة',
+      noMessages: 'لا توجد رسائل بعد. اكتب أول رسالة بالأسفل.', teacherMsgFill: 'اكتب نص الرسالة.', teacherMsgSent: 'تم إرسال الرسالة إلى المعلم.',
+      you: 'أنت',
       noChildren: 'لا يوجد أبناء مسجلون بعد.', noAttendance: 'لا يوجد سجل حضور بعد.',
       noHomework: 'لا توجد واجبات بعد.', noHwOptions: 'لا توجد واجبات متاحة',
       noNotes: 'لا توجد ملاحظات بعد.', noAnnouncements: 'لا توجد إعلانات بعد.',
@@ -567,7 +633,7 @@
   };
 
   let guardians = [], students = [], attendance = [], registrations = [], homework = [];
-  let announcements = [], studentNotes = [], hours = [], teachers = [];
+  let announcements = [], studentNotes = [], hours = [], teachers = [], messages = [];
   let paymentLink = '';
   let currentGuardian = null;
   let currentChildIndex = 0;
@@ -622,10 +688,18 @@
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
+  onSnapshot(collection(db, 'messages'), (snap) => {
+    messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian){
+      renderChild();
+      if(document.getElementById('view-teacherMsg').style.display !== 'none') renderTeacherMsgHistory();
+    }
+  });
   onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
     paymentLink = snap.exists() ? (snap.data().lenke || '') : '';
     if(currentGuardian) renderChild();
   }, (err) => console.error('settings/betaling', err));
+
 
   window.doParentLogin = function(){
     const errEl = document.getElementById('loginError');
@@ -711,6 +785,7 @@
     document.getElementById('view-' + name).style.display = 'block';
     if(name === 'schedule') closeScheduleDay();
     if(name === 'payment') resetPaymentChoiceUI();
+    if(name === 'teacherMsg') openTeacherMsg();
     markSeen(name);
     updateBadges();
   };
@@ -769,7 +844,82 @@
     document.getElementById('dotHomework').parentElement.classList.toggle('has-new', hasNew('homework','dato', myHw));
     document.getElementById('dotNotes').parentElement.classList.toggle('has-new', hasNew('studentNotes','dato', myNotes));
     document.getElementById('dotAnnouncements').parentElement.classList.toggle('has-new', hasNew('announcements','dato', announcements));
+    document.getElementById('dotTeacherMsg').parentElement.classList.toggle('has-new', hasNewTeacherMsg());
   }
+
+  function msgSeenKey(klasse){ return 'ps_seen_messages_' + (currentGuardian ? currentGuardian.navn : '') + '_' + klasse; }
+  function hasNewTeacherMsg(){
+    if(myChildren.length === 0 || !currentGuardian) return false;
+    const child = myChildren[currentChildIndex];
+    const seen = localStorage.getItem(msgSeenKey(child.klasse));
+    const relevant = messages.filter(m => m.klasse === child.klasse && m.guardianNavn === currentGuardian.navn && m.fra === 'Lærer');
+    if(!seen) return relevant.length > 0;
+    return relevant.some(m => (m.dato||'') > seen);
+  }
+
+  window.openTeacherMsg = function(){
+    if(myChildren.length === 0 || !currentGuardian) return;
+    const child = myChildren[currentChildIndex];
+    localStorage.setItem(msgSeenKey(child.klasse), new Date().toISOString());
+    document.getElementById('teacherMsgSub').textContent =
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + (child.klasse || '—');
+    renderTeacherMsgHistory();
+  };
+
+  function renderTeacherMsgHistory(){
+    const el = document.getElementById('teacherMsgHistory');
+    if(!el || myChildren.length === 0 || !currentGuardian) return;
+    const child = myChildren[currentChildIndex];
+    const thread = messages.filter(m => m.klasse === child.klasse && m.guardianNavn === currentGuardian.navn)
+      .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+    if(thread.length === 0){
+      el.innerHTML = `<div class="empty-msg">${t('noMessages')}</div>`;
+      return;
+    }
+    el.innerHTML = thread.map(m => `
+      <div class="note-item" style="background:${m.fra === 'Foresatt' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line);">
+        <div class="d"><strong>${m.fra === 'Foresatt' ? t('you') : escapeHtml(m.avsenderNavn||'')}</strong><br>${escapeHtml(m.tekst||'')}</div>
+        ${m.vedleggLenke ? `<div style="margin-top:6px;"><a href="${escapeHtml(m.vedleggLenke)}" target="_blank" style="font-size:12px;">${currentLang === 'ar' ? 'مرفق' : 'Vedlegg'}</a></div>` : ''}
+        <div class="meta">${escapeHtml((m.dato||'').slice(0,16).replace('T',' · '))}</div>
+      </div>`).join('');
+  }
+
+  window.sendTeacherMessage = async function(){
+    if(myChildren.length === 0 || !currentGuardian) return;
+    const child = myChildren[currentChildIndex];
+    const tekst = document.getElementById('teacherMsgText').value.trim();
+    const fileInput = document.getElementById('teacherMsgFile');
+    const file = fileInput.files[0];
+    let vedleggLenke = document.getElementById('teacherMsgLink').value.trim();
+    const statusEl = document.getElementById('teacherMsgUploadStatus');
+    if(!tekst){
+      alert(t('teacherMsgFill'));
+      return;
+    }
+    try{
+      if(file){
+        statusEl.style.display = 'block';
+        statusEl.classList.remove('err');
+        statusEl.textContent = t('uploading');
+        vedleggLenke = await uploadAttachment(file, 'message-attachments');
+      }
+      await addDoc(collection(db, 'messages'), {
+        klasse: child.klasse, guardianNavn: currentGuardian.navn,
+        fra: 'Foresatt', avsenderNavn: currentGuardian.navn, tekst, vedleggLenke,
+        dato: new Date().toISOString()
+      });
+      showToast(t('teacherMsgSent'));
+      document.getElementById('teacherMsgText').value = '';
+      document.getElementById('teacherMsgLink').value = '';
+      fileInput.value = '';
+      statusEl.style.display = 'none';
+    } catch(err){
+      console.error(err);
+      statusEl.style.display = 'block';
+      statusEl.classList.add('err');
+      statusEl.textContent = t('errorOccurred') + err.message;
+    }
+  };
 
   function renderChild(){
     if(myChildren.length === 0){
@@ -927,21 +1077,34 @@
     if(myChildren.length === 0) return;
     const child = myChildren[currentChildIndex];
     const tittel = document.getElementById('hwSubmitTitle').value;
-    const lenke = document.getElementById('hwSubmitLink').value.trim();
-    if(!tittel || !lenke){
+    const fileInput = document.getElementById('hwSubmitFile');
+    const file = fileInput.files[0];
+    let lenke = document.getElementById('hwSubmitLink').value.trim();
+    const statusEl = document.getElementById('hwUploadStatus');
+    if(!tittel || (!file && !lenke)){
       alert(t('fillHwFields'));
       return;
     }
     try{
+      if(file){
+        statusEl.style.display = 'block';
+        statusEl.classList.remove('err');
+        statusEl.textContent = t('uploading');
+        lenke = await uploadAttachment(file, 'homework-submissions');
+      }
       await addDoc(collection(db, 'homeworkSubmissions'), {
         homeworkTittel: tittel, klasse: child.klasse, elevNavn: child.navn,
         lenke, innsendtDato: todayISO()
       });
       showToast(t('hwSent'));
       document.getElementById('hwSubmitLink').value = '';
+      fileInput.value = '';
+      statusEl.style.display = 'none';
     } catch(err){
       console.error(err);
-      alert(t('errorOccurred') + err.message);
+      statusEl.style.display = 'block';
+      statusEl.classList.add('err');
+      statusEl.textContent = t('errorOccurred') + err.message;
     }
   };
 
