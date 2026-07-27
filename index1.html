@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Madina Skole — Lærerportal</title>
+<link rel="manifest" href="manifest-larer.json">
+<meta name="theme-color" content="#1f4a3a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Madina Lærer">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -1262,6 +1268,13 @@
   // Init
   applyStaticTranslations();
   populateFagSelect();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.error);
+    });
+  }
 </script>
 </body>
 </html>
