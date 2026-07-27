@@ -563,6 +563,16 @@
     </div>
 
     <div class="report-card" style="margin-top:20px;">
+      <h3>Migrer koblinger til stabil ID</h3>
+      <div class="sub">Kjøres én gang — oppdaterer eksisterende koblinger (elev↔foresatt, elev↔klasse, lærer↔klasse, timeplan/forberedelser↔lærer/klasse) slik at de peker på et fast ID i stedet for et navn. Etter dette slutter koblinger å knekke når noen bytter navn.</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
+        Trygt å kjøre flere ganger — allerede migrerte oppføringer hoppes automatisk over. Ta gjerne en backup først (se under).
+      </p>
+      <button class="btn btn-primary" onclick="migrateNameLinksToIds()">Kjør migrering</button>
+      <div id="migrationResult" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-top:12px; white-space:pre-line;"></div>
+    </div>
+
+    <div class="report-card" style="margin-top:20px;">
       <h3>Sikkerhetskopi</h3>
       <div class="sub">Beskytt dere mot utilsiktet sletting — last ned eller send hele databasen jevnlig</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -1597,10 +1607,23 @@
     const ok = confirm(warning);
     if(!ok) return;
     try{
-      for(const t of DEMO_DATA.classes) await addDoc(collection(db, 'classes'), t);
+      // Insert classes/guardians first, then map name → the real Firestore id
+      // that was just generated, so students link to them by stable id.
+      const classIdByName = {};
+      for(const t of DEMO_DATA.classes){
+        const ref = await addDoc(collection(db, 'classes'), t);
+        classIdByName[t.navn] = ref.id;
+      }
       for(const t of DEMO_DATA.teachers) await addDoc(collection(db, 'teachers'), t);
-      for(const t of DEMO_DATA.guardians) await addDoc(collection(db, 'guardians'), t);
-      for(const t of DEMO_DATA.students) await addDoc(collection(db, 'students'), t);
+      const guardianIdByName = {};
+      for(const t of DEMO_DATA.guardians){
+        const ref = await addDoc(collection(db, 'guardians'), t);
+        guardianIdByName[t.navn] = ref.id;
+      }
+      for(const t of DEMO_DATA.students){
+        const record = { ...t, klasse: classIdByName[t.klasse] || '', foresatt: guardianIdByName[t.foresatt] || '' };
+        await addDoc(collection(db, 'students'), record);
+      }
       for(const t of SEED_HOURS) await addDoc(collection(db, 'hours'), t);
       const today = todayISO();
       for(const t of DEMO_DATA.attendance) await addDoc(collection(db, 'attendance'), { dato: today, ...t });
@@ -1608,6 +1631,59 @@
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt under innlasting av eksempeldata.');
+    }
+  };
+
+  // One-time migration: every dynamic-select field (foresatt, klasse, larer,
+  // tildeltKlasse, referent, kjoptAv, registrertAv, ...) used to store the
+  // linked record's NAME. From now on it stores that record's stable Firestore
+  // id instead, so renaming someone never breaks the link. This walks every
+  // schema, finds dynamic-select fields whose current value is still a name
+  // rather than a known id, and rewrites it to the matching id. Safe to run
+  // more than once — already-migrated fields are skipped automatically.
+  window.migrateNameLinksToIds = async function(){
+    const resultEl = document.getElementById('migrationResult');
+    resultEl.textContent = 'Migrerer, vennligst vent...';
+    let updated = 0;
+    const unresolved = [];
+    const ambiguous = [];
+    try{
+      for(const type of Object.keys(SCHEMAS)){
+        const schema = SCHEMAS[type];
+        const dynFields = schema.fields.filter(f => f.type === 'dynamic-select');
+        if(dynFields.length === 0) continue;
+        for(const row of cache[type]){
+          const updates = {};
+          for(const f of dynFields){
+            const val = row[f.key];
+            if(!val) continue;
+            const sources = Array.isArray(f.source) ? f.source : [f.source];
+            const alreadyId = sources.some(src => (cache[src]||[]).some(r => r.id === val));
+            if(alreadyId) continue;
+            const matches = sources.flatMap(src => (cache[src]||[]).filter(r => r.navn === val));
+            if(matches.length === 1){
+              updates[f.key] = matches[0].id;
+            } else if(matches.length === 0){
+              unresolved.push(schema.label + ' "' + (row.navn||row.id) + '" → ' + f.label + ': "' + val + '" (ingen match funnet)');
+            } else {
+              ambiguous.push(schema.label + ' "' + (row.navn||row.id) + '" → ' + f.label + ': "' + val + '" (flere med samme navn — løs manuelt i skjemaet)');
+            }
+          }
+          if(Object.keys(updates).length > 0){
+            await updateDoc(doc(db, schema.collectionName, row.id), updates);
+            updated++;
+          }
+        }
+      }
+      let summary = 'Ferdig. ' + updated + ' oppføring(er) oppdatert til ID-basert kobling.';
+      if(unresolved.length) summary += '\n\nFant ingen match (' + unresolved.length + '):\n' + unresolved.join('\n');
+      if(ambiguous.length) summary += '\n\nFlere med samme navn — løs manuelt (' + ambiguous.length + '):\n' + ambiguous.join('\n');
+      resultEl.textContent = summary;
+      showToast('Migrering fullført.');
+    } catch(err){
+      console.error(err);
+      resultEl.textContent = 'Noe gikk galt: ' + err.message;
+      showToast('Migrering feilet. Sjekk internettforbindelsen.');
     }
   };
 
@@ -1710,6 +1786,20 @@
   }
 
   function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  // Resolves a stable record id (guardian, teacher, class, ...) to its current
+  // display name. Falls back to returning the raw stored value as-is if it isn't
+  // a known id — this covers legacy name-based values that haven't been migrated
+  // yet, so nothing shows up blank.
+  function resolveDynName(sourceOrSources, val){
+    if(!val) return '';
+    const sources = Array.isArray(sourceOrSources) ? sourceOrSources : [sourceOrSources];
+    for(const src of sources){
+      const rec = (cache[src] || []).find(r => r.id === val);
+      if(rec) return rec.navn || '';
+    }
+    return val; // not a known id — show the raw value (legacy/un-migrated)
+  }
   function escapeHtml(str){
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
   }
@@ -1719,8 +1809,13 @@
     const searchEl = document.getElementById('search' + capitalize(type));
     const query = (searchEl ? searchEl.value : '').toLowerCase();
     let data = cache[type];
+    const colDisplay = (row, c) => {
+      const field = schema.fields.find(f=>f.key===c);
+      if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
+      return row[c] || '';
+    };
     if(query){
-      data = data.filter(row => schema.cols.some(c => (row[c]||'').toLowerCase().includes(query)));
+      data = data.filter(row => schema.cols.some(c => colDisplay(row, c).toLowerCase().includes(query)));
     }
     const tbody = document.getElementById('tbody' + capitalize(type));
     if(!tbody) return;
@@ -1732,7 +1827,7 @@
         const tr = document.createElement('tr');
         let cellsHtml = schema.cols.map((c,i) => {
           const field = schema.fields.find(f=>f.key===c);
-          const val = row[c] || '—';
+          const val = colDisplay(row, c) || '—';
           let display;
           if(type === 'registrations' && c === 'status'){
             const statusClass = { 'Ny':'ny', 'Venteliste':'venteliste', 'Godkjent':'godkjent', 'Avslått':'avslatt' }[val] || 'ny';
@@ -1745,7 +1840,7 @@
           return `<td data-label="${field.label}">${display}</td>`;
         }).join('');
         if(type === 'guardians'){
-          const childCount = cache.students.filter(s => (s.foresatt||'') === row.navn).length;
+          const childCount = cache.students.filter(s => (s.foresatt||'') === row.id).length;
           cellsHtml += `<td data-label="Antall barn">${childCount}</td>`;
         }
         if(type === 'registrations'){
@@ -1801,7 +1896,7 @@
       <div class="bar-row" style="border-bottom:1px solid var(--line); padding-bottom:10px;">
         <div class="bar-label"><span><strong>${escapeHtml(h.tid||'—')}</strong> · ${escapeHtml(h.fag||'—')}</span></div>
         <div style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;">
-          ${escapeHtml(h.larer || 'Ingen lærer')} · ${escapeHtml(h.klasse || 'Ingen klasse')}
+          ${escapeHtml(resolveDynName('teachers', h.larer) || 'Ingen lærer')} · ${escapeHtml(resolveDynName('classes', h.klasse) || 'Ingen klasse')}
         </div>
       </div>`;
     lordagEl.innerHTML = lordag.length ? lordag.map(cardHtml).join('') : '<div class="report-empty">Ingen timer registrert for lørdag.</div>';
@@ -1825,10 +1920,10 @@
     const sel = document.getElementById('attClassFilter');
     if(!sel) return;
     const current = sel.value;
-    const names = [...new Set(cache.classes.map(c => c.navn).filter(Boolean))].sort();
+    const classList = [...cache.classes].filter(c => c.navn).sort((a,b)=>a.navn.localeCompare(b.navn));
     sel.innerHTML = '<option value="">— Alle elever —</option>' +
-      names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-    if(names.includes(current)) sel.value = current;
+      classList.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
+    if(classList.some(c => c.id === current)) sel.value = current;
   }
 
   function renderAttendanceTakingList(){
@@ -1854,10 +1949,11 @@
 
     listEl.innerHTML = students.map(s => {
       const currentStatus = existingForDate[s.navn] || 'Til stede';
+      const klasseName = resolveDynName('classes', s.klasse);
       const optionsHtml = STATUS_OPTIONS.map(opt => `<option value="${opt}" ${opt===currentStatus?'selected':''}>${opt}</option>`).join('');
       return `
         <div class="filter-row" style="grid-template-columns:2fr 1fr;" data-student="${escapeHtml(s.navn)}" data-klasse="${escapeHtml(s.klasse||'')}">
-          <div style="font-family:'Jost',sans-serif; font-size:13.5px; display:flex; align-items:center;">${escapeHtml(s.navn)} <span style="color:#8a9a90; margin-left:6px; font-size:11.5px;">(${escapeHtml(s.klasse||'—')})</span></div>
+          <div style="font-family:'Jost',sans-serif; font-size:13.5px; display:flex; align-items:center;">${escapeHtml(s.navn)} <span style="color:#8a9a90; margin-left:6px; font-size:11.5px;">(${escapeHtml(klasseName||'—')})</span></div>
           <select class="att-status">${optionsHtml}</select>
         </div>`;
     }).join('');
@@ -1970,7 +2066,7 @@
     }
 
     el.innerHTML = cache.teachers.map(teacher => {
-      const hasSent = cache.lessonPlans.some(p => p.larer === teacher.navn && p.dato >= start && p.dato <= end);
+      const hasSent = cache.lessonPlans.some(p => p.larer === teacher.id && p.dato >= start && p.dato <= end);
       const badge = hasSent
         ? '<span class="status-badge sent"><span class="dot"></span>Sendt</span>'
         : '<span class="status-badge notsent"><span class="dot"></span>Ikke sendt</span>';
@@ -2593,10 +2689,10 @@
     oldInput.replaceWith(newInput);
   }
 
-  function computeSoskenPrice(program, guardianName, excludeId){
+  function computeSoskenPrice(program, guardianId, excludeId){
     const basePrice = parseFloat(PROGRAM_PRICES[program] || 0) || 0;
-    if(!guardianName) return { price: basePrice, pos: 1 };
-    const siblingCount = cache.students.filter(s => s.foresatt === guardianName && s.id !== excludeId).length;
+    if(!guardianId) return { price: basePrice, pos: 1 };
+    const siblingCount = cache.students.filter(s => s.foresatt === guardianId && s.id !== excludeId).length;
     const pos = siblingCount + 1;
     let price = basePrice;
     if(pos === 2) price = Math.round(basePrice * 0.7);
@@ -2658,25 +2754,39 @@
         blank.value = ''; blank.textContent = '— Velg —';
         input.appendChild(blank);
         const sources = Array.isArray(f.source) ? f.source : [f.source];
-        const options = [...new Set(sources.flatMap(src => cache[src].map(r => r.navn)).filter(Boolean))].sort();
-        if(options.length === 0){
+        // Value = stable record id (never changes even if the person/class is renamed).
+        // Label = current navn, so the dropdown always shows an up-to-date name.
+        const records = sources.flatMap(src => cache[src].filter(r => r.navn));
+        const seenIds = new Set();
+        const uniqueRecords = records.filter(r => { if(seenIds.has(r.id)) return false; seenIds.add(r.id); return true; })
+          .sort((a,b) => a.navn.localeCompare(b.navn));
+        if(uniqueRecords.length === 0){
           const none = document.createElement('option');
           none.value = ''; none.disabled = true;
           none.textContent = 'Ingen ' + sources.map(s => TYPE_LABELS[s].toLowerCase()).join('/') + ' registrert ennå';
           input.appendChild(none);
         }
-        options.forEach(opt => {
+        uniqueRecords.forEach(r => {
           const o = document.createElement('option');
-          o.value = opt; o.textContent = opt;
-          if(existing[f.key] === opt) o.selected = true;
+          o.value = r.id; o.textContent = r.navn;
+          if(existing[f.key] === r.id) o.selected = true;
           input.appendChild(o);
         });
-        // Preserve a previously typed value even if it's not in the current list
-        if(existing[f.key] && !options.includes(existing[f.key])){
-          const o = document.createElement('option');
-          o.value = existing[f.key]; o.textContent = existing[f.key] + ' (utgått)';
-          o.selected = true;
-          input.appendChild(o);
+        // Fallback for legacy data: the stored value doesn't match any known id
+        // (e.g. an old name-based value from before this update, or a deleted record).
+        // Try to resolve it as a legacy name match once; otherwise show it raw so
+        // nothing silently disappears — this flags records that still need migration.
+        if(existing[f.key] && !uniqueRecords.some(r => r.id === existing[f.key])){
+          const legacyMatch = uniqueRecords.find(r => r.navn === existing[f.key]);
+          if(legacyMatch){
+            const opt = [...input.options].find(o => o.value === legacyMatch.id);
+            if(opt) opt.selected = true;
+          } else {
+            const o = document.createElement('option');
+            o.value = existing[f.key]; o.textContent = existing[f.key] + ' (utgått / ikke migrert)';
+            o.selected = true;
+            input.appendChild(o);
+          }
         }
         if(type === 'students' && f.key === 'foresatt'){
           input.addEventListener('change', () => applyStudentDiscountPricing());
@@ -2808,7 +2918,7 @@
     el.innerHTML = pending.map(r => `
       <div class="status-row" style="flex-wrap:wrap; gap:10px;">
         <span>
-          <strong>${escapeHtml(r.elevNavn||'')}</strong> (${escapeHtml(r.klasse||'—')}) — ${escapeHtml(r.dato||'')}<br>
+          <strong>${escapeHtml(r.elevNavn||'')}</strong> (${escapeHtml(resolveDynName('classes', r.klasse)||'—')}) — ${escapeHtml(r.dato||'')}<br>
           <span style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;">${escapeHtml(r.arsak||'')}</span>
         </span>
         <div class="reg-actions">
@@ -2823,7 +2933,7 @@
     const req = cache.absenceRequests.find(r => r.id === id);
     if(!req){ showToast('Fant ikke meldingen.'); return; }
     try{
-      const student = cache.students.find(s => s.navn === req.elevNavn);
+      const student = req.studentId ? cache.students.find(s => s.id === req.studentId) : cache.students.find(s => s.navn === req.elevNavn);
       const safeId = req.dato + '_' + (student ? student.id : req.elevNavn.replace(/[^a-zA-Z0-9]/g,''));
       await setDoc(doc(db, 'attendance', safeId), {
         dato: req.dato, elev: req.elevNavn, klasse: req.klasse, status: statusValue
@@ -2868,7 +2978,7 @@
     if(!req){ showToast('Fant ikke forespørselen.'); return; }
     try{
       if(apply){
-        const guardian = cache.guardians.find(g => g.navn === req.guardianNavn);
+        const guardian = req.guardianId ? cache.guardians.find(g => g.id === req.guardianId) : cache.guardians.find(g => g.navn === req.guardianNavn);
         if(guardian){
           const updates = {};
           if(req.nyTelefon) updates.telefon = req.nyTelefon;
@@ -2931,7 +3041,7 @@
     if(!req){ showToast('Fant ikke forespørselen.'); return; }
     try{
       if(apply){
-        const student = cache.students.find(s => s.navn === req.elevNavn);
+        const student = req.studentId ? cache.students.find(s => s.id === req.studentId) : cache.students.find(s => s.navn === req.elevNavn);
         if(student){
           const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
           const newPaid = toNum(student.belopBetalt) + toNum(req.belop);
@@ -2972,16 +3082,20 @@
 
     try{
       let guardianName = reg.foresatt1_navn || '';
+      let guardianId = '';
       if(guardianName){
         const existingGuardian = cache.guardians.find(g => g.navn === guardianName);
-        if(!existingGuardian){
-          await addDoc(collection(db, 'guardians'), {
+        if(existingGuardian){
+          guardianId = existingGuardian.id;
+        } else {
+          const newGuardianRef = await addDoc(collection(db, 'guardians'), {
             navn: guardianName,
             telefon: reg.foresatt1_tlf || '',
             epost: reg.foresatt1_epost || '',
             sistEndretAv: currentUserEmail || 'ukjent',
             sistEndretDato: new Date().toISOString().slice(0,10)
           });
+          guardianId = newGuardianRef.id;
         }
       }
 
@@ -2990,7 +3104,7 @@
       // Sibling discount: existing children of the same guardian already in
       // Administrativ determine this child's position (1st = full price,
       // 2nd = 30% off, 3rd+ = 50% off).
-      const { price: discountedPrice, pos: soskenPos } = computeSoskenPrice(program, guardianName, null);
+      const { price: discountedPrice, pos: soskenPos } = computeSoskenPrice(program, guardianId, null);
 
       // Copy every field from the registration into the new student record,
       // then layer on the school-specific fields (program, class, payment).
@@ -3002,7 +3116,7 @@
       studentRecord.navn = reg.elev_navn || '';
       studentRecord.program = program;
       studentRecord.klasse = '';
-      studentRecord.foresatt = guardianName;
+      studentRecord.foresatt = guardianId;
       studentRecord.foresattTlf = reg.foresatt1_tlf || '';
       studentRecord.foresattEpost = reg.foresatt1_epost || '';
       studentRecord.telefon = '';
@@ -3077,7 +3191,7 @@
         '<hr>' +
         block(labelFor('lekser'), plan.lekser);
 
-      const metaLine = (plan.larer||'—') + ' · ' + (plan.klasse||'—') + ' · ' + (plan.fag||'—') + ' · ' + (plan.dato||'—');
+      const metaLine = (resolveDynName('teachers', plan.larer)||'—') + ' · ' + (resolveDynName('classes', plan.klasse)||'—') + ' · ' + (plan.fag||'—') + ' · ' + (plan.dato||'—');
 
       const printDoc = `<!DOCTYPE html>
 <html lang="no"><head><meta charset="UTF-8">
