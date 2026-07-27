@@ -88,6 +88,11 @@
     white-space:nowrap; user-select:none;
   }
   .tab.active{color:var(--emerald-d); border-bottom-color:var(--gold);}
+  .tab{display:none !important;}
+  .current-tab-label{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d);
+    padding:14px 20px 14px 0; white-space:nowrap;
+  }
   .back-to-cards{
     font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; color:var(--emerald);
     background:none; border:none; border-inline-end:1px solid var(--line); padding:16px 18px 16px 0;
@@ -382,6 +387,7 @@
 
 <div class="tabs" id="tabsBar" style="display:none;">
   <button class="back-to-cards" onclick="backToSubChoice()">⬅ Bytt seksjon</button>
+  <span class="current-tab-label" id="currentTabLabel"></span>
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
@@ -3145,6 +3151,8 @@
       document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      const labelEl = document.getElementById('currentTabLabel');
+      if(labelEl) labelEl.textContent = tab.textContent;
       if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     });
   });
