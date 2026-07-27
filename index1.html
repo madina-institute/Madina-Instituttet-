@@ -350,7 +350,6 @@
     <div class="card" id="messageThreadView" style="display:none;">
       <button class="back-link" onclick="showMessages()">← Tilbake til meldinger</button>
       <h2 id="messageThreadTitle"></h2>
-      <div id="messageThreadHistory" style="margin-bottom:16px;"></div>
       <div class="field">
         <label>Svar</label>
         <textarea id="msgReplyText" rows="3"></textarea>
@@ -365,6 +364,8 @@
       </div>
       <div class="upload-status" id="msgReplyUploadStatus" style="display:none;"></div>
       <button class="btn btn-primary" onclick="sendTeacherReply()">Send svar</button>
+      <hr style="border:none; border-top:1px dotted var(--line); margin:20px 0;">
+      <div id="messageThreadHistory"></div>
     </div>
   </div>
 

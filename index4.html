@@ -465,7 +465,6 @@
       <div class="card">
         <h2 data-i18n="menuTeacherMsg">Kontakt lærer</h2>
         <div class="sub" id="teacherMsgSub"></div>
-        <div id="teacherMsgHistory" style="margin-bottom:16px;"></div>
         <div class="field">
           <label data-i18n="yourMessage">Din melding</label>
           <textarea id="teacherMsgText" rows="3"></textarea>
@@ -480,6 +479,8 @@
         </div>
         <div class="upload-status" id="teacherMsgUploadStatus" style="display:none;"></div>
         <button class="btn btn-primary" onclick="sendTeacherMessage()" data-i18n="sendMessageBtn">Send melding</button>
+        <hr style="border:none; border-top:1px dotted var(--line); margin:20px 0;">
+        <div id="teacherMsgHistory"></div>
       </div>
     </div>
 
