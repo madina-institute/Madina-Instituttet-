@@ -835,15 +835,36 @@
       el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد تحضيرات مرسلة بعد.' : 'Ingen forberedelser sendt inn ennå.'}</div>`;
       return;
     }
+    const detailRow = (label, value) => `
+      <div style="margin-bottom:10px;">
+        <div style="font-family:'Jost',sans-serif; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--gold); margin-bottom:2px;">${escapeHtml(label)}</div>
+        <div style="font-size:13.5px; white-space:pre-wrap; line-height:1.55;">${escapeHtml(value || '—')}</div>
+      </div>`;
     el.innerHTML = mine.map(p => `
       <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
-        <span class="name" style="width:100%;">
-          <strong>${escapeHtml(p.dato||'—')}</strong>
-          <span class="tag-pill" style="margin-inline-start:8px;">${escapeHtml(weekdayNameFor(p.dato))}</span>
-          <span class="tag-pill" style="margin-inline-start:6px;">${escapeHtml((I18N[currentLang].fagLabels && I18N[currentLang].fagLabels[p.fag]) || p.fag || '—')}</span>
-          <br>
-          <span style="font-size:13px; color:#5a6860;">${escapeHtml(p.emne||'—')}</span>
-        </span>
+        <details style="width:100%;">
+          <summary style="cursor:pointer;">
+            <span class="name">
+              <strong>${escapeHtml(p.dato||'—')}</strong>
+              <span class="tag-pill" style="margin-inline-start:8px;">${escapeHtml(weekdayNameFor(p.dato))}</span>
+              <span class="tag-pill" style="margin-inline-start:6px;">${escapeHtml((I18N[currentLang].fagLabels && I18N[currentLang].fagLabels[p.fag]) || p.fag || '—')}</span>
+              <br>
+              <span style="font-size:13px; color:#5a6860;">${escapeHtml(p.emne||'—')}</span>
+            </span>
+          </summary>
+          <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);">
+            ${detailRow(t('malLabel'), p.mal)}
+            ${detailRow(t('metodeLabel'), p.metode)}
+            ${detailRow(t('materiellLabel'), p.materiell)}
+            ${detailRow(t('step1'), p.oppstart)}
+            ${detailRow(t('step2'), p.repetisjon)}
+            ${detailRow(t('step3'), p.nyttStoff)}
+            ${detailRow(t('step4'), p.oving)}
+            ${detailRow(t('step5'), p.oppsummering)}
+            ${detailRow(t('lekserLabel'), p.lekser)}
+            <button type="button" class="btn btn-ghost" onclick="printArchivedLessonPlan('${p.id}')">🖨 ${currentLang === 'ar' ? 'إعادة الطباعة' : 'Skriv ut på nytt'}</button>
+          </div>
+        </details>
       </div>`).join('');
   }
 
@@ -1352,68 +1373,30 @@
     }
   }
 
-  window.printAndSubmitLessonPlan = function(){
-    try{
-      if(!currentTeacher){
-        alert(currentLang === 'ar' ? 'الرجاء تسجيل الدخول أولاً.' : 'Du må logge inn først.');
-        return;
-      }
+  // Builds the fancy framed print document shared by both the "print & submit"
+  // flow (new lesson plan) and the "reprint from archive" flow (already-saved
+  // plan). meta = {teacherName, className, subjectLabel, dato}. fields = the
+  // plan's content fields. submitPanelHtml/submitScript are optional extras
+  // only used for the brand-new submission flow.
+  function buildLessonPlanPrintHtml(meta, fields, extraBodyHtml, extraScript){
+    const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+    const block = (label, value) =>
+      `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
+    const bodyHtml =
+      block(t('emneLabel'), fields.emne) +
+      block(t('malLabel'), fields.mal) +
+      block(t('metodeLabel'), fields.metode) +
+      block(t('materiellLabel'), fields.materiell) +
+      '<hr>' +
+      block(t('step1'), fields.oppstart) +
+      block(t('step2'), fields.repetisjon) +
+      block(t('step3'), fields.nyttStoff) +
+      block(t('step4'), fields.oving) +
+      block(t('step5'), fields.oppsummering) +
+      '<hr>' +
+      block(t('lekserLabel'), fields.lekser);
 
-      const fag = document.getElementById('lpFag').value;
-      const dato = document.getElementById('lpDato').value;
-      const emne = document.getElementById('lpEmne').value.trim();
-      const mal = document.getElementById('lpMal').value.trim();
-      const metode = document.getElementById('lpMetode').value.trim();
-      const materiell = document.getElementById('lpMateriell').value.trim();
-      const oppstart = document.getElementById('lpOppstart').value.trim();
-      const repetisjon = document.getElementById('lpRepetisjon').value.trim();
-      const nyttStoff = document.getElementById('lpNyttStoff').value.trim();
-      const oving = document.getElementById('lpOving').value.trim();
-      const oppsummering = document.getElementById('lpOppsummering').value.trim();
-      const lekser = document.getElementById('lpLekser').value.trim();
-
-      if(!dato || !emne || !mal || !nyttStoff){
-        alert(t('fillRequiredLesson'));
-        return;
-      }
-
-      // STEP 1 — mandatory print/PDF step, opened in a fully separate window
-      // so it never competes with — or gets confused with — this page's own
-      // content or CSS.
-      const block = (label, value) =>
-        `<div class="block"><div class="lbl">${escapeHtml(label)}</div><div class="val">${escapeHtml(value || '—')}</div></div>`;
-
-      const bodyHtml =
-        block(t('emneLabel'), emne) +
-        block(t('malLabel'), mal) +
-        block(t('metodeLabel'), metode) +
-        block(t('materiellLabel'), materiell) +
-        '<hr>' +
-        block(t('step1'), oppstart) +
-        block(t('step2'), repetisjon) +
-        block(t('step3'), nyttStoff) +
-        block(t('step4'), oving) +
-        block(t('step5'), oppsummering) +
-        '<hr>' +
-        block(t('lekserLabel'), lekser);
-
-      const metaLine = currentTeacher.navn + ' · ' + resolveClassName(currentTeacher.tildeltKlasse) + ' · ' + I18N[currentLang].fagLabels[fag] + ' · ' + dato;
-      const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-      const fieldsJson = JSON.stringify({
-        fag, dato, emne, mal, metode, materiell,
-        oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
-      }).replace(/</g, '\\u003c');
-
-      const submitLabel = currentLang === 'ar' ? 'أرسلت / حفظت التحضير — إرسال للإدارة الآن' : 'Jeg har skrevet ut / lagret — send inn nå';
-      const sentLabel = currentLang === 'ar' ? '✓ تم الإرسال. يمكنك إغلاق هذه النافذة.' : '✓ Sendt. Du kan lukke dette vinduet.';
-      const errLabel = currentLang === 'ar'
-        ? 'تعذّر الإرسال من هنا. ارجع للصفحة الرئيسية وحاول مرة أخرى.'
-        : 'Kunne ikke sende herfra. Gå tilbake til hovedsiden og prøv igjen.';
-      const instructionLabel = currentLang === 'ar'
-        ? 'بعد الطباعة أو حفظ PDF، اضغط الزر أدناه لإرسال التحضير للإدارة.'
-        : 'Etter du har skrevet ut eller lagret PDF, trykk knappen under for å sende forberedelsen til administrasjonen.';
-
-      const printDoc = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="${currentLang}" dir="${dir}"><head><meta charset="UTF-8">
 <title>${escapeHtml(t('lessonTitle'))}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1483,22 +1466,94 @@
     <div class="school-name">Madina Skole</div>
     <h1>${escapeHtml(t('lessonTitle'))}</h1>
     <div class="meta-bar">
-      <span><b>${escapeHtml(currentTeacher.navn)}</b></span>
-      <span>${escapeHtml(resolveClassName(currentTeacher.tildeltKlasse))}</span>
-      <span>${escapeHtml(I18N[currentLang].fagLabels[fag])}</span>
-      <span>${escapeHtml(dato)}</span>
+      <span><b>${escapeHtml(meta.teacherName)}</b></span>
+      <span>${escapeHtml(meta.className)}</span>
+      <span>${escapeHtml(meta.subjectLabel)}</span>
+      <span>${escapeHtml(meta.dato)}</span>
     </div>
   </div>
   ${bodyHtml}
   <div class="footer-note">Madina Skole — Kunnskap · Barmhjertighet · Opplysning</div>
+  ${extraBodyHtml || ''}
+</div>
+${extraScript || ''}
+</body></html>`;
+  }
 
+  function openPrintWindow(html){
+    const win = window.open('', '_blank');
+    if(!win){
+      alert(currentLang === 'ar'
+        ? 'المتصفح منع نافذة الطباعة. فعّل النوافذ المنبثقة لهذا الموقع وحاول مرة أخرى.'
+        : 'Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for denne siden og prøv igjen.');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => { win.focus(); win.print(); };
+  }
+
+  window.printArchivedLessonPlan = function(planId){
+    const plan = lessonPlans.find(p => p.id === planId);
+    if(!plan) return;
+    const meta = {
+      teacherName: currentTeacher.navn,
+      className: resolveClassName(plan.klasse),
+      subjectLabel: (I18N[currentLang].fagLabels && I18N[currentLang].fagLabels[plan.fag]) || plan.fag || '—',
+      dato: plan.dato || '—'
+    };
+    const html = buildLessonPlanPrintHtml(meta, plan, '', '');
+    openPrintWindow(html);
+  };
+
+  window.printAndSubmitLessonPlan = function(){
+    try{
+      if(!currentTeacher){
+        alert(currentLang === 'ar' ? 'الرجاء تسجيل الدخول أولاً.' : 'Du må logge inn først.');
+        return;
+      }
+
+      const fag = document.getElementById('lpFag').value;
+      const dato = document.getElementById('lpDato').value;
+      const emne = document.getElementById('lpEmne').value.trim();
+      const mal = document.getElementById('lpMal').value.trim();
+      const metode = document.getElementById('lpMetode').value.trim();
+      const materiell = document.getElementById('lpMateriell').value.trim();
+      const oppstart = document.getElementById('lpOppstart').value.trim();
+      const repetisjon = document.getElementById('lpRepetisjon').value.trim();
+      const nyttStoff = document.getElementById('lpNyttStoff').value.trim();
+      const oving = document.getElementById('lpOving').value.trim();
+      const oppsummering = document.getElementById('lpOppsummering').value.trim();
+      const lekser = document.getElementById('lpLekser').value.trim();
+
+      if(!dato || !emne || !mal || !nyttStoff){
+        alert(t('fillRequiredLesson'));
+        return;
+      }
+
+      const fields = {
+        fag, dato, emne, mal, metode, materiell,
+        oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
+      };
+      const fieldsJson = JSON.stringify(fields).replace(/</g, '\\u003c');
+
+      const submitLabel = currentLang === 'ar' ? 'أرسلت / حفظت التحضير — إرسال للإدارة الآن' : 'Jeg har skrevet ut / lagret — send inn nå';
+      const sentLabel = currentLang === 'ar' ? '✓ تم الإرسال. يمكنك إغلاق هذه النافذة.' : '✓ Sendt. Du kan lukke dette vinduet.';
+      const errLabel = currentLang === 'ar'
+        ? 'تعذّر الإرسال من هنا. ارجع للصفحة الرئيسية وحاول مرة أخرى.'
+        : 'Kunne ikke sende herfra. Gå tilbake til hovedsiden og prøv igjen.';
+      const instructionLabel = currentLang === 'ar'
+        ? 'بعد الطباعة أو حفظ PDF، اضغط الزر أدناه لإرسال التحضير للإدارة.'
+        : 'Etter du har skrevet ut eller lagret PDF, trykk knappen under for å sende forberedelsen til administrasjonen.';
+
+      const submitPanelHtml = `
   <div class="submit-panel">
     <p>${escapeHtml(instructionLabel)}</p>
     <button id="submitBtn" onclick="doSubmit()">${escapeHtml(submitLabel)}</button>
     <div class="status" id="statusMsg"></div>
-  </div>
-</div>
-
+  </div>`;
+      const submitScript = `
   <script>
     const fields = ${fieldsJson};
     function doSubmit(){
@@ -1516,20 +1571,17 @@
         statusEl.textContent = ${JSON.stringify(errLabel)};
       }
     }
-  <\/script>
-</body></html>`;
+  <\/script>`;
 
-      const win = window.open('', '_blank');
-      if(!win){
-        alert(currentLang === 'ar'
-          ? 'المتصفح منع نافذة الطباعة. فعّل النوافذ المنبثقة لهذا الموقع وحاول مرة أخرى.'
-          : 'Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for denne siden og prøv igjen.');
-        return;
-      }
-      win.document.open();
-      win.document.write(printDoc);
-      win.document.close();
-      win.onload = () => { win.focus(); win.print(); };
+      const meta = {
+        teacherName: currentTeacher.navn,
+        className: resolveClassName(currentTeacher.tildeltKlasse),
+        subjectLabel: I18N[currentLang].fagLabels[fag],
+        dato: dato
+      };
+      const printDoc = buildLessonPlanPrintHtml(meta, fields, submitPanelHtml, submitScript);
+
+      openPrintWindow(printDoc);
     } catch(err){
       console.error(err);
       alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
