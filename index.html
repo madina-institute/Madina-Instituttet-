@@ -417,7 +417,7 @@
 </div>
 
 <div class="tabs" id="tabsBar" style="display:none;">
-  <button class="back-to-cards" onclick="backToSubChoice()">⬅ Bytt seksjon</button>
+  <button class="back-to-cards" onclick="history.back()">⬅ Bytt seksjon</button>
   <span class="current-tab-label" id="currentTabLabel"></span>
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
@@ -2163,6 +2163,7 @@
         <p>${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}</p>
       </div>
     `).join('');
+    pushAppView({ appView: 'sub', side });
   };
 
   window.selectSubTab = function(tabName){
@@ -2176,6 +2177,7 @@
 
     const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
     if(targetTab) targetTab.click();
+    pushAppView({ appView: 'tab', side: currentSideForBack, tab: tabName });
   };
 
   window.backToSubChoice = function(){
@@ -2191,6 +2193,28 @@
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'none';
   };
+
+  // ---------- Browser back-button support ----------
+  // Pressing the phone's back button while inside a section/tab should step
+  // back one level in the admin panel instead of leaving the site entirely.
+  let appNavigating = false;
+  function pushAppView(state){
+    if(appNavigating) return;
+    history.pushState(state, '', location.href);
+  }
+  window.addEventListener('popstate', function(e){
+    appNavigating = true;
+    const state = e.state;
+    if(state && state.appView === 'tab'){
+      selectSide(state.side);
+      selectSubTab(state.tab);
+    } else if(state && state.appView === 'sub'){
+      selectSide(state.side);
+    } else {
+      showSideChoice();
+    }
+    appNavigating = false;
+  });
 
 
   window.toggleRecordsById = function(tableId){
