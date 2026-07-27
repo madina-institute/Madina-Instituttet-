@@ -1349,15 +1349,53 @@
       const printDoc = `<!DOCTYPE html>
 <html lang="${currentLang}" dir="${dir}"><head><meta charset="UTF-8">
 <title>${escapeHtml(t('lessonTitle'))}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  body{font-family:${currentLang === 'ar' ? "'Tajawal',Arial,sans-serif" : "Georgia,'Times New Roman',serif"}; color:#000; padding:30px 36px; max-width:720px; margin:0 auto;}
-  .logo-print{height:56px; display:block; margin:0 auto 16px;}
-  h1{font-size:22px; margin:0 0 4px; text-align:center;}
-  .meta{font-size:13px; color:#333; margin-bottom:22px; text-align:center;}
-  .block{margin-bottom:14px;}
-  .block .lbl{font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#1f4a3a; margin-bottom:3px; font-family:Arial,sans-serif;}
-  .block .val{font-size:14px; white-space:pre-wrap; line-height:1.5;}
-  hr{border:none; border-top:1px solid #ccc; margin:18px 0;}
+  @page{ margin:14mm; }
+  *{box-sizing:border-box;}
+  body{
+    font-family:${currentLang === 'ar' ? "'Tajawal',Arial,sans-serif" : "'Lora',Georgia,serif"};
+    color:#1c2c24; margin:0; padding:0; background:#fbf8f1;
+  }
+  .page-frame{
+    position:relative; max-width:760px; margin:0 auto; padding:30px 40px 40px;
+    border:2px solid #1f4a3a; border-radius:6px; background:#fff;
+  }
+  .page-frame::before{
+    content:''; position:absolute; inset:7px; border:1px solid #b7924a; border-radius:3px; pointer-events:none;
+  }
+  .header-band{ text-align:center; padding-bottom:18px; margin-bottom:22px; border-bottom:2px solid #b7924a; }
+  .logo-frame{
+    width:76px; height:76px; margin:0 auto 12px; border-radius:50%; border:3px solid #b7924a; padding:5px;
+    display:flex; align-items:center; justify-content:center; background:#fff; box-shadow:0 3px 8px rgba(15,43,33,0.18);
+  }
+  .logo-frame img{ width:100%; height:100%; object-fit:contain; border-radius:50%; }
+  .school-name{
+    font-family:'Jost',${currentLang === 'ar' ? "'Tajawal'," : ""}sans-serif; font-size:11px; font-weight:700;
+    letter-spacing:0.14em; text-transform:uppercase; color:#b7924a; margin-bottom:6px;
+  }
+  h1{
+    font-family:'Cormorant Garamond',${currentLang === 'ar' ? "'Tajawal'," : ""}serif; font-weight:700; font-size:27px;
+    color:#0f2b21; margin:0 0 10px; letter-spacing:0.01em;
+  }
+  .meta-bar{
+    display:inline-flex; flex-wrap:wrap; justify-content:center; gap:6px 16px; font-size:12.5px; color:#3d4a42;
+    background:#f3ecdb; border:1px solid #e4d9bc; border-radius:20px; padding:8px 20px; font-family:'Jost',sans-serif;
+  }
+  .meta-bar b{ color:#1f4a3a; font-weight:700; }
+  .block{ margin-bottom:17px; page-break-inside:avoid; }
+  .block .lbl{
+    font-weight:700; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:#b7924a;
+    margin-bottom:5px; font-family:'Jost',sans-serif; border-bottom:1px dotted #ddd3be; padding-bottom:3px;
+  }
+  .block .val{ font-size:14.5px; white-space:pre-wrap; line-height:1.65; }
+  hr{ border:none; height:1px; margin:24px 0; background:linear-gradient(90deg, transparent, #b7924a 50%, transparent); }
+  .divider{ border:none; height:1px; margin:24px 0; background:linear-gradient(90deg, transparent, #b7924a 50%, transparent); }
+  .footer-note{
+    text-align:center; margin-top:26px; padding-top:14px; border-top:1px solid #e4d9bc;
+    font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:#8a9a90;
+  }
   .submit-panel{
     margin-top:30px; padding:18px 20px; background:#f3ecdb; border:1px solid #ddd3be; border-radius:10px;
     font-family:Arial,sans-serif;
@@ -1369,19 +1407,30 @@
   }
   .submit-panel button:disabled{background:#8a9a90; cursor:default;}
   .submit-panel .status{margin-top:10px; font-size:13px; color:#1f4a3a; font-weight:700;}
-  @media print{ .submit-panel{display:none !important;} }
+  @media print{ .submit-panel{display:none !important;} body{background:#fff;} .page-frame{border-width:1.5px;} }
 </style>
 </head><body>
-  <img src="${LOGO_DATA_URI}" alt="Madina Institute" class="logo-print">
-  <h1>${escapeHtml(t('lessonTitle'))}</h1>
-  <div class="meta">${escapeHtml(metaLine)}</div>
+<div class="page-frame">
+  <div class="header-band">
+    <div class="logo-frame"><img src="${LOGO_DATA_URI}" alt="Madina Institute"></div>
+    <div class="school-name">Madina Skole</div>
+    <h1>${escapeHtml(t('lessonTitle'))}</h1>
+    <div class="meta-bar">
+      <span><b>${escapeHtml(currentTeacher.navn)}</b></span>
+      <span>${escapeHtml(resolveClassName(currentTeacher.tildeltKlasse))}</span>
+      <span>${escapeHtml(I18N[currentLang].fagLabels[fag])}</span>
+      <span>${escapeHtml(dato)}</span>
+    </div>
+  </div>
   ${bodyHtml}
+  <div class="footer-note">Madina Skole — Kunnskap · Barmhjertighet · Opplysning</div>
 
   <div class="submit-panel">
     <p>${escapeHtml(instructionLabel)}</p>
     <button id="submitBtn" onclick="doSubmit()">${escapeHtml(submitLabel)}</button>
     <div class="status" id="statusMsg"></div>
   </div>
+</div>
 
   <script>
     const fields = ${fieldsJson};
