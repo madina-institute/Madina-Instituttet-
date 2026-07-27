@@ -761,20 +761,29 @@
   }
   window.addEventListener('popstate', function(e){
     appNavigating = true;
+    // If the session was lost (e.g. the phone silently reloaded the tab while
+    // backgrounded), currentTeacher is null and the view-restoring functions
+    // below would throw. Just let the login screen show instead of crashing.
+    if(!currentTeacher){ appNavigating = false; return; }
     const view = (e.state && e.state.appView) || 'choice';
-    if(view === 'attendance') showAttendance();
-    else if(view === 'lesson') showLesson();
-    else if(view === 'lessonArchive') showLessonArchive();
-    else if(view === 'homework') showHomework();
-    else if(view === 'absenceReview') showAbsenceReview();
-    else if(view === 'studentNotes') showStudentNotes();
-    else if(view === 'messages') showMessages();
-    else if(view === 'messageThread' && currentThreadGuardian){
-      document.getElementById('messagesListView').style.display = 'none';
-      document.getElementById('messageThreadView').style.display = 'block';
-      renderMessageThreadHistory();
+    try{
+      if(view === 'attendance') showAttendance();
+      else if(view === 'lesson') showLesson();
+      else if(view === 'lessonArchive') showLessonArchive();
+      else if(view === 'homework') showHomework();
+      else if(view === 'absenceReview') showAbsenceReview();
+      else if(view === 'studentNotes') showStudentNotes();
+      else if(view === 'messages') showMessages();
+      else if(view === 'messageThread' && currentThreadGuardian){
+        document.getElementById('messagesListView').style.display = 'none';
+        document.getElementById('messageThreadView').style.display = 'block';
+        renderMessageThreadHistory();
+      }
+      else showChoice();
+    } catch(err){
+      console.error('popstate navigation error:', err);
+      showChoice();
     }
-    else showChoice();
     appNavigating = false;
   });
 
@@ -1457,9 +1466,17 @@
   }
   .submit-panel button:disabled{background:#8a9a90; cursor:default;}
   .submit-panel .status{margin-top:10px; font-size:13px; color:#1f4a3a; font-weight:700;}
-  @media print{ .submit-panel{display:none !important;} body{background:#fff;} .page-frame{border-width:1.5px;} }
+  .top-actions{ max-width:760px; margin:0 auto 14px; padding:0 6px; }
+  .top-actions button{
+    background:#fff; border:1.5px solid #1f4a3a; color:#1f4a3a; font-family:'Jost',sans-serif; font-weight:700;
+    font-size:12.5px; padding:10px 18px; border-radius:6px; cursor:pointer;
+  }
+  @media print{ .submit-panel{display:none !important;} .top-actions{display:none !important;} body{background:#fff;} .page-frame{border-width:1.5px;} }
 </style>
 </head><body>
+<div class="top-actions">
+  <button type="button" onclick="closeAndReturn()">${dir === 'rtl' ? '→ العودة لبوابة المعلم' : '← Tilbake til Lærerportal'}</button>
+</div>
 <div class="page-frame">
   <div class="header-band">
     <div class="logo-frame"><img src="${LOGO_DATA_URI}" alt="Madina Institute"></div>
@@ -1476,6 +1493,16 @@
   <div class="footer-note">Madina Skole — Kunnskap · Barmhjertighet · Opplysning</div>
   ${extraBodyHtml || ''}
 </div>
+<script>
+  function closeAndReturn(){
+    try{ window.close(); }catch(e){}
+    setTimeout(function(){
+      alert(${JSON.stringify(currentLang === 'ar'
+        ? 'تعذّر إغلاق هذه النافذة تلقائيًا. استخدم زر الرجوع بالمتصفح أو أغلق هذا التبويب يدويًا للعودة لبوابة المعلم.'
+        : 'Kunne ikke lukke vinduet automatisk. Bruk nettleserens tilbake-knapp, eller lukk denne fanen manuelt for å gå tilbake til Lærerportal.')});
+    }, 300);
+  }
+<\/script>
 ${extraScript || ''}
 </body></html>`;
   }
