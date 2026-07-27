@@ -287,6 +287,11 @@
           <div class="t" data-i18n="menuHomework">Lekser</div>
           <div class="d" data-i18n="menuHomeworkDesc">Se og lever besvarelse</div>
         </div>
+        <div class="menu-card" onclick="openSection('lessonPlans')">
+          <div class="ic">📖</div>
+          <div class="t" data-i18n="menuLessonPlans">Undervisningsplan</div>
+          <div class="d" data-i18n="menuLessonPlansDesc">Hva klassen lærer nå</div>
+        </div>
         <div class="menu-card" onclick="openSection('absence')">
           <div class="ic">🚫</div>
           <div class="t" data-i18n="menuAbsence">Meld fravær</div>
@@ -319,6 +324,11 @@
           <div class="t" data-i18n="menuTeacherMsg">Kontakt lærer</div>
           <div class="d" data-i18n="menuTeacherMsgDesc">Send og motta meldinger</div>
           <div class="msg-badge" id="teacherMsgBadge"></div>
+        </div>
+        <div class="menu-card" onclick="openSection('classPosts')">
+          <div class="ic">📣</div>
+          <div class="t" data-i18n="menuClassPosts">Klassemeldinger</div>
+          <div class="d" data-i18n="menuClassPostsDesc">Fra læreren — du kan kommentere</div>
         </div>
       </div>
     </div>
@@ -395,6 +405,26 @@
         </div>
         <div class="upload-status" id="hwUploadStatus" style="display:none;"></div>
         <button class="btn btn-primary" onclick="submitHomeworkAnswer()" data-i18n="submitHwBtn">Send inn besvarelse</button>
+      </div>
+    </div>
+
+    <!-- LESSON PLANS (read-only) -->
+    <div class="sub-view" id="view-lessonPlans">
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuLessonPlans">Undervisningsplan</h2>
+        <div class="sub" data-i18n="lessonPlansSub">Det læreren har forberedt for klassen, nyeste først</div>
+        <div id="lessonPlansList"></div>
+      </div>
+    </div>
+
+    <!-- CLASS POSTS (broadcast + comments) -->
+    <div class="sub-view" id="view-classPosts">
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuClassPosts">Klassemeldinger</h2>
+        <div class="sub" data-i18n="classPostsSub">Meldinger fra læreren til hele klassen</div>
+        <div id="classPostsList"></div>
       </div>
     </div>
 
@@ -588,6 +618,17 @@
       you: 'Deg',
       noChildren: 'Ingen barn registrert ennå.', noAttendance: 'Ingen oppmøteregistreringer ennå.',
       noHomework: 'Ingen lekser lagt ut ennå.', noHwOptions: 'Ingen lekser tilgjengelig',
+      menuLessonPlans: 'Undervisningsplan', menuLessonPlansDesc: 'Hva klassen lærer nå',
+      lessonPlansSub: 'Det læreren har forberedt for klassen, nyeste først',
+      noLessonPlans: 'Ingen undervisningsplaner lagt ut ennå.',
+      malLabel: 'Mål', nyttStoffLabel: 'Nytt stoff', lekserLabel: 'Lekser',
+      menuClassPosts: 'Klassemeldinger', menuClassPostsDesc: 'Fra læreren — du kan kommentere',
+      classPostsSub: 'Meldinger fra læreren til hele klassen',
+      noClassPosts: 'Ingen klassemeldinger ennå.',
+      noComments: 'Ingen kommentarer ennå.',
+      commentsClosedNote: 'Kommentarer er stengt for dette innlegget.',
+      writeComment: 'Skriv en kommentar...',
+      sendComment: 'Send kommentar',
       noNotes: 'Ingen notater ennå.', noAnnouncements: 'Ingen kunngjøringer ennå.',
       noSchedule: 'Ingen timer registrert for denne dagen.', noTeachers: 'Ingen lærerinfo tilgjengelig for denne dagen.',
       fillHwFields: 'Velg lekse og lim inn en lenke til besvarelsen.', hwSent: 'Besvarelsen er sendt inn.',
@@ -632,6 +673,17 @@
       you: 'أنت',
       noChildren: 'لا يوجد أبناء مسجلون بعد.', noAttendance: 'لا يوجد سجل حضور بعد.',
       noHomework: 'لا توجد واجبات بعد.', noHwOptions: 'لا توجد واجبات متاحة',
+      menuLessonPlans: 'الخطة التعليمية', menuLessonPlansDesc: 'اللي يدرسه الصف حاليًا',
+      lessonPlansSub: 'اللي حضّره المعلم للصف، الأحدث أولًا',
+      noLessonPlans: 'لا توجد خطط تعليمية منشورة بعد.',
+      malLabel: 'الهدف', nyttStoffLabel: 'المادة الجديدة', lekserLabel: 'الواجب',
+      menuClassPosts: 'رسائل الصف', menuClassPostsDesc: 'من المعلم — تقدر تعلّق',
+      classPostsSub: 'رسائل من المعلم لكل الصف',
+      noClassPosts: 'لا توجد رسائل صف بعد.',
+      noComments: 'لا توجد تعليقات بعد.',
+      commentsClosedNote: 'التعليقات مقفلة لهذا المنشور.',
+      writeComment: 'اكتب تعليقًا...',
+      sendComment: 'إرسال التعليق',
       noNotes: 'لا توجد ملاحظات بعد.', noAnnouncements: 'لا توجد إعلانات بعد.',
       noSchedule: 'لا توجد حصص مسجلة لهذا اليوم.', noTeachers: 'لا توجد معلومات معلمين لهذا اليوم.',
       fillHwFields: 'اختر واجبًا والصق رابط الإجابة.', hwSent: 'تم إرسال الإجابة.',
@@ -728,6 +780,21 @@
   });
   onSnapshot(collection(db, 'homework'), (snap) => {
     homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  let lessonPlans = [];
+  onSnapshot(collection(db, 'lessonPlans'), (snap) => {
+    lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  let classPosts = [];
+  onSnapshot(collection(db, 'classPosts'), (snap) => {
+    classPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  let classPostComments = [];
+  onSnapshot(collection(db, 'classPostComments'), (snap) => {
+    classPostComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   onSnapshot(collection(db, 'announcements'), (snap) => {
@@ -1071,6 +1138,71 @@
     submitSelect.innerHTML = myHomework.map(h => `<option value="${escapeHtml(h.tittel)}">${escapeHtml(h.tittel)} (${escapeHtml(h.dato)})</option>`).join('')
       || `<option value="">${t('noHwOptions')}</option>`;
 
+    // Undervisningsplan (lesson plans — read-only for parents)
+    const myLessonPlans = lessonPlans.filter(p => p.klasse === child.klasse).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const lpListEl = document.getElementById('lessonPlansList');
+    if(lpListEl){
+      if(myLessonPlans.length === 0){
+        lpListEl.innerHTML = `<div class="empty-msg">${t('noLessonPlans')}</div>`;
+      } else {
+        lpListEl.innerHTML = myLessonPlans.map(p => `
+          <div class="hw-item">
+            <details>
+              <summary style="cursor:pointer;">
+                <span class="t" style="display:inline;">${escapeHtml(p.emne||'—')}</span>
+                <span class="meta">${escapeHtml(p.dato||'—')} · ${escapeHtml(p.fag||'—')} · ${escapeHtml(resolveTeacherName(p.larer))}</span>
+              </summary>
+              <div style="margin-top:10px; padding-top:10px; border-top:1px dotted var(--line);">
+                <div class="d" style="margin-bottom:8px;"><strong>${escapeHtml(t('malLabel')||'Mål')}:</strong> ${escapeHtml(p.mal||'—')}</div>
+                <div class="d" style="margin-bottom:8px;"><strong>${escapeHtml(t('nyttStoffLabel')||'Nytt stoff')}:</strong> ${escapeHtml(p.nyttStoff||'—')}</div>
+                <div class="d">${escapeHtml(p.lekser ? (t('lekserLabel')||'Lekser') + ': ' + p.lekser : '')}</div>
+              </div>
+            </details>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Klassemeldinger (class broadcast posts + forum comments)
+    const myClassPosts = classPosts.filter(p => p.klasse === child.klasse).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const cpListEl = document.getElementById('classPostsList');
+    if(cpListEl){
+      if(myClassPosts.length === 0){
+        cpListEl.innerHTML = `<div class="empty-msg">${t('noClassPosts')}</div>`;
+      } else {
+        cpListEl.innerHTML = myClassPosts.map(p => {
+          const comments = classPostComments.filter(c => c.postId === p.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+          const commentsHtml = comments.length === 0
+            ? `<div class="empty-msg">${t('noComments')}</div>`
+            : comments.map(c => `
+                <div class="info-row" style="align-items:flex-start; flex-direction:column; background:${c.fra === 'Lærer' ? 'var(--paper-2)' : 'transparent'}; border-radius:6px; padding:8px 10px; margin-bottom:6px;">
+                  <strong style="font-size:12.5px;">${escapeHtml(c.avsenderNavn||'')}</strong>
+                  <span style="font-size:11px; color:#8a9a90;">${escapeHtml((c.dato||'').slice(0,16).replace('T',' · '))}</span>
+                  <span style="font-size:13px; margin-top:4px;">${escapeHtml(c.tekst||'')}</span>
+                </div>`).join('');
+          return `
+          <div class="hw-item">
+            <details>
+              <summary style="cursor:pointer;">
+                <span class="meta">${escapeHtml((p.dato||'').slice(0,10))}</span>
+                <div class="d" style="margin-top:4px;">${escapeHtml((p.tekst||'').slice(0,90))}${(p.tekst||'').length > 90 ? '…' : ''}</div>
+              </summary>
+              <div style="margin-top:10px; padding-top:10px; border-top:1px dotted var(--line);">
+                <div class="d" style="white-space:pre-wrap; margin-bottom:12px;">${escapeHtml(p.tekst||'')}</div>
+                <div style="margin-bottom:10px;">${commentsHtml}</div>
+                ${p.commentsEnabled ? `
+                  <div class="field" style="margin-bottom:8px;">
+                    <textarea id="cpReply_${p.id}" rows="2" placeholder="${escapeHtml(t('writeComment'))}"></textarea>
+                  </div>
+                  <button type="button" class="btn btn-primary" onclick="submitGuardianComment('${p.id}')">${escapeHtml(t('sendComment'))}</button>
+                ` : `<div class="empty-msg">${t('commentsClosedNote')}</div>`}
+              </div>
+            </details>
+          </div>`;
+        }).join('');
+      }
+    }
+
     // Notater
     const myNotes = studentNotes.filter(n => n.elevNavn === child.navn).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(myNotes.length === 0){
@@ -1290,6 +1422,25 @@
       document.getElementById('payChoiceSentMsg').style.display = 'block';
       document.getElementById('payChoiceSubmitBtn').style.display = 'none';
       document.getElementById('payAmountFieldWrap').style.display = 'none';
+    } catch(err){
+      console.error(err);
+      alert(t('errorOccurred') + err.message);
+    }
+  };
+
+  window.submitGuardianComment = async function(postId){
+    if(!currentGuardian) return;
+    const input = document.getElementById('cpReply_' + postId);
+    if(!input) return;
+    const tekst = input.value.trim();
+    if(!tekst) return;
+    try{
+      await addDoc(collection(db, 'classPostComments'), {
+        postId, fra: 'Foresatt', guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
+        avsenderNavn: currentGuardian.navn, tekst,
+        dato: new Date().toISOString()
+      });
+      input.value = '';
     } catch(err){
       console.error(err);
       alert(t('errorOccurred') + err.message);
