@@ -240,7 +240,7 @@
 
     <!-- ATTENDANCE VIEW -->
     <div class="card" id="attendanceView" style="display:none;">
-      <button class="back-link" onclick="showChoice()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <h2 data-i18n="chooseAttendance">Ta oppmøte</h2>
       <div class="sub" id="classSub"></div>
 
@@ -258,7 +258,7 @@
 
     <!-- LESSON PLAN VIEW -->
     <div class="card" id="lessonView" style="display:none;">
-      <button class="back-link" onclick="showChoice()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <h2 data-i18n="lessonTitle">Pedagogisk forberedelse (timeforberedelse)</h2>
       <div class="sub" data-i18n="lessonSub">Bygget etter skolens undervisningsmodell — sendes til administrasjonen når den er ferdig</div>
 
@@ -327,7 +327,7 @@
 
     <!-- HOMEWORK VIEW -->
     <div class="card" id="homeworkView" style="display:none;">
-      <button class="back-link" onclick="showChoice()">← Tilbake</button>
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
       <h2>Legg ut lekse</h2>
       <div class="sub" id="homeworkClassSub"></div>
       <div class="field">
@@ -347,7 +347,7 @@
 
     <!-- ABSENCE REVIEW VIEW -->
     <div class="card" id="absenceReviewView" style="display:none;">
-      <button class="back-link" onclick="showChoice()">← Tilbake</button>
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
       <h2>Fraværsmeldinger</h2>
       <div class="sub">Ubehandlede meldinger fra foresatte for din klasse</div>
       <div id="absenceReviewList"></div>
@@ -355,7 +355,7 @@
 
     <!-- STUDENT NOTES VIEW -->
     <div class="card" id="studentNotesView" style="display:none;">
-      <button class="back-link" onclick="showChoice()">← Tilbake</button>
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
       <h2>Elevnotater</h2>
       <div class="sub" id="notesClassSub">Skriv et fremgangsnotat om en elev — vises for foresatte i Foreldreportalen</div>
       <div class="field">
@@ -374,7 +374,7 @@
 
     <!-- MESSAGES: thread list -->
     <div class="card" id="messagesListView" style="display:none;">
-      <button class="back-link" onclick="showChoice()">← Tilbake</button>
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
       <h2>Meldinger fra foresatte</h2>
       <div class="sub">Velg en foresatt for å se og svare på meldinger</div>
       <div id="messageThreadsList"></div>
@@ -382,7 +382,7 @@
 
     <!-- MESSAGES: thread detail -->
     <div class="card" id="messageThreadView" style="display:none;">
-      <button class="back-link" onclick="showMessages()">← Tilbake til meldinger</button>
+      <button class="back-link" onclick="history.back()">← Tilbake til meldinger</button>
       <h2 id="messageThreadTitle"></h2>
       <div class="field">
         <label>Svar</label>
@@ -723,6 +723,34 @@
     document.getElementById('loginPin').value = '';
   };
 
+  // ---------- Browser back-button support ----------
+  // Pressing the phone's back button while inside a sub-view should return to
+  // the main menu (or the messages list) instead of leaving the site entirely.
+  // Each "open a view" action pushes a history entry; browser back then fires
+  // popstate, which we use to restore the right view instead of navigating away.
+  let appNavigating = false;
+  function pushAppView(name){
+    if(appNavigating) return;
+    history.pushState({ appView: name }, '', location.href);
+  }
+  window.addEventListener('popstate', function(e){
+    appNavigating = true;
+    const view = (e.state && e.state.appView) || 'choice';
+    if(view === 'attendance') showAttendance();
+    else if(view === 'lesson') showLesson();
+    else if(view === 'homework') showHomework();
+    else if(view === 'absenceReview') showAbsenceReview();
+    else if(view === 'studentNotes') showStudentNotes();
+    else if(view === 'messages') showMessages();
+    else if(view === 'messageThread' && currentThreadGuardian){
+      document.getElementById('messagesListView').style.display = 'none';
+      document.getElementById('messageThreadView').style.display = 'block';
+      renderMessageThreadHistory();
+    }
+    else showChoice();
+    appNavigating = false;
+  });
+
   window.showChoice = function(){
     document.getElementById('chooseView').style.display = 'block';
     document.getElementById('attendanceView').style.display = 'none';
@@ -742,12 +770,14 @@
     document.getElementById('classSub').textContent =
       (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
     renderStudentList();
+    pushAppView('attendance');
   };
 
   window.showLesson = function(){
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'block';
+    pushAppView('lesson');
   };
 
   window.showHomework = function(){
@@ -755,12 +785,14 @@
     document.getElementById('homeworkView').style.display = 'block';
     document.getElementById('homeworkClassSub').textContent =
       (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+    pushAppView('homework');
   };
 
   window.showAbsenceReview = function(){
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'block';
     renderAbsenceReviewList();
+    pushAppView('absenceReview');
   };
 
   window.submitHomework = async function(){
@@ -839,6 +871,7 @@
     sel.innerHTML = myStudents.map(s => `<option value="${escapeHtml(s.navn)}">${escapeHtml(s.navn)}</option>`).join('')
       || `<option value="">${currentLang === 'ar' ? 'لا يوجد طلاب في هذا الصف' : 'Ingen elever i denne klassen'}</option>`;
     renderStudentNotesList();
+    pushAppView('studentNotes');
   };
 
   window.submitStudentNote = async function(){
@@ -915,6 +948,7 @@
     currentThreadGuardian = null;
     renderMessageThreads();
     updateMsgDot();
+    pushAppView('messages');
   };
 
   function renderMessageThreads(){
@@ -951,6 +985,7 @@
     localStorage.setItem(threadSeenKey(key), new Date().toISOString());
     renderMessageThreadHistory();
     updateMsgDot();
+    pushAppView('messageThread');
   };
 
   function renderMessageThreadHistory(){
