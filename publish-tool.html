@@ -107,17 +107,22 @@
         <label>Hvilken fil?</label>
         <select id="filePreset" onchange="onPresetChange()">
           <option value="index.html">Admin — index.html</option>
-          <option value="larerportal2/index1.html">Lærerportal — larerportal2/index1.html</option>
-          <option value="foreldreportal/index4.html">Foreldreportal — foreldreportal/index4.html</option>
-          <option value="foreldreportal.html">Foreldreportal (kopi) — foreldreportal.html</option>
-          <option value="soknad/index2.html">Søknadsskjema — soknad/index2.html</option>
-          <option value="soknad.html">Søknadsskjema (kopi) — soknad.html</option>
+          <option value="index1.html">Lærerportal — index1.html</option>
+          <option value="index2.html">Søknadsskjema — index2.html</option>
+          <option value="index4.html">Foreldreportal — index4.html</option>
+          <option value="sw.js">Service worker (cache) — sw.js</option>
+          <option value="publish-tool.html">Dette publiseringsverktøyet — publish-tool.html</option>
+          <option value="manifest-admin.json">Manifest — Admin (manifest-admin.json)</option>
+          <option value="manifest-larer.json">Manifest — Lærerportal (manifest-larer.json)</option>
+          <option value="manifest-soknad.json">Manifest — Søknadsskjema (manifest-soknad.json)</option>
+          <option value="manifest-foreldre.json">Manifest — Foreldreportal (manifest-foreldre.json)</option>
           <option value="__custom__">Annen filsti...</option>
         </select>
+        <div class="hint" id="lastPublishedHint"></div>
       </div>
       <div class="field" id="customPathWrap" style="display:none;">
         <label>Egendefinert filsti</label>
-        <input type="text" id="customPath" placeholder="f.eks. mappe/fil.html">
+        <input type="text" id="customPath" placeholder="f.eks. mappe/fil.html" oninput="updateLastPublishedHint()">
       </div>
       <div class="field">
         <label style="display:flex; justify-content:space-between; align-items:center;">
@@ -135,11 +140,28 @@
 
 <script>
   const LS_KEY = 'madina_publish_config_v1';
+  const LS_LAST_FILE = 'madina_publish_last_file_v1';
+  const LS_LAST_PUBLISHED = 'madina_publish_last_published_v1';
 
   function loadConfig(){
     try{ return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){ return null; }
   }
   function saveConfig(cfg){ localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }
+
+  function loadLastPublished(){
+    try{ return JSON.parse(localStorage.getItem(LS_LAST_PUBLISHED) || '{}'); } catch(e){ return {}; }
+  }
+  function recordPublished(path){
+    const log = loadLastPublished();
+    log[path] = new Date().toLocaleString('no-NO');
+    localStorage.setItem(LS_LAST_PUBLISHED, JSON.stringify(log));
+  }
+  function updateLastPublishedHint(){
+    const path = currentPath();
+    const log = loadLastPublished();
+    const hintEl = document.getElementById('lastPublishedHint');
+    hintEl.textContent = (path && log[path]) ? 'Sist publisert: ' + log[path] : '';
+  }
 
   function init(){
     const cfg = loadConfig();
@@ -147,6 +169,13 @@
       document.getElementById('setupView').style.display = 'none';
       document.getElementById('publishView').style.display = 'block';
       document.getElementById('repoLabel').textContent = cfg.owner + '/' + cfg.repo + ' (' + cfg.branch + ')';
+      // Pre-select whichever file was published last time — usually the same one gets edited again.
+      const lastFile = localStorage.getItem(LS_LAST_FILE);
+      const sel = document.getElementById('filePreset');
+      if(lastFile && [...sel.options].some(o => o.value === lastFile)){
+        sel.value = lastFile;
+      }
+      onPresetChange();
     } else {
       document.getElementById('setupView').style.display = 'block';
       document.getElementById('publishView').style.display = 'none';
@@ -175,6 +204,7 @@
   window.onPresetChange = function(){
     const val = document.getElementById('filePreset').value;
     document.getElementById('customPathWrap').style.display = val === '__custom__' ? 'block' : 'none';
+    updateLastPublishedHint();
   };
 
   window.clearFileContent = function(){
@@ -255,6 +285,9 @@
 
       if(putRes.status === 200 || putRes.status === 201){
         showStatus('✓ Publisert! Endringen er live om noen sekunder.', 'ok');
+        localStorage.setItem(LS_LAST_FILE, document.getElementById('filePreset').value);
+        recordPublished(path);
+        updateLastPublishedHint();
       } else {
         const errData = await putRes.json().catch(()=>({}));
         throw new Error('Feil ved publisering (status ' + putRes.status + '): ' + (errData.message || 'Ukjent feil'));
