@@ -871,7 +871,7 @@
     if(!el || myChildren.length === 0 || !currentGuardian) return;
     const child = myChildren[currentChildIndex];
     const thread = messages.filter(m => m.klasse === child.klasse && m.guardianNavn === currentGuardian.navn)
-      .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(thread.length === 0){
       el.innerHTML = `<div class="empty-msg">${t('noMessages')}</div>`;
       return;

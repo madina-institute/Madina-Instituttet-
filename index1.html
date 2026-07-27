@@ -898,7 +898,7 @@
     const el = document.getElementById('messageThreadHistory');
     if(!el || !currentThreadGuardian) return;
     const thread = myClassMessages().filter(m => m.guardianNavn === currentThreadGuardian)
-      .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     el.innerHTML = thread.map(m => `
       <div class="student-row" style="flex-wrap:wrap; align-items:flex-start; background:${m.fra === 'Lærer' ? 'var(--paper-2)' : 'transparent'};">
         <span class="name">
