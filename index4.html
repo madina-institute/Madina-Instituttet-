@@ -304,7 +304,7 @@
 
     <!-- ELEVINFORMASJON -->
     <div class="sub-view" id="view-info">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuInfo">Elevinformasjon</h2>
         <div id="childInfo"></div>
@@ -318,7 +318,7 @@
 
     <!-- TIMEPLAN -->
     <div class="sub-view" id="view-schedule">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
 
       <!-- Day selector -->
       <div id="scheduleDayChoose">
@@ -345,7 +345,7 @@
 
     <!-- OPPMØTE -->
     <div class="sub-view" id="view-attendance">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuAttendance">Oppmøtehistorikk</h2>
         <div id="attendanceHistory"></div>
@@ -354,7 +354,7 @@
 
     <!-- LEKSER -->
     <div class="sub-view" id="view-homework">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuHomework">Lekser</h2>
         <div id="homeworkList"></div>
@@ -379,7 +379,7 @@
 
     <!-- FRAVÆR -->
     <div class="sub-view" id="view-absence">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuAbsence">Meld fravær</h2>
         <div class="sub" data-i18n="absenceSub">Send en melding til læreren om barnets fravær</div>
@@ -397,7 +397,7 @@
 
     <!-- NOTATER -->
     <div class="sub-view" id="view-notes">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuNotes">Notater fra læreren</h2>
         <div class="sub" data-i18n="notesSub">Fremgangsnotater om barnet ditt</div>
@@ -407,7 +407,7 @@
 
     <!-- KUNNGJØRINGER -->
     <div class="sub-view" id="view-announcements">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuAnnouncements">Kunngjøringer</h2>
         <div id="announcementsList"></div>
@@ -416,7 +416,7 @@
 
     <!-- BETALING -->
     <div class="sub-view" id="view-payment">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuPayment">Betaling</h2>
         <div id="paymentInfo"></div>
@@ -445,7 +445,7 @@
 
     <!-- KONTAKTINFO -->
     <div class="sub-view" id="view-contact">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuContact">Meld endring av kontaktinfo</h2>
         <div class="sub" data-i18n="contactSub">Sendes til administrasjonen for godkjenning</div>
@@ -467,7 +467,7 @@
 
     <!-- KONTAKT LÆRER -->
     <div class="sub-view" id="view-teacherMsg">
-      <button class="back-link" onclick="closeSection()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuTeacherMsg">Kontakt lærer</h2>
         <div class="sub" id="teacherMsgSub"></div>
@@ -819,11 +819,30 @@
     if(name === 'teacherMsg') openTeacherMsg();
     markSeen(name);
     updateBadges();
+    pushAppView(name);
   };
   window.closeSection = function(){
     document.getElementById('homeView').style.display = 'block';
     document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
   };
+
+  // ---------- Browser back-button support ----------
+  // Pressing the phone's back button while inside a section should return to
+  // the home menu instead of leaving the site entirely. Opening a section
+  // pushes a history entry; browser back then fires popstate, which we use to
+  // restore the right screen instead of navigating away.
+  let appNavigating = false;
+  function pushAppView(name){
+    if(appNavigating) return;
+    history.pushState({ appView: name }, '', location.href);
+  }
+  window.addEventListener('popstate', function(e){
+    appNavigating = true;
+    const view = e.state && e.state.appView;
+    if(view) openSection(view);
+    else closeSection();
+    appNavigating = false;
+  });
 
   let currentChildDays = [];
   window.showScheduleDay = function(day){
