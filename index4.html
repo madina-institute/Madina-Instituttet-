@@ -650,7 +650,7 @@
   };
 
   let guardians = [], students = [], attendance = [], registrations = [], homework = [];
-  let announcements = [], studentNotes = [], hours = [], teachers = [], messages = [];
+  let announcements = [], studentNotes = [], hours = [], teachers = [], messages = [], classes = [];
   let paymentLink = '';
   let currentGuardian = null;
   let currentChildIndex = 0;
@@ -662,6 +662,16 @@
   }
   function escapeHtml(str){
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+  }
+  function resolveTeacherName(teacherId){
+    if(!teacherId) return '';
+    const t = teachers.find(x => x.id === teacherId);
+    return t ? (t.navn || '') : teacherId; // fallback: legacy/un-migrated value
+  }
+  function resolveClassName(classId){
+    if(!classId) return '';
+    const c = classes.find(x => x.id === classId);
+    return c ? (c.navn || '') : classId; // fallback: legacy/un-migrated value
   }
   function showToast(msg){
     const el = document.getElementById('toast');
@@ -703,6 +713,10 @@
   });
   onSnapshot(collection(db, 'teachers'), (snap) => {
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  onSnapshot(collection(db, 'classes'), (snap) => {
+    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   onSnapshot(collection(db, 'messages'), (snap) => {
@@ -751,7 +765,7 @@
   };
 
   function refreshMyChildren(){
-    myChildren = students.filter(s => s.foresatt === currentGuardian.navn);
+    myChildren = students.filter(s => s.foresatt === currentGuardian.id);
     if(currentChildIndex >= myChildren.length) currentChildIndex = 0;
     renderSummary();
     renderChildTabs();
@@ -840,7 +854,7 @@
     document.getElementById('scheduleDayDetail').style.display = 'none';
   };
 
-  function seenKey(type){ return 'ps_seen_' + type + '_' + (currentGuardian ? currentGuardian.navn : ''); }
+  function seenKey(type){ return 'ps_seen_' + type + '_' + (currentGuardian ? currentGuardian.id : ''); }
   function markSeen(name){
     const map = { homework: 'homework', notes: 'studentNotes', announcements: 'announcements' };
     const type = map[name];
@@ -863,7 +877,7 @@
     document.getElementById('dotAnnouncements').parentElement.classList.toggle('has-new', hasNew('announcements','dato', announcements));
     const unread = hasNewTeacherMsg();
     const badge = document.getElementById('teacherMsgBadge');
-    const hasAnyMsg = messages.some(m => m.klasse === child.klasse && m.guardianNavn === currentGuardian.navn);
+    const hasAnyMsg = messages.some(m => m.klasse === child.klasse && (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn));
     if(!hasAnyMsg){
       badge.className = 'msg-badge';
       badge.textContent = '';
@@ -873,12 +887,12 @@
     }
   }
 
-  function msgSeenKey(klasse){ return 'ps_seen_messages_' + (currentGuardian ? currentGuardian.navn : '') + '_' + klasse; }
+  function msgSeenKey(klasse){ return 'ps_seen_messages_' + (currentGuardian ? currentGuardian.id : '') + '_' + klasse; }
   function hasNewTeacherMsg(){
     if(myChildren.length === 0 || !currentGuardian) return false;
     const child = myChildren[currentChildIndex];
     const seen = localStorage.getItem(msgSeenKey(child.klasse));
-    const relevant = messages.filter(m => m.klasse === child.klasse && m.guardianNavn === currentGuardian.navn && m.fra === 'Lærer');
+    const relevant = messages.filter(m => m.klasse === child.klasse && (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn) && m.fra === 'Lærer');
     if(!seen) return relevant.length > 0;
     return relevant.some(m => (m.dato||'') > seen);
   }
@@ -888,7 +902,7 @@
     const child = myChildren[currentChildIndex];
     localStorage.setItem(msgSeenKey(child.klasse), new Date().toISOString());
     document.getElementById('teacherMsgSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + (child.klasse || '—');
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + (resolveClassName(child.klasse) || '—');
     renderTeacherMsgHistory();
   };
 
@@ -896,7 +910,7 @@
     const el = document.getElementById('teacherMsgHistory');
     if(!el || myChildren.length === 0 || !currentGuardian) return;
     const child = myChildren[currentChildIndex];
-    const thread = messages.filter(m => m.klasse === child.klasse && m.guardianNavn === currentGuardian.navn)
+    const thread = messages.filter(m => m.klasse === child.klasse && (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn))
       .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(thread.length === 0){
       el.innerHTML = `<div class="empty-msg">${t('noMessages')}</div>`;
@@ -930,7 +944,7 @@
         vedleggLenke = await uploadAttachment(file, 'message-attachments');
       }
       await addDoc(collection(db, 'messages'), {
-        klasse: child.klasse, guardianNavn: currentGuardian.navn,
+        klasse: child.klasse, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
         fra: 'Foresatt', avsenderNavn: currentGuardian.navn, tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
@@ -960,7 +974,7 @@
     document.getElementById('childInfo').innerHTML = `
       <div class="info-row"><span class="lbl">Navn</span><span>${escapeHtml(child.navn)}</span></div>
       <div class="info-row"><span class="lbl">Program</span><span>${escapeHtml(child.program||'—')}</span></div>
-      <div class="info-row"><span class="lbl">Klasse</span><span>${escapeHtml(child.klasse||'—')}</span></div>
+      <div class="info-row"><span class="lbl">Klasse</span><span>${escapeHtml(resolveClassName(child.klasse)||'—')}</span></div>
       <div class="info-row"><span class="lbl">Totalt beløp</span><span>${toNum(child.belop).toLocaleString('no-NO')} kr</span></div>
       <div class="info-row"><span class="lbl">Betalt</span><span>${toNum(child.belopBetalt).toLocaleString('no-NO')} kr</span></div>
       <div class="info-row"><span class="lbl">Gjenstår</span><span>${(toNum(child.belop)-toNum(child.belopBetalt)).toLocaleString('no-NO')} kr</span></div>
@@ -999,7 +1013,7 @@
         <div class="hw-item">
           <div class="t">${escapeHtml(h.tittel)}</div>
           <div class="d">${escapeHtml(h.beskrivelse)}</div>
-          <div class="meta">${escapeHtml(h.dato)}${h.frist ? ' · Frist: ' + escapeHtml(h.frist) : ''} · ${escapeHtml(h.larer||'')}</div>
+          <div class="meta">${escapeHtml(h.dato)}${h.frist ? ' · Frist: ' + escapeHtml(h.frist) : ''} · ${escapeHtml(resolveTeacherName(h.larer))}</div>
         </div>
       `).join('');
     }
@@ -1015,7 +1029,7 @@
       document.getElementById('notesList').innerHTML = myNotes.map(n => `
         <div class="note-item">
           <div class="d">${escapeHtml(n.tekst)}</div>
-          <div class="meta">${escapeHtml(n.dato)} · ${escapeHtml(n.larer||'')}</div>
+          <div class="meta">${escapeHtml(n.dato)} · ${escapeHtml(resolveTeacherName(n.larer))}</div>
         </div>
       `).join('');
     }
@@ -1145,7 +1159,7 @@
     }
     try{
       await addDoc(collection(db, 'absenceRequests'), {
-        elevNavn: child.navn, klasse: child.klasse, dato, arsak,
+        studentId: child.id, elevNavn: child.navn, klasse: child.klasse, dato, arsak,
         status: 'Ny', innsendtDato: todayISO()
       });
       showToast(t('absSent'));
@@ -1167,7 +1181,7 @@
     }
     try{
       await addDoc(collection(db, 'contactUpdateRequests'), {
-        guardianNavn: currentGuardian.navn, nyTelefon, nyEpost, melding,
+        guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn, nyTelefon, nyEpost, melding,
         status: 'Ny', dato: todayISO()
       });
       showToast(t('contactSent'));
@@ -1220,7 +1234,7 @@
     }
     try{
       await addDoc(collection(db, 'paymentRequests'), {
-        elevNavn: child.navn, guardianNavn: currentGuardian.navn,
+        studentId: child.id, elevNavn: child.navn, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
         belop: String(belop), type: selectedPayType, status: 'Ny', dato: todayISO()
       });
       document.getElementById('payChoiceSentMsg').style.display = 'block';
