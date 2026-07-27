@@ -258,7 +258,7 @@
     try{
       // 1. Get current SHA (needed to update an existing file)
       let sha = null;
-      const getRes = await fetch(apiBase + '?ref=' + encodeURIComponent(cfg.branch), { headers });
+      const getRes = await fetch(apiBase + '?ref=' + encodeURIComponent(cfg.branch), { headers, cache: 'no-store' });
       if(getRes.status === 200){
         const getData = await getRes.json();
         sha = getData.sha;
@@ -280,7 +280,8 @@
       const putRes = await fetch(apiBase, {
         method: 'PUT',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(putBody)
+        body: JSON.stringify(putBody),
+        cache: 'no-store'
       });
 
       if(putRes.status === 200 || putRes.status === 201){
