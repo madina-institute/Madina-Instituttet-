@@ -1135,7 +1135,7 @@
     if(myChildren.length === 0) return;
     const child = myChildren[currentChildIndex];
     const myHw = homework.filter(h => h.klasse === child.klasse);
-    const myNotes = studentNotes.filter(n => n.elevNavn === child.navn);
+    const myNotes = studentNotes.filter(n => n.studentId === child.id);
     document.getElementById('dotHomework').parentElement.classList.toggle('has-new', hasNew('homework','dato', myHw));
     document.getElementById('dotNotes').parentElement.classList.toggle('has-new', hasNew('studentNotes','dato', myNotes));
     document.getElementById('dotAnnouncements').parentElement.classList.toggle('has-new', hasNew('announcements','dato', announcements));
@@ -1466,7 +1466,7 @@
       currentRegForDownload = null;
     }
 
-    const myAttendance = attendance.filter(a => a.elev === child.navn).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const myAttendance = attendance.filter(a => a.studentId === child.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(myAttendance.length === 0){
       document.getElementById('attendanceHistory').innerHTML = `<div class="empty-msg">${t('noAttendance')}</div>`;
     } else {
@@ -1569,7 +1569,7 @@
     }
 
     // Notater
-    const myNotes = studentNotes.filter(n => n.elevNavn === child.navn).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const myNotes = studentNotes.filter(n => n.studentId === child.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(myNotes.length === 0){
       document.getElementById('notesList').innerHTML = `<div class="empty-msg">${t('noNotes')}</div>`;
     } else {
@@ -1680,7 +1680,7 @@
         lenke = await uploadAttachment(file, 'homework-submissions');
       }
       await addDoc(collection(db, 'homeworkSubmissions'), {
-        homeworkTittel: tittel, klasse: child.klasse, elevNavn: child.navn,
+        homeworkTittel: tittel, klasse: child.klasse, studentId: child.id, elevNavn: child.navn,
         lenke, innsendtDato: todayISO()
       });
       showToast(t('hwSent'));
