@@ -15,9 +15,13 @@
 <style>
   :root{
     --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
-    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
-    --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10);
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
     --red:#a83c3c;
+    --stat-purple-bg:#EDE9FE; --stat-purple-fg:#5B4B9E;
+    --stat-yellow-bg:#FDF3C7; --stat-yellow-fg:#8A6D1D;
+    --stat-pink-bg:#FCE7EE; --stat-pink-fg:#A23B60;
+    --stat-blue-bg:#DCEFFB; --stat-blue-fg:#1E6E8C;
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink);}
@@ -46,62 +50,139 @@
   .login-error{margin-top:12px; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); display:none;}
 
   header{
-    background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
-    color:var(--paper); padding:26px 28px; box-shadow:var(--shadow); position:relative;
-    display:flex; align-items:center; gap:18px;
+    background:transparent; color:var(--ink); padding:22px 24px 10px; box-shadow:none; position:relative;
+    display:flex; align-items:center; justify-content:center; gap:18px; text-align:center;
   }
-  header .logo-img{ height:56px; width:auto; border-radius:6px; flex-shrink:0; }
-  header .header-text{ flex:1; min-width:0; }
-  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; margin:0 0 4px;}
-  header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold-l); margin:0;}
+  header .logo-img{ height:44px; width:auto; border-radius:6px; flex-shrink:0; }
+  header .header-text{ flex:none; min-width:0; }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; margin:0 0 4px; color:var(--ink);}
+  header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8fa3; margin:0;}
   .side-switch{
-    position:absolute; top:22px; right:28px; background:rgba(246,242,231,0.12); border:1px solid rgba(217,189,124,0.4);
-    color:var(--gold-l); font-family:'Jost',sans-serif; font-size:12px; padding:8px 14px; border-radius:6px; cursor:pointer;
+    position:absolute; top:20px; right:24px; background:#fff; border:1px solid var(--line);
+    color:var(--ink); font-family:'Jost',sans-serif; font-size:12px; padding:8px 14px; border-radius:8px; cursor:pointer; box-shadow:var(--shadow);
   }
   .who-logged-in{
-    position:absolute; top:60px; right:28px; display:flex; align-items:center; gap:10px;
-    font-family:'Jost',sans-serif; font-size:11px; color:var(--gold-l);
+    position:absolute; top:58px; right:24px; display:flex; align-items:center; gap:10px;
+    font-family:'Jost',sans-serif; font-size:11px; color:#8a8fa3;
   }
   .logout-btn{
-    background:transparent; border:1px solid rgba(217,189,124,0.4); color:var(--gold-l);
-    font-family:'Jost',sans-serif; font-size:11px; padding:5px 10px; border-radius:5px; cursor:pointer;
+    background:#fff; border:1px solid var(--line); color:var(--ink);
+    font-family:'Jost',sans-serif; font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer;
   }
 
-  #sideChooseView{ padding:60px 20px; }
-  #sideChooseView .wrap{ max-width:640px; margin:0 auto; }
+  #sideChooseView{ padding:32px 24px; }
+  #sideChooseView .wrap{ max-width:1400px; margin:0 auto; }
   .side-grid{ display:flex; flex-direction:column; gap:18px; }
   @media (min-width:640px){ .side-grid{ flex-direction:row; flex-wrap:wrap; } .side-grid .side-card{ flex:1 1 calc(50% - 9px); min-width:220px; } }
 
-  /* Desktop sidebar — Alma/Gradelink-style persistent left nav. Mobile keeps
-     the existing full-screen card flow untouched (a sidebar makes no sense
-     on a phone-width screen). */
+  /* Persistent left rail for the 5 main sections — visible on every screen
+     size (compact icon rail on mobile, full labeled sidebar on desktop).
+     Lives inside .app-body (a flex row below the header), so it starts
+     right where the header ends and never overlaps the header banner. */
+  .app-body{ display:flex; flex-direction:row; align-items:flex-start; padding:0 16px 16px 16px; gap:14px; }
   .app-sidebar{
-    display:none; position:fixed; inset-inline-start:0; top:0; bottom:0; width:220px; z-index:500;
-    background:linear-gradient(180deg, var(--emerald) 0%, var(--emerald-d) 100%);
-    flex-direction:column; padding:18px 10px; gap:4px; overflow-y:auto;
+    display:flex; position:sticky; top:16px; flex:0 0 84px; width:84px; z-index:500;
+    background:#fff; border:1px solid var(--line);
+    flex-direction:column; align-items:center; padding:18px 4px; gap:8px; overflow-y:auto;
+    max-height:calc(100vh - 32px); border-radius:18px; box-shadow:var(--shadow);
   }
-  .app-sidebar .sb-logo{display:flex; align-items:center; gap:10px; padding:6px 10px 18px;}
-  .app-sidebar .sb-logo img{height:34px; width:auto; border-radius:5px;}
-  .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:#fff;}
-  html[dir="rtl"] .app-sidebar .sb-logo span{font-family:'Tajawal',sans-serif; font-size:14px;}
+  .app-sidebar .sb-logo{display:none;}
   .app-sidebar button{
-    display:flex; align-items:center; gap:10px; width:100%; text-align:start; background:transparent; border:none;
-    color:rgba(255,255,255,0.82); font-family:'Jost',sans-serif; font-size:13px; padding:10px 12px; border-radius:8px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; text-align:center;
+    background:transparent; border:none; color:#8a8fa3; font-family:'Jost',sans-serif;
+    font-size:9.5px; line-height:1.2; padding:12px 2px; border-radius:10px; cursor:pointer; gap:4px;
   }
   html[dir="rtl"] .app-sidebar button{font-family:'Tajawal',sans-serif;}
-  .app-sidebar button .ic{font-size:16px;}
-  .app-sidebar button:hover{background:rgba(255,255,255,0.10); color:#fff;}
-  .app-sidebar button.active{background:#fff; color:var(--emerald-d); font-weight:600;}
+  .app-sidebar button .ic{font-size:19px;}
+  .app-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
+  .app-sidebar button.active{background:var(--stat-blue-bg); color:var(--stat-blue-fg); font-weight:600;}
+  #sideChooseView, #subChooseView, .content-layout{ flex:1; min-width:0; }
   @media (min-width:900px){
-    #appRoot{ padding-inline-start:220px; }
-    .app-sidebar{ display:flex; }
+    .app-sidebar{ flex-basis:250px; width:250px; align-items:stretch; padding:24px 14px; gap:8px; max-height:calc(100vh - 32px); border-radius:18px; }
+    .app-sidebar .sb-logo{display:flex; align-items:center; gap:10px; padding:6px 10px 18px;}
+    .app-sidebar .sb-logo img{height:34px; width:auto; border-radius:5px;}
+    .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--ink);}
+    html[dir="rtl"] .app-sidebar .sb-logo span{font-family:'Tajawal',sans-serif; font-size:14px;}
+    .app-sidebar button{
+      flex-direction:row; align-items:center; text-align:start; justify-content:flex-start;
+      font-size:13px; padding:14px 14px; gap:10px;
+    }
+    .app-sidebar button .ic{font-size:17px;}
   }
+  /* Weekly timeplan grid — real schedule table (times × classes), styled
+     with the site's own palette but structured like the reference design:
+     colored subject badges, shaded break rows, a merged "felles" row. */
+  .tp-legend{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:12px; color:var(--ink); }
+  .tp-legend span{ display:flex; align-items:center; gap:6px; }
+  .tp-dot{ width:11px; height:11px; border-radius:50%; display:inline-block; flex:none; }
+  .tp-scrollbox{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:10px; box-shadow:var(--shadow); border:1px solid var(--line); margin-top:10px; }
+  .tp-table{ border-collapse:collapse; width:100%; min-width:460px; background:#fff; }
+  .tp-table thead th{
+    background:var(--emerald); color:#fff; font-family:'Jost',sans-serif; font-weight:700;
+    padding:10px 6px; text-align:center; font-size:12px; letter-spacing:.01em;
+  }
+  .tp-table thead th:first-child{ background:var(--gold); color:var(--emerald-d); }
+  .tp-table td{
+    padding:8px 6px; text-align:center; border-bottom:1px solid var(--paper-2); border-inline-end:1px solid var(--paper-2);
+    vertical-align:middle; font-size:12.5px;
+  }
+  .tp-table td:last-child{ border-inline-end:none; }
+  .tp-table tr:last-child td{ border-bottom:none; }
+  .tp-time{ font-family:'Jost',sans-serif; font-weight:700; color:var(--emerald-d); background:var(--paper-2); white-space:nowrap; font-size:11.5px; }
+  .tp-subj{ display:block; padding:6px 5px; border-radius:8px; font-weight:700; font-size:12px; font-family:'Jost',sans-serif; line-height:1.25; }
+  .tp-subj small{ display:block; font-weight:500; font-size:10px; opacity:.8; margin-top:1px; }
+  .tp-koran{ background:#d9ecda; color:#1f5c34; }
+  .tp-islam{ background:#fbe7c2; color:#6b4c06; }
+  .tp-sprak{ background:#e3ecf7; color:#2f4d73; }
+  .tp-madinabarn{ background:#f3ddf0; color:#6a2f63; }
+  .tp-repetisjon{ background:#eef1ec; color:#51605a; }
+  .tp-annet{ background:var(--paper-2); color:var(--ink); }
+  .tp-empty-cell{ color:#c7ccc6; font-size:11px; }
+  .tp-pause td{
+    background:repeating-linear-gradient(45deg, var(--paper), var(--paper) 8px, var(--paper-2) 8px, var(--paper-2) 16px);
+    color:#7a8a80; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:700; padding:7px;
+  }
+  .tp-felles td{
+    background:var(--emerald-d); color:#fff; font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; padding:12px 8px;
+  }
+  .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
+
   .side-card{
     flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:34px 26px;
     text-align:center; box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s, transform .2s;
   }
   .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
   .side-card .ic{ font-size:30px; margin-bottom:10px; }
+
+  /* Persistent vertical sub-section nav: a real side column next to the
+     content on every screen size — narrow on mobile, wider on desktop.
+     Always visible while inside a side — no more "choose a card" screen. */
+  .content-layout{ display:flex; flex-direction:row; align-items:flex-start; gap:10px; padding:14px 10px; }
+  .sub-sidebar{
+    display:flex; flex-direction:column; gap:6px; background:#fff; border:1px solid var(--line);
+    border-radius:16px; padding:10px; box-shadow:var(--shadow);
+    flex:0 0 100px; position:sticky; top:10px; max-height:calc(100vh - 20px); overflow-y:auto;
+  }
+  .sub-sidebar button{
+    display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; text-align:center;
+    background:transparent; border:none; color:#8a8fa3; font-family:'Jost',sans-serif;
+    font-size:10.5px; line-height:1.2; padding:12px 4px; border-radius:10px; cursor:pointer;
+  }
+  html[dir="rtl"] .sub-sidebar button{font-family:'Tajawal',sans-serif;}
+  .sub-sidebar button .ic{font-size:17px;}
+  .sub-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
+  .sub-sidebar button.active{background:var(--stat-blue-bg); color:var(--stat-blue-fg); font-weight:600;}
+  #mainContent{ min-width:0; flex:1; }
+  @media (min-width:640px){
+    .sub-sidebar{ flex-basis:150px; }
+    .sub-sidebar button{ flex-direction:row; text-align:start; font-size:12.5px; padding:13px 12px; }
+    .sub-sidebar button .ic{font-size:16px;}
+  }
+  @media (min-width:900px){
+    .content-layout{ padding:20px; gap:16px; }
+    .sub-sidebar{ flex-basis:210px; top:20px; }
+  }
 
   /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
   .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
@@ -150,7 +231,7 @@
     margin-inline-end:6px; cursor:pointer; white-space:nowrap;
   }
 
-  main{max-width:1100px; margin:0 auto; padding:24px 20px 60px;}
+  main{padding:24px 20px 60px;}
   .panel{display:none;}
   .panel.active{display:block;}
 
@@ -179,6 +260,28 @@
   .count-chip .toggle-arrow{font-size:9px; transition:transform .2s;}
   .count-chip.expanded .toggle-arrow{transform:rotate(180deg);}
   .records-hidden{display:none;}
+
+  /* Record card grid (used by all list-style sections) */
+  .card-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:16px; }
+  .record-empty{ grid-column:1/-1; background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; text-align:center; color:var(--emerald); font-family:'Jost',sans-serif; font-size:13.5px; box-shadow:var(--shadow); }
+  .record-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; transition:transform .15s, border-color .15s; }
+  .record-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .record-card-top{ display:flex; align-items:center; gap:12px; }
+  .record-avatar{
+    flex:none; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(160deg, var(--emerald) 0%, var(--emerald-d) 100%); color:#fff;
+    font-family:'Jost',sans-serif; font-weight:700; font-size:15px; letter-spacing:0.02em;
+  }
+  .record-title{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17.5px; color:var(--ink); line-height:1.25; }
+  .record-pill{
+    display:inline-block; margin-top:3px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600;
+    color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:20px; padding:3px 10px;
+  }
+  .record-field{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); }
+  .record-field-label{ color:var(--gold); font-weight:600; margin-inline-end:4px; }
+  .record-contact{ display:flex; flex-direction:column; gap:5px; border-top:1px solid var(--line); padding-top:10px; }
+  .record-contact-row{ font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; word-break:break-all; }
+  .record-card-actions{ display:flex; gap:8px; margin-top:2px; flex-wrap:wrap; }
 
   table{width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:var(--shadow);}
   thead th{
@@ -258,14 +361,53 @@
 
   .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;}
   @media (max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}}
-  .stat-card{background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px 18px; box-shadow:var(--shadow);}
+  .stat-card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow); position:relative;}
   .stat-card .n{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:28px; color:var(--emerald-d);}
   .stat-card .l{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gold);}
   .dash-strip{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px;}
   @media (min-width:640px){ .dash-strip{ grid-template-columns:repeat(4,1fr); } }
-  .stat-card.alert.has-items{border-color:var(--red);}
-  .stat-card.alert.has-items .n{color:var(--red);}
-  .stat-card.alert.has-items .l{color:var(--red);}
+  .stat-card.stat-purple{background:var(--stat-purple-bg); border-color:transparent;}
+  .stat-card.stat-purple .n, .stat-card.stat-purple .l{color:var(--stat-purple-fg);}
+  .stat-card.stat-yellow{background:var(--stat-yellow-bg); border-color:transparent;}
+  .stat-card.stat-yellow .n, .stat-card.stat-yellow .l{color:var(--stat-yellow-fg);}
+  .stat-card.stat-pink{background:var(--stat-pink-bg); border-color:transparent;}
+  .stat-card.stat-pink .n, .stat-card.stat-pink .l{color:var(--stat-pink-fg);}
+  .stat-card.stat-blue{background:var(--stat-blue-bg); border-color:transparent;}
+  .stat-card.stat-blue .n, .stat-card.stat-blue .l{color:var(--stat-blue-fg);}
+  .stat-card .alert-dot{
+    display:none; position:absolute; top:14px; inset-inline-end:14px; width:9px; height:9px; border-radius:50%;
+    background:var(--red); box-shadow:0 0 0 3px rgba(168,60,60,0.18);
+  }
+  .stat-card.alert.has-items .alert-dot{display:block;}
+
+  /* Dashboard widgets — real-data donut, bar chart, and agenda list on the landing screen */
+  .dash-widgets{ display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:26px; }
+  @media (min-width:900px){ .dash-widgets{ grid-template-columns:1fr 1fr 1.3fr; } }
+  .widget-card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); }
+  .widget-card h3{ font-family:'Cormorant Garamond',serif; font-size:17px; color:var(--ink); margin:0 0 14px; font-weight:700; }
+  .shortcuts-title{ font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--ink); margin:4px 0 14px; font-weight:700; }
+  .donut-wrap{ position:relative; width:128px; height:128px; margin:0 auto 16px; }
+  .donut{ width:100%; height:100%; border-radius:50%; }
+  .donut-center{ position:absolute; inset:18px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .donut-center span{ font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:700; color:var(--ink); }
+  .donut-center small{ font-family:'Jost',sans-serif; font-size:9.5px; color:#8a8fa3; text-transform:uppercase; letter-spacing:.05em; }
+  .donut-legend{ display:flex; flex-direction:column; gap:7px; font-family:'Jost',sans-serif; font-size:12px; color:var(--ink); }
+  .donut-legend span{ display:flex; align-items:center; gap:8px; }
+  .donut-legend i{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
+  .bar-chart{ display:flex; align-items:flex-end; gap:12px; height:130px; padding-top:10px; }
+  .bar-chart .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; height:100%; }
+  .bar-chart .bar-fill{ width:100%; border-radius:6px 6px 0 0; min-height:4px; transition:height .3s; }
+  .bar-chart .bar-n{ font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:var(--ink); }
+  .bar-chart .bar-lbl{ font-family:'Jost',sans-serif; font-size:9px; color:#8a8fa3; text-align:center; line-height:1.2; }
+  .agenda-row{ display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--paper-2); }
+  .agenda-row:last-child{ border-bottom:none; }
+  .agenda-time{
+    flex:none; font-family:'Jost',sans-serif; font-weight:700; font-size:11px; color:var(--stat-blue-fg);
+    background:var(--stat-blue-bg); border-radius:8px; padding:4px 8px; white-space:nowrap;
+  }
+  .agenda-text{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); }
+  .agenda-text b{ display:block; font-size:12.5px; }
+  .agenda-text small{ color:#8a8fa3; font-size:11px; }
 
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -280,7 +422,7 @@
 
   .sync-badge{
     display:inline-flex; align-items:center; gap:6px; font-family:'Jost',sans-serif; font-size:11px;
-    color:var(--gold-l); background:var(--emerald-d); padding:4px 12px; border-radius:12px; margin-left:10px;
+    color:var(--gold-l); background:var(--emerald-d); padding:4px 12px; border-radius:12px; margin:4px 0 6px;
   }
   .sync-badge .dot{width:7px; height:7px; border-radius:50%; background:#4caf7d;}
   .sync-badge.offline .dot{background:#c94a4a;}
@@ -409,7 +551,8 @@
 <header>
   <img src="https://madina-institute.github.io/Madina-Instituttet-/logo.png" alt="Madina Institute" class="logo-img">
   <div class="header-text">
-    <h1>Madina Skole — Database <span class="sync-badge offline" id="syncBadge"><span class="dot"></span><span id="syncText">Kobler til...</span></span></h1>
+    <h1>Madina Skole — Database</h1>
+    <span class="sync-badge offline" id="syncBadge"><span class="dot"></span><span id="syncText">Kobler til...</span></span>
     <p>Lærere · Elever · Timeplan</p>
   </div>
   <button class="side-switch" id="sideSwitchBtn" onclick="showSideChoice()" style="display:none;">🏠 Bytt side</button>
@@ -419,6 +562,7 @@
   </div>
 </header>
 
+<div class="app-body" id="appBody">
 <nav class="app-sidebar" id="appSidebar">
   <div class="sb-logo">
     <img src="https://madina-institute.github.io/Madina-Instituttet-/logo.png" alt="Madina Institute">
@@ -435,11 +579,35 @@
 <div id="sideChooseView">
   <div class="wrap">
     <div class="dash-strip" id="dashStrip">
-      <div class="stat-card"><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
-      <div class="stat-card alert" id="dashCardRegs"><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
-      <div class="stat-card alert" id="dashCardRequests"><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
-      <div class="stat-card alert" id="dashCardUnpaid"><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
+      <div class="stat-card stat-purple"><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
+      <div class="stat-card stat-yellow alert" id="dashCardRegs"><span class="alert-dot"></span><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
+      <div class="stat-card stat-pink alert" id="dashCardRequests"><span class="alert-dot"></span><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
+      <div class="stat-card stat-blue alert" id="dashCardUnpaid"><span class="alert-dot"></span><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
     </div>
+
+    <div class="dash-widgets" id="dashWidgets">
+      <div class="widget-card">
+        <h3>Betalingsstatus</h3>
+        <div class="donut-wrap">
+          <div class="donut" id="dashDonut"></div>
+          <div class="donut-center"><span id="dashDonutPct">0%</span><small>betalt</small></div>
+        </div>
+        <div class="donut-legend">
+          <span><i style="background:var(--stat-blue-fg)"></i>Betalt (<span id="dashPaidCount">0</span>)</span>
+          <span><i style="background:var(--paper-2)"></i>Ikke betalt (<span id="dashUnpaidCount">0</span>)</span>
+        </div>
+      </div>
+      <div class="widget-card">
+        <h3>Oppmøtestatus</h3>
+        <div class="bar-chart" id="dashAttBars"></div>
+      </div>
+      <div class="widget-card">
+        <h3 id="dashAgendaTitle">Dagens timeplan</h3>
+        <div id="dashAgendaList"></div>
+      </div>
+    </div>
+
+    <h3 class="shortcuts-title">Snarveier</h3>
     <div class="side-grid">
       <div class="side-card" onclick="selectSide('eier')">
         <div class="ic">🏛️</div>
@@ -470,17 +638,10 @@
   </div>
 </div>
 
-<!-- SUB-SECTION CHOICE (big cards, same style as the main side choice) -->
-<div id="subChooseView" style="display:none;">
-  <div class="wrap">
-    <button class="side-switch" style="position:static; display:inline-block; margin-bottom:18px;" onclick="showSideChoice()">🏠 Bytt side</button>
-    <div class="side-grid" id="subChooseGrid"></div>
-  </div>
-</div>
+<!-- SUB-SECTION NAV — persistent vertical list, stays visible while browsing a side's sections -->
+<div id="subChooseView" style="display:none;"></div>
 
 <div class="tabs" id="tabsBar" style="display:none;">
-  <button class="back-to-cards" onclick="history.back()">⬅ Bytt seksjon</button>
-  <span class="current-tab-label" id="currentTabLabel"></span>
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
@@ -504,7 +665,9 @@
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
 </div>
 
-<main id="mainContent" style="display:none;">
+<div class="content-layout" id="contentLayout" style="display:none;">
+  <nav class="sub-sidebar" id="subSidebar"></nav>
+  <main id="mainContent">
 
 
   <!-- REPORTS -->
@@ -767,12 +930,7 @@
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
       <button class="btn btn-ghost" onclick="exportCSV('registrations')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableRegistrations">
-      <thead><tr>
-        <th>Elev</th><th>Foresatt</th><th>Ønsket program</th><th>Status</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyRegistrations"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableRegistrations"></div>
   </div>
 
   <!-- LEDELSE -->
@@ -783,12 +941,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('ledelse')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('ledelse')">+ Ny person</button>
     </div>
-    <table class="records-hidden" id="tableLedelse">
-      <thead><tr>
-        <th>Navn</th><th>Rolle</th><th>Fagområde</th><th>Telefon</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyLedelse"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableLedelse"></div>
   </div>
 
   <!-- MEETINGS -->
@@ -799,12 +952,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('meetings')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('meetings')">+ Nytt møtereferat</button>
     </div>
-    <table class="records-hidden" id="tableMeetings">
-      <thead><tr>
-        <th>Dato</th><th>Tema</th><th>Referent</th><th>Til stede (roller)</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyMeetings"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableMeetings"></div>
   </div>
 
   <!-- FINANCES -->
@@ -820,12 +968,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('finances')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
     </div>
-    <table class="records-hidden" id="tableFinances">
-      <thead><tr>
-        <th>Dato</th><th>Type</th><th>Kategori</th><th>Beløp</th><th>Beskrivelse</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyFinances"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableFinances"></div>
   </div>
 
   <!-- TEACHERS -->
@@ -836,12 +979,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny lærer</button>
     </div>
-    <table class="records-hidden" id="tableTeachers">
-      <thead><tr>
-        <th>Navn</th><th>Fag</th><th>Dager</th><th>Telefon</th><th>E-post</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyTeachers"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableTeachers"></div>
   </div>
 
   <!-- GUARDIANS -->
@@ -852,12 +990,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('guardians')">+ Ny foresatt</button>
     </div>
-    <table class="records-hidden" id="tableGuardians">
-      <thead><tr>
-        <th>Navn</th><th>Telefon</th><th>E-post</th><th>Antall barn</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyGuardians"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableGuardians"></div>
   </div>
 
   <!-- STUDENTS -->
@@ -868,12 +1001,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('students')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('students')">+ Ny elev</button>
     </div>
-    <table class="records-hidden" id="tableStudents">
-      <thead><tr>
-        <th>Navn</th><th>Program</th><th>Klasse</th><th>Foresatt</th><th>Betalt</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyStudents"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableStudents"></div>
   </div>
 
   <!-- CLASSES -->
@@ -884,12 +1012,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('classes')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('classes')">+ Ny klasse</button>
     </div>
-    <table class="records-hidden" id="tableClasses">
-      <thead><tr>
-        <th>Klassenavn</th><th>Trinn/Alder</th><th>Program</th><th>Merknad</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyClasses"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableClasses"></div>
   </div>
 
   <!-- HOURS -->
@@ -904,24 +1027,27 @@
     </div>
 
     <div class="report-grid" id="weekView" style="display:none; margin-bottom:22px;">
+      <div class="tp-legend" style="grid-column:1/-1;">
+        <span><span class="tp-dot" style="background:#9ecfb2;"></span>Koran</span>
+        <span><span class="tp-dot" style="background:#edc276;"></span>Islam</span>
+        <span><span class="tp-dot" style="background:#b9cbe6;"></span>Arabisk / Urdu</span>
+        <span><span class="tp-dot" style="background:#dfb8da;"></span>Madinabarn</span>
+        <span><span class="tp-dot" style="background:#cfd6cf;"></span>Repetisjon</span>
+        <span><span class="tp-dot" style="background:var(--emerald-d);"></span>Felles samling</span>
+      </div>
       <div class="report-card">
         <h3>Lørdag</h3>
-        <div class="sub">Sortert etter klokkeslett</div>
+        <div class="sub">Fullstendig timeplan, sortert etter klokkeslett</div>
         <div id="weekLordag"></div>
       </div>
       <div class="report-card">
         <h3>Søndag</h3>
-        <div class="sub">Sortert etter klokkeslett</div>
+        <div class="sub">Fullstendig timeplan, sortert etter klokkeslett</div>
         <div id="weekSondag"></div>
       </div>
     </div>
 
-    <table class="records-hidden" id="tableHours">
-      <thead><tr>
-        <th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th><th>Klasse/Gruppe</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyHours"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableHours"></div>
   </div>
 
   <!-- ATTENDANCE -->
@@ -950,12 +1076,7 @@
       <span class="count-chip" id="countAttendance" onclick="toggleRecordsById('tableAttendance')">0 registreringer</span>
       <button class="btn btn-ghost" onclick="exportCSV('attendance')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableAttendance">
-      <thead><tr>
-        <th>Dato</th><th>Elev</th><th>Klasse</th><th>Status</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyAttendance"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableAttendance"></div>
   </div>
 
   <!-- ABSENCE REQUESTS -->
@@ -1002,12 +1123,7 @@
         <span class="count-chip" id="countLessonPlans" onclick="toggleRecordsById('tableLessonPlans')">0 forberedelser</span>
         <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
       </div>
-      <table class="records-hidden" id="tableLessonPlans">
-        <thead><tr>
-          <th>Lærer</th><th>Fag</th><th>Dato</th><th>Emne</th><th>Klasse</th><th></th>
-        </tr></thead>
-        <tbody id="tbodyLessonPlans"></tbody>
-      </table>
+      <div class="records-hidden card-grid" id="tableLessonPlans"></div>
     </div>
   </div>
 
@@ -1018,24 +1134,14 @@
       <span class="count-chip" id="countHomework" onclick="toggleRecordsById('tableHomework')">0 lekser</span>
       <button class="btn btn-ghost" onclick="exportCSV('homework')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableHomework">
-      <thead><tr>
-        <th>Klasse</th><th>Tittel</th><th>Lærer</th><th>Dato</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyHomework"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableHomework"></div>
 
     <div class="toolbar" style="margin-top:22px;">
       <input class="search" id="searchHomeworkSubmissions" placeholder="Søk etter elev, lekse eller klasse...">
       <span class="count-chip" id="countHomeworkSubmissions" onclick="toggleRecordsById('tableHomeworkSubmissions')">0 leksesvar</span>
       <button class="btn btn-ghost" onclick="exportCSV('homeworkSubmissions')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableHomeworkSubmissions">
-      <thead><tr>
-        <th>Elev</th><th>Lekse</th><th>Klasse</th><th>Innsendt</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyHomeworkSubmissions"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableHomeworkSubmissions"></div>
   </div>
 
   <!-- ANNOUNCEMENTS -->
@@ -1049,12 +1155,7 @@
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
       Kunngjøringer vises for alle foresatte i Foreldreportalen, sortert etter dato (nyeste øverst).
     </div>
-    <table class="records-hidden" id="tableAnnouncements">
-      <thead><tr>
-        <th>Tittel</th><th>Målgruppe</th><th>Dato</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyAnnouncements"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableAnnouncements"></div>
   </div>
 
   <!-- STUDENT NOTES -->
@@ -1068,12 +1169,7 @@
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
       Notater om fremgang skrives vanligvis av læreren i Lærerportalen, og vises for foresatte i Foreldreportalen.
     </div>
-    <table class="records-hidden" id="tableStudentNotes">
-      <thead><tr>
-        <th>Elev</th><th>Klasse</th><th>Dato</th><th>Lærer</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyStudentNotes"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableStudentNotes"></div>
   </div>
 
   <!-- CONTACT UPDATE REQUESTS -->
@@ -1104,12 +1200,7 @@
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
       Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt).
     </div>
-    <table class="records-hidden" id="tableMessages">
-      <thead><tr>
-        <th>Klasse</th><th>Foresatt</th><th>Fra</th><th>Dato/tid</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyMessages"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableMessages"></div>
   </div>
 
   <!-- BETALINGSINNSTILLINGER -->
@@ -1127,6 +1218,8 @@
 
 
 </main>
+</div>
+</div>
 
 <!-- MODAL -->
 <div class="overlay" id="overlay">
@@ -1369,7 +1462,6 @@
         ]},
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
-        {key:'foresatt1_relasjon_annet', label:'Foresatt 1 — relasjon (annet)', type:'text'},
 
         {key:'telefon', label:'Telefon (elev/direkte)', type:'text'},
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
@@ -1385,7 +1477,6 @@
         {key:'postnr_sted', label:'Postnummer og sted', type:'text'},
         {key:'foresatt2_navn', label:'Foresatt 2 — navn', type:'text'},
         {key:'foresatt2_relasjon', label:'Foresatt 2 — relasjon', type:'text'},
-        {key:'foresatt2_relasjon_annet', label:'Foresatt 2 — relasjon (annet)', type:'text'},
         {key:'foresatt2_tlf', label:'Foresatt 2 — telefon', type:'text'},
         {key:'foresatt2_epost', label:'Foresatt 2 — e-post', type:'text'},
         {key:'nod_navn', label:'Nødkontakt — navn', type:'text'},
@@ -1408,30 +1499,18 @@
         {key:'tidligere_studert', label:'Tidligere studert', type:'text'},
         {key:'koran_lese', label:'Koran — kan lese', type:'text'},
         {key:'koran_qaida', label:'Koran — lært Qaida', type:'text'},
-        {key:'koran_qaida_hvilken', label:'Koran — hvilken Qaida', type:'text'},
         {key:'koran_tajwid', label:'Koran — leser med tajwīd', type:'text'},
         {key:'koran_memorert', label:'Koran — memorert deler', type:'text'},
-        {key:'koran_memorert_fra', label:'Koran — memorert fra', type:'text'},
-        {key:'koran_memorert_til', label:'Koran — memorert til', type:'text'},
         {key:'koran_ijazah', label:'Koran — ijāzah/Hifz', type:'text'},
         {key:'arabisk_tidligere', label:'Arabisk — lært tidligere', type:'text'},
-        {key:'arabisk_ar', label:'Arabisk — antall år', type:'text'},
-        {key:'ar_lese', label:'Arabisk — lese', type:'text'},
-        {key:'ar_skrive', label:'Arabisk — skrive', type:'text'},
-        {key:'ar_forsta', label:'Arabisk — forstå', type:'text'},
-        {key:'ar_snakke', label:'Arabisk — snakke', type:'text'},
         {key:'arabisk_niva', label:'Arabisk — nivå/bok', type:'text'},
         {key:'urdu_tidligere', label:'Urdu — lært tidligere', type:'text'},
-        {key:'urdu_ar', label:'Urdu — antall år', type:'text'},
-        {key:'urdu_ferdighet', label:'Urdu — ferdigheter', type:'text'},
         {key:'urdu_niva', label:'Urdu — nivå/bok', type:'text'},
         {key:'sprak_hjemme', label:'Språk hjemme', type:'text'},
-        {key:'sprak_hjemme_annet', label:'Språk hjemme — annet', type:'text'},
         {key:'samtykke_personopplysninger', label:'Samtykke personopplysninger', type:'text'},
         {key:'samtykke_bilder', label:'Samtykke bilder/video (internt)', type:'text'},
         {key:'samtykke_fotografering', label:'Samtykke fotografering', type:'text'},
-        {key:'samtykke_publisering_nett', label:'Samtykke publisering på nett/sosiale medier', type:'text'},
-        {key:'dato_signatur', label:'Dato signatur', type:'text'}
+        {key:'samtykke_publisering_nett', label:'Samtykke publisering på nett/sosiale medier', type:'text'}
       ],
       cols: ['navn','program','klasse','foresatt','betalt']
     },
@@ -1981,60 +2060,127 @@
     if(query){
       data = data.filter(row => schema.cols.some(c => colDisplay(row, c).toLowerCase().includes(query)));
     }
-    const tbody = document.getElementById('tbody' + capitalize(type));
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    if(data.length === 0){
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="${schema.cols.length+1}">Ingen ${schema.label}e registrert ennå.</td></tr>`;
-    } else {
-      data.forEach(row => {
-        const tr = document.createElement('tr');
-        let cellsHtml = schema.cols.map((c,i) => {
-          const field = schema.fields.find(f=>f.key===c);
-          const val = colDisplay(row, c) || '—';
-          let display;
-          if(type === 'registrations' && c === 'status'){
-            const statusClass = { 'Ny':'ny', 'Venteliste':'venteliste', 'Godkjent':'godkjent', 'Avslått':'avslatt' }[val] || 'ny';
-            display = `<span class="status-pill ${statusClass}">${escapeHtml(val)}</span>`;
-          } else if(i===1 && field && field.type==='select'){
-            display = `<span class="tag-pill">${escapeHtml(val)}</span>`;
-          } else {
-            display = escapeHtml(val);
-          }
-          return `<td data-label="${field.label}">${display}</td>`;
-        }).join('');
-        if(type === 'guardians'){
-          const childCount = cache.students.filter(s => (s.foresatt||'') === row.id).length;
-          cellsHtml += `<td data-label="Antall barn">${childCount}</td>`;
-        }
-        if(type === 'registrations'){
-          cellsHtml += `<td class="actions-col">
-            <div class="reg-actions">
-              <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
-              <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
-              <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
-              <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
-            </div>
-          </td>`;
-        } else {
-          cellsHtml += `<td class="actions-col">
-            ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
-            <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
-            <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
-          </td>`;
-        }
-        tr.innerHTML = cellsHtml;
-        tbody.appendChild(tr);
-      });
-    }
+    renderRecordCards(type, data);
     const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
     document.getElementById('count' + capitalize(type)).innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
-    if(type === 'students' && document.getElementById('tbodyGuardians')) render('guardians');
+    if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
     if(type === 'classes') populateAttendanceClassFilter();
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     updateStats();
+  }
+
+  // Which field is the card "title" and which (select-type) field is shown as a colored pill, per type.
+  // Falls back to the first column / first select-type column when not listed here.
+  const CARD_CONFIG = {
+    teachers: { title:'navn', pill:'fag' },
+    guardians: { title:'navn', pill:'relasjon' },
+    students: { title:'navn', pill:'program' },
+    classes: { title:'navn', pill:'program' },
+    hours: { title:'fag', pill:'dag' },
+    attendance: { title:'studentId', pill:'status' },
+    lessonPlans: { title:'emne', pill:'fag' },
+    registrations: { title:'elev_navn', pill:'status' },
+    homework: { title:'tittel', pill:null },
+    homeworkSubmissions: { title:'studentId', pill:null },
+    announcements: { title:'tittel', pill:'malgruppe' },
+    studentNotes: { title:'studentId', pill:null },
+    messages: { title:'guardianNavn', pill:'fra' },
+    meetings: { title:'tema', pill:null },
+    finances: { title:'beskrivelse', pill:'type' },
+    ledelse: { title:'navn', pill:'rolle' }
+  };
+
+  function renderRecordCards(type, data){
+    const schema = SCHEMAS[type];
+    const grid = document.getElementById('table' + capitalize(type));
+    if(!grid) return;
+    grid.innerHTML = '';
+    if(data.length === 0){
+      grid.innerHTML = `<div class="record-empty">Ingen ${schema.label}er registrert ennå.</div>`;
+      return;
+    }
+    const colDisplay = (row, c) => {
+      const field = schema.fields.find(f=>f.key===c);
+      if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
+      const v = row[c];
+      if(Array.isArray(v)) return v.join(', ');
+      return v || '';
+    };
+    const cfg = CARD_CONFIG[type] || {};
+    const titleKey = cfg.title || schema.cols[0];
+    let pillKey = cfg.pill;
+    if(pillKey === undefined){
+      const second = schema.cols[1];
+      const secondField = second && schema.fields.find(f=>f.key===second);
+      pillKey = (secondField && secondField.type === 'select') ? second : null;
+    }
+    data.forEach(row => {
+      const titleVal = colDisplay(row, titleKey) || '—';
+      const initials = String(titleVal).trim().split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
+      let pillHtml = '';
+      if(pillKey){
+        const pillVal = colDisplay(row, pillKey);
+        if(pillVal){
+          if(type === 'registrations' && pillKey === 'status'){
+            const statusClass = { 'Ny':'ny', 'Venteliste':'venteliste', 'Godkjent':'godkjent', 'Avslått':'avslatt' }[pillVal] || 'ny';
+            pillHtml = `<span class="status-pill ${statusClass}">${escapeHtml(pillVal)}</span>`;
+          } else {
+            pillHtml = `<span class="record-pill">${escapeHtml(pillVal)}</span>`;
+          }
+        }
+      }
+      let fieldsHtml = '';
+      let contactHtml = '';
+      schema.cols.forEach(c => {
+        if(c === titleKey || c === pillKey) return;
+        const field = schema.fields.find(f=>f.key===c);
+        const val = colDisplay(row, c);
+        if(!val) return;
+        if(c === 'epost' || c === 'nyEpost'){
+          contactHtml += `<div class="record-contact-row">✉️ ${escapeHtml(val)}</div>`;
+        } else if(c === 'telefon' || c === 'nyTelefon'){
+          contactHtml += `<div class="record-contact-row">📞 ${escapeHtml(val)}</div>`;
+        } else {
+          fieldsHtml += `<div class="record-field"><span class="record-field-label">${escapeHtml(field.label)}</span>${escapeHtml(val)}</div>`;
+        }
+      });
+      if(type === 'guardians'){
+        const childCount = cache.students.filter(s => (s.foresatt||'') === row.id).length;
+        fieldsHtml += `<div class="record-field"><span class="record-field-label">Antall barn</span>${childCount}</div>`;
+      }
+      let actionsHtml;
+      if(type === 'registrations'){
+        actionsHtml = `<div class="record-card-actions">
+          <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
+          <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
+          <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
+          <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
+        </div>`;
+      } else {
+        actionsHtml = `<div class="record-card-actions">
+          ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
+          <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
+          <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
+        </div>`;
+      }
+      const card = document.createElement('div');
+      card.className = 'record-card';
+      card.innerHTML = `
+        <div class="record-card-top">
+          <div class="record-avatar">${escapeHtml(initials)}</div>
+          <div>
+            <div class="record-title">${escapeHtml(titleVal)}</div>
+            ${pillHtml}
+          </div>
+        </div>
+        ${fieldsHtml}
+        ${contactHtml ? `<div class="record-contact">${contactHtml}</div>` : ''}
+        ${actionsHtml}
+      `;
+      grid.appendChild(card);
+    });
   }
 
   function renderFinanceSummary(){
@@ -2049,22 +2195,82 @@
     document.getElementById('finStatSaldo').textContent = saldo.toLocaleString('no-NO') + ' kr';
   }
 
+  const TP_SUBJECT_CLASS = {
+    'Koran':'tp-koran', 'Islam':'tp-islam', 'Arabisk':'tp-sprak', 'Urdu':'tp-sprak',
+    'Madinabarn':'tp-madinabarn', 'Repetisjon':'tp-repetisjon'
+  };
+  function tpSubjClass(fag){ return TP_SUBJECT_CLASS[fag] || 'tp-annet'; }
+  function tpParseTid(tid){
+    if(!tid) return { start:'', end:'' };
+    const parts = tid.split(/[–-]/).map(s => s.trim());
+    return { start: parts[0] || '', end: parts[1] || parts[0] || '' };
+  }
+  function tpClassName(h){ return resolveDynName('classes', h.klasse) || h.klasse || ''; }
+
+  function renderTimeplanDay(day){
+    const rows = cache.hours.filter(h => h.dag === day);
+    if(rows.length === 0){
+      return `<div class="report-empty">Ingen timer registrert for ${day.toLowerCase()}.</div>`;
+    }
+
+    // Columns: distinct real classes (excludes shared "felles" blocks), first-seen order.
+    const columns = [];
+    const seenCols = new Set();
+    rows.forEach(h => {
+      const name = tpClassName(h);
+      if(name && !/felles/i.test(name) && !seenCols.has(name)){
+        seenCols.add(name);
+        columns.push(name);
+      }
+    });
+
+    // Time slots: distinct tid values, sorted by start time.
+    const slotMap = new Map();
+    rows.forEach(h => { if(h.tid && !slotMap.has(h.tid)) slotMap.set(h.tid, tpParseTid(h.tid)); });
+    const slots = Array.from(slotMap.entries()).sort((a,b) => a[1].start.localeCompare(b[1].start));
+
+    let bodyHtml = '';
+    for(let i=0; i<slots.length; i++){
+      const [tid, range] = slots[i];
+      const slotRows = rows.filter(h => h.tid === tid);
+      const isFelles = slotRows.some(h => /felles/i.test(tpClassName(h)));
+      if(isFelles){
+        const label = Array.from(new Set(slotRows.map(h => `${h.fag ? h.fag + ' — ' : ''}${tpClassName(h)}`))).join(' · ');
+        bodyHtml += `<tr class="tp-felles"><td class="tp-time">${escapeHtml(tid)}</td><td colspan="${columns.length}">${escapeHtml(label)}</td></tr>`;
+      } else {
+        const cells = columns.map(col => {
+          const entry = slotRows.find(h => tpClassName(h) === col);
+          if(!entry) return `<td class="tp-empty-cell">—</td>`;
+          const teacher = resolveDynName('teachers', entry.larer);
+          return `<td><span class="tp-subj ${tpSubjClass(entry.fag)}">${escapeHtml(entry.fag || '—')}${teacher ? `<small>${escapeHtml(teacher)}</small>` : ''}</span></td>`;
+        }).join('');
+        bodyHtml += `<tr><td class="tp-time">${escapeHtml(tid)}</td>${cells}</tr>`;
+      }
+      if(i < slots.length - 1){
+        const next = slots[i+1][1];
+        if(range.end && next.start && range.end !== next.start){
+          bodyHtml += `<tr class="tp-pause"><td colspan="${columns.length + 1}">Pause · ${escapeHtml(range.end)}–${escapeHtml(next.start)}</td></tr>`;
+        }
+      }
+    }
+
+    const theadCols = columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+    return `
+      <div class="tp-scrollbox">
+        <table class="tp-table">
+          <thead><tr><th>Tid</th>${theadCols}</tr></thead>
+          <tbody>${bodyHtml}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function renderWeekView(){
     const lordagEl = document.getElementById('weekLordag');
     const sondagEl = document.getElementById('weekSondag');
     if(!lordagEl || !sondagEl) return;
-    const sortByTid = (a,b) => (a.tid||'').localeCompare(b.tid||'');
-    const lordag = cache.hours.filter(h => h.dag === 'Lørdag').sort(sortByTid);
-    const sondag = cache.hours.filter(h => h.dag === 'Søndag').sort(sortByTid);
-    const cardHtml = (h) => `
-      <div class="bar-row" style="border-bottom:1px solid var(--line); padding-bottom:10px;">
-        <div class="bar-label"><span><strong>${escapeHtml(h.tid||'—')}</strong> · ${escapeHtml(h.fag||'—')}</span></div>
-        <div style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;">
-          ${escapeHtml(resolveDynName('teachers', h.larer) || 'Ingen lærer')} · ${escapeHtml(resolveDynName('classes', h.klasse) || 'Ingen klasse')}
-        </div>
-      </div>`;
-    lordagEl.innerHTML = lordag.length ? lordag.map(cardHtml).join('') : '<div class="report-empty">Ingen timer registrert for lørdag.</div>';
-    sondagEl.innerHTML = sondag.length ? sondag.map(cardHtml).join('') : '<div class="report-empty">Ingen timer registrert for søndag.</div>';
+    lordagEl.innerHTML = renderTimeplanDay('Lørdag');
+    sondagEl.innerHTML = renderTimeplanDay('Søndag');
   }
 
   window.toggleWeekView = function(){
@@ -2179,6 +2385,65 @@
     const unpaid = cache.students.filter(s => s.betalt === 'Nei').length;
     document.getElementById('dashStatUnpaid').textContent = unpaid;
     document.getElementById('dashCardUnpaid').classList.toggle('has-items', unpaid > 0);
+
+    renderDashboardWidgets();
+  }
+
+  const ATT_STATUS_COLORS = { 'Til stede':'#4A8FCB', 'Fraværende':'#a83c3c', 'Syk':'#b7924a', 'Permisjon':'#8a8fa3' };
+
+  function renderDashboardWidgets(){
+    const donutEl = document.getElementById('dashDonut');
+    if(!donutEl) return;
+
+    // Donut: payment status among students
+    const total = cache.students.length;
+    const paid = cache.students.filter(s => s.betalt === 'Ja').length;
+    const pct = total ? Math.round((paid / total) * 100) : 0;
+    donutEl.style.background = `conic-gradient(var(--stat-blue-fg) 0% ${pct}%, var(--paper-2) ${pct}% 100%)`;
+    document.getElementById('dashDonutPct').textContent = pct + '%';
+    document.getElementById('dashPaidCount').textContent = paid;
+    document.getElementById('dashUnpaidCount').textContent = total - paid;
+
+    // Bar chart: attendance status distribution
+    const counts = Object.fromEntries(countBy(cache.attendance, 'status'));
+    const statuses = ['Til stede', 'Fraværende', 'Syk', 'Permisjon'];
+    const max = Math.max(1, ...statuses.map(s => counts[s] || 0));
+    const barsEl = document.getElementById('dashAttBars');
+    if(barsEl){
+      barsEl.innerHTML = statuses.map(s => {
+        const n = counts[s] || 0;
+        const h = Math.max(4, Math.round((n / max) * 100));
+        return `<div class="bar-col">
+          <div class="bar-n">${n}</div>
+          <div class="bar-fill" style="height:${h}px; background:${ATT_STATUS_COLORS[s]};"></div>
+          <div class="bar-lbl">${escapeHtml(s)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Agenda: today's schedule if it's a school day (Lørdag/Søndag), else next school day's
+    const dayNames = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+    const todayName = dayNames[new Date().getDay()];
+    const titleEl = document.getElementById('dashAgendaTitle');
+    let agendaDay = (todayName === 'Lørdag' || todayName === 'Søndag') ? todayName : null;
+    if(!agendaDay){
+      agendaDay = 'Lørdag';
+      if(titleEl) titleEl.textContent = 'Neste timeplan (lørdag)';
+    } else if(titleEl){
+      titleEl.textContent = 'Dagens timeplan (' + agendaDay + ')';
+    }
+    const agendaRows = cache.hours.filter(h => h.dag === agendaDay).sort((a,b) => (a.tid||'').localeCompare(b.tid||''));
+    const listEl = document.getElementById('dashAgendaList');
+    if(listEl){
+      listEl.innerHTML = agendaRows.length ? agendaRows.map(h => {
+        const klasseName = resolveDynName('classes', h.klasse) || h.klasse || '';
+        const larerName = resolveDynName('teachers', h.larer);
+        return `<div class="agenda-row">
+          <span class="agenda-time">${escapeHtml(h.tid || '—')}</span>
+          <span class="agenda-text"><b>${escapeHtml(h.fag || '—')}</b><small>${escapeHtml(klasseName)}${larerName ? ' · ' + escapeHtml(larerName) : ''}</small></span>
+        </div>`;
+      }).join('') : '<div class="report-empty">Ingen timer registrert.</div>';
+    }
   }
 
   function countBy(list, key){
@@ -2321,30 +2586,27 @@
     currentSideForBack = side;
     highlightSidebar(side);
     document.getElementById('sideChooseView').style.display = 'none';
-    document.getElementById('tabsBar').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'inline-block';
-    document.getElementById('subChooseView').style.display = 'block';
+    document.getElementById('contentLayout').style.display = 'flex';
 
-    const grid = document.getElementById('subChooseGrid');
+    const subSidebar = document.getElementById('subSidebar');
     const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side="' + side + '"]'));
-    grid.innerHTML = tabsForSide.map(tab => `
-      <div class="side-card" onclick="selectSubTab('${tab.dataset.tab}')">
-        <div class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</div>
-        <h2>${tab.textContent}</h2>
-        <p>${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}</p>
-      </div>
+    subSidebar.innerHTML = tabsForSide.map(tab => `
+      <button data-sub-tab="${tab.dataset.tab}" onclick="selectSubTab('${tab.dataset.tab}')" title="${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}">
+        <span class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</span> ${tab.textContent}
+      </button>
     `).join('');
-    pushAppView({ appView: 'sub', side });
+    if(tabsForSide.length) selectSubTab(tabsForSide[0].dataset.tab);
   };
 
   window.selectSubTab = function(tabName){
     document.getElementById('subChooseView').style.display = 'none';
-    document.getElementById('tabsBar').style.display = 'flex';
-    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('tabsBar').style.display = 'none';
+    document.getElementById('contentLayout').style.display = 'flex';
 
-    document.querySelectorAll('.tab').forEach(t => {
-      t.style.display = t.dataset.side === currentSideForBack ? '' : 'none';
+    document.querySelectorAll('.sub-sidebar button').forEach(b => {
+      b.classList.toggle('active', b.dataset.subTab === tabName);
     });
 
     const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
@@ -2353,9 +2615,8 @@
   };
 
   window.backToSubChoice = function(){
-    document.getElementById('tabsBar').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('subChooseView').style.display = 'block';
+    document.getElementById('contentLayout').style.display = 'none';
+    document.getElementById('subChooseView').style.display = 'none';
   };
 
   window.showSideChoice = function(){
@@ -2363,7 +2624,7 @@
     document.getElementById('sideChooseView').style.display = 'block';
     document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('contentLayout').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'none';
   };
 
