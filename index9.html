@@ -74,25 +74,26 @@
 
   /* Persistent left rail for the 5 main sections — visible on every screen
      size (compact icon rail on mobile, full labeled sidebar on desktop). */
-  #appRoot{ padding-inline-start:64px; }
+  #appRoot{ padding-inline-start:84px; }
   .app-sidebar{
-    display:flex; position:fixed; inset-inline-start:0; top:0; bottom:0; width:64px; z-index:500;
+    display:flex; position:fixed; inset-inline-start:0; top:0; width:84px; z-index:500;
     background:linear-gradient(180deg, var(--emerald) 0%, var(--emerald-d) 100%);
-    flex-direction:column; align-items:center; padding:14px 4px; gap:4px; overflow-y:auto;
+    flex-direction:column; align-items:center; padding:12px 4px; gap:2px; overflow-y:auto;
+    max-height:100vh; border-end-end-radius:14px; box-shadow:var(--shadow);
   }
   .app-sidebar .sb-logo{display:none;}
   .app-sidebar button{
     display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; text-align:center;
     background:transparent; border:none; color:rgba(255,255,255,0.82); font-family:'Jost',sans-serif;
-    font-size:9.5px; line-height:1.2; padding:8px 2px; border-radius:8px; cursor:pointer; gap:3px;
+    font-size:9.5px; line-height:1.15; padding:7px 2px; border-radius:8px; cursor:pointer; gap:2px;
   }
   html[dir="rtl"] .app-sidebar button{font-family:'Tajawal',sans-serif;}
-  .app-sidebar button .ic{font-size:19px;}
+  .app-sidebar button .ic{font-size:17px;}
   .app-sidebar button:hover{background:rgba(255,255,255,0.10); color:#fff;}
   .app-sidebar button.active{background:#fff; color:var(--emerald-d); font-weight:600;}
   @media (min-width:900px){
     #appRoot{ padding-inline-start:220px; }
-    .app-sidebar{ width:220px; align-items:stretch; padding:18px 10px; gap:4px; }
+    .app-sidebar{ width:220px; align-items:stretch; padding:18px 10px; gap:4px; bottom:0; max-height:none; border-end-end-radius:0; }
     .app-sidebar .sb-logo{display:flex; align-items:center; gap:10px; padding:6px 10px 18px;}
     .app-sidebar .sb-logo img{height:34px; width:auto; border-radius:5px;}
     .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:#fff;}
