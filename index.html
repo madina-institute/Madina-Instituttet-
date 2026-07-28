@@ -2027,6 +2027,29 @@
     return true;
   }
 
+  // Safety-net for every hard delete in the admin panel: snapshot the full
+  // record into 'deletionLog' BEFORE it's actually removed from its real
+  // collection. The live delete still happens immediately/normally — this
+  // is purely a recovery trail, reviewed on the separate hidden
+  // "Slettelogg" page, which can restore a record with its EXACT original
+  // Firestore id (so any existing dynamic-select links pointing at that id
+  // start working again automatically) or dismiss the log entry once the
+  // deletion is confirmed as intentional. Never blocks or delays the
+  // delete itself — logging failures are swallowed so a logging hiccup can
+  // never prevent an admin from deleting something.
+  async function logDeletion(type, row){
+    try{
+      const { id, ...data } = row;
+      await addDoc(collection(db, 'deletionLog'), {
+        type, originalId: id, data,
+        deletedAt: new Date().toISOString(),
+        deletedBy: currentUserEmail || 'ukjent'
+      });
+    } catch(err){
+      console.error('Kunne ikke logge sletting (selve slettingen fortsetter uansett):', err);
+    }
+  }
+
   window.clearCollection = async function(type){
     const count = cache[type].length;
     if(count === 0){
@@ -2039,6 +2062,7 @@
     if(!ok) return;
     try{
       for(const row of cache[type]){
+        await logDeletion(type, row);
         await deleteDoc(doc(db, SCHEMAS[type].collectionName, row.id));
       }
       showToast(TYPE_LABELS[type] + ' er nullstilt.');
@@ -2063,6 +2087,7 @@
     try{
       for(const type of Object.keys(SCHEMAS)){
         for(const row of cache[type]){
+          await logDeletion(type, row);
           await deleteDoc(doc(db, SCHEMAS[type].collectionName, row.id));
         }
       }
@@ -3886,6 +3911,8 @@
   window.deleteEntry = async function(type, id){
     if(!confirm('Er du sikker på at du vil slette denne oppføringen?')) return;
     try{
+      const row = cache[type].find(r => r.id === id);
+      if(row) await logDeletion(type, row);
       await deleteDoc(doc(db, SCHEMAS[type].collectionName, id));
       showToast('Slettet.');
     } catch(err){
