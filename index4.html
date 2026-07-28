@@ -223,6 +223,9 @@
   html[dir="rtl"] .chat-bubble{font-family:'Tajawal','Lora',serif;}
   .chat-row.me .chat-bubble{background:var(--emerald); color:#fff; border-color:var(--emerald);}
   .chat-bubble .chat-time{display:block; margin-top:5px; font-family:'Jost',sans-serif; font-size:10px; color:#8a9a90;}
+  .chat-bubble .chat-sender{display:block; font-family:'Jost',sans-serif; font-size:11px; font-weight:700; margin-bottom:3px; color:var(--emerald-d);}
+  .chat-row.me .chat-bubble .chat-sender{color:rgba(255,255,255,0.85);}
+  html[dir="rtl"] .chat-bubble .chat-sender{font-family:'Tajawal',sans-serif;}
   .chat-row.me .chat-bubble .chat-time{color:rgba(255,255,255,0.7);}
   html[dir="rtl"] .chat-bubble .chat-time{font-family:'Tajawal',sans-serif;}
   .chat-bubble .chat-attach{display:inline-block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; text-decoration:underline;}
@@ -549,9 +552,26 @@
     <!-- KONTAKT LÆRER -->
     <div class="sub-view" id="view-teacherMsg">
       <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
-      <div class="card">
+
+      <div class="card" id="teacherMsgListInner">
         <h2 data-i18n="menuTeacherMsg">Kontakt lærer</h2>
-        <div class="sub" id="teacherMsgSub"></div>
+        <button type="button" class="btn btn-ghost" onclick="startGuardianThread()" data-i18n="newMsgStart" style="margin-bottom:14px;">Start melding</button>
+        <div class="sub" data-i18n="openThreadsLabel">Åpne samtaler</div>
+        <div id="teacherMsgThreadsList"></div>
+        <div class="sub" id="archivedThreadsLabelParent" style="margin-top:18px;" data-i18n="archivedThreadsLabel">Arkiverte samtaler</div>
+        <div id="teacherMsgThreadsArchiveList"></div>
+      </div>
+
+      <div class="card" id="teacherMsgDetailInner" style="display:none;">
+        <button class="back-link" onclick="backToThreadList()" data-i18n="back">← Tilbake</button>
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+          <div>
+            <h2 id="teacherMsgTitle" style="margin-bottom:2px;"></h2>
+            <div class="sub" id="teacherMsgSub"></div>
+          </div>
+          <button type="button" class="btn btn-ghost" id="guardianThreadCloseBtn" style="white-space:nowrap; font-size:11.5px; padding:6px 12px;" onclick="toggleGuardianThreadClosed()"></button>
+        </div>
+        <div class="empty-msg" id="teacherThreadClosedNote" style="display:none;" data-i18n="threadClosedNote">Denne samtalen er lukket. Send en melding for å gjenåpne den.</div>
         <div class="chat-scroll" id="teacherMsgHistory"></div>
         <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
         <div class="field">
@@ -577,7 +597,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, doc
+    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -639,6 +659,22 @@
       contactSub: 'Sendes til administrasjonen for godkjenning', newPhone: 'Ny telefon (valgfritt)', newEmail: 'Ny e-post (valgfritt)',
       messageLabel: 'Melding (valgfritt)', sendContactUpdate: 'Send forespørsel',
       menuTeacherMsg: 'Kontakt lærer', menuTeacherMsgDesc: 'Send og motta meldinger',
+      newMsgStart: 'Start ny melding',
+      openThreadsLabel: 'Åpne samtaler',
+      archivedThreadsLabel: 'Arkiverte samtaler',
+      closeThread: 'Lukk samtale',
+      reopenThread: 'Gjenåpne samtale',
+      threadClosedNote: 'Denne samtalen er lukket. Send en melding for å gjenåpne den.',
+      untitledThread: 'Samtale',
+      pollFillNote: 'Velg et alternativ.',
+      votesCount: 'stemmer',
+      voteBtn: 'Stem',
+      yourVoteNote: 'Din stemme',
+      rsvpComing: 'Jeg kommer',
+      rsvpNotComing: 'Jeg kommer ikke',
+      rsvpComingCount: 'kommer',
+      rsvpNotComingCount: 'kommer ikke',
+      attachPoll: 'Avstemning', attachEvent: 'Arrangement',
       yourMessage: 'Din melding', attachmentLabel: 'Vedlegg (lenke til bilde/dokument, valgfritt)', sendMessageBtn: 'Send melding',
       noMessages: 'Ingen meldinger ennå. Skriv den første meldingen under.', teacherMsgFill: 'Skriv en melding.', teacherMsgSent: 'Meldingen er sendt til læreren.',
       unreadBadge: 'Ulest', readBadge: 'Lest',
@@ -694,6 +730,22 @@
       contactSub: 'يُرسل إلى الإدارة للموافقة', newPhone: 'رقم هاتف جديد (اختياري)', newEmail: 'بريد إلكتروني جديد (اختياري)',
       messageLabel: 'رسالة (اختياري)', sendContactUpdate: 'إرسال الطلب',
       menuTeacherMsg: 'التواصل مع المعلم', menuTeacherMsgDesc: 'إرسال واستقبال الرسائل',
+      newMsgStart: 'ابدأ محادثة جديدة',
+      openThreadsLabel: 'المحادثات المفتوحة',
+      archivedThreadsLabel: 'المحادثات المؤرشفة',
+      closeThread: 'إغلاق المحادثة',
+      reopenThread: 'إعادة فتح المحادثة',
+      threadClosedNote: 'هذي المحادثة مغلقة. أرسل رسالة عشان تفتحها من جديد.',
+      untitledThread: 'محادثة',
+      pollFillNote: 'اختر خيارًا.',
+      votesCount: 'صوت',
+      voteBtn: 'صوّت',
+      yourVoteNote: 'صوتك',
+      rsvpComing: 'سأحضر',
+      rsvpNotComing: 'لن أحضر',
+      rsvpComingCount: 'حاضر',
+      rsvpNotComingCount: 'غير حاضر',
+      attachPoll: 'تصويت', attachEvent: 'حدث',
       yourMessage: 'رسالتك', attachmentLabel: 'مرفق (رابط صورة أو ملف، اختياري)', sendMessageBtn: 'إرسال الرسالة',
       noMessages: 'لا توجد رسائل بعد. اكتب أول رسالة بالأسفل.', teacherMsgFill: 'اكتب نص الرسالة.', teacherMsgSent: 'تم إرسال الرسالة إلى المعلم.',
       unreadBadge: 'غير مقروءة', readBadge: 'مقروءة',
@@ -866,8 +918,30 @@
     messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       renderChild();
-      if(document.getElementById('view-teacherMsg').style.display !== 'none') renderTeacherMsgHistory();
+      if(document.getElementById('view-teacherMsg').style.display !== 'none'){
+        if(document.getElementById('teacherMsgDetailInner').style.display !== 'none') renderTeacherMsgHistory();
+        else renderGuardianThreadList();
+      }
     }
+  });
+  let messageThreads = [];
+  onSnapshot(collection(db, 'messageThreads'), (snap) => {
+    messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian){
+      updateBadges();
+      if(document.getElementById('view-teacherMsg').style.display !== 'none' &&
+         document.getElementById('teacherMsgListInner').style.display !== 'none') renderGuardianThreadList();
+    }
+  });
+  let classPollVotes = [];
+  onSnapshot(collection(db, 'classPollVotes'), (snap) => {
+    classPollVotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  let eventRSVPs = [];
+  onSnapshot(collection(db, 'eventRSVPs'), (snap) => {
+    eventRSVPs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
   });
   onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
     paymentLink = snap.exists() ? (snap.data().lenke || '') : '';
@@ -982,7 +1056,13 @@
   window.addEventListener('popstate', function(e){
     appNavigating = true;
     const view = e.state && e.state.appView;
-    if(view) openSection(view);
+    if(view === 'teacherMsgThread'){
+      document.getElementById('homeView').style.display = 'none';
+      document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
+      document.getElementById('view-teacherMsg').style.display = 'block';
+      document.getElementById('teacherMsgListInner').style.display = 'none';
+      document.getElementById('teacherMsgDetailInner').style.display = 'block';
+    } else if(view) openSection(view);
     else closeSection();
     appNavigating = false;
   });
@@ -1039,7 +1119,7 @@
     document.getElementById('dotAnnouncements').parentElement.classList.toggle('has-new', hasNew('announcements','dato', announcements));
     const unread = hasNewTeacherMsg();
     const badge = document.getElementById('teacherMsgBadge');
-    const hasAnyMsg = messages.some(m => m.klasse === child.klasse && (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn));
+    const hasAnyMsg = buildGuardianThreadRows(child).length > 0;
     if(!hasAnyMsg){
       badge.className = 'msg-badge';
       badge.textContent = '';
@@ -1050,22 +1130,185 @@
   }
 
   function msgSeenKey(klasse){ return 'ps_seen_messages_' + (currentGuardian ? currentGuardian.id : '') + '_' + klasse; }
+  function threadSeenKey(key){ return 'ps_msg_seen_' + (currentGuardian ? currentGuardian.id : '') + '_' + key; }
+  function isThreadUnread(key){
+    const seen = localStorage.getItem(threadSeenKey(key));
+    return messages.some(m => threadKey(m) === key && m.fra === 'Lærer' && (!seen || (m.dato||'') > seen));
+  }
+  function threadKey(m){
+    if(m.threadId) return m.threadId;
+    return 'legacy:' + (m.guardianId || m.guardianNavn);
+  }
   function hasNewTeacherMsg(){
     if(myChildren.length === 0 || !currentGuardian) return false;
     const child = myChildren[currentChildIndex];
-    const seen = localStorage.getItem(msgSeenKey(child.klasse));
-    const relevant = messages.filter(m => m.klasse === child.klasse && (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn) && m.fra === 'Lærer');
-    if(!seen) return relevant.length > 0;
-    return relevant.some(m => (m.dato||'') > seen);
+    return buildGuardianThreadRows(child).some(r => r.unread);
+  }
+
+  function buildGuardianThreadRows(child){
+    if(!currentGuardian) return [];
+    const rows = [];
+    messageThreads.filter(th => th.klasse === child.klasse && th.guardianId === currentGuardian.id).forEach(th => {
+      rows.push({ key: th.id, isLegacy: false, status: th.status || 'open', title: th.title || t('untitledThread'),
+        lastActivityAt: th.lastActivityAt || th.createdAt || '', unread: isThreadUnread(th.id) });
+    });
+    const legacyMsgs = messages.filter(m => m.klasse === child.klasse && !m.threadId &&
+      (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn));
+    const legacyKeys = [...new Set(legacyMsgs.map(threadKey))];
+    legacyKeys.forEach(k => {
+      const own = legacyMsgs.filter(m => threadKey(m) === k).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      rows.push({ key: k, isLegacy: true, status: 'open', title: t('untitledThread'), lastActivityAt: own[0].dato || '', unread: isThreadUnread(k) });
+    });
+    return rows.sort((a,b) => (b.lastActivityAt||'').localeCompare(a.lastActivityAt||''));
+  }
+
+  function renderGuardianThreadList(){
+    if(myChildren.length === 0 || !currentGuardian) return;
+    const child = myChildren[currentChildIndex];
+    const rows = buildGuardianThreadRows(child);
+    const openRows = rows.filter(r => r.status !== 'closed');
+    const archRows = rows.filter(r => r.status === 'closed');
+    const rowHtml = r => `
+      <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openGuardianThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
+        <span class="name">
+          <strong>${escapeHtml(r.title)}</strong>
+          <span class="msg-badge ${r.unread ? 'unread' : 'read'}">${r.unread ? t('unreadBadge') : t('readBadge')}</span>
+        </span>
+      </div>`;
+    const openEl = document.getElementById('teacherMsgThreadsList');
+    const archEl = document.getElementById('teacherMsgThreadsArchiveList');
+    openEl.innerHTML = openRows.length ? openRows.map(rowHtml).join('') : `<div class="empty-msg">${t('noMessages')}</div>`;
+    document.getElementById('archivedThreadsLabelParent').style.display = archRows.length ? 'block' : 'none';
+    archEl.innerHTML = archRows.map(rowHtml).join('');
   }
 
   window.openTeacherMsg = function(){
     if(myChildren.length === 0 || !currentGuardian) return;
+    document.getElementById('teacherMsgListInner').style.display = 'block';
+    document.getElementById('teacherMsgDetailInner').style.display = 'none';
+    renderGuardianThreadList();
+  };
+
+  window.startGuardianThread = async function(){
+    if(myChildren.length === 0 || !currentGuardian) return;
     const child = myChildren[currentChildIndex];
-    localStorage.setItem(msgSeenKey(child.klasse), new Date().toISOString());
-    document.getElementById('teacherMsgSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + (resolveClassName(child.klasse) || '—');
+    const teacher = teachers.find(x => x.tildeltKlasse === child.klasse);
+    const nowIso = new Date().toISOString();
+    const threadRef = await addDoc(collection(db, 'messageThreads'), {
+      klasse: child.klasse, teacherId: teacher ? teacher.id : '', guardianId: currentGuardian.id, title: '',
+      status: 'open', createdAt: nowIso, lastActivityAt: nowIso
+    });
+    openGuardianThread(threadRef.id, false);
+  };
+
+  let currentThreadKey = null;
+  let currentThreadDoc = null;
+
+  window.openGuardianThread = function(key, isLegacy){
+    currentThreadKey = key;
+    currentThreadDoc = isLegacy ? null : messageThreads.find(th => th.id === key) || null;
+    document.getElementById('teacherMsgListInner').style.display = 'none';
+    document.getElementById('teacherMsgDetailInner').style.display = 'block';
+    const child = myChildren[currentChildIndex];
+    document.getElementById('teacherMsgTitle').textContent = currentThreadDoc ? (currentThreadDoc.title || t('untitledThread')) : t('untitledThread');
+    document.getElementById('teacherMsgSub').textContent = (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + (resolveClassName(child.klasse) || '—');
+    const isClosed = currentThreadDoc && currentThreadDoc.status === 'closed';
+    const closeBtn = document.getElementById('guardianThreadCloseBtn');
+    closeBtn.style.display = currentThreadDoc ? 'inline-block' : 'none';
+    closeBtn.textContent = isClosed ? t('reopenThread') : t('closeThread');
+    document.getElementById('teacherThreadClosedNote').style.display = isClosed ? 'block' : 'none';
+    localStorage.setItem(threadSeenKey(key), new Date().toISOString());
     renderTeacherMsgHistory();
+    updateBadges();
+    pushAppView('teacherMsgThread');
+  };
+
+  window.backToThreadList = function(){ history.back(); };
+
+  window.toggleGuardianThreadClosed = async function(){
+    if(!currentThreadDoc) return;
+    const nowClosed = currentThreadDoc.status !== 'closed';
+    await updateDoc(doc(db, 'messageThreads', currentThreadDoc.id), {
+      status: nowClosed ? 'closed' : 'open', closedAt: nowClosed ? new Date().toISOString() : null
+    });
+    currentThreadDoc.status = nowClosed ? 'closed' : 'open';
+    document.getElementById('guardianThreadCloseBtn').textContent = nowClosed ? t('reopenThread') : t('closeThread');
+    document.getElementById('teacherThreadClosedNote').style.display = nowClosed ? 'block' : 'none';
+  };
+
+  function buildGuardianPollHtml(p){
+    const myVote = classPollVotes.find(v => v.postId === p.id && v.guardianId === currentGuardian.id);
+    const votes = classPollVotes.filter(v => v.postId === p.id);
+    const total = votes.length;
+    if(myVote){
+      const rows = p.pollOptions.map((opt, idx) => {
+        const count = votes.filter(v => v.optionIndex === idx).length;
+        const pct = total ? Math.round((count/total)*100) : 0;
+        const isMine = myVote.optionIndex === idx;
+        return `
+          <div style="margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:3px;">
+              <span>${escapeHtml(opt)}${isMine ? ' ✓ ' + escapeHtml(t('yourVoteNote')) : ''}</span><span>${count} ${escapeHtml(t('votesCount'))} (${pct}%)</span>
+            </div>
+            <div style="background:var(--paper-2); border-radius:6px; height:8px; overflow:hidden;">
+              <div style="background:var(--emerald); height:100%; width:${pct}%;"></div>
+            </div>
+          </div>`;
+      }).join('');
+      return `<div style="margin-bottom:14px; padding:12px; background:var(--paper-2); border-radius:8px;">
+        <div style="font-weight:700; margin-bottom:8px;">${escapeHtml(p.pollQuestion)}</div>${rows}
+      </div>`;
+    }
+    const options = p.pollOptions.map((opt, idx) => `
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:13px;">
+        <input type="radio" name="poll_${p.id}" value="${idx}" style="width:auto;">
+        ${escapeHtml(opt)}
+      </label>`).join('');
+    return `<div style="margin-bottom:14px; padding:12px; background:var(--paper-2); border-radius:8px;">
+      <div style="font-weight:700; margin-bottom:8px;">${escapeHtml(p.pollQuestion)}</div>
+      ${options}
+      <button type="button" class="btn btn-ghost" style="margin-top:6px;" onclick="voteOnPoll('${p.id}')">${escapeHtml(t('voteBtn'))}</button>
+    </div>`;
+  }
+
+  window.voteOnPoll = async function(postId){
+    const checked = document.querySelector(`input[name="poll_${postId}"]:checked`);
+    if(!checked){
+      alert(t('pollFillNote'));
+      return;
+    }
+    await addDoc(collection(db, 'classPollVotes'), {
+      postId, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
+      optionIndex: parseInt(checked.value, 10), dato: new Date().toISOString()
+    });
+  };
+
+  function buildGuardianEventHtml(p){
+    const myRsvp = eventRSVPs.find(r => r.postId === p.id && r.guardianId === currentGuardian.id);
+    const rsvps = eventRSVPs.filter(r => r.postId === p.id);
+    const coming = rsvps.filter(r => r.status === 'kommer').length;
+    const notComing = rsvps.filter(r => r.status === 'kommer_ikke').length;
+    return `<div style="margin-bottom:14px; padding:12px; background:var(--paper-2); border-radius:8px;">
+      <div style="font-weight:700;">${escapeHtml(p.eventTitle)}</div>
+      <div style="font-size:12px; color:#5a6860; margin-bottom:8px;">${escapeHtml(p.eventDate)}</div>
+      ${p.eventDesc ? `<div style="font-size:13px; margin-bottom:10px;">${escapeHtml(p.eventDesc)}</div>` : ''}
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button type="button" class="btn ${myRsvp && myRsvp.status === 'kommer' ? 'btn-primary' : 'btn-ghost'}" style="font-size:12px; padding:7px 12px;" onclick="submitEventRsvp('${p.id}', 'kommer')">${escapeHtml(t('rsvpComing'))}</button>
+        <button type="button" class="btn ${myRsvp && myRsvp.status === 'kommer_ikke' ? 'btn-primary' : 'btn-ghost'}" style="font-size:12px; padding:7px 12px;" onclick="submitEventRsvp('${p.id}', 'kommer_ikke')">${escapeHtml(t('rsvpNotComing'))}</button>
+      </div>
+      <div style="font-size:11.5px; color:#5a6860;">${coming} ${escapeHtml(t('rsvpComingCount'))} · ${notComing} ${escapeHtml(t('rsvpNotComingCount'))}</div>
+    </div>`;
+  }
+
+  window.submitEventRsvp = async function(postId, status){
+    const existing = eventRSVPs.find(r => r.postId === postId && r.guardianId === currentGuardian.id);
+    if(existing){
+      await updateDoc(doc(db, 'eventRSVPs', existing.id), { status, dato: new Date().toISOString() });
+    } else {
+      await addDoc(collection(db, 'eventRSVPs'), {
+        postId, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn, status, dato: new Date().toISOString()
+      });
+    }
   };
 
   function initialsOf(name){
@@ -1086,9 +1329,8 @@
 
   function renderTeacherMsgHistory(){
     const el = document.getElementById('teacherMsgHistory');
-    if(!el || myChildren.length === 0 || !currentGuardian) return;
-    const child = myChildren[currentChildIndex];
-    const thread = messages.filter(m => m.klasse === child.klasse && (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn))
+    if(!el || myChildren.length === 0 || !currentGuardian || !currentThreadKey) return;
+    const thread = messages.filter(m => threadKey(m) === currentThreadKey)
       .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     if(thread.length === 0){
       el.innerHTML = `<div class="empty-msg">${t('noMessages')}</div>`;
@@ -1101,6 +1343,7 @@
       <div class="chat-row ${isMe ? 'me' : ''}">
         <div class="chat-avatar">${escapeHtml(initialsOf(senderName))}</div>
         <div class="chat-bubble">
+          <span class="chat-sender">${escapeHtml(senderName || '')}</span>
           ${escapeHtml(m.tekst||'')}
           ${m.vedleggLenke ? `<a class="chat-attach" href="${escapeHtml(m.vedleggLenke)}" target="_blank">${currentLang === 'ar' ? '📎 مرفق' : '📎 Vedlegg'}</a>` : ''}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
@@ -1111,7 +1354,7 @@
   }
 
   window.sendTeacherMessage = async function(){
-    if(myChildren.length === 0 || !currentGuardian) return;
+    if(myChildren.length === 0 || !currentGuardian || !currentThreadKey) return;
     const child = myChildren[currentChildIndex];
     const tekst = document.getElementById('teacherMsgText').value.trim();
     const fileInput = document.getElementById('teacherMsgFile');
@@ -1131,9 +1374,17 @@
       }
       await addDoc(collection(db, 'messages'), {
         klasse: child.klasse, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
+        threadId: currentThreadDoc ? currentThreadDoc.id : null,
         fra: 'Foresatt', avsenderNavn: currentGuardian.navn, tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
+      if(currentThreadDoc){
+        await updateDoc(doc(db, 'messageThreads', currentThreadDoc.id), {
+          status: 'open', closedAt: null, lastActivityAt: new Date().toISOString()
+        });
+        currentThreadDoc.status = 'open';
+        document.getElementById('teacherThreadClosedNote').style.display = 'none';
+      }
       notifyClassTeacherByEmail(child.klasse,
         (currentLang === 'ar' ? 'رسالة جديدة من ولي أمر' : 'Ny melding fra foresatt'),
         (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentGuardian.navn + '\n\n' + tekst);
@@ -1253,11 +1504,14 @@
                 <div class="chat-row ${isMe ? 'me' : ''}">
                   <div class="chat-avatar">${escapeHtml(initialsOf(senderName))}</div>
                   <div class="chat-bubble">
+                    <span class="chat-sender">${escapeHtml(senderName)}</span>
                     ${escapeHtml(c.tekst||'')}
                     <span class="chat-time">${escapeHtml(formatChatTime(c.dato))}</span>
                   </div>
                 </div>`;
               }).join('') + `</div>`;
+          const pollHtml = p.pollOptions ? buildGuardianPollHtml(p) : '';
+          const eventHtml = p.eventDate ? buildGuardianEventHtml(p) : '';
           return `
           <div class="hw-item">
             <details>
@@ -1267,6 +1521,8 @@
               </summary>
               <div style="margin-top:10px; padding-top:10px; border-top:1px dotted var(--line);">
                 <div class="d" style="white-space:pre-wrap; margin-bottom:12px;">${escapeHtml(p.tekst||'')}</div>
+                ${pollHtml}
+                ${eventHtml}
                 <div style="margin-bottom:10px;">${commentsHtml}</div>
                 ${p.commentsEnabled ? `
                   <div class="field" style="margin-bottom:8px;">
