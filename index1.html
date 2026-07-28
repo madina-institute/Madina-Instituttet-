@@ -2013,6 +2013,10 @@ ${extraScript || ''}
       });
 
       showToast(t('lessonSent'));
+      notifyClassGuardians(currentTeacher.tildeltKlasse,
+        (currentLang === 'ar' ? 'خطة درس جديدة: ' : 'Ny undervisningsplan: ') + fag + ' – ' + dato,
+        (currentLang === 'ar' ? 'الموضوع: ' : 'Emne: ') + emne + '\n\n' +
+        (currentLang === 'ar' ? 'أهداف التعلم:\n' : 'Læringsmål:\n') + mal);
       ['lpEmne','lpMal','lpMetode','lpMateriell','lpOppstart','lpRepetisjon','lpNyttStoff','lpOving','lpOppsummering','lpLekser']
         .forEach(id => { document.getElementById(id).value = ''; });
     } catch(err){
