@@ -1398,12 +1398,12 @@
       label: 'oppmøteregistrering', collectionName: 'attendance',
       fields: [
         {key:'dato', label:'Dato', type:'text'},
-        {key:'elev', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'studentId', label:'Elev', type:'dynamic-select', source:'students'},
         {key:'klasse', label:'Klasse', type:'text'},
         {key:'status', label:'Status', type:'select', options:['Til stede','Fraværende','Syk','Permisjon']},
         {key:'merknad', label:'Merknad', type:'text'}
       ],
-      cols: ['dato','elev','klasse','status']
+      cols: ['dato','studentId','klasse','status']
     },
     lessonPlans: {
       label: 'timeforberedelse', collectionName: 'lessonPlans',
@@ -1512,16 +1512,16 @@
       fields: [
         {key:'homeworkTittel', label:'Lekse', type:'text'},
         {key:'klasse', label:'Klasse', type:'text'},
-        {key:'elevNavn', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'studentId', label:'Elev', type:'dynamic-select', source:'students'},
         {key:'lenke', label:'Lenke til besvarelse', type:'text'},
         {key:'innsendtDato', label:'Innsendt dato', type:'text'}
       ],
-      cols: ['elevNavn','homeworkTittel','klasse','innsendtDato']
+      cols: ['studentId','homeworkTittel','klasse','innsendtDato']
     },
     absenceRequests: {
       label: 'fraværsmelding', collectionName: 'absenceRequests',
       fields: [
-        {key:'elevNavn', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'studentId', label:'Elev', type:'dynamic-select', source:'students'},
         {key:'klasse', label:'Klasse', type:'text'},
         {key:'dato', label:'Dato for fravær', type:'text'},
         {key:'arsak', label:'Årsak (fra foresatt)', type:'text'},
@@ -1530,7 +1530,7 @@
         {key:'innsendtDato', label:'Innsendt dato', type:'text'},
         {key:'behandletAv', label:'Behandlet av', type:'text'}
       ],
-      cols: ['elevNavn','klasse','dato','status']
+      cols: ['studentId','klasse','dato','status']
     },
     announcements: {
       label: 'kunngjøring', collectionName: 'announcements',
@@ -1546,13 +1546,13 @@
     studentNotes: {
       label: 'elevnotat', collectionName: 'studentNotes',
       fields: [
-        {key:'elevNavn', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'studentId', label:'Elev', type:'dynamic-select', source:'students'},
         {key:'klasse', label:'Klasse', type:'text'},
         {key:'tekst', label:'Notat', type:'text'},
         {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
         {key:'dato', label:'Dato', type:'text'}
       ],
-      cols: ['elevNavn','klasse','dato','larer']
+      cols: ['studentId','klasse','dato','larer']
     },
     contactUpdateRequests: {
       label: 'kontaktendringsforespørsel', collectionName: 'contactUpdateRequests',
@@ -1569,14 +1569,14 @@
     paymentRequests: {
       label: 'betalingsforespørsel', collectionName: 'paymentRequests',
       fields: [
-        {key:'elevNavn', label:'Elev', type:'dynamic-select', source:'students'},
+        {key:'studentId', label:'Elev', type:'dynamic-select', source:'students'},
         {key:'guardianNavn', label:'Foresatt', type:'text'},
         {key:'belop', label:'Beløp (kr)', type:'text'},
         {key:'type', label:'Type', type:'select', options:['Alt','Delvis']},
         {key:'status', label:'Status', type:'select', options:['Ny','Behandlet']},
         {key:'dato', label:'Dato', type:'text'}
       ],
-      cols: ['elevNavn','guardianNavn','belop','status']
+      cols: ['studentId','guardianNavn','belop','status']
     },
     messages: {
       label: 'melding', collectionName: 'messages',
@@ -2047,14 +2047,14 @@
     }
 
     const existingForDate = {};
-    cache.attendance.filter(a => a.dato === date).forEach(a => { existingForDate[a.elev] = a.status; });
+    cache.attendance.filter(a => a.dato === date).forEach(a => { existingForDate[a.studentId] = a.status; });
 
     listEl.innerHTML = students.map(s => {
-      const currentStatus = existingForDate[s.navn] || 'Til stede';
+      const currentStatus = existingForDate[s.id] || 'Til stede';
       const klasseName = resolveDynName('classes', s.klasse);
       const optionsHtml = STATUS_OPTIONS.map(opt => `<option value="${opt}" ${opt===currentStatus?'selected':''}>${opt}</option>`).join('');
       return `
-        <div class="filter-row" style="grid-template-columns:2fr 1fr;" data-student="${escapeHtml(s.navn)}" data-klasse="${escapeHtml(s.klasse||'')}">
+        <div class="filter-row" style="grid-template-columns:2fr 1fr;" data-student-id="${escapeHtml(s.id)}" data-student="${escapeHtml(s.navn)}" data-klasse="${escapeHtml(s.klasse||'')}">
           <div style="font-family:'Jost',sans-serif; font-size:13.5px; display:flex; align-items:center;">${escapeHtml(s.navn)} <span style="color:#8a9a90; margin-left:6px; font-size:11.5px;">(${escapeHtml(klasseName||'—')})</span></div>
           <select class="att-status">${optionsHtml}</select>
         </div>`;
@@ -2074,12 +2074,11 @@
     }
     try{
       for(const row of rows){
-        const studentName = row.dataset.student;
+        const studentId = row.dataset.studentId;
         const klasse = row.dataset.klasse;
         const status = row.querySelector('.att-status').value;
-        const student = cache.students.find(s => s.navn === studentName);
-        const safeId = date + '_' + (student ? student.id : studentName.replace(/[^a-zA-Z0-9]/g,''));
-        await setDoc(doc(db, 'attendance', safeId), { dato: date, elev: studentName, klasse, status });
+        const safeId = date + '_' + studentId;
+        await setDoc(doc(db, 'attendance', safeId), { dato: date, studentId, klasse, status });
       }
       showToast('Oppmøte lagret for ' + rows.length + ' elev(er).');
     } catch(err){
