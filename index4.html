@@ -15,33 +15,42 @@
 <style>
   :root{
     --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
-    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
-    --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10); --red:#a83c3c;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08); --red:#a83c3c;
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
   html[dir="rtl"] body{font-family:'Tajawal','Lora',serif;}
 
+  /* Decorative corner triangles — same treatment as the admin panel. */
+  .corner-deco{
+    position:fixed; bottom:-10%; width:38vw; max-width:420px; height:70vh; max-height:520px;
+    z-index:-1; pointer-events:none; opacity:0.55;
+    background:linear-gradient(135deg, #C9BFF0 0%, #A38FE0 100%);
+  }
+  .corner-deco-left{ left:-10%; clip-path:polygon(0 0, 0 100%, 100% 100%); }
+  .corner-deco-right{ right:-10%; clip-path:polygon(100% 0, 0 100%, 100% 100%); }
+  @media (max-width:640px){ .corner-deco{ display:none; } }
+
   header{
-    background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
-    color:var(--paper); padding:22px 20px; text-align:center; box-shadow:var(--shadow); position:relative;
+    background:transparent; color:var(--ink); padding:22px 20px 10px; text-align:center; box-shadow:none; position:relative;
   }
   header .logo-img{ height:48px; width:auto; border-radius:5px; margin:0 auto 10px; display:block; }
-  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; margin:0 0 4px;}
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; margin:0 0 4px; color:var(--ink);}
   html[dir="rtl"] header h1{font-family:'Tajawal',sans-serif; font-size:20px;}
-  header p{font-family:'Jost',sans-serif; font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold-l); margin:0;}
+  header p{font-family:'Jost',sans-serif; font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8fa3; margin:0;}
   html[dir="rtl"] header p{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
 
-  .lang-switch{position:absolute; top:18px; inset-inline-end:16px; display:flex; border:1px solid rgba(255,255,255,0.3); border-radius:6px; overflow:hidden;}
+  .lang-switch{position:absolute; top:18px; inset-inline-end:16px; display:flex; background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden;}
   .lang-switch button{
-    background:transparent; border:none; color:#fff; font-family:'Jost',sans-serif; font-size:11px;
-    padding:6px 10px; cursor:pointer;
+    background:transparent; border:none; color:var(--ink); opacity:0.55; font-family:'Jost',sans-serif; font-size:11px;
+    padding:7px 12px; cursor:pointer;
   }
-  .lang-switch button.active{background:var(--gold-l); color:var(--emerald-d);}
+  .lang-switch button.active{background:var(--emerald); color:#fff; opacity:1;}
 
   main{max-width:600px; margin:0 auto; padding:22px 18px 60px;}
 
-  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:26px 24px; box-shadow:var(--shadow); margin-bottom:18px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px 24px; box-shadow:var(--shadow); margin-bottom:18px;}
   .card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d); margin:0 0 6px;}
   html[dir="rtl"] .card h2{font-family:'Tajawal',sans-serif; font-size:17px;}
   .card .sub{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:18px;}
@@ -258,6 +267,9 @@
 </style>
 </head>
 <body>
+
+<div class="corner-deco corner-deco-left"></div>
+<div class="corner-deco corner-deco-right"></div>
 
 <header>
   <div class="lang-switch">
@@ -816,8 +828,11 @@
   }
 
   const PROGRAM_PRICES = {
-    'Madina Islamske Skole — Integrert program (Lørdag)': '3500',
-    'Madinabarn (Søndag)': '1500'
+    'Madina Islamske Skole (Lørdag)': '2500',
+    'Tilleggsprogram i språk – Arabisk (Søndag)': '2000',
+    'Tilleggsprogram i språk – Urdu (Søndag)': '2000',
+    'Kombinert – Islamske Skole + Språk (Lørdag og søndag)': '4000',
+    'Madinabarn (Søndag)': '2000'
   };
 
   let guardians = [], students = [], attendance = [], registrations = [], homework = [];
