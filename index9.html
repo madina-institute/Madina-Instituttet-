@@ -180,27 +180,27 @@
   .count-chip.expanded .toggle-arrow{transform:rotate(180deg);}
   .records-hidden{display:none;}
 
-  /* Ledelse card grid */
-  .ledelse-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:16px; }
-  .ledelse-empty{ grid-column:1/-1; background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; text-align:center; color:var(--emerald); font-family:'Jost',sans-serif; font-size:13.5px; box-shadow:var(--shadow); }
-  .ledelse-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; transition:transform .15s, border-color .15s; }
-  .ledelse-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
-  .ledelse-card-top{ display:flex; align-items:center; gap:12px; }
-  .ledelse-avatar{
+  /* Record card grid (used by all list-style sections) */
+  .card-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:16px; }
+  .record-empty{ grid-column:1/-1; background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; text-align:center; color:var(--emerald); font-family:'Jost',sans-serif; font-size:13.5px; box-shadow:var(--shadow); }
+  .record-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; transition:transform .15s, border-color .15s; }
+  .record-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .record-card-top{ display:flex; align-items:center; gap:12px; }
+  .record-avatar{
     flex:none; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(160deg, var(--emerald) 0%, var(--emerald-d) 100%); color:#fff;
     font-family:'Jost',sans-serif; font-weight:700; font-size:15px; letter-spacing:0.02em;
   }
-  .ledelse-name{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17.5px; color:var(--ink); line-height:1.25; }
-  .ledelse-role-pill{
+  .record-title{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17.5px; color:var(--ink); line-height:1.25; }
+  .record-pill{
     display:inline-block; margin-top:3px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600;
     color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:20px; padding:3px 10px;
   }
-  .ledelse-field{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); }
-  .ledelse-field-label{ color:var(--gold); font-weight:600; margin-inline-end:4px; }
-  .ledelse-contact{ display:flex; flex-direction:column; gap:5px; border-top:1px solid var(--line); padding-top:10px; }
-  .ledelse-contact-row{ font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; word-break:break-all; }
-  .ledelse-card-actions{ display:flex; gap:8px; margin-top:2px; }
+  .record-field{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); }
+  .record-field-label{ color:var(--gold); font-weight:600; margin-inline-end:4px; }
+  .record-contact{ display:flex; flex-direction:column; gap:5px; border-top:1px solid var(--line); padding-top:10px; }
+  .record-contact-row{ font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; word-break:break-all; }
+  .record-card-actions{ display:flex; gap:8px; margin-top:2px; flex-wrap:wrap; }
 
   table{width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:var(--shadow);}
   thead th{
@@ -789,12 +789,7 @@
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
       <button class="btn btn-ghost" onclick="exportCSV('registrations')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableRegistrations">
-      <thead><tr>
-        <th>Elev</th><th>Foresatt</th><th>Ønsket program</th><th>Status</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyRegistrations"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableRegistrations"></div>
   </div>
 
   <!-- LEDELSE -->
@@ -805,7 +800,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('ledelse')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('ledelse')">+ Ny person</button>
     </div>
-    <div class="records-hidden ledelse-grid" id="tableLedelse"></div>
+    <div class="records-hidden card-grid" id="tableLedelse"></div>
   </div>
 
   <!-- MEETINGS -->
@@ -816,12 +811,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('meetings')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('meetings')">+ Nytt møtereferat</button>
     </div>
-    <table class="records-hidden" id="tableMeetings">
-      <thead><tr>
-        <th>Dato</th><th>Tema</th><th>Referent</th><th>Til stede (roller)</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyMeetings"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableMeetings"></div>
   </div>
 
   <!-- FINANCES -->
@@ -837,12 +827,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('finances')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
     </div>
-    <table class="records-hidden" id="tableFinances">
-      <thead><tr>
-        <th>Dato</th><th>Type</th><th>Kategori</th><th>Beløp</th><th>Beskrivelse</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyFinances"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableFinances"></div>
   </div>
 
   <!-- TEACHERS -->
@@ -853,12 +838,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny lærer</button>
     </div>
-    <table class="records-hidden" id="tableTeachers">
-      <thead><tr>
-        <th>Navn</th><th>Fag</th><th>Dager</th><th>Telefon</th><th>E-post</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyTeachers"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableTeachers"></div>
   </div>
 
   <!-- GUARDIANS -->
@@ -869,12 +849,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('guardians')">+ Ny foresatt</button>
     </div>
-    <table class="records-hidden" id="tableGuardians">
-      <thead><tr>
-        <th>Navn</th><th>Telefon</th><th>E-post</th><th>Antall barn</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyGuardians"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableGuardians"></div>
   </div>
 
   <!-- STUDENTS -->
@@ -885,12 +860,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('students')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('students')">+ Ny elev</button>
     </div>
-    <table class="records-hidden" id="tableStudents">
-      <thead><tr>
-        <th>Navn</th><th>Program</th><th>Klasse</th><th>Foresatt</th><th>Betalt</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyStudents"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableStudents"></div>
   </div>
 
   <!-- CLASSES -->
@@ -901,12 +871,7 @@
       <button class="btn btn-ghost" onclick="exportCSV('classes')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('classes')">+ Ny klasse</button>
     </div>
-    <table class="records-hidden" id="tableClasses">
-      <thead><tr>
-        <th>Klassenavn</th><th>Trinn/Alder</th><th>Program</th><th>Merknad</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyClasses"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableClasses"></div>
   </div>
 
   <!-- HOURS -->
@@ -933,12 +898,7 @@
       </div>
     </div>
 
-    <table class="records-hidden" id="tableHours">
-      <thead><tr>
-        <th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th><th>Klasse/Gruppe</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyHours"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableHours"></div>
   </div>
 
   <!-- ATTENDANCE -->
@@ -967,12 +927,7 @@
       <span class="count-chip" id="countAttendance" onclick="toggleRecordsById('tableAttendance')">0 registreringer</span>
       <button class="btn btn-ghost" onclick="exportCSV('attendance')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableAttendance">
-      <thead><tr>
-        <th>Dato</th><th>Elev</th><th>Klasse</th><th>Status</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyAttendance"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableAttendance"></div>
   </div>
 
   <!-- ABSENCE REQUESTS -->
@@ -1019,12 +974,7 @@
         <span class="count-chip" id="countLessonPlans" onclick="toggleRecordsById('tableLessonPlans')">0 forberedelser</span>
         <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
       </div>
-      <table class="records-hidden" id="tableLessonPlans">
-        <thead><tr>
-          <th>Lærer</th><th>Fag</th><th>Dato</th><th>Emne</th><th>Klasse</th><th></th>
-        </tr></thead>
-        <tbody id="tbodyLessonPlans"></tbody>
-      </table>
+      <div class="records-hidden card-grid" id="tableLessonPlans"></div>
     </div>
   </div>
 
@@ -1035,24 +985,14 @@
       <span class="count-chip" id="countHomework" onclick="toggleRecordsById('tableHomework')">0 lekser</span>
       <button class="btn btn-ghost" onclick="exportCSV('homework')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableHomework">
-      <thead><tr>
-        <th>Klasse</th><th>Tittel</th><th>Lærer</th><th>Dato</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyHomework"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableHomework"></div>
 
     <div class="toolbar" style="margin-top:22px;">
       <input class="search" id="searchHomeworkSubmissions" placeholder="Søk etter elev, lekse eller klasse...">
       <span class="count-chip" id="countHomeworkSubmissions" onclick="toggleRecordsById('tableHomeworkSubmissions')">0 leksesvar</span>
       <button class="btn btn-ghost" onclick="exportCSV('homeworkSubmissions')">Eksporter CSV</button>
     </div>
-    <table class="records-hidden" id="tableHomeworkSubmissions">
-      <thead><tr>
-        <th>Elev</th><th>Lekse</th><th>Klasse</th><th>Innsendt</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyHomeworkSubmissions"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableHomeworkSubmissions"></div>
   </div>
 
   <!-- ANNOUNCEMENTS -->
@@ -1066,12 +1006,7 @@
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
       Kunngjøringer vises for alle foresatte i Foreldreportalen, sortert etter dato (nyeste øverst).
     </div>
-    <table class="records-hidden" id="tableAnnouncements">
-      <thead><tr>
-        <th>Tittel</th><th>Målgruppe</th><th>Dato</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyAnnouncements"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableAnnouncements"></div>
   </div>
 
   <!-- STUDENT NOTES -->
@@ -1085,12 +1020,7 @@
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
       Notater om fremgang skrives vanligvis av læreren i Lærerportalen, og vises for foresatte i Foreldreportalen.
     </div>
-    <table class="records-hidden" id="tableStudentNotes">
-      <thead><tr>
-        <th>Elev</th><th>Klasse</th><th>Dato</th><th>Lærer</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyStudentNotes"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableStudentNotes"></div>
   </div>
 
   <!-- CONTACT UPDATE REQUESTS -->
@@ -1121,12 +1051,7 @@
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
       Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt).
     </div>
-    <table class="records-hidden" id="tableMessages">
-      <thead><tr>
-        <th>Klasse</th><th>Foresatt</th><th>Fra</th><th>Dato/tid</th><th></th>
-      </tr></thead>
-      <tbody id="tbodyMessages"></tbody>
-    </table>
+    <div class="records-hidden card-grid" id="tableMessages"></div>
   </div>
 
   <!-- BETALINGSINNSTILLINGER -->
@@ -1984,96 +1909,124 @@
     if(query){
       data = data.filter(row => schema.cols.some(c => colDisplay(row, c).toLowerCase().includes(query)));
     }
-    if(type === 'ledelse'){
-      renderLedelseCards(data);
-    } else {
-      const tbody = document.getElementById('tbody' + capitalize(type));
-      if(!tbody) return;
-      tbody.innerHTML = '';
-      if(data.length === 0){
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="${schema.cols.length+1}">Ingen ${schema.label}e registrert ennå.</td></tr>`;
-      } else {
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          let cellsHtml = schema.cols.map((c,i) => {
-            const field = schema.fields.find(f=>f.key===c);
-            const val = colDisplay(row, c) || '—';
-            let display;
-            if(type === 'registrations' && c === 'status'){
-              const statusClass = { 'Ny':'ny', 'Venteliste':'venteliste', 'Godkjent':'godkjent', 'Avslått':'avslatt' }[val] || 'ny';
-              display = `<span class="status-pill ${statusClass}">${escapeHtml(val)}</span>`;
-            } else if(i===1 && field && field.type==='select'){
-              display = `<span class="tag-pill">${escapeHtml(val)}</span>`;
-            } else {
-              display = escapeHtml(val);
-            }
-            return `<td data-label="${field.label}">${display}</td>`;
-          }).join('');
-          if(type === 'guardians'){
-            const childCount = cache.students.filter(s => (s.foresatt||'') === row.id).length;
-            cellsHtml += `<td data-label="Antall barn">${childCount}</td>`;
-          }
-          if(type === 'registrations'){
-            cellsHtml += `<td class="actions-col">
-              <div class="reg-actions">
-                <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
-                <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
-                <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
-                <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
-              </div>
-            </td>`;
-          } else {
-            cellsHtml += `<td class="actions-col">
-              ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
-              <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
-              <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
-            </td>`;
-          }
-          tr.innerHTML = cellsHtml;
-          tbody.appendChild(tr);
-        });
-      }
-    }
+    renderRecordCards(type, data);
     const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
     document.getElementById('count' + capitalize(type)).innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
-    if(type === 'students' && document.getElementById('tbodyGuardians')) render('guardians');
+    if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
     if(type === 'classes') populateAttendanceClassFilter();
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     updateStats();
   }
 
-  function renderLedelseCards(data){
-    const grid = document.getElementById('tableLedelse');
+  // Which field is the card "title" and which (select-type) field is shown as a colored pill, per type.
+  // Falls back to the first column / first select-type column when not listed here.
+  const CARD_CONFIG = {
+    teachers: { title:'navn', pill:'fag' },
+    guardians: { title:'navn', pill:'relasjon' },
+    students: { title:'navn', pill:'program' },
+    classes: { title:'navn', pill:'program' },
+    hours: { title:'fag', pill:'dag' },
+    attendance: { title:'studentId', pill:'status' },
+    lessonPlans: { title:'emne', pill:'fag' },
+    registrations: { title:'elev_navn', pill:'status' },
+    homework: { title:'tittel', pill:null },
+    homeworkSubmissions: { title:'studentId', pill:null },
+    announcements: { title:'tittel', pill:'malgruppe' },
+    studentNotes: { title:'studentId', pill:null },
+    messages: { title:'guardianNavn', pill:'fra' },
+    meetings: { title:'tema', pill:null },
+    finances: { title:'beskrivelse', pill:'type' },
+    ledelse: { title:'navn', pill:'rolle' }
+  };
+
+  function renderRecordCards(type, data){
+    const schema = SCHEMAS[type];
+    const grid = document.getElementById('table' + capitalize(type));
     if(!grid) return;
     grid.innerHTML = '';
     if(data.length === 0){
-      grid.innerHTML = `<div class="ledelse-empty">Ingen ledelsesmedlemmer registrert ennå.</div>`;
+      grid.innerHTML = `<div class="record-empty">Ingen ${schema.label}er registrert ennå.</div>`;
       return;
     }
+    const colDisplay = (row, c) => {
+      const field = schema.fields.find(f=>f.key===c);
+      if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
+      const v = row[c];
+      if(Array.isArray(v)) return v.join(', ');
+      return v || '';
+    };
+    const cfg = CARD_CONFIG[type] || {};
+    const titleKey = cfg.title || schema.cols[0];
+    let pillKey = cfg.pill;
+    if(pillKey === undefined){
+      const second = schema.cols[1];
+      const secondField = second && schema.fields.find(f=>f.key===second);
+      pillKey = (secondField && secondField.type === 'select') ? second : null;
+    }
     data.forEach(row => {
-      const navn = row.navn || '—';
-      const initials = navn.trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase() || '?';
+      const titleVal = colDisplay(row, titleKey) || '—';
+      const initials = String(titleVal).trim().split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
+      let pillHtml = '';
+      if(pillKey){
+        const pillVal = colDisplay(row, pillKey);
+        if(pillVal){
+          if(type === 'registrations' && pillKey === 'status'){
+            const statusClass = { 'Ny':'ny', 'Venteliste':'venteliste', 'Godkjent':'godkjent', 'Avslått':'avslatt' }[pillVal] || 'ny';
+            pillHtml = `<span class="status-pill ${statusClass}">${escapeHtml(pillVal)}</span>`;
+          } else {
+            pillHtml = `<span class="record-pill">${escapeHtml(pillVal)}</span>`;
+          }
+        }
+      }
+      let fieldsHtml = '';
+      let contactHtml = '';
+      schema.cols.forEach(c => {
+        if(c === titleKey || c === pillKey) return;
+        const field = schema.fields.find(f=>f.key===c);
+        const val = colDisplay(row, c);
+        if(!val) return;
+        if(c === 'epost' || c === 'nyEpost'){
+          contactHtml += `<div class="record-contact-row">✉️ ${escapeHtml(val)}</div>`;
+        } else if(c === 'telefon' || c === 'nyTelefon'){
+          contactHtml += `<div class="record-contact-row">📞 ${escapeHtml(val)}</div>`;
+        } else {
+          fieldsHtml += `<div class="record-field"><span class="record-field-label">${escapeHtml(field.label)}</span>${escapeHtml(val)}</div>`;
+        }
+      });
+      if(type === 'guardians'){
+        const childCount = cache.students.filter(s => (s.foresatt||'') === row.id).length;
+        fieldsHtml += `<div class="record-field"><span class="record-field-label">Antall barn</span>${childCount}</div>`;
+      }
+      let actionsHtml;
+      if(type === 'registrations'){
+        actionsHtml = `<div class="record-card-actions">
+          <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
+          <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
+          <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
+          <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
+        </div>`;
+      } else {
+        actionsHtml = `<div class="record-card-actions">
+          ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
+          <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
+          <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
+        </div>`;
+      }
       const card = document.createElement('div');
-      card.className = 'ledelse-card';
+      card.className = 'record-card';
       card.innerHTML = `
-        <div class="ledelse-card-top">
-          <div class="ledelse-avatar">${escapeHtml(initials)}</div>
+        <div class="record-card-top">
+          <div class="record-avatar">${escapeHtml(initials)}</div>
           <div>
-            <div class="ledelse-name">${escapeHtml(navn)}</div>
-            <span class="ledelse-role-pill">${escapeHtml(row.rolle || '—')}</span>
+            <div class="record-title">${escapeHtml(titleVal)}</div>
+            ${pillHtml}
           </div>
         </div>
-        ${row.fagomrade ? `<div class="ledelse-field"><span class="ledelse-field-label">Fagområde</span>${escapeHtml(row.fagomrade)}</div>` : ''}
-        <div class="ledelse-contact">
-          ${row.epost ? `<div class="ledelse-contact-row">✉️ ${escapeHtml(row.epost)}</div>` : ''}
-          ${row.telefon ? `<div class="ledelse-contact-row">📞 ${escapeHtml(row.telefon)}</div>` : ''}
-        </div>
-        <div class="ledelse-card-actions">
-          <button class="btn-edit" onclick="editEntry('ledelse','${row.id}')">Rediger</button>
-          <button class="btn-danger" onclick="deleteEntry('ledelse','${row.id}')">Slett</button>
-        </div>
+        ${fieldsHtml}
+        ${contactHtml ? `<div class="record-contact">${contactHtml}</div>` : ''}
+        ${actionsHtml}
       `;
       grid.appendChild(card);
     });
