@@ -112,8 +112,17 @@
 
   .msg-badge{display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:12px; text-transform:uppercase; letter-spacing:0.03em;}
   html[dir="rtl"] .msg-badge{font-family:'Tajawal',sans-serif; text-transform:none; letter-spacing:0;}
-  .msg-badge.unread{background:rgba(168,60,60,0.12); color:var(--red);}
-  .msg-badge.read{background:rgba(90,104,96,0.14); color:#5a6860;}
+  .msg-badge.unread{background:var(--red); color:#fff;}
+  .msg-badge.read{display:none;}
+
+  .thread-card{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow);
+    transition:border-color .2s, transform .2s;
+  }
+  .thread-card:hover{border-color:var(--gold); transform:translateY(-1px);}
+  .thread-card .name{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink);}
+  html[dir="rtl"] .thread-card .name{font-family:'Tajawal',sans-serif;}
   .msg-open-link{display:block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);}
   html[dir="rtl"] .msg-open-link{font-family:'Tajawal',sans-serif;}
 
@@ -1596,12 +1605,11 @@
     const openRows = rows.filter(r => r.status !== 'closed');
     const archRows = rows.filter(r => r.status === 'closed');
     const rowHtml = r => `
-      <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openMessageThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
+      <div class="thread-card" onclick="openMessageThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
         <span class="name">
           <strong>${escapeHtml(r.title)}</strong>${r.guardianLabel ? ' — ' + escapeHtml(r.guardianLabel) : ''}
-          <span class="msg-badge ${r.unread ? 'unread' : 'read'}">${r.unread ? (currentLang === 'ar' ? 'غير مقروءة' : 'Ulest') : (currentLang === 'ar' ? 'مقروءة' : 'Lest')}</span>
-          <span class="msg-open-link">${currentLang === 'ar' ? 'افتح الرسالة' : 'Åpne meldingen'}</span>
         </span>
+        ${r.unread ? `<span class="msg-badge unread">${currentLang === 'ar' ? 'غير مقروءة' : 'Ulest'}</span>` : ''}
       </div>`;
     openEl.innerHTML = openRows.length
       ? openRows.map(rowHtml).join('')
