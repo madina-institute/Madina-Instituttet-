@@ -127,14 +127,15 @@
   .field-row-2{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;}
 
   .student-row{
-    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
     padding:12px 0; border-bottom:1px solid var(--line);
   }
   .student-row:last-child{border-bottom:none;}
-  .student-row .name{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink);}
+  .student-row .name{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink); flex:1 1 140px; min-width:0;}
   html[dir="rtl"] .student-row .name{font-family:'Tajawal',sans-serif;}
   .student-row select{
     padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Lora',serif; font-size:13.5px; background:var(--paper);
+    flex:0 0 auto;
   }
   html[dir="rtl"] .student-row select{font-family:'Tajawal','Lora',serif;}
 
