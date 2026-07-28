@@ -106,6 +106,45 @@
     }
     .app-sidebar button .ic{font-size:16px;}
   }
+  /* Weekly timeplan grid — real schedule table (times × classes), styled
+     with the site's own palette but structured like the reference design:
+     colored subject badges, shaded break rows, a merged "felles" row. */
+  .tp-legend{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:12px; color:var(--ink); }
+  .tp-legend span{ display:flex; align-items:center; gap:6px; }
+  .tp-dot{ width:11px; height:11px; border-radius:50%; display:inline-block; flex:none; }
+  .tp-scrollbox{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:10px; box-shadow:var(--shadow); border:1px solid var(--line); margin-top:10px; }
+  .tp-table{ border-collapse:collapse; width:100%; min-width:460px; background:#fff; }
+  .tp-table thead th{
+    background:var(--emerald); color:#fff; font-family:'Jost',sans-serif; font-weight:700;
+    padding:10px 6px; text-align:center; font-size:12px; letter-spacing:.01em;
+  }
+  .tp-table thead th:first-child{ background:var(--gold); color:var(--emerald-d); }
+  .tp-table td{
+    padding:8px 6px; text-align:center; border-bottom:1px solid var(--paper-2); border-inline-end:1px solid var(--paper-2);
+    vertical-align:middle; font-size:12.5px;
+  }
+  .tp-table td:last-child{ border-inline-end:none; }
+  .tp-table tr:last-child td{ border-bottom:none; }
+  .tp-time{ font-family:'Jost',sans-serif; font-weight:700; color:var(--emerald-d); background:var(--paper-2); white-space:nowrap; font-size:11.5px; }
+  .tp-subj{ display:block; padding:6px 5px; border-radius:8px; font-weight:700; font-size:12px; font-family:'Jost',sans-serif; line-height:1.25; }
+  .tp-subj small{ display:block; font-weight:500; font-size:10px; opacity:.8; margin-top:1px; }
+  .tp-koran{ background:#d9ecda; color:#1f5c34; }
+  .tp-islam{ background:#fbe7c2; color:#6b4c06; }
+  .tp-sprak{ background:#e3ecf7; color:#2f4d73; }
+  .tp-madinabarn{ background:#f3ddf0; color:#6a2f63; }
+  .tp-repetisjon{ background:#eef1ec; color:#51605a; }
+  .tp-annet{ background:var(--paper-2); color:var(--ink); }
+  .tp-empty-cell{ color:#c7ccc6; font-size:11px; }
+  .tp-pause td{
+    background:repeating-linear-gradient(45deg, var(--paper), var(--paper) 8px, var(--paper-2) 8px, var(--paper-2) 16px);
+    color:#7a8a80; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:700; padding:7px;
+  }
+  .tp-felles td{
+    background:var(--emerald-d); color:#fff; font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; padding:12px 8px;
+  }
+  .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
+
   .side-card{
     flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:34px 26px;
     text-align:center; box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s, transform .2s;
@@ -921,14 +960,22 @@
     </div>
 
     <div class="report-grid" id="weekView" style="display:none; margin-bottom:22px;">
+      <div class="tp-legend" style="grid-column:1/-1;">
+        <span><span class="tp-dot" style="background:#9ecfb2;"></span>Koran</span>
+        <span><span class="tp-dot" style="background:#edc276;"></span>Islam</span>
+        <span><span class="tp-dot" style="background:#b9cbe6;"></span>Arabisk / Urdu</span>
+        <span><span class="tp-dot" style="background:#dfb8da;"></span>Madinabarn</span>
+        <span><span class="tp-dot" style="background:#cfd6cf;"></span>Repetisjon</span>
+        <span><span class="tp-dot" style="background:var(--emerald-d);"></span>Felles samling</span>
+      </div>
       <div class="report-card">
         <h3>Lørdag</h3>
-        <div class="sub">Sortert etter klokkeslett</div>
+        <div class="sub">Fullstendig timeplan, sortert etter klokkeslett</div>
         <div id="weekLordag"></div>
       </div>
       <div class="report-card">
         <h3>Søndag</h3>
-        <div class="sub">Sortert etter klokkeslett</div>
+        <div class="sub">Fullstendig timeplan, sortert etter klokkeslett</div>
         <div id="weekSondag"></div>
       </div>
     </div>
@@ -2081,22 +2128,82 @@
     document.getElementById('finStatSaldo').textContent = saldo.toLocaleString('no-NO') + ' kr';
   }
 
+  const TP_SUBJECT_CLASS = {
+    'Koran':'tp-koran', 'Islam':'tp-islam', 'Arabisk':'tp-sprak', 'Urdu':'tp-sprak',
+    'Madinabarn':'tp-madinabarn', 'Repetisjon':'tp-repetisjon'
+  };
+  function tpSubjClass(fag){ return TP_SUBJECT_CLASS[fag] || 'tp-annet'; }
+  function tpParseTid(tid){
+    if(!tid) return { start:'', end:'' };
+    const parts = tid.split(/[–-]/).map(s => s.trim());
+    return { start: parts[0] || '', end: parts[1] || parts[0] || '' };
+  }
+  function tpClassName(h){ return resolveDynName('classes', h.klasse) || h.klasse || ''; }
+
+  function renderTimeplanDay(day){
+    const rows = cache.hours.filter(h => h.dag === day);
+    if(rows.length === 0){
+      return `<div class="report-empty">Ingen timer registrert for ${day.toLowerCase()}.</div>`;
+    }
+
+    // Columns: distinct real classes (excludes shared "felles" blocks), first-seen order.
+    const columns = [];
+    const seenCols = new Set();
+    rows.forEach(h => {
+      const name = tpClassName(h);
+      if(name && !/felles/i.test(name) && !seenCols.has(name)){
+        seenCols.add(name);
+        columns.push(name);
+      }
+    });
+
+    // Time slots: distinct tid values, sorted by start time.
+    const slotMap = new Map();
+    rows.forEach(h => { if(h.tid && !slotMap.has(h.tid)) slotMap.set(h.tid, tpParseTid(h.tid)); });
+    const slots = Array.from(slotMap.entries()).sort((a,b) => a[1].start.localeCompare(b[1].start));
+
+    let bodyHtml = '';
+    for(let i=0; i<slots.length; i++){
+      const [tid, range] = slots[i];
+      const slotRows = rows.filter(h => h.tid === tid);
+      const isFelles = slotRows.some(h => /felles/i.test(tpClassName(h)));
+      if(isFelles){
+        const label = Array.from(new Set(slotRows.map(h => `${h.fag ? h.fag + ' — ' : ''}${tpClassName(h)}`))).join(' · ');
+        bodyHtml += `<tr class="tp-felles"><td class="tp-time">${escapeHtml(tid)}</td><td colspan="${columns.length}">${escapeHtml(label)}</td></tr>`;
+      } else {
+        const cells = columns.map(col => {
+          const entry = slotRows.find(h => tpClassName(h) === col);
+          if(!entry) return `<td class="tp-empty-cell">—</td>`;
+          const teacher = resolveDynName('teachers', entry.larer);
+          return `<td><span class="tp-subj ${tpSubjClass(entry.fag)}">${escapeHtml(entry.fag || '—')}${teacher ? `<small>${escapeHtml(teacher)}</small>` : ''}</span></td>`;
+        }).join('');
+        bodyHtml += `<tr><td class="tp-time">${escapeHtml(tid)}</td>${cells}</tr>`;
+      }
+      if(i < slots.length - 1){
+        const next = slots[i+1][1];
+        if(range.end && next.start && range.end !== next.start){
+          bodyHtml += `<tr class="tp-pause"><td colspan="${columns.length + 1}">Pause · ${escapeHtml(range.end)}–${escapeHtml(next.start)}</td></tr>`;
+        }
+      }
+    }
+
+    const theadCols = columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+    return `
+      <div class="tp-scrollbox">
+        <table class="tp-table">
+          <thead><tr><th>Tid</th>${theadCols}</tr></thead>
+          <tbody>${bodyHtml}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function renderWeekView(){
     const lordagEl = document.getElementById('weekLordag');
     const sondagEl = document.getElementById('weekSondag');
     if(!lordagEl || !sondagEl) return;
-    const sortByTid = (a,b) => (a.tid||'').localeCompare(b.tid||'');
-    const lordag = cache.hours.filter(h => h.dag === 'Lørdag').sort(sortByTid);
-    const sondag = cache.hours.filter(h => h.dag === 'Søndag').sort(sortByTid);
-    const cardHtml = (h) => `
-      <div class="bar-row" style="border-bottom:1px solid var(--line); padding-bottom:10px;">
-        <div class="bar-label"><span><strong>${escapeHtml(h.tid||'—')}</strong> · ${escapeHtml(h.fag||'—')}</span></div>
-        <div style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;">
-          ${escapeHtml(resolveDynName('teachers', h.larer) || 'Ingen lærer')} · ${escapeHtml(resolveDynName('classes', h.klasse) || 'Ingen klasse')}
-        </div>
-      </div>`;
-    lordagEl.innerHTML = lordag.length ? lordag.map(cardHtml).join('') : '<div class="report-empty">Ingen timer registrert for lørdag.</div>';
-    sondagEl.innerHTML = sondag.length ? sondag.map(cardHtml).join('') : '<div class="report-empty">Ingen timer registrert for søndag.</div>';
+    lordagEl.innerHTML = renderTimeplanDay('Lørdag');
+    sondagEl.innerHTML = renderTimeplanDay('Søndag');
   }
 
   window.toggleWeekView = function(){
