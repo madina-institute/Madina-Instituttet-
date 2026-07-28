@@ -103,6 +103,28 @@
   .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
   .side-card .ic{ font-size:30px; margin-bottom:10px; }
 
+  /* Persistent vertical sub-section nav: stacked list above the content on
+     mobile, a real sticky left column next to the content on wider screens.
+     Always visible while inside a side — no more "choose a card" screen. */
+  .content-layout{ display:flex; flex-direction:column; gap:16px; padding:20px; }
+  .sub-sidebar{
+    display:flex; flex-direction:column; gap:3px; background:#fff; border:1px solid var(--line);
+    border-radius:12px; padding:8px; box-shadow:var(--shadow);
+  }
+  .sub-sidebar button{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:start; background:transparent; border:none;
+    color:var(--ink); font-family:'Jost',sans-serif; font-size:13px; padding:10px 12px; border-radius:8px; cursor:pointer;
+  }
+  html[dir="rtl"] .sub-sidebar button{font-family:'Tajawal',sans-serif;}
+  .sub-sidebar button .ic{font-size:15px;}
+  .sub-sidebar button:hover{background:var(--paper-2);}
+  .sub-sidebar button.active{background:var(--emerald); color:#fff; font-weight:600;}
+  #mainContent{ min-width:0; flex:1; }
+  @media (min-width:900px){
+    .content-layout{ flex-direction:row; align-items:flex-start; }
+    .sub-sidebar{ flex:0 0 210px; position:sticky; top:20px; max-height:calc(100vh - 40px); overflow-y:auto; }
+  }
+
   /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
   .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
   .school-cal-popover{
@@ -492,17 +514,10 @@
   </div>
 </div>
 
-<!-- SUB-SECTION CHOICE (big cards, same style as the main side choice) -->
-<div id="subChooseView" style="display:none;">
-  <div class="wrap">
-    <button class="side-switch" style="position:static; display:inline-block; margin-bottom:18px;" onclick="showSideChoice()">🏠 Bytt side</button>
-    <div class="side-grid" id="subChooseGrid"></div>
-  </div>
-</div>
+<!-- SUB-SECTION NAV — persistent vertical list, stays visible while browsing a side's sections -->
+<div id="subChooseView" style="display:none;"></div>
 
 <div class="tabs" id="tabsBar" style="display:none;">
-  <button class="back-to-cards" onclick="history.back()">⬅ Bytt seksjon</button>
-  <span class="current-tab-label" id="currentTabLabel"></span>
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
@@ -526,7 +541,9 @@
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
 </div>
 
-<main id="mainContent" style="display:none;">
+<div class="content-layout" id="contentLayout" style="display:none;">
+  <nav class="sub-sidebar" id="subSidebar"></nav>
+  <main id="mainContent">
 
 
   <!-- REPORTS -->
@@ -1069,6 +1086,7 @@
 
 
 </main>
+</div>
 
 <!-- MODAL -->
 <div class="overlay" id="overlay">
@@ -2316,30 +2334,27 @@
     currentSideForBack = side;
     highlightSidebar(side);
     document.getElementById('sideChooseView').style.display = 'none';
-    document.getElementById('tabsBar').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'inline-block';
-    document.getElementById('subChooseView').style.display = 'block';
+    document.getElementById('contentLayout').style.display = 'flex';
 
-    const grid = document.getElementById('subChooseGrid');
+    const subSidebar = document.getElementById('subSidebar');
     const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side="' + side + '"]'));
-    grid.innerHTML = tabsForSide.map(tab => `
-      <div class="side-card" onclick="selectSubTab('${tab.dataset.tab}')">
-        <div class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</div>
-        <h2>${tab.textContent}</h2>
-        <p>${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}</p>
-      </div>
+    subSidebar.innerHTML = tabsForSide.map(tab => `
+      <button data-sub-tab="${tab.dataset.tab}" onclick="selectSubTab('${tab.dataset.tab}')" title="${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}">
+        <span class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</span> ${tab.textContent}
+      </button>
     `).join('');
-    pushAppView({ appView: 'sub', side });
+    if(tabsForSide.length) selectSubTab(tabsForSide[0].dataset.tab);
   };
 
   window.selectSubTab = function(tabName){
     document.getElementById('subChooseView').style.display = 'none';
-    document.getElementById('tabsBar').style.display = 'flex';
-    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('tabsBar').style.display = 'none';
+    document.getElementById('contentLayout').style.display = 'flex';
 
-    document.querySelectorAll('.tab').forEach(t => {
-      t.style.display = t.dataset.side === currentSideForBack ? '' : 'none';
+    document.querySelectorAll('.sub-sidebar button').forEach(b => {
+      b.classList.toggle('active', b.dataset.subTab === tabName);
     });
 
     const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
@@ -2348,9 +2363,8 @@
   };
 
   window.backToSubChoice = function(){
-    document.getElementById('tabsBar').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('subChooseView').style.display = 'block';
+    document.getElementById('contentLayout').style.display = 'none';
+    document.getElementById('subChooseView').style.display = 'none';
   };
 
   window.showSideChoice = function(){
@@ -2358,7 +2372,7 @@
     document.getElementById('sideChooseView').style.display = 'block';
     document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('contentLayout').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'none';
   };
 
