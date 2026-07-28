@@ -360,6 +360,20 @@
   </div>
 </div>
 
+<div id="lockScreen" style="display:none; position:fixed; inset:0; z-index:9999; background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%); align-items:center; justify-content:center;">
+  <div class="login-card">
+    <img src="https://madina-institute.github.io/Madina-Instituttet-/logo.png" alt="Madina Institute" class="login-logo">
+    <h2>Økten er låst</h2>
+    <div class="sub">Ingen aktivitet på 20 minutter. Skriv inn passordet ditt for å fortsette (<span id="lockEmailShown"></span>).</div>
+    <div class="field">
+      <label>Passord</label>
+      <input type="password" id="lockPassword" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="doUnlock()">Lås opp</button>
+    <div class="login-error" id="lockError"></div>
+  </div>
+</div>
+
 <div id="appRoot" style="display:none;">
 
 <header>
@@ -1122,6 +1136,18 @@
 
   const LOGO_DATA_URI = "https://madina-institute.github.io/Madina-Instituttet-/logo.png";
 
+  // "Remember me": we only ever remember the e-post address (safe, not a
+  // secret) — never the password. This lets the login field pre-fill so
+  // admins don't retype their e-post every time, while the password still
+  // has to be entered to actually get in or to unlock after inactivity.
+  (function(){
+    const savedEmail = localStorage.getItem('madinaAdminEmail');
+    if(savedEmail){
+      const emailEl = document.getElementById('loginEmail');
+      if(emailEl) emailEl.value = savedEmail;
+    }
+  })();
+
   window.doAdminLogin = async function(){
     const email = document.getElementById('loginEmail').value.trim();
     const pw = document.getElementById('loginPassword').value;
@@ -1134,6 +1160,7 @@
     }
     try{
       await signInWithEmailAndPassword(auth, email, pw);
+      localStorage.setItem('madinaAdminEmail', email);
     } catch(err){
       console.error(err);
       errEl.textContent = 'Feil e-post eller passord.';
@@ -1146,6 +1173,53 @@
     signOut(auth);
   };
 
+  // INACTIVITY AUTO-LOCK — after 20 minutes with no clicks/keys/scrolling,
+  // show a lock screen requiring the password again. This does NOT sign
+  // the admin out of Firebase (no data/session is lost) — it's a local
+  // "lock the screen" measure, same idea as a phone's lock screen.
+  const INACTIVITY_LIMIT_MS = 20 * 60 * 1000;
+  let inactivityTimer = null;
+  let isLocked = false;
+
+  function resetInactivityTimer(){
+    if(isLocked || !currentUserEmail) return;
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(lockSession, INACTIVITY_LIMIT_MS);
+  }
+  ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+
+  function lockSession(){
+    if(!currentUserEmail) return;
+    isLocked = true;
+    document.getElementById('lockEmailShown').textContent = currentUserEmail;
+    document.getElementById('lockPassword').value = '';
+    document.getElementById('lockError').style.display = 'none';
+    document.getElementById('lockScreen').style.display = 'flex';
+  }
+
+  window.doUnlock = async function(){
+    const pw = document.getElementById('lockPassword').value;
+    const errEl = document.getElementById('lockError');
+    errEl.style.display = 'none';
+    if(!pw){
+      errEl.textContent = 'Skriv inn passordet ditt.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await signInWithEmailAndPassword(auth, currentUserEmail, pw);
+      isLocked = false;
+      document.getElementById('lockScreen').style.display = 'none';
+      resetInactivityTimer();
+    } catch(err){
+      console.error(err);
+      errEl.textContent = 'Feil passord.';
+      errEl.style.display = 'block';
+    }
+  };
+
   onAuthStateChanged(auth, (user) => {
     if(user){
       currentUserEmail = user.email;
@@ -1153,8 +1227,12 @@
       document.getElementById('appRoot').style.display = 'block';
       const who = document.getElementById('loggedInAs');
       if(who) who.textContent = user.email;
+      resetInactivityTimer();
     } else {
       currentUserEmail = null;
+      isLocked = false;
+      clearTimeout(inactivityTimer);
+      document.getElementById('lockScreen').style.display = 'none';
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('appRoot').style.display = 'none';
     }
