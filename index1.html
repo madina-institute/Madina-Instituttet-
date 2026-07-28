@@ -2543,7 +2543,7 @@ ${extraScript || ''}
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.error);
+      navigator.serviceWorker.register('./sw.js?v=4', { scope: './' }).catch(console.error);
     });
   }
 </script>
