@@ -1367,10 +1367,10 @@
     const req = absenceRequests.find(r => r.id === id);
     if(!req) return;
     try{
-      const student = students.find(s => s.navn === req.elevNavn);
+      const student = req.studentId ? students.find(s => s.id === req.studentId) : students.find(s => s.navn === req.elevNavn);
       const safeId = req.dato + '_' + (student ? student.id : req.elevNavn.replace(/[^a-zA-Z0-9]/g,''));
       await setDoc(doc(db, 'attendance', safeId), {
-        dato: req.dato, elev: req.elevNavn, klasse: req.klasse, status: statusValue
+        dato: req.dato, studentId: student ? student.id : '', klasse: req.klasse, status: statusValue
       });
       await updateDoc(doc(db, 'absenceRequests', id), {
         status: 'Behandlet', behandletSom: statusValue, behandletAv: currentTeacher.navn
@@ -1389,22 +1389,22 @@
       (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
     const sel = document.getElementById('noteElevSelect');
     const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse);
-    sel.innerHTML = myStudents.map(s => `<option value="${escapeHtml(s.navn)}">${escapeHtml(s.navn)}</option>`).join('')
+    sel.innerHTML = myStudents.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.navn)}</option>`).join('')
       || `<option value="">${currentLang === 'ar' ? 'لا يوجد طلاب في هذا الصف' : 'Ingen elever i denne klassen'}</option>`;
     renderStudentNotesList();
     pushAppView('studentNotes');
   };
 
   window.submitStudentNote = async function(){
-    const elevNavn = document.getElementById('noteElevSelect').value;
+    const studentId = document.getElementById('noteElevSelect').value;
     const tekst = document.getElementById('noteTekst').value.trim();
-    if(!elevNavn || !tekst){
+    if(!studentId || !tekst){
       alert(currentLang === 'ar' ? 'اختر طالبًا واكتب الملاحظة.' : 'Velg en elev og skriv et notat.');
       return;
     }
     try{
       await addDoc(collection(db, 'studentNotes'), {
-        elevNavn, klasse: currentTeacher.tildeltKlasse, tekst,
+        studentId, klasse: currentTeacher.tildeltKlasse, tekst,
         larer: currentTeacher.id, dato: todayISO()
       });
       showToast(currentLang === 'ar' ? 'تم إرسال الملاحظة.' : 'Notatet er sendt.');
@@ -1427,7 +1427,7 @@
     el.innerHTML = mine.slice(0,30).map(n => `
       <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
         <span class="name">
-          <strong>${escapeHtml(n.elevNavn||'')}</strong> — ${escapeHtml(n.dato||'')}<br>
+          <strong>${escapeHtml(resolveStudentName(n.studentId))}</strong> — ${escapeHtml(n.dato||'')}<br>
           <span style="font-size:12px; color:#5a6860;">${escapeHtml(n.tekst||'')}</span>
         </span>
       </div>`).join('');
@@ -1479,6 +1479,12 @@
     updateMsgDot();
     pushAppView('messages');
   };
+
+  function resolveStudentName(studentId){
+    if(!studentId) return '';
+    const s = students.find(x => x.id === studentId);
+    return s ? (s.navn || '') : studentId;
+  }
 
   function resolveGuardianName(guardianId){
     if(!guardianId) return '';
@@ -2152,14 +2158,14 @@
     }
 
     const existingForDate = {};
-    attendance.filter(a => a.dato === date).forEach(a => { existingForDate[a.elev] = a.status; });
+    attendance.filter(a => a.dato === date).forEach(a => { existingForDate[a.studentId] = a.status; });
 
     const statusLabels = t('statusLabels');
     listEl.innerHTML = myStudents.map(s => {
-      const currentStatus = existingForDate[s.navn] || 'Til stede';
+      const currentStatus = existingForDate[s.id] || 'Til stede';
       const optionsHtml = STATUS_KEYS.map(k => `<option value="${k}" ${k===currentStatus?'selected':''}>${statusLabels[k]}</option>`).join('');
       return `
-        <div class="student-row" data-student="${escapeHtml(s.navn)}">
+        <div class="student-row" data-student-id="${escapeHtml(s.id)}" data-student="${escapeHtml(s.navn)}">
           <span class="name">${escapeHtml(s.navn)}</span>
           <select class="att-status">${optionsHtml}</select>
         </div>`;
@@ -2175,12 +2181,12 @@
     try{
       const summaryLines = [];
       for(const row of rows){
+        const studentId = row.dataset.studentId;
         const studentName = row.dataset.student;
         const status = row.querySelector('.att-status').value;
-        const student = students.find(s => s.navn === studentName);
-        const safeId = date + '_' + (student ? student.id : studentName.replace(/[^a-zA-Z0-9]/g,''));
+        const safeId = date + '_' + studentId;
         await setDoc(doc(db, 'attendance', safeId), {
-          dato: date, elev: studentName, klasse: currentTeacher.tildeltKlasse, status
+          dato: date, studentId, klasse: currentTeacher.tildeltKlasse, status
         });
         summaryLines.push(studentName + ': ' + status);
       }
