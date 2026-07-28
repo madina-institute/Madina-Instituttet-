@@ -409,6 +409,20 @@
     color:var(--gold); margin:0 0 6px;
   }
   .dash-ukeplan-day .tp-scrollbox{ max-height:280px; overflow-y:auto; margin-top:0; }
+  .task-row{
+    display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid var(--paper-2);
+    cursor:pointer; transition:background .15s; border-radius:8px;
+  }
+  .task-row:last-child{ border-bottom:none; }
+  .task-row:hover{ background:var(--paper-2); }
+  .task-row .task-ic{ font-size:20px; flex-shrink:0; }
+  .task-row .task-label{ flex:1; font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); }
+  .task-row .task-count{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:#8a8fa3;
+    min-width:26px; text-align:center;
+  }
+  .task-row.has-count .task-count{ color:var(--red); }
+  .task-empty{ font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:24px 0; }
   .shortcuts-title{ font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--ink); margin:4px 0 14px; font-weight:700; }
   .donut-wrap{ position:relative; width:128px; height:128px; margin:0 auto 16px; }
   .donut{ width:100%; height:100%; border-radius:50%; }
@@ -629,17 +643,8 @@
         <div class="bar-chart" id="dashAttBars"></div>
       </div>
       <div class="widget-card">
-        <h3>Ukeplan</h3>
-        <div class="dash-ukeplan" id="dashUkeplan">
-          <div class="dash-ukeplan-day">
-            <h4>Lørdag</h4>
-            <div id="dashUkeplanLordag"></div>
-          </div>
-          <div class="dash-ukeplan-day">
-            <h4>Søndag</h4>
-            <div id="dashUkeplanSondag"></div>
-          </div>
-        </div>
+        <h3>Oppgaver som venter</h3>
+        <div id="dashTasksList"></div>
       </div>
     </div>
 
@@ -1490,12 +1495,10 @@
         {key:'navn', label:'Fullt navn', type:'text', essential:true},
         {key:'elev_fdato', label:'Fødselsdato', type:'text', essential:true},
         {key:'program', label:'Program', type:'select', essential:true, options:[
-          'Madina Islamske Skole (Lørdag)',
-          'Tilleggsprogram i språk – Arabisk (Søndag)',
-          'Tilleggsprogram i språk – Urdu (Søndag)',
-          'Kombinert – Islamske Skole + Språk (Lørdag og søndag)',
+          'Madina Islamske Skole — Integrert program (Lørdag)',
           'Madinabarn (Søndag)'
         ]},
+        {key:'sprakvalg', label:'Språkvalg (Arabisk/Urdu)', type:'select', essential:true, options:['','Arabisk','Urdu']},
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
 
@@ -1555,7 +1558,7 @@
       fields: [
         {key:'navn', label:'Klassenavn', type:'text'},
         {key:'trinn', label:'Trinn/Alder', type:'text'},
-        {key:'program', label:'Program', type:'select', options:['Madina Islamske Skole','Tilleggsprogram i språk','Madinabarn']},
+        {key:'program', label:'Program', type:'select', options:['Madina Islamske Skole — Integrert program (Lørdag)', 'Madinabarn (Søndag)']},
         {key:'merknad', label:'Merknad', type:'text'}
       ],
       cols: ['navn','trinn','program','merknad']
@@ -1639,6 +1642,7 @@
         {key:'bbt_ppt', label:'Følges av BBT/PPT', type:'text'},
         {key:'bbt_ppt_beskriv', label:'BBT/PPT — beskrivelse', type:'text'},
         {key:'program', label:'Ønsket program', type:'text'},
+        {key:'sprakvalg', label:'Språkvalg (Arabisk/Urdu)', type:'text'},
         {key:'tidligere_skole', label:'Tidligere islamsk skole', type:'text'},
         {key:'tidligere_skole_navn', label:'Tidligere skole — navn', type:'text'},
         {key:'tidligere_skole_ar', label:'Tidligere skole — antall år', type:'text'},
@@ -1817,43 +1821,81 @@
     }
   };
 
-  // Standard Saturday/Sunday schedule matching the school's teaching model
+  // Standard Lørdag timetable for the new integrated program: 6 classes
+  // (A–F) rotate through 3 subject-pairs across 3 time blocks (2 økter
+  // à 30 min each), matching the school's official reference timeplan.
+  // "Sprak" slots default to Arabisk here — admin should adjust per class
+  // depending on which language track that specific class actually is
+  // (Arabisk or Urdu is chosen per student at registration; classes are
+  // formed to match, so the exact split isn't knowable in a generic seed).
+  // Søndag is Madinabarn only now (09:30–11:00) — the old language-addon
+  // Søndag slots are gone, merged into Lørdag's integrated program.
   const SEED_HOURS = [
-    {dag:'Lørdag', tid:'09:30–09:40', fag:'Repetisjon', larer:'', klasse:'Felles oppstart'},
-    {dag:'Lørdag', tid:'09:40–10:30', fag:'Koran', larer:'', klasse:'Klasse A'},
-    {dag:'Lørdag', tid:'09:40–10:30', fag:'Islam', larer:'', klasse:'Klasse B'},
-    {dag:'Lørdag', tid:'10:30–11:15', fag:'Repetisjon', larer:'', klasse:'Klasse A'},
-    {dag:'Lørdag', tid:'10:30–11:15', fag:'Repetisjon', larer:'', klasse:'Klasse B'},
-    {dag:'Lørdag', tid:'11:15–12:15', fag:'Islam', larer:'', klasse:'Klasse A'},
-    {dag:'Lørdag', tid:'11:15–12:15', fag:'Koran', larer:'', klasse:'Klasse B'},
-    {dag:'Lørdag', tid:'12:30–13:00', fag:'Repetisjon', larer:'', klasse:'Felles avslutning'},
-    {dag:'Søndag', tid:'10:30–10:40', fag:'Repetisjon', larer:'', klasse:'Felles oppstart'},
-    {dag:'Søndag', tid:'10:40–13:00', fag:'Arabisk', larer:'', klasse:'Språkgruppe A'},
-    {dag:'Søndag', tid:'10:40–13:00', fag:'Urdu', larer:'', klasse:'Språkgruppe U'},
-    {dag:'Søndag', tid:'10:30–12:15', fag:'Madinabarn', larer:'', klasse:'Madinabarn'}
+    // Blokk 1
+    {dag:'Lørdag', tid:'09:30–10:00', fag:'Koran', larer:'', klasse:'Klasse A'},
+    {dag:'Lørdag', tid:'09:30–10:00', fag:'Islam', larer:'', klasse:'Klasse B'},
+    {dag:'Lørdag', tid:'09:30–10:00', fag:'Arabisk', larer:'', klasse:'Klasse C'},
+    {dag:'Lørdag', tid:'09:30–10:00', fag:'Koran', larer:'', klasse:'Klasse D'},
+    {dag:'Lørdag', tid:'09:30–10:00', fag:'Islam', larer:'', klasse:'Klasse E'},
+    {dag:'Lørdag', tid:'09:30–10:00', fag:'Arabisk', larer:'', klasse:'Klasse F'},
+    {dag:'Lørdag', tid:'10:00–10:30', fag:'Koran', larer:'', klasse:'Klasse A'},
+    {dag:'Lørdag', tid:'10:00–10:30', fag:'Islam', larer:'', klasse:'Klasse B'},
+    {dag:'Lørdag', tid:'10:00–10:30', fag:'Arabisk', larer:'', klasse:'Klasse C'},
+    {dag:'Lørdag', tid:'10:00–10:30', fag:'Koran', larer:'', klasse:'Klasse D'},
+    {dag:'Lørdag', tid:'10:00–10:30', fag:'Islam', larer:'', klasse:'Klasse E'},
+    {dag:'Lørdag', tid:'10:00–10:30', fag:'Arabisk', larer:'', klasse:'Klasse F'},
+    // Blokk 2 (etter lunsjpause 10:30–10:50)
+    {dag:'Lørdag', tid:'10:50–11:20', fag:'Islam', larer:'', klasse:'Klasse A'},
+    {dag:'Lørdag', tid:'10:50–11:20', fag:'Arabisk', larer:'', klasse:'Klasse B'},
+    {dag:'Lørdag', tid:'10:50–11:20', fag:'Koran', larer:'', klasse:'Klasse C'},
+    {dag:'Lørdag', tid:'10:50–11:20', fag:'Islam', larer:'', klasse:'Klasse D'},
+    {dag:'Lørdag', tid:'10:50–11:20', fag:'Arabisk', larer:'', klasse:'Klasse E'},
+    {dag:'Lørdag', tid:'10:50–11:20', fag:'Koran', larer:'', klasse:'Klasse F'},
+    {dag:'Lørdag', tid:'11:20–11:50', fag:'Islam', larer:'', klasse:'Klasse A'},
+    {dag:'Lørdag', tid:'11:20–11:50', fag:'Arabisk', larer:'', klasse:'Klasse B'},
+    {dag:'Lørdag', tid:'11:20–11:50', fag:'Koran', larer:'', klasse:'Klasse C'},
+    {dag:'Lørdag', tid:'11:20–11:50', fag:'Islam', larer:'', klasse:'Klasse D'},
+    {dag:'Lørdag', tid:'11:20–11:50', fag:'Arabisk', larer:'', klasse:'Klasse E'},
+    {dag:'Lørdag', tid:'11:20–11:50', fag:'Koran', larer:'', klasse:'Klasse F'},
+    // Blokk 3 (etter pause 11:50–11:55)
+    {dag:'Lørdag', tid:'11:55–12:25', fag:'Arabisk', larer:'', klasse:'Klasse A'},
+    {dag:'Lørdag', tid:'11:55–12:25', fag:'Koran', larer:'', klasse:'Klasse B'},
+    {dag:'Lørdag', tid:'11:55–12:25', fag:'Islam', larer:'', klasse:'Klasse C'},
+    {dag:'Lørdag', tid:'11:55–12:25', fag:'Arabisk', larer:'', klasse:'Klasse D'},
+    {dag:'Lørdag', tid:'11:55–12:25', fag:'Koran', larer:'', klasse:'Klasse E'},
+    {dag:'Lørdag', tid:'11:55–12:25', fag:'Islam', larer:'', klasse:'Klasse F'},
+    {dag:'Lørdag', tid:'12:25–12:55', fag:'Arabisk', larer:'', klasse:'Klasse A'},
+    {dag:'Lørdag', tid:'12:25–12:55', fag:'Koran', larer:'', klasse:'Klasse B'},
+    {dag:'Lørdag', tid:'12:25–12:55', fag:'Islam', larer:'', klasse:'Klasse C'},
+    {dag:'Lørdag', tid:'12:25–12:55', fag:'Arabisk', larer:'', klasse:'Klasse D'},
+    {dag:'Lørdag', tid:'12:25–12:55', fag:'Koran', larer:'', klasse:'Klasse E'},
+    {dag:'Lørdag', tid:'12:25–12:55', fag:'Islam', larer:'', klasse:'Klasse F'},
+    // Felles samling (etter pause 12:55–13:00)
+    {dag:'Lørdag', tid:'13:00–13:30', fag:'Repetisjon', larer:'', klasse:'Felles samling'},
+    // Madinabarn — Søndag, uendret
+    {dag:'Søndag', tid:'09:30–11:00', fag:'Madinabarn', larer:'', klasse:'Madinabarn'}
   ];
 
-  // Suggested payment amounts per program (kr) — shown as a hint, editable by admin
+  // Suggested payment amounts (kr) — shown as a hint, editable by admin.
+  // Integrert program: 3500 kr dekker BEGGE terminene (helåret) — bokutgifter
+  // kommer i tillegg og faktureres/noteres separat, ikke inkludert her.
+  // Madinabarn: 1500 kr per termin.
   const PROGRAM_PRICES = {
-    'Madina Islamske Skole (Lørdag)': '2500',
-    'Tilleggsprogram i språk – Arabisk (Søndag)': '2000',
-    'Tilleggsprogram i språk – Urdu (Søndag)': '2000',
-    'Kombinert – Islamske Skole + Språk (Lørdag og søndag)': '4000',
-    'Madinabarn (Søndag)': '2000'
+    'Madina Islamske Skole — Integrert program (Lørdag)': '3500',
+    'Madinabarn (Søndag)': '1500'
   };
 
   // Realistic demo/sample data for demonstrations and meetings
   const DEMO_DATA = {
     classes: [
-      {navn:'Klasse A', trinn:'7–9 år', program:'Madina Islamske Skole', merknad:'Nybegynnere'},
-      {navn:'Klasse B', trinn:'10–12 år', program:'Madina Islamske Skole', merknad:'Viderekommen'},
-      {navn:'Språkgruppe A', trinn:'8–13 år', program:'Tilleggsprogram i språk', merknad:'Arabisk'},
-      {navn:'Madinabarn', trinn:'3–6 år', program:'Madinabarn', merknad:''}
+      {navn:'Klasse A', trinn:'7–9 år', program:'Madina Islamske Skole — Integrert program (Lørdag)', merknad:'Arabisk-spor'},
+      {navn:'Klasse B', trinn:'10–12 år', program:'Madina Islamske Skole — Integrert program (Lørdag)', merknad:'Urdu-spor'},
+      {navn:'Madinabarn', trinn:'3–6 år', program:'Madinabarn (Søndag)', merknad:''}
     ],
     teachers: [
       {navn:'Ahmed Ali', fag:'Koran', dager:'Lørdag', telefon:'+47 401 23 456', epost:'ahmed@madina.no'},
       {navn:'Yusuf Hassan', fag:'Islam', dager:'Lørdag', telefon:'+47 402 34 567', epost:'yusuf@madina.no'},
-      {navn:'Maryam Said', fag:'Arabisk', dager:'Søndag', telefon:'+47 403 45 678', epost:'maryam@madina.no'},
+      {navn:'Maryam Said', fag:'Arabisk', dager:'Lørdag', telefon:'+47 403 45 678', epost:'maryam@madina.no'},
       {navn:'Amina Farah', fag:'Madinabarn', dager:'Søndag', telefon:'+47 404 56 789', epost:'amina@madina.no'}
     ],
     guardians: [
@@ -1862,11 +1904,11 @@
       {navn:'Omar Said', telefon:'+47 933 44 556', epost:'omar.said@eksempel.no'}
     ],
     students: [
-      {navn:'Yusuf Hassan Ali', program:'Madina Islamske Skole (Lørdag)', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'2500', betalingsdato:'2026-08-15'},
-      {navn:'Amina Hassan Ali', program:'Madina Islamske Skole (Lørdag)', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'2500', betalingsdato:'2026-08-15'},
-      {navn:'Ibrahim Ahmed', program:'Kombinert – Islamske Skole + Språk (Lørdag og søndag)', klasse:'Klasse B', foresatt:'Layla Ahmed', telefon:'', betalt:'Nei', belop:'4000', betalingsdato:''},
-      {navn:'Zainab Ahmed', program:'Madinabarn (Søndag)', klasse:'Madinabarn', foresatt:'Layla Ahmed', telefon:'', betalt:'Ja', belop:'2000', betalingsdato:'2026-08-10'},
-      {navn:'Hamza Said', program:'Tilleggsprogram i språk – Arabisk (Søndag)', klasse:'Språkgruppe A', foresatt:'Omar Said', telefon:'', betalt:'Nei', belop:'2000', betalingsdato:''}
+      {navn:'Yusuf Hassan Ali', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'3500', betalingsdato:'2026-08-15'},
+      {navn:'Amina Hassan Ali', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'3500', betalingsdato:'2026-08-15'},
+      {navn:'Ibrahim Ahmed', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Urdu', klasse:'Klasse B', foresatt:'Layla Ahmed', telefon:'', betalt:'Nei', belop:'3500', betalingsdato:''},
+      {navn:'Zainab Ahmed', program:'Madinabarn (Søndag)', klasse:'Madinabarn', foresatt:'Layla Ahmed', telefon:'', betalt:'Ja', belop:'1500', betalingsdato:'2026-08-10'},
+      {navn:'Hamza Said', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Omar Said', telefon:'', betalt:'Nei', belop:'3500', betalingsdato:''}
     ],
     attendance: [
       {elev:'Yusuf Hassan Ali', klasse:'Klasse A', status:'Til stede'},
@@ -2462,13 +2504,38 @@
       }).join('');
     }
 
-    // Ukeplan: full weekly schedule grid for both school days, reusing the
-    // same renderTimeplanDay() builder as the Timeplan section for visual consistency.
-    const ukeplanLordagEl = document.getElementById('dashUkeplanLordag');
-    const ukeplanSondagEl = document.getElementById('dashUkeplanSondag');
-    if(ukeplanLordagEl) ukeplanLordagEl.innerHTML = renderTimeplanDay('Lørdag');
-    if(ukeplanSondagEl) ukeplanSondagEl.innerHTML = renderTimeplanDay('Søndag');
+    // Oppgaver som venter: itemized breakdown of everything needing admin
+    // action (feeds the same underlying data as the KPI strip's counts,
+    // but broken out per category so it's clear WHAT needs attention, not
+    // just how many). Each row jumps straight to the relevant section.
+    const tasksEl = document.getElementById('dashTasksList');
+    if(tasksEl){
+      const taskDefs = [
+        { key:'registrations', ic:'📝', label:'Nye søknader', count: cache.registrations.filter(r => r.status === 'Ny').length, side:'registrering', tab:null },
+        { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
+        { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
+        { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'paymentRequests' }
+      ];
+      const anyTasks = taskDefs.some(t => t.count > 0);
+      tasksEl.innerHTML = anyTasks
+        ? taskDefs.map(t => `
+            <div class="task-row${t.count > 0 ? ' has-count' : ''}" onclick="goToTask('${t.side}'${t.tab ? `,'${t.tab}'` : ''})">
+              <span class="task-ic">${t.ic}</span>
+              <span class="task-label">${escapeHtml(t.label)}</span>
+              <span class="task-count">${t.count}</span>
+            </div>`).join('')
+        : '<div class="task-empty">Ingen oppgaver venter — alt er oppdatert ✅</div>';
+    }
   }
+
+  window.goToTask = function(side, tab){
+    if(side === 'registrering' || side === 'oversikt'){
+      promptPasswordAndSelectSide(side);
+      return;
+    }
+    selectSide(side);
+    if(tab) selectSubTab(tab);
+  };
 
   function countBy(list, key){
     const counts = {};
@@ -3571,15 +3638,25 @@
 
   function mapRegistrationProgram(codesStr){
     const codes = (codesStr || '').split(',').map(s => s.trim());
-    const hasSkole = codes.includes('madina_islamske_skole');
-    const hasArabisk = codes.includes('sprak_arabisk');
-    const hasUrdu = codes.includes('sprak_urdu');
     const hasMadinabarn = codes.includes('madinabarn');
-    if(hasSkole && (hasArabisk || hasUrdu)) return 'Kombinert – Islamske Skole + Språk (Lørdag og søndag)';
-    if(hasSkole) return 'Madina Islamske Skole (Lørdag)';
-    if(hasArabisk) return 'Tilleggsprogram i språk – Arabisk (Søndag)';
-    if(hasUrdu) return 'Tilleggsprogram i språk – Urdu (Søndag)';
+    // Any of the old per-language codes, or the plain school code, now all
+    // fall under the single integrated Lørdag program (språk is no longer
+    // a separate add-on program — it's just a language choice within it).
+    const hasIntegrert = codes.includes('madina_islamske_skole') || codes.includes('integrert')
+      || codes.includes('sprak_arabisk') || codes.includes('sprak_urdu');
+    if(hasIntegrert) return 'Madina Islamske Skole — Integrert program (Lørdag)';
     if(hasMadinabarn) return 'Madinabarn (Søndag)';
+    return '';
+  }
+
+  // Derives the student's language track (Arabisk/Urdu) from the registration.
+  // Prefers an explicit reg.sprakvalg field if the form sends one directly;
+  // falls back to the old per-language checkbox codes for backward compatibility.
+  function mapRegistrationSprakvalg(reg){
+    if(reg.sprakvalg) return reg.sprakvalg;
+    const codes = (reg.program || '').split(',').map(s => s.trim());
+    if(codes.includes('sprak_urdu')) return 'Urdu';
+    if(codes.includes('sprak_arabisk')) return 'Arabisk';
     return '';
   }
 
@@ -3628,6 +3705,7 @@
 
       studentRecord.navn = reg.elev_navn || '';
       studentRecord.program = program;
+      studentRecord.sprakvalg = mapRegistrationSprakvalg(reg);
       studentRecord.klasse = '';
       studentRecord.foresatt = guardianId;
       studentRecord.telefon = '';
