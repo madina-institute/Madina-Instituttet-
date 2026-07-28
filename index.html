@@ -398,9 +398,17 @@
 
   /* Dashboard widgets — real-data donut, bar chart, and agenda list on the landing screen */
   .dash-widgets{ display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:26px; }
-  @media (min-width:900px){ .dash-widgets{ grid-template-columns:1fr 1fr 1.3fr; } }
+  @media (min-width:900px){ .dash-widgets{ grid-template-columns:1fr 1fr 2fr; } }
   .widget-card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); }
   .widget-card h3{ font-family:'Cormorant Garamond',serif; font-size:17px; color:var(--ink); margin:0 0 14px; font-weight:700; }
+  .dash-ukeplan{ display:flex; flex-direction:column; gap:16px; }
+  @media (min-width:640px){ .dash-ukeplan{ flex-direction:row; } }
+  .dash-ukeplan-day{ flex:1; min-width:0; }
+  .dash-ukeplan-day h4{
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 6px;
+  }
+  .dash-ukeplan-day .tp-scrollbox{ max-height:280px; overflow-y:auto; margin-top:0; }
   .shortcuts-title{ font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--ink); margin:4px 0 14px; font-weight:700; }
   .donut-wrap{ position:relative; width:128px; height:128px; margin:0 auto 16px; }
   .donut{ width:100%; height:100%; border-radius:50%; }
@@ -621,8 +629,17 @@
         <div class="bar-chart" id="dashAttBars"></div>
       </div>
       <div class="widget-card">
-        <h3 id="dashAgendaTitle">Dagens timeplan</h3>
-        <div id="dashAgendaList"></div>
+        <h3>Ukeplan</h3>
+        <div class="dash-ukeplan" id="dashUkeplan">
+          <div class="dash-ukeplan-day">
+            <h4>Lørdag</h4>
+            <div id="dashUkeplanLordag"></div>
+          </div>
+          <div class="dash-ukeplan-day">
+            <h4>Søndag</h4>
+            <div id="dashUkeplanSondag"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2445,29 +2462,12 @@
       }).join('');
     }
 
-    // Agenda: today's schedule if it's a school day (Lørdag/Søndag), else next school day's
-    const dayNames = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
-    const todayName = dayNames[new Date().getDay()];
-    const titleEl = document.getElementById('dashAgendaTitle');
-    let agendaDay = (todayName === 'Lørdag' || todayName === 'Søndag') ? todayName : null;
-    if(!agendaDay){
-      agendaDay = 'Lørdag';
-      if(titleEl) titleEl.textContent = 'Neste timeplan (lørdag)';
-    } else if(titleEl){
-      titleEl.textContent = 'Dagens timeplan (' + agendaDay + ')';
-    }
-    const agendaRows = cache.hours.filter(h => h.dag === agendaDay).sort((a,b) => (a.tid||'').localeCompare(b.tid||''));
-    const listEl = document.getElementById('dashAgendaList');
-    if(listEl){
-      listEl.innerHTML = agendaRows.length ? agendaRows.map(h => {
-        const klasseName = resolveDynName('classes', h.klasse) || h.klasse || '';
-        const larerName = resolveDynName('teachers', h.larer);
-        return `<div class="agenda-row">
-          <span class="agenda-time">${escapeHtml(h.tid || '—')}</span>
-          <span class="agenda-text"><b>${escapeHtml(h.fag || '—')}</b><small>${escapeHtml(klasseName)}${larerName ? ' · ' + escapeHtml(larerName) : ''}</small></span>
-        </div>`;
-      }).join('') : '<div class="report-empty">Ingen timer registrert.</div>';
-    }
+    // Ukeplan: full weekly schedule grid for both school days, reusing the
+    // same renderTimeplanDay() builder as the Timeplan section for visual consistency.
+    const ukeplanLordagEl = document.getElementById('dashUkeplanLordag');
+    const ukeplanSondagEl = document.getElementById('dashUkeplanSondag');
+    if(ukeplanLordagEl) ukeplanLordagEl.innerHTML = renderTimeplanDay('Lørdag');
+    if(ukeplanSondagEl) ukeplanSondagEl.innerHTML = renderTimeplanDay('Søndag');
   }
 
   function countBy(list, key){
