@@ -1246,12 +1246,18 @@
           const comments = classPostComments.filter(c => c.postId === p.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
           const commentsHtml = comments.length === 0
             ? `<div class="empty-msg">${t('noComments')}</div>`
-            : comments.map(c => `
-                <div class="info-row" style="align-items:flex-start; flex-direction:column; background:${c.fra === 'Lærer' ? 'var(--paper-2)' : 'transparent'}; border-radius:6px; padding:8px 10px; margin-bottom:6px;">
-                  <strong style="font-size:12.5px;">${escapeHtml(c.avsenderNavn||'')}</strong>
-                  <span style="font-size:11px; color:#8a9a90;">${escapeHtml((c.dato||'').slice(0,16).replace('T',' · '))}</span>
-                  <span style="font-size:13px; margin-top:4px;">${escapeHtml(c.tekst||'')}</span>
-                </div>`).join('');
+            : `<div class="chat-scroll" style="max-height:280px;">` + comments.map(c => {
+                const isMe = c.fra === 'Foresatt';
+                const senderName = c.avsenderNavn || '';
+                return `
+                <div class="chat-row ${isMe ? 'me' : ''}">
+                  <div class="chat-avatar">${escapeHtml(initialsOf(senderName))}</div>
+                  <div class="chat-bubble">
+                    ${escapeHtml(c.tekst||'')}
+                    <span class="chat-time">${escapeHtml(formatChatTime(c.dato))}</span>
+                  </div>
+                </div>`;
+              }).join('') + `</div>`;
           return `
           <div class="hw-item">
             <details>
