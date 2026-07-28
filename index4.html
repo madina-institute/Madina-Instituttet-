@@ -232,6 +232,20 @@
   .chat-row.me .chat-bubble .chat-attach{color:#fff;}
   .chat-row:not(.me) .chat-bubble .chat-attach{color:var(--emerald);}
 
+  .msg-badge{display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:12px; text-transform:uppercase; letter-spacing:0.03em;}
+  html[dir="rtl"] .msg-badge{font-family:'Tajawal',sans-serif; text-transform:none; letter-spacing:0;}
+  .msg-badge.unread{background:var(--red); color:#fff;}
+  .msg-badge.read{display:none;}
+
+  .thread-card{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow);
+    transition:border-color .2s, transform .2s;
+  }
+  .thread-card:hover{border-color:var(--gold); transform:translateY(-1px);}
+  .thread-card .name{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink);}
+  html[dir="rtl"] .thread-card .name{font-family:'Tajawal',sans-serif;}
+
   .attach-row{display:flex; align-items:center; gap:8px; margin:-8px 0 12px;}
   .attach-btn{
     display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;
@@ -1169,11 +1183,9 @@
     const openRows = rows.filter(r => r.status !== 'closed');
     const archRows = rows.filter(r => r.status === 'closed');
     const rowHtml = r => `
-      <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openGuardianThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
-        <span class="name">
-          <strong>${escapeHtml(r.title)}</strong>
-          <span class="msg-badge ${r.unread ? 'unread' : 'read'}">${r.unread ? t('unreadBadge') : t('readBadge')}</span>
-        </span>
+      <div class="thread-card" onclick="openGuardianThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
+        <span class="name"><strong>${escapeHtml(r.title)}</strong></span>
+        ${r.unread ? `<span class="msg-badge unread">${escapeHtml(t('unreadBadge'))}</span>` : ''}
       </div>`;
     const openEl = document.getElementById('teacherMsgThreadsList');
     const archEl = document.getElementById('teacherMsgThreadsArchiveList');
