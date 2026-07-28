@@ -228,6 +228,14 @@
   .chat-bubble .chat-attach{display:inline-block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; text-decoration:underline;}
   .chat-row.me .chat-bubble .chat-attach{color:#fff;}
   .chat-row:not(.me) .chat-bubble .chat-attach{color:var(--emerald);}
+
+  .attach-row{display:flex; align-items:center; gap:8px; margin:-8px 0 12px;}
+  .attach-btn{
+    display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;
+    border-radius:50%; background:var(--paper-2); border:1px solid var(--line); cursor:pointer; font-size:15px;
+  }
+  .attach-filename{font-family:'Jost',sans-serif; font-size:11.5px; color:#5a6860;}
+  html[dir="rtl"] .attach-filename{font-family:'Tajawal',sans-serif;}
   .note-item .d{font-size:13.5px;}
   .note-item .meta{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:6px;}
 </style>
@@ -544,22 +552,19 @@
       <div class="card">
         <h2 data-i18n="menuTeacherMsg">Kontakt lærer</h2>
         <div class="sub" id="teacherMsgSub"></div>
+        <div class="chat-scroll" id="teacherMsgHistory"></div>
+        <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
         <div class="field">
           <label data-i18n="yourMessage">Din melding</label>
           <textarea id="teacherMsgText" rows="3"></textarea>
         </div>
-        <div class="field">
-          <label data-i18n="attachFileLabel">Legg ved bilde/dokument (valgfritt)</label>
-          <input type="file" id="teacherMsgFile" accept="image/*,.pdf,.doc,.docx">
-        </div>
-        <div class="field">
-          <label data-i18n="orLinkLabel">Eller lim inn en lenke (valgfritt)</label>
-          <input type="text" id="teacherMsgLink" placeholder="https://...">
+        <div class="attach-row">
+          <label class="attach-btn" for="teacherMsgFile" title="Legg ved fil">📎</label>
+          <input type="file" id="teacherMsgFile" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="document.getElementById('teacherMsgFileName').textContent = this.files[0] ? this.files[0].name : '';">
+          <span class="attach-filename" id="teacherMsgFileName"></span>
         </div>
         <div class="upload-status" id="teacherMsgUploadStatus" style="display:none;"></div>
         <button class="btn btn-primary" onclick="sendTeacherMessage()" data-i18n="sendMessageBtn">Send melding</button>
-        <hr style="border:none; border-top:1px dotted var(--line); margin:20px 0;">
-        <div class="chat-scroll" id="teacherMsgHistory"></div>
       </div>
     </div>
 
@@ -1111,7 +1116,7 @@
     const tekst = document.getElementById('teacherMsgText').value.trim();
     const fileInput = document.getElementById('teacherMsgFile');
     const file = fileInput.files[0];
-    let vedleggLenke = document.getElementById('teacherMsgLink').value.trim();
+    let vedleggLenke = '';
     const statusEl = document.getElementById('teacherMsgUploadStatus');
     if(!tekst){
       alert(t('teacherMsgFill'));
@@ -1134,7 +1139,7 @@
         (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentGuardian.navn + '\n\n' + tekst);
       showToast(t('teacherMsgSent'));
       document.getElementById('teacherMsgText').value = '';
-      document.getElementById('teacherMsgLink').value = '';
+      document.getElementById('teacherMsgFileName').textContent = '';
       fileInput.value = '';
       statusEl.style.display = 'none';
     } catch(err){
