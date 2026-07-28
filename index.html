@@ -1242,8 +1242,6 @@
         ]},
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
-        {key:'foresattTlf', label:'Foresatt — telefon', type:'text', essential:true},
-        {key:'foresattEpost', label:'Foresatt — e-post', type:'text', essential:true},
 
         {key:'telefon', label:'Telefon (elev/direkte)', type:'text'},
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
@@ -3133,15 +3131,18 @@
 
     try{
       let guardianName = reg.foresatt1_navn || '';
+      let guardianPhone = reg.foresatt1_tlf || '';
       let guardianId = '';
       if(guardianName){
-        const existingGuardian = cache.guardians.find(g => g.navn === guardianName);
+        const existingGuardian = guardianPhone
+          ? cache.guardians.find(g => g.telefon === guardianPhone)
+          : cache.guardians.find(g => g.navn === guardianName);
         if(existingGuardian){
           guardianId = existingGuardian.id;
         } else {
           const newGuardianRef = await addDoc(collection(db, 'guardians'), {
             navn: guardianName,
-            telefon: reg.foresatt1_tlf || '',
+            telefon: guardianPhone,
             epost: reg.foresatt1_epost || '',
             sistEndretAv: currentUserEmail || 'ukjent',
             sistEndretDato: new Date().toISOString().slice(0,10)
@@ -3168,8 +3169,6 @@
       studentRecord.program = program;
       studentRecord.klasse = '';
       studentRecord.foresatt = guardianId;
-      studentRecord.foresattTlf = reg.foresatt1_tlf || '';
-      studentRecord.foresattEpost = reg.foresatt1_epost || '';
       studentRecord.telefon = '';
       studentRecord.betalt = 'Nei';
       studentRecord.belop = String(discountedPrice);
