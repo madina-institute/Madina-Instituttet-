@@ -1,4 +1,4 @@
-const CACHE_NAME = 'madina-shell-v3';
+const CACHE_NAME = 'madina-shell-v4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -33,8 +33,15 @@ self.addEventListener('fetch', (event) => {
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
 
   if (isHTML) {
+    // { cache: 'no-store' } forces this fetch to skip the browser's/CDN's
+    // own HTTP cache entirely and always go to the network for a fresh
+    // response. Without this, a large published file (like the admin
+    // panel's index.html) could keep showing an old version even right
+    // after a successful publish — not because of OUR cache below, but
+    // because the underlying fetch() itself was served from an upstream
+    // HTTP cache. This one option closes that gap.
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-store' })
         .then((res) => {
           if (res && res.ok) {
             const copy = res.clone();
