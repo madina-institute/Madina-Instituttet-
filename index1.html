@@ -198,6 +198,20 @@
     <div class="error-msg" id="loginError"></div>
   </div>
 
+  <!-- INACTIVITY LOCK OVERLAY -->
+  <div id="lockOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:var(--paper); align-items:center; justify-content:center;">
+    <div class="card" style="max-width:340px; width:100%; margin:0 18px;">
+      <h2>Økten er låst</h2>
+      <div class="sub">Ingen aktivitet på 20 minutter. Skriv inn PIN-koden din for å fortsette (<span id="lockNameShown"></span>).</div>
+      <div class="field">
+        <label data-i18n="pinLabel">PIN-kode</label>
+        <input type="password" id="lockPin" inputmode="numeric" maxlength="8" placeholder="••••">
+      </div>
+      <button class="btn btn-primary" onclick="doUnlock()">Lås opp</button>
+      <div class="error-msg" id="lockError"></div>
+    </div>
+  </div>
+
   <!-- APP (post-login) -->
   <div id="appView">
     <div class="who-bar">
@@ -742,6 +756,11 @@
     }
     sel.innerHTML = `<option value="">${t('selectName')}</option>` +
       teachers.map(tc => `<option value="${tc.id}">${escapeHtml(tc.navn)}</option>`).join('');
+    // "Remember me": only the teacher's identity is remembered (safe, not
+    // a secret) — never the PIN — so the dropdown pre-fills but the PIN
+    // still has to be entered to actually log in or to unlock after inactivity.
+    const rememberedId = localStorage.getItem('madinaTeacherId');
+    if(rememberedId && teachers.some(tc => tc.id === rememberedId)) sel.value = rememberedId;
   }
 
   onSnapshot(collection(db, 'teachers'), (snap) => {
@@ -836,6 +855,7 @@
       return;
     }
     currentTeacher = teacher;
+    localStorage.setItem('madinaTeacherId', teacher.id);
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = teacher.navn + ' · ' + resolveClassName(teacher.tildeltKlasse);
@@ -847,13 +867,56 @@
     populateFagSelect();
     showChoice();
     updateMsgDot();
+    resetInactivityTimer();
   };
 
   window.doLogout = function(){
     currentTeacher = null;
+    clearTimeout(inactivityTimer);
+    isLocked = false;
+    document.getElementById('lockOverlay').style.display = 'none';
     document.getElementById('appView').style.display = 'none';
     document.getElementById('loginView').style.display = 'block';
     document.getElementById('loginPin').value = '';
+  };
+
+  // INACTIVITY AUTO-LOCK — after 20 minutes with no taps/keys/scrolling,
+  // show a lock overlay requiring the PIN again. The session/data isn't
+  // lost — this is a local "lock the screen" measure only.
+  const INACTIVITY_LIMIT_MS = 20 * 60 * 1000;
+  let inactivityTimer = null;
+  let isLocked = false;
+
+  function resetInactivityTimer(){
+    if(isLocked || !currentTeacher) return;
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(lockSession, INACTIVITY_LIMIT_MS);
+  }
+  ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+
+  function lockSession(){
+    if(!currentTeacher) return;
+    isLocked = true;
+    document.getElementById('lockNameShown').textContent = currentTeacher.navn;
+    document.getElementById('lockPin').value = '';
+    document.getElementById('lockError').style.display = 'none';
+    document.getElementById('lockOverlay').style.display = 'flex';
+  }
+
+  window.doUnlock = function(){
+    const pin = document.getElementById('lockPin').value.trim();
+    const errEl = document.getElementById('lockError');
+    errEl.style.display = 'none';
+    if((currentTeacher.pin || '').trim() !== pin){
+      errEl.textContent = t('wrongPin');
+      errEl.style.display = 'block';
+      return;
+    }
+    isLocked = false;
+    document.getElementById('lockOverlay').style.display = 'none';
+    resetInactivityTimer();
   };
 
   // ---------- Browser back-button support ----------
