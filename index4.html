@@ -206,6 +206,28 @@
   .sched-block .tm{color:var(--emerald); font-weight:700; min-width:92px;}
 
   .note-item{background:var(--paper-2); border-radius:8px; padding:14px 16px; margin-bottom:10px;}
+
+  /* Chat bubbles — thread history (matches teacher portal) */
+  .chat-scroll{display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto; padding:4px 2px;}
+  .chat-row{display:flex; align-items:flex-end; gap:8px;}
+  .chat-row.me{flex-direction:row-reverse;}
+  .chat-avatar{
+    flex:0 0 auto; width:28px; height:28px; border-radius:50%; background:var(--paper-2); color:var(--emerald-d);
+    display:flex; align-items:center; justify-content:center; font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
+  }
+  .chat-row.me .chat-avatar{background:var(--emerald); color:#fff;}
+  .chat-bubble{
+    max-width:74%; padding:9px 13px; border-radius:14px; background:#fff; border:1px solid var(--line);
+    font-family:'Lora',serif; font-size:13.5px; line-height:1.45; color:var(--ink);
+  }
+  html[dir="rtl"] .chat-bubble{font-family:'Tajawal','Lora',serif;}
+  .chat-row.me .chat-bubble{background:var(--emerald); color:#fff; border-color:var(--emerald);}
+  .chat-bubble .chat-time{display:block; margin-top:5px; font-family:'Jost',sans-serif; font-size:10px; color:#8a9a90;}
+  .chat-row.me .chat-bubble .chat-time{color:rgba(255,255,255,0.7);}
+  html[dir="rtl"] .chat-bubble .chat-time{font-family:'Tajawal',sans-serif;}
+  .chat-bubble .chat-attach{display:inline-block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; text-decoration:underline;}
+  .chat-row.me .chat-bubble .chat-attach{color:#fff;}
+  .chat-row:not(.me) .chat-bubble .chat-attach{color:var(--emerald);}
   .note-item .d{font-size:13.5px;}
   .note-item .meta{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:6px;}
 </style>
@@ -537,7 +559,7 @@
         <div class="upload-status" id="teacherMsgUploadStatus" style="display:none;"></div>
         <button class="btn btn-primary" onclick="sendTeacherMessage()" data-i18n="sendMessageBtn">Send melding</button>
         <hr style="border:none; border-top:1px dotted var(--line); margin:20px 0;">
-        <div id="teacherMsgHistory"></div>
+        <div class="chat-scroll" id="teacherMsgHistory"></div>
       </div>
     </div>
 
@@ -759,8 +781,12 @@
     if(!classId) return;
     const teacher = teachers.find(x => x.tildeltKlasse === classId);
     if(!teacher || !teacher.epost) return;
+    const fullText = text + '\n\n---\n' +
+      (currentLang === 'ar'
+        ? 'لا تردّ على هذا البريد — ردّك لن يصل لولي الأمر. للرد، سجّل الدخول لبوابة المعلم.'
+        : 'Ikke svar på denne e-posten — svaret vil ikke nå frem. For å svare, logg inn i Lærerportalen.');
     try{
-      await addDoc(collection(db, 'mail'), { to: [teacher.epost], message: { subject, text } });
+      await addDoc(collection(db, 'mail'), { to: [teacher.epost], message: { subject, text: fullText } });
     } catch(err){
       console.error('E-postvarsling til lærer feilet:', err);
     }
@@ -1037,22 +1063,46 @@
     renderTeacherMsgHistory();
   };
 
+  function initialsOf(name){
+    const parts = (name || '').trim().split(/\s+/);
+    return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
+  }
+
+  function formatChatTime(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    if(isNaN(d)) return iso;
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const min = String(d.getMinutes()).padStart(2,'0');
+    return `${dd}.${mm} ${hh}:${min}`;
+  }
+
   function renderTeacherMsgHistory(){
     const el = document.getElementById('teacherMsgHistory');
     if(!el || myChildren.length === 0 || !currentGuardian) return;
     const child = myChildren[currentChildIndex];
     const thread = messages.filter(m => m.klasse === child.klasse && (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn))
-      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     if(thread.length === 0){
       el.innerHTML = `<div class="empty-msg">${t('noMessages')}</div>`;
       return;
     }
-    el.innerHTML = thread.map(m => `
-      <div class="note-item" style="background:${m.fra === 'Foresatt' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line);">
-        <div class="d"><strong>${m.fra === 'Foresatt' ? t('you') : escapeHtml(m.avsenderNavn||'')}</strong><br>${escapeHtml(m.tekst||'')}</div>
-        ${m.vedleggLenke ? `<div style="margin-top:6px;"><a href="${escapeHtml(m.vedleggLenke)}" target="_blank" style="font-size:12px;">${currentLang === 'ar' ? 'مرفق' : 'Vedlegg'}</a></div>` : ''}
-        <div class="meta">${escapeHtml((m.dato||'').slice(0,16).replace('T',' · '))}</div>
-      </div>`).join('');
+    el.innerHTML = thread.map(m => {
+      const isMe = m.fra === 'Foresatt';
+      const senderName = isMe ? currentGuardian.navn : m.avsenderNavn;
+      return `
+      <div class="chat-row ${isMe ? 'me' : ''}">
+        <div class="chat-avatar">${escapeHtml(initialsOf(senderName))}</div>
+        <div class="chat-bubble">
+          ${escapeHtml(m.tekst||'')}
+          ${m.vedleggLenke ? `<a class="chat-attach" href="${escapeHtml(m.vedleggLenke)}" target="_blank">${currentLang === 'ar' ? '📎 مرفق' : '📎 Vedlegg'}</a>` : ''}
+          <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
+        </div>
+      </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
   }
 
   window.sendTeacherMessage = async function(){
