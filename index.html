@@ -261,6 +261,11 @@
   .stat-card{background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px 18px; box-shadow:var(--shadow);}
   .stat-card .n{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:28px; color:var(--emerald-d);}
   .stat-card .l{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gold);}
+  .dash-strip{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px;}
+  @media (min-width:640px){ .dash-strip{ grid-template-columns:repeat(4,1fr); } }
+  .stat-card.alert.has-items{border-color:var(--red);}
+  .stat-card.alert.has-items .n{color:var(--red);}
+  .stat-card.alert.has-items .l{color:var(--red);}
 
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -429,6 +434,12 @@
 <!-- SIDE CHOICE -->
 <div id="sideChooseView">
   <div class="wrap">
+    <div class="dash-strip" id="dashStrip">
+      <div class="stat-card"><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
+      <div class="stat-card alert" id="dashCardRegs"><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
+      <div class="stat-card alert" id="dashCardRequests"><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
+      <div class="stat-card alert" id="dashCardUnpaid"><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
+    </div>
     <div class="side-grid">
       <div class="side-card" onclick="selectSide('eier')">
         <div class="ic">🏛️</div>
@@ -2132,6 +2143,28 @@
     renderAbsenceRequests();
     renderContactUpdateRequests();
     renderPaymentRequests();
+    updateDashboardStrip();
+  }
+
+  function updateDashboardStrip(){
+    const el = document.getElementById('dashStrip');
+    if(!el) return;
+    document.getElementById('dashStatStudents').textContent = cache.students.length;
+
+    const pendingRegs = cache.registrations.filter(r => r.status === 'Ny').length;
+    document.getElementById('dashStatRegs').textContent = pendingRegs;
+    document.getElementById('dashCardRegs').classList.toggle('has-items', pendingRegs > 0);
+
+    const pendingRequests =
+      cache.absenceRequests.filter(r => r.status === 'Ny').length +
+      cache.contactUpdateRequests.filter(r => r.status === 'Ny').length +
+      cache.paymentRequests.filter(r => r.status === 'Ny').length;
+    document.getElementById('dashStatRequests').textContent = pendingRequests;
+    document.getElementById('dashCardRequests').classList.toggle('has-items', pendingRequests > 0);
+
+    const unpaid = cache.students.filter(s => s.betalt === 'Nei').length;
+    document.getElementById('dashStatUnpaid').textContent = unpaid;
+    document.getElementById('dashCardUnpaid').classList.toggle('has-items', unpaid > 0);
   }
 
   function countBy(list, key){
