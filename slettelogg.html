@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madina Skole — Slettelogg</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08); --red:#a83c3c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
+
+  #loginScreen{
+    position:fixed; inset:0; z-index:9999; background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    background:#fff; border-radius:10px; padding:40px 32px; max-width:360px; width:100%;
+    box-shadow:0 20px 50px rgba(15,43,33,0.3); text-align:center;
+  }
+  .login-card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; color:var(--emerald-d); margin:0 0 4px;}
+  .login-card .sub{font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin-bottom:22px;}
+  .login-card .field{margin-bottom:14px; text-align:start;}
+  .login-card .field label{display:block; font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:5px; font-weight:600;}
+  .login-card .field input{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:6px; font-family:'Lora',serif; font-size:16px;
+  }
+  .btn-login{
+    width:100%; margin-top:8px; background:var(--emerald); color:#fff; border:none; border-radius:6px;
+    padding:13px 18px; font-family:'Jost',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.04em; cursor:pointer;
+  }
+  .login-error{margin-top:12px; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); display:none;}
+
+  header{ padding:26px 20px 14px; text-align:center; }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:24px; margin:0 0 6px; color:var(--ink);}
+  header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8fa3; margin:0;}
+
+  main{max-width:760px; margin:0 auto; padding:0 18px 60px;}
+
+  .note-box{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:20px; line-height:1.6;
+  }
+
+  .log-card{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);
+    margin-bottom:14px; display:flex; flex-direction:column; gap:8px;
+  }
+  .log-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;}
+  .log-title{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; color:var(--emerald-d); flex:1 1 160px; min-width:0;}
+  .log-type-pill{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d);
+    background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:3px 10px; white-space:nowrap;
+  }
+  .log-meta{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;}
+  .log-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;}
+  .btn-restore{
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700; letter-spacing:0.02em; text-transform:uppercase;
+    background:var(--emerald); color:#fff; border:none; border-radius:6px; padding:9px 14px; cursor:pointer; flex:1 1 auto;
+  }
+  .btn-confirm-delete{
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700; letter-spacing:0.02em; text-transform:uppercase;
+    background:transparent; color:var(--red); border:1px solid rgba(168,60,60,0.3); border-radius:6px; padding:9px 14px; cursor:pointer; flex:1 1 auto;
+  }
+  .empty-msg{
+    font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:40px 20px;
+    background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+  }
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif; font-size:13px;
+    padding:12px 22px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s; z-index:200; max-width:90%; text-align:center;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>Slettelogg</h2>
+    <div class="sub">Samme innlogging som Administrativ-panelet</div>
+    <div class="field">
+      <label>E-post</label>
+      <input type="email" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Passord</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Logg inn</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+  <header>
+    <h1>Slettelogg</h1>
+    <p>Angre-mulighet for slettede oppføringer</p>
+  </header>
+  <main>
+    <div class="note-box">
+      Hver gang noe slettes i Administrativ-panelet, havner en full kopi av det her FØR det fjernes fra den ekte databasen.
+      Trykk <strong>Gjenopprett</strong> for å legge oppføringen tilbake nøyaktig som den var (samme ID, så eksisterende
+      koblinger til den fortsetter å virke), eller <strong>Bekreft sletting</strong> for å fjerne den fra denne listen uten
+      å gjøre noe mer — dette betyr bare "jeg har sett dette, slettingen var riktig".
+    </div>
+    <div id="logList"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger', announcements:'Kunngjøringer', studentNotes:'Elevnotater', contactUpdateRequests:'Kontaktendringer', paymentRequests:'Betalingsforespørsler', messages:'Meldinger' };
+
+  window.doLogin = async function(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const pw = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    if(!email || !pw){
+      errEl.textContent = 'Fyll ut e-post og passord.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await signInWithEmailAndPassword(auth, email, pw);
+    } catch(err){
+      console.error(err);
+      errEl.textContent = 'Feil e-post eller passord.';
+      errEl.style.display = 'block';
+    }
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    document.getElementById('loginScreen').style.display = user ? 'none' : 'flex';
+    document.getElementById('appRoot').style.display = user ? 'block' : 'none';
+  });
+
+  function escapeHtml(str){
+    const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+  }
+
+  function showToast(msg){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(()=>el.classList.remove('show'), 2400);
+  }
+
+  function friendlyTitle(entry){
+    const d = entry.data || {};
+    return d.navn || d.tittel || d.emne || d.tema || d.elev_navn || d.beskrivelse || d.guardianNavn || d.tekst || ('#' + entry.originalId);
+  }
+
+  function formatDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    if(isNaN(d)) return iso;
+    return d.toLocaleString('no-NO');
+  }
+
+  let logEntries = [];
+
+  onSnapshot(collection(db, 'deletionLog'), (snap) => {
+    logEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.deletedAt||'').localeCompare(a.deletedAt||''));
+    render();
+  }, (err) => {
+    console.error(err);
+    document.getElementById('logList').innerHTML = `<div class="empty-msg">Kunne ikke laste slettelogg: ${escapeHtml(err.message)}</div>`;
+  });
+
+  function render(){
+    const el = document.getElementById('logList');
+    if(logEntries.length === 0){
+      el.innerHTML = '<div class="empty-msg">Ingen slettede oppføringer å vise akkurat nå.</div>';
+      return;
+    }
+    el.innerHTML = logEntries.map(entry => `
+      <div class="log-card">
+        <div class="log-top">
+          <div class="log-title">${escapeHtml(friendlyTitle(entry))}</div>
+          <span class="log-type-pill">${escapeHtml(TYPE_LABELS[entry.type] || entry.type)}</span>
+        </div>
+        <div class="log-meta">Slettet ${escapeHtml(formatDate(entry.deletedAt))} av ${escapeHtml(entry.deletedBy || 'ukjent')}</div>
+        <div class="log-actions">
+          <button class="btn-restore" onclick="restoreEntry('${entry.id}')">Gjenopprett</button>
+          <button class="btn-confirm-delete" onclick="confirmDeletion('${entry.id}')">Bekreft sletting</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.restoreEntry = async function(logId){
+    const entry = logEntries.find(e => e.id === logId);
+    if(!entry) return;
+    if(!confirm('Gjenopprette "' + friendlyTitle(entry) + '" til ' + (TYPE_LABELS[entry.type] || entry.type) + '?')) return;
+    try{
+      await setDoc(doc(db, entry.type, entry.originalId), entry.data);
+      await deleteDoc(doc(db, 'deletionLog', logId));
+      showToast('Gjenopprettet.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  window.confirmDeletion = async function(logId){
+    if(!confirm('Bekrefte at denne slettingen var riktig? Oppføringen fjernes da fra denne listen (den er allerede slettet fra databasen).')) return;
+    try{
+      await deleteDoc(doc(db, 'deletionLog', logId));
+      showToast('Bekreftet.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+</script>
+</body>
+</html>
