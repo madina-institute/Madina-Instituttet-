@@ -569,6 +569,10 @@
 
       <div class="card" id="teacherMsgListInner">
         <h2 data-i18n="menuTeacherMsg">Kontakt lærer</h2>
+        <div class="field">
+          <label data-i18n="newMsgTitleLabel">Tittel på samtalen</label> <span style="color:var(--red);">*</span>
+          <input type="text" id="guardianNewMsgTitle" required data-i18n-ph="newMsgTitlePh" placeholder="F.eks. Om leksene denne uken">
+        </div>
         <button type="button" class="btn btn-ghost" onclick="startGuardianThread()" data-i18n="newMsgStart" style="margin-bottom:14px;">Start melding</button>
         <div class="sub" data-i18n="openThreadsLabel">Åpne samtaler</div>
         <div id="teacherMsgThreadsList"></div>
@@ -674,6 +678,8 @@
       messageLabel: 'Melding (valgfritt)', sendContactUpdate: 'Send forespørsel',
       menuTeacherMsg: 'Kontakt lærer', menuTeacherMsgDesc: 'Send og motta meldinger',
       newMsgStart: 'Start ny melding',
+      newMsgTitleLabel: 'Tittel på samtalen',
+      newMsgTitlePh: 'F.eks. Om leksene denne uken',
       openThreadsLabel: 'Åpne samtaler',
       archivedThreadsLabel: 'Arkiverte samtaler',
       closeThread: 'Lukk samtale',
@@ -745,6 +751,8 @@
       messageLabel: 'رسالة (اختياري)', sendContactUpdate: 'إرسال الطلب',
       menuTeacherMsg: 'التواصل مع المعلم', menuTeacherMsgDesc: 'إرسال واستقبال الرسائل',
       newMsgStart: 'ابدأ محادثة جديدة',
+      newMsgTitleLabel: 'عنوان المحادثة',
+      newMsgTitlePh: 'مثلاً: بخصوص واجبات هذا الأسبوع',
       openThreadsLabel: 'المحادثات المفتوحة',
       archivedThreadsLabel: 'المحادثات المؤرشفة',
       closeThread: 'إغلاق المحادثة',
@@ -1203,13 +1211,20 @@
 
   window.startGuardianThread = async function(){
     if(myChildren.length === 0 || !currentGuardian) return;
+    const titleInput = document.getElementById('guardianNewMsgTitle');
+    const title = titleInput ? titleInput.value.trim() : '';
+    if(!title){
+      alert(currentLang === 'ar' ? 'اكتب عنوان للمحادثة.' : 'Skriv en tittel på samtalen.');
+      return;
+    }
     const child = myChildren[currentChildIndex];
     const teacher = teachers.find(x => x.tildeltKlasse === child.klasse);
     const nowIso = new Date().toISOString();
     const threadRef = await addDoc(collection(db, 'messageThreads'), {
-      klasse: child.klasse, teacherId: teacher ? teacher.id : '', guardianId: currentGuardian.id, title: '',
+      klasse: child.klasse, teacherId: teacher ? teacher.id : '', guardianId: currentGuardian.id, title,
       status: 'open', createdAt: nowIso, lastActivityAt: nowIso
     });
+    if(titleInput) titleInput.value = '';
     openGuardianThread(threadRef.id, false);
   };
 
@@ -1391,11 +1406,15 @@
         dato: new Date().toISOString()
       });
       if(currentThreadDoc){
-        await updateDoc(doc(db, 'messageThreads', currentThreadDoc.id), {
-          status: 'open', closedAt: null, lastActivityAt: new Date().toISOString()
-        });
-        currentThreadDoc.status = 'open';
-        document.getElementById('teacherThreadClosedNote').style.display = 'none';
+        try{
+          await updateDoc(doc(db, 'messageThreads', currentThreadDoc.id), {
+            status: 'open', closedAt: null, lastActivityAt: new Date().toISOString()
+          });
+          currentThreadDoc.status = 'open';
+          document.getElementById('teacherThreadClosedNote').style.display = 'none';
+        } catch(threadErr){
+          console.error('Kunne ikke oppdatere samtalestatus (meldingen ble likevel sendt):', threadErr);
+        }
       }
       notifyClassTeacherByEmail(child.klasse,
         (currentLang === 'ar' ? 'رسالة جديدة من ولي أمر' : 'Ny melding fra foresatt'),
