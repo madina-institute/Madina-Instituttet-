@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,500&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#1c2c24; --emerald:#1f4a3a; --emerald-d:#0f2b21; --emerald-l:#2e6b53;
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
     --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
     --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10);
     --red:#a83c3c;
@@ -71,6 +71,31 @@
   #sideChooseView .wrap{ max-width:640px; margin:0 auto; }
   .side-grid{ display:flex; flex-direction:column; gap:18px; }
   @media (min-width:640px){ .side-grid{ flex-direction:row; flex-wrap:wrap; } .side-grid .side-card{ flex:1 1 calc(50% - 9px); min-width:220px; } }
+
+  /* Desktop sidebar — Alma/Gradelink-style persistent left nav. Mobile keeps
+     the existing full-screen card flow untouched (a sidebar makes no sense
+     on a phone-width screen). */
+  .app-sidebar{
+    display:none; position:fixed; inset-inline-start:0; top:0; bottom:0; width:220px; z-index:500;
+    background:linear-gradient(180deg, var(--emerald) 0%, var(--emerald-d) 100%);
+    flex-direction:column; padding:18px 10px; gap:4px; overflow-y:auto;
+  }
+  .app-sidebar .sb-logo{display:flex; align-items:center; gap:10px; padding:6px 10px 18px;}
+  .app-sidebar .sb-logo img{height:34px; width:auto; border-radius:5px;}
+  .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:#fff;}
+  html[dir="rtl"] .app-sidebar .sb-logo span{font-family:'Tajawal',sans-serif; font-size:14px;}
+  .app-sidebar button{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:start; background:transparent; border:none;
+    color:rgba(255,255,255,0.82); font-family:'Jost',sans-serif; font-size:13px; padding:10px 12px; border-radius:8px; cursor:pointer;
+  }
+  html[dir="rtl"] .app-sidebar button{font-family:'Tajawal',sans-serif;}
+  .app-sidebar button .ic{font-size:16px;}
+  .app-sidebar button:hover{background:rgba(255,255,255,0.10); color:#fff;}
+  .app-sidebar button.active{background:#fff; color:var(--emerald-d); font-weight:600;}
+  @media (min-width:900px){
+    #appRoot{ padding-inline-start:220px; }
+    .app-sidebar{ display:flex; }
+  }
   .side-card{
     flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:34px 26px;
     text-align:center; box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s, transform .2s;
@@ -388,6 +413,18 @@
     <button class="logout-btn" onclick="doAdminLogout()">Logg ut</button>
   </div>
 </header>
+
+<nav class="app-sidebar" id="appSidebar">
+  <div class="sb-logo">
+    <img src="https://madina-institute.github.io/Madina-Instituttet-/logo.png" alt="Madina Institute">
+    <span>Madina Skole</span>
+  </div>
+  <button data-sb-side="eier" onclick="sidebarSelectSide('eier')"><span class="ic">🏛️</span> Eier / Ledelsen</button>
+  <button data-sb-side="admin" onclick="sidebarSelectSide('admin')"><span class="ic">🗂️</span> Administrativ</button>
+  <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')"><span class="ic">🎓</span> Pedagogisk</button>
+  <button data-sb-side="registrering" onclick="sidebarSelectSide('registrering')"><span class="ic">📝</span> Registrering</button>
+  <button data-sb-side="oversikt" onclick="sidebarSelectSide('oversikt')"><span class="ic">⚙️</span> Oversikt</button>
+</nav>
 
 <!-- SIDE CHOICE -->
 <div id="sideChooseView">
@@ -2222,8 +2259,20 @@
 
   let currentSideForBack = null;
 
+  window.sidebarSelectSide = function(side){
+    if(side === 'registrering' || side === 'oversikt') promptPasswordAndSelectSide(side);
+    else selectSide(side);
+  };
+
+  function highlightSidebar(side){
+    document.querySelectorAll('.app-sidebar button').forEach(b => {
+      b.classList.toggle('active', b.dataset.sbSide === side);
+    });
+  }
+
   window.selectSide = function(side){
     currentSideForBack = side;
+    highlightSidebar(side);
     document.getElementById('sideChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
     document.getElementById('mainContent').style.display = 'none';
@@ -2263,6 +2312,7 @@
   };
 
   window.showSideChoice = function(){
+    highlightSidebar(null);
     document.getElementById('sideChooseView').style.display = 'block';
     document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
