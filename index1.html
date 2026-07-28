@@ -135,6 +135,9 @@
   html[dir="rtl"] .chat-bubble{font-family:'Tajawal','Lora',serif;}
   .chat-row.me .chat-bubble{background:var(--emerald); color:#fff; border-color:var(--emerald);}
   .chat-bubble .chat-time{display:block; margin-top:5px; font-family:'Jost',sans-serif; font-size:10px; color:#8a9a90;}
+  .chat-bubble .chat-sender{display:block; font-family:'Jost',sans-serif; font-size:11px; font-weight:700; margin-bottom:3px; color:var(--emerald-d);}
+  .chat-row.me .chat-bubble .chat-sender{color:rgba(255,255,255,0.85);}
+  html[dir="rtl"] .chat-bubble .chat-sender{font-family:'Tajawal',sans-serif;}
   .chat-row.me .chat-bubble .chat-time{color:rgba(255,255,255,0.7);}
   html[dir="rtl"] .chat-bubble .chat-time{font-family:'Tajawal',sans-serif;}
   .chat-bubble .chat-attach{display:inline-block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; text-decoration:underline;}
@@ -456,17 +459,31 @@
           <label data-i18n="newMsgLabel">Ny melding til</label>
           <select id="newMsgGuardianSelect"></select>
         </div>
-        <button type="button" class="btn btn-ghost" style="margin-bottom:0;" onclick="startNewMessageThread()" data-i18n="newMsgStart">Start melding</button>
       </div>
+      <div class="field">
+        <label data-i18n="newMsgTitleLabel">Tittel på samtalen</label>
+        <input type="text" id="newMsgTitle" data-i18n-ph="newMsgTitlePh" placeholder="F.eks. Om leksene denne uken">
+      </div>
+      <button type="button" class="btn btn-ghost" onclick="startNewMessageThread()" data-i18n="newMsgStart">Start melding</button>
       <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
+      <div class="sub" id="openThreadsLabel" data-i18n="openThreadsLabel">Åpne samtaler</div>
       <div id="messageThreadsList"></div>
+      <div class="sub" id="archivedThreadsLabel" style="margin-top:18px;" data-i18n="archivedThreadsLabel">Arkiverte samtaler</div>
+      <div id="messageThreadsArchiveList"></div>
     </div>
+
 
     <!-- MESSAGES: thread detail -->
     <div class="card" id="messageThreadView" style="display:none;">
       <button class="back-link" onclick="history.back()">← Tilbake til meldinger</button>
-      <h2 id="messageThreadTitle"></h2>
-      <div class="thread-subtitle" id="messageThreadSubtitle"></div>
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+        <div>
+          <h2 id="messageThreadTitle" style="margin-bottom:2px;"></h2>
+          <div class="thread-subtitle" id="messageThreadSubtitle"></div>
+        </div>
+        <button type="button" class="btn btn-ghost" id="threadCloseBtn" style="display:none; white-space:nowrap; font-size:11.5px; padding:6px 12px;" onclick="toggleThreadClosed()"></button>
+      </div>
+      <div class="empty-msg" id="threadClosedNote" style="display:none;" data-i18n="threadClosedNote">Denne samtalen er lukket. Send en melding for å gjenåpne den.</div>
       <div class="chat-scroll" id="messageThreadHistory"></div>
       <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
       <div class="field">
@@ -490,9 +507,46 @@
       <div class="field">
         <textarea id="classPostText" rows="3" data-i18n-ph="classPostPlaceholder" placeholder="Skriv en melding til klassen..."></textarea>
       </div>
+      <div class="field">
+        <label data-i18n="attachTypeLabel">Legg til (valgfritt)</label>
+        <select id="classPostAttachType" onchange="onClassPostAttachTypeChange()">
+          <option value="" data-i18n="attachNone">Ingenting</option>
+          <option value="poll" data-i18n="attachPoll">Avstemning</option>
+          <option value="event" data-i18n="attachEvent">Arrangement</option>
+        </select>
+      </div>
+      <div id="classPostPollFields" style="display:none;">
+        <div class="field">
+          <label data-i18n="pollQuestionLabel">Spørsmål</label>
+          <input type="text" id="classPostPollQuestion">
+        </div>
+        <div id="classPostPollOptions">
+          <div class="field"><label data-i18n="pollOptionLabel">Valg 1</label><input type="text" class="poll-option-input"></div>
+          <div class="field"><label data-i18n="pollOptionLabel">Valg 2</label><input type="text" class="poll-option-input"></div>
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="addPollOptionField()" data-i18n="addPollOption">+ Legg til valg</button>
+      </div>
+      <div id="classPostEventFields" style="display:none;">
+        <div class="field">
+          <label data-i18n="eventTitleLabel">Tittel på arrangementet</label>
+          <input type="text" id="classPostEventTitle">
+        </div>
+        <div class="field">
+          <label data-i18n="eventDateLabel">Dato</label>
+          <input type="date" id="classPostEventDate">
+        </div>
+        <div class="field">
+          <label data-i18n="eventDescLabel">Beskrivelse (valgfritt)</label>
+          <textarea id="classPostEventDesc" rows="2"></textarea>
+        </div>
+      </div>
       <label style="display:flex; align-items:center; gap:8px; font-family:'Jost',sans-serif; font-size:13px; margin-bottom:14px;">
         <input type="checkbox" id="classPostAllowComments" checked style="width:auto;">
         <span data-i18n="allowComments">Tillat kommentarer fra foresatte</span>
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; font-family:'Jost',sans-serif; font-size:13px; margin-bottom:14px;">
+        <input type="checkbox" id="classPostNotifyEmail" style="width:auto;">
+        <span data-i18n="notifyByEmail">Varsle foresatte på e-post om denne meldingen</span>
       </label>
       <button class="btn btn-primary" onclick="publishClassPost()" data-i18n="publishClassPost">Publiser til klassen</button>
       <hr style="border:none; border-top:1px dotted var(--line); margin:22px 0;">
@@ -571,6 +625,25 @@
       classPostsSub: 'Send en melding til alle foresatte i klassen. De kan kommentere med mindre du stenger det.',
       classPostPlaceholder: 'Skriv en melding til klassen...',
       allowComments: 'Tillat kommentarer fra foresatte',
+      notifyByEmail: 'Varsle foresatte på e-post om denne meldingen',
+      attachTypeLabel: 'Legg til (valgfritt)',
+      attachNone: 'Ingenting',
+      attachPoll: 'Avstemning',
+      attachEvent: 'Arrangement',
+      pollQuestionLabel: 'Spørsmål',
+      pollOptionLabel: 'Valg',
+      addPollOption: '+ Legg til valg',
+      eventTitleLabel: 'Tittel på arrangementet',
+      eventDateLabel: 'Dato',
+      eventDescLabel: 'Beskrivelse (valgfritt)',
+      pollFillNote: 'Skriv spørsmålet og minst 2 valg.',
+      votesCount: 'stemmer',
+      voteBtn: 'Stem',
+      yourVoteNote: 'Din stemme',
+      rsvpComing: 'Jeg kommer',
+      rsvpNotComing: 'Jeg kommer ikke',
+      rsvpComingCount: 'kommer',
+      rsvpNotComingCount: 'kommer ikke',
       publishClassPost: 'Publiser til klassen',
       classPostsArchiveTitle: 'Tidligere klassemeldinger',
       noClassPosts: 'Ingen klassemeldinger sendt ennå.',
@@ -583,6 +656,14 @@
       sendReply: 'Send',
       newMsgLabel: 'Ny melding til',
       newMsgStart: 'Start melding',
+      newMsgTitleLabel: 'Tittel på samtalen',
+      newMsgTitlePh: 'F.eks. Om leksene denne uken',
+      openThreadsLabel: 'Åpne samtaler',
+      archivedThreadsLabel: 'Arkiverte samtaler',
+      closeThread: 'Lukk samtale',
+      reopenThread: 'Gjenåpne samtale',
+      threadClosedNote: 'Denne samtalen er lukket. Send en melding for å gjenåpne den.',
+      untitledThread: 'Samtale',
       newMsgPick: '— Velg en foresatt —',
       chooseLesson: 'Timeforberedelse',
       chooseLessonDesc: 'Send inn pedagogisk forberedelse for en time',
@@ -654,6 +735,25 @@
       classPostsSub: 'أرسل رسالة لكل أولياء أمور الصف. يقدرون يعلّقون إلا لو أوقفت التعليقات.',
       classPostPlaceholder: 'اكتب رسالة للصف...',
       allowComments: 'السماح بتعليقات الأولياء',
+      notifyByEmail: 'إشعار أولياء الأمور بالإيميل عن هذي الرسالة',
+      attachTypeLabel: 'إضافة (اختياري)',
+      attachNone: 'لا شيء',
+      attachPoll: 'تصويت',
+      attachEvent: 'حدث',
+      pollQuestionLabel: 'السؤال',
+      pollOptionLabel: 'خيار',
+      addPollOption: '+ إضافة خيار',
+      eventTitleLabel: 'عنوان الحدث',
+      eventDateLabel: 'التاريخ',
+      eventDescLabel: 'الوصف (اختياري)',
+      pollFillNote: 'اكتب السؤال وخيارين على الأقل.',
+      votesCount: 'صوت',
+      voteBtn: 'صوّت',
+      yourVoteNote: 'صوتك',
+      rsvpComing: 'سأحضر',
+      rsvpNotComing: 'لن أحضر',
+      rsvpComingCount: 'حاضر',
+      rsvpNotComingCount: 'غير حاضر',
       publishClassPost: 'نشر للصف',
       classPostsArchiveTitle: 'رسائل الصف السابقة',
       noClassPosts: 'ما فيه رسائل صف مرسلة بعد.',
@@ -666,6 +766,14 @@
       sendReply: 'إرسال',
       newMsgLabel: 'رسالة جديدة إلى',
       newMsgStart: 'ابدأ الرسالة',
+      newMsgTitleLabel: 'عنوان المحادثة',
+      newMsgTitlePh: 'مثلاً: بخصوص واجبات هذا الأسبوع',
+      openThreadsLabel: 'المحادثات المفتوحة',
+      archivedThreadsLabel: 'المحادثات المؤرشفة',
+      closeThread: 'إغلاق المحادثة',
+      reopenThread: 'إعادة فتح المحادثة',
+      threadClosedNote: 'هذي المحادثة مغلقة. أرسل رسالة عشان تفتحها من جديد.',
+      untitledThread: 'محادثة',
       newMsgPick: '— اختر ولي أمر —',
       chooseLesson: 'التحضير التربوي',
       chooseLessonDesc: 'أرسل تحضيرك التربوي لحصة معينة',
@@ -807,6 +915,26 @@
     if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') populateNewMessagePicker();
   });
 
+  // Titled 1-1 conversation threads (title, open/closed lifecycle, archive).
+  // Older messages sent before this feature exists have no matching thread
+  // doc — those are still shown as an untitled "legacy" conversation per
+  // guardian that never auto-closes, so nothing old is lost or surprises anyone.
+  const AUTO_CLOSE_DAYS = 14;
+  let messageThreads = [];
+  function autoCloseStaleThreads(){
+    const cutoffTime = Date.now() - AUTO_CLOSE_DAYS * 24 * 60 * 60 * 1000;
+    messageThreads.forEach(th => {
+      if(th.status === 'open' && th.lastActivityAt && new Date(th.lastActivityAt).getTime() < cutoffTime){
+        updateDoc(doc(db, 'messageThreads', th.id), { status: 'closed', closedAt: new Date().toISOString() }).catch(()=>{});
+      }
+    });
+  }
+  onSnapshot(collection(db, 'messageThreads'), (snap) => {
+    messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    autoCloseStaleThreads();
+    if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') renderMessageThreads();
+  });
+
   onSnapshot(collection(db, 'students'), (snap) => {
     students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentTeacher) renderStudentList();
@@ -849,6 +977,16 @@
   let classPostComments = [];
   onSnapshot(collection(db, 'classPostComments'), (snap) => {
     classPostComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+  });
+  let classPollVotes = [];
+  onSnapshot(collection(db, 'classPollVotes'), (snap) => {
+    classPollVotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+  });
+  let eventRSVPs = [];
+  onSnapshot(collection(db, 'eventRSVPs'), (snap) => {
+    eventRSVPs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
   });
 
@@ -1290,11 +1428,18 @@
   // Threads are keyed by the guardian's stable id when available (guardianId),
   // falling back to their name for older messages sent before this field existed
   // — so a thread never splits or gets "lost" just because a guardian was renamed.
-  let currentThreadGuardian = null; // the thread's identity key (id or legacy name)
+  let currentThreadGuardian = null; // the thread's identity key (real threadId, or "legacy:<id/name>")
   let currentThreadGuardianName = ''; // current display name for the header/reply
   let currentThreadGuardianId = ''; // stable id, once known from the thread's messages
+  let currentThreadDoc = null; // the real messageThreads doc, if this is a real (non-legacy) thread
 
-  function threadKey(m){ return m.guardianId || m.guardianNavn; }
+  // Messages sent before the titled-thread feature existed have no threadId —
+  // those are grouped into a per-guardian "legacy" conversation that's always
+  // open and has no title, so nothing old ever disappears or gets locked.
+  function threadKey(m){
+    if(m.threadId) return m.threadId;
+    return 'legacy:' + (m.guardianId || m.guardianNavn);
+  }
 
   function myClassMessages(){
     if(!currentTeacher) return [];
@@ -1394,68 +1539,116 @@
       options.map(o => `<option value="${escapeHtml(o.guardianId)}">${escapeHtml(o.label)}</option>`).join('');
   }
 
-  window.startNewMessageThread = function(){
+  window.startNewMessageThread = async function(){
     const sel = document.getElementById('newMsgGuardianSelect');
     const guardianId = sel ? sel.value : '';
+    const titleInput = document.getElementById('newMsgTitle');
+    const title = titleInput ? titleInput.value.trim() : '';
     if(!guardianId){
       alert(currentLang === 'ar' ? 'اختر ولي أمر أول.' : 'Velg en foresatt først.');
       return;
     }
-    const guardianLabel = resolveGuardianLabel(guardianId);
-    openMessageThread(guardianId, guardianLabel);
+    const nowIso = new Date().toISOString();
+    const threadRef = await addDoc(collection(db, 'messageThreads'), {
+      klasse: currentTeacher.tildeltKlasse, teacherId: currentTeacher.id, guardianId, title,
+      status: 'open', createdAt: nowIso, lastActivityAt: nowIso
+    });
+    if(titleInput) titleInput.value = '';
+    if(sel) sel.value = '';
+    openMessageThread(threadRef.id, false);
   };
 
-  function renderMessageThreads(){
-    const el = document.getElementById('messageThreadsList');
-    if(!el || !currentTeacher) return;
+  function buildThreadRows(){
+    if(!currentTeacher) return [];
     const mine = myClassMessages();
-    const keys = [...new Set(mine.map(threadKey))];
-    if(keys.length === 0){
-      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد رسائل بعد.' : 'Ingen meldinger ennå.'}</div>`;
-      return;
-    }
-    const rows = keys.map(k => {
-      const thread = mine.filter(m => threadKey(m) === k).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-      const gId = thread[0].guardianId || '';
-      const relation = gId ? resolveGuardianRelation(gId) : '';
-      const displayName = thread[0].guardianNavn + (relation ? ' (' + relation + ')' : '');
-      return { k, displayName, last: thread[0], unread: isThreadUnread(k) };
-    }).sort((a,b) => (b.last.dato||'').localeCompare(a.last.dato||''));
-    el.innerHTML = rows.map(r => `
-      <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openMessageThread('${r.k.replace(/'/g,"\\'")}', '${(r.displayName||'').replace(/'/g,"\\'")}')">
+    const rows = [];
+    // Real, titled threads for this class.
+    messageThreads.filter(th => th.klasse === currentTeacher.tildeltKlasse).forEach(th => {
+      const threadMsgs = mine.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      const relation = th.guardianId ? resolveGuardianRelation(th.guardianId) : '';
+      const guardianLabel = th.guardianId ? resolveGuardianLabel(th.guardianId) : '';
+      rows.push({
+        key: th.id, isLegacy: false, status: th.status || 'open',
+        title: th.title || t('untitledThread'), guardianLabel,
+        lastActivityAt: th.lastActivityAt || th.createdAt || '',
+        unread: isThreadUnread(th.id)
+      });
+    });
+    // Legacy (untitled, always-open) per-guardian conversations from before this feature.
+    const legacyKeys = [...new Set(mine.filter(m => !m.threadId).map(threadKey))];
+    legacyKeys.forEach(k => {
+      const threadMsgs = mine.filter(m => threadKey(m) === k).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      rows.push({
+        key: k, isLegacy: true, status: 'open',
+        title: t('untitledThread'), guardianLabel: threadMsgs[0].guardianNavn || '',
+        lastActivityAt: threadMsgs[0].dato || '',
+        unread: isThreadUnread(k)
+      });
+    });
+    return rows.sort((a,b) => (b.lastActivityAt||'').localeCompare(a.lastActivityAt||''));
+  }
+
+  function renderMessageThreads(){
+    const openEl = document.getElementById('messageThreadsList');
+    const archEl = document.getElementById('messageThreadsArchiveList');
+    if(!openEl || !archEl || !currentTeacher) return;
+    const rows = buildThreadRows();
+    const openRows = rows.filter(r => r.status !== 'closed');
+    const archRows = rows.filter(r => r.status === 'closed');
+    const rowHtml = r => `
+      <div class="student-row" style="cursor:pointer; flex-wrap:wrap; align-items:flex-start;" onclick="openMessageThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
         <span class="name">
-          <strong>${escapeHtml(r.displayName)}</strong>
+          <strong>${escapeHtml(r.title)}</strong>${r.guardianLabel ? ' — ' + escapeHtml(r.guardianLabel) : ''}
           <span class="msg-badge ${r.unread ? 'unread' : 'read'}">${r.unread ? (currentLang === 'ar' ? 'غير مقروءة' : 'Ulest') : (currentLang === 'ar' ? 'مقروءة' : 'Lest')}</span>
           <span class="msg-open-link">${currentLang === 'ar' ? 'افتح الرسالة' : 'Åpne meldingen'}</span>
         </span>
-      </div>`).join('');
+      </div>`;
+    openEl.innerHTML = openRows.length
+      ? openRows.map(rowHtml).join('')
+      : `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد محادثات مفتوحة.' : 'Ingen åpne samtaler.'}</div>`;
+    document.getElementById('archivedThreadsLabel').style.display = archRows.length ? 'block' : 'none';
+    archEl.innerHTML = archRows.map(rowHtml).join('');
   }
 
-  window.openMessageThread = function(key, displayName){
+  window.openMessageThread = function(key, isLegacy){
     currentThreadGuardian = key;
-    currentThreadGuardianName = displayName;
-    const withId = myClassMessages().find(m => threadKey(m) === key && m.guardianId);
-    if(withId){
-      currentThreadGuardianId = withId.guardianId;
-    } else if(guardians.some(g => g.id === key)){
-      // No messages yet (a freshly-started thread) — key is already the guardian's real id.
-      currentThreadGuardianId = key;
+    currentThreadDoc = isLegacy ? null : messageThreads.find(th => th.id === key) || null;
+    if(!isLegacy && currentThreadDoc){
+      currentThreadGuardianId = currentThreadDoc.guardianId || '';
     } else {
-      currentThreadGuardianId = '';
+      const withId = myClassMessages().find(m => threadKey(m) === key && m.guardianId);
+      currentThreadGuardianId = withId ? withId.guardianId : (guardians.some(g => g.id === key) ? key : '');
     }
+    currentThreadGuardianName = resolveGuardianLabel(currentThreadGuardianId) || currentThreadGuardianId;
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'block';
-    document.getElementById('messageThreadTitle').textContent = displayName;
+    const title = currentThreadDoc ? (currentThreadDoc.title || t('untitledThread')) : t('untitledThread');
+    document.getElementById('messageThreadTitle').textContent = title;
     const linkedKids = currentThreadGuardianId
       ? students.filter(s => s.klasse === currentTeacher.tildeltKlasse && s.foresatt === currentThreadGuardianId).map(s => s.navn)
       : [];
-    document.getElementById('messageThreadSubtitle').textContent = linkedKids.length
-      ? (currentLang === 'ar' ? 'ولي أمر: ' : 'Foresatt for: ') + linkedKids.join(', ')
-      : '';
+    const withParts = [currentThreadGuardianName, linkedKids.length ? ((currentLang === 'ar' ? 'ولي أمر: ' : 'Foresatt for: ') + linkedKids.join(', ')) : '']
+      .filter(Boolean).join(' · ');
+    document.getElementById('messageThreadSubtitle').textContent = withParts;
+    const isClosed = currentThreadDoc && currentThreadDoc.status === 'closed';
+    const closeBtn = document.getElementById('threadCloseBtn');
+    closeBtn.style.display = currentThreadDoc ? 'inline-block' : 'none';
+    closeBtn.textContent = isClosed ? t('reopenThread') : t('closeThread');
+    document.getElementById('threadClosedNote').style.display = isClosed ? 'block' : 'none';
     localStorage.setItem(threadSeenKey(key), new Date().toISOString());
     renderMessageThreadHistory();
     updateMsgDot();
     pushAppView('messageThread');
+  };
+
+  window.toggleThreadClosed = async function(){
+    if(!currentThreadDoc) return;
+    const nowClosed = currentThreadDoc.status !== 'closed';
+    await updateDoc(doc(db, 'messageThreads', currentThreadDoc.id), {
+      status: nowClosed ? 'closed' : 'open',
+      closedAt: nowClosed ? new Date().toISOString() : null
+    });
+    showToast(nowClosed ? (currentLang === 'ar' ? 'تم إغلاق المحادثة.' : 'Samtalen er lukket.') : (currentLang === 'ar' ? 'تم فتح المحادثة.' : 'Samtalen er gjenåpnet.'));
   };
 
   function initialsOf(name){
@@ -1490,6 +1683,7 @@
       <div class="chat-row ${isMe ? 'me' : ''}">
         <div class="chat-avatar">${escapeHtml(initialsOf(senderName))}</div>
         <div class="chat-bubble">
+          <span class="chat-sender">${escapeHtml(senderName || '')}</span>
           ${escapeHtml(m.tekst||'')}
           ${m.vedleggLenke ? `<a class="chat-attach" href="${escapeHtml(m.vedleggLenke)}" target="_blank">${currentLang === 'ar' ? '📎 مرفق' : '📎 Vedlegg'}</a>` : ''}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
@@ -1518,10 +1712,21 @@
         vedleggLenke = await uploadAttachment(file, 'message-attachments');
       }
       await addDoc(collection(db, 'messages'), {
-        klasse: currentTeacher.tildeltKlasse, guardianId: currentThreadGuardianId || '', guardianNavn: currentThreadGuardianName,
+        klasse: currentTeacher.tildeltKlasse, guardianId: currentThreadGuardianId || '',
+        guardianNavn: resolveGuardianName(currentThreadGuardianId) || currentThreadGuardianName,
+        threadId: currentThreadDoc ? currentThreadDoc.id : null,
         fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
+      if(currentThreadDoc){
+        await updateDoc(doc(db, 'messageThreads', currentThreadDoc.id), {
+          status: 'open', closedAt: null, lastActivityAt: new Date().toISOString()
+        });
+        currentThreadDoc.status = 'open';
+        currentThreadDoc.closedAt = null;
+        document.getElementById('threadCloseBtn').textContent = t('closeThread');
+        document.getElementById('threadClosedNote').style.display = 'none';
+      }
       notifyGuardianByEmail(currentThreadGuardianId, currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny melding fra læreren',
         (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentTeacher.navn + '\n\n' + tekst);
       showToast(currentLang === 'ar' ? 'تم إرسال الرد.' : 'Svaret er sendt.');
@@ -1547,6 +1752,22 @@
     pushAppView('classPosts');
   };
 
+  window.onClassPostAttachTypeChange = function(){
+    const type = document.getElementById('classPostAttachType').value;
+    document.getElementById('classPostPollFields').style.display = type === 'poll' ? 'block' : 'none';
+    document.getElementById('classPostEventFields').style.display = type === 'event' ? 'block' : 'none';
+  };
+
+  window.addPollOptionField = function(){
+    const wrap = document.getElementById('classPostPollOptions');
+    const count = wrap.querySelectorAll('.poll-option-input').length;
+    if(count >= 6) return;
+    const div = document.createElement('div');
+    div.className = 'field';
+    div.innerHTML = `<label>${escapeHtml(t('pollOptionLabel'))} ${count+1}</label><input type="text" class="poll-option-input">`;
+    wrap.appendChild(div);
+  };
+
   window.publishClassPost = async function(){
     const tekst = document.getElementById('classPostText').value.trim();
     if(!tekst){
@@ -1554,19 +1775,53 @@
       return;
     }
     const commentsEnabled = document.getElementById('classPostAllowComments').checked;
+    const notifyEmail = document.getElementById('classPostNotifyEmail').checked;
+    const attachType = document.getElementById('classPostAttachType').value;
+    const extra = {};
+    if(attachType === 'poll'){
+      const question = document.getElementById('classPostPollQuestion').value.trim();
+      const options = [...document.querySelectorAll('.poll-option-input')].map(i => i.value.trim()).filter(Boolean);
+      if(!question || options.length < 2){
+        alert(t('pollFillNote'));
+        return;
+      }
+      extra.pollQuestion = question;
+      extra.pollOptions = options;
+    } else if(attachType === 'event'){
+      const eTitle = document.getElementById('classPostEventTitle').value.trim();
+      const eDate = document.getElementById('classPostEventDate').value;
+      const eDesc = document.getElementById('classPostEventDesc').value.trim();
+      if(!eTitle || !eDate){
+        alert(currentLang === 'ar' ? 'اكتب عنوان وتاريخ الحدث.' : 'Fyll ut tittel og dato for arrangementet.');
+        return;
+      }
+      extra.eventTitle = eTitle;
+      extra.eventDate = eDate;
+      extra.eventDesc = eDesc;
+    }
     try{
       await addDoc(collection(db, 'classPosts'), {
         klasse: currentTeacher.tildeltKlasse,
         larer: currentTeacher.id,
         tekst,
         commentsEnabled,
-        dato: new Date().toISOString()
+        dato: new Date().toISOString(),
+        ...extra
       });
       document.getElementById('classPostText').value = '';
       document.getElementById('classPostAllowComments').checked = true;
+      document.getElementById('classPostNotifyEmail').checked = false;
+      document.getElementById('classPostAttachType').value = '';
+      onClassPostAttachTypeChange();
+      document.getElementById('classPostPollQuestion').value = '';
+      document.getElementById('classPostEventTitle').value = '';
+      document.getElementById('classPostEventDate').value = '';
+      document.getElementById('classPostEventDesc').value = '';
       showToast(currentLang === 'ar' ? 'تم النشر للصف.' : 'Publisert til klassen.');
-      notifyClassGuardians(currentTeacher.tildeltKlasse,
-        (currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny klassemelding fra læreren'), tekst);
+      if(notifyEmail){
+        notifyClassGuardians(currentTeacher.tildeltKlasse,
+          (currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny klassemelding fra læreren'), tekst);
+      }
     } catch(err){
       console.error(err);
       alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
@@ -1619,6 +1874,7 @@
             <div class="chat-row ${isMe ? 'me' : ''}">
               <div class="chat-avatar">${escapeHtml(initialsOf(senderName))}</div>
               <div class="chat-bubble">
+                <span class="chat-sender">${escapeHtml(senderName || '')}</span>
                 ${escapeHtml(c.tekst||'')}
                 <span class="chat-time">${escapeHtml(formatChatTime(c.dato))}</span>
               </div>
@@ -1626,6 +1882,8 @@
           }).join('') + `</div>`;
       const toggleLabel = p.commentsEnabled ? t('closeComments') : t('openComments');
       const statusLabel = p.commentsEnabled ? t('commentsOpenLabel') : t('commentsClosedLabel');
+      const pollHtml = p.pollOptions ? buildPollResultsHtml(p) : '';
+      const eventHtml = p.eventDate ? buildEventSummaryHtml(p) : '';
       return `
       <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
         <details style="width:100%;">
@@ -1633,11 +1891,15 @@
             <span class="name">
               <span class="tag-pill">${escapeHtml((p.dato||'').slice(0,10))}</span>
               <span class="tag-pill" style="margin-inline-start:6px;">${escapeHtml(statusLabel)}</span>
+              ${p.pollOptions ? `<span class="tag-pill" style="margin-inline-start:6px;">${escapeHtml(t('attachPoll'))}</span>` : ''}
+              ${p.eventDate ? `<span class="tag-pill" style="margin-inline-start:6px;">${escapeHtml(t('attachEvent'))}</span>` : ''}
               <br><span style="font-size:13.5px;">${escapeHtml((p.tekst||'').slice(0,90))}${(p.tekst||'').length > 90 ? '…' : ''}</span>
             </span>
           </summary>
           <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);">
             <div style="font-size:14px; white-space:pre-wrap; line-height:1.6; margin-bottom:14px;">${escapeHtml(p.tekst||'')}</div>
+            ${pollHtml}
+            ${eventHtml}
             <button type="button" class="btn btn-ghost" style="margin-bottom:14px;" onclick="toggleClassPostComments('${p.id}', ${!p.commentsEnabled})">${escapeHtml(toggleLabel)}</button>
             <div style="margin-bottom:10px;">${commentsHtml}</div>
             ${p.commentsEnabled ? `
@@ -1650,6 +1912,44 @@
         </details>
       </div>`;
     }).join('');
+  }
+
+  // Read-only poll results for the teacher (they don't vote themselves).
+  function buildPollResultsHtml(p){
+    const votes = classPollVotes.filter(v => v.postId === p.id);
+    const total = votes.length;
+    const rows = p.pollOptions.map((opt, idx) => {
+      const count = votes.filter(v => v.optionIndex === idx).length;
+      const pct = total ? Math.round((count/total)*100) : 0;
+      return `
+        <div style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:3px;">
+            <span>${escapeHtml(opt)}</span><span>${count} ${escapeHtml(t('votesCount'))} (${pct}%)</span>
+          </div>
+          <div style="background:var(--paper-2); border-radius:6px; height:8px; overflow:hidden;">
+            <div style="background:var(--emerald); height:100%; width:${pct}%;"></div>
+          </div>
+        </div>`;
+    }).join('');
+    return `<div style="margin-bottom:14px; padding:12px; background:var(--paper-2); border-radius:8px;">
+      <div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15px; color:var(--emerald-d); margin-bottom:8px;">${escapeHtml(p.pollQuestion)}</div>
+      ${rows}
+    </div>`;
+  }
+
+  // Event info + RSVP summary (list of guardians who responded) for the teacher.
+  function buildEventSummaryHtml(p){
+    const rsvps = eventRSVPs.filter(r => r.postId === p.id);
+    const coming = rsvps.filter(r => r.status === 'kommer');
+    const notComing = rsvps.filter(r => r.status === 'kommer_ikke');
+    const nameList = list => list.map(r => escapeHtml(r.guardianNavn||'')).join(', ') || '—';
+    return `<div style="margin-bottom:14px; padding:12px; background:var(--paper-2); border-radius:8px;">
+      <div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15px; color:var(--emerald-d);">${escapeHtml(p.eventTitle)}</div>
+      <div style="font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin-bottom:8px;">${escapeHtml(p.eventDate)}</div>
+      ${p.eventDesc ? `<div style="font-size:13px; margin-bottom:10px;">${escapeHtml(p.eventDesc)}</div>` : ''}
+      <div style="font-size:12.5px;"><strong>${coming.length} ${escapeHtml(t('rsvpComingCount'))}:</strong> ${nameList(coming)}</div>
+      <div style="font-size:12.5px; margin-top:4px;"><strong>${notComing.length} ${escapeHtml(t('rsvpNotComingCount'))}:</strong> ${nameList(notComing)}</div>
+    </div>`;
   }
 
   function resolveClassName(classId){
