@@ -26,6 +26,19 @@
   *{box-sizing:border-box;}
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink);}
 
+  /* Decorative corner triangles — purely cosmetic, sit behind all real
+     content (z-index:-1, pointer-events:none), fixed to the viewport's
+     bottom-left/right corners like the SchoolHub reference image. The wider
+     .app-body side gutter above is what keeps real content clear of them. */
+  .corner-deco{
+    position:fixed; bottom:-10%; width:38vw; max-width:420px; height:70vh; max-height:520px;
+    z-index:-1; pointer-events:none; opacity:0.55;
+    background:linear-gradient(135deg, #C9BFF0 0%, #A38FE0 100%);
+  }
+  .corner-deco-left{ left:-10%; clip-path:polygon(0 0, 0 100%, 100% 100%); }
+  .corner-deco-right{ right:-10%; clip-path:polygon(100% 0, 0 100%, 100% 100%); }
+  @media (max-width:640px){ .corner-deco{ display:none; } }
+
   #loginScreen{
     position:fixed; inset:0; z-index:9999; background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
     display:flex; align-items:center; justify-content:center; padding:20px;
@@ -79,7 +92,10 @@
      size (compact icon rail on mobile, full labeled sidebar on desktop).
      Lives inside .app-body (a flex row below the header), so it starts
      right where the header ends and never overlaps the header banner. */
-  .app-body{ display:flex; flex-direction:row; align-items:flex-start; padding:0 16px 16px 16px; gap:14px; }
+  .app-body{ display:flex; flex-direction:row; align-items:flex-start; padding:0 20px 24px 20px; gap:14px; }
+  @media (min-width:640px){ .app-body{ padding:0 36px 32px 36px; } }
+  @media (min-width:900px){ .app-body{ padding:0 56px 40px 56px; } }
+  @media (min-width:1280px){ .app-body{ padding:0 88px 48px 88px; } }
   .app-sidebar{
     display:flex; position:sticky; top:16px; flex:0 0 84px; width:84px; z-index:500;
     background:#fff; border:1px solid var(--line);
@@ -513,6 +529,9 @@
 </style>
 </head>
 <body>
+
+<div class="corner-deco corner-deco-left"></div>
+<div class="corner-deco corner-deco-right"></div>
 
 <div id="loginScreen">
   <div class="login-card">
