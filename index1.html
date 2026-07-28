@@ -155,12 +155,12 @@
   .msg-badge.read{display:none;}
 
   .thread-card{
-    display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; cursor:pointer;
     background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow);
     transition:border-color .2s, transform .2s;
   }
   .thread-card:hover{border-color:var(--gold); transform:translateY(-1px);}
-  .thread-card .name{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink);}
+  .thread-card .name{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink); flex:1 1 140px; min-width:0;}
   html[dir="rtl"] .thread-card .name{font-family:'Tajawal',sans-serif;}
   .msg-open-link{display:block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);}
   html[dir="rtl"] .msg-open-link{font-family:'Tajawal',sans-serif;}
@@ -502,8 +502,8 @@
     <!-- MESSAGES: thread detail -->
     <div class="card" id="messageThreadView" style="display:none;">
       <button class="back-link" onclick="history.back()">← Tilbake til meldinger</button>
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
-        <div>
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div style="flex:1 1 160px; min-width:0;">
           <h2 id="messageThreadTitle" style="margin-bottom:2px;"></h2>
           <div class="thread-subtitle" id="messageThreadSubtitle"></div>
         </div>
@@ -1985,8 +1985,8 @@
       const pct = total ? Math.round((count/total)*100) : 0;
       return `
         <div style="margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:3px;">
-            <span>${escapeHtml(opt)}</span><span>${count} ${escapeHtml(t('votesCount'))} (${pct}%)</span>
+          <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:12.5px; margin-bottom:3px;">
+            <span style="flex:1 1 100px; min-width:0;">${escapeHtml(opt)}</span><span>${count} ${escapeHtml(t('votesCount'))} (${pct}%)</span>
           </div>
           <div style="background:var(--paper-2); border-radius:6px; height:8px; overflow:hidden;">
             <div style="background:var(--emerald); height:100%; width:${pct}%;"></div>
