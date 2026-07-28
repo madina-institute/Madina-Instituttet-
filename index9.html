@@ -15,9 +15,13 @@
 <style>
   :root{
     --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
-    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
-    --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10);
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
     --red:#a83c3c;
+    --stat-purple-bg:#EDE9FE; --stat-purple-fg:#5B4B9E;
+    --stat-yellow-bg:#FDF3C7; --stat-yellow-fg:#8A6D1D;
+    --stat-pink-bg:#FCE7EE; --stat-pink-fg:#A23B60;
+    --stat-blue-bg:#DCEFFB; --stat-blue-fg:#1E6E8C;
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink);}
@@ -79,32 +83,32 @@
   .app-body{ display:flex; flex-direction:row; align-items:flex-start; }
   .app-sidebar{
     display:flex; position:sticky; top:0; flex:0 0 84px; width:84px; z-index:500;
-    background:linear-gradient(180deg, var(--emerald) 0%, var(--emerald-d) 100%);
-    flex-direction:column; align-items:center; padding:12px 4px; gap:2px; overflow-y:auto;
-    max-height:100vh; border-end-end-radius:14px; box-shadow:var(--shadow);
+    background:#fff; border:1px solid var(--line); border-inline-start:none;
+    flex-direction:column; align-items:center; padding:18px 4px; gap:8px; overflow-y:auto;
+    max-height:100vh; border-end-end-radius:18px; box-shadow:var(--shadow);
   }
   .app-sidebar .sb-logo{display:none;}
   .app-sidebar button{
     display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; text-align:center;
-    background:transparent; border:none; color:rgba(255,255,255,0.82); font-family:'Jost',sans-serif;
-    font-size:9.5px; line-height:1.15; padding:7px 2px; border-radius:8px; cursor:pointer; gap:2px;
+    background:transparent; border:none; color:#8a8fa3; font-family:'Jost',sans-serif;
+    font-size:9.5px; line-height:1.2; padding:12px 2px; border-radius:10px; cursor:pointer; gap:4px;
   }
   html[dir="rtl"] .app-sidebar button{font-family:'Tajawal',sans-serif;}
-  .app-sidebar button .ic{font-size:17px;}
-  .app-sidebar button:hover{background:rgba(255,255,255,0.10); color:#fff;}
-  .app-sidebar button.active{background:#fff; color:var(--emerald-d); font-weight:600;}
+  .app-sidebar button .ic{font-size:19px;}
+  .app-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
+  .app-sidebar button.active{background:var(--stat-blue-bg); color:var(--stat-blue-fg); font-weight:600;}
   #sideChooseView, #subChooseView, .content-layout{ flex:1; min-width:0; }
   @media (min-width:900px){
-    .app-sidebar{ flex-basis:220px; width:220px; align-items:stretch; padding:18px 10px; gap:4px; max-height:100vh; border-end-end-radius:14px; }
+    .app-sidebar{ flex-basis:220px; width:220px; align-items:stretch; padding:24px 12px; gap:8px; max-height:100vh; border-end-end-radius:18px; }
     .app-sidebar .sb-logo{display:flex; align-items:center; gap:10px; padding:6px 10px 18px;}
     .app-sidebar .sb-logo img{height:34px; width:auto; border-radius:5px;}
-    .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:#fff;}
+    .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--ink);}
     html[dir="rtl"] .app-sidebar .sb-logo span{font-family:'Tajawal',sans-serif; font-size:14px;}
     .app-sidebar button{
       flex-direction:row; align-items:center; text-align:start; justify-content:flex-start;
-      font-size:13px; padding:10px 12px; gap:10px;
+      font-size:13px; padding:14px 14px; gap:10px;
     }
-    .app-sidebar button .ic{font-size:16px;}
+    .app-sidebar button .ic{font-size:17px;}
   }
   /* Weekly timeplan grid — real schedule table (times × classes), styled
      with the site's own palette but structured like the reference design:
@@ -157,24 +161,24 @@
      Always visible while inside a side — no more "choose a card" screen. */
   .content-layout{ display:flex; flex-direction:row; align-items:flex-start; gap:10px; padding:14px 10px; }
   .sub-sidebar{
-    display:flex; flex-direction:column; gap:3px; background:#fff; border:1px solid var(--line);
-    border-radius:12px; padding:6px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; gap:6px; background:#fff; border:1px solid var(--line);
+    border-radius:16px; padding:10px; box-shadow:var(--shadow);
     flex:0 0 100px; position:sticky; top:10px; max-height:calc(100vh - 20px); overflow-y:auto;
   }
   .sub-sidebar button{
-    display:flex; flex-direction:column; align-items:center; gap:3px; width:100%; text-align:center;
-    background:transparent; border:none; color:var(--ink); font-family:'Jost',sans-serif;
-    font-size:10.5px; line-height:1.2; padding:8px 4px; border-radius:8px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; text-align:center;
+    background:transparent; border:none; color:#8a8fa3; font-family:'Jost',sans-serif;
+    font-size:10.5px; line-height:1.2; padding:12px 4px; border-radius:10px; cursor:pointer;
   }
   html[dir="rtl"] .sub-sidebar button{font-family:'Tajawal',sans-serif;}
-  .sub-sidebar button .ic{font-size:16px;}
-  .sub-sidebar button:hover{background:var(--paper-2);}
-  .sub-sidebar button.active{background:var(--emerald); color:#fff; font-weight:600;}
+  .sub-sidebar button .ic{font-size:17px;}
+  .sub-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
+  .sub-sidebar button.active{background:var(--stat-blue-bg); color:var(--stat-blue-fg); font-weight:600;}
   #mainContent{ min-width:0; flex:1; }
   @media (min-width:640px){
     .sub-sidebar{ flex-basis:150px; }
-    .sub-sidebar button{ flex-direction:row; text-align:start; font-size:12.5px; padding:9px 10px; }
-    .sub-sidebar button .ic{font-size:15px;}
+    .sub-sidebar button{ flex-direction:row; text-align:start; font-size:12.5px; padding:13px 12px; }
+    .sub-sidebar button .ic{font-size:16px;}
   }
   @media (min-width:900px){
     .content-layout{ padding:20px; gap:16px; }
@@ -358,14 +362,53 @@
 
   .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;}
   @media (max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}}
-  .stat-card{background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px 18px; box-shadow:var(--shadow);}
+  .stat-card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow); position:relative;}
   .stat-card .n{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:28px; color:var(--emerald-d);}
   .stat-card .l{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gold);}
   .dash-strip{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px;}
   @media (min-width:640px){ .dash-strip{ grid-template-columns:repeat(4,1fr); } }
-  .stat-card.alert.has-items{border-color:var(--red);}
-  .stat-card.alert.has-items .n{color:var(--red);}
-  .stat-card.alert.has-items .l{color:var(--red);}
+  .stat-card.stat-purple{background:var(--stat-purple-bg); border-color:transparent;}
+  .stat-card.stat-purple .n, .stat-card.stat-purple .l{color:var(--stat-purple-fg);}
+  .stat-card.stat-yellow{background:var(--stat-yellow-bg); border-color:transparent;}
+  .stat-card.stat-yellow .n, .stat-card.stat-yellow .l{color:var(--stat-yellow-fg);}
+  .stat-card.stat-pink{background:var(--stat-pink-bg); border-color:transparent;}
+  .stat-card.stat-pink .n, .stat-card.stat-pink .l{color:var(--stat-pink-fg);}
+  .stat-card.stat-blue{background:var(--stat-blue-bg); border-color:transparent;}
+  .stat-card.stat-blue .n, .stat-card.stat-blue .l{color:var(--stat-blue-fg);}
+  .stat-card .alert-dot{
+    display:none; position:absolute; top:14px; inset-inline-end:14px; width:9px; height:9px; border-radius:50%;
+    background:var(--red); box-shadow:0 0 0 3px rgba(168,60,60,0.18);
+  }
+  .stat-card.alert.has-items .alert-dot{display:block;}
+
+  /* Dashboard widgets — real-data donut, bar chart, and agenda list on the landing screen */
+  .dash-widgets{ display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:26px; }
+  @media (min-width:900px){ .dash-widgets{ grid-template-columns:1fr 1fr 1.3fr; } }
+  .widget-card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); }
+  .widget-card h3{ font-family:'Cormorant Garamond',serif; font-size:17px; color:var(--ink); margin:0 0 14px; font-weight:700; }
+  .shortcuts-title{ font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--ink); margin:4px 0 14px; font-weight:700; }
+  .donut-wrap{ position:relative; width:128px; height:128px; margin:0 auto 16px; }
+  .donut{ width:100%; height:100%; border-radius:50%; }
+  .donut-center{ position:absolute; inset:18px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .donut-center span{ font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:700; color:var(--ink); }
+  .donut-center small{ font-family:'Jost',sans-serif; font-size:9.5px; color:#8a8fa3; text-transform:uppercase; letter-spacing:.05em; }
+  .donut-legend{ display:flex; flex-direction:column; gap:7px; font-family:'Jost',sans-serif; font-size:12px; color:var(--ink); }
+  .donut-legend span{ display:flex; align-items:center; gap:8px; }
+  .donut-legend i{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
+  .bar-chart{ display:flex; align-items:flex-end; gap:12px; height:130px; padding-top:10px; }
+  .bar-chart .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; height:100%; }
+  .bar-chart .bar-fill{ width:100%; border-radius:6px 6px 0 0; min-height:4px; transition:height .3s; }
+  .bar-chart .bar-n{ font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:var(--ink); }
+  .bar-chart .bar-lbl{ font-family:'Jost',sans-serif; font-size:9px; color:#8a8fa3; text-align:center; line-height:1.2; }
+  .agenda-row{ display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--paper-2); }
+  .agenda-row:last-child{ border-bottom:none; }
+  .agenda-time{
+    flex:none; font-family:'Jost',sans-serif; font-weight:700; font-size:11px; color:var(--stat-blue-fg);
+    background:var(--stat-blue-bg); border-radius:8px; padding:4px 8px; white-space:nowrap;
+  }
+  .agenda-text{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); }
+  .agenda-text b{ display:block; font-size:12.5px; }
+  .agenda-text small{ color:#8a8fa3; font-size:11px; }
 
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -536,11 +579,35 @@
 <div id="sideChooseView">
   <div class="wrap">
     <div class="dash-strip" id="dashStrip">
-      <div class="stat-card"><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
-      <div class="stat-card alert" id="dashCardRegs"><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
-      <div class="stat-card alert" id="dashCardRequests"><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
-      <div class="stat-card alert" id="dashCardUnpaid"><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
+      <div class="stat-card stat-purple"><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
+      <div class="stat-card stat-yellow alert" id="dashCardRegs"><span class="alert-dot"></span><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
+      <div class="stat-card stat-pink alert" id="dashCardRequests"><span class="alert-dot"></span><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
+      <div class="stat-card stat-blue alert" id="dashCardUnpaid"><span class="alert-dot"></span><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
     </div>
+
+    <div class="dash-widgets" id="dashWidgets">
+      <div class="widget-card">
+        <h3>Betalingsstatus</h3>
+        <div class="donut-wrap">
+          <div class="donut" id="dashDonut"></div>
+          <div class="donut-center"><span id="dashDonutPct">0%</span><small>betalt</small></div>
+        </div>
+        <div class="donut-legend">
+          <span><i style="background:var(--stat-blue-fg)"></i>Betalt (<span id="dashPaidCount">0</span>)</span>
+          <span><i style="background:var(--paper-2)"></i>Ikke betalt (<span id="dashUnpaidCount">0</span>)</span>
+        </div>
+      </div>
+      <div class="widget-card">
+        <h3>Oppmøtestatus</h3>
+        <div class="bar-chart" id="dashAttBars"></div>
+      </div>
+      <div class="widget-card">
+        <h3 id="dashAgendaTitle">Dagens timeplan</h3>
+        <div id="dashAgendaList"></div>
+      </div>
+    </div>
+
+    <h3 class="shortcuts-title">Snarveier</h3>
     <div class="side-grid">
       <div class="side-card" onclick="selectSide('eier')">
         <div class="ic">🏛️</div>
@@ -2318,6 +2385,65 @@
     const unpaid = cache.students.filter(s => s.betalt === 'Nei').length;
     document.getElementById('dashStatUnpaid').textContent = unpaid;
     document.getElementById('dashCardUnpaid').classList.toggle('has-items', unpaid > 0);
+
+    renderDashboardWidgets();
+  }
+
+  const ATT_STATUS_COLORS = { 'Til stede':'#4A8FCB', 'Fraværende':'#a83c3c', 'Syk':'#b7924a', 'Permisjon':'#8a8fa3' };
+
+  function renderDashboardWidgets(){
+    const donutEl = document.getElementById('dashDonut');
+    if(!donutEl) return;
+
+    // Donut: payment status among students
+    const total = cache.students.length;
+    const paid = cache.students.filter(s => s.betalt === 'Ja').length;
+    const pct = total ? Math.round((paid / total) * 100) : 0;
+    donutEl.style.background = `conic-gradient(var(--stat-blue-fg) 0% ${pct}%, var(--paper-2) ${pct}% 100%)`;
+    document.getElementById('dashDonutPct').textContent = pct + '%';
+    document.getElementById('dashPaidCount').textContent = paid;
+    document.getElementById('dashUnpaidCount').textContent = total - paid;
+
+    // Bar chart: attendance status distribution
+    const counts = Object.fromEntries(countBy(cache.attendance, 'status'));
+    const statuses = ['Til stede', 'Fraværende', 'Syk', 'Permisjon'];
+    const max = Math.max(1, ...statuses.map(s => counts[s] || 0));
+    const barsEl = document.getElementById('dashAttBars');
+    if(barsEl){
+      barsEl.innerHTML = statuses.map(s => {
+        const n = counts[s] || 0;
+        const h = Math.max(4, Math.round((n / max) * 100));
+        return `<div class="bar-col">
+          <div class="bar-n">${n}</div>
+          <div class="bar-fill" style="height:${h}px; background:${ATT_STATUS_COLORS[s]};"></div>
+          <div class="bar-lbl">${escapeHtml(s)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Agenda: today's schedule if it's a school day (Lørdag/Søndag), else next school day's
+    const dayNames = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+    const todayName = dayNames[new Date().getDay()];
+    const titleEl = document.getElementById('dashAgendaTitle');
+    let agendaDay = (todayName === 'Lørdag' || todayName === 'Søndag') ? todayName : null;
+    if(!agendaDay){
+      agendaDay = 'Lørdag';
+      if(titleEl) titleEl.textContent = 'Neste timeplan (lørdag)';
+    } else if(titleEl){
+      titleEl.textContent = 'Dagens timeplan (' + agendaDay + ')';
+    }
+    const agendaRows = cache.hours.filter(h => h.dag === agendaDay).sort((a,b) => (a.tid||'').localeCompare(b.tid||''));
+    const listEl = document.getElementById('dashAgendaList');
+    if(listEl){
+      listEl.innerHTML = agendaRows.length ? agendaRows.map(h => {
+        const klasseName = resolveDynName('classes', h.klasse) || h.klasse || '';
+        const larerName = resolveDynName('teachers', h.larer);
+        return `<div class="agenda-row">
+          <span class="agenda-time">${escapeHtml(h.tid || '—')}</span>
+          <span class="agenda-text"><b>${escapeHtml(h.fag || '—')}</b><small>${escapeHtml(klasseName)}${larerName ? ' · ' + escapeHtml(larerName) : ''}</small></span>
+        </div>`;
+      }).join('') : '<div class="report-empty">Ingen timer registrert.</div>';
+    }
   }
 
   function countBy(list, key){
