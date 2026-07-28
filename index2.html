@@ -359,34 +359,25 @@
   <div class="card">
     <div class="tag"><span class="num">05</span> Påmelding</div>
     <h2 class="title">Ønsket program, dag og fag</h2>
-    <p class="hint">Velg lørdag, søndag, eller begge dager. Madinabarn kan ikke kombineres med de andre programmene.</p>
+    <p class="hint">Velg programmet ditt. Madinabarn kan ikke kombineres med hovedprogrammet.</p>
     <hr class="rule">
 
     <div class="program-opts">
       <label class="prog-opt">
         <input type="checkbox" name="program" value="madina_islamske_skole" class="price-trigger day-trigger" id="chkLordag">
         <div class="p-body">
-          <div class="p-title">Madina Islamske Skole</div>
-          <div class="p-meta">LØRDAG · 09:30–13:00</div>
-          <div class="p-sub">Hovedprogrammet — Koran og Islam.</div>
-        </div>
-      </label>
-
-      <label class="prog-opt">
-        <input type="checkbox" class="price-trigger day-trigger" id="chkSondag">
-        <div class="p-body">
-          <div class="p-title">Tilleggsprogram i språk</div>
-          <div class="p-meta">SØNDAG · 10:30–13:00</div>
-          <div class="p-sub">Frivillig språkprogram — Arabisk eller Urdu (velges under).</div>
+          <div class="p-title">Madina Islamske Skole — Integrert program</div>
+          <div class="p-meta">LØRDAG · 09:30–13:30</div>
+          <div class="p-sub">Koran, Islam og valgt språk (arabisk eller urdu) — samlet i ett program.</div>
         </div>
       </label>
 
       <div class="subject-check" id="sprakValgWrap" style="display:none;">
         <div class="field" style="margin-bottom:0;">
-          <label>Velg ett språkspor for søndag (kun ett)</label>
+          <label>Velg ett språkspor (kun ett)</label>
           <div class="radio-row">
-            <label><input type="radio" name="sprak_valg" value="arabisk" id="sprakArabisk"> Arabisk (etter læreverket Al-Mutammim)</label>
-            <label><input type="radio" name="sprak_valg" value="urdu" id="sprakUrdu"> Urdu</label>
+            <label><input type="radio" name="sprakvalg" value="arabisk" id="sprakArabisk"> Arabisk (etter læreverket Al-Mutammim)</label>
+            <label><input type="radio" name="sprakvalg" value="urdu" id="sprakUrdu"> Urdu</label>
           </div>
         </div>
       </div>
@@ -397,8 +388,8 @@
         <input type="checkbox" name="program" value="madinabarn" class="price-trigger" id="chkMadinabarn">
         <div class="p-body">
           <div class="p-title">Madinabarn</div>
-          <div class="p-meta">SØNDAG · 10:30–12:15 · 3–6 ÅR</div>
-          <div class="p-sub">Introduksjonsprogram for de yngste barna. Kan ikke kombineres med lørdag/søndag-programmene.</div>
+          <div class="p-meta">SØNDAG · 09:30–11:00 · 3–6 ÅR</div>
+          <div class="p-sub">Introduksjonsprogram for de yngste barna. Kan ikke kombineres med hovedprogrammet.</div>
         </div>
       </label>
 
@@ -413,7 +404,7 @@
     </div>
 
     <div class="price-box">
-      <div class="price-label">Beregnet semesteravgift</div>
+      <div class="price-label">Beregnet avgift</div>
       <div class="price-amount" id="priceAmount">Velg minst ett program ovenfor</div>
     </div>
 
@@ -425,9 +416,7 @@
     </div>
 
     <div class="note-box" style="margin-top:10px;">
-      <strong>Bøker:</strong> Skolemateriell/bøker kommer i tillegg og koster <strong>450 kr per år</strong>.
-      Betales hele semesteravgiften samlet, får eleven <strong>50 % rabatt</strong> på bøkene. Betales hele
-      årsavgiften samlet (begge semestre), får eleven <strong>bøkene helt gratis</strong>.
+      <strong>Bøker:</strong> Skolemateriell/bøker kommer i tillegg til avgiften over og koster <strong>450 kr per år</strong>.
     </div>
   </div>
 
@@ -825,7 +814,6 @@
   const MULTI_FIELDS = ['program', 'tidligere_studert', 'urdu_ferdighet', 'sprak_hjemme'];
 
   const chkLordag = document.getElementById('chkLordag');
-  const chkSondag = document.getElementById('chkSondag');
   const chkMadinabarn = document.getElementById('chkMadinabarn');
   const sprakValgWrap = document.getElementById('sprakValgWrap');
   const sprakArabisk = document.getElementById('sprakArabisk');
@@ -839,13 +827,9 @@
   function updatePriceDisplay(){
     const priceEl = document.getElementById('priceAmount');
     if(chkMadinabarn.checked){
-      priceEl.textContent = '2 000 kr / semester';
-    } else if(chkLordag.checked && chkSondag.checked){
-      priceEl.textContent = '4 000 kr / semester';
+      priceEl.textContent = '1 500 kr / semester';
     } else if(chkLordag.checked){
-      priceEl.textContent = '2 500 kr / semester';
-    } else if(chkSondag.checked){
-      priceEl.textContent = '2 000 kr / semester';
+      priceEl.textContent = '3 500 kr / hele skoleåret (begge semestre)';
     } else {
       priceEl.textContent = 'Velg minst ett program ovenfor';
     }
@@ -867,8 +851,8 @@
 
   function updateKartleggingVisibility(){
     const showKoran = chkLordag.checked;
-    const showArabisk = chkSondag.checked && sprakArabisk.checked;
-    const showUrdu = chkSondag.checked && sprakUrdu.checked;
+    const showArabisk = chkLordag.checked && sprakArabisk.checked;
+    const showUrdu = chkLordag.checked && sprakUrdu.checked;
 
     kbKoran.style.display = showKoran ? 'block' : 'none';
     kbArabisk.style.display = showArabisk ? 'block' : 'none';
@@ -901,33 +885,26 @@
     }
   }
 
-  function updateMutualExclusivity(dayChanged){
-    if(dayChanged){
-      // Lørdag/Søndag chosen → Madinabarn becomes unavailable
-      const anyDay = chkLordag.checked || chkSondag.checked;
-      chkMadinabarn.disabled = anyDay;
-      if(anyDay) chkMadinabarn.checked = false;
-    } else {
-      // Madinabarn chosen → Lørdag/Søndag become unavailable
-      const madinabarnOn = chkMadinabarn.checked;
-      chkLordag.disabled = madinabarnOn;
-      chkSondag.disabled = madinabarnOn;
-      if(madinabarnOn){
-        chkLordag.checked = false;
-        chkSondag.checked = false;
-        sprakValgWrap.style.display = 'none';
-        sprakArabisk.required = false;
-        sprakUrdu.required = false;
-        hiddenSprakArabisk.checked = false;
-        hiddenSprakUrdu.checked = false;
-        sprakArabisk.checked = false;
-        sprakUrdu.checked = false;
-      }
+  function updateMutualExclusivity(){
+    const lordagOn = chkLordag.checked;
+    const madinabarnOn = chkMadinabarn.checked;
+    chkMadinabarn.disabled = lordagOn;
+    chkLordag.disabled = madinabarnOn;
+    if(lordagOn) chkMadinabarn.checked = false;
+    if(madinabarnOn){
+      chkLordag.checked = false;
+      sprakValgWrap.style.display = 'none';
+      sprakArabisk.required = false;
+      sprakUrdu.required = false;
+      hiddenSprakArabisk.checked = false;
+      hiddenSprakUrdu.checked = false;
+      sprakArabisk.checked = false;
+      sprakUrdu.checked = false;
     }
   }
 
-  function onSondagChange(){
-    const showing = chkSondag.checked;
+  function onLordagChange(){
+    const showing = chkLordag.checked;
     sprakValgWrap.style.display = showing ? 'block' : 'none';
     sprakArabisk.required = showing;
     sprakUrdu.required = showing;
@@ -937,14 +914,13 @@
       hiddenSprakArabisk.checked = false;
       hiddenSprakUrdu.checked = false;
     }
-    updateMutualExclusivity(true);
+    updateMutualExclusivity();
     updateKartleggingVisibility();
     updatePriceDisplay();
   }
 
-  chkLordag.addEventListener('change', () => { updateMutualExclusivity(true); updateKartleggingVisibility(); updatePriceDisplay(); });
-  chkSondag.addEventListener('change', onSondagChange);
-  chkMadinabarn.addEventListener('change', () => { updateMutualExclusivity(false); updateKartleggingVisibility(); updatePriceDisplay(); });
+  chkLordag.addEventListener('change', onLordagChange);
+  chkMadinabarn.addEventListener('change', () => { updateMutualExclusivity(); updateKartleggingVisibility(); updatePriceDisplay(); });
 
   [sprakArabisk, sprakUrdu].forEach(radio => {
     radio.addEventListener('change', () => {
