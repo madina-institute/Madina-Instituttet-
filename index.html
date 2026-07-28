@@ -1300,11 +1300,12 @@
       label: 'foresatt', collectionName: 'guardians',
       fields: [
         {key:'navn', label:'Fullt navn', type:'text'},
+        {key:'relasjon', label:'Relasjon til eleven', type:'select', options:['Mor','Far','Annen']},
         {key:'telefon', label:'Telefon', type:'text'},
         {key:'epost', label:'E-post', type:'text'},
         {key:'tilgangskode', label:'Tilgangskode (foreldreportal)', type:'text'}
       ],
-      cols: ['navn','telefon','epost']
+      cols: ['navn','relasjon','telefon','epost']
     },
     students: {
       label: 'elev', collectionName: 'students',
@@ -3220,6 +3221,7 @@
         } else {
           const newGuardianRef = await addDoc(collection(db, 'guardians'), {
             navn: guardianName,
+            relasjon: reg.foresatt1_relasjon === 'Annet' ? (reg.foresatt1_relasjon_annet || 'Annen') : (reg.foresatt1_relasjon || ''),
             telefon: guardianPhone,
             epost: reg.foresatt1_epost || '',
             sistEndretAv: currentUserEmail || 'ukjent',
