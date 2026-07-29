@@ -1114,6 +1114,7 @@
     }
     currentTeacher = teacher;
     localStorage.setItem('madinaTeacherId', teacher.id);
+    updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = teacher.navn + ' · ' + resolveClassName(teacher.tildeltKlasse);
