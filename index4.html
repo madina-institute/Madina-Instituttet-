@@ -385,6 +385,7 @@
       <button data-sidebar="attendance" onclick="openSection('attendance')"><span class="ic">✅</span><span class="lbl" data-i18n="menuAttendance">Oppmøte</span></button>
       <button data-sidebar="homework" onclick="openSection('homework')"><span class="ic">📚</span><span class="lbl" data-i18n="menuHomework">Lekser</span><span class="dot" id="dotHomework"></span></button>
       <button data-sidebar="lessonPlans" onclick="openSection('lessonPlans')"><span class="ic">📖</span><span class="lbl" data-i18n="menuLessonPlans">Undervisningsplan</span></button>
+      <button data-sidebar="videos" onclick="openSection('videos')"><span class="ic">🎥</span><span class="lbl" data-i18n="menuVideos">Treningsvideoer</span></button>
       <button data-sidebar="absence" onclick="openSection('absence')"><span class="ic">🚫</span><span class="lbl" data-i18n="menuAbsence">Meld fravær</span></button>
       <button data-sidebar="notes" onclick="openSection('notes')"><span class="ic">📝</span><span class="lbl" data-i18n="menuNotes">Notater</span><span class="dot" id="dotNotes"></span></button>
       <button data-sidebar="announcements" onclick="openSection('announcements')"><span class="ic">📢</span><span class="lbl" data-i18n="menuAnnouncements">Kunngjøringer</span><span class="dot" id="dotAnnouncements"></span></button>
@@ -571,6 +572,15 @@
         <h2 data-i18n="menuLessonPlans">Undervisningsplan</h2>
         <div class="sub" data-i18n="lessonPlansSub">Det læreren har forberedt for klassen, nyeste først</div>
         <div id="lessonPlansList"></div>
+      </div>
+    </div>
+
+    <div class="sub-view" id="view-videos">
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <div class="card">
+        <h2 data-i18n="menuVideos">Treningsvideoer</h2>
+        <div class="sub" data-i18n="videosSub">Videoer læreren har lagt til for klassen å øve på</div>
+        <div id="videosList"></div>
       </div>
     </div>
 
@@ -815,6 +825,7 @@
       menuLessonPlans: 'Undervisningsplan', menuLessonPlansDesc: 'Hva klassen lærer nå',
       lessonPlansSub: 'Det læreren har forberedt for klassen, nyeste først',
       noLessonPlans: 'Ingen undervisningsplaner lagt ut ennå.',
+      menuVideos: 'Treningsvideoer', videosSub: 'Videoer læreren har lagt til for klassen å øve på', noVideos: 'Ingen videoer lagt til ennå.',
       malLabel: 'Mål', nyttStoffLabel: 'Nytt stoff', lekserLabel: 'Lekser',
       menuClassPosts: 'Klassemeldinger', menuClassPostsDesc: 'Fra læreren — du kan kommentere',
       classPostsSub: 'Meldinger fra læreren til hele klassen',
@@ -888,6 +899,7 @@
       menuLessonPlans: 'الخطة التعليمية', menuLessonPlansDesc: 'اللي يدرسه الصف حاليًا',
       lessonPlansSub: 'اللي حضّره المعلم للصف، الأحدث أولًا',
       noLessonPlans: 'لا توجد خطط تعليمية منشورة بعد.',
+      menuVideos: 'فيديوهات تدريب', videosSub: 'فيديوهات أضافها المعلم يقدر الصف يتدرب عليها', noVideos: 'ما فيه فيديوهات مضافة بعد.',
       malLabel: 'الهدف', nyttStoffLabel: 'المادة الجديدة', lekserLabel: 'الواجب',
       menuClassPosts: 'رسائل الصف', menuClassPostsDesc: 'من المعلم — تقدر تعلّق',
       classPostsSub: 'رسائل من المعلم لكل الصف',
@@ -961,6 +973,7 @@
       menuLessonPlans: 'تعلیمی منصوبہ', menuLessonPlansDesc: 'کلاس ابھی کیا پڑھ رہی ہے',
       lessonPlansSub: 'استاد نے کلاس کے لیے جو تیار کیا، تازہ ترین پہلے',
       noLessonPlans: 'ابھی تک کوئی تعلیمی منصوبہ شائع نہیں ہوا۔',
+      menuVideos: 'تربیتی ویڈیوز', videosSub: 'استاد نے کلاس کے لیے شامل کی گئی ویڈیوز', noVideos: 'ابھی تک کوئی ویڈیو شامل نہیں کی گئی۔',
       malLabel: 'مقصد', nyttStoffLabel: 'نیا مواد', lekserLabel: 'ہوم ورک',
       menuClassPosts: 'کلاس کے پیغامات', menuClassPostsDesc: 'استاد کی طرف سے — آپ تبصرہ کر سکتے ہیں',
       classPostsSub: 'استاد کی طرف سے پوری کلاس کے لیے پیغامات',
@@ -1029,6 +1042,22 @@
   function escapeHtml(str){
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
   }
+  function toEmbedUrl(url){
+    try{
+      const u = new URL(url);
+      if(u.hostname.includes('youtube.com') && u.searchParams.get('v')){
+        return 'https://www.youtube.com/embed/' + u.searchParams.get('v');
+      }
+      if(u.hostname === 'youtu.be'){
+        return 'https://www.youtube.com/embed/' + u.pathname.slice(1);
+      }
+      if(u.hostname.includes('vimeo.com')){
+        const id = u.pathname.split('/').filter(Boolean)[0];
+        if(id) return 'https://player.vimeo.com/video/' + id;
+      }
+    } catch(e){ /* not a valid URL — fall through */ }
+    return null;
+  }
   function resolveTeacherName(teacherId){
     if(!teacherId) return '';
     const t = teachers.find(x => x.id === teacherId);
@@ -1086,6 +1115,11 @@
   let lessonPlans = [];
   onSnapshot(collection(db, 'lessonPlans'), (snap) => {
     lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian) renderChild();
+  });
+  let practiceVideos = [];
+  onSnapshot(collection(db, 'practiceVideos'), (snap) => {
+    practiceVideos = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(currentGuardian) renderChild();
   });
   let classPosts = [];
@@ -1704,6 +1738,28 @@
             </details>
           </div>
         `).join('');
+      }
+    }
+
+    // Treningsvideoer (practice videos — read-only for parents)
+    const myVideos = practiceVideos.filter(v => v.klasse === child.klasse);
+    const vidListEl = document.getElementById('videosList');
+    if(vidListEl){
+      if(myVideos.length === 0){
+        vidListEl.innerHTML = `<div class="empty-msg">${t('noVideos')||'Ingen videoer lagt til ennå.'}</div>`;
+      } else {
+        vidListEl.innerHTML = myVideos.map(v => {
+          const embed = toEmbedUrl(v.url);
+          const player = embed
+            ? `<div style="position:relative; padding-top:56.25%; margin:10px 0; border-radius:10px; overflow:hidden;"><iframe src="${embed}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;" allowfullscreen></iframe></div>`
+            : `<a href="${escapeHtml(v.url)}" target="_blank" rel="noopener">${escapeHtml(v.url)}</a>`;
+          return `
+            <div class="hw-item">
+              <div class="t">${escapeHtml(v.tittel)}</div>
+              ${v.beskrivelse ? `<div class="meta" style="margin-bottom:6px;">${escapeHtml(v.beskrivelse)}</div>` : ''}
+              ${player}
+            </div>`;
+        }).join('');
       }
     }
 
