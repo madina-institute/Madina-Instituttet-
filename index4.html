@@ -315,6 +315,7 @@
   <div class="lang-switch">
     <button id="btnLangNo" class="active" onclick="switchLang('no')">NO</button>
     <button id="btnLangAr" onclick="switchLang('ar')">AR</button>
+    <button id="btnLangUr" onclick="switchLang('ur')">UR</button>
   </div>
   <img src="https://madina-institute.github.io/Madina-Instituttet-/logo.png" alt="Madina Institute" class="logo-img">
   <h1 data-i18n="headerTitle">Madina Skole — Foreldreportal</h1>
@@ -864,6 +865,79 @@
       contactSent: 'تم إرسال الطلب إلى الإدارة.',
       wrongLogin: 'رقم الهاتف أو رمز الدخول غير صحيح.', fillLogin: 'يرجى تعبئة رقم الهاتف ورمز الدخول.',
       errorOccurred: 'حدث خطأ: '
+    },
+    ur: {
+      headerTitle: 'مدینہ سکول — والدین کا پورٹل', headerSub: 'صرف سرپرستوں کے لیے',
+      loginTitle: 'لاگ ان', loginSub: 'اپنا فون نمبر اور سکول سے ملا ہوا رسائی کوڈ درج کریں۔',
+      phoneLabel: 'فون نمبر', codeLabel: 'رسائی کوڈ', loginBtn: 'لاگ ان', logout: 'لاگ آؤٹ',
+      sumTotalLbl: 'کل رقم', sumPaidLbl: 'ادا شدہ', sumRemainingLbl: 'باقی رقم', sumChildrenLbl: 'بچوں کی تعداد', sumSavingsLbl: 'بہن بھائی رعایت کی بچت',
+      menuInfo: 'طالب علم کی معلومات', menuInfoDesc: 'حالت اور تفصیلات',
+      menuSchedule: 'ٹائم ٹیبل', menuScheduleDesc: 'ہفتہ وار شیڈول اور اساتذہ',
+      menuAttendance: 'حاضری', menuAttendanceDesc: 'ریکارڈ',
+      menuHomework: 'ہوم ورک', menuHomeworkDesc: 'جواب دیکھیں اور جمع کروائیں',
+      menuAbsence: 'غیر حاضری کی اطلاع', menuAbsenceDesc: 'استاد کو پیغام بھیجیں',
+      menuNotes: 'نوٹس', menuNotesDesc: 'استاد کی طرف سے پیش رفت',
+      menuAnnouncements: 'اعلانات', menuAnnouncementsDesc: 'سکول کی تازہ خبریں',
+      menuPayment: 'ادائیگی', menuPaymentDesc: 'رقم اور ابھی ادائیگی کریں',
+      menuContact: 'رابطے کی معلومات', menuContactDesc: 'تبدیلی کی درخواست دیں',
+      back: '→ واپس', regStatusTitle: 'درخواست کی صورتحال', downloadReg: 'میری درخواست ڈاؤن لوڈ کریں',
+      scheduleSub: 'تفصیلی شیڈول دیکھنے کے لیے دن منتخب کریں', teachersTitle: 'اس دن کے اساتذہ',
+      saturday: 'ہفتہ', sunday: 'اتوار', backToDays: '→ دنوں کی طرف واپس',
+      submitHwSub: 'جواب جمع کروائیں (تصویر/دستاویز اپ لوڈ کرنے کے بعد لنک پیسٹ کریں، مثلاً Google Drive پر)',
+      whichHw: 'یہ کون سا ہوم ورک ہے؟', linkLabel: 'جواب کا لنک', submitHwBtn: 'جواب جمع کروائیں',
+      fileLabel: 'فائل اپ لوڈ کریں (تصویر/دستاویز)', orLinkLabel: 'یا ایک لنک پیسٹ کریں (اختیاری)', attachFileLabel: 'تصویر/دستاویز منسلک کریں (اختیاری)',
+      uploading: 'اپ لوڈ ہو رہا ہے...', fileTooLarge: 'فائل بہت بڑی ہے (زیادہ سے زیادہ 10 MB)۔',
+      absenceSub: 'بچے کی غیر حاضری کے بارے میں استاد کو پیغام بھیجیں', dateLabel: 'تاریخ', reasonLabel: 'وجہ', sendAbsence: 'غیر حاضری کی اطلاع بھیجیں',
+      notesSub: 'آپ کے بچے کے بارے میں پیش رفت کے نوٹس',
+      payNowBtn: 'ابھی ادائیگی کریں', paymentComingSoon: 'آن لائن ادائیگی جلد آ رہی ہے۔ ادائیگی کی معلومات کے لیے سکول سے رابطہ کریں۔',
+      howMuchSub: 'آپ کتنی رقم ادا کرنا چاہتے ہیں؟', payAllBtn: 'تمام باقی رقم', payPartialBtn: 'دوسری رقم',
+      amountLabel: 'رقم (کرون)', confirmAmountBtn: 'رقم کی تصدیق کریں', payChoiceSent: 'شکریہ! رقم درج کر لی گئی ہے۔ نیچے ادائیگی مکمل کریں۔',
+      invalidAmount: 'ایک درست رقم درج کریں۔', noRemaining: 'اس بچے کے لیے کوئی باقی رقم نہیں ہے۔',
+      contactSub: 'منظوری کے لیے انتظامیہ کو بھیجا جائے گا', newPhone: 'نیا فون نمبر (اختیاری)', newEmail: 'نیا ای میل (اختیاری)',
+      messageLabel: 'پیغام (اختیاری)', sendContactUpdate: 'درخواست بھیجیں',
+      menuTeacherMsg: 'استاد سے رابطہ کریں', menuTeacherMsgDesc: 'پیغامات بھیجیں اور وصول کریں',
+      newMsgStart: 'نئی بات چیت شروع کریں',
+      newMsgTitleLabel: 'بات چیت کا عنوان',
+      newMsgTitlePh: 'مثلاً: اس ہفتے کے ہوم ورک کے بارے میں',
+      openThreadsLabel: 'کھلی بات چیت',
+      archivedThreadsLabel: 'محفوظ شدہ بات چیت',
+      closeThread: 'بات چیت بند کریں',
+      reopenThread: 'بات چیت دوبارہ کھولیں',
+      threadClosedNote: 'یہ بات چیت بند ہے۔ اسے دوبارہ کھولنے کے لیے ایک پیغام بھیجیں۔',
+      untitledThread: 'بات چیت',
+      pollFillNote: 'ایک آپشن منتخب کریں۔',
+      votesCount: 'ووٹ',
+      voteBtn: 'ووٹ دیں',
+      yourVoteNote: 'آپ کا ووٹ',
+      rsvpComing: 'میں آؤں گا/گی',
+      rsvpNotComing: 'میں نہیں آؤں گا/گی',
+      rsvpComingCount: 'آ رہے ہیں',
+      rsvpNotComingCount: 'نہیں آ رہے',
+      attachPoll: 'رائے شماری', attachEvent: 'تقریب',
+      yourMessage: 'آپ کا پیغام', attachmentLabel: 'منسلکہ (تصویر یا دستاویز کا لنک، اختیاری)', sendMessageBtn: 'پیغام بھیجیں',
+      noMessages: 'ابھی تک کوئی پیغام نہیں۔ نیچے پہلا پیغام لکھیں۔', teacherMsgFill: 'پیغام لکھیں۔', teacherMsgSent: 'پیغام استاد کو بھیج دیا گیا ہے۔',
+      unreadBadge: 'غیر پڑھا ہوا', readBadge: 'پڑھا ہوا',
+      you: 'آپ',
+      noChildren: 'ابھی تک کوئی بچہ رجسٹرڈ نہیں ہے۔', noAttendance: 'ابھی تک کوئی حاضری ریکارڈ نہیں ہے۔',
+      noHomework: 'ابھی تک کوئی ہوم ورک نہیں دیا گیا۔', noHwOptions: 'کوئی ہوم ورک دستیاب نہیں',
+      menuLessonPlans: 'تعلیمی منصوبہ', menuLessonPlansDesc: 'کلاس ابھی کیا پڑھ رہی ہے',
+      lessonPlansSub: 'استاد نے کلاس کے لیے جو تیار کیا، تازہ ترین پہلے',
+      noLessonPlans: 'ابھی تک کوئی تعلیمی منصوبہ شائع نہیں ہوا۔',
+      malLabel: 'مقصد', nyttStoffLabel: 'نیا مواد', lekserLabel: 'ہوم ورک',
+      menuClassPosts: 'کلاس کے پیغامات', menuClassPostsDesc: 'استاد کی طرف سے — آپ تبصرہ کر سکتے ہیں',
+      classPostsSub: 'استاد کی طرف سے پوری کلاس کے لیے پیغامات',
+      noClassPosts: 'ابھی تک کوئی کلاس پیغام نہیں۔',
+      noComments: 'ابھی تک کوئی تبصرہ نہیں۔',
+      commentsClosedNote: 'اس پوسٹ پر تبصرے بند ہیں۔',
+      writeComment: 'ایک تبصرہ لکھیں...',
+      sendComment: 'تبصرہ بھیجیں',
+      noNotes: 'ابھی تک کوئی نوٹ نہیں۔', noAnnouncements: 'ابھی تک کوئی اعلان نہیں۔',
+      noSchedule: 'اس دن کے لیے کوئی کلاس درج نہیں ہے۔', noTeachers: 'اس دن کے لیے کوئی استاد کی معلومات دستیاب نہیں۔',
+      fillHwFields: 'ہوم ورک منتخب کریں اور جواب کا لنک پیسٹ کریں۔', hwSent: 'جواب جمع کروا دیا گیا ہے۔',
+      fillAbsFields: 'براہ کرم تاریخ اور وجہ درج کریں۔', absSent: 'غیر حاضری کی اطلاع استاد کو بھیج دی گئی ہے۔',
+      contactSent: 'درخواست انتظامیہ کو بھیج دی گئی ہے۔',
+      wrongLogin: 'غلط فون نمبر یا رسائی کوڈ۔', fillLogin: 'براہ کرم فون نمبر اور رسائی کوڈ درج کریں۔',
+      errorOccurred: 'ایک خرابی پیش آئی: '
     }
   };
 
@@ -871,10 +945,11 @@
 
   window.switchLang = function(lang){
     currentLang = lang;
-    document.getElementById('htmlRoot').setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.getElementById('htmlRoot').setAttribute('dir', (lang === 'ar' || lang === 'ur') ? 'rtl' : 'ltr');
     document.getElementById('htmlRoot').setAttribute('lang', lang);
     document.getElementById('btnLangNo').classList.toggle('active', lang === 'no');
     document.getElementById('btnLangAr').classList.toggle('active', lang === 'ar');
+    document.getElementById('btnLangUr').classList.toggle('active', lang === 'ur');
     applyStaticTranslations();
     if(currentGuardian) renderChild();
   };
