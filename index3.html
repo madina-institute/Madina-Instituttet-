@@ -19,6 +19,22 @@
     --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
   }
   *{box-sizing:border-box;}
+
+  /* Shown only when the page detects it's running inside an app's built-in
+     browser (WhatsApp, Instagram, Facebook, etc.) rather than a real Safari/
+     Chrome tab — those in-app browsers can silently break Firebase login.
+     No code can force-open Safari automatically (an Apple/app-level
+     restriction), so this just tells the person exactly where to tap. */
+  #inAppBrowserBanner{
+    display:none; position:sticky; top:0; z-index:3000; background:var(--gold);
+    color:#3a2e10; font-family:'Jost',sans-serif; font-size:12.5px; line-height:1.5;
+    padding:12px 16px; text-align:center; box-shadow:var(--shadow);
+  }
+  #inAppBrowserBanner strong{font-weight:700;}
+  #inAppBrowserBanner .close-banner{
+    background:none; border:none; color:#3a2e10; font-weight:700; font-size:14px;
+    cursor:pointer; margin-inline-start:10px; text-decoration:underline;
+  }
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
   html[dir="rtl"] body{font-family:'Tajawal','Lora',serif;}
 
@@ -73,6 +89,20 @@
 </style>
 </head>
 <body>
+<div id="inAppBrowserBanner">
+  ⚠️ Du åpnet denne siden inne i en app (f.eks. WhatsApp eller Instagram) — <strong>innlogging kan da feile</strong>.
+  Trykk <strong>⋯</strong> eller <strong>del-ikonet</strong> øverst/nederst på skjermen og velg <strong>«Åpne i Safari»</strong> (eller «Åpne i nettleser»).
+  <button class="close-banner" onclick="document.getElementById('inAppBrowserBanner').style.display='none'">Skjul</button>
+</div>
+<script>
+  (function(){
+    var ua = navigator.userAgent || '';
+    var isInApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|Twitter|LinkedInApp|Snapchat/i.test(ua);
+    if(isInApp){
+      document.getElementById('inAppBrowserBanner').style.display = 'block';
+    }
+  })();
+</script>
 
 <div class="corner-deco corner-deco-left"></div>
 <div class="corner-deco corner-deco-right"></div>
