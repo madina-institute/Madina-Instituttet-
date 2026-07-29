@@ -1348,7 +1348,8 @@
     getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
+    setPersistence, inMemoryPersistence
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -1367,6 +1368,11 @@
   const db = getFirestore(app);
   const storage = getStorage(app);
   const auth = getAuth(app);
+  // Never persist the login session to the browser (no localStorage/
+  // IndexedDB auth token) — every fresh page load/refresh requires a real
+  // email+password login again, instead of silently auto-logging-in from a
+  // previously saved session.
+  setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
 
   const MAX_FILE_MB = 10;
   async function uploadAttachment(file, folder){
