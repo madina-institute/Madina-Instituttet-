@@ -189,6 +189,10 @@
           </div>
           <div class="activity-grid">
             <div class="activity-row">
+              <div class="lbl">Siste innlogging</div>
+              <div class="val ${tc.sisteInnlogging ? '' : 'empty'}">${tc.sisteInnlogging ? formatDate(tc.sisteInnlogging) : 'Aldri logget inn'}</div>
+            </div>
+            <div class="activity-row">
               <div class="lbl">Sist oppmøte registrert</div>
               <div class="val ${lastAtt ? '' : 'empty'}">${lastAtt ? escapeHtml(lastAtt.dato) : 'Ingen registrert ennå'}</div>
             </div>
