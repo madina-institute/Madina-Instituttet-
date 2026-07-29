@@ -693,6 +693,7 @@
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
+    <div class="tab" data-tab="financeLog" data-side="eier">Betalingslogg</div>
   <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
@@ -1017,6 +1018,19 @@
       <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
     </div>
     <div class="records-hidden card-grid" id="tableFinances"></div>
+  </div>
+
+  <!-- FINANCE ACTIVITY LOG — visible to everyone with admin access, not hidden.
+       Every time a student's payment status/amount changes, or a Kasse/Økonomi
+       entry is created or edited, a row is added here recording who did it and
+       when. Deletions of finances entries already show up in the separate
+       Slettelogg (deletion recovery) page — this log is about tracking EDITS,
+       not recovering deletes. -->
+  <div class="panel" id="panel-financeLog">
+    <div class="note-box" style="background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:18px; line-height:1.6;">
+      Full oversikt over alle økonomiske endringer — hvem som markerte en elev som betalt/ubetalt, endret et beløp, eller la til/redigerte en Kasse/Økonomi-post, og når. Synlig for alle med admin-tilgang.
+    </div>
+    <div id="financeLogList"></div>
   </div>
 
   <!-- TEACHERS -->
@@ -2015,6 +2029,49 @@
     }
   };
 
+  // Visible (not hidden) log of financial changes — a student's payment
+  // status/amount being edited, or a Kasse/Økonomi post being created or
+  // edited. Kept as its own standalone collection/listener (not part of
+  // SCHEMAS/attachListener) since it's a log of activity, not an editable
+  // record type of its own.
+  async function logFinanceChange(summary){
+    try{
+      await addDoc(collection(db, 'financeLog'), {
+        summary,
+        changedAt: new Date().toISOString(),
+        changedBy: currentUserEmail || 'ukjent'
+      });
+    } catch(err){
+      console.error('Kunne ikke logge økonomiendring:', err);
+    }
+  }
+
+  onSnapshot(collection(db, 'financeLog'), (snap) => {
+    cache.financeLog = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.changedAt||'').localeCompare(a.changedAt||''));
+    renderFinanceLog();
+  }, (err) => {
+    console.error('financeLog', err);
+  });
+
+  function renderFinanceLog(){
+    const el = document.getElementById('financeLogList');
+    if(!el) return;
+    if(cache.financeLog.length === 0){
+      el.innerHTML = '<div class="report-empty">Ingen økonomiske endringer registrert ennå.</div>';
+      return;
+    }
+    el.innerHTML = cache.financeLog.map(entry => `
+      <div class="status-row" style="flex-wrap:wrap; gap:10px;">
+        <span style="flex:1 1 220px; min-width:0;">${escapeHtml(entry.summary || '')}</span>
+        <span style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; white-space:nowrap;">
+          ${escapeHtml(new Date(entry.changedAt||'').toLocaleString('no-NO'))} — ${escapeHtml(entry.changedBy||'ukjent')}
+        </span>
+      </div>`).join('');
+  }
+
+
+
   const ADMIN_DELETE_PASSWORD = 'AdminEgypt2026';
 
   function checkAdminPassword(){
@@ -2099,7 +2156,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [] };
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -3499,12 +3556,34 @@
     }
     entry.sistEndretAv = currentUserEmail || 'ukjent';
     entry.sistEndretDato = new Date().toISOString().slice(0,10);
+
+    // Build a human-readable summary for the visible Betalingslogg BEFORE
+    // saving, while we still have the old cached values to compare against.
+    let financeLogSummary = null;
+    if(editingType === 'students'){
+      const oldRow = editingId ? cache.students.find(r => r.id === editingId) : null;
+      const changes = [];
+      if(oldRow && (oldRow.betalt||'') !== (entry.betalt||'')){
+        changes.push(`betalingsstatus: "${oldRow.betalt||'—'}" → "${entry.betalt||'—'}"`);
+      }
+      if(oldRow && (oldRow.belop||'') !== (entry.belop||'')){
+        changes.push(`beløp: "${oldRow.belop||'—'}" → "${entry.belop||'—'}" kr`);
+      }
+      if(changes.length){
+        financeLogSummary = `${entry.navn || (oldRow && oldRow.navn) || 'Ukjent elev'} — ${changes.join(', ')}`;
+      }
+    } else if(editingType === 'finances'){
+      const action = editingId ? 'Redigert' : 'Ny';
+      financeLogSummary = `${action} økonomipost: ${entry.type||''} ${entry.belop||'0'} kr — ${entry.kategori||''} (${entry.beskrivelse||'ingen beskrivelse'})`;
+    }
+
     try{
       if(editingId){
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
       } else {
         await addDoc(collection(db, schema.collectionName), entry);
       }
+      if(financeLogSummary) logFinanceChange(financeLogSummary);
       closeModal();
       showToast('Lagret.');
     } catch(err){
