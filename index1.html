@@ -340,6 +340,7 @@
       <button data-sidebar="studentNotes" onclick="navTo('studentNotes', showStudentNotes)"><span class="ic">✍️</span><span class="lbl">Elevnotater</span></button>
       <button data-sidebar="messages" onclick="navTo('messages', showMessages)"><span class="ic">📩</span><span class="lbl">Meldinger</span><span class="dot" id="msgDot" style="display:none;"></span></button>
       <button data-sidebar="classPosts" onclick="navTo('classPosts', showClassPosts)"><span class="ic">📣</span><span class="lbl">Klassemelding</span></button>
+      <button data-sidebar="videos" onclick="navTo('videos', showVideos)"><span class="ic">🎥</span><span class="lbl" data-i18n="videosLbl">Treningsvideoer</span></button>
     </nav>
     <div class="portal-content">
     <div class="who-bar">
@@ -608,6 +609,28 @@
       <h2 style="font-size:17px;" data-i18n="classPostsArchiveTitle">Tidligere klassemeldinger</h2>
       <div id="classPostsList"></div>
     </div>
+
+    <div class="card" id="videosView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← <span data-i18n="back">Tilbake</span></button>
+      <h2 data-i18n="videosTitle">Treningsvideoer</h2>
+      <div class="sub" data-i18n="videosSub">Legg til en YouTube- eller Vimeo-lenke som elevene i klassen kan øve på hjemme.</div>
+      <div class="field">
+        <label data-i18n="videoTitleLabel">Tittel</label>
+        <input type="text" id="videoTitleInput" data-i18n-ph="videoTitlePh" placeholder="F.eks. Surah Al-Fatiha — uttale">
+      </div>
+      <div class="field">
+        <label data-i18n="videoUrlLabel">Lenke (YouTube eller Vimeo)</label>
+        <input type="text" id="videoUrlInput" placeholder="https://youtube.com/watch?v=...">
+      </div>
+      <div class="field">
+        <label data-i18n="videoDescLabel">Beskrivelse (valgfritt)</label>
+        <textarea id="videoDescInput" rows="2"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="addVideo()" data-i18n="addVideoBtn">Legg til video</button>
+      <hr style="border:none; border-top:1px dotted var(--line); margin:22px 0;">
+      <h2 style="font-size:17px;" data-i18n="videosListTitle">Videoer for klassen</h2>
+      <div id="videosList"></div>
+    </div>
     </div>
     </div>
   </div>
@@ -619,7 +642,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc
+    getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -705,6 +728,11 @@
       classPostsArchiveTitle: 'Tidligere klassemeldinger',
       noClassPosts: 'Ingen klassemeldinger sendt ennå.',
       commentsOpenLabel: 'Kommentarer åpne',
+      videosLbl: 'Treningsvideoer', videosTitle: 'Treningsvideoer',
+      videosSub: 'Legg til en YouTube- eller Vimeo-lenke som elevene i klassen kan øve på hjemme.',
+      videoTitleLabel: 'Tittel', videoTitlePh: 'F.eks. Surah Al-Fatiha — uttale',
+      videoUrlLabel: 'Lenke (YouTube eller Vimeo)', videoDescLabel: 'Beskrivelse (valgfritt)',
+      addVideoBtn: 'Legg til video', videosListTitle: 'Videoer for klassen',
       commentsClosedLabel: 'Kommentarer stengt',
       closeComments: 'Steng kommentarer',
       openComments: 'Åpne kommentarer',
@@ -815,6 +843,11 @@
       classPostsArchiveTitle: 'رسائل الصف السابقة',
       noClassPosts: 'ما فيه رسائل صف مرسلة بعد.',
       commentsOpenLabel: 'التعليقات مفتوحة',
+      videosLbl: 'فيديوهات تدريب', videosTitle: 'فيديوهات تدريب',
+      videosSub: 'أضف رابط يوتيوب أو فيميو يقدر طلاب الصف يتدربوا عليه بالبيت.',
+      videoTitleLabel: 'العنوان', videoTitlePh: 'مثلاً: سورة الفاتحة — النطق',
+      videoUrlLabel: 'الرابط (يوتيوب أو فيميو)', videoDescLabel: 'الوصف (اختياري)',
+      addVideoBtn: 'إضافة فيديو', videosListTitle: 'فيديوهات الصف',
       commentsClosedLabel: 'التعليقات مقفلة',
       closeComments: 'إيقاف التعليقات',
       openComments: 'فتح التعليقات',
@@ -1171,6 +1204,7 @@
       else if(view === 'studentNotes') navTo('studentNotes', showStudentNotes);
       else if(view === 'messages') navTo('messages', showMessages);
       else if(view === 'classPosts') navTo('classPosts', showClassPosts);
+      else if(view === 'videos') navTo('videos', showVideos);
       else if(view === 'messageThread' && currentThreadGuardian){
         document.getElementById('messagesListView').style.display = 'none';
         document.getElementById('messageThreadView').style.display = 'block';
@@ -1202,6 +1236,7 @@
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'none';
     document.getElementById('classPostsView').style.display = 'none';
+    document.getElementById('videosView').style.display = 'none';
   };
 
   function setActiveSidebar(key){
@@ -1842,6 +1877,97 @@
     renderClassPosts();
     pushAppView('classPosts');
   };
+
+  let practiceVideos = [];
+  onSnapshot(collection(db, 'practiceVideos'), (snap) => {
+    practiceVideos = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(currentTeacher && document.getElementById('videosView').style.display !== 'none') renderVideos();
+  });
+
+  window.showVideos = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('videosView').style.display = 'block';
+    document.getElementById('videoTitleInput').value = '';
+    document.getElementById('videoUrlInput').value = '';
+    document.getElementById('videoDescInput').value = '';
+    renderVideos();
+    pushAppView('videos');
+  };
+
+  // Converts a normal YouTube/Vimeo watch link into an embeddable iframe src.
+  // Returns null if the link isn't recognized (shown as a plain link instead).
+  function toEmbedUrl(url){
+    try{
+      const u = new URL(url);
+      if(u.hostname.includes('youtube.com') && u.searchParams.get('v')){
+        return 'https://www.youtube.com/embed/' + u.searchParams.get('v');
+      }
+      if(u.hostname === 'youtu.be'){
+        return 'https://www.youtube.com/embed/' + u.pathname.slice(1);
+      }
+      if(u.hostname.includes('vimeo.com')){
+        const id = u.pathname.split('/').filter(Boolean)[0];
+        if(id) return 'https://player.vimeo.com/video/' + id;
+      }
+    } catch(e){ /* not a valid URL — fall through */ }
+    return null;
+  }
+
+  window.addVideo = async function(){
+    const tittel = document.getElementById('videoTitleInput').value.trim();
+    const url = document.getElementById('videoUrlInput').value.trim();
+    const beskrivelse = document.getElementById('videoDescInput').value.trim();
+    if(!tittel || !url){
+      alert(currentLang === 'ar' ? 'الرجاء إدخال عنوان ورابط.' : 'Fyll ut tittel og lenke.');
+      return;
+    }
+    try{
+      await addDoc(collection(db, 'practiceVideos'), {
+        larer: currentTeacher.id,
+        klasse: currentTeacher.tildeltKlasse,
+        tittel, url, beskrivelse,
+        dato: new Date().toISOString()
+      });
+      document.getElementById('videoTitleInput').value = '';
+      document.getElementById('videoUrlInput').value = '';
+      document.getElementById('videoDescInput').value = '';
+    } catch(err){
+      console.error(err);
+      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+    }
+  };
+
+  window.deleteVideo = async function(id){
+    if(!confirm(currentLang === 'ar' ? 'حذف هذا الفيديو؟' : 'Slette denne videoen?')) return;
+    try{
+      await deleteDoc(doc(db, 'practiceVideos', id));
+    } catch(err){
+      console.error(err);
+    }
+  };
+
+  function renderVideos(){
+    const el = document.getElementById('videosList');
+    const mine = practiceVideos.filter(v => v.klasse === currentTeacher.tildeltKlasse);
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا يوجد فيديوهات بعد.' : 'Ingen videoer lagt til ennå.'}</div>`;
+      return;
+    }
+    el.innerHTML = mine.map(v => {
+      const embed = toEmbedUrl(v.url);
+      const player = embed
+        ? `<div style="position:relative; padding-top:56.25%; margin:10px 0; border-radius:10px; overflow:hidden;"><iframe src="${embed}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;" allowfullscreen></iframe></div>`
+        : `<a href="${escapeHtml(v.url)}" target="_blank" rel="noopener">${escapeHtml(v.url)}</a>`;
+      return `
+        <div class="record-card" style="margin-bottom:14px;">
+          <h3 style="margin-bottom:4px;">${escapeHtml(v.tittel)}</h3>
+          ${v.beskrivelse ? `<div class="sub" style="margin-bottom:6px;">${escapeHtml(v.beskrivelse)}</div>` : ''}
+          ${player}
+          <button class="btn btn-ghost" style="margin-top:8px; font-size:11px;" onclick="deleteVideo('${v.id}')">🗑 ${currentLang === 'ar' ? 'حذف' : 'Slett'}</button>
+        </div>`;
+    }).join('');
+  }
 
   window.onClassPostAttachTypeChange = function(){
     const type = document.getElementById('classPostAttachType').value;
