@@ -3567,7 +3567,10 @@
         changes.push(`betalingsstatus: "${oldRow.betalt||'—'}" → "${entry.betalt||'—'}"`);
       }
       if(oldRow && (oldRow.belop||'') !== (entry.belop||'')){
-        changes.push(`beløp: "${oldRow.belop||'—'}" → "${entry.belop||'—'}" kr`);
+        changes.push(`beløp totalt: "${oldRow.belop||'—'}" → "${entry.belop||'—'}" kr`);
+      }
+      if(oldRow && (oldRow.belopBetalt||'') !== (entry.belopBetalt||'')){
+        changes.push(`beløp betalt så langt: "${oldRow.belopBetalt||'—'}" → "${entry.belopBetalt||'—'}" kr`);
       }
       if(changes.length){
         financeLogSummary = `${entry.navn || (oldRow && oldRow.navn) || 'Ukjent elev'} — ${changes.join(', ')}`;
