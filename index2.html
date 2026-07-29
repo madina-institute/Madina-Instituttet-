@@ -806,6 +806,18 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  // Silent analytics: log a "visit" the moment the form loads, and a
+  // one-time "started" event the first time the person touches any field
+  // (so admin can see visits vs. attempts vs. actual completed
+  // registrations, without this ever affecting the person filling it out).
+  addDoc(collection(db, 'formAnalytics'), { type: 'visit', timestamp: new Date().toISOString() }).catch(()=>{});
+  let startedLogged = false;
+  document.addEventListener('input', function(){
+    if(startedLogged) return;
+    startedLogged = true;
+    addDoc(collection(db, 'formAnalytics'), { type: 'started', timestamp: new Date().toISOString() }).catch(()=>{});
+  }, { once: true });
+
   function todayISO(){
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
