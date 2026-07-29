@@ -1474,6 +1474,7 @@
     }
   };
 
+  let authGatedListenersAttached = false;
   onAuthStateChanged(auth, (user) => {
     if(user){
       currentUserEmail = user.email;
@@ -1482,6 +1483,17 @@
       const who = document.getElementById('loggedInAs');
       if(who) who.textContent = user.email;
       resetInactivityTimer();
+      // ledelse/meetings/finances require request.auth != null in the
+      // Firestore rules — attaching their listeners before login used to
+      // leave them permanently stuck on "Kobler til..." since they were
+      // started at page load with no auth token yet. Now they only start
+      // once a real login is confirmed, and only once per session.
+      if(!authGatedListenersAttached){
+        authGatedListenersAttached = true;
+        attachListener('ledelse');
+        attachListener('meetings');
+        attachListener('finances');
+      }
     } else {
       currentUserEmail = null;
       isLocked = false;
@@ -4145,9 +4157,6 @@
   attachListener('hours');
   attachListener('attendance');
   attachListener('lessonPlans');
-  attachListener('ledelse');
-  attachListener('meetings');
-  attachListener('finances');
   attachListener('registrations');
   attachListener('homework');
   attachListener('homeworkSubmissions');
