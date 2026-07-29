@@ -983,6 +983,11 @@
 
   <!-- REGISTRATIONS -->
   <div class="panel" id="panel-registrations">
+    <div class="report-card" style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;" id="formAnalyticsBox">
+      <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormVisits">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Besøkte lenken</div></div>
+      <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormStarted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Begynte å fylle ut</div></div>
+      <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormCompleted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Fullførte søknaden</div></div>
+    </div>
     <div class="toolbar">
       <input class="search" id="searchRegistrations" placeholder="Søk etter elevnavn, foresatt eller program...">
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
@@ -2054,6 +2059,21 @@
       console.error('Kunne ikke logge økonomiendring:', err);
     }
   }
+
+  onSnapshot(collection(db, 'formAnalytics'), (snap) => {
+    let visits = 0, started = 0;
+    snap.forEach(d => {
+      const t = d.data().type;
+      if(t === 'visit') visits++;
+      else if(t === 'started') started++;
+    });
+    const elV = document.getElementById('statFormVisits');
+    const elS = document.getElementById('statFormStarted');
+    const elC = document.getElementById('statFormCompleted');
+    if(elV) elV.textContent = visits;
+    if(elS) elS.textContent = started;
+    if(elC) elC.textContent = cache.registrations.length;
+  }, (err) => { console.error('formAnalytics', err); });
 
   onSnapshot(collection(db, 'financeLog'), (snap) => {
     cache.financeLog = snap.docs.map(d => ({ id: d.id, ...d.data() }))
