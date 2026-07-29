@@ -135,13 +135,12 @@
   .summary-item .l{font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gold-l); margin-top:2px;}
   html[dir="rtl"] .summary-item .l{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
 
-  .child-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
-  .child-tab{
-    font-family:'Jost',sans-serif; font-size:12.5px; padding:8px 14px; border-radius:20px;
-    border:1px solid var(--line); background:var(--paper-2); cursor:pointer; color:var(--ink);
+  .child-select-wrap{margin-bottom:16px;}
+  .child-select{
+    width:100%; font-family:'Jost',sans-serif; font-size:16px; padding:12px 14px; border-radius:10px;
+    border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; box-shadow:var(--shadow);
   }
-  html[dir="rtl"] .child-tab{font-family:'Tajawal',sans-serif;}
-  .child-tab.active{background:var(--emerald); color:#fff; border-color:var(--emerald);}
+  html[dir="rtl"] .child-select{font-family:'Tajawal',sans-serif;}
 
   .info-row{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:9px 0; border-bottom:1px solid var(--line); font-family:'Jost',sans-serif; font-size:13.5px;}
   html[dir="rtl"] .info-row{font-family:'Tajawal',sans-serif;}
@@ -363,6 +362,10 @@
       <button class="logout" onclick="doParentLogout()" data-i18n="logout">Logg ut</button>
     </div>
 
+    <div class="child-select-wrap" id="childSelectWrap" style="display:none;">
+      <select class="child-select" id="childSelect" onchange="selectChild(this.selectedIndex)"></select>
+    </div>
+
     <div class="summary-box">
       <div class="summary-grid">
         <div class="summary-item"><div class="n" id="sumTotal">0 kr</div><div class="l" data-i18n="sumTotalLbl">Totalt</div></div>
@@ -375,8 +378,6 @@
         <div class="l" data-i18n="sumSavingsLbl">Spart på søskenrabatt</div>
       </div>
     </div>
-
-    <div class="child-tabs" id="childTabs"></div>
 
     <!-- HOME MENU (superseded by the sidebar; kept only as an inert
          container so document.getElementById('homeView') calls in the
@@ -1176,13 +1177,16 @@
   }
 
   function renderChildTabs(){
-    const el = document.getElementById('childTabs');
-    if(myChildren.length === 0){
-      el.innerHTML = '';
+    const wrap = document.getElementById('childSelectWrap');
+    const sel = document.getElementById('childSelect');
+    if(myChildren.length <= 1){
+      wrap.style.display = 'none';
+      sel.innerHTML = '';
       return;
     }
-    el.innerHTML = myChildren.map((c,i) =>
-      `<div class="child-tab ${i===currentChildIndex?'active':''}" onclick="selectChild(${i})">${escapeHtml(c.navn)}</div>`
+    wrap.style.display = 'block';
+    sel.innerHTML = myChildren.map((c,i) =>
+      `<option value="${i}" ${i===currentChildIndex?'selected':''}>${escapeHtml(c.navn)}</option>`
     ).join('');
   }
 
