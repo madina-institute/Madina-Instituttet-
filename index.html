@@ -880,6 +880,7 @@
       <div class="modal-actions" style="justify-content:flex-start;">
         <button class="btn btn-primary" onclick="exportFullCSV()">Last ned full backup</button>
         <button class="btn btn-ghost" onclick="emailFullBackup()">Send backup på e-post</button>
+        <a href="./slettelogg.html" target="_blank" class="btn btn-ghost" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Åpne slettelogg (angre sletting)</a>
       </div>
 
       <hr class="divider">
@@ -968,6 +969,10 @@
       <div class="danger-row">
         <span><strong>Nullstill HELE databasen</strong> (alt ovenfor på én gang)</span>
         <button class="btn btn-danger-solid" onclick="clearAllData()">Slett alt</button>
+      </div>
+      <div class="danger-row">
+        <span><strong>Nullstill testdata</strong> (alt ovenfor UNNTATT søknader — søknader beholdes)</span>
+        <button class="btn btn-danger-solid" onclick="clearTestDataKeepRegistrations()">Slett testdata (behold søknader)</button>
       </div>
     </div>
   </div>
@@ -2149,6 +2154,33 @@
         }
       }
       showToast('Hele databasen er nullstilt.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt under nullstilling.');
+    }
+  };
+
+  window.clearTestDataKeepRegistrations = async function(){
+    const typesToClear = Object.keys(SCHEMAS).filter(t => t !== 'registrations');
+    const totalCount = typesToClear.reduce((sum, t) => sum + cache[t].length, 0);
+    if(totalCount === 0){
+      showToast('Det er allerede ingenting å slette (utenom søknader).');
+      return;
+    }
+    if(!checkAdminPassword()) return;
+    const typed = prompt(`ADVARSEL: Dette sletter PERMANENT alle ${totalCount} oppføringer i databasen UNNTATT søknader (Søknader/registrations beholdes urørt).\n\nSkriv "SLETT TESTDATA" (med store bokstaver) for å bekrefte:`);
+    if(typed !== 'SLETT TESTDATA'){
+      showToast('Sletting avbrutt.');
+      return;
+    }
+    try{
+      for(const type of typesToClear){
+        for(const row of cache[type]){
+          await logDeletion(type, row);
+          await deleteDoc(doc(db, SCHEMAS[type].collectionName, row.id));
+        }
+      }
+      showToast('Testdata nullstilt — søknader er beholdt.');
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt under nullstilling.');
