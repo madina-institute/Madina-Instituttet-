@@ -49,6 +49,28 @@
     font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:20px; line-height:1.6;
   }
 
+  .quick-restore-box{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 18px; box-shadow:var(--shadow); margin-bottom:24px;
+  }
+  .quick-restore-title{font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; color:var(--emerald-d); margin-bottom:10px;}
+  .quick-restore-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn-quick{
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700; letter-spacing:0.02em; text-transform:uppercase;
+    background:var(--paper-2); color:var(--emerald-d); border:1px solid var(--line); border-radius:6px; padding:9px 14px; cursor:pointer; flex:1 1 auto;
+  }
+
+  .log-group{margin-bottom:28px;}
+  .log-group-header{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;
+    padding-bottom:8px; border-bottom:2px solid var(--line);
+  }
+  .log-group-title{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--ink); flex:1 1 160px; min-width:0;}
+  .log-group-count{font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; font-weight:400;}
+  .btn-restore-all{
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:700; letter-spacing:0.02em; text-transform:uppercase;
+    background:var(--emerald-d); color:#fff; border:none; border-radius:6px; padding:8px 14px; cursor:pointer; white-space:nowrap;
+  }
+
   .log-card{
     background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);
     margin-bottom:14px; display:flex; flex-direction:column; gap:8px;
@@ -68,6 +90,9 @@
   .btn-confirm-delete{
     font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700; letter-spacing:0.02em; text-transform:uppercase;
     background:transparent; color:var(--red); border:1px solid rgba(168,60,60,0.3); border-radius:6px; padding:9px 14px; cursor:pointer; flex:1 1 auto;
+  }
+  .btn-confirm-delete:disabled{
+    color:#b5bdc4; border-color:var(--line); cursor:not-allowed; opacity:0.7;
   }
   .empty-msg{
     font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:40px 20px;
@@ -109,8 +134,17 @@
     <div class="note-box">
       Hver gang noe slettes i Administrativ-panelet, havner en full kopi av det her FØR det fjernes fra den ekte databasen.
       Trykk <strong>Gjenopprett</strong> for å legge oppføringen tilbake nøyaktig som den var (samme ID, så eksisterende
-      koblinger til den fortsetter å virke), eller <strong>Bekreft sletting</strong> for å fjerne den fra denne listen uten
-      å gjøre noe mer — dette betyr bare "jeg har sett dette, slettingen var riktig".
+      koblinger til den fortsetter å virke) — dette virker alltid, med en gang. <strong>Bekreft sletting</strong> fjerner
+      oppføringen fra denne listen uten å gjøre noe mer, men er låst i 30 dager fra slettingstidspunktet, som en ekstra
+      sikkerhetsmargin.
+    </div>
+    <div class="quick-restore-box">
+      <div class="quick-restore-title">Gjenopprett raskt etter tidspunkt (uansett type)</div>
+      <div class="quick-restore-row">
+        <button class="btn-quick" onclick="restoreByTime(1)">Siste time</button>
+        <button class="btn-quick" onclick="restoreByTime(24)">Siste døgn</button>
+        <button class="btn-quick" onclick="restoreByTime(24*7)">Siste uke</button>
+      </div>
     </div>
     <div id="logList"></div>
   </main>
@@ -189,6 +223,24 @@
     return d.toLocaleString('no-NO');
   }
 
+  const CONFIRM_LOCK_DAYS = 30;
+  const CONFIRM_LOCK_MS = CONFIRM_LOCK_DAYS * 24 * 60 * 60 * 1000;
+
+  // "Bekreft sletting" (permanently dismissing a log entry) is locked for
+  // 30 days from the moment something was deleted, for EVERY type — this
+  // is a deliberate cooling-off period so a confirmation can't happen too
+  // hastily. "Gjenopprett" (restore) is NEVER locked — it always works
+  // immediately, from the first second, for anything in the log.
+  function confirmUnlocksAt(entry){
+    return new Date(entry.deletedAt).getTime() + CONFIRM_LOCK_MS;
+  }
+  function isConfirmLocked(entry){
+    return Date.now() < confirmUnlocksAt(entry);
+  }
+  function daysRemaining(entry){
+    return Math.max(1, Math.ceil((confirmUnlocksAt(entry) - Date.now()) / (24*60*60*1000)));
+  }
+
   let logEntries = [];
 
   onSnapshot(collection(db, 'deletionLog'), (snap) => {
@@ -200,13 +252,12 @@
     document.getElementById('logList').innerHTML = `<div class="empty-msg">Kunne ikke laste slettelogg: ${escapeHtml(err.message)}</div>`;
   });
 
-  function render(){
-    const el = document.getElementById('logList');
-    if(logEntries.length === 0){
-      el.innerHTML = '<div class="empty-msg">Ingen slettede oppføringer å vise akkurat nå.</div>';
-      return;
-    }
-    el.innerHTML = logEntries.map(entry => `
+  function renderEntryCard(entry){
+    const locked = isConfirmLocked(entry);
+    const confirmBtn = locked
+      ? `<button class="btn-confirm-delete" disabled title="Låses opp om ${daysRemaining(entry)} dag(er)">Bekreft sletting (låst i ${daysRemaining(entry)}d)</button>`
+      : `<button class="btn-confirm-delete" onclick="confirmDeletion('${entry.id}')">Bekreft sletting</button>`;
+    return `
       <div class="log-card">
         <div class="log-top">
           <div class="log-title">${escapeHtml(friendlyTitle(entry))}</div>
@@ -215,10 +266,33 @@
         <div class="log-meta">Slettet ${escapeHtml(formatDate(entry.deletedAt))} av ${escapeHtml(entry.deletedBy || 'ukjent')}</div>
         <div class="log-actions">
           <button class="btn-restore" onclick="restoreEntry('${entry.id}')">Gjenopprett</button>
-          <button class="btn-confirm-delete" onclick="confirmDeletion('${entry.id}')">Bekreft sletting</button>
+          ${confirmBtn}
         </div>
-      </div>
-    `).join('');
+      </div>`;
+  }
+
+  function render(){
+    const el = document.getElementById('logList');
+    if(logEntries.length === 0){
+      el.innerHTML = '<div class="empty-msg">Ingen slettede oppføringer å vise akkurat nå.</div>';
+      return;
+    }
+    // Group by type, largest group first (most-populated "folder" on top).
+    const groups = {};
+    logEntries.forEach(e => { (groups[e.type] = groups[e.type] || []).push(e); });
+    const orderedTypes = Object.keys(groups).sort((a,b) => groups[b].length - groups[a].length);
+
+    el.innerHTML = orderedTypes.map(type => {
+      const items = groups[type];
+      return `
+        <div class="log-group">
+          <div class="log-group-header">
+            <span class="log-group-title">${escapeHtml(TYPE_LABELS[type] || type)} <span class="log-group-count">(${items.length})</span></span>
+            <button class="btn-restore-all" onclick="restoreGroup('${type}')">Gjenopprett alle (${items.length})</button>
+          </div>
+          ${items.map(renderEntryCard).join('')}
+        </div>`;
+    }).join('');
   }
 
   window.restoreEntry = async function(logId){
@@ -236,10 +310,51 @@
   };
 
   window.confirmDeletion = async function(logId){
+    const entry = logEntries.find(e => e.id === logId);
+    if(entry && isConfirmLocked(entry)){
+      showToast('Denne kan ikke bekreftes ennå — låst i ' + daysRemaining(entry) + ' dag(er) til.');
+      return;
+    }
     if(!confirm('Bekrefte at denne slettingen var riktig? Oppføringen fjernes da fra denne listen (den er allerede slettet fra databasen).')) return;
     try{
       await deleteDoc(doc(db, 'deletionLog', logId));
       showToast('Bekreftet.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  window.restoreGroup = async function(type){
+    const items = logEntries.filter(e => e.type === type);
+    if(items.length === 0) return;
+    if(!confirm(`Gjenopprette alle ${items.length} oppføringer i "${TYPE_LABELS[type] || type}"?`)) return;
+    try{
+      for(const entry of items){
+        await setDoc(doc(db, entry.type, entry.originalId), entry.data);
+        await deleteDoc(doc(db, 'deletionLog', entry.id));
+      }
+      showToast('Alle gjenopprettet.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  window.restoreByTime = async function(hoursBack){
+    const cutoff = Date.now() - hoursBack * 60 * 60 * 1000;
+    const items = logEntries.filter(e => new Date(e.deletedAt).getTime() >= cutoff);
+    if(items.length === 0){
+      showToast('Ingenting slettet i denne perioden.');
+      return;
+    }
+    if(!confirm(`Gjenopprette alle ${items.length} oppføringer slettet i denne perioden (uansett type)?`)) return;
+    try{
+      for(const entry of items){
+        await setDoc(doc(db, entry.type, entry.originalId), entry.data);
+        await deleteDoc(doc(db, 'deletionLog', entry.id));
+      }
+      showToast('Alle gjenopprettet.');
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
