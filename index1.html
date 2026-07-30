@@ -368,6 +368,7 @@
       <button data-sidebar="absenceReview" onclick="navTo('absenceReview', showAbsenceReview)"><span class="ic">🚫</span><span class="lbl">Fraværsmeldinger</span></button>
       <button data-sidebar="studentNotes" onclick="navTo('studentNotes', showStudentNotes)"><span class="ic">✍️</span><span class="lbl">Elevnotater</span></button>
       <button data-sidebar="messages" onclick="navTo('messages', showMessages)"><span class="ic">📩</span><span class="lbl">Meldinger</span><span class="dot" id="msgDot" style="display:none;"></span></button>
+      <button data-sidebar="adminMsgs" onclick="navTo('adminMsgs', showAdminMsgs)"><span class="ic">📢</span><span class="lbl">Fra administrasjonen</span><span class="dot" id="adminMsgDot" style="display:none;"></span></button>
       <button data-sidebar="classPosts" onclick="navTo('classPosts', showClassPosts)"><span class="ic">📣</span><span class="lbl">Klassemelding</span></button>
       <button data-sidebar="videos" onclick="navTo('videos', showVideos)"><span class="ic">🎥</span><span class="lbl" data-i18n="videosLbl">Treningsvideoer</span></button>
     </nav>
@@ -669,6 +670,25 @@
       </div>
       <div class="upload-status" id="msgReplyUploadStatus" style="display:none;"></div>
       <button class="btn btn-primary" onclick="sendTeacherReply()">Send svar</button>
+    </div>
+
+    <!-- ADMIN BROADCAST MESSAGES -->
+    <div class="card" id="adminMsgsListView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
+      <h2>Meldinger fra administrasjonen</h2>
+      <div class="sub">Meldinger sendt til deg fra skolens administrasjon</div>
+      <div id="adminMsgsList"></div>
+    </div>
+    <div class="card" id="adminMsgsThreadView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
+      <h2 id="adminMsgsThreadTitle"></h2>
+      <div class="chat-scroll" id="adminMsgsThreadHistory"></div>
+      <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
+      <div class="field">
+        <label>Svar</label>
+        <textarea id="adminMsgsReplyText" rows="3"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="sendAdminMsgReply()">Send svar</button>
     </div>
 
     <!-- CLASS POSTS (broadcast + forum comments) -->
@@ -1183,6 +1203,21 @@
   });
 
   let dailyPlanTemplates = [], monthlyPlanTemplates = [], semesterPlanTemplates = [];
+  let broadcastThreads = [], broadcastMessages = [];
+  onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
+    broadcastThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher){
+      updateAdminMsgDot();
+      if(document.getElementById('adminMsgsListView').style.display !== 'none') renderAdminMsgsList();
+    }
+  });
+  onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
+    broadcastMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher){
+      updateAdminMsgDot();
+      if(currentAdminMsgThreadId) renderAdminMsgsThreadHistory();
+    }
+  });
   let monthlyPlans = [], semesterPlans = [];
   onSnapshot(collection(db, 'dailyPlanTemplates'), (snap) => {
     dailyPlanTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1386,6 +1421,12 @@
       if(view === 'attendance') navTo('attendance', showAttendance);
       else if(view === 'lesson') navTo('lesson', showLesson);
       else if(view === 'lessonArchive') showLessonArchive();
+      else if(view === 'adminMsgs') navTo('adminMsgs', showAdminMsgs);
+      else if(view === 'adminMsgsThread' && currentAdminMsgThreadId){
+        document.getElementById('adminMsgsListView').style.display = 'none';
+        document.getElementById('adminMsgsThreadView').style.display = 'block';
+        renderAdminMsgsThreadHistory();
+      }
       else if(view === 'monthlyPlan') navTo('monthlyPlan', showMonthlyPlan);
       else if(view === 'semesterPlan') navTo('semesterPlan', showSemesterPlan);
       else if(view === 'homework') navTo('homework', showHomework);
@@ -1419,6 +1460,8 @@
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'none';
     document.getElementById('lessonArchiveView').style.display = 'none';
+    document.getElementById('adminMsgsListView').style.display = 'none';
+    document.getElementById('adminMsgsThreadView').style.display = 'none';
     document.getElementById('monthlyPlanView').style.display = 'none';
     document.getElementById('semesterPlanView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'none';
@@ -2068,6 +2111,111 @@
   function initialsFor(name){
     return String(name||'?').trim().split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
   }
+
+  // ===== ADMIN BROADCAST MESSAGES (received from Meldingssenter) =====
+  let currentAdminMsgThreadId = null;
+
+  function myAdminMsgThreads(){
+    if(!currentTeacher) return [];
+    return broadcastThreads.filter(th => th.recipientType === 'teacher' && th.recipientId === currentTeacher.id);
+  }
+
+  function updateAdminMsgDot(){
+    const dot = document.getElementById('adminMsgDot');
+    if(!dot) return;
+    const hasUnread = myAdminMsgThreads().some(th => {
+      const seen = localStorage.getItem('adminmsg_seen_' + th.id);
+      return broadcastMessages.some(m => m.threadId === th.id && m.fra === 'Administrasjon' && (!seen || (m.dato||'') > seen));
+    });
+    dot.style.display = hasUnread ? 'inline-block' : 'none';
+  }
+
+  window.showAdminMsgs = function(){
+    document.getElementById('adminMsgsListView').style.display = 'block';
+    renderAdminMsgsList();
+    pushAppView('adminMsgs');
+  };
+
+  function renderAdminMsgsList(){
+    const el = document.getElementById('adminMsgsList');
+    if(!el || !currentTeacher) return;
+    const rows = myAdminMsgThreads().map(th => {
+      const msgs = broadcastMessages.filter(m => m.threadId === th.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const last = msgs[msgs.length - 1];
+      const seen = localStorage.getItem('adminmsg_seen_' + th.id);
+      const unread = last && last.fra === 'Administrasjon' && (!seen || (last.dato||'') > seen);
+      return { th, last, unread };
+    }).sort((a,b) => (b.th.lastActivityAt||'').localeCompare(a.th.lastActivityAt||''));
+    if(rows.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد رسائل من الإدارة بعد.' : 'Ingen meldinger fra administrasjonen ennå.'}</div>`;
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <div class="inbox-row ${r.unread ? 'unread' : ''}" onclick="openAdminMsgThread('${r.th.id}')">
+        <div class="inbox-avatar">📢</div>
+        <div class="inbox-body">
+          <div class="inbox-top-line">
+            <span class="inbox-name">${escapeHtml(r.th.title||'')}</span>
+            <span class="inbox-time">${escapeHtml(inboxTimeLabel(r.th.lastActivityAt))}</span>
+          </div>
+          <div class="inbox-preview">${escapeHtml((r.last ? r.last.tekst : '').slice(0,70))}</div>
+        </div>
+        ${r.unread ? '<div class="inbox-dot"></div>' : ''}
+      </div>`).join('');
+  }
+
+  window.openAdminMsgThread = function(threadId){
+    currentAdminMsgThreadId = threadId;
+    const th = broadcastThreads.find(t => t.id === threadId);
+    document.getElementById('adminMsgsListView').style.display = 'none';
+    document.getElementById('adminMsgsThreadView').style.display = 'block';
+    document.getElementById('adminMsgsThreadTitle').textContent = th ? th.title : '';
+    localStorage.setItem('adminmsg_seen_' + threadId, new Date().toISOString());
+    renderAdminMsgsThreadHistory();
+    updateAdminMsgDot();
+    pushAppView('adminMsgsThread');
+  };
+
+  function renderAdminMsgsThreadHistory(){
+    const el = document.getElementById('adminMsgsThreadHistory');
+    if(!el || !currentAdminMsgThreadId) return;
+    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+    el.innerHTML = msgs.map(m => {
+      const isMe = m.fra !== 'Administrasjon';
+      const senderName = isMe ? currentTeacher.navn : 'Administrasjonen';
+      return `
+      <div class="chat-row ${isMe ? 'me' : ''}">
+        <div class="chat-avatar">${escapeHtml(initialsFor(senderName))}</div>
+        <div class="chat-bubble">
+          <span class="chat-sender">${escapeHtml(senderName)}</span>
+          ${escapeHtml(m.tekst||'')}
+          <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
+        </div>
+      </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  window.sendAdminMsgReply = async function(){
+    if(!currentTeacher || !currentAdminMsgThreadId) return;
+    const tekst = document.getElementById('adminMsgsReplyText').value.trim();
+    if(!tekst){
+      alert(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
+      return;
+    }
+    try{
+      await addDoc(collection(db, 'broadcastMessages'), {
+        threadId: currentAdminMsgThreadId, fra: 'Lærer', avsenderNavn: currentTeacher.navn,
+        tekst, dato: new Date().toISOString()
+      });
+      await updateDoc(doc(db, 'broadcastThreads', currentAdminMsgThreadId), { lastActivityAt: new Date().toISOString() });
+      document.getElementById('adminMsgsReplyText').value = '';
+      showToast(currentLang === 'ar' ? 'تم إرسال الرد.' : 'Svaret er sendt.');
+    } catch(err){
+      console.error(err);
+      alert('Feil: ' + err.message);
+    }
+  };
 
   function renderMessageThreads(){
     const openEl = document.getElementById('messageThreadsList');
