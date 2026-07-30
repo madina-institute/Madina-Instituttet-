@@ -161,7 +161,7 @@
     return d.toLocaleString('no-NO');
   }
 
-  let teachers = [], classes = [], lessonPlans = [], homework = [], messageThreads = [], attendance = [];
+  let teachers = [], classes = [], lessonPlans = [], homework = [], messageThreads = [], attendance = [], loginEvents = [];
 
   function resolveClassName(id){
     const c = classes.find(x => x.id === id);
@@ -179,6 +179,8 @@
       const myHw = homework.filter(h => h.larer === tc.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       const myThreads = messageThreads.filter(m => m.teacherId === tc.id).sort((a,b) => (b.lastActivityAt||b.createdAt||'').localeCompare(a.lastActivityAt||a.createdAt||''));
       const myAtt = attendance.filter(a => a.klasse === tc.tildeltKlasse).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      const weekAgo = Date.now() - 7*24*60*60*1000;
+      const myLogins = loginEvents.filter(le => le.role === 'teacher' && le.personId === tc.id && new Date(le.timestamp).getTime() >= weekAgo);
 
       const lastPlan = myPlans[0];
       const lastHw = myHw[0];
@@ -200,6 +202,10 @@
               <div class="val ${tc.sisteInnlogging ? '' : 'empty'}">${tc.sisteInnlogging ? formatDate(tc.sisteInnlogging) : 'Aldri logget inn'}</div>
             </div>
             <div class="activity-row">
+              <div class="lbl">Innlogginger siste 7 dager</div>
+              <div class="val ${myLogins.length ? '' : 'empty'}">${myLogins.length}</div>
+            </div>
+            <div class="activity-row">
               <div class="lbl">Sist oppmøte registrert</div>
               <div class="val ${lastAtt ? '' : 'empty'}">${lastAtt ? escapeHtml(lastAtt.dato) : 'Ingen registrert ennå'}</div>
             </div>
@@ -219,6 +225,11 @@
         </div>`;
     }).join('');
   }
+
+  onSnapshot(collection(db, 'loginEvents'), (snap) => {
+    loginEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  });
 
   onSnapshot(collection(db, 'teachers'), (snap) => {
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
