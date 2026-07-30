@@ -3094,26 +3094,32 @@
     statusBox.textContent = 'Sender til ' + recipients.length + ' mottaker(e)...';
 
     try{
+      const nowIso = new Date().toISOString();
+      // ONE broadcast record for the whole group — not one per person —
+      // with every recipient's id/name/type stored in a single array. Each
+      // recipient still sees this exact thread in their own portal (matched
+      // by their id being present in recipientIds), and can choose to reply
+      // either visibly to everyone in the thread, or privately to admin
+      // only — every individual reply is still saved as its own separate
+      // message either way, just tagged with who sent it and who can see it.
+      const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
+        recipients: recipients.map(r => ({ type:r.type, id:r.id, name:r.name })),
+        title: subject, groupLabel, status: 'open',
+        createdAt: nowIso, lastActivityAt: nowIso,
+        sentBy: currentUserEmail || 'ukjent'
+      });
+      await addDoc(collection(db, 'broadcastMessages'), {
+        threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
+        visibility: 'all', tekst: body, dato: nowIso
+      });
       for(const r of recipients){
-        const nowIso = new Date().toISOString();
-        const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
-          recipientType: r.type, recipientId: r.id, recipientName: r.name,
-          title: subject, groupLabel, status: 'open',
-          createdAt: nowIso, lastActivityAt: nowIso,
-          sentBy: currentUserEmail || 'ukjent'
-        });
-        await addDoc(collection(db, 'broadcastMessages'), {
-          threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
-          tekst: body, dato: nowIso
-        });
-        if(r.epost){
-          try{
-            await addDoc(collection(db, 'mail'), {
-              to: [r.epost],
-              message: { subject: '[Madina Skole] ' + subject, text: body }
-            });
-          } catch(mailErr){ console.error('E-post-varsling feilet for', r.epost, mailErr); }
-        }
+        if(!r.epost) continue;
+        try{
+          await addDoc(collection(db, 'mail'), {
+            to: [r.epost],
+            message: { subject: '[Madina Skole] ' + subject, text: body }
+          });
+        } catch(mailErr){ console.error('E-post-varsling feilet for', r.epost, mailErr); }
       }
       statusBox.style.background = 'rgba(46,107,83,0.10)'; statusBox.style.color = 'var(--emerald)';
       statusBox.textContent = '✓ Sendt til ' + recipients.length + ' mottaker(e).';
@@ -3133,11 +3139,12 @@
     let rows = broadcastThreadsCache.map(th => {
       const msgs = broadcastMessagesCache.filter(m => m.threadId === th.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
       const last = msgs[msgs.length - 1];
-      return { th, msgs, last: last || { tekst:'', dato: th.createdAt, fra:'Administrasjon' } };
+      const recipientNames = (th.recipients || []).map(r => r.name);
+      return { th, msgs, recipientNames, last: last || { tekst:'', dato: th.createdAt, fra:'Administrasjon' } };
     });
     if(query){
       rows = rows.filter(r =>
-        (r.th.recipientName||'').toLowerCase().includes(query) ||
+        r.recipientNames.some(n => n.toLowerCase().includes(query)) ||
         (r.th.title||'').toLowerCase().includes(query) ||
         (r.th.groupLabel||'').toLowerCase().includes(query)
       );
@@ -3148,18 +3155,22 @@
       listEl.innerHTML = '<div class="record-empty">Ingen meldinger sendt fra Meldingssenter ennå.</div>';
       return;
     }
-    listEl.innerHTML = rows.map(r => `
+    listEl.innerHTML = rows.map(r => {
+      const n = r.recipientNames.length;
+      const recipientSummary = n <= 3 ? r.recipientNames.join(', ') : r.recipientNames.slice(0,3).join(', ') + ' + ' + (n-3) + ' til';
+      const lastSenderLabel = r.last.fra === 'Administrasjon' ? '' : (r.last.avsenderNavn || '') + ': ';
+      return `
       <details style="margin-bottom:8px;">
         <summary style="cursor:pointer;">
           <div class="inbox-row">
-            <div class="inbox-avatar">${escapeHtml((r.th.recipientName||'?')[0].toUpperCase())}</div>
+            <div class="inbox-avatar">${n}</div>
             <div class="inbox-body">
               <div class="inbox-top-line">
-                <span class="inbox-name">${escapeHtml(r.th.recipientName||'')}</span>
+                <span class="inbox-name">${escapeHtml(r.th.title||'')}</span>
                 <span class="inbox-time">${escapeHtml(inboxTimeLabelAdmin(r.th.lastActivityAt))}</span>
               </div>
-              <div class="inbox-subject">${escapeHtml(r.th.title||'')} · <span style="color:#8a9a90;">${escapeHtml(r.th.groupLabel||'')}</span></div>
-              <div class="inbox-preview">${escapeHtml((r.last.fra === 'Administrasjon' ? '' : (r.th.recipientName + ': ')) + (r.last.tekst||'').slice(0,70))}</div>
+              <div class="inbox-subject">${n} mottaker${n===1?'':'e'}: ${escapeHtml(recipientSummary)} · <span style="color:#8a9a90;">${escapeHtml(r.th.groupLabel||'')}</span></div>
+              <div class="inbox-preview">${escapeHtml(lastSenderLabel + (r.last.tekst||'').slice(0,70))}</div>
             </div>
           </div>
         </summary>
@@ -3167,13 +3178,15 @@
           ${r.msgs.map(m => `
             <div style="background:${m.fra === 'Administrasjon' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:9px 12px;">
               <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:3px;">
-                ${escapeHtml(m.fra === 'Administrasjon' ? 'Administrasjonen' : (r.th.recipientName||''))}
+                ${escapeHtml(m.fra === 'Administrasjon' ? 'Administrasjonen' : (m.avsenderNavn||''))}
+                ${m.visibility === 'private' ? '<span style="font-weight:600; color:var(--gold); margin-inline-start:5px;">🔒 Privat svar</span>' : ''}
                 <span style="font-weight:400; color:#8a9a90;"> — ${escapeHtml(inboxTimeLabelAdmin(m.dato))}</span>
               </div>
               <div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeHtml(m.tekst||'')}</div>
             </div>`).join('')}
         </div>
-      </details>`).join('');
+      </details>`;
+    }).join('');
   }
   const searchBroadcastInboxEl = document.getElementById('searchBroadcastInbox');
   if(searchBroadcastInboxEl) searchBroadcastInboxEl.addEventListener('input', renderBroadcastInbox);
