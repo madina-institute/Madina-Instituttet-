@@ -302,27 +302,30 @@
   <!-- LOGIN -->
   <div class="card" id="loginView">
     <h2 data-i18n="loginTitle">Logg inn</h2>
-    <div class="sub" data-i18n="loginSub">Velg navnet ditt og skriv inn PIN-koden du har fått fra administrasjonen.</div>
+    <div class="sub" data-i18n="loginSub">Logg inn med e-posten og passordet ditt.</div>
     <div class="field">
-      <label data-i18n="yourName">Ditt navn</label>
-      <select id="loginName"><option data-i18n="loadingTeachers">Laster lærere...</option></select>
+      <label data-i18n="emailLabel">E-post</label>
+      <input type="email" id="loginEmail" autocomplete="username">
     </div>
     <div class="field">
-      <label data-i18n="pinLabel">PIN-kode</label>
-      <input type="password" id="loginPin" inputmode="numeric" maxlength="8" placeholder="••••">
+      <label data-i18n="passwordLabel">Passord</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
     </div>
     <button class="btn btn-primary" onclick="doLogin()" data-i18n="loginBtn">Logg inn</button>
     <div class="error-msg" id="loginError"></div>
+    <div style="text-align:center; margin-top:10px;">
+      <a href="#" onclick="doForgotPassword(); return false;" style="font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);" data-i18n="forgotPassword">Glemt passord?</a>
+    </div>
   </div>
 
   <!-- INACTIVITY LOCK OVERLAY -->
   <div id="lockOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:var(--paper); align-items:center; justify-content:center;">
     <div class="card" style="max-width:340px; width:100%; margin:0 18px;">
       <h2>Økten er låst</h2>
-      <div class="sub">Ingen aktivitet på 20 minutter. Skriv inn PIN-koden din for å fortsette (<span id="lockNameShown"></span>).</div>
+      <div class="sub">Ingen aktivitet på 20 minutter. Skriv inn passordet ditt for å fortsette (<span id="lockNameShown"></span>).</div>
       <div class="field">
-        <label data-i18n="pinLabel">PIN-kode</label>
-        <input type="password" id="lockPin" inputmode="numeric" maxlength="8" placeholder="••••">
+        <label data-i18n="passwordLabel">Passord</label>
+        <input type="password" id="lockPassword" autocomplete="current-password">
       </div>
       <button class="btn btn-primary" onclick="doUnlock()">Lås opp</button>
       <div class="error-msg" id="lockError"></div>
@@ -645,6 +648,9 @@
     getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
+    getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
   import {
@@ -666,6 +672,7 @@
     isTokenAutoRefreshEnabled: true
   });
   const db = getFirestore(app);
+  const auth = getAuth(app);
   const storage = getStorage(app);
 
   const MAX_FILE_MB = 10;
@@ -698,10 +705,19 @@
       selectName: '— Velg navn —',
       noTeachers: 'Ingen lærere registrert ennå',
       pinLabel: 'PIN-kode',
+      emailLabel: 'E-post',
+      passwordLabel: 'Passord',
+      forgotPassword: 'Glemt passord?',
       loginBtn: 'Logg inn',
       logout: 'Logg ut',
       fillNameAndPin: 'Velg navn og skriv inn PIN-koden.',
       wrongPin: 'Feil PIN-kode. Prøv igjen, eller kontakt administrasjonen.',
+      fillEmailAndPassword: 'Fyll ut e-post og passord.',
+      noAccountForEmail: 'Fant ingen lærerkonto med denne e-posten.',
+      wrongPassword: 'Feil e-post eller passord.',
+      enterEmailFirst: 'Skriv inn e-posten din først.',
+      resetEmailSent: 'E-post for å tilbakestille passord er sendt.',
+      resetEmailFailed: 'Kunne ikke sende e-post. Sjekk at e-posten er riktig.',
       noClassAssigned: 'Du har ingen tildelt klasse ennå. Kontakt administrasjonen.',
       chooseTitle: 'Hva vil du gjøre?',
       chooseAttendance: 'Ta oppmøte',
@@ -813,10 +829,19 @@
       selectName: '— اختر الاسم —',
       noTeachers: 'لا يوجد معلمون مسجّلون بعد',
       pinLabel: 'رمز الدخول (PIN)',
+      emailLabel: 'البريد الإلكتروني',
+      passwordLabel: 'كلمة المرور',
+      forgotPassword: 'نسيت كلمة المرور؟',
       loginBtn: 'دخول',
       logout: 'تسجيل خروج',
       fillNameAndPin: 'اختر اسمك وأدخل رمز الدخول.',
       wrongPin: 'رمز الدخول غير صحيح. حاول مرة أخرى أو تواصل مع الإدارة.',
+      fillEmailAndPassword: 'من فضلك اكتب البريد الإلكتروني وكلمة المرور.',
+      noAccountForEmail: 'لا يوجد حساب معلم بهذا البريد الإلكتروني.',
+      wrongPassword: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+      enterEmailFirst: 'اكتب بريدك الإلكتروني أولاً.',
+      resetEmailSent: 'تم إرسال بريد لإعادة تعيين كلمة المرور.',
+      resetEmailFailed: 'تعذر إرسال البريد. تأكد إن البريد الإلكتروني صحيح.',
       noClassAssigned: 'لم يتم تعيين صف لك بعد. تواصل مع الإدارة.',
       chooseTitle: 'ماذا تريد أن تفعل؟',
       chooseAttendance: 'تسجيل الحضور',
@@ -983,24 +1008,8 @@
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
   }
 
-  function populateLoginNames(){
-    const sel = document.getElementById('loginName');
-    if(teachers.length === 0){
-      sel.innerHTML = `<option value="">${t('noTeachers')}</option>`;
-      return;
-    }
-    sel.innerHTML = `<option value="">${t('selectName')}</option>` +
-      teachers.map(tc => `<option value="${tc.id}">${escapeHtml(tc.navn)}</option>`).join('');
-    // "Remember me": only the teacher's identity is remembered (safe, not
-    // a secret) — never the PIN — so the dropdown pre-fills but the PIN
-    // still has to be entered to actually log in or to unlock after inactivity.
-    const rememberedId = localStorage.getItem('madinaTeacherId');
-    if(rememberedId && teachers.some(tc => tc.id === rememberedId)) sel.value = rememberedId;
-  }
-
   onSnapshot(collection(db, 'teachers'), (snap) => {
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    populateLoginNames();
   });
 
   onSnapshot(collection(db, 'classes'), (snap) => {
@@ -1097,20 +1106,28 @@
     }
   });
 
-  window.doLogin = function(){
+  window.doLogin = async function(){
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
-    const teacherId = document.getElementById('loginName').value;
-    const pin = document.getElementById('loginPin').value.trim();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
 
-    if(!teacherId || !pin){
-      errEl.textContent = t('fillNameAndPin');
+    if(!email || !password){
+      errEl.textContent = t('fillEmailAndPassword');
       errEl.style.display = 'block';
       return;
     }
-    const teacher = teachers.find(tc => tc.id === teacherId);
-    if(!teacher || (teacher.pin || '').trim() !== pin){
-      errEl.textContent = t('wrongPin');
+    let teacher = teachers.find(tc => (tc.epost || '').trim().toLowerCase() === email.toLowerCase());
+    if(!teacher){
+      errEl.textContent = t('noAccountForEmail');
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch(err){
+      console.error(err);
+      errEl.textContent = t('wrongPassword');
       errEl.style.display = 'block';
       return;
     }
@@ -1120,7 +1137,6 @@
       return;
     }
     currentTeacher = teacher;
-    localStorage.setItem('madinaTeacherId', teacher.id);
     updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     addDoc(collection(db, 'loginEvents'), { role: 'teacher', personId: teacher.id, timestamp: new Date().toISOString() }).catch(()=>{});
     document.getElementById('loginView').style.display = 'none';
@@ -1137,14 +1153,37 @@
     resetInactivityTimer();
   };
 
+  window.doForgotPassword = async function(){
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    const email = document.getElementById('loginEmail').value.trim();
+    if(!email){
+      errEl.textContent = t('enterEmailFirst');
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await sendPasswordResetEmail(auth, email);
+      errEl.style.color = 'var(--emerald)';
+      errEl.textContent = t('resetEmailSent');
+      errEl.style.display = 'block';
+    } catch(err){
+      console.error(err);
+      errEl.style.color = '';
+      errEl.textContent = t('resetEmailFailed');
+      errEl.style.display = 'block';
+    }
+  };
+
   window.doLogout = function(){
     currentTeacher = null;
     clearTimeout(inactivityTimer);
     isLocked = false;
+    signOut(auth).catch(()=>{});
     document.getElementById('lockOverlay').style.display = 'none';
     document.getElementById('appView').style.display = 'none';
     document.getElementById('loginView').style.display = 'block';
-    document.getElementById('loginPin').value = '';
+    document.getElementById('loginPassword').value = '';
   };
 
   // INACTIVITY AUTO-LOCK — after 20 minutes with no taps/keys/scrolling,
@@ -1167,17 +1206,24 @@
     if(!currentTeacher) return;
     isLocked = true;
     document.getElementById('lockNameShown').textContent = currentTeacher.navn;
-    document.getElementById('lockPin').value = '';
+    document.getElementById('lockPassword').value = '';
     document.getElementById('lockError').style.display = 'none';
     document.getElementById('lockOverlay').style.display = 'flex';
   }
 
-  window.doUnlock = function(){
-    const pin = document.getElementById('lockPin').value.trim();
+  window.doUnlock = async function(){
+    const password = document.getElementById('lockPassword').value;
     const errEl = document.getElementById('lockError');
     errEl.style.display = 'none';
-    if((currentTeacher.pin || '').trim() !== pin){
-      errEl.textContent = t('wrongPin');
+    if(!password){
+      errEl.textContent = t('fillEmailAndPassword');
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await signInWithEmailAndPassword(auth, currentTeacher.epost, password);
+    } catch(err){
+      errEl.textContent = t('wrongPassword');
       errEl.style.display = 'block';
       return;
     }
