@@ -824,6 +824,9 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import {
+    initializeAppCheck, ReCaptchaV3Provider
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
@@ -834,6 +837,10 @@
     appId: "1:174564736838:web:033f873c8b420d4bc96f47"
   };
   const app = initializeApp(firebaseConfig);
+  const appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+    isTokenAutoRefreshEnabled: true
+  });
   const db = getFirestore(app);
 
   // Silent analytics: log a "visit" the moment the form loads, and a
