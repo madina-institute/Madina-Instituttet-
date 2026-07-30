@@ -999,6 +999,16 @@
         <div class="field"><label>E-post</label><input type="email" id="newAdminEmail"></div>
         <div class="field"><label>Passord (minst 6 tegn)</label><input type="password" id="newAdminPassword"></div>
       </div>
+      <div class="field">
+        <label>Rolle (kun for visning)</label>
+        <select id="newAdminRole">
+          <option value="Administrator">Administrator</option>
+          <option value="Eier">Eier</option>
+          <option value="Direktør">Direktør</option>
+          <option value="Pedagogisk leder">Pedagogisk leder</option>
+          <option value="Annet">Annet</option>
+        </select>
+      </div>
       <button class="btn btn-primary" onclick="createNewAdminAccount()">Opprett konto</button>
       <p class="login-error" id="newAdminMsg" style="display:none; margin-top:10px;"></p>
 
@@ -1592,6 +1602,7 @@
 
       await addDoc(collection(db, 'adminUsers'), {
         epost: email,
+        rolle: document.getElementById('newAdminRole').value,
         opprettetAv: currentUserEmail || 'ukjent',
         opprettetDato: new Date().toISOString().slice(0,10)
       });
@@ -1601,6 +1612,7 @@
       msgEl.style.display = 'block';
       document.getElementById('newAdminEmail').value = '';
       document.getElementById('newAdminPassword').value = '';
+      document.getElementById('newAdminRole').value = 'Administrator';
     } catch(err){
       console.error(err);
       msgEl.style.color = 'var(--red)';
@@ -4289,7 +4301,7 @@
     }
     el.innerHTML = list.map(u => `
       <div class="status-row">
-        <span>${escapeHtml(u.epost)}</span>
+        <span>${escapeHtml(u.epost)} ${u.rolle ? '<span style="display:inline-block; font-family:\'Jost\',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:2px 9px; margin-inline-start:6px;">' + escapeHtml(u.rolle) + '</span>' : ''}</span>
         <span style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">opprettet ${escapeHtml(u.opprettetDato||'')} av ${escapeHtml(u.opprettetAv||'')}</span>
       </div>`).join('');
   });
