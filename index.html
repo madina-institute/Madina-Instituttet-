@@ -1699,6 +1699,27 @@
       });
       createdParts.push(grantsAdmin ? 'tilgang til Administrativt panel' : 'registrert i ansattoversikten');
 
+      if(grantsAdmin){
+        // Also create (or update, if this e-post already has a Ledelse
+        // card) the visible leadership card, so the Ledelse section always
+        // stays in sync with the Ansatte form — one entry point, no
+        // duplicate/disconnected records for the same real person.
+        const existingLedelse = cache.ledelse.find(l => (l.epost||'').trim().toLowerCase() === email.toLowerCase());
+        if(existingLedelse){
+          const mergedRoller = Array.from(new Set([
+            ...(existingLedelse.rolle||'').split(',').map(s=>s.trim()).filter(Boolean),
+            ...roller
+          ]));
+          await updateDoc(doc(db, 'ledelse', existingLedelse.id), { navn, epost: email, rolle: mergedRoller.join(', ') });
+          createdParts.push('oppdatert ledelseskort');
+        } else {
+          await addDoc(collection(db, 'ledelse'), {
+            navn, epost: email, rolle: roller.join(', '), fagomrade: '', telefon: ''
+          });
+          createdParts.push('ledelseskort opprettet');
+        }
+      }
+
       if(grantsTeacher){
         await addDoc(collection(db, 'teachers'), {
           navn, epost: email,
