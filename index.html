@@ -3135,13 +3135,26 @@
     }).join('');
   }
 
-  const SENSITIVE_SIDE_PASSWORD = 'AdminEgypt2026';
+  // Registrering and Oversikt are sensitive sections — access is now based
+  // on the LOGGED-IN PERSON'S ACTUAL ROLE (Eier / Skoleleder / Daglig leder
+  // / Faglig-pedagogisk leder), not a shared password everyone has to know
+  // and type. If someone has no role record at all yet (e.g. the original
+  // admin account from before this role system existed), they're treated
+  // as unrestricted rather than locked out.
+  function currentUserHasSeniorRole(){
+    if(!currentUserEmail) return false;
+    const emailLc = currentUserEmail.trim().toLowerCase();
+    const rec = cache.teachers.find(t => (t.epost||'').trim().toLowerCase() === emailLc)
+             || adminUsersCache.find(u => (u.epost||'').trim().toLowerCase() === emailLc);
+    if(!rec) return true;
+    const roller = (rec.roller || rec.rolle || '').split(',').map(s=>s.trim()).filter(Boolean);
+    if(roller.length === 0) return true;
+    return roller.some(r => SENIOR_LEADERSHIP_ROLES.includes(r));
+  }
 
   window.promptPasswordAndSelectSide = function(side){
-    const pw = prompt('Skriv inn passordet for å åpne denne seksjonen:');
-    if(pw === null) return;
-    if(pw !== SENSITIVE_SIDE_PASSWORD){
-      alert('Feil passord.');
+    if(!currentUserHasSeniorRole()){
+      showToast('Denne seksjonen er kun tilgjengelig for øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder).');
       return;
     }
     selectSide(side);
