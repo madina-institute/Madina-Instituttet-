@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Madina Skole — Lærerinnsyn</title>
+<title>Madina Skole — Foreldreinnsyn</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,14 +44,14 @@
 
   main{max-width:760px; margin:0 auto; padding:0 18px 60px;}
 
-  .teacher-card{
+  .guardian-card{
     background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow);
     margin-bottom:14px;
   }
-  .teacher-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
-  .teacher-name{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d); flex:1 1 160px; min-width:0;}
-  .teacher-meta{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin-top:2px;}
-  .fag-pill{
+  .guardian-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .guardian-name{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d); flex:1 1 160px; min-width:0;}
+  .guardian-meta{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin-top:2px;}
+  .children-pill{
     display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d);
     background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:3px 10px; white-space:nowrap;
   }
@@ -73,7 +73,7 @@
 
 <div id="loginScreen">
   <div class="login-card">
-    <h2>Lærerinnsyn</h2>
+    <h2>Foreldreinnsyn</h2>
     <div class="sub">Samme innlogging som Administrativ-panelet</div>
     <div class="field">
       <label>E-post</label>
@@ -90,11 +90,11 @@
 
 <div id="appRoot" style="display:none;">
   <header>
-    <h1>Lærerinnsyn</h1>
-    <p>Aktivitetsoversikt per lærer — kun for eier</p>
+    <h1>Foreldreinnsyn</h1>
+    <p>Aktivitetsoversikt per foresatt — kun for eier</p>
   </header>
   <main>
-    <div id="teacherList"></div>
+    <div id="guardianList"></div>
   </main>
 </div>
 
@@ -106,6 +106,9 @@
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    initializeAppCheck, ReCaptchaV3Provider
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
@@ -117,6 +120,10 @@
   };
 
   const app = initializeApp(firebaseConfig);
+  const appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+    isTokenAutoRefreshEnabled: true
+  });
   const db = getFirestore(app);
   const auth = getAuth(app);
 
@@ -154,87 +161,75 @@
     return d.toLocaleString('no-NO');
   }
 
-  let teachers = [], classes = [], lessonPlans = [], homework = [], messageThreads = [], attendance = [];
-
-  function resolveClassName(id){
-    const c = classes.find(x => x.id === id);
-    return c ? (c.navn || id) : id;
-  }
+  let guardians = [], students = [], messageThreads = [], absenceRequests = [], paymentRequests = [];
 
   function render(){
-    const el = document.getElementById('teacherList');
-    if(teachers.length === 0){
-      el.innerHTML = '<div class="empty-msg">Ingen lærere registrert ennå.</div>';
+    const el = document.getElementById('guardianList');
+    if(guardians.length === 0){
+      el.innerHTML = '<div class="empty-msg">Ingen foresatte registrert ennå.</div>';
       return;
     }
-    el.innerHTML = teachers.map(tc => {
-      const myPlans = lessonPlans.filter(p => p.larer === tc.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-      const myHw = homework.filter(h => h.larer === tc.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-      const myThreads = messageThreads.filter(m => m.teacherId === tc.id).sort((a,b) => (b.lastActivityAt||b.createdAt||'').localeCompare(a.lastActivityAt||a.createdAt||''));
-      const myAtt = attendance.filter(a => a.klasse === tc.tildeltKlasse).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    el.innerHTML = guardians.map(g => {
+      const myChildren = students.filter(s => s.foresatt === g.id);
+      const childIds = myChildren.map(s => s.id);
 
-      const lastPlan = myPlans[0];
-      const lastHw = myHw[0];
+      const myThreads = messageThreads.filter(m => m.guardianId === g.id).sort((a,b) => (b.lastActivityAt||b.createdAt||'').localeCompare(a.lastActivityAt||a.createdAt||''));
+      const myAbsences = absenceRequests.filter(a => childIds.includes(a.studentId)).sort((a,b) => (b.innsendtDato||a.dato||'').localeCompare(b.innsendtDato||a.dato||''));
+      const myPayments = paymentRequests.filter(p => childIds.includes(p.studentId)).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+
       const lastThread = myThreads[0];
-      const lastAtt = myAtt[0];
+      const lastAbsence = myAbsences[0];
+      const lastPayment = myPayments[0];
 
       return `
-        <div class="teacher-card">
-          <div class="teacher-top">
+        <div class="guardian-card">
+          <div class="guardian-top">
             <div>
-              <div class="teacher-name">${escapeHtml(tc.navn || '—')}</div>
-              <div class="teacher-meta">${escapeHtml(resolveClassName(tc.tildeltKlasse))}</div>
+              <div class="guardian-name">${escapeHtml(g.navn || '—')}</div>
+              <div class="guardian-meta">${escapeHtml(g.telefon || '')}</div>
             </div>
-            <span class="fag-pill">${escapeHtml(tc.fag || '—')}</span>
+            <span class="children-pill">${myChildren.length} barn</span>
           </div>
           <div class="activity-grid">
             <div class="activity-row">
               <div class="lbl">Siste innlogging</div>
-              <div class="val ${tc.sisteInnlogging ? '' : 'empty'}">${tc.sisteInnlogging ? formatDate(tc.sisteInnlogging) : 'Aldri logget inn'}</div>
+              <div class="val ${g.sisteInnlogging ? '' : 'empty'}">${g.sisteInnlogging ? formatDate(g.sisteInnlogging) : 'Aldri logget inn'}</div>
             </div>
             <div class="activity-row">
-              <div class="lbl">Sist oppmøte registrert</div>
-              <div class="val ${lastAtt ? '' : 'empty'}">${lastAtt ? escapeHtml(lastAtt.dato) : 'Ingen registrert ennå'}</div>
-            </div>
-            <div class="activity-row">
-              <div class="lbl">Sist forberedelse</div>
-              <div class="val ${lastPlan ? '' : 'empty'}">${lastPlan ? escapeHtml(lastPlan.dato) + ' — ' + escapeHtml(lastPlan.emne || '') : 'Ingen lagt ut ennå'}</div>
-            </div>
-            <div class="activity-row">
-              <div class="lbl">Sist lekse</div>
-              <div class="val ${lastHw ? '' : 'empty'}">${lastHw ? escapeHtml(lastHw.dato) + ' — ' + escapeHtml(lastHw.tittel || '') : 'Ingen lagt ut ennå'}</div>
-            </div>
-            <div class="activity-row">
-              <div class="lbl">Sist meldingsaktivitet</div>
+              <div class="lbl">Siste meldingsaktivitet</div>
               <div class="val ${lastThread ? '' : 'empty'}">${lastThread ? formatDate(lastThread.lastActivityAt || lastThread.createdAt) + ' — ' + escapeHtml(lastThread.title || '') : 'Ingen samtaler ennå'}</div>
+            </div>
+            <div class="activity-row">
+              <div class="lbl">Siste fraværsmelding</div>
+              <div class="val ${lastAbsence ? '' : 'empty'}">${lastAbsence ? escapeHtml(lastAbsence.innsendtDato || lastAbsence.dato || '') + ' — ' + escapeHtml(lastAbsence.arsak || '') : 'Ingen sendt ennå'}</div>
+            </div>
+            <div class="activity-row">
+              <div class="lbl">Siste betalingsforespørsel</div>
+              <div class="val ${lastPayment ? '' : 'empty'}">${lastPayment ? escapeHtml(lastPayment.dato) + ' — ' + escapeHtml(lastPayment.belop || '') + ' kr' : 'Ingen sendt ennå'}</div>
             </div>
           </div>
         </div>`;
     }).join('');
   }
 
-  onSnapshot(collection(db, 'teachers'), (snap) => {
-    teachers = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
+  onSnapshot(collection(db, 'guardians'), (snap) => {
+    guardians = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
     render();
   });
-  onSnapshot(collection(db, 'classes'), (snap) => {
-    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    render();
-  });
-  onSnapshot(collection(db, 'lessonPlans'), (snap) => {
-    lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    render();
-  });
-  onSnapshot(collection(db, 'homework'), (snap) => {
-    homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  onSnapshot(collection(db, 'students'), (snap) => {
+    students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
   onSnapshot(collection(db, 'messageThreads'), (snap) => {
     messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  onSnapshot(collection(db, 'attendance'), (snap) => {
-    attendance = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  onSnapshot(collection(db, 'absenceRequests'), (snap) => {
+    absenceRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  });
+  onSnapshot(collection(db, 'paymentRequests'), (snap) => {
+    paymentRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
 </script>
