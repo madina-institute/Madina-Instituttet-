@@ -1945,6 +1945,7 @@
         {key:'sprakvalg', label:'Språkvalg (Arabisk/Urdu)', type:'select', essential:true, options:['','Arabisk','Urdu']},
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
+        {key:'foresatt2', label:'Foresatt 2 (om registrert som egen konto)', type:'dynamic-select', source:'guardians'},
 
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
         {key:'belop', label:'Beløp totalt (kr)', type:'text'},
@@ -4574,8 +4575,43 @@
             sistEndretDato: new Date().toISOString().slice(0,10)
           });
           guardianId = newGuardianRef.id;
+          // Give the newly-created guardian a real login right away — this
+          // was previously missing entirely for registration-approval
+          // guardians (only guardians added via the manual "Legg til"
+          // modal got an account), so approved parents had a Firestore
+          // record but no way to actually log into Foreldreportalen.
+          if(reg.foresatt1_epost) await createPortalAccountIfNeeded(reg.foresatt1_epost);
         }
       }
+
+      // Second guardian (e.g. the other parent) — only created as a real,
+      // separate guardian record + login if they submitted their own name
+      // on the registration form. Both guardians then see the same child
+      // in Foreldreportalen, and a teacher can message the student directly
+      // with the message reaching both parents (see messaging changes).
+      let guardianId2 = '';
+      const guardian2Name = reg.foresatt2_navn || '';
+      const guardian2Phone = reg.foresatt2_tlf || '';
+      if(guardian2Name){
+        const existingGuardian2 = guardian2Phone
+          ? cache.guardians.find(g => g.telefon === guardian2Phone)
+          : cache.guardians.find(g => g.navn === guardian2Name);
+        if(existingGuardian2){
+          guardianId2 = existingGuardian2.id;
+        } else {
+          const newGuardianRef2 = await addDoc(collection(db, 'guardians'), {
+            navn: guardian2Name,
+            relasjon: reg.foresatt2_relasjon === 'Annen' ? (reg.foresatt2_relasjon_annet || 'Annen') : (reg.foresatt2_relasjon || ''),
+            telefon: guardian2Phone,
+            epost: reg.foresatt2_epost || '',
+            sistEndretAv: currentUserEmail || 'ukjent',
+            sistEndretDato: new Date().toISOString().slice(0,10)
+          });
+          guardianId2 = newGuardianRef2.id;
+          if(reg.foresatt2_epost) await createPortalAccountIfNeeded(reg.foresatt2_epost);
+        }
+      }
+
 
       const program = mapRegistrationProgram(reg.program);
 
@@ -4596,6 +4632,7 @@
       studentRecord.sprakvalg = mapRegistrationSprakvalg(reg);
       studentRecord.klasse = '';
       studentRecord.foresatt = guardianId;
+      studentRecord.foresatt2 = guardianId2;
       studentRecord.betalt = 'Nei';
       studentRecord.belop = String(discountedPrice);
       studentRecord.belopBetalt = '0';
