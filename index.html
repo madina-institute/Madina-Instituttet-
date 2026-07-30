@@ -3019,50 +3019,62 @@
   // Resolves the current group selection into a concrete list of
   // {type, id, name, epost} recipients — the single source of truth used
   // both for the live "X mottakere" preview count and for the actual send.
+  // Dedupes a recipient list by e-post (case-insensitive) — this is what
+  // stops the same real person getting the message (and the notification
+  // e-mail) twice when they show up more than once in the underlying data
+  // (e.g. a teacher who is also a foresatt for another child, or a
+  // duplicate/legacy record with a matching e-post). People with no e-post
+  // at all are deduped by id instead, since there's no e-post to compare.
+  function dedupeMsRecipients(list){
+    const seen = new Set();
+    const result = [];
+    for(const r of list){
+      const key = r.epost ? r.epost.trim().toLowerCase() : (r.type + ':' + r.id);
+      if(seen.has(key)) continue;
+      seen.add(key);
+      result.push(r);
+    }
+    return result;
+  }
+
   function computeMsRecipients(){
     const val = document.getElementById('msMottakerType').value;
+    let raw = [];
     if(val === 'individual'){
       const sel = document.getElementById('msIndividualSelect');
-      if(!sel.value) return [];
-      const [type, id] = sel.value.split(':');
-      const rec = (type === 'teacher' ? cache.teachers : cache.guardians).find(r => r.id === id);
-      return rec ? [{ type, id, name: rec.navn, epost: rec.epost || '' }] : [];
-    }
-    if(val === 'allGuardians'){
-      return cache.guardians.map(g => ({ type:'guardian', id:g.id, name:g.navn, epost:g.epost||'' }));
-    }
-    if(val === 'classGuardians'){
+      if(sel.value){
+        const [type, id] = sel.value.split(':');
+        const rec = (type === 'teacher' ? cache.teachers : cache.guardians).find(r => r.id === id);
+        if(rec) raw = [{ type, id, name: rec.navn, epost: rec.epost || '' }];
+      }
+    } else if(val === 'allGuardians'){
+      raw = cache.guardians.map(g => ({ type:'guardian', id:g.id, name:g.navn, epost:g.epost||'' }));
+    } else if(val === 'classGuardians'){
       const classId = document.getElementById('msClassSelect').value;
       const guardianIds = [...new Set(cache.students.filter(s => s.klasse === classId).flatMap(s => [s.foresatt, s.foresatt2].filter(Boolean)))];
-      return guardianIds.map(id => cache.guardians.find(g => g.id === id)).filter(Boolean)
+      raw = guardianIds.map(id => cache.guardians.find(g => g.id === id)).filter(Boolean)
         .map(g => ({ type:'guardian', id:g.id, name:g.navn, epost:g.epost||'' }));
-    }
-    if(val === 'allTeachers'){
-      return cache.teachers.map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
-    }
-    if(val === 'subjectTeachers'){
+    } else if(val === 'allTeachers'){
+      raw = cache.teachers.map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    } else if(val === 'subjectTeachers'){
       const fag = document.getElementById('msSubjectSelect').value;
-      return cache.teachers.filter(t => t.fag === fag).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
-    }
-    if(val === 'saturdayTeachers'){
-      return cache.teachers.filter(t => t.fag && t.fag !== 'Madinabarn').map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
-    }
-    if(val === 'sundayTeachers'){
-      return cache.teachers.filter(t => t.fag === 'Madinabarn').map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
-    }
-    if(val === 'ledelse'){
-      return cache.teachers.filter(t => {
+      raw = cache.teachers.filter(t => t.fag === fag).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    } else if(val === 'saturdayTeachers'){
+      raw = cache.teachers.filter(t => t.fag && t.fag !== 'Madinabarn').map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    } else if(val === 'sundayTeachers'){
+      raw = cache.teachers.filter(t => t.fag === 'Madinabarn').map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    } else if(val === 'ledelse'){
+      raw = cache.teachers.filter(t => {
         const roller = (t.roller||'').split(',').map(s=>s.trim());
         return roller.some(r => ADMIN_PANEL_ROLES.includes(r));
       }).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
-    }
-    if(val === 'assistants'){
-      return cache.teachers.filter(t => {
+    } else if(val === 'assistants'){
+      raw = cache.teachers.filter(t => {
         const roller = (t.roller||'').split(',').map(s=>s.trim());
         return roller.includes('Assistent') || roller.includes('Frivillig');
       }).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
     }
-    return [];
+    return dedupeMsRecipients(raw);
   }
 
   window.updateMsRecipientCount = function(){
