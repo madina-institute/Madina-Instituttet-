@@ -654,6 +654,7 @@
   <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')"><span class="ic">🎓</span> Pedagogisk</button>
   <button data-sb-side="registrering" onclick="sidebarSelectSide('registrering')"><span class="ic">📝</span> Registrering</button>
   <button data-sb-side="oversikt" onclick="sidebarSelectSide('oversikt')"><span class="ic">⚙️</span> Oversikt</button>
+  <button data-sb-side="portaler" onclick="sidebarSelectSide('portaler')"><span class="ic">🔗</span> Portaler</button>
 </nav>
 
 <!-- SIDE CHOICE -->
@@ -715,6 +716,60 @@
         <h2>Oversikt</h2>
         <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- PORTAL SHORTCUTS -->
+<div id="portalLinksView" style="display:none;">
+  <div class="wrap">
+    <h3 class="shortcuts-title">Alle portaler</h3>
+    <div class="side-grid">
+      <a class="side-card" href="index.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">🛡️</div>
+        <h2>Administrativ</h2>
+        <p>Denne siden — lærere, elever, timeplan og alt administrativt</p>
+      </a>
+      <a class="side-card" href="index1.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">📖</div>
+        <h2>Lærerportal</h2>
+        <p>Oppmøte, forberedelser, lekser og meldinger for lærere</p>
+      </a>
+      <a class="side-card" href="index4.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">👨‍👩‍👧</div>
+        <h2>Foreldreportal</h2>
+        <p>For foresatte — barnas fremgang, lekser og betaling</p>
+      </a>
+      <a class="side-card" href="index2.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">📝</div>
+        <h2>Påmelding</h2>
+        <p>Det offentlige søknadsskjemaet for nye elever</p>
+      </a>
+      <a class="side-card" href="index3.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">🏠</div>
+        <h2>Hovedportal</h2>
+        <p>Forsiden med lenker til alle portaler</p>
+      </a>
+      <a class="side-card" href="larerinnsyn.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">🧑‍🏫</div>
+        <h2>Lærerinnsyn</h2>
+        <p>Skjult — aktivitetsoversikt per lærer, kun for eier</p>
+      </a>
+      <a class="side-card" href="foreldreinnsyn.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">👪</div>
+        <h2>Foreldreinnsyn</h2>
+        <p>Skjult — aktivitetsoversikt per foresatt, kun for eier</p>
+      </a>
+      <a class="side-card" href="slettelogg.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">🗑️</div>
+        <h2>Slettelogg</h2>
+        <p>Skjult — angre-mulighet for slettede oppføringer</p>
+      </a>
+      <a class="side-card" href="publish-tool.html" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+        <div class="ic">🚀</div>
+        <h2>Nettpublisering</h2>
+        <p>Verktøyet som publiserer endringer til nettsiden</p>
+      </a>
     </div>
   </div>
 </div>
@@ -2864,8 +2919,20 @@
   let currentSideForBack = null;
 
   window.sidebarSelectSide = function(side){
+    if(side === 'portaler'){ showPortalLinks(); return; }
     if(side === 'registrering' || side === 'oversikt') promptPasswordAndSelectSide(side);
     else selectSide(side);
+  };
+
+  window.showPortalLinks = function(){
+    currentSideForBack = 'portaler';
+    highlightSidebar('portaler');
+    document.getElementById('sideChooseView').style.display = 'none';
+    document.getElementById('subChooseView').style.display = 'none';
+    document.getElementById('tabsBar').style.display = 'none';
+    document.getElementById('contentLayout').style.display = 'none';
+    document.getElementById('portalLinksView').style.display = 'block';
+    document.getElementById('sideSwitchBtn').style.display = 'inline-block';
   };
 
   function highlightSidebar(side){
@@ -2879,6 +2946,7 @@
     highlightSidebar(side);
     document.getElementById('sideChooseView').style.display = 'none';
     document.getElementById('subChooseView').style.display = 'none';
+    document.getElementById('portalLinksView').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'inline-block';
     document.getElementById('contentLayout').style.display = 'flex';
 
@@ -2915,6 +2983,7 @@
     highlightSidebar(null);
     document.getElementById('sideChooseView').style.display = 'block';
     document.getElementById('subChooseView').style.display = 'none';
+    document.getElementById('portalLinksView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
     document.getElementById('contentLayout').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'none';
