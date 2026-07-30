@@ -372,17 +372,20 @@
   <!-- LOGIN -->
   <div class="card" id="loginView">
     <h2 data-i18n="loginTitle">Logg inn</h2>
-    <div class="sub" data-i18n="loginSub">Skriv inn telefonnummeret ditt og tilgangskoden du har fått fra skolen.</div>
+    <div class="sub" data-i18n="loginSub">Logg inn med e-posten og passordet ditt.</div>
     <div class="field">
-      <label data-i18n="phoneLabel">Telefonnummer</label>
-      <input type="tel" id="loginPhone" inputmode="tel">
+      <label data-i18n="emailLabel">E-post</label>
+      <input type="email" id="loginEmail" autocomplete="username">
     </div>
     <div class="field">
-      <label data-i18n="codeLabel">Tilgangskode</label>
-      <input type="password" id="loginCode">
+      <label data-i18n="passwordLabel">Passord</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
     </div>
     <button class="btn btn-primary" onclick="doParentLogin()" data-i18n="loginBtn">Logg inn</button>
     <div class="error-msg" id="loginError"></div>
+    <div style="text-align:center; margin-top:10px;">
+      <a href="#" onclick="doForgotPassword(); return false;" style="font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);" data-i18n="forgotPassword">Glemt passord?</a>
+    </div>
   </div>
 
   <!-- APP -->
@@ -753,6 +756,9 @@
     getFirestore, collection, onSnapshot, addDoc, doc, updateDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
+    getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
   import {
@@ -773,6 +779,7 @@
     isTokenAutoRefreshEnabled: true
   });
   const db = getFirestore(app);
+  const auth = getAuth(app);
   const storage = getStorage(app);
 
   const MAX_FILE_MB = 10;
@@ -791,8 +798,13 @@
   const I18N = {
     no: {
       headerTitle: 'Madina Skole — Foreldreportal', headerSub: 'Kun for foresatte',
-      loginTitle: 'Logg inn', loginSub: 'Skriv inn telefonnummeret ditt og tilgangskoden du har fått fra skolen.',
+      loginTitle: 'Logg inn', loginSub: 'Logg inn med e-posten og passordet ditt.',
       phoneLabel: 'Telefonnummer', codeLabel: 'Tilgangskode', loginBtn: 'Logg inn', logout: 'Logg ut',
+      emailLabel: 'E-post', passwordLabel: 'Passord', forgotPassword: 'Glemt passord?',
+      noAccountForEmail: 'Fant ingen foresatt-konto med denne e-posten.',
+      enterEmailFirst: 'Skriv inn e-posten din først.',
+      resetEmailSent: 'E-post for å tilbakestille passord er sendt.',
+      resetEmailFailed: 'Kunne ikke sende e-post. Sjekk at e-posten er riktig.',
       sumTotalLbl: 'Totalt', sumPaidLbl: 'Betalt', sumRemainingLbl: 'Gjenstår', sumChildrenLbl: 'Antall barn', sumSavingsLbl: 'Spart på søskenrabatt',
       menuInfo: 'Elevinformasjon', menuInfoDesc: 'Status og detaljer',
       menuSchedule: 'Timeplan', menuScheduleDesc: 'Ukentlig skjema og lærere',
@@ -861,13 +873,18 @@
       fillHwFields: 'Velg lekse og lim inn en lenke til besvarelsen.', hwSent: 'Besvarelsen er sendt inn.',
       fillAbsFields: 'Fyll ut dato og årsak.', absSent: 'Fraværsmeldingen er sendt til læreren.',
       contactSent: 'Forespørselen er sendt til administrasjonen.',
-      wrongLogin: 'Feil telefonnummer eller tilgangskode.', fillLogin: 'Fyll ut telefonnummer og tilgangskode.',
+      wrongLogin: 'Feil e-post eller passord.', fillLogin: 'Fyll ut e-post og passord.',
       errorOccurred: 'En feil oppstod: '
     },
     ar: {
       headerTitle: 'مدرسة المدينة — بوابة أولياء الأمور', headerSub: 'خاص بأولياء الأمور فقط',
-      loginTitle: 'تسجيل الدخول', loginSub: 'أدخل رقم هاتفك ورمز الدخول الذي حصلت عليه من المدرسة.',
+      loginTitle: 'تسجيل الدخول', loginSub: 'سجّل الدخول ببريدك الإلكتروني وكلمة المرور.',
       phoneLabel: 'رقم الهاتف', codeLabel: 'رمز الدخول', loginBtn: 'دخول', logout: 'تسجيل خروج',
+      emailLabel: 'البريد الإلكتروني', passwordLabel: 'كلمة المرور', forgotPassword: 'نسيت كلمة المرور؟',
+      noAccountForEmail: 'لا يوجد حساب ولي أمر بهذا البريد الإلكتروني.',
+      enterEmailFirst: 'اكتب بريدك الإلكتروني أولاً.',
+      resetEmailSent: 'تم إرسال بريد لإعادة تعيين كلمة المرور.',
+      resetEmailFailed: 'تعذر إرسال البريد. تأكد إن البريد الإلكتروني صحيح.',
       sumTotalLbl: 'الإجمالي', sumPaidLbl: 'المدفوع', sumRemainingLbl: 'المتبقي', sumChildrenLbl: 'عدد الأبناء', sumSavingsLbl: 'التوفير بخصم الإخوة',
       menuInfo: 'معلومات الطالب', menuInfoDesc: 'الحالة والتفاصيل',
       menuSchedule: 'الجدول الزمني', menuScheduleDesc: 'الجدول الأسبوعي والمعلمون',
@@ -936,13 +953,18 @@
       fillHwFields: 'اختر واجبًا والصق رابط الإجابة.', hwSent: 'تم إرسال الإجابة.',
       fillAbsFields: 'يرجى تعبئة التاريخ والسبب.', absSent: 'تم إرسال إشعار الغياب إلى المعلم.',
       contactSent: 'تم إرسال الطلب إلى الإدارة.',
-      wrongLogin: 'رقم الهاتف أو رمز الدخول غير صحيح.', fillLogin: 'يرجى تعبئة رقم الهاتف ورمز الدخول.',
+      wrongLogin: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.', fillLogin: 'يرجى تعبئة البريد الإلكتروني وكلمة المرور.',
       errorOccurred: 'حدث خطأ: '
     },
     ur: {
       headerTitle: 'مدینہ سکول — والدین کا پورٹل', headerSub: 'صرف سرپرستوں کے لیے',
-      loginTitle: 'لاگ ان', loginSub: 'اپنا فون نمبر اور سکول سے ملا ہوا رسائی کوڈ درج کریں۔',
+      loginTitle: 'لاگ ان', loginSub: 'اپنی ای میل اور پاس ورڈ سے لاگ ان کریں۔',
       phoneLabel: 'فون نمبر', codeLabel: 'رسائی کوڈ', loginBtn: 'لاگ ان', logout: 'لاگ آؤٹ',
+      emailLabel: 'ای میل', passwordLabel: 'پاس ورڈ', forgotPassword: 'پاس ورڈ بھول گئے؟',
+      noAccountForEmail: 'اس ای میل کے ساتھ کوئی سرپرست اکاؤنٹ نہیں ملا۔',
+      enterEmailFirst: 'پہلے اپنی ای میل درج کریں۔',
+      resetEmailSent: 'پاس ورڈ ری سیٹ کرنے کے لیے ای میل بھیج دی گئی ہے۔',
+      resetEmailFailed: 'ای میل بھیجی نہیں جا سکی۔ یقینی بنائیں کہ ای میل درست ہے۔',
       sumTotalLbl: 'کل رقم', sumPaidLbl: 'ادا شدہ', sumRemainingLbl: 'باقی رقم', sumChildrenLbl: 'بچوں کی تعداد', sumSavingsLbl: 'بہن بھائی رعایت کی بچت',
       menuInfo: 'طالب علم کی معلومات', menuInfoDesc: 'حالت اور تفصیلات',
       menuSchedule: 'ٹائم ٹیبل', menuScheduleDesc: 'ہفتہ وار شیڈول اور اساتذہ',
@@ -1011,7 +1033,7 @@
       fillHwFields: 'ہوم ورک منتخب کریں اور جواب کا لنک پیسٹ کریں۔', hwSent: 'جواب جمع کروا دیا گیا ہے۔',
       fillAbsFields: 'براہ کرم تاریخ اور وجہ درج کریں۔', absSent: 'غیر حاضری کی اطلاع استاد کو بھیج دی گئی ہے۔',
       contactSent: 'درخواست انتظامیہ کو بھیج دی گئی ہے۔',
-      wrongLogin: 'غلط فون نمبر یا رسائی کوڈ۔', fillLogin: 'براہ کرم فون نمبر اور رسائی کوڈ درج کریں۔',
+      wrongLogin: 'غلط ای میل یا پاس ورڈ۔', fillLogin: 'براہ کرم ای میل اور پاس ورڈ درج کریں۔',
       errorOccurred: 'ایک خرابی پیش آئی: '
     }
   };
@@ -1221,18 +1243,26 @@
   }, (err) => console.error('settings/betaling', err));
 
 
-  window.doParentLogin = function(){
+  window.doParentLogin = async function(){
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
-    const phone = document.getElementById('loginPhone').value.trim();
-    const code = document.getElementById('loginCode').value.trim();
-    if(!phone || !code){
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if(!email || !password){
       errEl.textContent = t('fillLogin');
       errEl.style.display = 'block';
       return;
     }
-    const guardian = guardians.find(g => (g.telefon||'').trim() === phone && (g.tilgangskode||'').trim() === code);
+    const guardian = guardians.find(g => (g.epost||'').trim().toLowerCase() === email.toLowerCase());
     if(!guardian){
+      errEl.textContent = t('noAccountForEmail');
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch(err){
+      console.error(err);
       errEl.textContent = t('wrongLogin');
       errEl.style.display = 'block';
       return;
@@ -1248,11 +1278,34 @@
     refreshMyChildren();
   };
 
+  window.doForgotPassword = async function(){
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    const email = document.getElementById('loginEmail').value.trim();
+    if(!email){
+      errEl.textContent = t('enterEmailFirst');
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await sendPasswordResetEmail(auth, email);
+      errEl.style.color = 'var(--emerald)';
+      errEl.textContent = t('resetEmailSent');
+      errEl.style.display = 'block';
+    } catch(err){
+      console.error(err);
+      errEl.style.color = '';
+      errEl.textContent = t('resetEmailFailed');
+      errEl.style.display = 'block';
+    }
+  };
+
   window.doParentLogout = function(){
     currentGuardian = null;
+    signOut(auth).catch(()=>{});
     document.getElementById('appView').style.display = 'none';
     document.getElementById('loginView').style.display = 'block';
-    document.getElementById('loginCode').value = '';
+    document.getElementById('loginPassword').value = '';
   };
 
   function refreshMyChildren(){
