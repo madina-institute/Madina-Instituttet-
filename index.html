@@ -793,6 +793,8 @@
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
+  <div class="tab" data-tab="planmaler" data-side="pedagogisk">Planmaler</div>
+  <div class="tab" data-tab="planArkiv" data-side="pedagogisk">Planarkiv</div>
   <div class="tab" data-tab="homework" data-side="pedagogisk">Lekser</div>
   <div class="tab" data-tab="announcements" data-side="pedagogisk">Kunngjøringer</div>
   <div class="tab" data-tab="studentNotes" data-side="pedagogisk">Elevnotater</div>
@@ -1310,6 +1312,68 @@
     </div>
   </div>
 
+  <!-- PLANMALER (admin-managed templates for daily/monthly/semester plans) -->
+  <div class="panel" id="panel-planmaler">
+    <div id="planmalerChooseView">
+      <div class="report-grid">
+        <div class="choice-card" onclick="showPlanmalerType('dailyPlanTemplates')">
+          <h3>Daglig forberedelse — maler</h3>
+          <div class="sub">Foreslått emne, læringsmål og metode per fag/klasse</div>
+        </div>
+        <div class="choice-card" onclick="showPlanmalerType('monthlyPlanTemplates')">
+          <h3>Månedsplan — maler</h3>
+          <div class="sub">4 ukers-mal med tema og læringsmål per fag/klasse</div>
+        </div>
+        <div class="choice-card" onclick="showPlanmalerType('semesterPlanTemplates')">
+          <h3>Semesterplan — maler</h3>
+          <div class="sub">6 måneders-mal med kjernemål per fag/klasse</div>
+        </div>
+      </div>
+    </div>
+    <div id="planmalerListView" style="display:none;">
+      <button class="back-link" onclick="showPlanmalerChoice()">← Tilbake</button>
+      <div class="toolbar">
+        <input class="search" id="searchPlanmalerActive" placeholder="Søk etter fag eller klasse...">
+        <span class="count-chip" id="countPlanmalerActive">0 maler</span>
+        <button class="btn btn-primary" id="planmalerAddBtn">+ Ny mal</button>
+      </div>
+      <div class="records-hidden card-grid" id="tablePlanmalerActive"></div>
+    </div>
+  </div>
+
+  <!-- PLANARKIV (unified + class-filtered archive across daily/monthly/semester plans) -->
+  <div class="panel" id="panel-planArkiv">
+    <div id="planArkivChooseView">
+      <div class="report-grid">
+        <div class="choice-card" onclick="showPlanArkivUnified()">
+          <h3>Alle planer (samlet)</h3>
+          <div class="sub">Daglig forberedelse, månedsplan og semesterplan i én liste</div>
+        </div>
+        <div class="choice-card" onclick="showPlanArkivByClass()">
+          <h3>Måned- og semesterplaner per klasse</h3>
+          <div class="sub">Kun månedsplaner og semesterplaner, filtrerbart per klasse</div>
+        </div>
+      </div>
+    </div>
+    <div id="planArkivUnifiedView" style="display:none;">
+      <button class="back-link" onclick="showPlanArkivChoice()">← Tilbake</button>
+      <div class="toolbar">
+        <input class="search" id="searchPlanArkivUnified" placeholder="Søk etter lærer, fag, klasse eller type...">
+        <span class="count-chip" id="countPlanArkivUnified">0 planer</span>
+      </div>
+      <div class="records-hidden card-grid" id="tablePlanArkivUnified"></div>
+    </div>
+    <div id="planArkivByClassView" style="display:none;">
+      <button class="back-link" onclick="showPlanArkivChoice()">← Tilbake</button>
+      <div class="toolbar">
+        <select id="planArkivClassFilter" class="search" style="max-width:220px;"></select>
+        <input class="search" id="searchPlanArkivByClass" placeholder="Søk etter lærer eller fag...">
+        <span class="count-chip" id="countPlanArkivByClass">0 planer</span>
+      </div>
+      <div class="records-hidden card-grid" id="tablePlanArkivByClass"></div>
+    </div>
+  </div>
+
   <!-- HOMEWORK -->
   <div class="panel" id="panel-homework">
     <div class="toolbar">
@@ -1604,11 +1668,25 @@
         isAuthorizedAdmin = false;
       }
       if(!isAuthorizedAdmin){
+        // Check whether this is a legitimate teacher account (just without
+        // an admin-tier role) so we can point them to the right portal
+        // instead of a flat "no access" message that leaves them stuck.
+        let isKnownTeacher = false;
+        try{
+          const tq = query(collection(db, 'teachers'), where('epost', '==', user.email));
+          const tsnap = await getDocs(tq);
+          isKnownTeacher = !tsnap.empty;
+        } catch(err){ console.error('Kunne ikke sjekke lærerstatus:', err); }
         await signOut(auth);
         const errEl = document.getElementById('loginError');
         if(errEl){
           errEl.style.color = 'var(--red)';
-          errEl.textContent = 'Denne kontoen har ikke tilgang til Administrativt panel.';
+          if(isKnownTeacher){
+            errEl.innerHTML = 'Denne tilgangen er kun for Administrativt panel — den er ikke for lærere.<br>' +
+              '<a href="index1.html" style="color:var(--emerald); font-weight:700;">Trykk her for å gå til Lærerportalen →</a>';
+          } else {
+            errEl.textContent = 'Denne kontoen har ikke tilgang til Administrativt panel.';
+          }
           errEl.style.display = 'block';
         }
         return;
@@ -1965,6 +2043,95 @@
         {key:'lekser', label:'Lekser', type:'text'}
       ],
       cols: ['larer','fag','dato','emne','klasse']
+    },
+    dailyPlanTemplates: {
+      label: 'daglig-mal', collectionName: 'dailyPlanTemplates',
+      fields: [
+        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
+        {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes'},
+        {key:'emne', label:'Foreslått emne/tema', type:'text'},
+        {key:'mal', label:'Foreslått læringsmål', type:'text'},
+        {key:'metode', label:'Foreslått metode', type:'text'},
+        {key:'materiell', label:'Hjelpemidler', type:'text'},
+        {key:'bok', label:'Referansebok/pensum', type:'text'}
+      ],
+      cols: ['fag','klasse','emne']
+    },
+    monthlyPlanTemplates: {
+      label: 'månedsplan-mal', collectionName: 'monthlyPlanTemplates',
+      fields: [
+        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
+        {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes'},
+        {key:'maal', label:'Overordnet mål for måneden', type:'text'},
+        {key:'uke1_tema', label:'Uke 1 — tema fra boken', type:'text'},
+        {key:'uke1_maal', label:'Uke 1 — læringsmål', type:'text'},
+        {key:'uke2_tema', label:'Uke 2 — tema fra boken', type:'text'},
+        {key:'uke2_maal', label:'Uke 2 — læringsmål', type:'text'},
+        {key:'uke3_tema', label:'Uke 3 — tema fra boken', type:'text'},
+        {key:'uke3_maal', label:'Uke 3 — læringsmål', type:'text'},
+        {key:'uke4_tema', label:'Uke 4 — tema fra boken', type:'text'},
+        {key:'uke4_maal', label:'Uke 4 — læringsmål', type:'text'},
+        {key:'vurdering', label:'Vurderingsmetode', type:'text'},
+        {key:'bok', label:'Referansebok/pensum', type:'text'}
+      ],
+      cols: ['fag','klasse','maal']
+    },
+    semesterPlanTemplates: {
+      label: 'semesterplan-mal', collectionName: 'semesterPlanTemplates',
+      fields: [
+        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
+        {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes'},
+        {key:'maal', label:'Overordnet mål for semesteret', type:'text'},
+        {key:'mnd1', label:'Måned 1 — tema/enhet', type:'text'},
+        {key:'mnd2', label:'Måned 2 — tema/enhet', type:'text'},
+        {key:'mnd3', label:'Måned 3 — tema/enhet', type:'text'},
+        {key:'mnd4', label:'Måned 4 — tema/enhet', type:'text'},
+        {key:'mnd5', label:'Måned 5 — tema/enhet', type:'text'},
+        {key:'mnd6', label:'Måned 6 — tema/enhet', type:'text'},
+        {key:'kjernemaal', label:'Kjernemål for hele semesteret', type:'text'},
+        {key:'bok', label:'Referansebok/pensum', type:'text'}
+      ],
+      cols: ['fag','klasse','maal']
+    },
+    monthlyPlans: {
+      label: 'månedsplan', collectionName: 'monthlyPlans',
+      fields: [
+        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
+        {key:'klasse', label:'Klasse', type:'text'},
+        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
+        {key:'maaned', label:'Måned', type:'text'},
+        {key:'maal', label:'Overordnet mål for måneden', type:'text'},
+        {key:'uke1_tema', label:'Uke 1 — tema fra boken', type:'text'},
+        {key:'uke1_maal', label:'Uke 1 — læringsmål', type:'text'},
+        {key:'uke2_tema', label:'Uke 2 — tema fra boken', type:'text'},
+        {key:'uke2_maal', label:'Uke 2 — læringsmål', type:'text'},
+        {key:'uke3_tema', label:'Uke 3 — tema fra boken', type:'text'},
+        {key:'uke3_maal', label:'Uke 3 — læringsmål', type:'text'},
+        {key:'uke4_tema', label:'Uke 4 — tema fra boken', type:'text'},
+        {key:'uke4_maal', label:'Uke 4 — læringsmål', type:'text'},
+        {key:'vurdering', label:'Vurderingsmetode', type:'text'},
+        {key:'bok', label:'Referansebok/pensum', type:'text'}
+      ],
+      cols: ['larer','fag','klasse','maaned']
+    },
+    semesterPlans: {
+      label: 'semesterplan', collectionName: 'semesterPlans',
+      fields: [
+        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
+        {key:'klasse', label:'Klasse', type:'text'},
+        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
+        {key:'semester', label:'Semester', type:'select', options:['Høst','Vår']},
+        {key:'maal', label:'Overordnet mål for semesteret', type:'text'},
+        {key:'mnd1', label:'Måned 1 — tema/enhet', type:'text'},
+        {key:'mnd2', label:'Måned 2 — tema/enhet', type:'text'},
+        {key:'mnd3', label:'Måned 3 — tema/enhet', type:'text'},
+        {key:'mnd4', label:'Måned 4 — tema/enhet', type:'text'},
+        {key:'mnd5', label:'Måned 5 — tema/enhet', type:'text'},
+        {key:'mnd6', label:'Måned 6 — tema/enhet', type:'text'},
+        {key:'kjernemaal', label:'Kjernemål for hele semesteret', type:'text'},
+        {key:'bok', label:'Referansebok/pensum', type:'text'}
+      ],
+      cols: ['larer','fag','klasse','semester']
     },
     registrations: {
       label: 'søknad', collectionName: 'registrations',
@@ -2611,6 +2778,11 @@
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teachers') renderLedelseView();
+    if(['dailyPlanTemplates','monthlyPlanTemplates','semesterPlanTemplates'].includes(type) && type === currentPlanmalerType) renderPlanmalerList();
+    if(['lessonPlans','monthlyPlans','semesterPlans'].includes(type)){
+      if(document.getElementById('planArkivUnifiedView') && document.getElementById('planArkivUnifiedView').style.display !== 'none') renderPlanArkivUnified();
+      if(document.getElementById('planArkivByClassView') && document.getElementById('planArkivByClassView').style.display !== 'none') renderPlanArkivByClass();
+    }
     updateStats();
   }
 
@@ -2637,6 +2809,167 @@
     const countEl = document.getElementById('countLedelse');
     if(countEl) countEl.innerHTML = data.length + ' ledelsesmedlemmer <span class="toggle-arrow">▾</span>';
   }
+
+  // ===== PLANMALER (admin-managed templates) =====
+  let currentPlanmalerType = null;
+  const PLANMALER_LABELS = { dailyPlanTemplates:'daglig forberedelse', monthlyPlanTemplates:'månedsplan', semesterPlanTemplates:'semesterplan' };
+
+  window.showPlanmalerType = function(type){
+    currentPlanmalerType = type;
+    document.getElementById('planmalerChooseView').style.display = 'none';
+    document.getElementById('planmalerListView').style.display = 'block';
+    const addBtn = document.getElementById('planmalerAddBtn');
+    addBtn.textContent = '+ Ny mal (' + PLANMALER_LABELS[type] + ')';
+    addBtn.onclick = () => openModal(type);
+    renderPlanmalerList();
+  };
+
+  window.showPlanmalerChoice = function(){
+    currentPlanmalerType = null;
+    document.getElementById('planmalerChooseView').style.display = 'block';
+    document.getElementById('planmalerListView').style.display = 'none';
+  };
+
+  function renderPlanmalerList(){
+    if(!currentPlanmalerType) return;
+    const type = currentPlanmalerType;
+    const searchEl = document.getElementById('searchPlanmalerActive');
+    const query = (searchEl ? searchEl.value : '').toLowerCase();
+    let data = cache[type] || [];
+    if(query){
+      data = data.filter(row =>
+        (row.fag||'').toLowerCase().includes(query) ||
+        resolveDynName('classes', row.klasse).toLowerCase().includes(query)
+      );
+    }
+    renderRecordCards(type, data, { targetGridId: 'tablePlanmalerActive' });
+    const countEl = document.getElementById('countPlanmalerActive');
+    if(countEl) countEl.textContent = data.length + ' maler';
+  }
+
+  const searchPlanmalerEl = document.getElementById('searchPlanmalerActive');
+  if(searchPlanmalerEl) searchPlanmalerEl.addEventListener('input', renderPlanmalerList);
+
+  // ===== PLANARKIV (unified + per-class archive across daily/month/semester plans) =====
+  const PLAN_TYPE_LABELS = { lessonPlans:'Daglig', monthlyPlans:'Måned', semesterPlans:'Semester' };
+
+  window.showPlanArkivUnified = function(){
+    document.getElementById('planArkivChooseView').style.display = 'none';
+    document.getElementById('planArkivUnifiedView').style.display = 'block';
+    document.getElementById('planArkivByClassView').style.display = 'none';
+    renderPlanArkivUnified();
+  };
+  window.showPlanArkivByClass = function(){
+    document.getElementById('planArkivChooseView').style.display = 'none';
+    document.getElementById('planArkivUnifiedView').style.display = 'none';
+    document.getElementById('planArkivByClassView').style.display = 'block';
+    populatePlanArkivClassFilter();
+    renderPlanArkivByClass();
+  };
+  window.showPlanArkivChoice = function(){
+    document.getElementById('planArkivChooseView').style.display = 'block';
+    document.getElementById('planArkivUnifiedView').style.display = 'none';
+    document.getElementById('planArkivByClassView').style.display = 'none';
+  };
+
+  function planArkivCardHtml(row){
+    const typeLabel = PLAN_TYPE_LABELS[row._type];
+    const periode = row._type === 'lessonPlans' ? (row.dato||'') : row._type === 'monthlyPlans' ? (row.maaned||'') : (row.semester||'');
+    return `
+      <div class="record-card">
+        <div class="record-card-top">
+          <div class="record-avatar">${escapeHtml(typeLabel[0])}</div>
+          <div>
+            <div class="record-title">${escapeHtml(resolveDynName('teachers', row.larer) || '—')}</div>
+            <span class="record-pill">${escapeHtml(typeLabel)}</span>
+          </div>
+        </div>
+        <div class="record-field"><span class="record-field-label">Fag</span>${escapeHtml(row.fag||'')}</div>
+        <div class="record-field"><span class="record-field-label">Klasse</span>${escapeHtml(row.klasse||'')}</div>
+        <div class="record-field"><span class="record-field-label">Periode</span>${escapeHtml(periode)}</div>
+        <div class="record-card-actions">
+          <button class="btn-edit" onclick="editEntry('${row._type}','${row.id}')">Rediger</button>
+          <button class="btn-danger" onclick="deleteEntry('${row._type}','${row.id}')">Slett</button>
+        </div>
+      </div>`;
+  }
+
+  function combinedPlanData(){
+    return [
+      ...cache.lessonPlans.map(r => ({ ...r, _type:'lessonPlans' })),
+      ...cache.monthlyPlans.map(r => ({ ...r, _type:'monthlyPlans' })),
+      ...cache.semesterPlans.map(r => ({ ...r, _type:'semesterPlans' }))
+    ];
+  }
+
+  function renderPlanArkivUnified(){
+    const grid = document.getElementById('tablePlanArkivUnified');
+    if(!grid) return;
+    const searchEl = document.getElementById('searchPlanArkivUnified');
+    const query = (searchEl ? searchEl.value : '').toLowerCase();
+    let data = combinedPlanData();
+    if(query){
+      data = data.filter(row =>
+        resolveDynName('teachers', row.larer).toLowerCase().includes(query) ||
+        (row.fag||'').toLowerCase().includes(query) ||
+        (row.klasse||'').toLowerCase().includes(query) ||
+        PLAN_TYPE_LABELS[row._type].toLowerCase().includes(query)
+      );
+    }
+    const countEl = document.getElementById('countPlanArkivUnified');
+    if(countEl) countEl.textContent = data.length + ' planer';
+    grid.innerHTML = data.length === 0
+      ? '<div class="record-empty">Ingen planer registrert ennå.</div>'
+      : data.map(planArkivCardHtml).join('');
+  }
+
+  function populatePlanArkivClassFilter(){
+    const sel = document.getElementById('planArkivClassFilter');
+    if(!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Alle klasser</option>' +
+      cache.classes.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn||c.id)}</option>`).join('');
+    if(current) sel.value = current;
+  }
+
+  function renderPlanArkivByClass(){
+    const grid = document.getElementById('tablePlanArkivByClass');
+    if(!grid) return;
+    const searchEl = document.getElementById('searchPlanArkivByClass');
+    const query = (searchEl ? searchEl.value : '').toLowerCase();
+    const classFilterEl = document.getElementById('planArkivClassFilter');
+    const classFilter = classFilterEl ? classFilterEl.value : '';
+    let data = [
+      ...cache.monthlyPlans.map(r => ({ ...r, _type:'monthlyPlans' })),
+      ...cache.semesterPlans.map(r => ({ ...r, _type:'semesterPlans' }))
+    ];
+    if(classFilter){
+      const className = resolveDynName('classes', classFilter);
+      data = data.filter(row => row.klasse === classFilter || row.klasse === className);
+    }
+    if(query){
+      data = data.filter(row =>
+        resolveDynName('teachers', row.larer).toLowerCase().includes(query) ||
+        (row.fag||'').toLowerCase().includes(query)
+      );
+    }
+    const countEl = document.getElementById('countPlanArkivByClass');
+    if(countEl) countEl.textContent = data.length + ' planer';
+    grid.innerHTML = data.length === 0
+      ? '<div class="record-empty">Ingen måned- eller semesterplaner registrert ennå.</div>'
+      : data.map(planArkivCardHtml).join('');
+  }
+
+  ['searchPlanArkivUnified'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', renderPlanArkivUnified);
+  });
+  ['searchPlanArkivByClass'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', renderPlanArkivByClass);
+  });
+  const planArkivClassFilterEl = document.getElementById('planArkivClassFilter');
+  if(planArkivClassFilterEl) planArkivClassFilterEl.addEventListener('change', renderPlanArkivByClass);
 
   // Which field is the card "title" and which (select-type) field is shown as a colored pill, per type.
   // Falls back to the first column / first select-type column when not listed here.
@@ -3172,6 +3505,8 @@
     attendance: 'Registrer daglig oppmøte',
     absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
     lessonPlans: 'Lærernes pedagogiske forberedelser',
+    planmaler: 'Maler for daglig forberedelse, månedsplan og semesterplan per fag/klasse',
+    planArkiv: 'Samlet arkiv over alle innsendte planer — daglig, månedlig og semester',
     homework: 'Lekser og innleverte besvarelser',
     announcements: 'Kunngjøringer som vises for foresatte',
     studentNotes: 'Fremgangsnotater for enkeltelever',
@@ -3187,7 +3522,7 @@
   const TAB_ICONS = {
     ledelse: '👑', meetings: '🗒️', finances: '💰',
     teachers: '🧑‍🏫', guardians: '👪', students: '🎒', classes: '🏫', hours: '📅',
-    attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', homework: '📚',
+    attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
     betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝'
@@ -4503,6 +4838,11 @@
   attachListener('hours');
   attachListener('attendance');
   attachListener('lessonPlans');
+  attachListener('dailyPlanTemplates');
+  attachListener('monthlyPlanTemplates');
+  attachListener('semesterPlanTemplates');
+  attachListener('monthlyPlans');
+  attachListener('semesterPlans');
   attachListener('registrations');
   attachListener('homework');
   attachListener('homeworkSubmissions');
