@@ -106,6 +106,9 @@
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    initializeAppCheck, ReCaptchaV3Provider
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
@@ -117,6 +120,10 @@
   };
 
   const app = initializeApp(firebaseConfig);
+  const appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+    isTokenAutoRefreshEnabled: true
+  });
   const db = getFirestore(app);
   const auth = getAuth(app);
 
