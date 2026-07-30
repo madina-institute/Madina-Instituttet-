@@ -302,6 +302,26 @@
   .record-contact{ display:flex; flex-direction:column; gap:5px; border-top:1px solid var(--line); padding-top:10px; }
   .record-contact-row{ font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; word-break:break-all; }
   .record-card-actions{ display:flex; gap:8px; margin-top:2px; flex-wrap:wrap; }
+  summary{ list-style:none; }
+  summary::-webkit-details-marker{ display:none; }
+
+  /* Outlook-style inbox row (Meldinger panel): avatar + name/preview + time */
+  .inbox-row{
+    display:flex; align-items:flex-start; gap:12px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:13px 15px;
+    transition:border-color .15s, background .15s;
+  }
+  .inbox-row:hover{border-color:var(--gold); background:var(--paper-2);}
+  .inbox-avatar{
+    flex:0 0 auto; width:38px; height:38px; border-radius:50%; background:var(--emerald-l); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-family:'Jost',sans-serif; font-weight:700; font-size:14px;
+  }
+  .inbox-body{flex:1 1 auto; min-width:0;}
+  .inbox-top-line{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .inbox-name{font-family:'Jost',sans-serif; font-weight:700; font-size:13.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .inbox-time{flex:0 0 auto; font-family:'Jost',sans-serif; font-size:10.5px; color:#8a9a90; white-space:nowrap;}
+  .inbox-subject{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .inbox-preview{font-family:'Lora',serif; font-size:12.5px; color:#8a9a90; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
   table{width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:var(--shadow);}
   thead th{
@@ -1444,14 +1464,14 @@
   <!-- MESSAGES ARCHIVE -->
   <div class="panel" id="panel-messages">
     <div class="toolbar">
-      <input class="search" id="searchMessages" placeholder="Søk etter klasse, foresatt eller melding...">
-      <span class="count-chip" id="countMessages" onclick="toggleRecordsById('tableMessages')">0 meldinger</span>
+      <input class="search" id="searchMessagesInbox" placeholder="Søk etter elev, foresatt, lærer eller klasse...">
+      <span class="count-chip" id="countMessagesInbox">0 samtaler</span>
       <button class="btn btn-ghost" onclick="exportCSV('messages')">Eksporter CSV</button>
     </div>
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
-      Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt).
+      Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt). Trykk en samtale for å se hele historikken.
     </div>
-    <div class="records-hidden card-grid" id="tableMessages"></div>
+    <div id="messagesInboxList"></div>
   </div>
 
   <!-- BETALINGSINNSTILLINGER -->
@@ -2699,6 +2719,7 @@
   // Local live cache, kept in sync by Firestore onSnapshot listeners
   const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [] };
   let adminUsersCache = [];
+  let messageThreadsCache = [];
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -2783,6 +2804,7 @@
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teachers') renderLedelseView();
+    if(type === 'messages') renderMessagesInbox();
     if(['dailyPlanTemplates','monthlyPlanTemplates','semesterPlanTemplates'].includes(type) && type === currentPlanmalerType) renderPlanmalerList();
     if(['lessonPlans','monthlyPlans','semesterPlans'].includes(type)){
       if(document.getElementById('planArkivUnifiedView') && document.getElementById('planArkivUnifiedView').style.display !== 'none') renderPlanArkivUnified();
@@ -2813,6 +2835,95 @@
     });
     const countEl = document.getElementById('countLedelse');
     if(countEl) countEl.innerHTML = data.length + ' ledelsesmedlemmer <span class="toggle-arrow">▾</span>';
+  }
+
+  // ===== MELDINGER (read-only Outlook-style archive of all guardian↔teacher messages) =====
+  function renderMessagesInbox(){
+    const listEl = document.getElementById('messagesInboxList');
+    if(!listEl) return;
+    const query = (document.getElementById('searchMessagesInbox')?.value || '').toLowerCase();
+
+    // Group every individual message into its conversation thread — real
+    // threads by threadId, or a synthetic legacy key (klasse+guardianId)
+    // for messages sent before the threaded-messaging feature existed.
+    const groups = {};
+    cache.messages.forEach(m => {
+      const key = m.threadId || ('legacy_' + m.klasse + '_' + (m.guardianId || m.guardianNavn || ''));
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(m);
+    });
+
+    let rows = Object.keys(groups).map(key => {
+      const msgs = groups[key].sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const last = msgs[msgs.length - 1];
+      const th = messageThreadsCache.find(t => t.id === key);
+      const studentName = th && th.studentId ? resolveDynName('students', th.studentId) : '';
+      const teacherName = th && th.teacherId ? resolveDynName('teachers', th.teacherId) : '';
+      const className = resolveDynName('classes', last.klasse);
+      const title = th ? (th.title || 'Uten tittel') : 'Uten tittel';
+      const displayName = studentName || last.guardianNavn || 'Ukjent';
+      return {
+        key, msgs, last, title, displayName, teacherName, className,
+        lastActivityAt: last.dato || ''
+      };
+    });
+
+    if(query){
+      rows = rows.filter(r =>
+        r.displayName.toLowerCase().includes(query) ||
+        r.title.toLowerCase().includes(query) ||
+        r.teacherName.toLowerCase().includes(query) ||
+        r.className.toLowerCase().includes(query) ||
+        r.msgs.some(m => (m.tekst||'').toLowerCase().includes(query))
+      );
+    }
+    rows.sort((a,b) => (b.lastActivityAt||'').localeCompare(a.lastActivityAt||''));
+
+    const countEl = document.getElementById('countMessagesInbox');
+    if(countEl) countEl.textContent = rows.length + ' samtaler';
+
+    if(rows.length === 0){
+      listEl.innerHTML = '<div class="record-empty">Ingen meldinger registrert ennå.</div>';
+      return;
+    }
+
+    listEl.innerHTML = rows.map(r => `
+      <details style="margin-bottom:8px;">
+        <summary style="cursor:pointer; list-style:none;">
+          <div class="inbox-row">
+            <div class="inbox-avatar">${escapeHtml((r.displayName[0]||'?').toUpperCase())}</div>
+            <div class="inbox-body">
+              <div class="inbox-top-line">
+                <span class="inbox-name">${escapeHtml(r.displayName)}</span>
+                <span class="inbox-time">${escapeHtml(inboxTimeLabelAdmin(r.lastActivityAt))}</span>
+              </div>
+              <div class="inbox-subject">${escapeHtml(r.title)}${r.className ? ' · ' + escapeHtml(r.className) : ''}${r.teacherName ? ' · ' + escapeHtml(r.teacherName) : ''}</div>
+              <div class="inbox-preview">${escapeHtml((r.last.fra === 'Lærer' ? 'Lærer: ' : (r.last.guardianNavn ? r.last.guardianNavn + ': ' : '')) + (r.last.tekst||'').slice(0,70))}</div>
+            </div>
+          </div>
+        </summary>
+        <div style="padding:12px 16px 16px 66px; display:flex; flex-direction:column; gap:10px;">
+          ${r.msgs.map(m => `
+            <div style="background:${m.fra === 'Lærer' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:9px 12px;">
+              <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:3px;">
+                ${escapeHtml(m.fra === 'Lærer' ? (m.avsenderNavn || 'Lærer') : (m.guardianNavn || 'Foresatt'))}
+                <span style="font-weight:400; color:#8a9a90;"> — ${escapeHtml(inboxTimeLabelAdmin(m.dato))}</span>
+              </div>
+              <div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeHtml(m.tekst||'')}</div>
+              ${m.vedleggLenke ? `<a href="${escapeHtml(m.vedleggLenke)}" target="_blank" style="font-size:11.5px; color:var(--emerald);">📎 Vedlegg</a>` : ''}
+            </div>`).join('')}
+        </div>
+      </details>`).join('');
+  }
+
+  function inboxTimeLabelAdmin(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    if(isNaN(d.getTime())) return '';
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    if(sameDay) return d.toLocaleTimeString('no-NO', { hour:'2-digit', minute:'2-digit' });
+    return d.toLocaleDateString('no-NO', { day:'numeric', month:'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
   }
 
   // ===== PLANMALER (admin-managed templates) =====
@@ -4864,10 +4975,12 @@
   });
 
   // Search listeners
-  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes','messages'].forEach(type => {
+  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes'].forEach(type => {
     const el = document.getElementById('search' + capitalize(type));
     if(el) el.addEventListener('input', () => render(type));
   });
+  const searchMessagesInboxEl = document.getElementById('searchMessagesInbox');
+  if(searchMessagesInboxEl) searchMessagesInboxEl.addEventListener('input', renderMessagesInbox);
   const searchLedelseEl = document.getElementById('searchLedelse');
   if(searchLedelseEl) searchLedelseEl.addEventListener('input', () => renderLedelseView());
 
@@ -4893,6 +5006,10 @@
   attachListener('contactUpdateRequests');
   attachListener('paymentRequests');
   attachListener('messages');
+  onSnapshot(collection(db, 'messageThreads'), (snap) => {
+    messageThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(document.getElementById('panel-messages') && document.getElementById('panel-messages').classList.contains('active')) renderMessagesInbox();
+  });
 
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
