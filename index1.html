@@ -1974,7 +1974,10 @@
   // same class only gets one email.
   async function notifyClassGuardians(classId, subject, text){
     if(!classId) return;
-    const guardianIds = [...new Set(students.filter(s => s.klasse === classId && s.foresatt).map(s => s.foresatt))];
+    const guardianIds = [...new Set(
+      students.filter(s => s.klasse === classId && (s.foresatt || s.foresatt2))
+        .flatMap(s => [s.foresatt, s.foresatt2].filter(Boolean))
+    )];
     for(const gId of guardianIds){
       await notifyGuardianByEmail(gId, subject, text);
     }
@@ -1983,36 +1986,34 @@
   function populateNewMessagePicker(){
     const sel = document.getElementById('newMsgGuardianSelect');
     if(!sel || !currentTeacher) return;
-    const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse && s.foresatt);
-    const seen = new Set();
-    const options = [];
-    myStudents.forEach(s => {
-      if(seen.has(s.foresatt)) return;
-      seen.add(s.foresatt);
-      const gLabel = resolveGuardianLabel(s.foresatt) || '—';
-      options.push({ guardianId: s.foresatt, label: gLabel + ' · ' + s.navn });
-    });
-    options.sort((a,b) => a.label.localeCompare(b.label));
+    const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse && (s.foresatt || s.foresatt2));
+    const options = myStudents.map(s => ({ studentId: s.id, label: s.navn })).sort((a,b) => a.label.localeCompare(b.label));
     sel.innerHTML = '<option value="">' + t('newMsgPick') + '</option>' +
-      options.map(o => `<option value="${escapeHtml(o.guardianId)}">${escapeHtml(o.label)}</option>`).join('');
+      options.map(o => `<option value="${escapeHtml(o.studentId)}">${escapeHtml(o.label)}</option>`).join('');
   }
 
   window.startNewMessageThread = async function(){
     const sel = document.getElementById('newMsgGuardianSelect');
-    const guardianId = sel ? sel.value : '';
+    const studentId = sel ? sel.value : '';
     const titleInput = document.getElementById('newMsgTitle');
     const title = titleInput ? titleInput.value.trim() : '';
-    if(!guardianId){
-      alert(currentLang === 'ar' ? 'اختر ولي أمر أول.' : 'Velg en foresatt først.');
+    if(!studentId){
+      alert(currentLang === 'ar' ? 'اختر الطالب أولاً.' : 'Velg en elev først.');
       return;
     }
     if(!title){
       alert(currentLang === 'ar' ? 'اكتب عنوان للمحادثة.' : 'Skriv en tittel på samtalen.');
       return;
     }
+    const student = students.find(s => s.id === studentId);
     const nowIso = new Date().toISOString();
+    // studentId is the real anchor for who can see this thread — both
+    // guardians (foresatt + foresatt2, if the student has two) see the
+    // same conversation. guardianId is kept as the primary guardian only
+    // for backward-compatible display in older parts of the UI.
     const threadRef = await addDoc(collection(db, 'messageThreads'), {
-      klasse: currentTeacher.tildeltKlasse, teacherId: currentTeacher.id, guardianId, title,
+      klasse: currentTeacher.tildeltKlasse, teacherId: currentTeacher.id,
+      studentId, guardianId: student ? (student.foresatt || '') : '', title,
       status: 'open', createdAt: nowIso, lastActivityAt: nowIso
     });
     if(titleInput) titleInput.value = '';
@@ -2027,13 +2028,16 @@
     // Real, titled threads for this class.
     messageThreads.filter(th => th.klasse === currentTeacher.tildeltKlasse).forEach(th => {
       const threadMsgs = mine.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-      const relation = th.guardianId ? resolveGuardianRelation(th.guardianId) : '';
-      const guardianLabel = th.guardianId ? resolveGuardianLabel(th.guardianId) : '';
+      const student = th.studentId ? students.find(s => s.id === th.studentId) : null;
+      const lastMsg = threadMsgs[0];
+      const lastReplierRelation = lastMsg && lastMsg.fra === 'Foresatt' && lastMsg.guardianId ? resolveGuardianRelation(lastMsg.guardianId) : '';
+      const guardianLabel = student ? student.navn : (th.guardianId ? resolveGuardianLabel(th.guardianId) : '');
       rows.push({
         key: th.id, isLegacy: false, status: th.status || 'open',
         title: th.title || t('untitledThread'), guardianLabel,
         lastActivityAt: th.lastActivityAt || th.createdAt || '',
-        lastPreview: threadMsgs[0] ? (threadMsgs[0].tekst || '') : '',
+        lastPreview: lastMsg ? (lastMsg.tekst || '') : '',
+        lastReplierRelation,
         unread: isThreadUnread(th.id)
       });
     });
@@ -2081,7 +2085,7 @@
             <span class="inbox-time">${escapeHtml(inboxTimeLabel(r.lastActivityAt))}</span>
           </div>
           <div class="inbox-subject">${escapeHtml(r.title)}</div>
-          <div class="inbox-preview">${escapeHtml((r.lastPreview||'').slice(0,70))}</div>
+          <div class="inbox-preview">${r.lastReplierRelation ? `<strong>${escapeHtml(r.lastReplierRelation)}:</strong> ` : ''}${escapeHtml((r.lastPreview||'').slice(0,70))}</div>
         </div>
         ${r.unread ? '<div class="inbox-dot"></div>' : ''}
       </div>`;
@@ -2104,13 +2108,27 @@
     currentThreadGuardianName = resolveGuardianLabel(currentThreadGuardianId) || currentThreadGuardianId;
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'block';
+    const student = currentThreadDoc && currentThreadDoc.studentId ? students.find(s => s.id === currentThreadDoc.studentId) : null;
     const title = currentThreadDoc ? (currentThreadDoc.title || t('untitledThread')) : t('untitledThread');
     document.getElementById('messageThreadTitle').textContent = title;
-    const linkedKids = currentThreadGuardianId
-      ? students.filter(s => s.klasse === currentTeacher.tildeltKlasse && s.foresatt === currentThreadGuardianId).map(s => s.navn)
-      : [];
-    const withParts = [currentThreadGuardianName, linkedKids.length ? ((currentLang === 'ar' ? 'ولي أمر: ' : 'Foresatt for: ') + linkedKids.join(', ')) : '']
-      .filter(Boolean).join(' · ');
+    let withParts;
+    if(student){
+      // Both guardians (if the student has two) are named here so the
+      // teacher always knows who is actually part of this conversation,
+      // even before anyone has replied.
+      const guardianParts = [student.foresatt, student.foresatt2].filter(Boolean).map(gId => {
+        const label = resolveGuardianLabel(gId);
+        const relation = resolveGuardianRelation(gId);
+        return relation ? `${label} (${relation})` : label;
+      }).filter(Boolean);
+      withParts = [student.navn, guardianParts.length ? guardianParts.join(' · ') : ''].filter(Boolean).join(' — ');
+    } else {
+      const linkedKids = currentThreadGuardianId
+        ? students.filter(s => s.klasse === currentTeacher.tildeltKlasse && s.foresatt === currentThreadGuardianId).map(s => s.navn)
+        : [];
+      withParts = [currentThreadGuardianName, linkedKids.length ? ((currentLang === 'ar' ? 'ولي أمر: ' : 'Foresatt for: ') + linkedKids.join(', ')) : '']
+        .filter(Boolean).join(' · ');
+    }
     document.getElementById('messageThreadSubtitle').textContent = withParts;
     const isClosed = currentThreadDoc && currentThreadDoc.status === 'closed';
     const closeBtn = document.getElementById('threadCloseBtn');
@@ -2161,11 +2179,12 @@
     el.innerHTML = thread.map(m => {
       const isMe = m.fra === 'Lærer';
       const senderName = isMe ? currentTeacher.navn : m.guardianNavn;
+      const relation = !isMe && m.guardianId ? resolveGuardianRelation(m.guardianId) : '';
       return `
       <div class="chat-row ${isMe ? 'me' : ''}">
         <div class="chat-avatar">${escapeHtml(initialsOf(senderName))}</div>
         <div class="chat-bubble">
-          <span class="chat-sender">${escapeHtml(senderName || '')}</span>
+          <span class="chat-sender">${escapeHtml(senderName || '')}${relation ? ' <span style="display:inline-block; font-size:10px; font-weight:700; color:var(--emerald-d); background:var(--paper-2); border-radius:8px; padding:1px 7px; margin-inline-start:4px;">' + escapeHtml(relation) + '</span>' : ''}</span>
           ${escapeHtml(m.tekst||'')}
           ${m.vedleggLenke ? `<a class="chat-attach" href="${escapeHtml(m.vedleggLenke)}" target="_blank">${currentLang === 'ar' ? '📎 مرفق' : '📎 Vedlegg'}</a>` : ''}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
@@ -2213,8 +2232,12 @@
           console.error('Kunne ikke oppdatere samtalestatus (meldingen ble likevel sendt):', threadErr);
         }
       }
-      notifyGuardianByEmail(currentThreadGuardianId, currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny melding fra læreren',
-        (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentTeacher.navn + '\n\n' + tekst);
+      const notifyStudent = currentThreadDoc && currentThreadDoc.studentId ? students.find(s => s.id === currentThreadDoc.studentId) : null;
+      const notifyGuardianIds = notifyStudent ? [notifyStudent.foresatt, notifyStudent.foresatt2].filter(Boolean) : [currentThreadGuardianId];
+      notifyGuardianIds.forEach(gId => {
+        notifyGuardianByEmail(gId, currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny melding fra læreren',
+          (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentTeacher.navn + '\n\n' + tekst);
+      });
       showToast(currentLang === 'ar' ? 'تم إرسال الرد.' : 'Svaret er sendt.');
       document.getElementById('msgReplyText').value = '';
       document.getElementById('msgReplyFileName').textContent = '';
