@@ -104,7 +104,7 @@
     getFirestore, collection, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, setPersistence, inMemoryPersistence
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     initializeAppCheck, ReCaptchaV3Provider
@@ -126,6 +126,7 @@
   });
   const db = getFirestore(app);
   const auth = getAuth(app);
+  setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
 
   window.doLogin = async function(){
     const email = document.getElementById('loginEmail').value.trim();
@@ -170,7 +171,7 @@
       return;
     }
     el.innerHTML = guardians.map(g => {
-      const myChildren = students.filter(s => s.foresatt === g.id);
+      const myChildren = students.filter(s => s.foresatt === g.id || s.foresatt2 === g.id);
       const childIds = myChildren.map(s => s.id);
 
       const myThreads = messageThreads.filter(m => m.guardianId === g.id).sort((a,b) => (b.lastActivityAt||b.createdAt||'').localeCompare(a.lastActivityAt||a.createdAt||''));
