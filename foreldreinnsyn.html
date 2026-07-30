@@ -161,7 +161,7 @@
     return d.toLocaleString('no-NO');
   }
 
-  let guardians = [], students = [], messageThreads = [], absenceRequests = [], paymentRequests = [];
+  let guardians = [], students = [], messageThreads = [], absenceRequests = [], paymentRequests = [], loginEvents = [];
 
   function render(){
     const el = document.getElementById('guardianList');
@@ -176,6 +176,8 @@
       const myThreads = messageThreads.filter(m => m.guardianId === g.id).sort((a,b) => (b.lastActivityAt||b.createdAt||'').localeCompare(a.lastActivityAt||a.createdAt||''));
       const myAbsences = absenceRequests.filter(a => childIds.includes(a.studentId)).sort((a,b) => (b.innsendtDato||a.dato||'').localeCompare(b.innsendtDato||a.dato||''));
       const myPayments = paymentRequests.filter(p => childIds.includes(p.studentId)).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      const weekAgo = Date.now() - 7*24*60*60*1000;
+      const myLogins = loginEvents.filter(le => le.role === 'guardian' && le.personId === g.id && new Date(le.timestamp).getTime() >= weekAgo);
 
       const lastThread = myThreads[0];
       const lastAbsence = myAbsences[0];
@@ -196,6 +198,10 @@
               <div class="val ${g.sisteInnlogging ? '' : 'empty'}">${g.sisteInnlogging ? formatDate(g.sisteInnlogging) : 'Aldri logget inn'}</div>
             </div>
             <div class="activity-row">
+              <div class="lbl">Innlogginger siste 7 dager</div>
+              <div class="val ${myLogins.length ? '' : 'empty'}">${myLogins.length}</div>
+            </div>
+            <div class="activity-row">
               <div class="lbl">Siste meldingsaktivitet</div>
               <div class="val ${lastThread ? '' : 'empty'}">${lastThread ? formatDate(lastThread.lastActivityAt || lastThread.createdAt) + ' — ' + escapeHtml(lastThread.title || '') : 'Ingen samtaler ennå'}</div>
             </div>
@@ -211,6 +217,11 @@
         </div>`;
     }).join('');
   }
+
+  onSnapshot(collection(db, 'loginEvents'), (snap) => {
+    loginEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  });
 
   onSnapshot(collection(db, 'guardians'), (snap) => {
     guardians = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
