@@ -38,13 +38,6 @@
   }
   .field textarea{
     font-family:'Jost',monospace; font-size:16px; min-height:220px; resize:vertical;
-    /* Long pasted code (a single unbroken token/line, e.g. inside a long
-       attribute or URL) used to force this box — and the whole page — to
-       grow wider than the screen, so reaching the "Tøm innhold" button
-       above meant scrolling right then back left. These 3 properties make
-       any content wrap inside the box no matter what, and overflow-x:hidden
-       is a hard backstop so the box itself can never grow past its own
-       width even if something still doesn't wrap. */
     white-space:pre-wrap;
     overflow-wrap:break-word;
     word-break:break-word;
@@ -57,6 +50,12 @@
   .btn-primary{background:var(--emerald); color:#fff;}
   .btn-primary:disabled{opacity:0.5; cursor:not-allowed;}
   .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink); margin-top:8px;}
+  .btn-file-label{
+    display:block; text-align:center; background:var(--paper-2); border:1.5px dashed var(--gold);
+    color:var(--emerald-d); font-family:'Jost',sans-serif; font-size:13px; font-weight:700;
+    letter-spacing:0.02em; padding:13px 14px; border-radius:6px; cursor:pointer; margin-bottom:10px;
+  }
+  .btn-file-label input[type="file"]{ display:none; }
   .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:10px 12px; border-radius:6px; display:none;}
   .status.show{display:block;}
   .status.ok{background:rgba(46,107,83,0.10); color:var(--emerald);}
@@ -71,6 +70,8 @@
   .who-bar span{flex:1 1 auto; min-width:0; word-break:break-word;}
   .who-bar button{background:none; border:none; color:var(--red); font-family:'Jost',sans-serif; font-size:11.5px; text-decoration:underline; cursor:pointer;}
   .hint{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:4px;}
+  .file-loaded-hint{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:10px; display:none;}
+  .file-loaded-hint.show{display:block;}
 </style>
 </head>
 <body>
@@ -117,7 +118,12 @@
 
     <div class="card">
       <h2>Publiser fil</h2>
-      <div class="sub">Lim inn innholdet Claude ga deg, velg riktig fil, og trykk «Publiser».</div>
+      <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
+
+      <label class="btn-file-label" for="fileUpload">📁 Velg fil fra telefonen...</label>
+      <input type="file" id="fileUpload" accept=".html,.js,.json,.css,.txt" onchange="handleFileUpload(event)">
+      <div class="file-loaded-hint" id="fileLoadedHint"></div>
+
       <div class="field">
         <label>Hvilken fil?</label>
         <select id="filePreset" onchange="onPresetChange()">
@@ -145,7 +151,7 @@
           <span>Filinnhold</span>
           <button type="button" class="clear-btn" onclick="clearFileContent()">Tøm innhold</button>
         </label>
-        <textarea id="fileContent" placeholder="Lim inn hele filinnholdet her..." wrap="soft"></textarea>
+        <textarea id="fileContent" placeholder="Velg en fil ovenfor, eller lim inn innholdet manuelt her..." wrap="soft"></textarea>
       </div>
       <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
       <div class="status" id="statusBox"></div>
@@ -230,6 +236,41 @@
     const statusBox = document.getElementById('statusBox');
     statusBox.className = 'status';
     statusBox.textContent = '';
+    const loadedHint = document.getElementById('fileLoadedHint');
+    loadedHint.className = 'file-loaded-hint';
+    loadedHint.textContent = '';
+    document.getElementById('fileUpload').value = '';
+  };
+
+  // Reads the picked file straight from the phone's storage (Downloads/
+  // Files app) into the textarea — no manual select-all/copy/paste needed.
+  // Also tries to auto-match the dropdown to the file's own name, so the
+  // person doesn't have to pick that by hand either when the names line up.
+  window.handleFileUpload = function(event){
+    const file = event.target.files && event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      document.getElementById('fileContent').value = e.target.result;
+      const loadedHint = document.getElementById('fileLoadedHint');
+      loadedHint.className = 'file-loaded-hint show';
+      loadedHint.textContent = '✓ Lastet inn: ' + file.name + ' (' + Math.round(file.size/1024) + ' kB)';
+
+      const sel = document.getElementById('filePreset');
+      const matchingOption = [...sel.options].find(o => o.value === file.name);
+      if(matchingOption){
+        sel.value = file.name;
+        onPresetChange();
+      } else {
+        sel.value = '__custom__';
+        document.getElementById('customPath').value = file.name;
+        onPresetChange();
+      }
+    };
+    reader.onerror = function(){
+      showStatus('✗ Kunne ikke lese filen. Prøv å lime inn innholdet manuelt i stedet.', 'err');
+    };
+    reader.readAsText(file, 'UTF-8');
   };
 
   function currentPath(){
@@ -258,7 +299,7 @@
       return;
     }
     if(!content.trim()){
-      showStatus('Lim inn filinnholdet først.', 'err');
+      showStatus('Velg en fil eller lim inn filinnholdet først.', 'err');
       return;
     }
     const btn = document.getElementById('publishBtn');
