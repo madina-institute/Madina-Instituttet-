@@ -1406,7 +1406,7 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-    setPersistence, inMemoryPersistence
+    setPersistence, inMemoryPersistence, sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -1609,6 +1609,33 @@
     }
   };
 
+  // Creates a real Firebase Auth account for a teacher or guardian (using
+  // their e-post) with a random throwaway password, then immediately sends
+  // them a password-reset email so they set their OWN real password on
+  // first use — the random password itself is never shown or stored
+  // anywhere. Uses a secondary app instance so the admin's own session is
+  // never affected. Silently skipped if the email is already registered
+  // (e.g. editing an existing person) or missing.
+  async function createPortalAccountIfNeeded(email){
+    if(!email) return { ok:false, reason:'no-email' };
+    const secondaryApp = initializeApp(firebaseConfig, 'SecondaryPortalAccount_' + Date.now());
+    const secondaryAuth = getAuth(secondaryApp);
+    try{
+      const tempPassword = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + 'Aa1!';
+      await createUserWithEmailAndPassword(secondaryAuth, email, tempPassword);
+      await sendPasswordResetEmail(secondaryAuth, email);
+      await signOut(secondaryAuth);
+      await deleteApp(secondaryApp);
+      return { ok:true };
+    } catch(err){
+      try{ await deleteApp(secondaryApp); }catch(e2){}
+      if(err.code === 'auth/email-already-in-use'){
+        return { ok:false, reason:'exists' };
+      }
+      console.error('createPortalAccountIfNeeded failed:', err);
+      return { ok:false, reason: err.code || 'unknown' };
+    }
+  }
 
   const SCHEMAS = {
     teachers: {
@@ -1619,8 +1646,7 @@
         {key:'dager', label:'Dager', type:'select', options:['Lørdag','Søndag','Lørdag og søndag']},
         {key:'telefon', label:'Telefon', type:'text'},
         {key:'epost', label:'E-post', type:'text'},
-        {key:'tildeltKlasse', label:'Tildelt klasse (for Lærerportal)', type:'dynamic-select', source:'classes'},
-        {key:'pin', label:'PIN-kode (4 sifre, for Lærerportal)', type:'text'}
+        {key:'tildeltKlasse', label:'Tildelt klasse (for Lærerportal)', type:'dynamic-select', source:'classes'}
       ],
       cols: ['navn','fag','dager','telefon','epost']
     },
@@ -1630,8 +1656,7 @@
         {key:'navn', label:'Fullt navn', type:'text'},
         {key:'relasjon', label:'Relasjon til eleven', type:'select', options:['Mor','Far','Annen']},
         {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'},
-        {key:'tilgangskode', label:'Tilgangskode (foreldreportal)', type:'text'}
+        {key:'epost', label:'E-post', type:'text'}
       ],
       cols: ['navn','relasjon','telefon','epost']
     },
@@ -1648,7 +1673,6 @@
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
 
-        {key:'telefon', label:'Telefon (elev/direkte)', type:'text'},
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
         {key:'belop', label:'Beløp totalt (kr)', type:'text'},
         {key:'belopBetalt', label:'Beløp betalt så langt (kr)', type:'text'},
@@ -1661,7 +1685,7 @@
         {key:'adresse', label:'Adresse', type:'text'},
         {key:'postnr_sted', label:'Postnummer og sted', type:'text'},
         {key:'foresatt2_navn', label:'Foresatt 2 — navn', type:'text'},
-        {key:'foresatt2_relasjon', label:'Foresatt 2 — relasjon', type:'text'},
+        {key:'foresatt2_relasjon', label:'Foresatt 2 — relasjon', type:'select', options:['','Mor','Far','Annen']},
         {key:'foresatt2_tlf', label:'Foresatt 2 — telefon', type:'text'},
         {key:'foresatt2_epost', label:'Foresatt 2 — e-post', type:'text'},
         {key:'nod_navn', label:'Nødkontakt — navn', type:'text'},
@@ -1764,12 +1788,12 @@
         {key:'adresse', label:'Adresse', type:'text'},
         {key:'postnr_sted', label:'Postnummer og sted', type:'text'},
         {key:'foresatt1_navn', label:'Foresatt 1 — navn', type:'text'},
-        {key:'foresatt1_relasjon', label:'Foresatt 1 — relasjon', type:'text'},
+        {key:'foresatt1_relasjon', label:'Foresatt 1 — relasjon', type:'select', options:['','Mor','Far','Annen']},
         {key:'foresatt1_relasjon_annet', label:'Foresatt 1 — relasjon (annet)', type:'text'},
         {key:'foresatt1_tlf', label:'Foresatt 1 — telefon', type:'text'},
         {key:'foresatt1_epost', label:'Foresatt 1 — e-post', type:'text'},
         {key:'foresatt2_navn', label:'Foresatt 2 — navn', type:'text'},
-        {key:'foresatt2_relasjon', label:'Foresatt 2 — relasjon', type:'text'},
+        {key:'foresatt2_relasjon', label:'Foresatt 2 — relasjon', type:'select', options:['','Mor','Far','Annen']},
         {key:'foresatt2_relasjon_annet', label:'Foresatt 2 — relasjon (annet)', type:'text'},
         {key:'foresatt2_tlf', label:'Foresatt 2 — telefon', type:'text'},
         {key:'foresatt2_epost', label:'Foresatt 2 — e-post', type:'text'},
@@ -3762,6 +3786,7 @@
     }
 
     try{
+      const isNewPortalPerson = !editingId && (editingType === 'teachers' || editingType === 'guardians') && entry.epost;
       if(editingId){
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
       } else {
@@ -3769,7 +3794,19 @@
       }
       if(financeLogSummary) logFinanceChange(financeLogSummary);
       closeModal();
-      showToast('Lagret.');
+      if(isNewPortalPerson){
+        showToast('Lagret. Oppretter portal-konto...');
+        const res = await createPortalAccountIfNeeded(entry.epost);
+        if(res.ok){
+          showToast('Konto opprettet — e-post for å sette passord er sendt til ' + entry.epost + '.');
+        } else if(res.reason === 'exists'){
+          showToast('Lagret. (Konto fantes allerede for denne e-posten.)');
+        } else {
+          showToast('Lagret, men kunne ikke opprette portal-konto automatisk. Kontakt support.');
+        }
+      } else {
+        showToast('Lagret.');
+      }
     } catch(err){
       console.error(err);
       showToast('Kunne ikke lagre. Sjekk internettforbindelsen.');
@@ -3974,7 +4011,7 @@
         } else {
           const newGuardianRef = await addDoc(collection(db, 'guardians'), {
             navn: guardianName,
-            relasjon: reg.foresatt1_relasjon === 'Annet' ? (reg.foresatt1_relasjon_annet || 'Annen') : (reg.foresatt1_relasjon || ''),
+            relasjon: reg.foresatt1_relasjon === 'Annen' ? (reg.foresatt1_relasjon_annet || 'Annen') : (reg.foresatt1_relasjon || ''),
             telefon: guardianPhone,
             epost: reg.foresatt1_epost || '',
             sistEndretAv: currentUserEmail || 'ukjent',
@@ -4003,7 +4040,6 @@
       studentRecord.sprakvalg = mapRegistrationSprakvalg(reg);
       studentRecord.klasse = '';
       studentRecord.foresatt = guardianId;
-      studentRecord.telefon = '';
       studentRecord.betalt = 'Nei';
       studentRecord.belop = String(discountedPrice);
       studentRecord.belopBetalt = '0';
