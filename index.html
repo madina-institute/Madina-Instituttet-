@@ -1065,10 +1065,6 @@
         <button class="btn btn-danger-solid" onclick="clearCollection('lessonPlans')">Slett</button>
       </div>
       <div class="danger-row">
-        <span>Slett alle ledelsesmedlemmer</span>
-        <button class="btn btn-danger-solid" onclick="clearCollection('ledelse')">Slett</button>
-      </div>
-      <div class="danger-row">
         <span>Slett alle møtereferater</span>
         <button class="btn btn-danger-solid" onclick="clearCollection('meetings')">Slett</button>
       </div>
@@ -1112,8 +1108,8 @@
     <div class="toolbar">
       <input class="search" id="searchLedelse" placeholder="Søk etter navn eller rolle...">
       <span class="count-chip" id="countLedelse" onclick="toggleRecordsById('tableLedelse')">0 ledelsesmedlemmer</span>
-      <button class="btn btn-ghost" onclick="exportCSV('ledelse')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('ledelse')">+ Ny person</button>
+      <button class="btn btn-ghost" onclick="exportLedelseCSV()">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny person</button>
     </div>
     <div class="records-hidden card-grid" id="tableLedelse"></div>
   </div>
@@ -1623,14 +1619,15 @@
       const who = document.getElementById('loggedInAs');
       if(who) who.textContent = user.email;
       resetInactivityTimer();
-      // ledelse/meetings/finances require request.auth != null in the
-      // Firestore rules — attaching their listeners before login used to
-      // leave them permanently stuck on "Kobler til..." since they were
-      // started at page load with no auth token yet. Now they only start
-      // once a real login is confirmed, and only once per session.
+      // meetings/finances require request.auth != null in the Firestore
+      // rules — attaching their listeners before login used to leave them
+      // permanently stuck on "Kobler til..." since they were started at
+      // page load with no auth token yet. Now they only start once a real
+      // login is confirmed, and only once per session. (Ledelse is no
+      // longer its own collection/listener — it's a filtered view over
+      // 'teachers', re-rendered whenever the teachers listener fires.)
       if(!authGatedListenersAttached){
         authGatedListenersAttached = true;
-        attachListener('ledelse');
         attachListener('meetings');
         attachListener('finances');
       }
@@ -1650,6 +1647,86 @@
     'Arabisk lærer': 'Arabisk',
     'Urdu lærer': 'Urdu'
   };
+
+  // ===== CENTRAL STAFF/ROLE SYNC =====
+  // Single source of truth for keeping a person's role-driven records in
+  // sync across the three places a "staff member" can exist:
+  //   - adminUsers (invisible access-control list — gates admin panel login)
+  //   - ledelse    (visible staff directory cards, split into
+  //                 "Øvre ledelse" / "Administrativt kadre" by role)
+  //   - teachers   (functional record needed for class assignment +
+  //                 Lærerportal login)
+  // Called from EVERY entry point that can set/change a person's roller
+  // (the Ansatte form, and editing a Ledelse or Lærer card directly) so
+  // that no matter which door someone comes in through, all three stay
+  // consistent and nothing has to be re-entered by hand a second time.
+  // Matching an existing person is done by e-post (case-insensitive).
+  async function syncStaffRoles(navn, epost, rollerArray, opts){
+    opts = opts || {};
+    if(!epost || rollerArray.length === 0) return { ok:false, reason:'missing-data' };
+    const emailLc = epost.trim().toLowerCase();
+    const rollerStr = rollerArray.join(', ');
+    const grantsAdmin = rollerArray.some(r => ADMIN_PANEL_ROLES.includes(r));
+    const teacherRoles = rollerArray.filter(r => TEACHER_ROLE_TO_FAG[r]);
+    const grantsTeacher = teacherRoles.length > 0;
+    const parts = [];
+
+    if(opts.sendAccountEmail){
+      const accountRes = await createPortalAccountIfNeeded(epost);
+      if(!accountRes.ok){
+        return { ok:false, reason: accountRes.reason };
+      }
+    }
+
+    // adminUsers — directory + access-control entry for EVERY role holder,
+    // regardless of whether their specific roles grant panel access (access
+    // itself is gated on role content at login time, not on presence here).
+    const existingAdmin = adminUsersCache.find(u => (u.epost||'').trim().toLowerCase() === emailLc);
+    if(existingAdmin){
+      await updateDoc(doc(db, 'adminUsers', existingAdmin.id), { navn, epost, roller: rollerStr });
+    } else {
+      await addDoc(collection(db, 'adminUsers'), {
+        navn, epost, roller: rollerStr,
+        opprettetAv: currentUserEmail || 'ukjent',
+        opprettetDato: new Date().toISOString().slice(0,10)
+      });
+    }
+    parts.push(grantsAdmin ? 'tilgang til Administrativt panel' : 'registrert i ansattoversikten');
+
+    // teachers is now the single master staff record — created/updated for
+    // EVERYONE processed here, not just people with a teaching-subject
+    // role. The Ledelse panel (Øvre ledelse / Administrativt kadre) is a
+    // live filtered VIEW over this same collection, so there is exactly
+    // one place a person's roles ever live — no separate 'ledelse' writes.
+    // Existing tildeltKlasse/dager/telefon/fag are preserved; 'fag' is only
+    // filled in when it was empty, so a class-subject an admin already
+    // picked by hand is never silently overwritten.
+    // skipTeacherWrite: set by callers (like editing a teacher card
+    // directly) that already wrote the full teachers document themselves
+    // via the normal save path — without this, the local cache hasn't
+    // caught up with that write yet (Firestore listeners are async), so
+    // the "does a record already exist?" check below could miss it and
+    // create a second, duplicate teacher document for the same person.
+    if(!opts.skipTeacherWrite){
+      const existingTeacher = cache.teachers.find(tc => (tc.epost||'').trim().toLowerCase() === emailLc);
+      if(existingTeacher){
+        const update = { navn, epost, roller: rollerStr };
+        if(!existingTeacher.fag && grantsTeacher) update.fag = TEACHER_ROLE_TO_FAG[teacherRoles[0]];
+        await updateDoc(doc(db, 'teachers', existingTeacher.id), update);
+        parts.push('personkort oppdatert');
+      } else {
+        await addDoc(collection(db, 'teachers'), {
+          navn, epost, fag: grantsTeacher ? TEACHER_ROLE_TO_FAG[teacherRoles[0]] : '',
+          roller: rollerStr, dager: '', telefon: '', tildeltKlasse: ''
+        });
+        parts.push(grantsTeacher ? 'lærerkonto opprettet (husk å tildele klasse under "Lærere")' : 'personkort opprettet');
+      }
+    } else {
+      parts.push('personkort oppdatert');
+    }
+
+    return { ok:true, summary: parts.join(' + ') };
+  }
 
   window.createNewStaffAccount = async function(){
     const navn = document.getElementById('newStaffName').value.trim();
@@ -1674,63 +1751,16 @@
     msgEl.textContent = 'Oppretter konto...';
     msgEl.style.display = 'block';
 
-    const accountRes = await createPortalAccountIfNeeded(email);
-    if(!accountRes.ok && accountRes.reason !== 'exists'){
-      msgEl.style.color = 'var(--red)';
-      msgEl.textContent = 'Kunne ikke opprette konto: ' + accountRes.reason;
-      msgEl.style.display = 'block';
-      return;
-    }
-
-    const grantsAdmin = roller.some(r => ADMIN_PANEL_ROLES.includes(r));
-    const teacherRoles = roller.filter(r => TEACHER_ROLE_TO_FAG[r]);
-    const grantsTeacher = teacherRoles.length > 0;
-    const createdParts = [];
-
     try{
-      // Always recorded in the staff directory (adminUsers) with their full
-      // role list, for reference — actual admin panel access at login time
-      // is gated on whether one of their roles is in ADMIN_PANEL_ROLES, not
-      // on mere presence in this collection (see onAuthStateChanged above).
-      await addDoc(collection(db, 'adminUsers'), {
-        navn, epost: email, roller: roller.join(', '),
-        opprettetAv: currentUserEmail || 'ukjent',
-        opprettetDato: new Date().toISOString().slice(0,10)
-      });
-      createdParts.push(grantsAdmin ? 'tilgang til Administrativt panel' : 'registrert i ansattoversikten');
-
-      if(grantsAdmin){
-        // Also create (or update, if this e-post already has a Ledelse
-        // card) the visible leadership card, so the Ledelse section always
-        // stays in sync with the Ansatte form — one entry point, no
-        // duplicate/disconnected records for the same real person.
-        const existingLedelse = cache.ledelse.find(l => (l.epost||'').trim().toLowerCase() === email.toLowerCase());
-        if(existingLedelse){
-          const mergedRoller = Array.from(new Set([
-            ...(existingLedelse.rolle||'').split(',').map(s=>s.trim()).filter(Boolean),
-            ...roller
-          ]));
-          await updateDoc(doc(db, 'ledelse', existingLedelse.id), { navn, epost: email, rolle: mergedRoller.join(', ') });
-          createdParts.push('oppdatert ledelseskort');
-        } else {
-          await addDoc(collection(db, 'ledelse'), {
-            navn, epost: email, rolle: roller.join(', '), fagomrade: '', telefon: ''
-          });
-          createdParts.push('ledelseskort opprettet');
-        }
+      const res = await syncStaffRoles(navn, email, roller, { sendAccountEmail: true });
+      if(!res.ok){
+        msgEl.style.color = 'var(--red)';
+        msgEl.textContent = 'Kunne ikke opprette konto: ' + res.reason;
+        msgEl.style.display = 'block';
+        return;
       }
-
-      if(grantsTeacher){
-        await addDoc(collection(db, 'teachers'), {
-          navn, epost: email,
-          fag: TEACHER_ROLE_TO_FAG[teacherRoles[0]],
-          roller: roller.join(', '), dager: '', telefon: '', tildeltKlasse: ''
-        });
-        createdParts.push('lærerkonto (husk å tildele klasse under "Lærere")');
-      }
-
       msgEl.style.color = 'var(--emerald)';
-      msgEl.textContent = 'Opprettet: ' + createdParts.join(' + ') + '. E-post for å sette passord er sendt til ' + email + '.';
+      msgEl.textContent = 'Opprettet: ' + res.summary + '. E-post for å sette passord er sendt til ' + email + '.';
       msgEl.style.display = 'block';
       document.getElementById('newStaffName').value = '';
       document.getElementById('newStaffEmail').value = '';
@@ -2103,26 +2133,12 @@
       ],
       cols: ['klasse','guardianNavn','fra','dato']
     },
-    ledelse: {
-      label: 'ledelsesmedlem', collectionName: 'ledelse',
-      fields: [
-        {key:'rolle', label:'Roller', type:'role-checklist', options:[
-          'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator',
-          'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
-        ]},
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'fagomrade', label:'Fagområde (for fagkoordinator)', type:'text'},
-        {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'}
-      ],
-      cols: ['navn','rolle','fagomrade','telefon']
-    },
     meetings: {
       label: 'møtereferat', collectionName: 'meetings',
       fields: [
         {key:'dato', label:'Dato', type:'text'},
         {key:'tema', label:'Møtetema', type:'text'},
-        {key:'referent', label:'Referent (skrevet av)', type:'dynamic-select', source:'ledelse'},
+        {key:'referent', label:'Referent (skrevet av)', type:'dynamic-select', source:'teachers'},
         {key:'tilstedeRoller', label:'Til stede (roller)', type:'role-checklist', options:[
           'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærere','Assistenter','Andre'
         ]},
@@ -2144,10 +2160,10 @@
         ]},
         {key:'belop', label:'Beløp (kr)', type:'text'},
         {key:'beskrivelse', label:'Beskrivelse / hva ble kjøpt', type:'text'},
-        {key:'kjoptAv', label:'Kjøpt av (ved innkjøp)', type:'dynamic-select', source:['ledelse','teachers']},
+        {key:'kjoptAv', label:'Kjøpt av (ved innkjøp)', type:'dynamic-select', source:'teachers'},
         {key:'kvitteringLink', label:'Kvittering/dokument', type:'file'},
         {key:'refundert', label:'Refundert til kjøper?', type:'select', options:['Ja','Nei','Ikke aktuelt']},
-        {key:'registrertAv', label:'Registrert av', type:'dynamic-select', source:'ledelse'}
+        {key:'registrertAv', label:'Registrert av', type:'dynamic-select', source:'teachers'}
       ],
       cols: ['dato','type','kategori','belop','beskrivelse']
     }
@@ -2509,7 +2525,8 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], ledelse: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [] };
+  let adminUsersCache = [];
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -2585,7 +2602,7 @@
       data = data.filter(row => schema.cols.some(c => colDisplay(row, c).toLowerCase().includes(query)));
     }
     renderRecordCards(type, data);
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', ledelse:'ledelsesmedlemmer', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
+    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
     const countEl = document.getElementById('count' + capitalize(type));
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
@@ -2593,7 +2610,32 @@
     if(type === 'classes') populateAttendanceClassFilter();
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
+    if(type === 'teachers') renderLedelseView();
     updateStats();
+  }
+
+  // Ledelse is a filtered VIEW over 'teachers' (anyone with at least one
+  // role set), not its own collection — so it can never drift out of sync
+  // with the master staff list. Re-rendered every time teachers data
+  // changes. Editing/adding always opens the real teachers modal.
+  function renderLedelseView(){
+    const searchEl = document.getElementById('searchLedelse');
+    const query = (searchEl ? searchEl.value : '').toLowerCase();
+    let data = cache.teachers.filter(t => (t.roller || '').trim() !== '');
+    if(query){
+      data = data.filter(row =>
+        (row.navn||'').toLowerCase().includes(query) ||
+        (row.roller||'').toLowerCase().includes(query)
+      );
+    }
+    renderRecordCards('teachers', data, {
+      targetGridId: 'tableLedelse',
+      pillKeyOverride: 'roller',
+      groupByLeadership: true,
+      roleFieldKey: 'roller'
+    });
+    const countEl = document.getElementById('countLedelse');
+    if(countEl) countEl.innerHTML = data.length + ' ledelsesmedlemmer <span class="toggle-arrow">▾</span>';
   }
 
   // Which field is the card "title" and which (select-type) field is shown as a colored pill, per type.
@@ -2613,35 +2655,36 @@
     studentNotes: { title:'studentId', pill:null },
     messages: { title:'guardianNavn', pill:'fra' },
     meetings: { title:'tema', pill:null },
-    finances: { title:'beskrivelse', pill:'type' },
-    ledelse: { title:'navn', pill:'rolle' }
+    finances: { title:'beskrivelse', pill:'type' }
   };
 
   const SENIOR_LEADERSHIP_ROLES = ['Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder'];
-  function isSeniorLeadershipRow(row){
-    const roller = (row.rolle || '').split(',').map(s=>s.trim()).filter(Boolean);
+  function isSeniorLeadershipRow(row, roleFieldKey){
+    const roller = (row[roleFieldKey] || '').split(',').map(s=>s.trim()).filter(Boolean);
     return roller.length === 0 || roller.some(r => SENIOR_LEADERSHIP_ROLES.includes(r));
   }
 
-  function renderRecordCards(type, data){
+  function renderRecordCards(type, data, opts){
+    opts = opts || {};
     const schema = SCHEMAS[type];
-    const grid = document.getElementById('table' + capitalize(type));
+    const grid = document.getElementById(opts.targetGridId || ('table' + capitalize(type)));
     if(!grid) return;
     grid.innerHTML = '';
     if(data.length === 0){
       grid.innerHTML = `<div class="record-empty">Ingen ${schema.label}er registrert ennå.</div>`;
       return;
     }
-    // Leadership cards are visually split into "Øvre ledelse" (Eier,
-    // Skoleleder, Daglig leder, Faglig/pedagogisk leder) and
-    // "Administrativt kadre" (everyone else: Fagkoordinator, faglærere,
-    // assistenter, frivillige) — purely a display grouping over the SAME
-    // data/roles, not a separate collection, so there is only one place
-    // roles are ever stored or can drift out of sync.
-    if(type === 'ledelse'){
+    // The Ledelse panel shows a filtered view of 'teachers' (anyone with at
+    // least one role) split visually into "Øvre ledelse" (Eier, Skoleleder,
+    // Daglig leder, Faglig/pedagogisk leder) and "Administrativt kadre"
+    // (everyone else: Fagkoordinator, faglærere, assistenter, frivillige) —
+    // purely a display grouping over the SAME data/roles, not a separate
+    // collection, so there is only one place roles are ever stored.
+    const groupByLeadership = !!opts.groupByLeadership;
+    if(groupByLeadership){
       data = [...data].sort((a,b) => {
-        const aSenior = isSeniorLeadershipRow(a) ? 0 : 1;
-        const bSenior = isSeniorLeadershipRow(b) ? 0 : 1;
+        const aSenior = isSeniorLeadershipRow(a, opts.roleFieldKey) ? 0 : 1;
+        const bSenior = isSeniorLeadershipRow(b, opts.roleFieldKey) ? 0 : 1;
         return aSenior - bSenior;
       });
     }
@@ -2654,7 +2697,7 @@
     };
     const cfg = CARD_CONFIG[type] || {};
     const titleKey = cfg.title || schema.cols[0];
-    let pillKey = cfg.pill;
+    let pillKey = opts.pillKeyOverride !== undefined ? opts.pillKeyOverride : cfg.pill;
     if(pillKey === undefined){
       const second = schema.cols[1];
       const secondField = second && schema.fields.find(f=>f.key===second);
@@ -2662,8 +2705,8 @@
     }
     let lastLeadershipGroup = null;
     data.forEach(row => {
-      if(type === 'ledelse'){
-        const thisGroup = isSeniorLeadershipRow(row) ? 'senior' : 'staff';
+      if(groupByLeadership){
+        const thisGroup = isSeniorLeadershipRow(row, opts.roleFieldKey) ? 'senior' : 'staff';
         if(thisGroup !== lastLeadershipGroup){
           const header = document.createElement('div');
           header.style.cssText = 'grid-column:1/-1; font-family:\'Cormorant Garamond\',serif; font-weight:700; font-size:16px; color:var(--emerald-d); margin:' + (lastLeadershipGroup ? '18px' : '0') + ' 0 4px; padding-bottom:6px; border-bottom:1px solid var(--line);';
@@ -3324,7 +3367,7 @@
 
   function buildFullBackupText(){
     let out = '';
-    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes','contactUpdateRequests','paymentRequests','messages'].forEach(type => {
+    ['teachers','guardians','students','classes','hours','attendance','lessonPlans','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes','contactUpdateRequests','paymentRequests','messages'].forEach(type => {
       const schema = SCHEMAS[type];
       const data = cache[type];
       out += '=== ' + schema.label.toUpperCase() + 'E ===\n';
@@ -3340,7 +3383,7 @@
   function hasAnyData(){
     return cache.teachers.length>0 || cache.guardians.length>0 || cache.students.length>0 ||
            cache.classes.length>0 || cache.hours.length>0 || cache.attendance.length>0 ||
-           cache.lessonPlans.length>0 || cache.ledelse.length>0 || cache.meetings.length>0 ||
+           cache.lessonPlans.length>0 || cache.meetings.length>0 ||
            cache.finances.length>0 || cache.registrations.length>0;
   }
 
@@ -3712,49 +3755,6 @@
     a.click();
     URL.revokeObjectURL(url);
   };
-  function buildLedelseNavnInput(currentRolle, currentValue){
-    const linkedRoles = ['Lærer','Assistent'];
-    let input;
-    if(linkedRoles.includes(currentRolle)){
-      input = document.createElement('select');
-      const blank = document.createElement('option');
-      blank.value = ''; blank.textContent = '— Velg —';
-      input.appendChild(blank);
-      const options = [...new Set(cache.teachers.map(r => r.navn).filter(Boolean))].sort();
-      if(options.length === 0){
-        const none = document.createElement('option');
-        none.value = ''; none.disabled = true;
-        none.textContent = 'Ingen lærere registrert ennå (legg til under Administrativ → Lærere)';
-        input.appendChild(none);
-      }
-      options.forEach(opt => {
-        const o = document.createElement('option');
-        o.value = opt; o.textContent = opt;
-        if(currentValue === opt) o.selected = true;
-        input.appendChild(o);
-      });
-      if(currentValue && !options.includes(currentValue)){
-        const o = document.createElement('option');
-        o.value = currentValue; o.textContent = currentValue + ' (utgått)';
-        o.selected = true;
-        input.appendChild(o);
-      }
-    } else {
-      input = document.createElement('input');
-      input.type = 'text';
-      input.value = currentValue || '';
-    }
-    input.id = 'field_navn';
-    return input;
-  }
-
-  function updateLedelseNavnField(newRolle){
-    const oldInput = document.getElementById('field_navn');
-    if(!oldInput) return;
-    const currentValue = oldInput.value;
-    const newInput = buildLedelseNavnInput(newRolle, currentValue);
-    oldInput.replaceWith(newInput);
-  }
 
   function computeSoskenPrice(program, guardianId, excludeId){
     const basePrice = parseFloat(PROGRAM_PRICES[program] || 0) || 0;
@@ -3810,11 +3810,6 @@
         if(type === 'students' && f.key === 'program'){
           input.addEventListener('change', () => applyStudentDiscountPricing());
         }
-        if(type === 'ledelse' && f.key === 'rolle'){
-          input.addEventListener('change', () => updateLedelseNavnField(input.value));
-        }
-      } else if(type === 'ledelse' && f.key === 'navn'){
-        input = buildLedelseNavnInput(existing.rolle, existing.navn);
       } else if(f.type === 'dynamic-select'){
         input = document.createElement('select');
         const blank = document.createElement('option');
@@ -3983,7 +3978,11 @@
     }
 
     try{
-      const isNewPortalPerson = !editingId && (editingType === 'teachers' || editingType === 'guardians') && entry.epost;
+      const isNewGuardianPerson = !editingId && editingType === 'guardians' && entry.epost;
+      const isRoleDrivenType = editingType === 'teachers';
+      const rollerArr = isRoleDrivenType ? (entry.roller || '').split(',').map(s=>s.trim()).filter(Boolean) : [];
+      const isNewRolePerson = !editingId && isRoleDrivenType && entry.epost && rollerArr.length > 0;
+
       if(editingId){
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
       } else {
@@ -3991,15 +3990,23 @@
       }
       if(financeLogSummary) logFinanceChange(financeLogSummary);
       closeModal();
-      if(isNewPortalPerson){
+
+      if(isRoleDrivenType && entry.epost && rollerArr.length > 0){
+        // Whether this teacher card was just created OR edited (e.g. an
+        // admin added "Skoleleder" to an existing teacher's roles), keep
+        // adminUsers (access control) in sync — teachers itself IS the
+        // master record here, and Ledelse is just a filtered view of it,
+        // so there is nothing else that needs writing.
+        showToast('Lagret. Synkroniserer roller...');
+        const res = await syncStaffRoles(entry.navn, entry.epost, rollerArr, { sendAccountEmail: isNewRolePerson, skipTeacherWrite: true });
+        showToast(res.ok ? 'Lagret og synkronisert: ' + res.summary + '.' : 'Lagret, men synkronisering feilet: ' + res.reason);
+      } else if(isNewGuardianPerson){
         showToast('Lagret. Oppretter portal-konto...');
         const res = await createPortalAccountIfNeeded(entry.epost);
         if(res.ok){
           showToast('Konto opprettet — e-post for å sette passord er sendt til ' + entry.epost + '.');
-        } else if(res.reason === 'exists'){
-          showToast('Lagret. (Konto fantes allerede for denne e-posten.)');
         } else {
-          showToast('Lagret, men kunne ikke opprette portal-konto automatisk. Kontakt support.');
+          showToast('Lagret, men kunne ikke opprette portal-konto automatisk: ' + res.reason);
         }
       } else {
         showToast('Lagret.');
@@ -4432,6 +4439,21 @@
     URL.revokeObjectURL(url);
   };
 
+  window.exportLedelseCSV = function(){
+    const schema = SCHEMAS.teachers;
+    const data = cache.teachers.filter(t => (t.roller || '').trim() !== '');
+    if(data.length === 0){ showToast('Ingen data å eksportere.'); return; }
+    const headers = schema.fields.map(f => f.label);
+    const rows = data.map(row => schema.fields.map(f => '"' + (row[f.key]||'').replace(/"/g,'""') + '"'));
+    const csv = [headers.join(','), ...rows.map(r=>r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'madina_ledelse.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   function showToast(msg){
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -4453,10 +4475,12 @@
   });
 
   // Search listeners
-  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','ledelse','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes','messages'].forEach(type => {
+  ['teachers','guardians','students','classes','hours','attendance','lessonPlans','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes','messages'].forEach(type => {
     const el = document.getElementById('search' + capitalize(type));
     if(el) el.addEventListener('input', () => render(type));
   });
+  const searchLedelseEl = document.getElementById('searchLedelse');
+  if(searchLedelseEl) searchLedelseEl.addEventListener('input', () => renderLedelseView());
 
   // Init: attach real-time listeners for all 3 collections
   attachListener('teachers');
@@ -4477,7 +4501,8 @@
   attachListener('messages');
 
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
-    const list = snap.docs.map(d => d.data()).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
+    adminUsersCache = list;
     const el = document.getElementById('adminUsersList');
     if(!el) return;
     if(list.length === 0){
