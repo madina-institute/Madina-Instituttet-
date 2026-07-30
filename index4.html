@@ -784,6 +784,10 @@
           <label data-i18n="yourMessage">Din melding</label>
           <textarea id="guardianAdminMsgReplyText" rows="3"></textarea>
         </div>
+        <div class="field" style="display:flex; gap:16px; align-items:center;">
+          <label style="display:flex; align-items:center; gap:5px; font-weight:400; margin:0;"><input type="radio" name="guardianAdminMsgVisibility" value="private" checked> Svar privat til administrasjonen</label>
+          <label style="display:flex; align-items:center; gap:5px; font-weight:400; margin:0;"><input type="radio" name="guardianAdminMsgVisibility" value="all"> Svar til alle mottakere</label>
+        </div>
         <button class="btn btn-primary" onclick="sendGuardianAdminMsgReply()">Send melding</button>
       </div>
     </div>
@@ -1586,7 +1590,7 @@
 
   function myAdminMsgThreads(){
     if(!currentGuardian) return [];
-    return broadcastThreads.filter(th => th.recipientType === 'guardian' && th.recipientId === currentGuardian.id);
+    return broadcastThreads.filter(th => (th.recipients||[]).some(r => r.type === 'guardian' && r.id === currentGuardian.id));
   }
 
   function updateAdminMsgBadge(){
@@ -1610,7 +1614,9 @@
     const el = document.getElementById('guardianAdminMsgsList');
     if(!el || !currentGuardian) return;
     const rows = myAdminMsgThreads().map(th => {
-      const msgs = broadcastMessages.filter(m => m.threadId === th.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const msgs = broadcastMessages.filter(m => m.threadId === th.id &&
+        (m.fra === 'Administrasjon' || m.visibility === 'all' || m.avsenderId === currentGuardian.id)
+      ).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
       const last = msgs[msgs.length - 1];
       const seen = localStorage.getItem('adminmsg_seen_' + currentGuardian.id + '_' + th.id);
       const unread = last && last.fra === 'Administrasjon' && (!seen || (last.dato||'') > seen);
@@ -1655,15 +1661,18 @@
   function renderGuardianAdminMsgHistory(){
     const el = document.getElementById('guardianAdminMsgHistory');
     if(!el || !currentAdminMsgThreadId) return;
-    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId &&
+      (m.fra === 'Administrasjon' || m.visibility === 'all' || m.avsenderId === currentGuardian.id)
+    ).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     el.innerHTML = msgs.map(m => {
       const isMe = m.fra !== 'Administrasjon';
-      const senderName = isMe ? currentGuardian.navn : 'Administrasjonen';
+      const senderName = isMe ? m.avsenderNavn : 'Administrasjonen';
+      const privateTag = m.visibility === 'private' ? ' <span style="font-size:10px; font-weight:700; color:var(--gold);">🔒 privat</span>' : '';
       return `
       <div class="chat-row ${isMe ? 'me' : ''}">
         <div class="chat-avatar">${escapeHtml(initialsFor(senderName))}</div>
         <div class="chat-bubble">
-          <span class="chat-sender">${escapeHtml(senderName)}</span>
+          <span class="chat-sender">${escapeHtml(senderName)}${privateTag}</span>
           ${escapeHtml(m.tekst||'')}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
         </div>
@@ -1675,11 +1684,12 @@
   window.sendGuardianAdminMsgReply = async function(){
     if(!currentGuardian || !currentAdminMsgThreadId) return;
     const tekst = document.getElementById('guardianAdminMsgReplyText').value.trim();
+    const visibility = document.querySelector('input[name="guardianAdminMsgVisibility"]:checked')?.value || 'private';
     if(!tekst){ alert(t('teacherMsgFill')); return; }
     try{
       await addDoc(collection(db, 'broadcastMessages'), {
-        threadId: currentAdminMsgThreadId, fra: 'Foresatt', avsenderNavn: currentGuardian.navn,
-        tekst, dato: new Date().toISOString()
+        threadId: currentAdminMsgThreadId, fra: 'Foresatt', avsenderNavn: currentGuardian.navn, avsenderId: currentGuardian.id,
+        visibility, tekst, dato: new Date().toISOString()
       });
       await updateDoc(doc(db, 'broadcastThreads', currentAdminMsgThreadId), { lastActivityAt: new Date().toISOString() });
       document.getElementById('guardianAdminMsgReplyText').value = '';
