@@ -1239,6 +1239,7 @@
     }
     currentGuardian = guardian;
     updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
+    addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = guardian.navn;
