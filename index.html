@@ -610,6 +610,9 @@
     </div>
     <button class="btn-login" onclick="doAdminLogin()">Logg inn</button>
     <div class="login-error" id="loginError"></div>
+    <div style="text-align:center; margin-top:12px;">
+      <a href="#" onclick="doAdminForgotPassword(); return false;" style="font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);">Glemt passord?</a>
+    </div>
   </div>
 </div>
 
@@ -993,27 +996,38 @@
     </div>
 
     <div class="report-card" style="margin-top:20px;">
-      <h3>Brukere (innlogging)</h3>
-      <div class="sub">Opprett tilgang for flere administratorer — hver person logger inn med sin egen e-post</div>
+      <h3>Ansatte (innlogging)</h3>
+      <div class="sub">Opprett tilgang for ansatte — hver person logger inn med sin egen e-post. Én person kan ha flere roller samtidig.</div>
       <div class="field-row-2">
-        <div class="field"><label>E-post</label><input type="email" id="newAdminEmail"></div>
-        <div class="field"><label>Passord (minst 6 tegn)</label><input type="password" id="newAdminPassword"></div>
+        <div class="field"><label>Navn</label><input type="text" id="newStaffName"></div>
+        <div class="field"><label>E-post</label><input type="email" id="newStaffEmail"></div>
       </div>
       <div class="field">
-        <label>Rolle (kun for visning)</label>
-        <select id="newAdminRole">
-          <option value="Administrator">Administrator</option>
-          <option value="Eier">Eier</option>
-          <option value="Direktør">Direktør</option>
-          <option value="Pedagogisk leder">Pedagogisk leder</option>
-          <option value="Annet">Annet</option>
-        </select>
+        <label>Roller (velg alle som passer)</label>
+        <div id="newStaffRoles" style="display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--paper);">
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Eier"> Eier</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Skoleleder"> Skoleleder</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Faglig / pedagogisk leder"> Faglig / pedagogisk leder</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Fagkoordinator"> Fagkoordinator</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Koran lærer"> Koran lærer</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Islam lærer"> Islam lærer</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Arabisk lærer"> Arabisk lærer</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Urdu lærer"> Urdu lærer</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Assistent"> Assistent</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Frivillig"> Frivillig</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Annet"> Annet</label>
+        </div>
+        <p class="hint" style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:6px;">
+          Roller merket <strong>Eier / Skoleleder / Faglig / pedagogisk leder / Fagkoordinator</strong> gir tilgang til dette Administrative panelet.<br>
+          Roller merket <strong>Koran / Islam / Arabisk / Urdu lærer</strong> oppretter automatisk en ekte lærer-konto (klasse tildeles etterpå under "Lærere").<br>
+          Assistent / Frivillig / Annet er kun merkelapper — ingen automatisk tilgang.
+        </p>
       </div>
-      <button class="btn btn-primary" onclick="createNewAdminAccount()">Opprett konto</button>
+      <button class="btn btn-primary" onclick="createNewStaffAccount()">Opprett konto</button>
       <p class="login-error" id="newAdminMsg" style="display:none; margin-top:10px;"></p>
 
       <hr class="divider">
-      <h3 style="margin-top:0;">Registrerte administratorer</h3>
+      <h3 style="margin-top:0;">Registrerte ansatte</h3>
       <div class="sub">Oversikt over kontoer opprettet herfra (til referanse)</div>
       <div id="adminUsersList"></div>
     </div>
@@ -1412,7 +1426,7 @@
 <script type="module">
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc
+    getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDocs, query, where
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
@@ -1494,6 +1508,28 @@
     }
   };
 
+  window.doAdminForgotPassword = async function(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    if(!email){
+      errEl.textContent = 'Skriv inn e-posten din først.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await sendPasswordResetEmail(auth, email);
+      errEl.style.color = 'var(--emerald)';
+      errEl.textContent = 'E-post for å tilbakestille passord er sendt.';
+      errEl.style.display = 'block';
+    } catch(err){
+      console.error(err);
+      errEl.style.color = '';
+      errEl.textContent = 'Kunne ikke sende e-post. Sjekk at e-posten er riktig.';
+      errEl.style.display = 'block';
+    }
+  };
+
   window.doAdminLogout = function(){
     if(!confirm('Logg ut?')) return;
     signOut(auth);
@@ -1546,9 +1582,40 @@
     }
   };
 
+  const ADMIN_PANEL_ROLES = ['Eier', 'Skoleleder', 'Faglig / pedagogisk leder', 'Fagkoordinator'];
+
   let authGatedListenersAttached = false;
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if(user){
+      // SECURITY: signing in with a valid Firebase account is NOT enough by
+      // itself — teacher and guardian accounts share the same Firebase Auth
+      // pool now that all portals use real e-post/passord login. We must
+      // verify this specific e-post is actually registered in 'adminUsers'
+      // before granting access to the admin panel. If not, sign them back
+      // out immediately and show an error instead of the panel.
+      let isAuthorizedAdmin = false;
+      try{
+        const q = query(collection(db, 'adminUsers'), where('epost', '==', user.email));
+        const snap = await getDocs(q);
+        isAuthorizedAdmin = snap.docs.some(d => {
+          const data = d.data();
+          const roller = (data.roller || data.rolle || '').split(',').map(s => s.trim()).filter(Boolean);
+          return roller.length === 0 || roller.some(r => ADMIN_PANEL_ROLES.includes(r));
+        });
+      } catch(err){
+        console.error('Kunne ikke bekrefte admin-tilgang:', err);
+        isAuthorizedAdmin = false;
+      }
+      if(!isAuthorizedAdmin){
+        await signOut(auth);
+        const errEl = document.getElementById('loginError');
+        if(errEl){
+          errEl.style.color = 'var(--red)';
+          errEl.textContent = 'Denne kontoen har ikke tilgang til Administrativt panel.';
+          errEl.style.display = 'block';
+        }
+        return;
+      }
       currentUserEmail = user.email;
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appRoot').style.display = 'block';
@@ -1576,43 +1643,76 @@
     }
   });
 
-  window.createNewAdminAccount = async function(){
-    const email = document.getElementById('newAdminEmail').value.trim();
-    const pw = document.getElementById('newAdminPassword').value;
+  const TEACHER_ROLE_TO_FAG = {
+    'Koran lærer': 'Koran',
+    'Islam lærer': 'Islam',
+    'Arabisk lærer': 'Arabisk',
+    'Urdu lærer': 'Urdu'
+  };
+
+  window.createNewStaffAccount = async function(){
+    const navn = document.getElementById('newStaffName').value.trim();
+    const email = document.getElementById('newStaffEmail').value.trim();
+    const checkedBoxes = [...document.querySelectorAll('#newStaffRoles input:checked')];
+    const roller = checkedBoxes.map(cb => cb.value);
     const msgEl = document.getElementById('newAdminMsg');
     msgEl.style.display = 'none';
-    if(!email || !pw){
-      msgEl.textContent = 'Fyll ut e-post og passord.';
+    if(!navn || !email){
+      msgEl.style.color = 'var(--red)';
+      msgEl.textContent = 'Fyll ut navn og e-post.';
       msgEl.style.display = 'block';
       return;
     }
-    if(pw.length < 6){
-      msgEl.textContent = 'Passordet må være minst 6 tegn.';
+    if(roller.length === 0){
+      msgEl.style.color = 'var(--red)';
+      msgEl.textContent = 'Velg minst én rolle.';
       msgEl.style.display = 'block';
       return;
     }
-    try{
-      // Use a secondary Firebase app instance so creating the new account
-      // does not sign the CURRENT admin out of their own session.
-      const secondaryApp = initializeApp(firebaseConfig, 'SecondaryAdminCreation_' + Date.now());
-      const secondaryAuth = getAuth(secondaryApp);
-      await createUserWithEmailAndPassword(secondaryAuth, email, pw);
-      await signOut(secondaryAuth);
-      await deleteApp(secondaryApp);
+    msgEl.style.color = '';
+    msgEl.textContent = 'Oppretter konto...';
+    msgEl.style.display = 'block';
 
+    const accountRes = await createPortalAccountIfNeeded(email);
+    if(!accountRes.ok && accountRes.reason !== 'exists'){
+      msgEl.style.color = 'var(--red)';
+      msgEl.textContent = 'Kunne ikke opprette konto: ' + accountRes.reason;
+      msgEl.style.display = 'block';
+      return;
+    }
+
+    const grantsAdmin = roller.some(r => ADMIN_PANEL_ROLES.includes(r));
+    const teacherRoles = roller.filter(r => TEACHER_ROLE_TO_FAG[r]);
+    const grantsTeacher = teacherRoles.length > 0;
+    const createdParts = [];
+
+    try{
+      // Always recorded in the staff directory (adminUsers) with their full
+      // role list, for reference — actual admin panel access at login time
+      // is gated on whether one of their roles is in ADMIN_PANEL_ROLES, not
+      // on mere presence in this collection (see onAuthStateChanged above).
       await addDoc(collection(db, 'adminUsers'), {
-        epost: email,
-        rolle: document.getElementById('newAdminRole').value,
+        navn, epost: email, roller: roller.join(', '),
         opprettetAv: currentUserEmail || 'ukjent',
         opprettetDato: new Date().toISOString().slice(0,10)
       });
+      createdParts.push(grantsAdmin ? 'tilgang til Administrativt panel' : 'registrert i ansattoversikten');
+
+      if(grantsTeacher){
+        await addDoc(collection(db, 'teachers'), {
+          navn, epost: email,
+          fag: TEACHER_ROLE_TO_FAG[teacherRoles[0]],
+          roller: roller.join(', '), dager: '', telefon: '', tildeltKlasse: ''
+        });
+        createdParts.push('lærerkonto (husk å tildele klasse under "Lærere")');
+      }
 
       msgEl.style.color = 'var(--emerald)';
-      msgEl.textContent = 'Konto opprettet for ' + email + '.';
+      msgEl.textContent = 'Opprettet: ' + createdParts.join(' + ') + '. E-post for å sette passord er sendt til ' + email + '.';
       msgEl.style.display = 'block';
-      document.getElementById('newAdminEmail').value = '';
-      document.getElementById('newAdminPassword').value = '';
-      document.getElementById('newAdminRole').value = 'Administrator';
+      document.getElementById('newStaffName').value = '';
+      document.getElementById('newStaffEmail').value = '';
+      document.querySelectorAll('#newStaffRoles input:checked').forEach(cb => cb.checked = false);
     } catch(err){
       console.error(err);
       msgEl.style.color = 'var(--red)';
@@ -1658,6 +1758,10 @@
         {key:'dager', label:'Dager', type:'select', options:['Lørdag','Søndag','Lørdag og søndag']},
         {key:'telefon', label:'Telefon', type:'text'},
         {key:'epost', label:'E-post', type:'text'},
+        {key:'roller', label:'Roller', type:'role-checklist', options:[
+          'Eier','Skoleleder','Faglig / pedagogisk leder','Fagkoordinator',
+          'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
+        ]},
         {key:'tildeltKlasse', label:'Tildelt klasse (for Lærerportal)', type:'dynamic-select', source:'classes'}
       ],
       cols: ['navn','fag','dager','telefon','epost']
@@ -4299,11 +4403,15 @@
       el.innerHTML = '<div class="report-empty">Ingen kontoer registrert her ennå.</div>';
       return;
     }
-    el.innerHTML = list.map(u => `
-      <div class="status-row">
-        <span>${escapeHtml(u.epost)} ${u.rolle ? '<span style="display:inline-block; font-family:\'Jost\',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:2px 9px; margin-inline-start:6px;">' + escapeHtml(u.rolle) + '</span>' : ''}</span>
+    el.innerHTML = list.map(u => {
+      const roller = (u.roller || u.rolle || '').split(',').map(s => s.trim()).filter(Boolean);
+      const badges = roller.map(r => '<span style="display:inline-block; font-family:\'Jost\',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:2px 9px; margin-inline-start:4px;">' + escapeHtml(r) + '</span>').join('');
+      return `
+      <div class="status-row" style="flex-wrap:wrap;">
+        <span>${escapeHtml(u.navn || u.epost)} <span style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">(${escapeHtml(u.epost)})</span> ${badges}</span>
         <span style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">opprettet ${escapeHtml(u.opprettetDato||'')} av ${escapeHtml(u.opprettetAv||'')}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   });
 
   populateCustomTypeDropdown();
