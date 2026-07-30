@@ -1007,6 +1007,7 @@
         <div id="newStaffRoles" style="display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--paper);">
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Eier"> Eier</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Skoleleder"> Skoleleder</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Daglig leder"> Daglig leder</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Faglig / pedagogisk leder"> Faglig / pedagogisk leder</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Fagkoordinator"> Fagkoordinator</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Koran lærer"> Koran lærer</label>
@@ -1582,7 +1583,7 @@
     }
   };
 
-  const ADMIN_PANEL_ROLES = ['Eier', 'Skoleleder', 'Faglig / pedagogisk leder', 'Fagkoordinator'];
+  const ADMIN_PANEL_ROLES = ['Eier', 'Skoleleder', 'Daglig leder', 'Faglig / pedagogisk leder', 'Fagkoordinator'];
 
   let authGatedListenersAttached = false;
   onAuthStateChanged(auth, async (user) => {
@@ -1782,12 +1783,12 @@
         {key:'telefon', label:'Telefon', type:'text'},
         {key:'epost', label:'E-post', type:'text'},
         {key:'roller', label:'Roller', type:'role-checklist', options:[
-          'Eier','Skoleleder','Faglig / pedagogisk leder','Fagkoordinator',
+          'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator',
           'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
         ]},
         {key:'tildeltKlasse', label:'Tildelt klasse (for Lærerportal)', type:'dynamic-select', source:'classes'}
       ],
-      cols: ['navn','fag','dager','telefon','epost']
+      cols: ['navn','fag','roller','dager','telefon','epost']
     },
     guardians: {
       label: 'foresatt', collectionName: 'guardians',
@@ -2084,8 +2085,9 @@
     ledelse: {
       label: 'ledelsesmedlem', collectionName: 'ledelse',
       fields: [
-        {key:'rolle', label:'Rolle', type:'select', options:[
-          'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærer','Assistent','Andre'
+        {key:'rolle', label:'Roller', type:'role-checklist', options:[
+          'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator',
+          'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
         ]},
         {key:'navn', label:'Fullt navn', type:'text'},
         {key:'fagomrade', label:'Fagområde (for fagkoordinator)', type:'text'},
@@ -2594,6 +2596,12 @@
     ledelse: { title:'navn', pill:'rolle' }
   };
 
+  const SENIOR_LEADERSHIP_ROLES = ['Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder'];
+  function isSeniorLeadershipRow(row){
+    const roller = (row.rolle || '').split(',').map(s=>s.trim()).filter(Boolean);
+    return roller.length === 0 || roller.some(r => SENIOR_LEADERSHIP_ROLES.includes(r));
+  }
+
   function renderRecordCards(type, data){
     const schema = SCHEMAS[type];
     const grid = document.getElementById('table' + capitalize(type));
@@ -2602,6 +2610,19 @@
     if(data.length === 0){
       grid.innerHTML = `<div class="record-empty">Ingen ${schema.label}er registrert ennå.</div>`;
       return;
+    }
+    // Leadership cards are visually split into "Øvre ledelse" (Eier,
+    // Skoleleder, Daglig leder, Faglig/pedagogisk leder) and
+    // "Administrativt kadre" (everyone else: Fagkoordinator, faglærere,
+    // assistenter, frivillige) — purely a display grouping over the SAME
+    // data/roles, not a separate collection, so there is only one place
+    // roles are ever stored or can drift out of sync.
+    if(type === 'ledelse'){
+      data = [...data].sort((a,b) => {
+        const aSenior = isSeniorLeadershipRow(a) ? 0 : 1;
+        const bSenior = isSeniorLeadershipRow(b) ? 0 : 1;
+        return aSenior - bSenior;
+      });
     }
     const colDisplay = (row, c) => {
       const field = schema.fields.find(f=>f.key===c);
@@ -2616,18 +2637,33 @@
     if(pillKey === undefined){
       const second = schema.cols[1];
       const secondField = second && schema.fields.find(f=>f.key===second);
-      pillKey = (secondField && secondField.type === 'select') ? second : null;
+      pillKey = (secondField && (secondField.type === 'select' || secondField.type === 'role-checklist')) ? second : null;
     }
+    let lastLeadershipGroup = null;
     data.forEach(row => {
+      if(type === 'ledelse'){
+        const thisGroup = isSeniorLeadershipRow(row) ? 'senior' : 'staff';
+        if(thisGroup !== lastLeadershipGroup){
+          const header = document.createElement('div');
+          header.style.cssText = 'grid-column:1/-1; font-family:\'Cormorant Garamond\',serif; font-weight:700; font-size:16px; color:var(--emerald-d); margin:' + (lastLeadershipGroup ? '18px' : '0') + ' 0 4px; padding-bottom:6px; border-bottom:1px solid var(--line);';
+          header.textContent = thisGroup === 'senior' ? '🏛️ Øvre ledelse' : '📋 Administrativt kadre';
+          grid.appendChild(header);
+          lastLeadershipGroup = thisGroup;
+        }
+      }
       const titleVal = colDisplay(row, titleKey) || '—';
       const initials = String(titleVal).trim().split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
       let pillHtml = '';
       if(pillKey){
         const pillVal = colDisplay(row, pillKey);
         if(pillVal){
+          const pillField = schema.fields.find(f => f.key === pillKey);
           if(type === 'registrations' && pillKey === 'status'){
             const statusClass = { 'Ny':'ny', 'Venteliste':'venteliste', 'Godkjent':'godkjent', 'Avslått':'avslatt' }[pillVal] || 'ny';
             pillHtml = `<span class="status-pill ${statusClass}">${escapeHtml(pillVal)}</span>`;
+          } else if(pillField && pillField.type === 'role-checklist'){
+            pillHtml = pillVal.split(',').map(s=>s.trim()).filter(Boolean)
+              .map(r => `<span class="record-pill" style="margin-inline-end:4px;">${escapeHtml(r)}</span>`).join('');
           } else {
             pillHtml = `<span class="record-pill">${escapeHtml(pillVal)}</span>`;
           }
