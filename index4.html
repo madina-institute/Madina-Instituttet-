@@ -1332,7 +1332,7 @@
   };
 
   function refreshMyChildren(){
-    myChildren = students.filter(s => s.foresatt === currentGuardian.id);
+    myChildren = students.filter(s => s.foresatt === currentGuardian.id || s.foresatt2 === currentGuardian.id);
     if(currentChildIndex >= myChildren.length) currentChildIndex = 0;
     renderSummary();
     renderChildTabs();
@@ -1506,7 +1506,13 @@
   function buildGuardianThreadRows(child){
     if(!currentGuardian) return [];
     const rows = [];
-    messageThreads.filter(th => th.klasse === child.klasse && th.guardianId === currentGuardian.id).forEach(th => {
+    // Matched by studentId first (new threads) — this is what lets BOTH
+    // guardians of the same child see the exact same conversation. Falls
+    // back to the old guardianId match for threads created before this
+    // (or for a lone guardian with no studentId set on the thread yet).
+    messageThreads.filter(th => th.klasse === child.klasse &&
+      (th.studentId ? th.studentId === child.id : th.guardianId === currentGuardian.id)
+    ).forEach(th => {
       const threadMsgs = messages.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       rows.push({ key: th.id, isLegacy: false, status: th.status || 'open', title: th.title || t('untitledThread'),
         lastActivityAt: th.lastActivityAt || th.createdAt || '', lastPreview: threadMsgs[0] ? (threadMsgs[0].tekst||'') : '',
