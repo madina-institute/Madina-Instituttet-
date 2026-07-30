@@ -323,6 +323,29 @@
   .thread-card .name{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink); flex:1 1 140px; min-width:0;}
   html[dir="rtl"] .thread-card .name{font-family:'Tajawal',sans-serif;}
 
+  /* Outlook-style inbox row: avatar + name/preview + time/unread-dot */
+  .inbox-row{
+    display:flex; align-items:flex-start; gap:12px; cursor:pointer;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:13px 15px; margin-bottom:8px;
+    transition:border-color .15s, background .15s;
+  }
+  .inbox-row:hover{border-color:var(--gold); background:var(--paper-2);}
+  .inbox-row.unread{border-inline-start:3px solid var(--emerald);}
+  .inbox-avatar{
+    flex:0 0 auto; width:38px; height:38px; border-radius:50%; background:var(--emerald-l); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-family:'Jost',sans-serif; font-weight:700; font-size:14px;
+  }
+  .inbox-body{flex:1 1 auto; min-width:0;}
+  .inbox-top-line{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .inbox-name{font-family:'Jost',sans-serif; font-weight:700; font-size:13.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  html[dir="rtl"] .inbox-name{font-family:'Tajawal',sans-serif;}
+  .inbox-row.unread .inbox-name{color:var(--emerald-d);}
+  .inbox-time{flex:0 0 auto; font-family:'Jost',sans-serif; font-size:10.5px; color:#8a9a90; white-space:nowrap;}
+  .inbox-subject{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  html[dir="rtl"] .inbox-subject{font-family:'Tajawal',sans-serif;}
+  .inbox-preview{font-family:'Lora',serif; font-size:12.5px; color:#8a9a90; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .inbox-dot{flex:0 0 auto; width:9px; height:9px; border-radius:50%; background:var(--emerald); margin-top:5px;}
+
   .attach-row{display:flex; align-items:center; gap:8px; margin:-8px 0 12px;}
   .attach-btn{
     display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;
@@ -1484,17 +1507,32 @@
     if(!currentGuardian) return [];
     const rows = [];
     messageThreads.filter(th => th.klasse === child.klasse && th.guardianId === currentGuardian.id).forEach(th => {
+      const threadMsgs = messages.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       rows.push({ key: th.id, isLegacy: false, status: th.status || 'open', title: th.title || t('untitledThread'),
-        lastActivityAt: th.lastActivityAt || th.createdAt || '', unread: isThreadUnread(th.id), teacherId: th.teacherId || '' });
+        lastActivityAt: th.lastActivityAt || th.createdAt || '', lastPreview: threadMsgs[0] ? (threadMsgs[0].tekst||'') : '',
+        unread: isThreadUnread(th.id), teacherId: th.teacherId || '' });
     });
     const legacyMsgs = messages.filter(m => m.klasse === child.klasse && !m.threadId &&
       (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn));
     const legacyKeys = [...new Set(legacyMsgs.map(threadKey))];
     legacyKeys.forEach(k => {
       const own = legacyMsgs.filter(m => threadKey(m) === k).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-      rows.push({ key: k, isLegacy: true, status: 'open', title: t('untitledThread'), lastActivityAt: own[0].dato || '', unread: isThreadUnread(k) });
+      rows.push({ key: k, isLegacy: true, status: 'open', title: t('untitledThread'), lastActivityAt: own[0].dato || '', lastPreview: own[0].tekst || '', unread: isThreadUnread(k) });
     });
     return rows.sort((a,b) => (b.lastActivityAt||'').localeCompare(a.lastActivityAt||''));
+  }
+
+  function inboxTimeLabel(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    if(isNaN(d.getTime())) return '';
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    if(sameDay) return d.toLocaleTimeString(currentLang === 'ar' ? 'ar' : (currentLang === 'ur' ? 'ur' : 'no-NO'), { hour:'2-digit', minute:'2-digit' });
+    return d.toLocaleDateString(currentLang === 'ar' ? 'ar' : (currentLang === 'ur' ? 'ur' : 'no-NO'), { day:'numeric', month:'short' });
+  }
+  function initialsFor(name){
+    return String(name||'?').trim().split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
   }
 
   function renderGuardianThreadList(){
@@ -1503,11 +1541,22 @@
     const rows = buildGuardianThreadRows(child);
     const openRows = rows.filter(r => r.status !== 'closed');
     const archRows = rows.filter(r => r.status === 'closed');
-    const rowHtml = r => `
-      <div class="thread-card" onclick="openGuardianThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
-        <span class="name">${r.teacherId && resolveTeacherFag(r.teacherId) ? `<span class="subject-tag">${escapeHtml(resolveTeacherFag(r.teacherId))}</span>` : ''}<strong>${escapeHtml(r.title)}</strong></span>
-        ${r.unread ? `<span class="msg-badge unread">${escapeHtml(t('unreadBadge'))}</span>` : ''}
+    const rowHtml = r => {
+      const subjectTag = r.teacherId && resolveTeacherFag(r.teacherId) ? resolveTeacherFag(r.teacherId) : '';
+      return `
+      <div class="inbox-row ${r.unread ? 'unread' : ''}" onclick="openGuardianThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
+        <div class="inbox-avatar">${escapeHtml(initialsFor(subjectTag || r.title))}</div>
+        <div class="inbox-body">
+          <div class="inbox-top-line">
+            <span class="inbox-name">${escapeHtml(r.title)}</span>
+            <span class="inbox-time">${escapeHtml(inboxTimeLabel(r.lastActivityAt))}</span>
+          </div>
+          ${subjectTag ? `<div class="inbox-subject">${escapeHtml(subjectTag)}</div>` : ''}
+          <div class="inbox-preview">${escapeHtml((r.lastPreview||'').slice(0,70))}</div>
+        </div>
+        ${r.unread ? '<div class="inbox-dot"></div>' : ''}
       </div>`;
+    };
     const openEl = document.getElementById('teacherMsgThreadsList');
     const archEl = document.getElementById('teacherMsgThreadsArchiveList');
     openEl.innerHTML = openRows.length ? openRows.map(rowHtml).join('') : `<div class="empty-msg">${t('noMessages')}</div>`;
