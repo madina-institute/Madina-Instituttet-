@@ -1740,14 +1740,37 @@
       await deleteApp(secondaryApp);
       return { ok:true };
     } catch(err){
-      try{ await deleteApp(secondaryApp); }catch(e2){}
       if(err.code === 'auth/email-already-in-use'){
-        return { ok:false, reason:'exists' };
+        // Account already exists (e.g. created before this system existed,
+        // or a retry) — still send a password-reset email so the person can
+        // set/reset their password, rather than silently doing nothing.
+        try{
+          await sendPasswordResetEmail(secondaryAuth, email);
+          await deleteApp(secondaryApp);
+          return { ok:true, reason:'exists' };
+        } catch(err2){
+          try{ await deleteApp(secondaryApp); }catch(e3){}
+          console.error('sendPasswordResetEmail (existing account) failed:', err2);
+          return { ok:false, reason: err2.code || 'unknown' };
+        }
       }
+      try{ await deleteApp(secondaryApp); }catch(e2){}
       console.error('createPortalAccountIfNeeded failed:', err);
       return { ok:false, reason: err.code || 'unknown' };
     }
   }
+
+  window.sendPortalAccountSetup = async function(email){
+    if(!confirm('Sende e-post for kontooppsett/tilbakestilling av passord til ' + email + '?')) return;
+    const res = await createPortalAccountIfNeeded(email);
+    if(res.ok){
+      showToast(res.reason === 'exists'
+        ? 'E-post for å tilbakestille passord er sendt til ' + email + '.'
+        : 'Konto opprettet — e-post for å sette passord er sendt til ' + email + '.');
+    } else {
+      showToast('Kunne ikke sende e-post: ' + res.reason);
+    }
+  };
 
   const SCHEMAS = {
     teachers: {
@@ -2640,6 +2663,7 @@
       } else {
         actionsHtml = `<div class="record-card-actions">
           ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
+          ${(type === 'teachers' || type === 'guardians') && row.epost ? `<button class="btn-edit" onclick="sendPortalAccountSetup('${escapeHtml(row.epost)}')">Send kontooppsett</button>` : ''}
           <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
           <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
         </div>`;
