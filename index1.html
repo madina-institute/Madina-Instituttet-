@@ -2017,15 +2017,24 @@
 
   // Notifies every guardian with children in a given class (used for
   // homework and class-wide broadcast posts). Skips guardians with no
-  // email on file and de-duplicates so a guardian with two kids in the
-  // same class only gets one email.
+  // email on file, and de-duplicates by e-post (not just by guardian id) —
+  // this also catches the case where two separate guardian records share
+  // the same real e-post (e.g. duplicate/legacy entries), which id-only
+  // de-duplication would miss and send that person two copies.
   async function notifyClassGuardians(classId, subject, text){
     if(!classId) return;
     const guardianIds = [...new Set(
       students.filter(s => s.klasse === classId && (s.foresatt || s.foresatt2))
         .flatMap(s => [s.foresatt, s.foresatt2].filter(Boolean))
     )];
+    const seenEmails = new Set();
     for(const gId of guardianIds){
+      const g = guardians.find(x => x.id === gId);
+      const emailKey = g && g.epost ? g.epost.trim().toLowerCase() : null;
+      if(emailKey){
+        if(seenEmails.has(emailKey)) continue;
+        seenEmails.add(emailKey);
+      }
       await notifyGuardianByEmail(gId, subject, text);
     }
   }
@@ -2395,7 +2404,14 @@
       }
       const notifyStudent = currentThreadDoc && currentThreadDoc.studentId ? students.find(s => s.id === currentThreadDoc.studentId) : null;
       const notifyGuardianIds = notifyStudent ? [notifyStudent.foresatt, notifyStudent.foresatt2].filter(Boolean) : [currentThreadGuardianId];
+      const notifiedEmails = new Set();
       notifyGuardianIds.forEach(gId => {
+        const g = guardians.find(x => x.id === gId);
+        const emailKey = g && g.epost ? g.epost.trim().toLowerCase() : null;
+        if(emailKey){
+          if(notifiedEmails.has(emailKey)) return;
+          notifiedEmails.add(emailKey);
+        }
         notifyGuardianByEmail(gId, currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny melding fra læreren',
           (currentLang === 'ar' ? 'من: ' : 'Fra: ') + currentTeacher.navn + '\n\n' + tekst);
       });
