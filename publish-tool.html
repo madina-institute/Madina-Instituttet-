@@ -72,6 +72,17 @@
   .hint{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:4px;}
   .file-loaded-hint{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:10px; display:none;}
   .file-loaded-hint.show{display:block;}
+  .multi-file-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:9px 12px; margin-top:8px;
+    font-family:'Jost',sans-serif; font-size:12.5px;
+  }
+  .multi-file-row .fname{flex:1 1 auto; min-width:0; word-break:break-word; font-weight:600;}
+  .multi-file-row .fstatus{flex:0 0 auto; font-size:11px; white-space:nowrap;}
+  .multi-file-row .fstatus.pending{color:#8a9a90;}
+  .multi-file-row .fstatus.busy{color:var(--gold);}
+  .multi-file-row .fstatus.ok{color:var(--emerald);}
+  .multi-file-row .fstatus.err{color:var(--red);}
 </style>
 </head>
 <body>
@@ -117,7 +128,20 @@
     </div>
 
     <div class="card">
-      <h2>Publiser fil</h2>
+      <h2>Publiser flere filer samtidig</h2>
+      <div class="sub">Velg flere filer fra telefonen (f.eks. index.html, index1.html, index4.html) — hver fil publiseres til sin egen filsti automatisk, basert på filnavnet.</div>
+
+      <label class="btn-file-label" for="multiFileUpload">📁 Velg flere filer fra telefonen...</label>
+      <input type="file" id="multiFileUpload" accept=".html,.js,.json,.css,.txt" multiple onchange="handleMultiFileUpload(event)">
+
+      <div id="multiFileList"></div>
+
+      <button class="btn btn-primary" id="multiPublishBtn" style="display:none; margin-top:10px;" onclick="publishAll()">Publiser alle filene</button>
+      <div class="status" id="multiStatusBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>Publiser én fil</h2>
       <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
 
       <label class="btn-file-label" for="fileUpload">📁 Velg fil fra telefonen...</label>
@@ -290,8 +314,52 @@
     return btoa(unescape(encodeURIComponent(str)));
   }
 
-  window.publish = async function(){
+  // Shared core used by both the single-file and multi-file publish flows.
+  // Returns {ok:true} on success or {ok:false, message} on failure — never
+  // throws, so callers (especially the multi-file loop) can keep going to
+  // the next file even if one fails.
+  async function publishFileToGitHub(path, content){
     const cfg = loadConfig();
+    const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
+    const headers = {
+      'Authorization': 'Bearer ' + cfg.token,
+      'Accept': 'application/vnd.github+json'
+    };
+    try{
+      let sha = null;
+      const getRes = await fetch(apiBase + '?ref=' + encodeURIComponent(cfg.branch), { headers, cache: 'no-store' });
+      if(getRes.status === 200){
+        const getData = await getRes.json();
+        sha = getData.sha;
+      } else if(getRes.status !== 404){
+        const errData = await getRes.json().catch(()=>({}));
+        throw new Error('Kunne ikke hente filen (status ' + getRes.status + '): ' + (errData.message || ''));
+      }
+      const putBody = {
+        message: 'Oppdater ' + path + ' via publiseringsverktøy',
+        content: toBase64(content),
+        branch: cfg.branch
+      };
+      if(sha) putBody.sha = sha;
+      const putRes = await fetch(apiBase, {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(putBody),
+        cache: 'no-store'
+      });
+      if(putRes.status === 200 || putRes.status === 201){
+        recordPublished(path);
+        return { ok: true };
+      }
+      const errData = await putRes.json().catch(()=>({}));
+      return { ok: false, message: 'Feil (status ' + putRes.status + '): ' + (errData.message || 'Ukjent feil') };
+    } catch(err){
+      console.error(err);
+      return { ok: false, message: err.message };
+    }
+  }
+
+  window.publish = async function(){
     const path = currentPath();
     const content = document.getElementById('fileContent').value;
     if(!path){
@@ -304,58 +372,83 @@
     }
     const btn = document.getElementById('publishBtn');
     btn.disabled = true;
-    showStatus('Henter nåværende versjon...', 'busy');
-
-    const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
-    const headers = {
-      'Authorization': 'Bearer ' + cfg.token,
-      'Accept': 'application/vnd.github+json'
-    };
-
-    try{
-      // 1. Get current SHA (needed to update an existing file)
-      let sha = null;
-      const getRes = await fetch(apiBase + '?ref=' + encodeURIComponent(cfg.branch), { headers, cache: 'no-store' });
-      if(getRes.status === 200){
-        const getData = await getRes.json();
-        sha = getData.sha;
-      } else if(getRes.status !== 404){
-        const errData = await getRes.json().catch(()=>({}));
-        throw new Error('Kunne ikke hente filen (status ' + getRes.status + '): ' + (errData.message || ''));
-      }
-
-      showStatus('Publiserer...', 'busy');
-
-      // 2. Create or update the file
-      const putBody = {
-        message: 'Oppdater ' + path + ' via publiseringsverktøy',
-        content: toBase64(content),
-        branch: cfg.branch
-      };
-      if(sha) putBody.sha = sha;
-
-      const putRes = await fetch(apiBase, {
-        method: 'PUT',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(putBody),
-        cache: 'no-store'
-      });
-
-      if(putRes.status === 200 || putRes.status === 201){
-        showStatus('✓ Publisert! Endringen er live om noen sekunder.', 'ok');
-        localStorage.setItem(LS_LAST_FILE, document.getElementById('filePreset').value);
-        recordPublished(path);
-        updateLastPublishedHint();
-      } else {
-        const errData = await putRes.json().catch(()=>({}));
-        throw new Error('Feil ved publisering (status ' + putRes.status + '): ' + (errData.message || 'Ukjent feil'));
-      }
-    } catch(err){
-      console.error(err);
-      showStatus('✗ ' + err.message, 'err');
-    } finally {
-      btn.disabled = false;
+    showStatus('Publiserer...', 'busy');
+    const result = await publishFileToGitHub(path, content);
+    if(result.ok){
+      showStatus('✓ Publisert! Endringen er live om noen sekunder.', 'ok');
+      localStorage.setItem(LS_LAST_FILE, document.getElementById('filePreset').value);
+      updateLastPublishedHint();
+    } else {
+      showStatus('✗ ' + result.message, 'err');
     }
+    btn.disabled = false;
+  };
+
+  // ===== Multi-file publish =====
+  let multiFiles = []; // [{name, content}]
+
+  window.handleMultiFileUpload = function(event){
+    const fileList = [...(event.target.files || [])];
+    if(fileList.length === 0) return;
+    multiFiles = [];
+    const listEl = document.getElementById('multiFileList');
+    listEl.innerHTML = '';
+    let loadedCount = 0;
+    fileList.forEach(file => {
+      const row = document.createElement('div');
+      row.className = 'multi-file-row';
+      row.innerHTML = '<span class="fname">' + file.name + '</span><span class="fstatus pending" id="mfstatus-' + CSS.escape(file.name) + '">Venter</span>';
+      listEl.appendChild(row);
+
+      const reader = new FileReader();
+      reader.onload = function(e){
+        multiFiles.push({ name: file.name, content: e.target.result });
+        loadedCount++;
+        if(loadedCount === fileList.length){
+          document.getElementById('multiPublishBtn').style.display = 'block';
+          document.getElementById('multiStatusBox').className = 'status';
+        }
+      };
+      reader.onerror = function(){
+        const statusEl = document.getElementById('mfstatus-' + CSS.escape(file.name));
+        if(statusEl){ statusEl.className = 'fstatus err'; statusEl.textContent = 'Kunne ikke lese filen'; }
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+  };
+
+  window.publishAll = async function(){
+    if(multiFiles.length === 0) return;
+    const btn = document.getElementById('multiPublishBtn');
+    btn.disabled = true;
+    const statusBox = document.getElementById('multiStatusBox');
+    statusBox.className = 'status show busy';
+    statusBox.textContent = 'Publiserer ' + multiFiles.length + ' filer, én etter én...';
+
+    let okCount = 0, errCount = 0;
+    // Published one at a time, with a short pause between each — publishing
+    // several files back-to-back too fast is what caused files to silently
+    // "supersede" each other and never actually go live (seen before with
+    // manual multi-file publishing). This avoids that.
+    for(const f of multiFiles){
+      const statusEl = document.getElementById('mfstatus-' + CSS.escape(f.name));
+      if(statusEl){ statusEl.className = 'fstatus busy'; statusEl.textContent = 'Publiserer...'; }
+      const result = await publishFileToGitHub(f.name, f.content);
+      if(result.ok){
+        okCount++;
+        if(statusEl){ statusEl.className = 'fstatus ok'; statusEl.textContent = '✓ Publisert'; }
+      } else {
+        errCount++;
+        if(statusEl){ statusEl.className = 'fstatus err'; statusEl.textContent = '✗ ' + result.message; }
+      }
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    statusBox.className = 'status show ' + (errCount === 0 ? 'ok' : 'err');
+    statusBox.textContent = errCount === 0
+      ? '✓ Alle ' + okCount + ' filer publisert!'
+      : okCount + ' av ' + multiFiles.length + ' publisert — ' + errCount + ' feilet (se status per fil ovenfor).';
+    btn.disabled = false;
   };
 
   init();
