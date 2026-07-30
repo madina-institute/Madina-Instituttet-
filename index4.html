@@ -427,6 +427,7 @@
       <button data-sidebar="payment" onclick="openSection('payment')"><span class="ic">💳</span><span class="lbl" data-i18n="menuPayment">Betaling</span></button>
       <button data-sidebar="contact" onclick="openSection('contact')"><span class="ic">✏️</span><span class="lbl" data-i18n="menuContact">Kontaktinfo</span></button>
       <button data-sidebar="teacherMsg" onclick="openSection('teacherMsg')"><span class="ic">📩</span><span class="lbl" data-i18n="menuTeacherMsg">Kontakt lærer</span><span class="msg-badge" id="teacherMsgBadge"></span></button>
+      <button data-sidebar="adminMsg" onclick="openSection('adminMsg')"><span class="ic">📢</span><span class="lbl">Fra administrasjonen</span><span class="msg-badge" id="adminMsgBadge"></span></button>
       <button data-sidebar="classPosts" onclick="openSection('classPosts')"><span class="ic">📣</span><span class="lbl" data-i18n="menuClassPosts">Klassemeldinger</span></button>
     </nav>
     <div class="portal-content">
@@ -762,6 +763,28 @@
         </div>
         <div class="upload-status" id="teacherMsgUploadStatus" style="display:none;"></div>
         <button class="btn btn-primary" onclick="sendTeacherMessage()" data-i18n="sendMessageBtn">Send melding</button>
+      </div>
+    </div>
+
+    <div class="sub-view" id="view-adminMsg">
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
+
+      <div class="card" id="adminMsgListInner">
+        <h2>Meldinger fra administrasjonen</h2>
+        <div class="sub">Meldinger sendt til deg fra skolens administrasjon</div>
+        <div id="guardianAdminMsgsList"></div>
+      </div>
+
+      <div class="card" id="adminMsgDetailInner" style="display:none;">
+        <button class="back-link" onclick="backToAdminMsgList()">← Tilbake</button>
+        <h2 id="guardianAdminMsgTitle"></h2>
+        <div class="chat-scroll" id="guardianAdminMsgHistory"></div>
+        <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
+        <div class="field">
+          <label data-i18n="yourMessage">Din melding</label>
+          <textarea id="guardianAdminMsgReplyText" rows="3"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="sendGuardianAdminMsgReply()">Send melding</button>
       </div>
     </div>
 
@@ -1250,6 +1273,22 @@
          document.getElementById('teacherMsgListInner').style.display !== 'none') renderGuardianThreadList();
     }
   });
+  let broadcastThreads = [], broadcastMessages = [];
+  onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
+    broadcastThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian){
+      updateAdminMsgBadge();
+      if(document.getElementById('view-adminMsg').style.display !== 'none' &&
+         document.getElementById('adminMsgListInner').style.display !== 'none') renderGuardianAdminMsgsList();
+    }
+  });
+  onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
+    broadcastMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentGuardian){
+      updateAdminMsgBadge();
+      if(currentAdminMsgThreadId) renderGuardianAdminMsgHistory();
+    }
+  });
   let classPollVotes = [];
   onSnapshot(collection(db, 'classPollVotes'), (snap) => {
     classPollVotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1392,6 +1431,7 @@
     if(name === 'schedule') closeScheduleDay();
     if(name === 'payment') resetPaymentChoiceUI();
     if(name === 'teacherMsg') openTeacherMsg();
+    if(name === 'adminMsg') openGuardianAdminMsgs();
     markSeen(name);
     updateBadges();
     setActiveSidebarParent(name);
@@ -1540,6 +1580,115 @@
   function initialsFor(name){
     return String(name||'?').trim().split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
   }
+
+  // ===== ADMIN BROADCAST MESSAGES (received from Meldingssenter) =====
+  let currentAdminMsgThreadId = null;
+
+  function myAdminMsgThreads(){
+    if(!currentGuardian) return [];
+    return broadcastThreads.filter(th => th.recipientType === 'guardian' && th.recipientId === currentGuardian.id);
+  }
+
+  function updateAdminMsgBadge(){
+    const badge = document.getElementById('adminMsgBadge');
+    if(!badge) return;
+    const hasUnread = myAdminMsgThreads().some(th => {
+      const seen = localStorage.getItem('adminmsg_seen_' + (currentGuardian?currentGuardian.id:'') + '_' + th.id);
+      return broadcastMessages.some(m => m.threadId === th.id && m.fra === 'Administrasjon' && (!seen || (m.dato||'') > seen));
+    });
+    badge.className = 'msg-badge ' + (hasUnread ? 'unread' : 'read');
+    badge.textContent = hasUnread ? t('unreadBadge') : '';
+  }
+
+  window.openGuardianAdminMsgs = function(){
+    document.getElementById('adminMsgListInner').style.display = 'block';
+    document.getElementById('adminMsgDetailInner').style.display = 'none';
+    renderGuardianAdminMsgsList();
+  };
+
+  function renderGuardianAdminMsgsList(){
+    const el = document.getElementById('guardianAdminMsgsList');
+    if(!el || !currentGuardian) return;
+    const rows = myAdminMsgThreads().map(th => {
+      const msgs = broadcastMessages.filter(m => m.threadId === th.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const last = msgs[msgs.length - 1];
+      const seen = localStorage.getItem('adminmsg_seen_' + currentGuardian.id + '_' + th.id);
+      const unread = last && last.fra === 'Administrasjon' && (!seen || (last.dato||'') > seen);
+      return { th, last, unread };
+    }).sort((a,b) => (b.th.lastActivityAt||'').localeCompare(a.th.lastActivityAt||''));
+    if(rows.length === 0){
+      el.innerHTML = `<div class="empty-msg">${t('noMessages')}</div>`;
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <div class="inbox-row ${r.unread ? 'unread' : ''}" onclick="openGuardianAdminMsgThread('${r.th.id}')">
+        <div class="inbox-avatar">📢</div>
+        <div class="inbox-body">
+          <div class="inbox-top-line">
+            <span class="inbox-name">${escapeHtml(r.th.title||'')}</span>
+            <span class="inbox-time">${escapeHtml(inboxTimeLabel(r.th.lastActivityAt))}</span>
+          </div>
+          <div class="inbox-preview">${escapeHtml((r.last ? r.last.tekst : '').slice(0,70))}</div>
+        </div>
+        ${r.unread ? '<div class="inbox-dot"></div>' : ''}
+      </div>`).join('');
+  }
+
+  window.openGuardianAdminMsgThread = function(threadId){
+    currentAdminMsgThreadId = threadId;
+    const th = broadcastThreads.find(t => t.id === threadId);
+    document.getElementById('adminMsgListInner').style.display = 'none';
+    document.getElementById('adminMsgDetailInner').style.display = 'block';
+    document.getElementById('guardianAdminMsgTitle').textContent = th ? th.title : '';
+    localStorage.setItem('adminmsg_seen_' + currentGuardian.id + '_' + threadId, new Date().toISOString());
+    renderGuardianAdminMsgHistory();
+    updateAdminMsgBadge();
+  };
+
+  window.backToAdminMsgList = function(){
+    currentAdminMsgThreadId = null;
+    document.getElementById('adminMsgListInner').style.display = 'block';
+    document.getElementById('adminMsgDetailInner').style.display = 'none';
+    renderGuardianAdminMsgsList();
+  };
+
+  function renderGuardianAdminMsgHistory(){
+    const el = document.getElementById('guardianAdminMsgHistory');
+    if(!el || !currentAdminMsgThreadId) return;
+    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+    el.innerHTML = msgs.map(m => {
+      const isMe = m.fra !== 'Administrasjon';
+      const senderName = isMe ? currentGuardian.navn : 'Administrasjonen';
+      return `
+      <div class="chat-row ${isMe ? 'me' : ''}">
+        <div class="chat-avatar">${escapeHtml(initialsFor(senderName))}</div>
+        <div class="chat-bubble">
+          <span class="chat-sender">${escapeHtml(senderName)}</span>
+          ${escapeHtml(m.tekst||'')}
+          <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
+        </div>
+      </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  window.sendGuardianAdminMsgReply = async function(){
+    if(!currentGuardian || !currentAdminMsgThreadId) return;
+    const tekst = document.getElementById('guardianAdminMsgReplyText').value.trim();
+    if(!tekst){ alert(t('teacherMsgFill')); return; }
+    try{
+      await addDoc(collection(db, 'broadcastMessages'), {
+        threadId: currentAdminMsgThreadId, fra: 'Foresatt', avsenderNavn: currentGuardian.navn,
+        tekst, dato: new Date().toISOString()
+      });
+      await updateDoc(doc(db, 'broadcastThreads', currentAdminMsgThreadId), { lastActivityAt: new Date().toISOString() });
+      document.getElementById('guardianAdminMsgReplyText').value = '';
+      showToast(t('teacherMsgSent'));
+    } catch(err){
+      console.error(err);
+      alert('Feil: ' + err.message);
+    }
+  };
 
   function renderGuardianThreadList(){
     if(myChildren.length === 0 || !currentGuardian) return;
