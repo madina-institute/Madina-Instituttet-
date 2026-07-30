@@ -805,6 +805,7 @@
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
     <div class="tab" data-tab="financeLog" data-side="eier">Betalingslogg</div>
+    <div class="tab" data-tab="meldingssenter" data-side="eier">Meldingssenter</div>
   <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
@@ -1174,6 +1175,67 @@
       Full oversikt over alle økonomiske endringer — hvem som markerte en elev som betalt/ubetalt, endret et beløp, eller la til/redigerte en Kasse/Økonomi-post, og når. Synlig for alle med admin-tilgang.
     </div>
     <div id="financeLogList"></div>
+  </div>
+
+  <!-- MELDINGSSENTER (broadcast messaging: individuals or groups) -->
+  <div class="panel" id="panel-meldingssenter">
+    <div class="report-card">
+      <h3>Ny melding</h3>
+      <div class="sub">Meldingen sendes som en egen samtale til hver mottaker — det blir ikke én delt gruppesamtale, så hver person svarer for seg selv.</div>
+
+      <div class="field">
+        <label>Send til</label>
+        <select id="msMottakerType" onchange="onMsMottakerTypeChange()">
+          <option value="individual">Enkeltperson</option>
+          <option value="allGuardians">Alle foresatte</option>
+          <option value="classGuardians">Foresatte i én klasse</option>
+          <option value="allTeachers">Alle lærere</option>
+          <option value="subjectTeachers">Lærere i ett fag</option>
+          <option value="saturdayTeachers">Madina Skole-lærere (lørdag)</option>
+          <option value="sundayTeachers">Madinabarn-lærere (søndag)</option>
+          <option value="ledelse">Ledelsen</option>
+          <option value="assistants">Assistenter/frivillige</option>
+        </select>
+      </div>
+
+      <div class="field" id="msIndividualWrap">
+        <label>Velg person</label>
+        <select id="msIndividualSelect"></select>
+      </div>
+      <div class="field" id="msClassWrap" style="display:none;">
+        <label>Velg klasse</label>
+        <select id="msClassSelect"></select>
+      </div>
+      <div class="field" id="msSubjectWrap" style="display:none;">
+        <label>Velg fag</label>
+        <select id="msSubjectSelect">
+          <option value="Koran">Koran</option>
+          <option value="Islam">Islam</option>
+          <option value="Arabisk">Arabisk</option>
+          <option value="Urdu">Urdu</option>
+        </select>
+      </div>
+
+      <div class="sub" id="msRecipientCount" style="margin-top:-6px; margin-bottom:14px;"></div>
+
+      <div class="field">
+        <label>Emne</label>
+        <input type="text" id="msSubject" placeholder="F.eks. Viktig informasjon om neste uke">
+      </div>
+      <div class="field">
+        <label>Melding</label>
+        <textarea id="msBody" rows="4"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="sendBroadcastMessage()">Send melding</button>
+      <div class="status" id="msStatusBox" style="display:none; margin-top:12px; padding:10px 12px; border-radius:6px; font-family:'Jost',sans-serif; font-size:12.5px;"></div>
+    </div>
+
+    <div class="report-card" style="margin-top:20px;">
+      <h3>Sendte meldinger (fra Meldingssenter)</h3>
+      <div class="sub">Trykk en samtale for å se svar fra mottakeren.</div>
+      <input class="search" id="searchBroadcastInbox" placeholder="Søk etter mottaker eller emne..." style="margin-bottom:12px;">
+      <div id="broadcastInboxList"></div>
+    </div>
   </div>
 
   <!-- TEACHERS -->
@@ -2720,6 +2782,8 @@
   const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
+  let broadcastThreadsCache = [];
+  let broadcastMessagesCache = [];
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -2805,6 +2869,10 @@
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teachers') renderLedelseView();
     if(type === 'messages') renderMessagesInbox();
+    if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
+      populateMsSelectors();
+      updateMsRecipientCount();
+    }
     if(['dailyPlanTemplates','monthlyPlanTemplates','semesterPlanTemplates'].includes(type) && type === currentPlanmalerType) renderPlanmalerList();
     if(['lessonPlans','monthlyPlans','semesterPlans'].includes(type)){
       if(document.getElementById('planArkivUnifiedView') && document.getElementById('planArkivUnifiedView').style.display !== 'none') renderPlanArkivUnified();
@@ -2925,6 +2993,190 @@
     if(sameDay) return d.toLocaleTimeString('no-NO', { hour:'2-digit', minute:'2-digit' });
     return d.toLocaleDateString('no-NO', { day:'numeric', month:'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
   }
+
+  // ===== MELDINGSSENTER (broadcast to individuals or groups) =====
+  window.onMsMottakerTypeChange = function(){
+    const val = document.getElementById('msMottakerType').value;
+    document.getElementById('msIndividualWrap').style.display = val === 'individual' ? 'block' : 'none';
+    document.getElementById('msClassWrap').style.display = val === 'classGuardians' ? 'block' : 'none';
+    document.getElementById('msSubjectWrap').style.display = val === 'subjectTeachers' ? 'block' : 'none';
+    updateMsRecipientCount();
+  };
+
+  function populateMsSelectors(){
+    const indivSel = document.getElementById('msIndividualSelect');
+    if(indivSel){
+      const teacherOpts = cache.teachers.map(t => `<option value="teacher:${t.id}">👨‍🏫 ${escapeHtml(t.navn)}</option>`);
+      const guardianOpts = cache.guardians.map(g => `<option value="guardian:${g.id}">👪 ${escapeHtml(g.navn)}</option>`);
+      indivSel.innerHTML = teacherOpts.concat(guardianOpts).join('');
+    }
+    const classSel = document.getElementById('msClassSelect');
+    if(classSel){
+      classSel.innerHTML = cache.classes.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn||c.id)}</option>`).join('');
+    }
+  }
+
+  // Resolves the current group selection into a concrete list of
+  // {type, id, name, epost} recipients — the single source of truth used
+  // both for the live "X mottakere" preview count and for the actual send.
+  function computeMsRecipients(){
+    const val = document.getElementById('msMottakerType').value;
+    if(val === 'individual'){
+      const sel = document.getElementById('msIndividualSelect');
+      if(!sel.value) return [];
+      const [type, id] = sel.value.split(':');
+      const rec = (type === 'teacher' ? cache.teachers : cache.guardians).find(r => r.id === id);
+      return rec ? [{ type, id, name: rec.navn, epost: rec.epost || '' }] : [];
+    }
+    if(val === 'allGuardians'){
+      return cache.guardians.map(g => ({ type:'guardian', id:g.id, name:g.navn, epost:g.epost||'' }));
+    }
+    if(val === 'classGuardians'){
+      const classId = document.getElementById('msClassSelect').value;
+      const guardianIds = [...new Set(cache.students.filter(s => s.klasse === classId).flatMap(s => [s.foresatt, s.foresatt2].filter(Boolean)))];
+      return guardianIds.map(id => cache.guardians.find(g => g.id === id)).filter(Boolean)
+        .map(g => ({ type:'guardian', id:g.id, name:g.navn, epost:g.epost||'' }));
+    }
+    if(val === 'allTeachers'){
+      return cache.teachers.map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    }
+    if(val === 'subjectTeachers'){
+      const fag = document.getElementById('msSubjectSelect').value;
+      return cache.teachers.filter(t => t.fag === fag).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    }
+    if(val === 'saturdayTeachers'){
+      return cache.teachers.filter(t => t.fag && t.fag !== 'Madinabarn').map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    }
+    if(val === 'sundayTeachers'){
+      return cache.teachers.filter(t => t.fag === 'Madinabarn').map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    }
+    if(val === 'ledelse'){
+      return cache.teachers.filter(t => {
+        const roller = (t.roller||'').split(',').map(s=>s.trim());
+        return roller.some(r => ADMIN_PANEL_ROLES.includes(r));
+      }).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    }
+    if(val === 'assistants'){
+      return cache.teachers.filter(t => {
+        const roller = (t.roller||'').split(',').map(s=>s.trim());
+        return roller.includes('Assistent') || roller.includes('Frivillig');
+      }).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
+    }
+    return [];
+  }
+
+  window.updateMsRecipientCount = function(){
+    const n = computeMsRecipients().length;
+    document.getElementById('msRecipientCount').textContent = n === 0
+      ? 'Ingen mottakere funnet med dette valget.'
+      : n + ' mottaker' + (n === 1 ? '' : 'e') + ' vil motta denne meldingen — hver som egen samtale.';
+  };
+  ['msIndividualSelect','msClassSelect','msSubjectSelect'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('change', updateMsRecipientCount);
+  });
+
+  window.sendBroadcastMessage = async function(){
+    const recipients = computeMsRecipients();
+    const subject = document.getElementById('msSubject').value.trim();
+    const body = document.getElementById('msBody').value.trim();
+    const statusBox = document.getElementById('msStatusBox');
+    if(recipients.length === 0){
+      statusBox.style.display = 'block'; statusBox.style.background = 'rgba(168,60,60,0.10)'; statusBox.style.color = 'var(--red)';
+      statusBox.textContent = 'Ingen mottakere funnet.'; return;
+    }
+    if(!subject || !body){
+      statusBox.style.display = 'block'; statusBox.style.background = 'rgba(168,60,60,0.10)'; statusBox.style.color = 'var(--red)';
+      statusBox.textContent = 'Fyll ut emne og melding.'; return;
+    }
+    const groupLabel = document.getElementById('msMottakerType').selectedOptions[0].textContent;
+    statusBox.style.display = 'block'; statusBox.style.background = 'var(--paper-2)'; statusBox.style.color = '#5a6860';
+    statusBox.textContent = 'Sender til ' + recipients.length + ' mottaker(e)...';
+
+    try{
+      for(const r of recipients){
+        const nowIso = new Date().toISOString();
+        const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
+          recipientType: r.type, recipientId: r.id, recipientName: r.name,
+          title: subject, groupLabel, status: 'open',
+          createdAt: nowIso, lastActivityAt: nowIso,
+          sentBy: currentUserEmail || 'ukjent'
+        });
+        await addDoc(collection(db, 'broadcastMessages'), {
+          threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
+          tekst: body, dato: nowIso
+        });
+        if(r.epost){
+          try{
+            await addDoc(collection(db, 'mail'), {
+              to: [r.epost],
+              message: { subject: '[Madina Skole] ' + subject, text: body }
+            });
+          } catch(mailErr){ console.error('E-post-varsling feilet for', r.epost, mailErr); }
+        }
+      }
+      statusBox.style.background = 'rgba(46,107,83,0.10)'; statusBox.style.color = 'var(--emerald)';
+      statusBox.textContent = '✓ Sendt til ' + recipients.length + ' mottaker(e).';
+      document.getElementById('msSubject').value = '';
+      document.getElementById('msBody').value = '';
+    } catch(err){
+      console.error(err);
+      statusBox.style.background = 'rgba(168,60,60,0.10)'; statusBox.style.color = 'var(--red)';
+      statusBox.textContent = '✗ Noe gikk galt: ' + err.message;
+    }
+  };
+
+  function renderBroadcastInbox(){
+    const listEl = document.getElementById('broadcastInboxList');
+    if(!listEl) return;
+    const query = (document.getElementById('searchBroadcastInbox')?.value || '').toLowerCase();
+    let rows = broadcastThreadsCache.map(th => {
+      const msgs = broadcastMessagesCache.filter(m => m.threadId === th.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const last = msgs[msgs.length - 1];
+      return { th, msgs, last: last || { tekst:'', dato: th.createdAt, fra:'Administrasjon' } };
+    });
+    if(query){
+      rows = rows.filter(r =>
+        (r.th.recipientName||'').toLowerCase().includes(query) ||
+        (r.th.title||'').toLowerCase().includes(query) ||
+        (r.th.groupLabel||'').toLowerCase().includes(query)
+      );
+    }
+    rows.sort((a,b) => (b.th.lastActivityAt||'').localeCompare(a.th.lastActivityAt||''));
+
+    if(rows.length === 0){
+      listEl.innerHTML = '<div class="record-empty">Ingen meldinger sendt fra Meldingssenter ennå.</div>';
+      return;
+    }
+    listEl.innerHTML = rows.map(r => `
+      <details style="margin-bottom:8px;">
+        <summary style="cursor:pointer;">
+          <div class="inbox-row">
+            <div class="inbox-avatar">${escapeHtml((r.th.recipientName||'?')[0].toUpperCase())}</div>
+            <div class="inbox-body">
+              <div class="inbox-top-line">
+                <span class="inbox-name">${escapeHtml(r.th.recipientName||'')}</span>
+                <span class="inbox-time">${escapeHtml(inboxTimeLabelAdmin(r.th.lastActivityAt))}</span>
+              </div>
+              <div class="inbox-subject">${escapeHtml(r.th.title||'')} · <span style="color:#8a9a90;">${escapeHtml(r.th.groupLabel||'')}</span></div>
+              <div class="inbox-preview">${escapeHtml((r.last.fra === 'Administrasjon' ? '' : (r.th.recipientName + ': ')) + (r.last.tekst||'').slice(0,70))}</div>
+            </div>
+          </div>
+        </summary>
+        <div style="padding:12px 16px 16px 66px; display:flex; flex-direction:column; gap:10px;">
+          ${r.msgs.map(m => `
+            <div style="background:${m.fra === 'Administrasjon' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:9px 12px;">
+              <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:3px;">
+                ${escapeHtml(m.fra === 'Administrasjon' ? 'Administrasjonen' : (r.th.recipientName||''))}
+                <span style="font-weight:400; color:#8a9a90;"> — ${escapeHtml(inboxTimeLabelAdmin(m.dato))}</span>
+              </div>
+              <div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeHtml(m.tekst||'')}</div>
+            </div>`).join('')}
+        </div>
+      </details>`).join('');
+  }
+  const searchBroadcastInboxEl = document.getElementById('searchBroadcastInbox');
+  if(searchBroadcastInboxEl) searchBroadcastInboxEl.addEventListener('input', renderBroadcastInbox);
 
   // ===== PLANMALER (admin-managed templates) =====
   let currentPlanmalerType = null;
@@ -3632,7 +3884,8 @@
     betaling: 'Betalingslenke som vises i Foreldreportalen',
     reports: 'Statistikk og tilpassede rapporter',
     overview: 'Eksempeldata, sikkerhetskopi, brukere og faresone',
-    registrations: 'Nye søknader — godkjenn, avslå eller sett på venteliste'
+    registrations: 'Nye søknader — godkjenn, avslå eller sett på venteliste',
+    meldingssenter: 'Send meldinger til enkeltpersoner eller grupper (foresatte, lærere, ledelse)'
   };
 
   const TAB_ICONS = {
@@ -3641,7 +3894,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
-    betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝'
+    betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
   };
 
   let currentSideForBack = null;
@@ -5009,6 +5262,14 @@
   onSnapshot(collection(db, 'messageThreads'), (snap) => {
     messageThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(document.getElementById('panel-messages') && document.getElementById('panel-messages').classList.contains('active')) renderMessagesInbox();
+  });
+  onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
+    broadcastThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderBroadcastInbox();
+  });
+  onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
+    broadcastMessagesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderBroadcastInbox();
   });
 
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
