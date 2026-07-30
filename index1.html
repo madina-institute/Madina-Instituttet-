@@ -338,6 +338,8 @@
     <nav class="portal-sidebar" id="portalSidebar">
       <button data-sidebar="attendance" onclick="navTo('attendance', showAttendance)"><span class="ic">✅</span><span class="lbl">Ta oppmøte</span></button>
       <button data-sidebar="lesson" onclick="navTo('lesson', showLesson)"><span class="ic">📅</span><span class="lbl">Timeforberedelse</span></button>
+      <button data-sidebar="monthlyPlan" onclick="navTo('monthlyPlan', showMonthlyPlan)"><span class="ic">🗂️</span><span class="lbl">Månedsplan</span></button>
+      <button data-sidebar="semesterPlan" onclick="navTo('semesterPlan', showSemesterPlan)"><span class="ic">🗃️</span><span class="lbl">Semesterplan</span></button>
       <button data-sidebar="homework" onclick="navTo('homework', showHomework)"><span class="ic">📚</span><span class="lbl">Lekser</span></button>
       <button data-sidebar="absenceReview" onclick="navTo('absenceReview', showAbsenceReview)"><span class="ic">🚫</span><span class="lbl">Fraværsmeldinger</span></button>
       <button data-sidebar="studentNotes" onclick="navTo('studentNotes', showStudentNotes)"><span class="ic">✍️</span><span class="lbl">Elevnotater</span></button>
@@ -380,6 +382,7 @@
       <h2 data-i18n="lessonTitle">Pedagogisk forberedelse (timeforberedelse)</h2>
       <div class="sub" data-i18n="lessonSub">Bygget etter skolens undervisningsmodell — sendes til administrasjonen når den er ferdig</div>
       <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="showLessonArchive()">📁 <span data-i18n="lessonArchiveLink">Se tidligere innsendte forberedelser</span></button>
+      <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="applyDailyPlanTemplate()">🗂️ Bruk mal fra administrasjonen</button>
 
       <div class="field-row-2">
         <div class="field">
@@ -450,6 +453,92 @@
       <h2 data-i18n="lessonArchiveTitle">Tidligere forberedelser</h2>
       <div class="sub" data-i18n="lessonArchiveSub">Alle forberedelser du har sendt inn, nyeste først</div>
       <div id="lessonArchiveList"></div>
+    </div>
+
+    <!-- MONTHLY PLAN VIEW -->
+    <div class="card" id="monthlyPlanView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
+      <h2>Månedsplan</h2>
+      <div class="sub">Bygget på skolens mal for faget og klassen din — rediger og send inn</div>
+      <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="applyMonthlyPlanTemplate()">🗂️ Bruk mal fra administrasjonen</button>
+      <div class="field">
+        <label>Måned</label>
+        <input type="text" id="mpMaaned" placeholder="f.eks. September 2026">
+      </div>
+      <div class="field">
+        <label>Overordnet mål for måneden</label>
+        <textarea id="mpMaal" rows="2"></textarea>
+      </div>
+      <div class="field-row-2">
+        <div class="field"><label>Uke 1 — tema fra boken</label><input type="text" id="mpUke1Tema"></div>
+        <div class="field"><label>Uke 1 — læringsmål</label><input type="text" id="mpUke1Maal"></div>
+      </div>
+      <div class="field-row-2">
+        <div class="field"><label>Uke 2 — tema fra boken</label><input type="text" id="mpUke2Tema"></div>
+        <div class="field"><label>Uke 2 — læringsmål</label><input type="text" id="mpUke2Maal"></div>
+      </div>
+      <div class="field-row-2">
+        <div class="field"><label>Uke 3 — tema fra boken</label><input type="text" id="mpUke3Tema"></div>
+        <div class="field"><label>Uke 3 — læringsmål</label><input type="text" id="mpUke3Maal"></div>
+      </div>
+      <div class="field-row-2">
+        <div class="field"><label>Uke 4 — tema fra boken</label><input type="text" id="mpUke4Tema"></div>
+        <div class="field"><label>Uke 4 — læringsmål</label><input type="text" id="mpUke4Maal"></div>
+      </div>
+      <div class="field">
+        <label>Vurderingsmetode</label>
+        <input type="text" id="mpVurdering">
+      </div>
+      <div class="field">
+        <label>Referansebok/pensum</label>
+        <input type="text" id="mpBok">
+      </div>
+      <button class="btn btn-primary" onclick="submitMonthlyPlan()">Send inn månedsplan</button>
+
+      <hr class="divider">
+      <h3 style="margin-top:0;">Tidligere innsendte månedsplaner</h3>
+      <div id="monthlyPlanList"></div>
+    </div>
+
+    <!-- SEMESTER PLAN VIEW -->
+    <div class="card" id="semesterPlanView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
+      <h2>Semesterplan</h2>
+      <div class="sub">Bygget på skolens mal for faget og klassen din — rediger og send inn</div>
+      <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="applySemesterPlanTemplate()">🗂️ Bruk mal fra administrasjonen</button>
+      <div class="field">
+        <label>Semester</label>
+        <select id="spSemester"><option value="Høst">Høst</option><option value="Vår">Vår</option></select>
+      </div>
+      <div class="field">
+        <label>Overordnet mål for semesteret</label>
+        <textarea id="spMaal" rows="2"></textarea>
+      </div>
+      <div class="field-row-2">
+        <div class="field"><label>Måned 1</label><input type="text" id="spMnd1"></div>
+        <div class="field"><label>Måned 2</label><input type="text" id="spMnd2"></div>
+      </div>
+      <div class="field-row-2">
+        <div class="field"><label>Måned 3</label><input type="text" id="spMnd3"></div>
+        <div class="field"><label>Måned 4</label><input type="text" id="spMnd4"></div>
+      </div>
+      <div class="field-row-2">
+        <div class="field"><label>Måned 5</label><input type="text" id="spMnd5"></div>
+        <div class="field"><label>Måned 6</label><input type="text" id="spMnd6"></div>
+      </div>
+      <div class="field">
+        <label>Kjernemål for hele semesteret</label>
+        <textarea id="spKjernemaal" rows="2"></textarea>
+      </div>
+      <div class="field">
+        <label>Referansebok/pensum</label>
+        <input type="text" id="spBok">
+      </div>
+      <button class="btn btn-primary" onclick="submitSemesterPlan()">Send inn semesterplan</button>
+
+      <hr class="divider">
+      <h3 style="margin-top:0;">Tidligere innsendte semesterplaner</h3>
+      <div id="semesterPlanList"></div>
     </div>
 
     <!-- HOMEWORK VIEW -->
@@ -1069,6 +1158,26 @@
     if(currentTeacher && document.getElementById('lessonArchiveView').style.display !== 'none') renderLessonArchive();
   });
 
+  let dailyPlanTemplates = [], monthlyPlanTemplates = [], semesterPlanTemplates = [];
+  let monthlyPlans = [], semesterPlans = [];
+  onSnapshot(collection(db, 'dailyPlanTemplates'), (snap) => {
+    dailyPlanTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
+  onSnapshot(collection(db, 'monthlyPlanTemplates'), (snap) => {
+    monthlyPlanTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
+  onSnapshot(collection(db, 'semesterPlanTemplates'), (snap) => {
+    semesterPlanTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  });
+  onSnapshot(collection(db, 'monthlyPlans'), (snap) => {
+    monthlyPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('monthlyPlanView') && document.getElementById('monthlyPlanView').style.display !== 'none') renderMonthlyPlanList();
+  });
+  onSnapshot(collection(db, 'semesterPlans'), (snap) => {
+    semesterPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentTeacher && document.getElementById('semesterPlanView') && document.getElementById('semesterPlanView').style.display !== 'none') renderSemesterPlanList();
+  });
+
   let homework = [];
   onSnapshot(collection(db, 'homework'), (snap) => {
     homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1253,6 +1362,8 @@
       if(view === 'attendance') navTo('attendance', showAttendance);
       else if(view === 'lesson') navTo('lesson', showLesson);
       else if(view === 'lessonArchive') showLessonArchive();
+      else if(view === 'monthlyPlan') navTo('monthlyPlan', showMonthlyPlan);
+      else if(view === 'semesterPlan') navTo('semesterPlan', showSemesterPlan);
       else if(view === 'homework') navTo('homework', showHomework);
       else if(view === 'homeworkArchive') showHomeworkArchive();
       else if(view === 'absenceReview') navTo('absenceReview', showAbsenceReview);
@@ -1284,6 +1395,8 @@
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'none';
     document.getElementById('lessonArchiveView').style.display = 'none';
+    document.getElementById('monthlyPlanView').style.display = 'none';
+    document.getElementById('semesterPlanView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'none';
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
@@ -1382,6 +1495,153 @@
             ${detailRow(t('step5'), p.oppsummering)}
             ${detailRow(t('lekserLabel'), p.lekser)}
             <button type="button" class="btn btn-ghost" onclick="printArchivedLessonPlan('${p.id}')">🖨 ${currentLang === 'ar' ? 'إعادة الطباعة' : 'Skriv ut på nytt'}</button>
+          </div>
+        </details>
+      </div>`).join('');
+  }
+
+  // ===== Template pulling (admin-defined maler → prefilled into the teacher's own plan) =====
+  window.applyDailyPlanTemplate = function(){
+    if(!currentTeacher) return;
+    const fag = document.getElementById('lpFag').value;
+    const tpl = dailyPlanTemplates.find(t => t.fag === fag && t.klasse === currentTeacher.tildeltKlasse);
+    if(!tpl){
+      alert(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
+      return;
+    }
+    if(tpl.emne) document.getElementById('lpEmne').value = tpl.emne;
+    if(tpl.mal) document.getElementById('lpMal').value = tpl.mal;
+    if(tpl.metode) document.getElementById('lpMetode').value = tpl.metode;
+    if(tpl.materiell) document.getElementById('lpMateriell').value = tpl.materiell;
+  };
+
+  window.showMonthlyPlan = function(){
+    document.getElementById('monthlyPlanView').style.display = 'block';
+    renderMonthlyPlanList();
+    pushAppView('monthlyPlan');
+  };
+
+  window.applyMonthlyPlanTemplate = function(){
+    if(!currentTeacher) return;
+    const tpl = monthlyPlanTemplates.find(t => t.fag === currentTeacher.fag && t.klasse === currentTeacher.tildeltKlasse);
+    if(!tpl){
+      alert(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
+      return;
+    }
+    const map = { mpMaal:'maal', mpUke1Tema:'uke1_tema', mpUke1Maal:'uke1_maal', mpUke2Tema:'uke2_tema', mpUke2Maal:'uke2_maal',
+      mpUke3Tema:'uke3_tema', mpUke3Maal:'uke3_maal', mpUke4Tema:'uke4_tema', mpUke4Maal:'uke4_maal', mpVurdering:'vurdering', mpBok:'bok' };
+    Object.keys(map).forEach(elId => {
+      const v = tpl[map[elId]];
+      if(v) document.getElementById(elId).value = v;
+    });
+  };
+
+  window.submitMonthlyPlan = async function(){
+    if(!currentTeacher) return;
+    const record = {
+      larer: currentTeacher.id, klasse: currentTeacher.tildeltKlasse, fag: currentTeacher.fag,
+      maaned: document.getElementById('mpMaaned').value.trim(),
+      maal: document.getElementById('mpMaal').value.trim(),
+      uke1_tema: document.getElementById('mpUke1Tema').value.trim(), uke1_maal: document.getElementById('mpUke1Maal').value.trim(),
+      uke2_tema: document.getElementById('mpUke2Tema').value.trim(), uke2_maal: document.getElementById('mpUke2Maal').value.trim(),
+      uke3_tema: document.getElementById('mpUke3Tema').value.trim(), uke3_maal: document.getElementById('mpUke3Maal').value.trim(),
+      uke4_tema: document.getElementById('mpUke4Tema').value.trim(), uke4_maal: document.getElementById('mpUke4Maal').value.trim(),
+      vurdering: document.getElementById('mpVurdering').value.trim(),
+      bok: document.getElementById('mpBok').value.trim()
+    };
+    if(!record.maaned){ alert(currentLang === 'ar' ? 'اكتب الشهر أولاً.' : 'Skriv inn måned først.'); return; }
+    try{
+      await addDoc(collection(db, 'monthlyPlans'), record);
+      showToast(currentLang === 'ar' ? 'تم إرسال الخطة الشهرية.' : 'Månedsplan sendt inn.');
+      ['mpMaaned','mpMaal','mpUke1Tema','mpUke1Maal','mpUke2Tema','mpUke2Maal','mpUke3Tema','mpUke3Maal','mpUke4Tema','mpUke4Maal','mpVurdering','mpBok'].forEach(id => document.getElementById(id).value = '');
+    } catch(err){
+      console.error(err);
+      alert('Feil: ' + err.message);
+    }
+  };
+
+  function renderMonthlyPlanList(){
+    const el = document.getElementById('monthlyPlanList');
+    if(!el || !currentTeacher) return;
+    const mine = monthlyPlans.filter(p => p.larer === currentTeacher.id).sort((a,b) => (b.maaned||'').localeCompare(a.maaned||''));
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد خطط شهرية مرسلة بعد.' : 'Ingen månedsplaner sendt inn ennå.'}</div>`;
+      return;
+    }
+    el.innerHTML = mine.map(p => `
+      <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
+        <details style="width:100%;">
+          <summary style="cursor:pointer;"><span class="name"><strong>${escapeHtml(p.maaned||'—')}</strong></span></summary>
+          <div style="margin-top:10px; font-size:13.5px; white-space:pre-wrap; line-height:1.6;">
+            <strong>Mål:</strong> ${escapeHtml(p.maal||'—')}<br>
+            <strong>Uke 1:</strong> ${escapeHtml(p.uke1_tema||'—')} — ${escapeHtml(p.uke1_maal||'—')}<br>
+            <strong>Uke 2:</strong> ${escapeHtml(p.uke2_tema||'—')} — ${escapeHtml(p.uke2_maal||'—')}<br>
+            <strong>Uke 3:</strong> ${escapeHtml(p.uke3_tema||'—')} — ${escapeHtml(p.uke3_maal||'—')}<br>
+            <strong>Uke 4:</strong> ${escapeHtml(p.uke4_tema||'—')} — ${escapeHtml(p.uke4_maal||'—')}
+          </div>
+        </details>
+      </div>`).join('');
+  }
+
+  window.showSemesterPlan = function(){
+    document.getElementById('semesterPlanView').style.display = 'block';
+    renderSemesterPlanList();
+    pushAppView('semesterPlan');
+  };
+
+  window.applySemesterPlanTemplate = function(){
+    if(!currentTeacher) return;
+    const tpl = semesterPlanTemplates.find(t => t.fag === currentTeacher.fag && t.klasse === currentTeacher.tildeltKlasse);
+    if(!tpl){
+      alert(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
+      return;
+    }
+    const map = { spMaal:'maal', spMnd1:'mnd1', spMnd2:'mnd2', spMnd3:'mnd3', spMnd4:'mnd4', spMnd5:'mnd5', spMnd6:'mnd6', spKjernemaal:'kjernemaal', spBok:'bok' };
+    Object.keys(map).forEach(elId => {
+      const v = tpl[map[elId]];
+      if(v) document.getElementById(elId).value = v;
+    });
+  };
+
+  window.submitSemesterPlan = async function(){
+    if(!currentTeacher) return;
+    const record = {
+      larer: currentTeacher.id, klasse: currentTeacher.tildeltKlasse, fag: currentTeacher.fag,
+      semester: document.getElementById('spSemester').value,
+      maal: document.getElementById('spMaal').value.trim(),
+      mnd1: document.getElementById('spMnd1').value.trim(), mnd2: document.getElementById('spMnd2').value.trim(),
+      mnd3: document.getElementById('spMnd3').value.trim(), mnd4: document.getElementById('spMnd4').value.trim(),
+      mnd5: document.getElementById('spMnd5').value.trim(), mnd6: document.getElementById('spMnd6').value.trim(),
+      kjernemaal: document.getElementById('spKjernemaal').value.trim(),
+      bok: document.getElementById('spBok').value.trim()
+    };
+    try{
+      await addDoc(collection(db, 'semesterPlans'), record);
+      showToast(currentLang === 'ar' ? 'تم إرسال الخطة النصف سنوية.' : 'Semesterplan sendt inn.');
+      ['spMaal','spMnd1','spMnd2','spMnd3','spMnd4','spMnd5','spMnd6','spKjernemaal','spBok'].forEach(id => document.getElementById(id).value = '');
+    } catch(err){
+      console.error(err);
+      alert('Feil: ' + err.message);
+    }
+  };
+
+  function renderSemesterPlanList(){
+    const el = document.getElementById('semesterPlanList');
+    if(!el || !currentTeacher) return;
+    const mine = semesterPlans.filter(p => p.larer === currentTeacher.id).sort((a,b) => (b.semester||'').localeCompare(a.semester||''));
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد خطط نصف سنوية مرسلة بعد.' : 'Ingen semesterplaner sendt inn ennå.'}</div>`;
+      return;
+    }
+    el.innerHTML = mine.map(p => `
+      <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
+        <details style="width:100%;">
+          <summary style="cursor:pointer;"><span class="name"><strong>${escapeHtml(p.semester||'—')}</strong></span></summary>
+          <div style="margin-top:10px; font-size:13.5px; white-space:pre-wrap; line-height:1.6;">
+            <strong>Mål:</strong> ${escapeHtml(p.maal||'—')}<br>
+            <strong>Måned 1:</strong> ${escapeHtml(p.mnd1||'—')} | <strong>2:</strong> ${escapeHtml(p.mnd2||'—')} | <strong>3:</strong> ${escapeHtml(p.mnd3||'—')}<br>
+            <strong>Måned 4:</strong> ${escapeHtml(p.mnd4||'—')} | <strong>5:</strong> ${escapeHtml(p.mnd5||'—')} | <strong>6:</strong> ${escapeHtml(p.mnd6||'—')}<br>
+            <strong>Kjernemål:</strong> ${escapeHtml(p.kjernemaal||'—')}
           </div>
         </details>
       </div>`).join('');
