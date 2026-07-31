@@ -402,6 +402,17 @@
     width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px;
     font-family:'Lora',serif; font-size:16px; background:var(--paper);
   }
+  /* The rule above is written for text/select/textarea fields — checkboxes
+     and radio buttons inside a .field (like the role checklists) would
+     otherwise inherit width:100%/padding/border and stretch into a huge
+     misshapen box that breaks the whole row. This resets them back to a
+     normal small checkbox no matter where inside a .field they're used, so
+     this class of bug can't resurface the next time a checkbox group gets
+     added somewhere new. */
+  .field input[type="checkbox"], .field input[type="radio"]{
+    width:15px; height:15px; min-width:15px; padding:0; border:1px solid var(--line);
+    flex-shrink:0; accent-color:var(--emerald); cursor:pointer; margin:0; background:#fff;
+  }
   .modal-actions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:20px;}
   .modal-actions .btn{flex:1 1 auto;}
   @media (max-width:480px){ .modal-actions .btn{flex-basis:100%;} }
@@ -3489,6 +3500,8 @@
           <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
           <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
           <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
+          <button class="btn-edit" onclick="sendVippsPaymentLink('${row.id}')">📤 Send Vipps-lenke (manuell)</button>
+          <button class="btn-edit" onclick="sendRealVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>
         </div>`;
       } else {
         actionsHtml = `<div class="record-card-actions">
@@ -5055,6 +5068,93 @@
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt.');
+    }
+  };
+
+  // Sends the Vipps payment-link (with its own product/order number, made
+  // manually in the Vipps portal for this specific søknad) to the
+  // guardian's e-post with one click. The link is remembered on the
+  // registration itself, so it only needs to be typed in once even if
+  // resent later. This does NOT confirm payment automatically — the school
+  // still checks the Vipps portal by the reference number and clicks
+  // "Godkjenn" once payment is seen there.
+  window.sendVippsPaymentLink = async function(id){
+    const reg = cache.registrations.find(r => r.id === id);
+    if(!reg){ showToast('Fant ikke søknaden.'); return; }
+    const guardianEmail = reg.foresatt1_epost || '';
+    if(!guardianEmail){
+      alert('Denne søknaden har ingen e-post registrert for foresatt 1 — kan ikke sende lenke.');
+      return;
+    }
+    const existingLink = reg.vippsLenke || '';
+    const link = prompt('Lim inn Vipps-betalingslenken for denne søknaden (' + (reg.elev_navn||'') + '):', existingLink);
+    if(link === null) return;
+    if(!link.trim()){ showToast('Ingen lenke skrevet inn.'); return; }
+    try{
+      await updateDoc(doc(db, 'registrations', id), { vippsLenke: link.trim() });
+      await addDoc(collection(db, 'mail'), {
+        to: [guardianEmail],
+        message: {
+          subject: '[Madina Skole] Betal depositum for ' + (reg.elev_navn || 'ditt barn'),
+          text: 'Hei,\n\nFor å bekrefte skoleplassen til ' + (reg.elev_navn || 'ditt barn') +
+            ', vennligst betal depositum på 500 kr via Vipps innen 5 dager:\n\n' + link.trim() +
+            '\n\nBetalingen trekkes fra totalbeløpet for skoleåret.\n\nMed vennlig hilsen,\nMadina Skole'
+        }
+      });
+      showToast('Vipps-lenke sendt til ' + guardianEmail + '.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt under sending.');
+    }
+  };
+
+  // ===== EKTE Vipps-integrasjon (Cloud Function) =====
+  // Denne kaller den ekte Vipps ePayment API via Cloud Functions — når
+  // foresatte fullfører betalingen i Vipps-appen, kommer et webhook-kall
+  // tilbake automatisk (vippsWebhook) som godkjenner søknaden og oppretter
+  // eleven i systemet UTEN at noen i administrasjonen må gjøre noe manuelt.
+  const VIPPS_CREATE_PAYMENT_URL = 'https://createvippspayment-qgyf6x4aba-uc.a.run.app';
+
+  window.sendRealVippsRequest = async function(id){
+    const reg = cache.registrations.find(r => r.id === id);
+    if(!reg){ showToast('Fant ikke søknaden.'); return; }
+    const guardianPhone = reg.foresatt1_tlf || '';
+    const phone = prompt('Telefonnummer for Vipps (8 siffer, uten landkode):', guardianPhone.replace(/\D/g,'').slice(-8));
+    if(phone === null) return;
+    if(!/^\d{8}$/.test(phone.trim())){
+      alert('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).');
+      return;
+    }
+    showToast('Oppretter Vipps-betaling...');
+    try{
+      const res = await fetch(VIPPS_CREATE_PAYMENT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationId: id, amountKr: 500, phoneNumber: phone.trim() })
+      });
+      const data = await res.json();
+      if(!data.ok){
+        showToast('Vipps-feil: ' + (data.error || 'Ukjent feil'));
+        return;
+      }
+      // Sender også betalingslenken på e-post automatisk, i tillegg til at
+      // foresatte får push-varsel direkte i Vipps-appen sin.
+      const guardianEmail = reg.foresatt1_epost || '';
+      if(guardianEmail){
+        await addDoc(collection(db, 'mail'), {
+          to: [guardianEmail],
+          message: {
+            subject: '[Madina Skole] Betal depositum for ' + (reg.elev_navn || 'ditt barn'),
+            text: 'Hei,\n\nFor å bekrefte skoleplassen til ' + (reg.elev_navn || 'ditt barn') +
+              ', vennligst betal depositum på 500 kr via Vipps innen 5 dager. Du har fått et betalingsvarsel i Vipps-appen din, eller kan bruke denne lenken:\n\n' + data.redirectUrl +
+              '\n\nBetalingen trekkes fra totalbeløpet for skoleåret. Så snart betalingen er gjennomført, er plassen automatisk bekreftet.\n\nMed vennlig hilsen,\nMadina Skole'
+          }
+        });
+      }
+      showToast('✓ Ekte Vipps-krav sendt! Plassen godkjennes automatisk når foresatte betaler.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
     }
   };
 
