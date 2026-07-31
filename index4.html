@@ -123,6 +123,10 @@
     width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:6px;
     font-family:'Lora',serif; font-size:16px; background:var(--paper);
   }
+  .field input[type="checkbox"], .field input[type="radio"]{
+    width:15px; height:15px; min-width:15px; padding:0; flex-shrink:0;
+    accent-color:var(--emerald); cursor:pointer; margin:0; background:#fff;
+  }
   html[dir="rtl"] .field input, html[dir="rtl"] .field select, html[dir="rtl"] .field textarea{font-family:'Tajawal','Lora',serif;}
 
   .btn{
@@ -200,7 +204,7 @@
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif; font-size:13px;
-    padding:12px 22px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s; z-index:200; max-width:90%; text-align:center;
+    padding:12px 22px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s; z-index:3800; max-width:90%; text-align:center;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -216,7 +220,7 @@
   /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
   .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
   .school-cal-popover{
-    position:fixed; z-index:2000; background:#fff; border:1px solid var(--line); border-radius:10px;
+    position:fixed; z-index:3500; background:#fff; border:1px solid var(--line); border-radius:10px;
     box-shadow:0 14px 32px rgba(15,43,33,0.22); padding:14px; width:270px; display:none;
   }
   .school-cal-popover.open{display:block;}
@@ -689,9 +693,7 @@
         <div class="empty-msg" id="payChoiceSentMsg" style="display:none;" data-i18n="payChoiceSent">Takk! Beløpet er registrert. Fullfør betalingen under.</div>
 
         <div id="paymentBtnWrap" style="margin-top:16px; display:none;">
-          <a id="paymentLink" href="#" target="_blank" style="text-decoration:none;">
-            <button class="btn btn-primary" data-i18n="payNowBtn">Betal nå</button>
-          </a>
+          <button class="btn btn-primary" id="paymentLink" onclick="payViaVippsNow()" data-i18n="payNowBtn">Betal nå</button>
         </div>
         <div class="empty-msg" id="paymentComingSoon" style="display:none;" data-i18n="paymentComingSoon">Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.</div>
       </div>
@@ -2204,13 +2206,17 @@
       <div class="info-row"><span class="lbl">Betalt</span><span>${toNum(child.belopBetalt).toLocaleString('no-NO')} kr</span></div>
       <div class="info-row"><span class="lbl">Gjenstår</span><span>${(toNum(child.belop)-toNum(child.belopBetalt)).toLocaleString('no-NO')} kr</span></div>
     `;
-    if(paymentLink){
+    const remainingKr = toNum(child.belop) - toNum(child.belopBetalt);
+    if(lastPaymentChildId !== child.id){
+      selectedPayAmountKr = 0;
+      lastPaymentChildId = child.id;
+    }
+    if(remainingKr > 0){
       document.getElementById('paymentBtnWrap').style.display = 'block';
       document.getElementById('paymentComingSoon').style.display = 'none';
-      document.getElementById('paymentLink').href = paymentLink;
     } else {
       document.getElementById('paymentBtnWrap').style.display = 'none';
-      document.getElementById('paymentComingSoon').style.display = 'block';
+      document.getElementById('paymentComingSoon').style.display = 'none';
     }
 
     updateBadges();
@@ -2340,6 +2346,8 @@
     }
   };
 
+  let selectedPayAmountKr = 0;
+  let lastPaymentChildId = null;
   window.submitPaymentChoice = async function(){
     if(myChildren.length === 0 || !currentGuardian) return;
     const child = myChildren[currentChildIndex];
@@ -2358,6 +2366,7 @@
         return;
       }
     }
+    selectedPayAmountKr = belop;
     try{
       await addDoc(collection(db, 'paymentRequests'), {
         studentId: child.id, elevNavn: child.navn, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
@@ -2371,6 +2380,51 @@
       alert(t('errorOccurred') + err.message);
     }
   };
+
+  // Ekte Vipps-betaling (samme integrasjon som brukes ved påmelding) — for
+  // et allerede godkjent barns restbeløp, IKKE en ny søknad. Webhooken på
+  // serveren vet forskjellen ut fra "type" og oppdaterer bare belopBetalt,
+  // uten å opprette noen ny elev.
+  const VIPPS_CREATE_PAYMENT_URL = 'https://createvippspayment-qgyf6x4aba-uc.a.run.app';
+
+  window.payViaVippsNow = async function(){
+    if(myChildren.length === 0 || !currentGuardian) return;
+    const child = myChildren[currentChildIndex];
+    const remaining = toNum(child.belop) - toNum(child.belopBetalt);
+    const amountToPay = selectedPayAmountKr > 0 ? selectedPayAmountKr : remaining;
+    if(!amountToPay || amountToPay <= 0){
+      alert(t('invalidAmount'));
+      return;
+    }
+    let phone = (currentGuardian.telefon || '').replace(/\D/g, '');
+    if(phone.length !== 8){
+      const entered = prompt(currentLang === 'ar' ? 'رقم موبايلك (٨ أرقام، Vipps):' : 'Ditt mobilnummer (8 sifre, for Vipps):', phone);
+      if(!entered) return;
+      phone = entered.replace(/\D/g, '');
+    }
+    const btn = document.getElementById('paymentLink');
+    if(btn) btn.style.pointerEvents = 'none';
+    showToast(currentLang === 'ar' ? 'جارٍ تجهيز الدفع...' : 'Forbereder betaling...');
+    try{
+      const res = await fetch(VIPPS_CREATE_PAYMENT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'balance', targetId: child.id, amountKr: amountToPay, phoneNumber: phone })
+      });
+      const data = await res.json();
+      if(!data.ok){
+        alert('Vipps-feil: ' + (data.error || 'Ukjent feil'));
+        if(btn) btn.style.pointerEvents = '';
+        return;
+      }
+      window.location.href = data.redirectUrl;
+    } catch(err){
+      console.error(err);
+      alert('Feil: ' + err.message);
+      if(btn) btn.style.pointerEvents = '';
+    }
+  };
+
 
   window.submitGuardianComment = async function(postId){
     if(!currentGuardian) return;
