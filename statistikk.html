@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madina Skole — Statistikk</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08); --red:#a83c3c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
+
+  #loginScreen{
+    position:fixed; inset:0; z-index:9999; background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    background:#fff; border-radius:10px; padding:40px 32px; max-width:360px; width:100%;
+    box-shadow:0 20px 50px rgba(15,43,33,0.3); text-align:center;
+  }
+  .login-card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; color:var(--emerald-d); margin:0 0 4px;}
+  .login-card .sub{font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin-bottom:22px;}
+  .login-card .field{margin-bottom:14px; text-align:start;}
+  .login-card .field label{display:block; font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:5px; font-weight:600;}
+  .login-card .field input{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:6px; font-family:'Lora',serif; font-size:16px;
+  }
+  .btn-login{
+    width:100%; margin-top:8px; background:var(--emerald); color:#fff; border:none; border-radius:6px;
+    padding:13px 18px; font-family:'Jost',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.04em; cursor:pointer;
+  }
+  .login-error{margin-top:12px; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); display:none;}
+
+  header{ padding:26px 20px 14px; text-align:center; }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; margin:0 0 6px; color:var(--ink);}
+  header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8fa3; margin:0;}
+  .live-dot{
+    display:inline-block; width:8px; height:8px; border-radius:50%; background:#3fae63; margin-inline-end:6px;
+    box-shadow:0 0 0 rgba(63,174,99,0.5); animation:pulse 2s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(63,174,99,0.5);}
+    70%{box-shadow:0 0 0 7px rgba(63,174,99,0);}
+    100%{box-shadow:0 0 0 0 rgba(63,174,99,0);}
+  }
+
+  main{max-width:1180px; margin:0 auto; padding:0 18px 60px;}
+
+  .summary-strip{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:24px;
+  }
+  .summary-card{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 14px; box-shadow:var(--shadow); text-align:center;
+  }
+  .summary-card .num{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:32px; color:var(--emerald-d); line-height:1;}
+  .summary-card .lbl{font-family:'Jost',sans-serif; font-size:10.5px; color:#8a9a90; text-transform:uppercase; letter-spacing:0.03em; margin-top:6px;}
+
+  .section-title{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--ink);
+    margin:30px 4px 12px; padding-bottom:8px; border-bottom:1px solid var(--line);
+  }
+
+  .chart-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;
+  }
+  .chart-card{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px 14px; box-shadow:var(--shadow);
+    min-width:0;
+  }
+  .chart-card.wide{grid-column:1 / -1;}
+  .chart-card h3{
+    font-family:'Jost',sans-serif; font-weight:600; font-size:12.5px; color:var(--emerald-d);
+    text-transform:uppercase; letter-spacing:0.03em; margin:0 0 14px;
+  }
+  .chart-card .chart-wrap{position:relative; height:230px;}
+  .chart-card.wide .chart-wrap{height:220px;}
+  .chart-empty{
+    font-family:'Jost',sans-serif; font-size:12px; color:#b5bdc4; text-align:center; padding:60px 10px; font-style:italic;
+  }
+
+  .empty-msg{
+    font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:60px 20px;
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>Statistikk</h2>
+    <div class="sub">Samme innlogging som Administrativ-panelet</div>
+    <div class="field">
+      <label>E-post</label>
+      <input type="email" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Passord</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Logg inn</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+  <header>
+    <h1>Statistikk</h1>
+    <p><span class="live-dot"></span>Live oversikt over alle påmeldinger</p>
+  </header>
+  <main>
+    <div id="loadingMsg" class="empty-msg">Laster data...</div>
+    <div id="dashboard" style="display:none;">
+
+      <div class="summary-strip" id="summaryStrip"></div>
+
+      <div class="section-title">Elevene</div>
+      <div class="chart-grid">
+        <div class="chart-card"><h3>Kjønn</h3><div class="chart-wrap"><canvas id="chGender"></canvas></div></div>
+        <div class="chart-card"><h3>Alder</h3><div class="chart-wrap"><canvas id="chAge"></canvas></div></div>
+        <div class="chart-card"><h3>Ny eller tidligere elev</h3><div class="chart-wrap"><canvas id="chStatus2"></canvas></div></div>
+        <div class="chart-card"><h3>Medlem av moskeen</h3><div class="chart-wrap"><canvas id="chMoske"></canvas></div></div>
+      </div>
+
+      <div class="section-title">Søknadene</div>
+      <div class="chart-grid">
+        <div class="chart-card"><h3>Status på søknad</h3><div class="chart-wrap"><canvas id="chStatus"></canvas></div></div>
+        <div class="chart-card"><h3>Foresattes relasjon</h3><div class="chart-wrap"><canvas id="chRelasjon"></canvas></div></div>
+        <div class="chart-card wide"><h3>Påmeldinger over tid</h3><div class="chart-wrap"><canvas id="chTimeline"></canvas></div></div>
+        <div class="chart-card wide"><h3>Ønsket program</h3><div class="chart-wrap"><canvas id="chProgram"></canvas></div></div>
+      </div>
+
+      <div class="section-title">Tidligere utdanning og hjemmespråk</div>
+      <div class="chart-grid">
+        <div class="chart-card"><h3>Gått på annen skole før?</h3><div class="chart-wrap"><canvas id="chTidligereSkole"></canvas></div></div>
+        <div class="chart-card wide"><h3>Hva har barnet studert før?</h3><div class="chart-wrap"><canvas id="chStudert"></canvas></div></div>
+        <div class="chart-card wide"><h3>Språk som snakkes hjemme</h3><div class="chart-wrap"><canvas id="chSprakHjemme"></canvas></div></div>
+      </div>
+
+      <div class="section-title">Koran- og arabiskkunnskaper</div>
+      <div class="chart-grid">
+        <div class="chart-card wide"><h3>Koranbakgrunn (Qaida, lesing, tajwīd, memorering, ijazah)</h3><div class="chart-wrap"><canvas id="chKoran"></canvas></div></div>
+        <div class="chart-card"><h3>Tidligere arabiskundervisning</h3><div class="chart-wrap"><canvas id="chArabiskTidligere"></canvas></div></div>
+        <div class="chart-card"><h3>Tidligere urduundervisning</h3><div class="chart-wrap"><canvas id="chUrduTidligere"></canvas></div></div>
+        <div class="chart-card wide"><h3>Egenvurdering — arabisk (lese / skrive / forstå / snakke)</h3><div class="chart-wrap"><canvas id="chArabiskFerdighet"></canvas></div></div>
+      </div>
+
+      <div class="section-title">Helse og tilrettelegging</div>
+      <div class="chart-grid">
+        <div class="chart-card wide"><h3>Allergi, sykdom, medisiner, lærevansker, tidligere utredning (BBT/PPT)</h3><div class="chart-wrap"><canvas id="chHelse"></canvas></div></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, setPersistence, inMemoryPersistence
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    initializeAppCheck, ReCaptchaV3Provider
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+    isTokenAutoRefreshEnabled: true
+  });
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
+
+  window.doLogin = async function(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const pw = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    if(!email || !pw){
+      errEl.textContent = 'Fyll ut e-post og passord.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try{
+      await signInWithEmailAndPassword(auth, email, pw);
+    } catch(err){
+      console.error(err);
+      errEl.textContent = 'Feil e-post eller passord.';
+      errEl.style.display = 'block';
+    }
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    document.getElementById('loginScreen').style.display = user ? 'none' : 'flex';
+    document.getElementById('appRoot').style.display = user ? 'block' : 'none';
+  });
+
+  // ===== Fargepalett (samme som resten av systemet) =====
+  const PALETTE = ['#4A8FCB', '#b7924a', '#6FA8DC', '#d9bd7c', '#8a9a90', '#a83c3c', '#2F6CA0', '#c9bff0'];
+  Chart.defaults.font.family = "'Jost', sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = '#5a6860';
+
+  const LABELS = {
+    // kjønn
+    gutt:'Gutt', jente:'Jente',
+    // ja/nei/etc
+    ja:'Ja', nei:'Nei', delvis:'Delvis', litt:'Litt', onsker_ikke_svare:'Ønsker ikke svare',
+    // status elev
+    tidligere:'Tidligere elev', ny:'Ny elev',
+    // program
+    madina_islamske_skole:'Madina Islamske Skole', sprak_arabisk:'Arabisk språk', sprak_urdu:'Urdu språk',
+    madinabarn:'Madinabarn', ekstra_koran_hifz:'Ekstra Koran/Hifz',
+    // studert
+    koran:'Koran', islam:'Islam', arabisk:'Arabisk', tajwid:'Tajwīd', hifz:'Hifz', annet:'Annet',
+    // hjemmespråk
+    urdu:'Urdu', norsk:'Norsk', engelsk:'Engelsk',
+    // relasjon
+    mor:'Mor', far:'Far',
+    // registreringsstatus
+    Ny:'Ny søknad', Godkjent:'Godkjent', Venteliste:'Venteliste', Avslått:'Avslått'
+  };
+  function lbl(v){ return LABELS[v] || v || 'Ukjent'; }
+
+  function countSingle(records, field){
+    const out = {};
+    records.forEach(r => {
+      const v = (r[field] || '').toString().trim();
+      const key = v === '' ? '(ikke besvart)' : v;
+      out[key] = (out[key] || 0) + 1;
+    });
+    return out;
+  }
+
+  function countMulti(records, field){
+    const out = {};
+    records.forEach(r => {
+      const raw = (r[field] || '').toString().trim();
+      if(!raw) return;
+      raw.split(',').map(s => s.trim()).filter(Boolean).forEach(v => {
+        out[v] = (out[v] || 0) + 1;
+      });
+    });
+    return out;
+  }
+
+  function calcAge(dateStr){
+    if(!dateStr) return null;
+    const bd = new Date(dateStr);
+    if(isNaN(bd)) return null;
+    const now = new Date();
+    let age = now.getFullYear() - bd.getFullYear();
+    const m = now.getMonth() - bd.getMonth();
+    if(m < 0 || (m === 0 && now.getDate() < bd.getDate())) age--;
+    return age;
+  }
+
+  const charts = {};
+  function renderChart(canvasId, type, dataObj, opts){
+    opts = opts || {};
+    const canvas = document.getElementById(canvasId);
+    const wrap = canvas.closest('.chart-wrap');
+    const entries = Object.entries(dataObj).sort((a,b) => b[1]-a[1]);
+
+    if(entries.length === 0){
+      canvas.style.display = 'none';
+      if(!wrap.querySelector('.chart-empty')){
+        const p = document.createElement('div');
+        p.className = 'chart-empty';
+        p.textContent = 'Ingen data ennå.';
+        wrap.appendChild(p);
+      }
+      return;
+    } else {
+      canvas.style.display = 'block';
+      const emptyEl = wrap.querySelector('.chart-empty');
+      if(emptyEl) emptyEl.remove();
+    }
+
+    const labels = entries.map(e => opts.rawLabels ? e[0] : lbl(e[0]));
+    const data = entries.map(e => e[1]);
+    const colors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
+
+    if(charts[canvasId]) charts[canvasId].destroy();
+
+    const baseOptions = {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display: type==='doughnut' || type==='pie', position:'bottom', labels:{ boxWidth:11, padding:10 } } }
+    };
+
+    if(type === 'doughnut' || type === 'pie'){
+      charts[canvasId] = new Chart(canvas, {
+        type,
+        data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:2, borderColor:'#fff' }] },
+        options: baseOptions
+      });
+    } else if(type === 'bar-h'){
+      charts[canvasId] = new Chart(canvas, {
+        type:'bar',
+        data:{ labels, datasets:[{ data, backgroundColor: colors, borderRadius:5, maxBarThickness:26 }] },
+        options:{ ...baseOptions, indexAxis:'y', scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } } } }
+      });
+    } else if(type === 'bar'){
+      charts[canvasId] = new Chart(canvas, {
+        type:'bar',
+        data:{ labels, datasets:[{ data, backgroundColor: colors, borderRadius:5, maxBarThickness:40 }] },
+        options:{ ...baseOptions, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+      });
+    }
+  }
+
+  function renderGroupedBar(canvasId, groups){
+    // groups: [{ label, dataObj }, ...] each dataObj like {ja:3, nei:2, ...}
+    const canvas = document.getElementById(canvasId);
+    const wrap = canvas.closest('.chart-wrap');
+    const allKeys = new Set();
+    groups.forEach(g => Object.keys(g.dataObj).forEach(k => allKeys.add(k)));
+    const keyOrder = ['ja','delvis','litt','nei','onsker_ikke_svare'].filter(k => allKeys.has(k));
+    Array.from(allKeys).forEach(k => { if(!keyOrder.includes(k)) keyOrder.push(k); });
+
+    const hasAny = groups.some(g => Object.values(g.dataObj).some(v => v > 0));
+    if(!hasAny){
+      canvas.style.display = 'none';
+      if(!wrap.querySelector('.chart-empty')){
+        const p = document.createElement('div'); p.className = 'chart-empty'; p.textContent = 'Ingen data ennå.'; wrap.appendChild(p);
+      }
+      return;
+    } else {
+      canvas.style.display = 'block';
+      const e = wrap.querySelector('.chart-empty'); if(e) e.remove();
+    }
+
+    const datasets = keyOrder.map((k, i) => ({
+      label: lbl(k),
+      data: groups.map(g => g.dataObj[k] || 0),
+      backgroundColor: PALETTE[i % PALETTE.length],
+      borderRadius:5
+    }));
+
+    if(charts[canvasId]) charts[canvasId].destroy();
+    charts[canvasId] = new Chart(canvas, {
+      type:'bar',
+      data:{ labels: groups.map(g => g.label), datasets },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, padding:10 } } },
+        scales:{ x:{ stacked:false }, y:{ beginAtZero:true, ticks:{ precision:0 } } }
+      }
+    });
+  }
+
+  function render(records){
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+
+    // ---- Sammendrag ----
+    const total = records.length;
+    const godkjent = records.filter(r => r.status === 'Godkjent').length;
+    const ny = records.filter(r => r.status === 'Ny').length;
+    const venteliste = records.filter(r => r.status === 'Venteliste').length;
+    document.getElementById('summaryStrip').innerHTML = `
+      <div class="summary-card"><div class="num">${total}</div><div class="lbl">Totalt</div></div>
+      <div class="summary-card"><div class="num">${ny}</div><div class="lbl">Nye søknader</div></div>
+      <div class="summary-card"><div class="num">${godkjent}</div><div class="lbl">Godkjent</div></div>
+      <div class="summary-card"><div class="num">${venteliste}</div><div class="lbl">Venteliste</div></div>
+    `;
+
+    // ---- Elevene ----
+    renderChart('chGender', 'doughnut', countSingle(records, 'kjonn'));
+
+    const ageBuckets = {};
+    records.forEach(r => {
+      const age = calcAge(r.elev_fdato);
+      if(age === null) return;
+      let bucket;
+      if(age <= 5) bucket = '≤ 5 år';
+      else if(age <= 7) bucket = '6–7 år';
+      else if(age <= 10) bucket = '8–10 år';
+      else if(age <= 13) bucket = '11–13 år';
+      else if(age <= 16) bucket = '14–16 år';
+      else bucket = '17+ år';
+      ageBuckets[bucket] = (ageBuckets[bucket] || 0) + 1;
+    });
+    const ageOrder = ['≤ 5 år','6–7 år','8–10 år','11–13 år','14–16 år','17+ år'];
+    const ageSorted = {};
+    ageOrder.forEach(k => { if(ageBuckets[k]) ageSorted[k] = ageBuckets[k]; });
+    renderChart('chAge', 'bar', ageSorted, { rawLabels:true });
+
+    renderChart('chStatus2', 'doughnut', countSingle(records, 'intro_elev_status'));
+    renderChart('chMoske', 'doughnut', countSingle(records, 'intro_moske_medlem'));
+
+    // ---- Søknadene ----
+    renderChart('chStatus', 'doughnut', countSingle(records, 'status'));
+    renderChart('chRelasjon', 'doughnut', countSingle(records, 'foresatt1_relasjon'));
+
+    const byDate = {};
+    records.forEach(r => {
+      const d = (r.innsendtDato || '').toString().slice(0,10);
+      if(!d) return;
+      byDate[d] = (byDate[d] || 0) + 1;
+    });
+    const sortedDates = Object.keys(byDate).sort();
+    if(sortedDates.length === 0){
+      document.getElementById('chTimeline').style.display = 'none';
+    } else {
+      document.getElementById('chTimeline').style.display = 'block';
+      if(charts.chTimeline) charts.chTimeline.destroy();
+      charts.chTimeline = new Chart(document.getElementById('chTimeline'), {
+        type:'line',
+        data:{ labels: sortedDates, datasets:[{
+          data: sortedDates.map(d => byDate[d]), borderColor:'#4A8FCB', backgroundColor:'rgba(74,143,203,0.12)',
+          fill:true, tension:0.3, pointRadius:3, pointBackgroundColor:'#2F6CA0'
+        }]},
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } }
+      });
+    }
+
+    renderChart('chProgram', 'bar-h', countMulti(records, 'program'));
+
+    // ---- Tidligere utdanning ----
+    renderChart('chTidligereSkole', 'doughnut', countSingle(records, 'tidligere_skole'));
+    renderChart('chStudert', 'bar-h', countMulti(records, 'tidligere_studert'));
+    renderChart('chSprakHjemme', 'bar-h', countMulti(records, 'sprak_hjemme'));
+
+    // ---- Koran / arabisk ----
+    renderGroupedBar('chKoran', [
+      { label:'Qaida', dataObj: countSingle(records, 'koran_qaida') },
+      { label:'Kan lese Koran', dataObj: countSingle(records, 'koran_lese') },
+      { label:'Tajwīd', dataObj: countSingle(records, 'koran_tajwid') },
+      { label:'Har memorert noe', dataObj: countSingle(records, 'koran_memorert') },
+      { label:'Ijazah', dataObj: countSingle(records, 'koran_ijazah') }
+    ]);
+    renderChart('chArabiskTidligere', 'doughnut', countSingle(records, 'arabisk_tidligere'));
+    renderChart('chUrduTidligere', 'doughnut', countSingle(records, 'urdu_tidligere'));
+    renderGroupedBar('chArabiskFerdighet', [
+      { label:'Lese', dataObj: countSingle(records, 'ar_lese') },
+      { label:'Skrive', dataObj: countSingle(records, 'ar_skrive') },
+      { label:'Forstå', dataObj: countSingle(records, 'ar_forsta') },
+      { label:'Snakke', dataObj: countSingle(records, 'ar_snakke') }
+    ]);
+
+    // ---- Helse ----
+    renderGroupedBar('chHelse', [
+      { label:'Allergi', dataObj: countSingle(records, 'allergi') },
+      { label:'Sykdom', dataObj: countSingle(records, 'sykdom') },
+      { label:'Medisiner', dataObj: countSingle(records, 'medisin') },
+      { label:'Lærevansker', dataObj: countSingle(records, 'larevansker') },
+      { label:'BBT/PPT', dataObj: countSingle(records, 'bbt_ppt') }
+    ]);
+  }
+
+  onSnapshot(collection(db, 'registrations'), (snap) => {
+    const records = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    render(records);
+  }, (err) => {
+    console.error(err);
+    document.getElementById('loadingMsg').textContent = 'Kunne ikke laste data: ' + err.message;
+  });
+</script>
+</body>
+</html>
