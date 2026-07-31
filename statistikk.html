@@ -217,9 +217,23 @@
 
   // ===== Fargepalett (samme som resten av systemet) =====
   const PALETTE = ['#4A8FCB', '#b7924a', '#6FA8DC', '#d9bd7c', '#8a9a90', '#a83c3c', '#2F6CA0', '#c9bff0'];
-  Chart.defaults.font.family = "'Jost', sans-serif";
-  Chart.defaults.font.size = 11;
-  Chart.defaults.color = '#5a6860';
+  // Disse linjene satte tidligere Chart.js sine standardinnstillinger helt
+  // øverst i modulen, FØR resten av koden (inkludert onSnapshot lengre
+  // ned, som faktisk henter dataene) fikk sjanse til å kjøre. Chart.js
+  // lastes via en vanlig <script>-tag rett over denne modulen, og
+  // SKAL normalt være ferdig lastet i tide — men hvis det av en eller
+  // annen grunn (nettverk, annonseblokkering, CDN-hikke) ikke er det,
+  // krasjet HELE resten av siden stille, og "Laster data..." ble
+  // stående for alltid siden onSnapshot-oppsettet aldri ble nådd.
+  // Denne sjekken gjør at et evt. Chart.js-problem aldri kan blokkere
+  // selve datainnhentingen — i verste fall mangler bare diagram-stilen.
+  if(typeof Chart !== 'undefined'){
+    Chart.defaults.font.family = "'Jost', sans-serif";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = '#5a6860';
+  } else {
+    console.error('Chart.js ble ikke lastet i tide — diagrammer vil ikke vises, men tallene under vil fortsatt fungere.');
+  }
 
   const LABELS = {
     // kjønn
@@ -277,6 +291,7 @@
 
   const charts = {};
   function renderChart(canvasId, type, dataObj, opts){
+    if(typeof Chart === 'undefined') return; // se forklaring lenger opp
     opts = opts || {};
     const canvas = document.getElementById(canvasId);
     const wrap = canvas.closest('.chart-wrap');
@@ -330,6 +345,7 @@
   }
 
   function renderGroupedBar(canvasId, groups){
+    if(typeof Chart === 'undefined') return; // se forklaring lenger opp
     // groups: [{ label, dataObj }, ...] each dataObj like {ja:3, nei:2, ...}
     const canvas = document.getElementById(canvasId);
     const wrap = canvas.closest('.chart-wrap');
