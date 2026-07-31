@@ -472,6 +472,8 @@
   onSnapshot(collection(db, 'registrations'), (snap) => {
     const records = snap.docs.map(d => ({ id:d.id, ...d.data() }));
     render(records);
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
   }, (err) => {
     console.error(err);
     document.getElementById('loadingMsg').textContent = 'Kunne ikke laste data: ' + err.message;
