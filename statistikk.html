@@ -160,7 +160,7 @@
   </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" onerror="this.onerror=null; document.write('<scr'+'ipt src=\'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js\'></scr'+'ipt>')"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
@@ -291,9 +291,21 @@
 
   const charts = {};
   function renderChart(canvasId, type, dataObj, opts){
-    if(typeof Chart === 'undefined') return; // se forklaring lenger opp
-    opts = opts || {};
     const canvas = document.getElementById(canvasId);
+    if(typeof Chart === 'undefined'){
+      // se forklaring lenger opp — Chart.js rakk ikke laste. Viser en
+      // tydelig melding i stedet for en stille, forvirrende, tom hvit boks.
+      const wrap0 = canvas.closest('.chart-wrap');
+      if(wrap0 && !wrap0.querySelector('.chart-fallback-msg')){
+        const msg = document.createElement('div');
+        msg.className = 'chart-fallback-msg empty-msg';
+        msg.style.cssText = 'padding:20px; text-align:center; font-size:12px;';
+        msg.textContent = 'Diagrambiblioteket kunne ikke lastes. Prøv å laste siden på nytt.';
+        wrap0.appendChild(msg);
+      }
+      return;
+    }
+    opts = opts || {};
     const wrap = canvas.closest('.chart-wrap');
     const entries = Object.entries(dataObj).sort((a,b) => b[1]-a[1]);
 
