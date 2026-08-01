@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="no" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Personvernerklæring — Madina Skole</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh; line-height:1.8;}
+  html[dir="rtl"] body{font-family:'Tajawal','Lora',serif;}
+  html[lang="ur"] body{font-family:'Noto Nastaliq Urdu','Tajawal',serif; line-height:2.3;}
+
+  nav.topbar{
+    position:sticky; top:0; z-index:200; background:rgba(238,240,251,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line); padding:12px 20px;
+  }
+  .topbar-inner{max-width:760px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .brand img{height:34px; width:auto; border-radius:8px;}
+  .brand-text{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; color:var(--emerald-d);}
+  html[dir="rtl"] .brand-text{font-family:'Tajawal',sans-serif;}
+
+  .lang-switch-inner{ display:inline-flex; background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
+  .lang-switch-inner button{
+    background:transparent; border:none; color:var(--ink); opacity:0.55; font-family:'Jost',sans-serif;
+    font-size:11px; font-weight:600; letter-spacing:0.04em; padding:7px 14px; cursor:pointer;
+  }
+  .lang-switch-inner button.active{background:var(--emerald); color:#fff; opacity:1;}
+
+  main{max-width:760px; margin:0 auto; padding:40px 20px 70px;}
+
+  header.doc-head{text-align:center; margin-bottom:36px;}
+  header.doc-head h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; margin:0 0 8px; color:var(--ink);}
+  html[dir="rtl"] header.doc-head h1{font-family:'Tajawal',sans-serif; font-size:23px;}
+  header.doc-head .updated{font-family:'Jost',sans-serif; font-size:12px; color:#8a978f;}
+  html[dir="rtl"] header.doc-head .updated{font-family:'Tajawal',sans-serif;}
+
+  .lang-notice{
+    background:var(--paper-2); border:1px dashed var(--gold); border-radius:10px; padding:12px 16px;
+    font-family:'Jost',sans-serif; font-size:12px; color:#6b5a30; margin-bottom:30px; line-height:1.7; text-align:center;
+  }
+  html[dir="rtl"] .lang-notice{font-family:'Tajawal',sans-serif;}
+
+  .doc-body section{margin-bottom:26px;}
+  .doc-body h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; color:var(--emerald-d); margin:0 0 8px;}
+  html[dir="rtl"] .doc-body h2{font-family:'Tajawal',sans-serif; font-size:16px;}
+  .doc-body p, .doc-body li{font-size:14.5px; color:#37454d;}
+  .doc-body ul{margin:6px 0; padding-inline-start:20px;}
+  .doc-body li{margin-bottom:4px;}
+
+  .contact-box{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px 22px; box-shadow:var(--shadow);
+    margin-top:36px;
+  }
+  .contact-box h2{margin-top:0;}
+  .contact-box .row{font-family:'Jost',sans-serif; font-size:13.5px; margin:6px 0;}
+  html[dir="rtl"] .contact-box .row{font-family:'Tajawal',sans-serif;}
+  .contact-box .row b{color:var(--emerald-d);}
+
+  footer{text-align:center; margin-top:50px;}
+  footer a{font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald-d); text-decoration:none;}
+  html[dir="rtl"] footer a{font-family:'Tajawal',sans-serif;}
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="https://madina.no/images/logo.png" alt="Madina Skole">
+      <span class="brand-text" id="brandText">Madina Skole</span>
+    </a>
+    <div class="lang-switch-inner">
+      <button id="btnLangNo" class="active" onclick="switchLang('no')">Norsk</button>
+      <button id="btnLangAr" onclick="switchLang('ar')">العربية</button>
+      <button id="btnLangUr" onclick="switchLang('ur')">اردو</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <header class="doc-head">
+    <h1 id="docTitle"></h1>
+    <div class="updated" id="docUpdated"></div>
+  </header>
+
+  <div class="lang-notice" id="langNotice"></div>
+
+  <div class="doc-body">
+    <section>
+      <h2 id="h1"></h2>
+      <p id="p1"></p>
+    </section>
+    <section>
+      <h2 id="h2"></h2>
+      <ul id="l2"></ul>
+    </section>
+    <section>
+      <h2 id="h3"></h2>
+      <ul id="l3"></ul>
+    </section>
+    <section>
+      <h2 id="h4"></h2>
+      <p id="p4"></p>
+    </section>
+    <section>
+      <h2 id="h5"></h2>
+      <p id="p5"></p>
+    </section>
+    <section>
+      <h2 id="h6"></h2>
+      <p id="p6"></p>
+    </section>
+    <section>
+      <h2 id="h7"></h2>
+      <p id="p7"></p>
+    </section>
+    <section>
+      <h2 id="h8"></h2>
+      <p id="p8"></p>
+    </section>
+  </div>
+
+  <div class="contact-box">
+    <h2 id="contactTitle"></h2>
+    <div class="row"><b id="contactEmailLbl"></b> info@madinaskole.no</div>
+    <div class="row"><b id="contactAddrLbl"></b> Hagelundveien 2B, 0963 Oslo</div>
+    <div class="row"><b id="contactOrgLbl"></b> 919674431</div>
+  </div>
+
+  <footer>
+    <a href="index.html" id="backLink"></a>
+  </footer>
+</main>
+
+<script>
+  const TEXT = {
+    no: {
+      pageTitle: 'Personvernerklæring — Madina Skole', brand: 'Madina Skole',
+      docTitle: 'Personvernerklæring', docUpdated: 'Sist oppdatert: 1. august 2026',
+      langNotice: 'Denne erklæringen finnes på norsk, arabisk og urdu. Den norske versjonen er den juridisk bindende versjonen; de andre er oversettelser til hjelp for foresatte.',
+      h1: '1. Hvem vi er', p1: 'Madina Institute er ansvarlig for innsamling og behandling av opplysningene beskrevet i dette dokumentet, gjennom påmeldingsskjemaet til Madina Skole og tilhørende programmer.',
+      h2: '2. Hvilke opplysninger vi samler inn',
+      l2: [
+        'Elevopplysninger: navn, fødselsdato, klasse, valgt program',
+        'Foresattes opplysninger: navn, telefonnummer, e-post, adresse',
+        'Nødkontaktinformasjon',
+        'Helseopplysninger (helt frivillig å oppgi): allergier, sykdommer, medisiner, lærevansker — du kan velge «ønsker ikke å svare» på ethvert slikt spørsmål uten at det påvirker vurderingen av søknaden',
+        'Tidligere islamsk undervisning og språkkunnskaper (Koran, arabisk/urdu)',
+        'Samtykker knyttet til fotografering og publisering'
+      ],
+      h3: '3. Hvorfor vi samler inn disse opplysningene',
+      l3: [
+        'For å behandle påmeldingen og ta en beslutning om opptak',
+        'For å sikre elevens trygghet i undervisningen (spesielt helseopplysninger)',
+        'For å kommunisere med foresatte om oppmøte, forberedelser og betaling',
+        'For fakturering og oppfølging av betaling'
+      ],
+      h4: '4. Hvem som har tilgang til opplysningene',
+      p4: 'Fullstendige opplysninger (inkludert helseopplysninger og faglig vurdering) er kun tilgjengelig for administrasjonen, via et passordbeskyttet administrasjonspanel med personlig innlogging. Lærere har ikke tilgang til disse opplysningene; deres tilgang er begrenset til elevens navn samt oppmøte- og forberedelsesregistrering for egen klasse.',
+      h5: '5. Hvor lenge opplysningene oppbevares',
+      p5: 'Opplysningene oppbevares så lenge eleven er tilknyttet skolen, og i ett år etter avsluttet elevforhold, med mindre du ber om tidligere sletting, jf. punkt 7 under.',
+      h6: '6. Tekniske leverandører vi bruker',
+      p6: 'Opplysningene lagres via tjenesten Google Firebase, og tjenesten Web3Forms brukes til å sende administrative e-postvarsler. Disse leverandørene bruker ikke opplysningene til noe annet formål enn å levere den tekniske tjenesten til Madina Institute.',
+      h7: '7. Dine rettigheter',
+      p7: 'Du har til enhver tid rett til å: få innsyn i registrerte opplysninger om barnet, be om retting, be om sletting, eller trekke tilbake samtykket til behandling av helseopplysninger spesifikt. Se kontaktinformasjon nedenfor.',
+      h8: '8. Samtykke',
+      p8: 'Ved å sende inn påmeldingsskjemaet bekrefter du å ha lest denne erklæringen og samtykker til behandling av opplysningene beskrevet ovenfor til de nevnte formålene, inkludert eventuelle helseopplysninger du har delt frivillig.',
+      contactTitle: 'Kontakt oss om personvern', contactEmailLbl: 'E-post:', contactAddrLbl: 'Adresse:', contactOrgLbl: 'Org. nummer:',
+      backLink: '← Tilbake til forsiden'
+    },
+    ar: {
+      pageTitle: 'سياسة الخصوصية — مدرسة مدينة', brand: 'مدرسة مدينة',
+      docTitle: 'سياسة الخصوصية', docUpdated: 'آخر تحديث: 1 أغسطس 2026',
+      langNotice: 'هذه السياسة متوفرة بالنرويجية والعربية والأردية. النسخة النرويجية هي النسخة الملزمة قانونيًا؛ باقي النسخ ترجمة مساعدة لأولياء الأمور.',
+      h1: '1. من نحن', p1: 'معهد مدينة هو الجهة المسؤولة عن جمع ومعالجة البيانات الموضحة في هذا المستند، من خلال استمارة التسجيل الخاصة بمدرسة مدينة وبرامجها التابعة.',
+      h2: '2. البيانات التي نجمعها',
+      l2: [
+        'بيانات الطالب: الاسم، تاريخ الميلاد، الفصل، البرنامج المختار',
+        'بيانات ولي الأمر: الاسم، رقم الهاتف، البريد الإلكتروني، العنوان',
+        'بيانات جهة الاتصال في حالات الطوارئ',
+        'البيانات الصحية (اختيارية تمامًا): الحساسية، الأمراض، الأدوية، صعوبات التعلم — يمكنك اختيار «لا أرغب في الإجابة» على أي سؤال من هذا النوع دون أن يؤثر ذلك على تقييم الطلب',
+        'الخلفية التعليمية الإسلامية السابقة والمهارات اللغوية (القرآن، العربية/الأردية)',
+        'الموافقات المتعلقة بالتصوير والنشر'
+      ],
+      h3: '3. لماذا نجمع هذه البيانات',
+      l3: [
+        'لمعالجة طلب التسجيل واتخاذ قرار القبول',
+        'لضمان سلامة الطالب أثناء التعليم (خصوصًا البيانات الصحية)',
+        'للتواصل مع أولياء الأمور بخصوص الحضور والتحضير والدفع',
+        'لأغراض الفوترة ومتابعة الدفع'
+      ],
+      h4: '4. من يمكنه الوصول إلى البيانات',
+      p4: 'البيانات الكاملة (بما فيها البيانات الصحية والتقييم الأكاديمي) متاحة فقط للإدارة، عبر لوحة إدارة محمية بكلمة مرور وتسجيل دخول شخصي. المعلمون لا يملكون وصولًا لهذه البيانات؛ وصولهم مقتصر على اسم الطالب وتسجيل الحضور والتحضير الخاص بفصلهم فقط.',
+      h5: '5. مدة الاحتفاظ بالبيانات',
+      p5: 'يُحتفظ بالبيانات طالما كان الطالب منتسبًا للمدرسة، ولمدة سنة واحدة بعد انتهاء الانتساب، ما لم تطلب حذفها في وقت أبكر وفقًا للبند 7 أدناه.',
+      h6: '6. الجهات التقنية التي نستخدمها',
+      p6: 'تُخزَّن البيانات عبر خدمة Google Firebase، وتُستخدم خدمة Web3Forms لإرسال إشعارات البريد الإلكتروني الإدارية. لا تستخدم هذه الجهات البيانات لأي غرض آخر غير تقديم الخدمة التقنية لمعهد مدينة.',
+      h7: '7. حقوقك',
+      p7: 'يحق لك في أي وقت: الاطلاع على البيانات المسجلة عن طفلك، طلب التصحيح، طلب الحذف، أو سحب الموافقة على معالجة البيانات الصحية تحديدًا. راجع بيانات التواصل أدناه.',
+      h8: '8. الموافقة',
+      p8: 'بإرسال استمارة التسجيل، فإنك تؤكد أنك قرأت هذه السياسة وتوافق على معالجة البيانات الموضحة أعلاه للأغراض المذكورة، بما في ذلك أي بيانات صحية شاركتها طوعًا.',
+      contactTitle: 'تواصل معنا بخصوص الخصوصية', contactEmailLbl: 'البريد الإلكتروني:', contactAddrLbl: 'العنوان:', contactOrgLbl: 'الرقم التنظيمي:',
+      backLink: '→ العودة للصفحة الرئيسية'
+    },
+    ur: {
+      pageTitle: 'رازداری کی پالیسی — مدینہ اسکول', brand: 'مدینہ اسکول',
+      docTitle: 'رازداری کی پالیسی', docUpdated: 'آخری تازہ کاری: 1 اگست 2026',
+      langNotice: 'یہ پالیسی ناروے، عربی اور اردو میں دستیاب ہے۔ ناروے کا نسخہ قانونی طور پر پابند ہے؛ باقی نسخے والدین کی مدد کے لیے ترجمہ ہیں۔',
+      h1: '1. ہم کون ہیں', p1: 'مدینہ انسٹی ٹیوٹ اس دستاویز میں بیان کردہ معلومات کے حصول اور پروسیسنگ کا ذمہ دار ہے، مدینہ اسکول کے داخلہ فارم اور اس سے منسلک پروگراموں کے ذریعے۔',
+      h2: '2. ہم کون سی معلومات جمع کرتے ہیں',
+      l2: [
+        'طالب علم کی معلومات: نام، تاریخ پیدائش، جماعت، منتخب پروگرام',
+        'والدین کی معلومات: نام، فون نمبر، ای میل، پتہ',
+        'ہنگامی رابطہ کی معلومات',
+        'صحت کی معلومات (مکمل طور پر رضاکارانہ): الرجی، بیماریاں، ادویات، سیکھنے میں مشکلات — آپ کسی بھی ایسے سوال پر «جواب نہیں دینا چاہتے» کا انتخاب کر سکتے ہیں بغیر اس کے کہ اس سے درخواست کی جانچ متاثر ہو',
+        'سابقہ اسلامی تعلیم اور زبان کی مہارتیں (قرآن، عربی/اردو)',
+        'تصویر کشی اور اشاعت سے متعلق رضامندیاں'
+      ],
+      h3: '3. ہم یہ معلومات کیوں جمع کرتے ہیں',
+      l3: [
+        'داخلے کی درخواست پر کارروائی اور داخلے کا فیصلہ کرنے کے لیے',
+        'تعلیم کے دوران طالب علم کی حفاظت کو یقینی بنانے کے لیے (خاص طور پر صحت کی معلومات)',
+        'حاضری، تیاری اور ادائیگی کے بارے میں والدین سے رابطے کے لیے',
+        'بلنگ اور ادائیگی کی پیروی کے لیے'
+      ],
+      h4: '4. معلومات تک کس کی رسائی ہے',
+      p4: 'مکمل معلومات (بشمول صحت کی معلومات اور تعلیمی جانچ) صرف انتظامیہ کے لیے دستیاب ہے، ایک پاس ورڈ سے محفوظ انتظامی پینل کے ذریعے ذاتی لاگ ان کے ساتھ۔ اساتذہ کو یہ معلومات تک رسائی حاصل نہیں؛ ان کی رسائی طالب علم کے نام اور اپنی جماعت کی حاضری و تیاری کے اندراج تک محدود ہے۔',
+      h5: '5. معلومات کتنے عرصے تک محفوظ رکھی جاتی ہیں',
+      p5: 'معلومات اس وقت تک محفوظ رکھی جاتی ہیں جب تک طالب علم اسکول سے منسلک رہتا ہے، اور تعلق ختم ہونے کے بعد ایک سال تک، جب تک کہ آپ نیچے نکتہ 7 کے مطابق پہلے حذف کرنے کی درخواست نہ کریں۔',
+      h6: '6. ہم جو تکنیکی سروسز استعمال کرتے ہیں',
+      p6: 'معلومات Google Firebase سروس کے ذریعے محفوظ کی جاتی ہیں، اور انتظامی ای میل اطلاعات بھیجنے کے لیے Web3Forms سروس استعمال ہوتی ہے۔ یہ سروس فراہم کرنے والے مدینہ انسٹی ٹیوٹ کو تکنیکی خدمت فراہم کرنے کے علاوہ کسی اور مقصد کے لیے معلومات استعمال نہیں کرتے۔',
+      h7: '7. آپ کے حقوق',
+      p7: 'آپ کو ہر وقت حق حاصل ہے کہ: اپنے بچے کے بارے میں درج معلومات تک رسائی حاصل کریں، تصحیح کی درخواست کریں، حذف کرنے کی درخواست کریں، یا خاص طور پر صحت کی معلومات کی پروسیسنگ کی رضامندی واپس لیں۔ نیچے رابطہ کی معلومات دیکھیں۔',
+      h8: '8. رضامندی',
+      p8: 'داخلہ فارم جمع کروا کر، آپ تصدیق کرتے ہیں کہ آپ نے یہ پالیسی پڑھ لی ہے اور اوپر بیان کردہ مقاصد کے لیے مذکورہ معلومات کی پروسیسنگ پر رضامند ہیں، بشمول کوئی بھی صحت کی معلومات جو آپ نے رضاکارانہ طور پر شیئر کی ہیں۔',
+      contactTitle: 'رازداری کے بارے میں ہم سے رابطہ کریں', contactEmailLbl: 'ای میل:', contactAddrLbl: 'پتہ:', contactOrgLbl: 'سرکاری رجسٹریشن نمبر:',
+      backLink: '→ ہوم پیج پر واپس جائیں'
+    }
+  };
+
+  function listHtml(items){ return items.map(i => `<li>${i}</li>`).join(''); }
+
+  function switchLang(lang){
+    const t = TEXT[lang];
+    const isRtl = (lang === 'ar' || lang === 'ur');
+    document.getElementById('htmlRoot').setAttribute('lang', lang);
+    document.getElementById('htmlRoot').setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+    document.getElementById('btnLangNo').classList.toggle('active', lang === 'no');
+    document.getElementById('btnLangAr').classList.toggle('active', lang === 'ar');
+    document.getElementById('btnLangUr').classList.toggle('active', lang === 'ur');
+
+    document.getElementById('pageTitle').textContent = t.pageTitle;
+    document.getElementById('brandText').textContent = t.brand;
+    document.getElementById('docTitle').textContent = t.docTitle;
+    document.getElementById('docUpdated').textContent = t.docUpdated;
+    document.getElementById('langNotice').textContent = t.langNotice;
+
+    for(let n = 1; n <= 8; n++){
+      document.getElementById('h'+n).textContent = t['h'+n];
+      const pEl = document.getElementById('p'+n);
+      if(pEl) pEl.textContent = t['p'+n];
+      const lEl = document.getElementById('l'+n);
+      if(lEl) lEl.innerHTML = listHtml(t['l'+n]);
+    }
+
+    document.getElementById('contactTitle').textContent = t.contactTitle;
+    document.getElementById('contactEmailLbl').textContent = t.contactEmailLbl;
+    document.getElementById('contactAddrLbl').textContent = t.contactAddrLbl;
+    document.getElementById('contactOrgLbl').textContent = t.contactOrgLbl;
+    document.getElementById('backLink').textContent = t.backLink;
+
+    localStorage.setItem('madinaHomeLang', lang);
+  }
+
+  (function(){
+    const saved = localStorage.getItem('madinaHomeLang');
+    switchLang((saved === 'ar' || saved === 'ur') ? saved : 'no');
+  })();
+</script>
+
+</body>
+</html>
