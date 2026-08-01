@@ -223,6 +223,16 @@
     <div class="card-grid" id="visionCards"></div>
   </section>
 
+  <section id="schedule">
+    <div class="section-head">
+      <div class="eyebrow" id="scheduleEyebrow"></div>
+      <h2 id="scheduleTitle"></h2>
+      <p id="scheduleDesc"></p>
+    </div>
+    <div class="card-grid" id="scheduleCards"></div>
+    <div class="draft-note" id="priceNote"></div>
+  </section>
+
   <section id="programs">
     <div class="section-head">
       <div class="eyebrow" id="programsEyebrow"></div>
@@ -269,7 +279,7 @@
       bannerText: '⚠️ Du åpnet denne siden inne i en app (f.eks. WhatsApp eller Instagram) — innlogging kan da feile. Trykk ⋯ eller del-ikonet og velg «Åpne i Safari».',
       bannerClose: 'Skjul',
       brand: 'Madina Skole',
-      nav: { about:'Om oss', vision:'Visjon', programs:'Fagtilbud', admin:'Ledelse', portals:'Portaler', reg:'Påmelding' },
+      nav: { about:'Om oss', vision:'Visjon', schedule:'Skoleår', programs:'Fagtilbud', admin:'Ledelse', portals:'Portaler', reg:'Påmelding' },
       instituteLink: '🕌 Madina Institute Norway',
       heroEyebrow: 'Madina Skole — Madina Grorud moske',
       heroTitle: 'Koranundervisning, arabisk og urdu for barna våre — med omsorg og oppfølging',
@@ -290,6 +300,15 @@
         { ic:'🤲', h:'Toleranse og respekt', p:'Instituttet fremmer en forståelse av islam basert på kjærlighet, toleranse og respekt for alle mennesker, uavhengig av bakgrunn eller tro.' },
         { ic:'🎓', h:'Bredt utdanningstilbud', p:'I tillegg til Madina Skole tilbyr instituttet et variert utdanningstilbud innen islamske studier, koranstudier, arabisk og islamsk teologi.' }
       ],
+      scheduleEyebrow: 'Skoleår', scheduleTitle: 'Skoleår, undervisningsdager og priser',
+      scheduleDesc: 'Skoleåret er delt i to semestre, med undervisning på faste ukedager.',
+      scheduleCards: [
+        { ic:'🍂', h:'Høstsemester', p:'Fra første uke i september til slutten av andre uke i desember.' },
+        { ic:'🌱', h:'Vårsemester', p:'Fra 1. januar til slutten av mai.' },
+        { ic:'📖', h:'Madina Skole — hovedprogram', p:'Lørdager, kl. 09:30–13:30. Koran, islam og valgt språkspor (arabisk etter læreverket Al-Mutammim, eller urdu).' },
+        { ic:'🧒', h:'Madinabarn (3–6 år)', p:'Søndager, kl. 09:30–11:00. Introduksjonsprogram for de yngste barna.' }
+      ],
+      priceNote: 'Priser: hovedprogrammet koster 3 500 kr for hele skoleåret (begge semestre), mens Madinabarn koster 1 500 kr per semester. Ved tilbud om plass betales et depositum på 500 kr innen 5 dager (trekkes fra totalbeløpet). Skolemateriell/bøker kommer i tillegg og koster 450 kr per år.',
       programsEyebrow: 'Fagtilbud', programsTitle: 'Tilgjengelige programmer',
       programsDesc: 'Foresatte kan velge ett eller flere programmer ved påmelding, etter elevens behov.',
       programs: [
@@ -318,7 +337,7 @@
         { ic:'📝', h:'Påmelding', p:'Meld på barnet ditt til skolen nå', href:'index2.html' }
       ],
       footerBrand: 'Madina Skole — Madina Institute Norway',
-      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerAddr: '📍 Hagelundveien 2B, 0963 Oslo',
       footerContact: '✉️ kontakt@madinainstitute.no',
       footerOrgNr: 'Org. nummer: 919674431',
       footerCopy: '© Madina Skole — Alle rettigheter forbeholdt'
@@ -328,7 +347,7 @@
       bannerText: '⚠️ فتحت الصفحة من داخل تطبيق (مثل واتساب أو انستجرام) — تسجيل الدخول للبوابات قد لا يعمل بشكل صحيح. اضغط ⋯ أو أيقونة المشاركة واختر «فتح في المتصفح».',
       bannerClose: 'إخفاء',
       brand: 'مدرسة مدينة',
-      nav: { about:'من نحن', vision:'رؤيتنا', programs:'البرامج الدراسية', admin:'الإدارة', portals:'البوابات', reg:'التسجيل' },
+      nav: { about:'من نحن', vision:'رؤيتنا', schedule:'العام الدراسي', programs:'البرامج الدراسية', admin:'الإدارة', portals:'البوابات', reg:'التسجيل' },
       instituteLink: '🕌 معهد مدينة النرويج',
       heroEyebrow: 'مدرسة مدينة الإسلامية — مسجد مدينة غرود',
       heroTitle: 'تعليم القرآن الكريم واللغة العربية والأردية لأبنائنا، برعاية وعناية',
@@ -349,6 +368,15 @@
         { ic:'🤲', h:'التسامح والاحترام', p:'يُعنى المعهد بترسيخ فهم للإسلام قائم على المحبة والتسامح واحترام كل البشر، بغض النظر عن خلفياتهم أو معتقداتهم.' },
         { ic:'🎓', h:'برامج تعليمية متنوعة', p:'إلى جانب مدرسة مدينة، يقدّم المعهد برامج تعليمية متنوعة في الدراسات الإسلامية والقرآنية واللغة العربية والعقيدة الإسلامية.' }
       ],
+      scheduleEyebrow: 'العام الدراسي', scheduleTitle: 'العام الدراسي، أيام التدريس، والأسعار',
+      scheduleDesc: 'ينقسم العام الدراسي إلى فصلين، مع تدريس في أيام أسبوعية ثابتة.',
+      scheduleCards: [
+        { ic:'🍂', h:'الفصل الدراسي الأول', p:'من أول أسبوع في سبتمبر حتى نهاية الأسبوع الثاني من ديسمبر.' },
+        { ic:'🌱', h:'الفصل الدراسي الثاني', p:'من 1 يناير حتى نهاية شهر مايو.' },
+        { ic:'📖', h:'مدرسة مدينة — البرنامج الأساسي', p:'أيام السبت، من الساعة 09:30 حتى 13:30. يشمل القرآن، الإسلام، ومسار اللغة المختار (العربية وفق منهج المتمم، أو الأردية).' },
+        { ic:'🧒', h:'مدينة بارن (3–6 سنوات)', p:'أيام الأحد، من الساعة 09:30 حتى 11:00. برنامج تمهيدي لأصغر الأطفال سنًا.' }
+      ],
+      priceNote: 'الأسعار: البرنامج الأساسي بـ 3500 كرون للعام الدراسي كاملًا (الفصلين معًا)، بينما مدينة بارن بـ 1500 كرون للفصل الواحد. عند قبول الطالب، يُدفع عربون قدره 500 كرون خلال 5 أيام (يُخصم من المبلغ الإجمالي). المواد التعليمية/الكتب إضافية بتكلفة 450 كرون سنويًا.',
       programsEyebrow: 'البرامج الدراسية', programsTitle: 'البرامج المتاحة للتسجيل',
       programsDesc: 'يمكن لولي الأمر اختيار برنامج واحد أو أكثر عند التسجيل، حسب حاجة الطالب.',
       programs: [
@@ -377,7 +405,7 @@
         { ic:'📝', h:'التسجيل', p:'سجّل طفلك في المدرسة الآن', href:'index2.html' }
       ],
       footerBrand: 'مدرسة مدينة — معهد مدينة النرويج',
-      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerAddr: '📍 Hagelundveien 2B, 0963 Oslo',
       footerContact: '✉️ kontakt@madinainstitute.no',
       footerOrgNr: 'الرقم التنظيمي الرسمي: 919674431',
       footerCopy: '© مدرسة مدينة — جميع الحقوق محفوظة'
@@ -387,7 +415,7 @@
       bannerText: '⚠️ آپ نے یہ صفحہ کسی ایپ (مثلاً واٹس ایپ یا انسٹاگرام) کے اندر کھولا ہے — لاگ اِن کام نہیں کر سکتا۔ ⋯ یا شیئر آئیکن پر ٹیپ کریں اور «Safari میں کھولیں» منتخب کریں۔',
       bannerClose: 'چھپائیں',
       brand: 'مدینہ اسکول',
-      nav: { about:'ہمارے بارے میں', vision:'ہمارا وژن', programs:'تعلیمی پروگرام', admin:'انتظامیہ', portals:'پورٹلز', reg:'داخلہ' },
+      nav: { about:'ہمارے بارے میں', vision:'ہمارا وژن', schedule:'تعلیمی سال', programs:'تعلیمی پروگرام', admin:'انتظامیہ', portals:'پورٹلز', reg:'داخلہ' },
       instituteLink: '🕌 مدینہ انسٹی ٹیوٹ ناروے',
       heroEyebrow: 'مدینہ اسکول — مدینہ گرورود مسجد',
       heroTitle: 'ہمارے بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم — نگہداشت اور توجہ کے ساتھ',
@@ -408,6 +436,15 @@
         { ic:'🤲', h:'رواداری اور احترام', p:'ادارہ محبت، رواداری اور تمام انسانوں کے احترام پر مبنی اسلام کی سمجھ کو فروغ دیتا ہے، چاہے ان کا پس منظر یا عقیدہ کچھ بھی ہو۔' },
         { ic:'🎓', h:'متنوع تعلیمی پروگرام', p:'مدینہ اسکول کے علاوہ، ادارہ اسلامی علوم، قرآنی علوم، عربی زبان اور اسلامی عقیدہ میں متنوع تعلیمی پروگرام پیش کرتا ہے۔' }
       ],
+      scheduleEyebrow: 'تعلیمی سال', scheduleTitle: 'تعلیمی سال، تدریسی دن، اور فیس',
+      scheduleDesc: 'تعلیمی سال دو سمسٹرز میں تقسیم ہے، مقررہ ہفتہ وار دنوں میں تدریس کے ساتھ۔',
+      scheduleCards: [
+        { ic:'🍂', h:'پہلا سمسٹر', p:'ستمبر کے پہلے ہفتے سے دسمبر کے دوسرے ہفتے کے اختتام تک۔' },
+        { ic:'🌱', h:'دوسرا سمسٹر', p:'یکم جنوری سے مئی کے اختتام تک۔' },
+        { ic:'📖', h:'مدینہ اسکول — بنیادی پروگرام', p:'ہفتہ کے روز، صبح 09:30 سے دوپہر 13:30 تک۔ اس میں قرآن، اسلام، اور منتخب زبان (المتمم نصاب کے مطابق عربی، یا اردو) شامل ہے۔' },
+        { ic:'🧒', h:'مدینہ بارن (3 تا 6 سال)', p:'اتوار کے روز، صبح 09:30 سے 11:00 تک۔ سب سے کم عمر بچوں کے لیے تعارفی پروگرام۔' }
+      ],
+      priceNote: 'فیس: بنیادی پروگرام پورے تعلیمی سال (دونوں سمسٹرز) کے لیے 3500 کرون، جبکہ مدینہ بارن فی سمسٹر 1500 کرون ہے۔ داخلے کی پیشکش پر، 5 دن کے اندر 500 کرون کا ڈپازٹ ادا کرنا ہوگا (جو کل رقم سے منہا کیا جائے گا)۔ تعلیمی مواد/کتابیں اضافی ہیں اور ان کی قیمت 450 کرون سالانہ ہے۔',
       programsEyebrow: 'تعلیمی پروگرام', programsTitle: 'دستیاب پروگرام',
       programsDesc: 'والدین داخلے کے وقت طالب علم کی ضرورت کے مطابق ایک یا زیادہ پروگرام منتخب کر سکتے ہیں۔',
       programs: [
@@ -436,7 +473,7 @@
         { ic:'📝', h:'داخلہ', p:'ابھی اپنے بچے کا اسکول میں داخلہ کروائیں', href:'index2.html' }
       ],
       footerBrand: 'مدینہ اسکول — مدینہ انسٹی ٹیوٹ ناروے',
-      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerAddr: '📍 Hagelundveien 2B, 0963 Oslo',
       footerContact: '✉️ kontakt@madinainstitute.no',
       footerOrgNr: 'سرکاری رجسٹریشن نمبر: 919674431',
       footerCopy: '© مدینہ اسکول — جملہ حقوق محفوظ ہیں'
@@ -469,7 +506,7 @@
     return list.map(p => `<a class="portal-card" href="${p.href}"><div class="ic">${p.ic}</div><div class="title">${p.h}</div><div class="desc">${p.p}</div></a>`).join('');
   }
   function navHtml(t){
-    return `<a href="#about">${t.nav.about}</a><a href="#vision">${t.nav.vision}</a><a href="#programs">${t.nav.programs}</a><a href="#admin">${t.nav.admin}</a><a href="#portals">${t.nav.portals}</a><a href="index2.html">${t.nav.reg}</a>`;
+    return `<a href="#about">${t.nav.about}</a><a href="#vision">${t.nav.vision}</a><a href="#schedule">${t.nav.schedule}</a><a href="#programs">${t.nav.programs}</a><a href="#admin">${t.nav.admin}</a><a href="#portals">${t.nav.portals}</a><a href="index2.html">${t.nav.reg}</a>`;
   }
 
   function switchLang(lang){
@@ -504,6 +541,12 @@
     document.getElementById('visionTitle').textContent = t.visionTitle;
     document.getElementById('visionDesc').textContent = t.visionDesc;
     document.getElementById('visionCards').innerHTML = cardsHtml(t.visionCards);
+
+    document.getElementById('scheduleEyebrow').textContent = t.scheduleEyebrow;
+    document.getElementById('scheduleTitle').textContent = t.scheduleTitle;
+    document.getElementById('scheduleDesc').textContent = t.scheduleDesc;
+    document.getElementById('scheduleCards').innerHTML = cardsHtml(t.scheduleCards);
+    document.getElementById('priceNote').textContent = t.priceNote;
 
     document.getElementById('programsEyebrow').textContent = t.programsEyebrow;
     document.getElementById('programsTitle').textContent = t.programsTitle;
