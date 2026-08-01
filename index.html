@@ -333,7 +333,7 @@
       programEyebrow: 'Fagtilbud', programTitle: 'Vårt program', programDesc: 'Tre kjernefag, undervist med omsorg tilpasset elevens nivå.',
       programCards: [
         { ic:'📖', h:'Koranstudier', p:'Koranlesing, memorering og tajwīd-regler. Programmet er strukturert slik at hver elev — uansett utgangspunkt — utvikler sin evne til å lese og forstå Koranen.' },
-        { ic:'✏️', h:'Arabisk og urdu', p:'Strukturert opplæring i lesing, skriving og muntlig kommunikasjon. Arabisk følger læreverket Al-Mutammim.' },
+        { ic:'✏️', h:'Arabisk og urdu', p:'Strukturert opplæring i lesing, skriving og muntlig kommunikasjon. Arabisk følger læreverket Al-Mutammim — en anerkjent metodikk utviklet etter over 30 års erfaring, brukt av over 150 utdanningsinstitusjoner i Europa og Nord-Amerika, og i tråd med de internasjonale rammeverkene CEFR og ACTFL.', video:'▶️ Se introduksjonsvideo om Al-Mutammim' },
         { ic:'🕌', h:'Islamsk oppdragelse', p:'De grunnleggende søylene i islam, samt etiske verdier som bygger en trygg og selvsikker muslimsk identitet.' }
       ],
 
@@ -395,7 +395,7 @@
       programEyebrow: 'البرامج الدراسية', programTitle: 'برنامجنا', programDesc: 'ثلاث مواد أساسية، تُدرَّس بعناية تناسب مستوى كل طالب.',
       programCards: [
         { ic:'📖', h:'الدراسات القرآنية', p:'تلاوة القرآن، الحفظ، وأحكام التجويد. البرنامج مصمم بحيث ينمو كل طالب — مهما كانت نقطة بدايته — في قدرته على قراءة القرآن وفهمه.' },
-        { ic:'✏️', h:'العربية والأردية', p:'تعليم منظم في القراءة والكتابة والمحادثة. العربية وفق منهج المتمم.' },
+        { ic:'✏️', h:'العربية والأردية', p:'تعليم منظم في القراءة والكتابة والمحادثة. العربية وفق منهج المتمم — منهج معتمد ثمرة أكثر من 30 عامًا من الخبرة، تعتمده أكثر من 150 مؤسسة تعليمية في أوروبا وأمريكا الشمالية، ومتوافق مع المعايير الدولية CEFR وACTFL.', video:'▶️ شاهد الفيديو التعريفي عن منهج المتمم' },
         { ic:'🕌', h:'التربية الإسلامية', p:'أركان الإسلام الأساسية، إلى جانب القيم الأخلاقية التي تبني هوية إسلامية واثقة وآمنة.' }
       ],
 
@@ -457,7 +457,7 @@
       programEyebrow: 'تعلیمی پروگرام', programTitle: 'ہمارا پروگرام', programDesc: 'تین بنیادی مضامین، ہر طالب علم کی سطح کے مطابق نگہداشت کے ساتھ پڑھائے جاتے ہیں۔',
       programCards: [
         { ic:'📖', h:'قرآنی علوم', p:'قرآن کی تلاوت، حفظ، اور تجوید کے اصول۔ پروگرام اس طرح ترتیب دیا گیا ہے کہ ہر طالب علم — چاہے اس کی ابتدائی سطح کچھ بھی ہو — قرآن پڑھنے اور سمجھنے کی صلاحیت میں ترقی کرے۔' },
-        { ic:'✏️', h:'عربی اور اردو', p:'پڑھنے، لکھنے اور بول چال میں منظم تعلیم۔ عربی المتمم نصاب کے مطابق پڑھائی جاتی ہے۔' },
+        { ic:'✏️', h:'عربی اور اردو', p:'پڑھنے، لکھنے اور بول چال میں منظم تعلیم۔ عربی المتمم نصاب کے مطابق پڑھائی جاتی ہے — ایک تسلیم شدہ طریقہ کار جو 30 سال سے زیادہ تجربے کے بعد تیار ہوا، یورپ اور شمالی امریکہ کے 150 سے زائد تعلیمی اداروں میں رائج ہے، اور بین الاقوامی معیارات CEFR اور ACTFL کے مطابق ہے۔', video:'▶️ المتمم کے تعارفی ویڈیو دیکھیں' },
         { ic:'🕌', h:'اسلامی تربیت', p:'اسلام کے بنیادی ارکان، ساتھ ہی اخلاقی اقدار جو ایک پراعتماد اور محفوظ اسلامی شناخت بناتی ہیں۔' }
       ],
 
@@ -492,7 +492,10 @@
     }
   };
 
-  function cardsHtml(list){ return list.map(c => `<div class="card"><div class="ic">${c.ic}</div><h3>${c.h}</h3><p>${c.p}</p></div>`).join(''); }
+  const MUTAMMIM_VIDEO_URL = 'https://youtu.be/AwgsxvVi5Mw';
+  function cardsHtml(list){
+    return list.map(c => `<div class="card"><div class="ic">${c.ic}</div><h3>${c.h}</h3><p>${c.p}</p>${c.video ? `<p style="margin-top:10px;"><a href="${MUTAMMIM_VIDEO_URL}" target="_blank" rel="noopener" style="color:var(--emerald-d); text-decoration:none; font-weight:700;">${c.video}</a></p>` : ''}</div>`).join('');
+  }
   function stepsHtml(list){ return list.map((s,i) => `<div class="step-card"><div class="step-num">${i+1}</div><h3>${s.h}</h3><p>${s.p}</p></div>`).join(''); }
   function datesHtml(list){ return list.map(d => `<div class="date-card"><div class="when">${d.when}</div><h3>${d.h}</h3><p>${d.p}</p></div>`).join(''); }
   function mvpHtml(list){ return list.map(m => `<div class="mvp-card"><div class="eyebrow">${m.eyebrow}</div><h3>${m.h}</h3><p>${m.p}</p></div>`).join(''); }
