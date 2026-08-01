@@ -47,23 +47,35 @@
   }
   .lang-switch-inner button.active{background:var(--emerald); color:#fff; opacity:1;}
 
-  /* ===== Hero ===== */
-  header.hero{ max-width:900px; margin:0 auto; padding:50px 20px 30px; text-align:center; }
+  /* ===== Hero (تصميم مطابق لهيكل SALAM، بألوان مدرسة مدينة) ===== */
+  header.hero{
+    background:linear-gradient(165deg, var(--emerald) 0%, var(--emerald-d) 100%);
+    padding:56px 20px 46px; text-align:center; color:#fff;
+  }
+  .hero-inner{max-width:900px; margin:0 auto;}
   .hero-badge{
-    display:inline-block; background:var(--gold); color:#fff; font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
-    letter-spacing:0.04em; text-transform:uppercase; padding:6px 16px; border-radius:20px; margin-bottom:18px;
+    display:inline-block; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35); color:#fff;
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
+    letter-spacing:0.04em; text-transform:uppercase; padding:6px 16px; border-radius:20px; margin-bottom:20px;
   }
   html[dir="rtl"] .hero-badge{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
-  header.hero h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; margin:0 0 14px; color:var(--ink); line-height:1.45;}
+  header.hero h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:27px; margin:0 0 6px; color:#fff; line-height:1.4;}
   html[dir="rtl"] header.hero h1{font-family:'Tajawal',sans-serif; font-size:23px;}
-  header.hero p.lead{max-width:600px; margin:0 auto 22px; font-size:15px; color:#4a5860;}
+  header.hero .school-year{font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:19px; color:var(--gold-l); margin:0 0 18px;}
+  html[dir="rtl"] header.hero .school-year{font-family:'Tajawal',sans-serif; font-style:normal;}
+  header.hero p.lead{max-width:600px; margin:0 auto 26px; font-size:15px; color:rgba(255,255,255,0.88);}
 
-  .quick-facts{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:26px;}
+  .quick-facts{
+    display:flex; gap:0; justify-content:center; flex-wrap:wrap; margin-bottom:28px; border-top:1px solid rgba(255,255,255,0.2);
+    border-bottom:1px solid rgba(255,255,255,0.2); padding:16px 0;
+  }
   .quick-fact{
-    background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 16px; box-shadow:var(--shadow);
-    font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald-d); font-weight:600;
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#fff; font-weight:500; padding:4px 20px;
+    border-inline-start:1px solid rgba(255,255,255,0.25);
   }
   html[dir="rtl"] .quick-fact{font-family:'Tajawal',sans-serif;}
+  .quick-fact:first-child{border-inline-start:none;}
+  .quick-fact b{display:block; font-weight:700; font-size:13.5px; margin-top:2px;}
 
   .hero-actions{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
   .btn{
@@ -71,8 +83,8 @@
     padding:13px 26px; border-radius:8px;
   }
   html[dir="rtl"] .btn{font-family:'Tajawal',sans-serif;}
-  .btn-primary{background:var(--emerald); color:#fff; box-shadow:0 8px 20px rgba(74,143,203,0.35);}
-  .btn-outline{background:#fff; color:var(--emerald-d); border:1.5px solid var(--emerald);}
+  .btn-primary{background:#fff; color:var(--emerald-d); box-shadow:0 8px 20px rgba(0,0,0,0.15);}
+  .btn-outline{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,0.6);}
 
   main{max-width:1080px; margin:0 auto; padding:0 20px 70px;}
   section{margin-top:56px;}
@@ -88,8 +100,8 @@
   .steps-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px;}
   .step-card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 20px; box-shadow:var(--shadow); position:relative;}
   .step-num{
-    width:30px; height:30px; border-radius:50%; background:var(--emerald); color:#fff; font-family:'Jost',sans-serif;
-    font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; margin-bottom:12px;
+    width:54px; height:54px; border-radius:50%; background:var(--paper-2); border:2px solid var(--emerald); color:var(--emerald-d);
+    font-size:22px; display:flex; align-items:center; justify-content:center; margin-bottom:14px;
   }
   .step-card h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px; margin:0 0 6px; color:var(--emerald-d);}
   html[dir="rtl"] .step-card h3{font-family:'Tajawal',sans-serif; font-size:15px;}
@@ -111,10 +123,13 @@
   .tuition-box .btn-primary{background:#fff; color:var(--emerald-d);}
 
   /* Key dates timeline */
-  .dates-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:16px;}
-  .date-card{background:#fff; border-inline-start:4px solid var(--gold); border-radius:10px; padding:18px 20px; box-shadow:var(--shadow);}
-  .date-card .when{font-family:'Jost',sans-serif; font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:5px;}
-  html[dir="rtl"] .date-card .when{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
+  .dates-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px;}
+  .date-card{background:#fff; border-radius:12px; padding:20px 18px; box-shadow:var(--shadow); text-align:center;}
+  .date-card .when{
+    display:inline-block; background:var(--emerald); color:#fff; font-family:'Jost',sans-serif; font-size:12.5px; font-weight:700;
+    padding:6px 16px; border-radius:8px; margin-bottom:12px;
+  }
+  html[dir="rtl"] .date-card .when{font-family:'Tajawal',sans-serif;}
   .date-card h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px; margin:0 0 6px; color:var(--ink);}
   html[dir="rtl"] .date-card h3{font-family:'Tajawal',sans-serif; font-size:15px;}
   .date-card p{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin:0;}
@@ -165,12 +180,12 @@
 
   /* CTA final */
   .final-cta{
-    background:linear-gradient(135deg, var(--gold) 0%, var(--gold-l) 100%); border-radius:16px; padding:36px 26px;
+    background:linear-gradient(135deg, var(--emerald) 0%, var(--emerald-d) 100%); border-radius:16px; padding:40px 26px;
     text-align:center; box-shadow:var(--shadow);
   }
-  .final-cta h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; margin:0 0 10px; color:#3a2e10;}
+  .final-cta h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:23px; margin:0 0 10px; color:#fff;}
   html[dir="rtl"] .final-cta h2{font-family:'Tajawal',sans-serif; font-size:20px;}
-  .final-cta p{font-family:'Jost',sans-serif; font-size:13px; color:#5a4820; margin:0 0 20px;}
+  .final-cta p{font-family:'Jost',sans-serif; font-size:13px; color:rgba(255,255,255,0.9); margin:0 0 20px;}
   html[dir="rtl"] .final-cta p{font-family:'Tajawal',sans-serif;}
   .final-cta .btn-primary{background:#fff; color:var(--emerald-d); box-shadow:none;}
 
@@ -214,13 +229,16 @@
 </nav>
 
 <header class="hero">
+  <div class="hero-inner">
   <span class="hero-badge" id="heroBadge"></span>
   <h1 id="heroTitle"></h1>
+  <div class="school-year" id="heroYear"></div>
   <p class="lead" id="heroLead"></p>
   <div class="quick-facts" id="quickFacts"></div>
   <div class="hero-actions">
     <a class="btn btn-primary" href="index2.html" id="heroBtnPrimary"></a>
     <a class="btn btn-outline" href="#program" id="heroBtnOutline"></a>
+  </div>
   </div>
 </header>
 
@@ -309,16 +327,20 @@
       bannerText: '⚠️ Du åpnet denne siden inne i en app (f.eks. WhatsApp eller Instagram) — innlogging kan da feile. Trykk ⋯ eller del-ikonet og velg «Åpne i Safari».', bannerClose: 'Skjul',
       nav: { register:'Påmelding', dates:'Datoer', program:'Program', who:'Om oss', team:'Team', portals:'Portaler' },
 
-      heroBadge: '📝 Påmelding er åpen', heroTitle: 'Koranundervisning, arabisk og urdu for barna våre — med omsorg og oppfølging',
+      heroBadge: '📝 Påmelding er åpen', heroTitle: 'Koranundervisning, arabisk og urdu for barna våre', heroYear: 'Skoleåret 2026/2027',
       heroLead: 'En undervisningsskole tilknyttet Madina Institute Norway (Madina Grorud moske), som tilbyr koranmemorering, arabisk- og urduundervisning samt islamsk oppdragelse for barn og unge.',
-      quickFacts: ['🗓️ Oppstart: uke 1 i september', '📖 Lørdager 09:30–13:30', '🧒 Madinabarn 3–6 år (søndager)'],
+      quickFacts: [
+        { l:'Oppstart', v:'Uke 1 i september' },
+        { l:'Undervisning', v:'Lørdager 09:30–13:30' },
+        { l:'Madinabarn', v:'Søndager, 3–6 år' }
+      ],
       heroBtnPrimary: '📝 Meld på nå', heroBtnOutline: 'Se programmet',
 
       regEyebrow: 'Påmelding', regTitle: 'Slik melder du deg på', regDesc: 'Tre enkle steg fra søknad til bekreftet plass.',
       steps: [
-        { h:'Fyll ut søknadsskjemaet', p:'Åpne påmeldingssiden og fyll inn opplysninger om eleven, foresatte og ønsket program.' },
-        { h:'Velg program og fag', p:'Velg hovedprogrammet eller Madinabarn, og eventuelt språkspor (arabisk eller urdu).' },
-        { h:'Bekreft plassen din', p:'Ved tilbud om plass betaler du et depositum på 500 kr innen 5 dager for å bekrefte plassen.' }
+        { ic:'📝', h:'Fyll ut søknadsskjemaet', p:'Åpne påmeldingssiden og fyll inn opplysninger om eleven, foresatte og ønsket program.' },
+        { ic:'✅', h:'Velg program og fag', p:'Velg hovedprogrammet eller Madinabarn, og eventuelt språkspor (arabisk eller urdu).' },
+        { ic:'💳', h:'Bekreft plassen din', p:'Ved tilbud om plass betaler du et depositum på 500 kr innen 5 dager for å bekrefte plassen.' }
       ],
       tuitionAmt: '2 500 kr / semester', tuitionSub: 'Hovedprogrammet (Lørdag) — per semester. Madinabarn: 1 500 kr per semester.',
       tuitionList: ['Depositum: 500 kr innen 5 dager etter tilbud (trekkes fra totalbeløpet)', 'Skolemateriell/bøker: 450 kr per år, kommer i tillegg'],
@@ -371,16 +393,20 @@
       bannerText: '⚠️ فتحت الصفحة من داخل تطبيق (مثل واتساب أو انستجرام) — تسجيل الدخول قد لا يعمل بشكل صحيح. اضغط ⋯ أو أيقونة المشاركة واختر «فتح في المتصفح».', bannerClose: 'إخفاء',
       nav: { register:'التسجيل', dates:'المواعيد', program:'البرنامج', who:'من نحن', team:'الفريق', portals:'البوابات' },
 
-      heroBadge: '📝 التسجيل مفتوح الآن', heroTitle: 'تعليم القرآن الكريم واللغة العربية والأردية لأبنائنا، برعاية وعناية',
+      heroBadge: '📝 التسجيل مفتوح الآن', heroTitle: 'تعليم القرآن الكريم واللغة العربية والأردية لأبنائنا', heroYear: 'العام الدراسي 2026/2027',
       heroLead: 'مدرسة تعليمية تابعة لمعهد مدينة النرويج (مسجد مدينة غرود)، تُعنى بتحفيظ القرآن الكريم وتعليم اللغة العربية والأردية والتربية الإسلامية للأطفال والناشئة.',
-      quickFacts: ['🗓️ البداية: الأسبوع الأول من سبتمبر', '📖 السبت 09:30–13:30', '🧒 مدينة بارن 3–6 سنوات (الأحد)'],
+      quickFacts: [
+        { l:'البداية', v:'الأسبوع الأول من سبتمبر' },
+        { l:'التدريس', v:'السبت 09:30–13:30' },
+        { l:'مدينة بارن', v:'الأحد، 3–6 سنوات' }
+      ],
       heroBtnPrimary: '📝 سجّل الآن', heroBtnOutline: 'شاهد البرنامج',
 
       regEyebrow: 'التسجيل', regTitle: 'خطوات التسجيل', regDesc: 'ثلاث خطوات بسيطة من التقديم لتأكيد المكان.',
       steps: [
-        { h:'املأ استمارة التسجيل', p:'افتح صفحة التسجيل واملأ بيانات الطالب وولي الأمر والبرنامج المطلوب.' },
-        { h:'اختر البرنامج والمادة', p:'اختر البرنامج الأساسي أو مدينة بارن، ومسار اللغة إن وجد (عربي أو أردو).' },
-        { h:'أكّد مكانك', p:'عند قبول الطالب، يُدفع عربون 500 كرون خلال 5 أيام لتأكيد المكان.' }
+        { ic:'📝', h:'املأ استمارة التسجيل', p:'افتح صفحة التسجيل واملأ بيانات الطالب وولي الأمر والبرنامج المطلوب.' },
+        { ic:'✅', h:'اختر البرنامج والمادة', p:'اختر البرنامج الأساسي أو مدينة بارن، ومسار اللغة إن وجد (عربي أو أردو).' },
+        { ic:'💳', h:'أكّد مكانك', p:'عند قبول الطالب، يُدفع عربون 500 كرون خلال 5 أيام لتأكيد المكان.' }
       ],
       tuitionAmt: '2500 كرون / الفصل الواحد', tuitionSub: 'البرنامج الأساسي (السبت) — لكل فصل. مدينة بارن: 1500 كرون للفصل الواحد.',
       tuitionList: ['العربون: 500 كرون خلال 5 أيام من القبول (يُخصم من المبلغ الإجمالي)', 'المواد التعليمية/الكتب: 450 كرون سنويًا، إضافية'],
@@ -433,16 +459,20 @@
       bannerText: '⚠️ آپ نے یہ صفحہ کسی ایپ کے اندر کھولا ہے — لاگ اِن کام نہیں کر سکتا۔ ⋯ یا شیئر آئیکن پر ٹیپ کریں اور «Safari میں کھولیں» منتخب کریں۔', bannerClose: 'چھپائیں',
       nav: { register:'داخلہ', dates:'تاریخیں', program:'پروگرام', who:'ہمارے بارے میں', team:'ٹیم', portals:'پورٹلز' },
 
-      heroBadge: '📝 داخلہ کھلا ہے', heroTitle: 'ہمارے بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم — نگہداشت اور توجہ کے ساتھ',
+      heroBadge: '📝 داخلہ کھلا ہے', heroTitle: 'ہمارے بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم', heroYear: 'تعلیمی سال 2026/2027',
       heroLead: 'مدینہ انسٹی ٹیوٹ ناروے (مدینہ گرورود مسجد) سے منسلک ایک تعلیمی ادارہ، جو بچوں اور نوجوانوں کے لیے قرآن کریم کے حفظ، عربی اور اردو زبان اور اسلامی تربیت پیش کرتا ہے۔',
-      quickFacts: ['🗓️ آغاز: ستمبر کا پہلا ہفتہ', '📖 ہفتہ 09:30–13:30', '🧒 مدینہ بارن 3–6 سال (اتوار)'],
+      quickFacts: [
+        { l:'آغاز', v:'ستمبر کا پہلا ہفتہ' },
+        { l:'تدریس', v:'ہفتہ 09:30–13:30' },
+        { l:'مدینہ بارن', v:'اتوار، 3–6 سال' }
+      ],
       heroBtnPrimary: '📝 ابھی داخلہ لیں', heroBtnOutline: 'پروگرام دیکھیں',
 
       regEyebrow: 'داخلہ', regTitle: 'داخلے کا طریقہ', regDesc: 'درخواست سے لے کر تصدیق شدہ جگہ تک تین آسان مراحل۔',
       steps: [
-        { h:'داخلہ فارم پُر کریں', p:'داخلہ صفحہ کھولیں اور طالب علم، والدین اور مطلوبہ پروگرام کی معلومات درج کریں۔' },
-        { h:'پروگرام اور مضمون منتخب کریں', p:'بنیادی پروگرام یا مدینہ بارن منتخب کریں، اور زبان کا انتخاب کریں (عربی یا اردو)۔' },
-        { h:'اپنی جگہ کی تصدیق کریں', p:'داخلے کی پیشکش پر، جگہ کی تصدیق کے لیے 5 دن کے اندر 500 کرون کا ڈپازٹ ادا کریں۔' }
+        { ic:'📝', h:'داخلہ فارم پُر کریں', p:'داخلہ صفحہ کھولیں اور طالب علم، والدین اور مطلوبہ پروگرام کی معلومات درج کریں۔' },
+        { ic:'✅', h:'پروگرام اور مضمون منتخب کریں', p:'بنیادی پروگرام یا مدینہ بارن منتخب کریں، اور زبان کا انتخاب کریں (عربی یا اردو)۔' },
+        { ic:'💳', h:'اپنی جگہ کی تصدیق کریں', p:'داخلے کی پیشکش پر، جگہ کی تصدیق کے لیے 5 دن کے اندر 500 کرون کا ڈپازٹ ادا کریں۔' }
       ],
       tuitionAmt: '2500 کرون / فی سمسٹر', tuitionSub: 'بنیادی پروگرام (ہفتہ) — فی سمسٹر۔ مدینہ بارن: 1500 کرون فی سمسٹر۔',
       tuitionList: ['ڈپازٹ: قبولیت کے 5 دن کے اندر 500 کرون (کل رقم سے منہا)', 'تعلیمی مواد/کتابیں: 450 کرون سالانہ، اضافی'],
@@ -496,7 +526,7 @@
   function cardsHtml(list){
     return list.map(c => `<div class="card"><div class="ic">${c.ic}</div><h3>${c.h}</h3><p>${c.p}</p>${c.video ? `<p style="margin-top:10px;"><a href="${MUTAMMIM_VIDEO_URL}" target="_blank" rel="noopener" style="color:var(--emerald-d); text-decoration:none; font-weight:700;">${c.video}</a></p>` : ''}</div>`).join('');
   }
-  function stepsHtml(list){ return list.map((s,i) => `<div class="step-card"><div class="step-num">${i+1}</div><h3>${s.h}</h3><p>${s.p}</p></div>`).join(''); }
+  function stepsHtml(list){ return list.map((s) => `<div class="step-card"><div class="step-num">${s.ic}</div><h3>${s.h}</h3><p>${s.p}</p></div>`).join(''); }
   function datesHtml(list){ return list.map(d => `<div class="date-card"><div class="when">${d.when}</div><h3>${d.h}</h3><p>${d.p}</p></div>`).join(''); }
   function mvpHtml(list){ return list.map(m => `<div class="mvp-card"><div class="eyebrow">${m.eyebrow}</div><h3>${m.h}</h3><p>${m.p}</p></div>`).join(''); }
   function teamHtml(list){
@@ -506,7 +536,7 @@
     }).join('');
   }
   function portalsHtml(list){ return list.map(p => `<a class="portal-card" href="${p.href}"><div class="ic">${p.ic}</div><div class="title">${p.h}</div><div class="desc">${p.p}</div></a>`).join(''); }
-  function quickFactsHtml(list){ return list.map(f => `<span class="quick-fact">${f}</span>`).join(''); }
+  function quickFactsHtml(list){ return list.map(f => `<span class="quick-fact">${f.l}<b>${f.v}</b></span>`).join(''); }
   function navHtml(t){
     return `<a href="#register">${t.nav.register}</a><a href="#dates">${t.nav.dates}</a><a href="#program">${t.nav.program}</a><a href="#who">${t.nav.who}</a><a href="#team">${t.nav.team}</a><a href="#portals">${t.nav.portals}</a>`;
   }
@@ -528,6 +558,7 @@
 
     document.getElementById('heroBadge').textContent = t.heroBadge;
     document.getElementById('heroTitle').textContent = t.heroTitle;
+    document.getElementById('heroYear').textContent = t.heroYear;
     document.getElementById('heroLead').textContent = t.heroLead;
     document.getElementById('quickFacts').innerHTML = quickFactsHtml(t.quickFacts);
     document.getElementById('heroBtnPrimary').textContent = t.heroBtnPrimary;
