@@ -65,7 +65,10 @@
   html[dir="rtl"] header.hero .eyebrow{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
   header.hero h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:23px; margin:0 0 14px; color:var(--ink); line-height:1.5;}
   html[dir="rtl"] header.hero h1{font-family:'Tajawal',sans-serif; font-size:22px;}
-  header.hero p.lead{max-width:620px; margin:0 auto 26px; font-size:15px; color:#4a5860;}
+  header.hero p.lead{max-width:620px; margin:0 auto 16px; font-size:15px; color:#4a5860;}
+  header.hero p.motto{font-family:'Cormorant Garamond',serif; font-style:italic; color:var(--gold); font-size:15px; margin:0 0 26px;}
+  html[dir="rtl"] header.hero p.motto{font-family:'Tajawal',sans-serif; font-style:normal;}
+  html[lang="ur"] header.hero p.motto{font-family:'Noto Nastaliq Urdu','Tajawal',serif;}
   .hero-actions{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
   .btn{
     display:inline-block; text-decoration:none; font-family:'Jost',sans-serif; font-weight:700; font-size:13.5px;
@@ -178,10 +181,11 @@
 <nav class="topbar">
   <div class="topbar-inner">
     <div class="brand">
-      <img src="logo.png" alt="Madina Skole">
+      <img src="https://madina.no/images/logo.png" alt="Madina Skole">
       <span class="brand-text" id="brandText">Madina Skole</span>
     </div>
     <div class="topbar-links" id="topbarLinks"></div>
+    <a href="https://madina.no" target="_blank" rel="noopener" id="instituteLink" style="font-size:11.5px; font-weight:700; color:var(--gold); text-decoration:none; white-space:nowrap;"></a>
     <div class="lang-switch-inner">
       <button id="btnLangNo" class="active" onclick="switchLang('no')">Norsk</button>
       <button id="btnLangAr" onclick="switchLang('ar')">العربية</button>
@@ -194,6 +198,7 @@
   <div class="eyebrow" id="heroEyebrow"></div>
   <h1 id="heroTitle"></h1>
   <p class="lead" id="heroLead"></p>
+  <p class="motto" id="heroMotto"></p>
   <div class="hero-actions">
     <a class="btn btn-primary" href="index2.html" id="heroBtnPrimary"></a>
     <a class="btn btn-outline" href="#portals" id="heroBtnOutline"></a>
@@ -207,6 +212,15 @@
       <h2 id="aboutTitle"></h2>
     </div>
     <div class="card-grid" id="aboutCards"></div>
+  </section>
+
+  <section id="vision">
+    <div class="section-head">
+      <div class="eyebrow" id="visionEyebrow"></div>
+      <h2 id="visionTitle"></h2>
+      <p id="visionDesc"></p>
+    </div>
+    <div class="card-grid" id="visionCards"></div>
   </section>
 
   <section id="programs">
@@ -241,8 +255,9 @@
 <footer>
   <div class="foot-inner">
     <h4 id="footerBrand"></h4>
-    <p class="placeholder" id="footerAddr"></p>
-    <p class="placeholder" id="footerContact"></p>
+    <p id="footerAddr"></p>
+    <p id="footerContact"></p>
+    <p id="footerOrgNr" style="font-size:11px;"></p>
     <p id="footerCopy"></p>
   </div>
 </footer>
@@ -254,10 +269,12 @@
       bannerText: '⚠️ Du åpnet denne siden inne i en app (f.eks. WhatsApp eller Instagram) — innlogging kan da feile. Trykk ⋯ eller del-ikonet og velg «Åpne i Safari».',
       bannerClose: 'Skjul',
       brand: 'Madina Skole',
-      nav: { about:'Om oss', programs:'Fagtilbud', admin:'Ledelse', portals:'Portaler', reg:'Påmelding' },
+      nav: { about:'Om oss', vision:'Visjon', programs:'Fagtilbud', admin:'Ledelse', portals:'Portaler', reg:'Påmelding' },
+      instituteLink: '🕌 Madina Institute Norway',
       heroEyebrow: 'Madina Skole — Madina Grorud moske',
       heroTitle: 'Koranundervisning, arabisk og urdu for barna våre — med omsorg og oppfølging',
       heroLead: 'En undervisningsskole tilknyttet Madina Grorud moske, som tilbyr koranmemorering, arabisk- og urduundervisning samt islamsk oppdragelse for barn og unge, i et strukturert læringsmiljø med tett oppfølging fra ledelsen og foresatte.',
+      heroMotto: '«Kjærlighet for alle, og hat mot ingen»',
       heroBtnPrimary: '📝 Meld på barnet ditt', heroBtnOutline: '🔑 Portaler',
       aboutEyebrow: 'Om oss', aboutTitle: 'Om skolen',
       aboutCards: [
@@ -265,6 +282,13 @@
         { ic:'🕌', h:'Islamsk oppdragelse', p:'Undervisning i grunnleggende islamsk tro og etiske verdier i et støttende miljø tilpasset barnas ulike aldre.' },
         { ic:'🌍', h:'Arabisk og urdu', p:'Strukturerte timer i lesing, skriving og muntlig kommunikasjon, tilpasset hver elevs faktiske nivå.' },
         { ic:'👨‍👩‍👧‍👦', h:'Samarbeid med foresatte', p:'Løpende kontakt med familien via en egen digital portal for oppmøte, lekser, meldinger og nyheter.' }
+      ],
+      visionEyebrow: 'Vår visjon', visionTitle: 'Del av Madina Institute Norway',
+      visionDesc: 'Madina Skole er en del av Madina Institute Norway (Madina Grorud moske), en internasjonal islamsk utdanningsinstitusjon.',
+      visionCards: [
+        { ic:'🌐', h:'Et globalt fellesskap', p:'Madina Institute er en internasjonal utdanningsinstitusjon grunnlagt av Shaykh Muhammad bin Yahya al-Ninowy, med filialer i blant annet USA, Sør-Afrika og Storbritannia.' },
+        { ic:'🤲', h:'Toleranse og respekt', p:'Instituttet fremmer en forståelse av islam basert på kjærlighet, toleranse og respekt for alle mennesker, uavhengig av bakgrunn eller tro.' },
+        { ic:'🎓', h:'Bredt utdanningstilbud', p:'I tillegg til Madina Skole tilbyr instituttet et variert utdanningstilbud innen islamske studier, koranstudier, arabisk og islamsk teologi.' }
       ],
       programsEyebrow: 'Fagtilbud', programsTitle: 'Tilgjengelige programmer',
       programsDesc: 'Foresatte kan velge ett eller flere programmer ved påmelding, etter elevens behov.',
@@ -293,9 +317,10 @@
         { ic:'👨‍👩‍👧', h:'Foreldreportal', p:'Oppfølging av elev, meldinger og betaling', href:'index4.html' },
         { ic:'📝', h:'Påmelding', p:'Meld på barnet ditt til skolen nå', href:'index2.html' }
       ],
-      footerBrand: 'Madina Skole — Madina Grorud moske',
-      footerAddr: '[ Full adresse — legges til senere ]',
-      footerContact: '[ Telefon / offisiell e-post — legges til senere ]',
+      footerBrand: 'Madina Skole — Madina Institute Norway',
+      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerContact: '✉️ kontakt@madinainstitute.no',
+      footerOrgNr: 'Org. nummer: 919674431',
       footerCopy: '© Madina Skole — Alle rettigheter forbeholdt'
     },
     ar: {
@@ -303,10 +328,12 @@
       bannerText: '⚠️ فتحت الصفحة من داخل تطبيق (مثل واتساب أو انستجرام) — تسجيل الدخول للبوابات قد لا يعمل بشكل صحيح. اضغط ⋯ أو أيقونة المشاركة واختر «فتح في المتصفح».',
       bannerClose: 'إخفاء',
       brand: 'مدرسة مدينة',
-      nav: { about:'من نحن', programs:'البرامج الدراسية', admin:'الإدارة', portals:'البوابات', reg:'التسجيل' },
+      nav: { about:'من نحن', vision:'رؤيتنا', programs:'البرامج الدراسية', admin:'الإدارة', portals:'البوابات', reg:'التسجيل' },
+      instituteLink: '🕌 معهد مدينة النرويج',
       heroEyebrow: 'مدرسة مدينة الإسلامية — مسجد مدينة غرود',
       heroTitle: 'تعليم القرآن الكريم واللغة العربية والأردية لأبنائنا، برعاية وعناية',
       heroLead: 'مدرسة تعليمية ملحقة بمسجد مدينة غرود، تُعنى بتحفيظ القرآن الكريم وتعليم اللغة العربية والأردية والتربية الإسلامية للأطفال والناشئة، ضمن بيئة تعليمية منظمة ومتابعة مستمرة من الإدارة وأولياء الأمور.',
+      heroMotto: '«المحبة للجميع، ولا كراهية لأحد»',
       heroBtnPrimary: '📝 سجّل طفلك الآن', heroBtnOutline: '🔑 بوابات الدخول',
       aboutEyebrow: 'من نحن', aboutTitle: 'نبذة عن المدرسة',
       aboutCards: [
@@ -314,6 +341,13 @@
         { ic:'🕌', h:'التربية الإسلامية', p:'تعليم أساسيات الدين الإسلامي والقيم الأخلاقية في بيئة داعمة تناسب أعمار الأطفال والناشئة المختلفة.' },
         { ic:'🌍', h:'اللغتان العربية والأردية', p:'دروس منظمة في القراءة والكتابة والمحادثة، تناسب المستوى الفعلي لكل طالب سواء كان مبتدئًا أو لديه خلفية سابقة.' },
         { ic:'👨‍👩‍👧‍👦', h:'شراكة مع أولياء الأمور', p:'تواصل مستمر مع الأسرة عبر بوابة إلكترونية مخصصة لمتابعة الحضور، الواجبات، الرسائل، والمستجدات أولًا بأول.' }
+      ],
+      visionEyebrow: 'رؤيتنا', visionTitle: 'جزء من معهد مدينة النرويج',
+      visionDesc: 'مدرسة مدينة جزء من معهد مدينة النرويج (مسجد مدينة غرود)، وهو مؤسسة تعليمية إسلامية عالمية.',
+      visionCards: [
+        { ic:'🌐', h:'مجتمع عالمي', p:'معهد مدينة مؤسسة تعليمية دولية أسسها الشيخ محمد بن يحيى النينوي، وله فروع في دول منها الولايات المتحدة وجنوب أفريقيا وبريطانيا.' },
+        { ic:'🤲', h:'التسامح والاحترام', p:'يُعنى المعهد بترسيخ فهم للإسلام قائم على المحبة والتسامح واحترام كل البشر، بغض النظر عن خلفياتهم أو معتقداتهم.' },
+        { ic:'🎓', h:'برامج تعليمية متنوعة', p:'إلى جانب مدرسة مدينة، يقدّم المعهد برامج تعليمية متنوعة في الدراسات الإسلامية والقرآنية واللغة العربية والعقيدة الإسلامية.' }
       ],
       programsEyebrow: 'البرامج الدراسية', programsTitle: 'البرامج المتاحة للتسجيل',
       programsDesc: 'يمكن لولي الأمر اختيار برنامج واحد أو أكثر عند التسجيل، حسب حاجة الطالب.',
@@ -342,9 +376,10 @@
         { ic:'👨‍👩‍👧', h:'بوابة أولياء الأمور', p:'متابعة الطالب، الرسائل، والمدفوعات', href:'index4.html' },
         { ic:'📝', h:'التسجيل', p:'سجّل طفلك في المدرسة الآن', href:'index2.html' }
       ],
-      footerBrand: 'مدرسة مدينة — مسجد مدينة غرود',
-      footerAddr: '[ العنوان الكامل — يُضاف لاحقًا ]',
-      footerContact: '[ رقم التواصل / البريد الإلكتروني الرسمي — يُضاف لاحقًا ]',
+      footerBrand: 'مدرسة مدينة — معهد مدينة النرويج',
+      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerContact: '✉️ kontakt@madinainstitute.no',
+      footerOrgNr: 'الرقم التنظيمي الرسمي: 919674431',
       footerCopy: '© مدرسة مدينة — جميع الحقوق محفوظة'
     },
     ur: {
@@ -352,10 +387,12 @@
       bannerText: '⚠️ آپ نے یہ صفحہ کسی ایپ (مثلاً واٹس ایپ یا انسٹاگرام) کے اندر کھولا ہے — لاگ اِن کام نہیں کر سکتا۔ ⋯ یا شیئر آئیکن پر ٹیپ کریں اور «Safari میں کھولیں» منتخب کریں۔',
       bannerClose: 'چھپائیں',
       brand: 'مدینہ اسکول',
-      nav: { about:'ہمارے بارے میں', programs:'تعلیمی پروگرام', admin:'انتظامیہ', portals:'پورٹلز', reg:'داخلہ' },
+      nav: { about:'ہمارے بارے میں', vision:'ہمارا وژن', programs:'تعلیمی پروگرام', admin:'انتظامیہ', portals:'پورٹلز', reg:'داخلہ' },
+      instituteLink: '🕌 مدینہ انسٹی ٹیوٹ ناروے',
       heroEyebrow: 'مدینہ اسکول — مدینہ گرورود مسجد',
       heroTitle: 'ہمارے بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم — نگہداشت اور توجہ کے ساتھ',
       heroLead: 'مدینہ گرورود مسجد سے منسلک ایک تعلیمی ادارہ، جو بچوں اور نوجوانوں کے لیے قرآن کریم کے حفظ، عربی اور اردو زبان اور اسلامی تربیت پر مشتمل ہے، ایک منظم تعلیمی ماحول میں انتظامیہ اور والدین کی مسلسل نگرانی کے ساتھ۔',
+      heroMotto: '«سب کے لیے محبت، کسی سے نفرت نہیں»',
       heroBtnPrimary: '📝 اپنے بچے کا داخلہ کروائیں', heroBtnOutline: '🔑 پورٹلز',
       aboutEyebrow: 'ہمارے بارے میں', aboutTitle: 'اسکول کا تعارف',
       aboutCards: [
@@ -363,6 +400,13 @@
         { ic:'🕌', h:'اسلامی تربیت', p:'بچوں کی مختلف عمروں کے مطابق ایک معاون ماحول میں بنیادی اسلامی عقائد اور اخلاقی اقدار کی تعلیم۔' },
         { ic:'🌍', h:'عربی اور اردو زبانیں', p:'ہر طالب علم کی اصل سطح کے مطابق پڑھنے، لکھنے اور بول چال کی منظم کلاسیں، چاہے وہ نیا سیکھنے والا ہو یا پہلے سے کچھ معلومات رکھتا ہو۔' },
         { ic:'👨‍👩‍👧‍👦', h:'والدین کے ساتھ شراکت', p:'حاضری، ہوم ورک، پیغامات اور تازہ ترین معلومات کی فوری فراہمی کے لیے ایک خصوصی الیکٹرانک پورٹل کے ذریعے خاندان سے مسلسل رابطہ۔' }
+      ],
+      visionEyebrow: 'ہمارا وژن', visionTitle: 'مدینہ انسٹی ٹیوٹ ناروے کا حصہ',
+      visionDesc: 'مدینہ اسکول، مدینہ انسٹی ٹیوٹ ناروے (مدینہ گرورود مسجد) کا حصہ ہے، جو ایک بین الاقوامی اسلامی تعلیمی ادارہ ہے۔',
+      visionCards: [
+        { ic:'🌐', h:'ایک عالمی برادری', p:'مدینہ انسٹی ٹیوٹ ایک بین الاقوامی تعلیمی ادارہ ہے جسے شیخ محمد بن یحییٰ النینوی نے قائم کیا، اور اس کی شاخیں امریکہ، جنوبی افریقہ اور برطانیہ سمیت دیگر ممالک میں موجود ہیں۔' },
+        { ic:'🤲', h:'رواداری اور احترام', p:'ادارہ محبت، رواداری اور تمام انسانوں کے احترام پر مبنی اسلام کی سمجھ کو فروغ دیتا ہے، چاہے ان کا پس منظر یا عقیدہ کچھ بھی ہو۔' },
+        { ic:'🎓', h:'متنوع تعلیمی پروگرام', p:'مدینہ اسکول کے علاوہ، ادارہ اسلامی علوم، قرآنی علوم، عربی زبان اور اسلامی عقیدہ میں متنوع تعلیمی پروگرام پیش کرتا ہے۔' }
       ],
       programsEyebrow: 'تعلیمی پروگرام', programsTitle: 'دستیاب پروگرام',
       programsDesc: 'والدین داخلے کے وقت طالب علم کی ضرورت کے مطابق ایک یا زیادہ پروگرام منتخب کر سکتے ہیں۔',
@@ -391,9 +435,10 @@
         { ic:'👨‍👩‍👧', h:'والدین کا پورٹل', p:'طالب علم کی نگرانی، پیغامات اور ادائیگیاں', href:'index4.html' },
         { ic:'📝', h:'داخلہ', p:'ابھی اپنے بچے کا اسکول میں داخلہ کروائیں', href:'index2.html' }
       ],
-      footerBrand: 'مدینہ اسکول — مدینہ گرورود مسجد',
-      footerAddr: '[ مکمل پتہ — بعد میں شامل کیا جائے گا ]',
-      footerContact: '[ فون نمبر / سرکاری ای میل — بعد میں شامل کیا جائے گا ]',
+      footerBrand: 'مدینہ اسکول — مدینہ انسٹی ٹیوٹ ناروے',
+      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerContact: '✉️ kontakt@madinainstitute.no',
+      footerOrgNr: 'سرکاری رجسٹریشن نمبر: 919674431',
       footerCopy: '© مدینہ اسکول — جملہ حقوق محفوظ ہیں'
     }
   };
@@ -424,7 +469,7 @@
     return list.map(p => `<a class="portal-card" href="${p.href}"><div class="ic">${p.ic}</div><div class="title">${p.h}</div><div class="desc">${p.p}</div></a>`).join('');
   }
   function navHtml(t){
-    return `<a href="#about">${t.nav.about}</a><a href="#programs">${t.nav.programs}</a><a href="#admin">${t.nav.admin}</a><a href="#portals">${t.nav.portals}</a><a href="index2.html">${t.nav.reg}</a>`;
+    return `<a href="#about">${t.nav.about}</a><a href="#vision">${t.nav.vision}</a><a href="#programs">${t.nav.programs}</a><a href="#admin">${t.nav.admin}</a><a href="#portals">${t.nav.portals}</a><a href="index2.html">${t.nav.reg}</a>`;
   }
 
   function switchLang(lang){
@@ -442,16 +487,23 @@
     document.getElementById('bannerClose').textContent = t.bannerClose;
     document.getElementById('brandText').textContent = t.brand;
     document.getElementById('topbarLinks').innerHTML = navHtml(t);
+    document.getElementById('instituteLink').textContent = t.instituteLink;
 
     document.getElementById('heroEyebrow').textContent = t.heroEyebrow;
     document.getElementById('heroTitle').textContent = t.heroTitle;
     document.getElementById('heroLead').textContent = t.heroLead;
+    document.getElementById('heroMotto').textContent = t.heroMotto;
     document.getElementById('heroBtnPrimary').textContent = t.heroBtnPrimary;
     document.getElementById('heroBtnOutline').textContent = t.heroBtnOutline;
 
     document.getElementById('aboutEyebrow').textContent = t.aboutEyebrow;
     document.getElementById('aboutTitle').textContent = t.aboutTitle;
     document.getElementById('aboutCards').innerHTML = cardsHtml(t.aboutCards);
+
+    document.getElementById('visionEyebrow').textContent = t.visionEyebrow;
+    document.getElementById('visionTitle').textContent = t.visionTitle;
+    document.getElementById('visionDesc').textContent = t.visionDesc;
+    document.getElementById('visionCards').innerHTML = cardsHtml(t.visionCards);
 
     document.getElementById('programsEyebrow').textContent = t.programsEyebrow;
     document.getElementById('programsTitle').textContent = t.programsTitle;
@@ -472,6 +524,7 @@
     document.getElementById('footerBrand').textContent = t.footerBrand;
     document.getElementById('footerAddr').textContent = t.footerAddr;
     document.getElementById('footerContact').textContent = t.footerContact;
+    document.getElementById('footerOrgNr').textContent = t.footerOrgNr;
     document.getElementById('footerCopy').textContent = t.footerCopy;
 
     localStorage.setItem('madinaHomeLang', lang);
