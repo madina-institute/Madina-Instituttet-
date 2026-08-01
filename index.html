@@ -49,7 +49,10 @@
 
   /* ===== Hero (تصميم مطابق لهيكل SALAM، بألوان مدرسة مدينة) ===== */
   header.hero{
-    background:linear-gradient(165deg, var(--emerald) 0%, var(--emerald-d) 100%);
+    background:
+      radial-gradient(circle at 88% 12%, rgba(183,146,74,0.45) 0%, rgba(183,146,74,0) 50%),
+      radial-gradient(circle at 8% 95%, rgba(111,168,220,0.35) 0%, rgba(111,168,220,0) 45%),
+      linear-gradient(155deg, var(--emerald) 0%, var(--emerald-d) 100%);
     padding:56px 20px 46px; text-align:center; color:#fff;
   }
   .hero-inner{max-width:900px; margin:0 auto;}
@@ -356,7 +359,7 @@
       programCards: [
         { ic:'📖', h:'Koranstudier', p:'Koranlesing, memorering og tajwīd-regler. Programmet er strukturert slik at hver elev — uansett utgangspunkt — utvikler sin evne til å lese og forstå Koranen.' },
         { ic:'✏️', h:'Arabisk og urdu', p:'Strukturert opplæring i lesing, skriving og muntlig kommunikasjon. Arabisk følger læreverket Al-Mutammim — en anerkjent metodikk utviklet etter over 30 års erfaring, brukt av over 150 utdanningsinstitusjoner i Europa og Nord-Amerika, og i tråd med de internasjonale rammeverkene CEFR og ACTFL.', video:'▶️ Se introduksjonsvideo om Al-Mutammim' },
-        { ic:'🕌', h:'Islamsk oppdragelse', p:'De grunnleggende søylene i islam, samt etiske verdier som bygger en trygg og selvsikker muslimsk identitet.' }
+        { ic:'🕌', h:'Islam undervisning', p:'De grunnleggende søylene i islam, samt etiske verdier som bygger en trygg og selvsikker muslimsk identitet.' }
       ],
 
       whoEyebrow: 'Om oss', whoTitle: 'Forankret i tro, bygget på fellesskap', whoDesc: 'Madina Skole er en del av Madina Institute Norway (Madina Grorud moske) — en internasjonal islamsk utdanningsinstitusjon.',
