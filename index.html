@@ -5130,7 +5130,7 @@
       const res = await fetch(VIPPS_CREATE_PAYMENT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registrationId: id, amountKr: 500, phoneNumber: phone.trim() })
+        body: JSON.stringify({ type: 'registration', targetId: id, amountKr: 500, phoneNumber: phone.trim() })
       });
       const data = await res.json();
       if(!data.ok){
