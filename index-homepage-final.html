@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="no" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Madina Skole</title>
+<meta id="pageDesc" name="description" content="Madina Skole — koranundervisning, arabisk og urdu for barn, tilknyttet Madina Grorud moske, Oslo.">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh; line-height:1.7;}
+  html[dir="rtl"] body{font-family:'Tajawal','Lora',serif;}
+
+  #inAppBrowserBanner{
+    display:none; position:sticky; top:0; z-index:3000; background:var(--gold);
+    color:#3a2e10; font-family:'Jost',sans-serif; font-size:12.5px; line-height:1.5; padding:12px 16px; text-align:center; box-shadow:var(--shadow);
+  }
+  html[dir="rtl"] #inAppBrowserBanner{font-family:'Tajawal',sans-serif;}
+  #inAppBrowserBanner strong{font-weight:700;}
+  #inAppBrowserBanner .close-banner{background:none; border:none; color:#3a2e10; font-weight:700; font-size:14px; cursor:pointer; margin-inline-start:10px; text-decoration:underline;}
+
+  .corner-deco{
+    position:fixed; bottom:-10%; width:38vw; max-width:420px; height:70vh; max-height:520px;
+    z-index:-1; pointer-events:none; opacity:0.5;
+    background:linear-gradient(135deg, #C9BFF0 0%, #A38FE0 100%);
+  }
+  .corner-deco-left{ left:-10%; clip-path:polygon(0 0, 0 100%, 100% 100%); }
+  .corner-deco-right{ right:-10%; clip-path:polygon(100% 0, 0 100%, 100% 100%); }
+  html[dir="rtl"] .corner-deco-left{ left:auto; right:-10%; clip-path:polygon(100% 0, 100% 100%, 0 100%); }
+  html[dir="rtl"] .corner-deco-right{ right:auto; left:-10%; clip-path:polygon(0 0, 100% 100%, 0 100%); }
+  @media (max-width:640px){ .corner-deco{ display:none; } }
+
+  /* ===== شريط علوي / topbar ===== */
+  nav.topbar{
+    position:sticky; top:0; z-index:200; background:rgba(238,240,251,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line); padding:12px 20px;
+  }
+  .topbar-inner{max-width:1080px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand img{height:38px; width:auto; border-radius:8px;}
+  .brand-text{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d);}
+  html[dir="rtl"] .brand-text{font-family:'Tajawal',sans-serif;}
+  .topbar-links{display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+  .topbar-links a{color:var(--ink); text-decoration:none; font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; opacity:0.75; letter-spacing:0.02em;}
+  html[dir="rtl"] .topbar-links a{font-family:'Tajawal',sans-serif;}
+  .topbar-links a:hover{opacity:1; color:var(--emerald-d);}
+
+  .lang-switch-inner{ display:inline-flex; background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
+  .lang-switch-inner button{
+    background:transparent; border:none; color:var(--ink); opacity:0.55; font-family:'Jost',sans-serif;
+    font-size:11px; font-weight:600; letter-spacing:0.04em; padding:7px 14px; cursor:pointer;
+  }
+  .lang-switch-inner button.active{background:var(--emerald); color:#fff; opacity:1;}
+
+  /* ===== Hero ===== */
+  header.hero{ max-width:1080px; margin:0 auto; padding:56px 20px 40px; text-align:center; }
+  header.hero .eyebrow{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:10px;}
+  html[dir="rtl"] header.hero .eyebrow{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
+  header.hero h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:23px; margin:0 0 14px; color:var(--ink); line-height:1.5;}
+  html[dir="rtl"] header.hero h1{font-family:'Tajawal',sans-serif; font-size:22px;}
+  header.hero p.lead{max-width:620px; margin:0 auto 16px; font-size:15px; color:#4a5860;}
+  header.hero p.motto{font-family:'Cormorant Garamond',serif; font-style:italic; color:var(--gold); font-size:15px; margin:0 0 26px;}
+  html[dir="rtl"] header.hero p.motto{font-family:'Tajawal',sans-serif; font-style:normal;}
+  html[lang="ur"] header.hero p.motto{font-family:'Noto Nastaliq Urdu','Tajawal',serif;}
+  .hero-actions{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
+  .btn{
+    display:inline-block; text-decoration:none; font-family:'Jost',sans-serif; font-weight:700; font-size:13.5px;
+    padding:13px 26px; border-radius:8px; transition:transform .15s;
+  }
+  html[dir="rtl"] .btn{font-family:'Tajawal',sans-serif;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:var(--emerald); color:#fff; box-shadow:0 8px 20px rgba(74,143,203,0.35);}
+  .btn-outline{background:#fff; color:var(--emerald-d); border:1.5px solid var(--emerald);}
+
+  main{max-width:1080px; margin:0 auto; padding:0 20px 70px;}
+  section{margin-top:56px;}
+  .section-head{text-align:center; margin-bottom:30px;}
+  .section-head .eyebrow{font-family:'Jost',sans-serif; font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:8px;}
+  html[dir="rtl"] .section-head .eyebrow{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
+  .section-head h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:25px; margin:0; color:var(--ink);}
+  html[dir="rtl"] .section-head h2{font-family:'Tajawal',sans-serif; font-size:23px;}
+  .section-head p{font-family:'Jost',sans-serif; color:#5a6860; font-size:13.5px; max-width:560px; margin:10px auto 0;}
+  html[dir="rtl"] .section-head p{font-family:'Tajawal',sans-serif;}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:16px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 20px; box-shadow:var(--shadow);}
+  .card .ic{font-size:26px; margin-bottom:10px;}
+  .card h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; margin:0 0 8px; color:var(--emerald-d);}
+  html[dir="rtl"] .card h3{font-family:'Tajawal',sans-serif; font-size:16px;}
+  .card p{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin:0; line-height:1.7;}
+  html[dir="rtl"] .card p{font-family:'Tajawal',sans-serif; font-size:13px;}
+
+  a.portal-card{
+    display:block; background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px 18px;
+    box-shadow:var(--shadow); text-align:center; text-decoration:none; color:inherit; transition:border-color .2s, transform .2s;
+  }
+  a.portal-card:hover{border-color:var(--gold); transform:translateY(-3px);}
+  a.portal-card .ic{font-size:30px; margin-bottom:10px;}
+  a.portal-card .title{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px; color:var(--emerald-d); margin-bottom:5px;}
+  html[dir="rtl"] a.portal-card .title{font-family:'Tajawal',sans-serif; font-size:15px;}
+  a.portal-card .desc{font-family:'Jost',sans-serif; font-size:11px; color:#5a6860; line-height:1.5;}
+  html[dir="rtl"] a.portal-card .desc{font-family:'Tajawal',sans-serif;}
+
+  .org-row{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-bottom:14px;}
+  .org-box{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 20px; box-shadow:var(--shadow);
+    text-align:center; min-width:150px; flex:1 1 150px; max-width:230px;
+  }
+  .org-box .lbl{font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.03em; color:#8a9a90; text-transform:uppercase; margin-bottom:5px;}
+  html[dir="rtl"] .org-box .lbl{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
+  .org-box .val{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15px; color:var(--ink);}
+  html[dir="rtl"] .org-box .val{font-family:'Tajawal',sans-serif; font-size:14px;}
+  .org-connector{text-align:center; color:#c3c8e0; font-size:18px; margin:2px 0;}
+
+  .draft-note{
+    background:var(--paper-2); border:1px dashed var(--gold); border-radius:10px; padding:14px 18px;
+    font-family:'Jost',sans-serif; font-size:12px; color:#6b5a30; margin-top:18px; line-height:1.7;
+  }
+  html[dir="rtl"] .draft-note{font-family:'Tajawal',sans-serif; font-size:12.5px;}
+  .draft-note strong{color:#8a6d20;}
+
+  .program-list{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:16px;}
+  .program-card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow);}
+  .program-card .tag{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:10px; font-weight:700; color:var(--emerald-d);
+    background:var(--paper-2); border-radius:10px; padding:3px 10px; margin-bottom:10px;
+  }
+  html[dir="rtl"] .program-card .tag{font-family:'Tajawal',sans-serif;}
+  .program-card h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px; margin:0 0 6px; color:var(--ink);}
+  html[dir="rtl"] .program-card h3{font-family:'Tajawal',sans-serif; font-size:15px;}
+  .program-card p{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin:0;}
+  html[dir="rtl"] .program-card p{font-family:'Tajawal',sans-serif; font-size:13px;}
+
+  footer{background:#fff; border-top:1px solid var(--line); margin-top:70px; padding:34px 20px; text-align:center;}
+  footer .foot-inner{max-width:1080px; margin:0 auto;}
+  footer h4{font-family:'Cormorant Garamond',serif; font-size:17px; margin:0 0 10px; color:var(--emerald-d);}
+  html[dir="rtl"] footer h4{font-family:'Tajawal',sans-serif;}
+  footer p{font-family:'Jost',sans-serif; font-size:12.5px; color:#8a978f; margin:4px 0;}
+  html[dir="rtl"] footer p{font-family:'Tajawal',sans-serif;}
+  footer .placeholder{color:#b5952a; font-style:italic;}
+
+  /* ===== الأوردو: خط Nastaliq + تباعد أسطر أكبر يناسب طبيعة الخط ===== */
+  html[lang="ur"] body, html[lang="ur"] .brand-text, html[lang="ur"] .topbar-links a,
+  html[lang="ur"] header.hero .eyebrow, html[lang="ur"] header.hero h1, html[lang="ur"] .btn,
+  html[lang="ur"] .section-head .eyebrow, html[lang="ur"] .section-head h2, html[lang="ur"] .section-head p,
+  html[lang="ur"] .card h3, html[lang="ur"] .card p, html[lang="ur"] a.portal-card .title, html[lang="ur"] a.portal-card .desc,
+  html[lang="ur"] .org-box .lbl, html[lang="ur"] .org-box .val, html[lang="ur"] .draft-note,
+  html[lang="ur"] .program-card .tag, html[lang="ur"] .program-card h3, html[lang="ur"] .program-card p,
+  html[lang="ur"] footer h4, html[lang="ur"] footer p, html[lang="ur"] #inAppBrowserBanner{
+    font-family:'Noto Nastaliq Urdu','Tajawal',serif;
+  }
+  html[lang="ur"] body{ line-height:2.3; }
+  html[lang="ur"] header.hero h1{ line-height:2.1; font-size:21px; }
+  html[lang="ur"] .card p, html[lang="ur"] .program-card p, html[lang="ur"] .section-head p, html[lang="ur"] .draft-note{ line-height:2.2; }
+</style>
+</head>
+<body>
+
+<div id="inAppBrowserBanner">
+  <span id="bannerText"></span>
+  <button class="close-banner" id="bannerClose" onclick="document.getElementById('inAppBrowserBanner').style.display='none'"></button>
+</div>
+<script>
+  (function(){
+    var ua = navigator.userAgent || '';
+    var isInApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|Twitter|LinkedInApp|Snapchat/i.test(ua);
+    if(isInApp){ document.getElementById('inAppBrowserBanner').style.display = 'block'; }
+  })();
+</script>
+
+<div class="corner-deco corner-deco-left"></div>
+<div class="corner-deco corner-deco-right"></div>
+
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img src="https://madina.no/images/logo.png" alt="Madina Skole">
+      <span class="brand-text" id="brandText">Madina Skole</span>
+    </div>
+    <div class="topbar-links" id="topbarLinks"></div>
+    <a href="https://madina.no" target="_blank" rel="noopener" id="instituteLink" style="font-size:11.5px; font-weight:700; color:var(--gold); text-decoration:none; white-space:nowrap;"></a>
+    <div class="lang-switch-inner">
+      <button id="btnLangNo" class="active" onclick="switchLang('no')">Norsk</button>
+      <button id="btnLangAr" onclick="switchLang('ar')">العربية</button>
+      <button id="btnLangUr" onclick="switchLang('ur')">اردو</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow" id="heroEyebrow"></div>
+  <h1 id="heroTitle"></h1>
+  <p class="lead" id="heroLead"></p>
+  <p class="motto" id="heroMotto"></p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="index2.html" id="heroBtnPrimary"></a>
+    <a class="btn btn-outline" href="#portals" id="heroBtnOutline"></a>
+  </div>
+</header>
+
+<main>
+  <section id="about">
+    <div class="section-head">
+      <div class="eyebrow" id="aboutEyebrow"></div>
+      <h2 id="aboutTitle"></h2>
+    </div>
+    <div class="card-grid" id="aboutCards"></div>
+  </section>
+
+  <section id="vision">
+    <div class="section-head">
+      <div class="eyebrow" id="visionEyebrow"></div>
+      <h2 id="visionTitle"></h2>
+      <p id="visionDesc"></p>
+    </div>
+    <div class="card-grid" id="visionCards"></div>
+  </section>
+
+  <section id="programs">
+    <div class="section-head">
+      <div class="eyebrow" id="programsEyebrow"></div>
+      <h2 id="programsTitle"></h2>
+      <p id="programsDesc"></p>
+    </div>
+    <div class="program-list" id="programCards"></div>
+  </section>
+
+  <section id="admin">
+    <div class="section-head">
+      <div class="eyebrow" id="adminEyebrow"></div>
+      <h2 id="adminTitle"></h2>
+      <p id="adminDesc"></p>
+    </div>
+    <div id="orgChart"></div>
+    <div class="draft-note" id="adminDraftNote"></div>
+  </section>
+
+  <section id="portals">
+    <div class="section-head">
+      <div class="eyebrow" id="portalsEyebrow"></div>
+      <h2 id="portalsTitle"></h2>
+      <p id="portalsDesc"></p>
+    </div>
+    <div class="card-grid" id="portalCards"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <h4 id="footerBrand"></h4>
+    <p id="footerAddr"></p>
+    <p id="footerContact"></p>
+    <p id="footerOrgNr" style="font-size:11px;"></p>
+    <p id="footerCopy"></p>
+  </div>
+</footer>
+
+<script>
+  const TEXT = {
+    no: {
+      pageTitle: 'Madina Skole', pageDesc: 'Madina Skole — koranundervisning, arabisk og urdu for barn, tilknyttet Madina Grorud moske, Oslo.',
+      bannerText: '⚠️ Du åpnet denne siden inne i en app (f.eks. WhatsApp eller Instagram) — innlogging kan da feile. Trykk ⋯ eller del-ikonet og velg «Åpne i Safari».',
+      bannerClose: 'Skjul',
+      brand: 'Madina Skole',
+      nav: { about:'Om oss', vision:'Visjon', programs:'Fagtilbud', admin:'Ledelse', portals:'Portaler', reg:'Påmelding' },
+      instituteLink: '🕌 Madina Institute Norway',
+      heroEyebrow: 'Madina Skole — Madina Grorud moske',
+      heroTitle: 'Koranundervisning, arabisk og urdu for barna våre — med omsorg og oppfølging',
+      heroLead: 'En undervisningsskole tilknyttet Madina Grorud moske, som tilbyr koranmemorering, arabisk- og urduundervisning samt islamsk oppdragelse for barn og unge, i et strukturert læringsmiljø med tett oppfølging fra ledelsen og foresatte.',
+      heroMotto: '«Kjærlighet for alle, og hat mot ingen»',
+      heroBtnPrimary: '📝 Meld på barnet ditt', heroBtnOutline: '🔑 Portaler',
+      aboutEyebrow: 'Om oss', aboutTitle: 'Om skolen',
+      aboutCards: [
+        { ic:'📖', h:'Koranmemorering', p:'Undervisning i Qaida, resitasjon av Koranen, tajwīd-regler og gradvis memorering med individuell oppfølging av hver elev.' },
+        { ic:'🕌', h:'Islamsk oppdragelse', p:'Undervisning i grunnleggende islamsk tro og etiske verdier i et støttende miljø tilpasset barnas ulike aldre.' },
+        { ic:'🌍', h:'Arabisk og urdu', p:'Strukturerte timer i lesing, skriving og muntlig kommunikasjon, tilpasset hver elevs faktiske nivå.' },
+        { ic:'👨‍👩‍👧‍👦', h:'Samarbeid med foresatte', p:'Løpende kontakt med familien via en egen digital portal for oppmøte, lekser, meldinger og nyheter.' }
+      ],
+      visionEyebrow: 'Vår visjon', visionTitle: 'Del av Madina Institute Norway',
+      visionDesc: 'Madina Skole er en del av Madina Institute Norway (Madina Grorud moske), en internasjonal islamsk utdanningsinstitusjon.',
+      visionCards: [
+        { ic:'🌐', h:'Et globalt fellesskap', p:'Madina Institute er en internasjonal utdanningsinstitusjon grunnlagt av Shaykh Muhammad bin Yahya al-Ninowy, med filialer i blant annet USA, Sør-Afrika og Storbritannia.' },
+        { ic:'🤲', h:'Toleranse og respekt', p:'Instituttet fremmer en forståelse av islam basert på kjærlighet, toleranse og respekt for alle mennesker, uavhengig av bakgrunn eller tro.' },
+        { ic:'🎓', h:'Bredt utdanningstilbud', p:'I tillegg til Madina Skole tilbyr instituttet et variert utdanningstilbud innen islamske studier, koranstudier, arabisk og islamsk teologi.' }
+      ],
+      programsEyebrow: 'Fagtilbud', programsTitle: 'Tilgjengelige programmer',
+      programsDesc: 'Foresatte kan velge ett eller flere programmer ved påmelding, etter elevens behov.',
+      programs: [
+        { tag:'Hovedprogram', h:'Madina Islamske Skole', p:'Hovedprogrammet som kombinerer Koranundervisning og islamsk oppdragelse.' },
+        { tag:'Språk', h:'Arabisk språkopplæring', p:'Eget løp for å lære å lese, skrive og snakke arabisk.' },
+        { tag:'Språk', h:'Urdu språkopplæring', p:'Eget løp for elever som ønsker å lære urdu.' },
+        { tag:'Yngste', h:'Madinabarn', p:'Et forenklet program tilpasset de yngste barna, med en pedagogisk tilnærming som passer deres alder.' },
+        { tag:'Tillegg', h:'Ekstra Koran/Hifz', p:'Ekstra timer for elever som ønsker å fokusere på koranmemorering i raskere tempo.' }
+      ],
+      adminEyebrow: 'Ledelse', adminTitle: 'Organisasjonsstruktur og ansvarsfordeling',
+      adminDesc: 'Skolen ledes gjennom tre hovednivåer som samarbeider for å sikre god drift av undervisning og administrasjon.',
+      org: [
+        { lbl:'Nivå 1', val:'Eier / Ledelse' },
+        { lbl:'Nivå 2', val:'Administrativ ledelse' },
+        { lbl:'Nivå 2', val:'Pedagogisk avdeling' },
+        { lbl:'Nivå 3', val:'Lærere' },
+        { lbl:'Fast samarbeidspartner', val:'Foresatte' }
+      ],
+      adminDraftNote: 'Merk: Dette er en foreløpig beskrivelse av organisasjonsstrukturen, basert på de faktiske avdelingene som allerede brukes i det elektroniske administrasjonssystemet (Eier/Ledelse, Administrativ, Pedagogisk). Full offisiell strategi og detaljerte ansvarsområder er ikke fastsatt ennå — denne seksjonen kan enkelt erstattes med offisiell tekst når den foreligger.',
+      portalsEyebrow: 'Portaler', portalsTitle: 'Innganger til portalene',
+      portalsDesc: 'Hver gruppe har sin egen portal for oppfølging og kommunikasjon.',
+      portals: [
+        { ic:'🛡️', h:'Administrativ', p:'For skolens administrasjon og drift', href:'admin.html' },
+        { ic:'📖', h:'Lærerportal', p:'Kun for lærere — oppmøte, lekser, forberedelser', href:'index1.html' },
+        { ic:'👨‍👩‍👧', h:'Foreldreportal', p:'Oppfølging av elev, meldinger og betaling', href:'index4.html' },
+        { ic:'📝', h:'Påmelding', p:'Meld på barnet ditt til skolen nå', href:'index2.html' }
+      ],
+      footerBrand: 'Madina Skole — Madina Institute Norway',
+      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerContact: '✉️ kontakt@madinainstitute.no',
+      footerOrgNr: 'Org. nummer: 919674431',
+      footerCopy: '© Madina Skole — Alle rettigheter forbeholdt'
+    },
+    ar: {
+      pageTitle: 'مدرسة مدينة', pageDesc: 'مدرسة مدينة الإسلامية — تعليم القرآن الكريم واللغة العربية والأردية للأطفال، ملحقة بمسجد مدينة غرود، أوسلو، النرويج.',
+      bannerText: '⚠️ فتحت الصفحة من داخل تطبيق (مثل واتساب أو انستجرام) — تسجيل الدخول للبوابات قد لا يعمل بشكل صحيح. اضغط ⋯ أو أيقونة المشاركة واختر «فتح في المتصفح».',
+      bannerClose: 'إخفاء',
+      brand: 'مدرسة مدينة',
+      nav: { about:'من نحن', vision:'رؤيتنا', programs:'البرامج الدراسية', admin:'الإدارة', portals:'البوابات', reg:'التسجيل' },
+      instituteLink: '🕌 معهد مدينة النرويج',
+      heroEyebrow: 'مدرسة مدينة الإسلامية — مسجد مدينة غرود',
+      heroTitle: 'تعليم القرآن الكريم واللغة العربية والأردية لأبنائنا، برعاية وعناية',
+      heroLead: 'مدرسة تعليمية ملحقة بمسجد مدينة غرود، تُعنى بتحفيظ القرآن الكريم وتعليم اللغة العربية والأردية والتربية الإسلامية للأطفال والناشئة، ضمن بيئة تعليمية منظمة ومتابعة مستمرة من الإدارة وأولياء الأمور.',
+      heroMotto: '«المحبة للجميع، ولا كراهية لأحد»',
+      heroBtnPrimary: '📝 سجّل طفلك الآن', heroBtnOutline: '🔑 بوابات الدخول',
+      aboutEyebrow: 'من نحن', aboutTitle: 'نبذة عن المدرسة',
+      aboutCards: [
+        { ic:'📖', h:'تحفيظ القرآن الكريم', p:'برامج لتعليم القاعدة النورانية، تلاوة القرآن الكريم، أحكام التجويد، والحفظ التدريجي بمتابعة فردية لكل طالب.' },
+        { ic:'🕌', h:'التربية الإسلامية', p:'تعليم أساسيات الدين الإسلامي والقيم الأخلاقية في بيئة داعمة تناسب أعمار الأطفال والناشئة المختلفة.' },
+        { ic:'🌍', h:'اللغتان العربية والأردية', p:'دروس منظمة في القراءة والكتابة والمحادثة، تناسب المستوى الفعلي لكل طالب سواء كان مبتدئًا أو لديه خلفية سابقة.' },
+        { ic:'👨‍👩‍👧‍👦', h:'شراكة مع أولياء الأمور', p:'تواصل مستمر مع الأسرة عبر بوابة إلكترونية مخصصة لمتابعة الحضور، الواجبات، الرسائل، والمستجدات أولًا بأول.' }
+      ],
+      visionEyebrow: 'رؤيتنا', visionTitle: 'جزء من معهد مدينة النرويج',
+      visionDesc: 'مدرسة مدينة جزء من معهد مدينة النرويج (مسجد مدينة غرود)، وهو مؤسسة تعليمية إسلامية عالمية.',
+      visionCards: [
+        { ic:'🌐', h:'مجتمع عالمي', p:'معهد مدينة مؤسسة تعليمية دولية أسسها الشيخ محمد بن يحيى النينوي، وله فروع في دول منها الولايات المتحدة وجنوب أفريقيا وبريطانيا.' },
+        { ic:'🤲', h:'التسامح والاحترام', p:'يُعنى المعهد بترسيخ فهم للإسلام قائم على المحبة والتسامح واحترام كل البشر، بغض النظر عن خلفياتهم أو معتقداتهم.' },
+        { ic:'🎓', h:'برامج تعليمية متنوعة', p:'إلى جانب مدرسة مدينة، يقدّم المعهد برامج تعليمية متنوعة في الدراسات الإسلامية والقرآنية واللغة العربية والعقيدة الإسلامية.' }
+      ],
+      programsEyebrow: 'البرامج الدراسية', programsTitle: 'البرامج المتاحة للتسجيل',
+      programsDesc: 'يمكن لولي الأمر اختيار برنامج واحد أو أكثر عند التسجيل، حسب حاجة الطالب.',
+      programs: [
+        { tag:'البرنامج الأساسي', h:'مدرسة مدينة الإسلامية', p:'البرنامج التعليمي الأساسي الجامع بين القرآن الكريم والتربية الإسلامية.' },
+        { tag:'لغة', h:'تعليم اللغة العربية', p:'مسار مخصص لتعلّم القراءة والكتابة والمحادثة باللغة العربية.' },
+        { tag:'لغة', h:'تعليم اللغة الأردية', p:'مسار مخصص لتعلّم اللغة الأردية للطلاب الراغبين في ذلك.' },
+        { tag:'الصغار', h:'مدينة بارن (الأطفال الصغار)', p:'برنامج مبسّط يناسب الأطفال في سن مبكرة، بأسلوب تعليمي ملائم لأعمارهم.' },
+        { tag:'إضافي', h:'مسار القرآن والحفظ الإضافي', p:'ساعات إضافية مخصصة للطلاب الراغبين في التركيز على حفظ القرآن الكريم بوتيرة أسرع.' }
+      ],
+      adminEyebrow: 'الإدارة', adminTitle: 'هيكل الإدارة وتوزيع الأدوار',
+      adminDesc: 'تدار المدرسة عبر ثلاثة مستويات رئيسية، تعمل معًا لضمان سير العملية التعليمية والإدارية بسلاسة.',
+      org: [
+        { lbl:'المستوى الأول', val:'الملاك / الإدارة العليا' },
+        { lbl:'المستوى الثاني', val:'الإدارة التنفيذية' },
+        { lbl:'المستوى الثاني', val:'القسم التربوي والتعليمي' },
+        { lbl:'المستوى الثالث', val:'المعلمون' },
+        { lbl:'شريك مستمر', val:'أولياء الأمور' }
+      ],
+      adminDraftNote: 'ملحوظة: هذا وصف مبدئي للهيكل الإداري مبني على الأقسام الفعلية المستخدمة في نظام الإدارة الإلكتروني حاليًا (الملاك/الإدارة، الإدارة التنفيذية، القسم التربوي). الأسماء والتفاصيل الكاملة لاستراتيجية الإدارة ومهام كل مستوى لم تُحدَّد بعد بشكل رسمي — هذا القسم جاهز ليُستبدل بنص رسمي كامل عند توفره.',
+      portalsEyebrow: 'البوابات الإلكترونية', portalsTitle: 'بوابات الدخول',
+      portalsDesc: 'لكل فئة بوابتها الخاصة للمتابعة والتواصل.',
+      portals: [
+        { ic:'🛡️', h:'الإدارة', p:'لإدارة المدرسة والشؤون الإدارية', href:'admin.html' },
+        { ic:'📖', h:'بوابة المعلم', p:'للمعلمين فقط — الحضور، الواجبات، التحضير', href:'index1.html' },
+        { ic:'👨‍👩‍👧', h:'بوابة أولياء الأمور', p:'متابعة الطالب، الرسائل، والمدفوعات', href:'index4.html' },
+        { ic:'📝', h:'التسجيل', p:'سجّل طفلك في المدرسة الآن', href:'index2.html' }
+      ],
+      footerBrand: 'مدرسة مدينة — معهد مدينة النرويج',
+      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerContact: '✉️ kontakt@madinainstitute.no',
+      footerOrgNr: 'الرقم التنظيمي الرسمي: 919674431',
+      footerCopy: '© مدرسة مدينة — جميع الحقوق محفوظة'
+    },
+    ur: {
+      pageTitle: 'مدینہ اسکول', pageDesc: 'مدینہ اسکول — بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم، مدینہ گرورود مسجد، اوسلو سے منسلک۔',
+      bannerText: '⚠️ آپ نے یہ صفحہ کسی ایپ (مثلاً واٹس ایپ یا انسٹاگرام) کے اندر کھولا ہے — لاگ اِن کام نہیں کر سکتا۔ ⋯ یا شیئر آئیکن پر ٹیپ کریں اور «Safari میں کھولیں» منتخب کریں۔',
+      bannerClose: 'چھپائیں',
+      brand: 'مدینہ اسکول',
+      nav: { about:'ہمارے بارے میں', vision:'ہمارا وژن', programs:'تعلیمی پروگرام', admin:'انتظامیہ', portals:'پورٹلز', reg:'داخلہ' },
+      instituteLink: '🕌 مدینہ انسٹی ٹیوٹ ناروے',
+      heroEyebrow: 'مدینہ اسکول — مدینہ گرورود مسجد',
+      heroTitle: 'ہمارے بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم — نگہداشت اور توجہ کے ساتھ',
+      heroLead: 'مدینہ گرورود مسجد سے منسلک ایک تعلیمی ادارہ، جو بچوں اور نوجوانوں کے لیے قرآن کریم کے حفظ، عربی اور اردو زبان اور اسلامی تربیت پر مشتمل ہے، ایک منظم تعلیمی ماحول میں انتظامیہ اور والدین کی مسلسل نگرانی کے ساتھ۔',
+      heroMotto: '«سب کے لیے محبت، کسی سے نفرت نہیں»',
+      heroBtnPrimary: '📝 اپنے بچے کا داخلہ کروائیں', heroBtnOutline: '🔑 پورٹلز',
+      aboutEyebrow: 'ہمارے بارے میں', aboutTitle: 'اسکول کا تعارف',
+      aboutCards: [
+        { ic:'📖', h:'قرآن کریم کا حفظ', p:'قاعدہ نورانیہ، تلاوتِ قرآن، احکامِ تجوید کی تعلیم، اور ہر طالب علم کی انفرادی نگرانی کے ساتھ بتدریج حفظ۔' },
+        { ic:'🕌', h:'اسلامی تربیت', p:'بچوں کی مختلف عمروں کے مطابق ایک معاون ماحول میں بنیادی اسلامی عقائد اور اخلاقی اقدار کی تعلیم۔' },
+        { ic:'🌍', h:'عربی اور اردو زبانیں', p:'ہر طالب علم کی اصل سطح کے مطابق پڑھنے، لکھنے اور بول چال کی منظم کلاسیں، چاہے وہ نیا سیکھنے والا ہو یا پہلے سے کچھ معلومات رکھتا ہو۔' },
+        { ic:'👨‍👩‍👧‍👦', h:'والدین کے ساتھ شراکت', p:'حاضری، ہوم ورک، پیغامات اور تازہ ترین معلومات کی فوری فراہمی کے لیے ایک خصوصی الیکٹرانک پورٹل کے ذریعے خاندان سے مسلسل رابطہ۔' }
+      ],
+      visionEyebrow: 'ہمارا وژن', visionTitle: 'مدینہ انسٹی ٹیوٹ ناروے کا حصہ',
+      visionDesc: 'مدینہ اسکول، مدینہ انسٹی ٹیوٹ ناروے (مدینہ گرورود مسجد) کا حصہ ہے، جو ایک بین الاقوامی اسلامی تعلیمی ادارہ ہے۔',
+      visionCards: [
+        { ic:'🌐', h:'ایک عالمی برادری', p:'مدینہ انسٹی ٹیوٹ ایک بین الاقوامی تعلیمی ادارہ ہے جسے شیخ محمد بن یحییٰ النینوی نے قائم کیا، اور اس کی شاخیں امریکہ، جنوبی افریقہ اور برطانیہ سمیت دیگر ممالک میں موجود ہیں۔' },
+        { ic:'🤲', h:'رواداری اور احترام', p:'ادارہ محبت، رواداری اور تمام انسانوں کے احترام پر مبنی اسلام کی سمجھ کو فروغ دیتا ہے، چاہے ان کا پس منظر یا عقیدہ کچھ بھی ہو۔' },
+        { ic:'🎓', h:'متنوع تعلیمی پروگرام', p:'مدینہ اسکول کے علاوہ، ادارہ اسلامی علوم، قرآنی علوم، عربی زبان اور اسلامی عقیدہ میں متنوع تعلیمی پروگرام پیش کرتا ہے۔' }
+      ],
+      programsEyebrow: 'تعلیمی پروگرام', programsTitle: 'دستیاب پروگرام',
+      programsDesc: 'والدین داخلے کے وقت طالب علم کی ضرورت کے مطابق ایک یا زیادہ پروگرام منتخب کر سکتے ہیں۔',
+      programs: [
+        { tag:'بنیادی پروگرام', h:'مدینہ اسلامک اسکول', p:'بنیادی تعلیمی پروگرام جو قرآن کریم اور اسلامی تربیت کو یکجا کرتا ہے۔' },
+        { tag:'زبان', h:'عربی زبان کی تعلیم', p:'عربی پڑھنے، لکھنے اور بولنے کے لیے مخصوص کورس۔' },
+        { tag:'زبان', h:'اردو زبان کی تعلیم', p:'اردو سیکھنے کے خواہشمند طلبہ کے لیے مخصوص کورس۔' },
+        { tag:'کم عمر بچے', h:'مدینہ بارن (چھوٹے بچے)', p:'چھوٹی عمر کے بچوں کے لیے موزوں ایک آسان پروگرام، ان کی عمر کے مطابق تدریسی انداز کے ساتھ۔' },
+        { tag:'اضافی', h:'اضافی قرآن/حفظ پروگرام', p:'ان طلبہ کے لیے اضافی اوقات جو تیز رفتاری سے قرآن کریم حفظ کرنا چاہتے ہیں۔' }
+      ],
+      adminEyebrow: 'انتظامیہ', adminTitle: 'انتظامی ڈھانچہ اور ذمہ داریوں کی تقسیم',
+      adminDesc: 'اسکول تین بنیادی سطحوں کے ذریعے چلایا جاتا ہے، جو تعلیمی اور انتظامی امور کو ہموار طریقے سے چلانے کے لیے مل کر کام کرتی ہیں۔',
+      org: [
+        { lbl:'پہلی سطح', val:'مالکان / اعلیٰ انتظامیہ' },
+        { lbl:'دوسری سطح', val:'انتظامی شعبہ' },
+        { lbl:'دوسری سطح', val:'تعلیمی و تدریسی شعبہ' },
+        { lbl:'تیسری سطح', val:'اساتذہ' },
+        { lbl:'مستقل شراکت دار', val:'والدین' }
+      ],
+      adminDraftNote: 'نوٹ: یہ انتظامی ڈھانچے کی ایک ابتدائی وضاحت ہے، جو الیکٹرانک انتظامی نظام میں فی الحال استعمال ہونے والے حقیقی شعبہ جات (مالکان/انتظامیہ، انتظامی شعبہ، تعلیمی شعبہ) پر مبنی ہے۔ مکمل باضابطہ حکمتِ عملی اور ہر سطح کی تفصیلی ذمہ داریاں ابھی طے نہیں کی گئیں — یہ حصہ باضابطہ متن دستیاب ہونے پر آسانی سے تبدیل کیا جا سکتا ہے۔',
+      portalsEyebrow: 'الیکٹرانک پورٹلز', portalsTitle: 'پورٹلز تک رسائی',
+      portalsDesc: 'ہر گروپ کے لیے نگرانی اور رابطے کا اپنا مخصوص پورٹل موجود ہے۔',
+      portals: [
+        { ic:'🛡️', h:'انتظامیہ', p:'اسکول کے انتظامی امور کے لیے', href:'admin.html' },
+        { ic:'📖', h:'اساتذہ کا پورٹل', p:'صرف اساتذہ کے لیے — حاضری، ہوم ورک، تیاری', href:'index1.html' },
+        { ic:'👨‍👩‍👧', h:'والدین کا پورٹل', p:'طالب علم کی نگرانی، پیغامات اور ادائیگیاں', href:'index4.html' },
+        { ic:'📝', h:'داخلہ', p:'ابھی اپنے بچے کا اسکول میں داخلہ کروائیں', href:'index2.html' }
+      ],
+      footerBrand: 'مدینہ اسکول — مدینہ انسٹی ٹیوٹ ناروے',
+      footerAddr: '📍 Hagelundveien 2, 0963 Oslo',
+      footerContact: '✉️ kontakt@madinainstitute.no',
+      footerOrgNr: 'سرکاری رجسٹریشن نمبر: 919674431',
+      footerCopy: '© مدینہ اسکول — جملہ حقوق محفوظ ہیں'
+    }
+  };
+
+  function cardsHtml(list){
+    return list.map(c => `<div class="card"><div class="ic">${c.ic}</div><h3>${c.h}</h3><p>${c.p}</p></div>`).join('');
+  }
+  function programsHtml(list){
+    return list.map(c => `<div class="program-card"><span class="tag">${c.tag}</span><h3>${c.h}</h3><p>${c.p}</p></div>`).join('');
+  }
+  function orgHtml(list){
+    // Nivå 1 alene øverst, nivå 2 (to bokser) i midten, nivå 3 + foresatte nederst
+    const l1 = list.filter(o => o.lbl === list[0].lbl);
+    return `
+      <div class="org-row"><div class="org-box"><div class="lbl">${list[0].lbl}</div><div class="val">${list[0].val}</div></div></div>
+      <div class="org-connector">↓</div>
+      <div class="org-row">
+        <div class="org-box"><div class="lbl">${list[1].lbl}</div><div class="val">${list[1].val}</div></div>
+        <div class="org-box"><div class="lbl">${list[2].lbl}</div><div class="val">${list[2].val}</div></div>
+      </div>
+      <div class="org-connector">↓</div>
+      <div class="org-row">
+        <div class="org-box"><div class="lbl">${list[3].lbl}</div><div class="val">${list[3].val}</div></div>
+        <div class="org-box"><div class="lbl">${list[4].lbl}</div><div class="val">${list[4].val}</div></div>
+      </div>`;
+  }
+  function portalsHtml(list){
+    return list.map(p => `<a class="portal-card" href="${p.href}"><div class="ic">${p.ic}</div><div class="title">${p.h}</div><div class="desc">${p.p}</div></a>`).join('');
+  }
+  function navHtml(t){
+    return `<a href="#about">${t.nav.about}</a><a href="#vision">${t.nav.vision}</a><a href="#programs">${t.nav.programs}</a><a href="#admin">${t.nav.admin}</a><a href="#portals">${t.nav.portals}</a><a href="index2.html">${t.nav.reg}</a>`;
+  }
+
+  function switchLang(lang){
+    const t = TEXT[lang];
+    const isRtl = (lang === 'ar' || lang === 'ur');
+    document.getElementById('htmlRoot').setAttribute('lang', lang);
+    document.getElementById('htmlRoot').setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+    document.getElementById('btnLangNo').classList.toggle('active', lang === 'no');
+    document.getElementById('btnLangAr').classList.toggle('active', lang === 'ar');
+    document.getElementById('btnLangUr').classList.toggle('active', lang === 'ur');
+
+    document.getElementById('pageTitle').textContent = t.pageTitle;
+    document.getElementById('pageDesc').setAttribute('content', t.pageDesc);
+    document.getElementById('bannerText').textContent = t.bannerText;
+    document.getElementById('bannerClose').textContent = t.bannerClose;
+    document.getElementById('brandText').textContent = t.brand;
+    document.getElementById('topbarLinks').innerHTML = navHtml(t);
+    document.getElementById('instituteLink').textContent = t.instituteLink;
+
+    document.getElementById('heroEyebrow').textContent = t.heroEyebrow;
+    document.getElementById('heroTitle').textContent = t.heroTitle;
+    document.getElementById('heroLead').textContent = t.heroLead;
+    document.getElementById('heroMotto').textContent = t.heroMotto;
+    document.getElementById('heroBtnPrimary').textContent = t.heroBtnPrimary;
+    document.getElementById('heroBtnOutline').textContent = t.heroBtnOutline;
+
+    document.getElementById('aboutEyebrow').textContent = t.aboutEyebrow;
+    document.getElementById('aboutTitle').textContent = t.aboutTitle;
+    document.getElementById('aboutCards').innerHTML = cardsHtml(t.aboutCards);
+
+    document.getElementById('visionEyebrow').textContent = t.visionEyebrow;
+    document.getElementById('visionTitle').textContent = t.visionTitle;
+    document.getElementById('visionDesc').textContent = t.visionDesc;
+    document.getElementById('visionCards').innerHTML = cardsHtml(t.visionCards);
+
+    document.getElementById('programsEyebrow').textContent = t.programsEyebrow;
+    document.getElementById('programsTitle').textContent = t.programsTitle;
+    document.getElementById('programsDesc').textContent = t.programsDesc;
+    document.getElementById('programCards').innerHTML = programsHtml(t.programs);
+
+    document.getElementById('adminEyebrow').textContent = t.adminEyebrow;
+    document.getElementById('adminTitle').textContent = t.adminTitle;
+    document.getElementById('adminDesc').textContent = t.adminDesc;
+    document.getElementById('orgChart').innerHTML = orgHtml(t.org);
+    document.getElementById('adminDraftNote').innerHTML = '<strong>!</strong> ' + t.adminDraftNote;
+
+    document.getElementById('portalsEyebrow').textContent = t.portalsEyebrow;
+    document.getElementById('portalsTitle').textContent = t.portalsTitle;
+    document.getElementById('portalsDesc').textContent = t.portalsDesc;
+    document.getElementById('portalCards').innerHTML = portalsHtml(t.portals);
+
+    document.getElementById('footerBrand').textContent = t.footerBrand;
+    document.getElementById('footerAddr').textContent = t.footerAddr;
+    document.getElementById('footerContact').textContent = t.footerContact;
+    document.getElementById('footerOrgNr').textContent = t.footerOrgNr;
+    document.getElementById('footerCopy').textContent = t.footerCopy;
+
+    localStorage.setItem('madinaHomeLang', lang);
+  }
+
+  (function(){
+    const saved = localStorage.getItem('madinaHomeLang');
+    switchLang((saved === 'ar' || saved === 'ur') ? saved : 'no'); // النرويجية هي اللغة الافتراضية دائمًا عند أول زيارة
+  })();
+</script>
+
+</body>
+</html>
