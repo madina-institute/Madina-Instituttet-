@@ -47,14 +47,28 @@
   .sub{font-size:15px;color:#4a5a52;font-style:italic;}
   .divider{width:110px;height:2px;margin:16px auto 0;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
 
-  .semester-bar{
-    display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:22px 0 6px;
+  .cal-box{
+    max-width:640px; margin:22px auto 0; background:#fff; border:1px solid var(--line); border-radius:14px;
+    overflow:hidden; box-shadow:0 14px 34px -14px rgba(11,61,46,0.2);
   }
-  .semester-bar .pill{
-    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:700; color:var(--emerald-deep);
-    background:var(--gold-soft); border:1px solid var(--line); border-radius:20px; padding:7px 16px;
+  .cal-box table{width:100%; min-width:0; border-collapse:collapse;}
+  .cal-box thead th{
+    background:var(--emerald-deep); color:#fdf6e3; font-family:'Jost',sans-serif; font-weight:700; font-size:13px;
+    padding:11px 10px; text-align:start;
   }
-  .semester-bar .pill.off{ background:#f3e3e3; color:#7a3a3a; }
+  .cal-box tbody td{
+    padding:10px 14px; font-family:'Jost',sans-serif; font-size:13.5px; border-bottom:1px solid var(--emerald-soft); text-align:start;
+  }
+  .cal-box tbody tr:last-child td{border-bottom:none;}
+  .cal-box .num-cell{color:#8a978f; width:28px; text-align:center;}
+  .cal-box .date-cell{font-weight:700; color:var(--ink);}
+  .cal-box .status-pill{
+    display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;
+  }
+  .cal-box .status-study{background:#e3f0e8; color:#0f4a30;}
+  .cal-box .status-holiday{background:#f8dede; color:#a83c3c;}
+  .cal-box tr.row-holiday{background:#fdf5f5;}
+  .cal-box tr.row-milestone .date-cell{color:var(--emerald-deep);}
 
   .legend{
     display:flex;justify-content:center;gap:16px;flex-wrap:wrap;
@@ -223,13 +237,34 @@
     <h1>Ukentlig Timeplan</h1>
     <div class="sub">Klasse A – F · Start kl. 09:30 · Slutt kl. 13:30 (maks 14:00) · Hvert fag i 2 økter à 30 min</div>
     <div class="divider"></div>
-    <div class="semester-bar">
-      <span class="pill">🗓️ Skolestart: lørdag 5. september 2026</span>
-      <span class="pill off">🍂 Høstferie: lørdag 3. oktober 2026</span>
-      <span class="pill">✅ Siste skoledag høst: lørdag 19. desember 2026</span>
-      <span class="pill off">🎄 Juleferie: lørdag 26. desember 2026</span>
-      <span class="pill off">🎉 Nyttårsferie: lørdag 2. januar 2027</span>
+    <div class="cal-box">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Dato</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr class="row-milestone"><td class="num-cell">1</td><td class="date-cell">Lørdag 5. september 2026</td><td><span class="status-pill status-study">📖 Skoledag — Skolestart</span></td></tr>
+          <tr><td class="num-cell">2</td><td class="date-cell">Lørdag 12. september 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">3</td><td class="date-cell">Lørdag 19. september 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">4</td><td class="date-cell">Lørdag 26. september 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">5</td><td class="date-cell">Lørdag 3. oktober 2026</td><td><span class="status-pill status-holiday">🍂 Fri — Høstferie</span></td></tr>
+          <tr><td class="num-cell">6</td><td class="date-cell">Lørdag 10. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">7</td><td class="date-cell">Lørdag 17. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">8</td><td class="date-cell">Lørdag 24. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">9</td><td class="date-cell">Lørdag 31. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">10</td><td class="date-cell">Lørdag 7. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">11</td><td class="date-cell">Lørdag 14. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">12</td><td class="date-cell">Lørdag 21. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">13</td><td class="date-cell">Lørdag 28. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">14</td><td class="date-cell">Lørdag 5. desember 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">15</td><td class="date-cell">Lørdag 12. desember 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr class="row-milestone"><td class="num-cell">16</td><td class="date-cell">Lørdag 19. desember 2026</td><td><span class="status-pill status-study">✅ Skoledag — Siste dag høstsemester</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">17</td><td class="date-cell">Lørdag 26. desember 2026</td><td><span class="status-pill status-holiday">🎄 Fri — Juleferie</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">18</td><td class="date-cell">Lørdag 2. januar 2027</td><td><span class="status-pill status-holiday">🎉 Fri — Nyttårsferie</span></td></tr>
+        </tbody>
+      </table>
     </div>
+    <div class="hint">Vårsemesteret fortsetter fra januar til slutten av mai 2027 — nøyaktige datoer publiseres senere.</div>
   </header>
 
   <div class="legend">
