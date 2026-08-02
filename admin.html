@@ -287,21 +287,6 @@
   .record-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; transition:transform .15s, border-color .15s; }
   .record-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
   .record-card-top{ display:flex; align-items:center; gap:12px; }
-  .activity-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;}
-  @media (max-width:560px){ .activity-grid{grid-template-columns:1fr;} }
-  .activity-row{background:var(--bg,#f7f8fb); border-radius:8px; padding:9px 12px;}
-  .activity-row .lbl{font-family:'Jost',sans-serif; font-size:10px; color:#8a9a90; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:3px;}
-  .activity-row .val{font-family:'Jost',sans-serif; font-size:14px; color:var(--ink); font-weight:600;}
-  .payments-list{display:flex; flex-direction:column; gap:6px;}
-  .payment-row{
-    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
-    background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 12px;
-    font-family:'Jost',sans-serif; font-size:12.5px;
-  }
-  .payment-row.payment-empty{color:#8a9a90; font-style:italic; justify-content:center;}
-  .payment-amt{font-weight:700; color:var(--emerald);}
-  .payment-date{color:#5a6860;}
-  .payment-kilde{font-size:11px; color:#8a9a90; background:var(--bg,#f7f8fb); padding:2px 8px; border-radius:10px;}
   .record-avatar{
     flex:none; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(160deg, var(--emerald) 0%, var(--emerald-d) 100%); color:#fff;
@@ -375,7 +360,6 @@
   .status-pill.ny{background:rgba(183,146,74,0.18); color:var(--gold);}
   .status-pill.venteliste{background:rgba(90,104,96,0.14); color:#5a6860;}
   .status-pill.godkjent{background:rgba(46,107,83,0.14); color:var(--emerald);}
-  .reg-filter-btn.active{background:var(--emerald); color:#fff; border-color:var(--emerald);}
   .status-pill.avslatt{background:rgba(168,60,60,0.12); color:var(--red);}
 
   .reg-actions{display:flex; gap:6px; flex-wrap:wrap;}
@@ -1149,13 +1133,6 @@
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormStarted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Begynte å fylle ut</div></div>
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormCompleted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Fullførte søknaden</div></div>
     </div>
-    <div class="toolbar" id="regStatusFilterBar" style="gap:8px; margin-bottom:10px;">
-      <button class="btn btn-ghost reg-filter-btn active" data-status="Ny" onclick="setRegistrationsFilter('Ny')">🆕 Nye</button>
-      <button class="btn btn-ghost reg-filter-btn" data-status="Venteliste" onclick="setRegistrationsFilter('Venteliste')">⏳ Venteliste</button>
-      <button class="btn btn-ghost reg-filter-btn" data-status="Godkjent" onclick="setRegistrationsFilter('Godkjent')">✅ Godkjente</button>
-      <button class="btn btn-ghost reg-filter-btn" data-status="Avslått" onclick="setRegistrationsFilter('Avslått')">🚫 Avslåtte</button>
-      <button class="btn btn-ghost reg-filter-btn" data-status="Alle" onclick="setRegistrationsFilter('Alle')">Alle</button>
-    </div>
     <div class="toolbar">
       <input class="search" id="searchRegistrations" placeholder="Søk etter elevnavn, foresatt eller program...">
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
@@ -1200,17 +1177,6 @@
       <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
     </div>
     <div class="records-hidden card-grid" id="tableFinances"></div>
-
-    <!-- ===== BETALINGSOVERSIKT PER KLASSE ===== -->
-    <div style="margin-top:30px; padding-top:24px; border-top:2px solid var(--line);">
-      <h3 style="font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--emerald-d); margin:0 0 12px;">💰 Betalingsoversikt per klasse</h3>
-      <div class="toolbar">
-        <select id="paymentsClassFilter" class="search" style="max-width:280px;" onchange="renderClassPaymentsOverview()">
-          <option value="">— Velg klasse —</option>
-        </select>
-      </div>
-      <div id="classPaymentsOverviewList"></div>
-    </div>
   </div>
 
   <!-- FINANCE ACTIVITY LOG — visible to everyone with admin access, not hidden.
@@ -1626,7 +1592,7 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-    setPersistence, inMemoryPersistence, sendPasswordResetEmail
+    setPersistence, browserSessionPersistence, sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -1652,11 +1618,10 @@
   const db = getFirestore(app);
   const storage = getStorage(app);
   const auth = getAuth(app);
-  // Never persist the login session to the browser (no localStorage/
-  // IndexedDB auth token) — every fresh page load/refresh requires a real
-  // email+password login again, instead of silently auto-logging-in from a
-  // previously saved session.
-  setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
+  // Persist the login session for the browser tab/window only (sessionStorage-
+  // backed): a page refresh keeps the user logged in, but closing the tab or
+  // the browser clears the session and requires a real email+password login again.
+  setPersistence(auth, browserSessionPersistence).catch(err => console.error('setPersistence failed:', err));
 
   const MAX_FILE_MB = 10;
   async function uploadAttachment(file, folder){
@@ -2700,14 +2665,6 @@
     console.error('financeLog', err);
   });
 
-  onSnapshot(collection(db, 'studentPayments'), (snap) => {
-    cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-    renderClassPaymentsOverview();
-  }, (err) => {
-    console.error('studentPayments', err);
-  });
-
   function renderFinanceLog(){
     const el = document.getElementById('financeLogList');
     if(!el) return;
@@ -2837,18 +2794,12 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
   let broadcastMessagesCache = [];
   let editingId = null;
-  let registrationsStatusFilter = 'Ny';
-  window.setRegistrationsFilter = function(status){
-    registrationsStatusFilter = status;
-    document.querySelectorAll('.reg-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.status === status));
-    render('registrations');
-  };
   let editingType = null;
   const readyCollections = new Set();
 
@@ -2922,17 +2873,13 @@
     if(query){
       data = data.filter(row => schema.cols.some(c => colDisplay(row, c).toLowerCase().includes(query)));
     }
-    if(type === 'registrations' && registrationsStatusFilter !== 'Alle'){
-      data = data.filter(row => (row.status || 'Ny') === registrationsStatusFilter);
-    }
     renderRecordCards(type, data);
     const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
     const countEl = document.getElementById('count' + capitalize(type));
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
-    if(type === 'classes'){ populateAttendanceClassFilter(); populatePaymentsClassFilter(); }
-    if(type === 'students' || type === 'classes') renderClassPaymentsOverview();
+    if(type === 'classes') populateAttendanceClassFilter();
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teachers') renderLedelseView();
@@ -3548,13 +3495,10 @@
       }
       let actionsHtml;
       if(type === 'registrations'){
-        const isPending = (row.status || 'Ny') === 'Ny';
         actionsHtml = `<div class="record-card-actions">
-          ${isPending ? `
           <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
           <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
           <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
-          ` : `<div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; padding:6px 2px; flex-basis:100%;">Allerede behandlet (${escapeHtml(row.status)}). Bruk «Se alt» for å endre status manuelt om nødvendig.</div>`}
           <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
           <button class="btn-edit" onclick="sendVippsPaymentLink('${row.id}')">📤 Send Vipps-lenke (manuell)</button>
           <button class="btn-edit" onclick="sendRealVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>
@@ -3699,94 +3643,6 @@
     sel.innerHTML = '<option value="">— Alle elever —</option>' +
       classList.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
     if(classList.some(c => c.id === current)) sel.value = current;
-  }
-
-  function populatePaymentsClassFilter(){
-    const sel = document.getElementById('paymentsClassFilter');
-    if(!sel) return;
-    const current = sel.value;
-    const classList = [...cache.classes].filter(c => c.navn).sort((a,b)=>a.navn.localeCompare(b.navn));
-    sel.innerHTML = '<option value="">— Velg klasse —</option>' +
-      classList.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
-    if(classList.some(c => c.id === current)) sel.value = current;
-  }
-
-  // Regner ut alder ut fra fødselsdato (elev_fdato, format YYYY-MM-DD eller
-  // norsk DD.MM.YYYY — begge tolkes), og gjetter automatisk om eleven
-  // sannsynligvis hører til Madinabarn (ca. 3–6 år) eller Madina Islamske
-  // Skole (ca. 6 år og oppover) — ren visningshjelp, endrer ikke lagrede data.
-  function computeAgeAndProgramBadge(fdatoRaw){
-    if(!fdatoRaw) return { age: null, badge: '❔ Ukjent program (mangler fødselsdato)' };
-    let d = null;
-    const iso = String(fdatoRaw).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    const no = String(fdatoRaw).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-    if(iso) d = new Date(Number(iso[1]), Number(iso[2])-1, Number(iso[3]));
-    else if(no) d = new Date(Number(no[3]), Number(no[2])-1, Number(no[1]));
-    if(!d || isNaN(d)) return { age: null, badge: '❔ Ukjent program (ugyldig dato)' };
-    const today = new Date();
-    let age = today.getFullYear() - d.getFullYear();
-    const monthDiff = today.getMonth() - d.getMonth();
-    if(monthDiff < 0 || (monthDiff === 0 && today.getDate() < d.getDate())) age--;
-    const badge = age <= 6
-      ? `🧒 Madinabarn (${age} år)`
-      : `🕌 Madina Islamske Skole (${age} år)`;
-    return { age, badge };
-  }
-
-  function renderClassPaymentsOverview(){
-    const listEl = document.getElementById('classPaymentsOverviewList');
-    const sel = document.getElementById('paymentsClassFilter');
-    if(!listEl || !sel) return;
-    const classId = sel.value;
-    if(!classId){
-      listEl.innerHTML = '<div class="report-empty">Velg en klasse ovenfor for å se betalingsoversikten.</div>';
-      return;
-    }
-    const students = cache.students.filter(s => s.klasse === classId).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
-    if(students.length === 0){
-      listEl.innerHTML = '<div class="report-empty">Ingen elever i denne klassen ennå.</div>';
-      return;
-    }
-    const parseKr = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
-
-    listEl.innerHTML = students.map(s => {
-      const total = parseKr(s.belop);
-      const paidTotal = parseKr(s.belopBetalt);
-      const remaining = total - paidTotal;
-      const { badge } = computeAgeAndProgramBadge(s.elev_fdato || s.fdato);
-      const payments = cache.studentPayments.filter(p => p.studentId === s.id)
-        .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-
-      const paymentsHtml = payments.length
-        ? payments.map(p => {
-            const d = new Date(p.dato);
-            const dateStr = isNaN(d) ? (p.dato || '') : d.toLocaleString('no-NO');
-            return `<div class="payment-row">
-              <span class="payment-amt">${parseKr(p.belop)} kr</span>
-              <span class="payment-date">${escapeHtml(dateStr)}</span>
-              <span class="payment-kilde">${escapeHtml(p.kilde || '')}</span>
-            </div>`;
-          }).join('')
-        : '<div class="payment-row payment-empty">Ingen registrerte betalinger ennå.</div>';
-
-      return `
-        <div class="record-card" style="margin-bottom:14px;">
-          <div class="record-card-top">
-            <div class="record-title">${escapeHtml(s.navn || '—')}</div>
-            <span class="record-pill">${badge}</span>
-          </div>
-          <div class="activity-grid" style="margin:10px 0;">
-            <div class="activity-row"><div class="lbl">Totalt beløp</div><div class="val">${total} kr</div></div>
-            <div class="activity-row"><div class="lbl">Betalt så langt</div><div class="val">${paidTotal} kr</div></div>
-            <div class="activity-row"><div class="lbl">Gjenstår</div><div class="val" style="${remaining > 0 ? 'color:#a83c3c; font-weight:700;' : 'color:#2e6b53; font-weight:700;'}">${remaining} kr</div></div>
-          </div>
-          <div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; text-transform:uppercase; letter-spacing:0.03em; margin:10px 0 4px;">Betalingshistorikk</div>
-          <div class="payments-list">${paymentsHtml}</div>
-          ${remaining > 0 ? `<div class="record-card-actions" style="margin-top:10px;">
-            <button class="btn-edit" style="background:#ff5b24; color:#fff; border-color:#ff5b24;" onclick="sendStudentVippsRequest('${s.id}')">⚡ Be om betaling (velg beløp)</button>
-          </div>` : ''}
-        </div>`;
-    }).join('');
   }
 
   function renderAttendanceTakingList(){
@@ -5105,10 +4961,6 @@
   window.approveRegistration = async function(id){
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
-    if((reg.status || 'Ny') !== 'Ny'){
-      showToast('Denne søknaden er allerede behandlet (' + reg.status + '). Bruk «Se alt» for å endre status manuelt om nødvendig.');
-      return;
-    }
     const ok = confirm(`Godkjenne søknaden for ${reg.elev_navn || 'denne eleven'}?\n\nDette oppretter elev og foresatt i Administrativ, og kobler dem sammen.`);
     if(!ok) return;
 
@@ -5309,27 +5161,15 @@
     }
   };
 
-  window.sendStudentVippsRequest = async function(id, customAmountKr){
+  window.sendStudentVippsRequest = async function(id){
     const student = cache.students.find(s => s.id === id);
     if(!student){ showToast('Fant ikke eleven.'); return; }
     const remainingKr = (parseFloat((student.belop||'0').replace(/[^\d.-]/g,'')) || 0)
       - (parseFloat((student.belopBetalt||'0').replace(/[^\d.-]/g,'')) || 0);
     if(remainingKr <= 0){ showToast('Ingen restbeløp å kreve inn.'); return; }
-
-    let amountKr = customAmountKr;
-    if(!amountKr){
-      const amountInput = prompt('Beløp å be om (kr) — resterende totalt: ' + remainingKr + ' kr:', String(remainingKr));
-      if(amountInput === null) return;
-      amountKr = parseFloat(amountInput.replace(/[^\d.-]/g,''));
-      if(!amountKr || amountKr <= 0){
-        alert('Skriv inn et gyldig beløp større enn 0.');
-        return;
-      }
-    }
-
     const guardian = cache.guardians.find(g => g.id === student.foresatt);
     const guardianPhone = (guardian && guardian.telefon) || student.foresatt1_tlf || '';
-    const phone = prompt('Telefonnummer for Vipps (8 siffer, uten landkode) — beløp: ' + amountKr + ' kr:', guardianPhone.replace(/\D/g,'').slice(-8));
+    const phone = prompt('Telefonnummer for Vipps (8 siffer, uten landkode) — beløp: ' + remainingKr + ' kr:', guardianPhone.replace(/\D/g,'').slice(-8));
     if(phone === null) return;
     if(!/^\d{8}$/.test(phone.trim())){
       alert('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).');
@@ -5340,7 +5180,7 @@
       const res = await fetch(VIPPS_CREATE_PAYMENT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'balance', targetId: id, amountKr: amountKr, phoneNumber: phone.trim() })
+        body: JSON.stringify({ type: 'balance', targetId: id, amountKr: remainingKr, phoneNumber: phone.trim() })
       });
       const data = await res.json();
       if(!data.ok){
@@ -5355,13 +5195,13 @@
           to: [guardianEmail],
           message: {
             subject: '[Madina Skole] Betaling for ' + (student.navn || 'ditt barn'),
-            text: 'Hei,\n\nDu bes om å betale ' + amountKr + ' kr for ' + (student.navn || 'ditt barn') +
+            text: 'Hei,\n\nDu har et utestående beløp på ' + remainingKr + ' kr for ' + (student.navn || 'ditt barn') +
               '. Du har fått et betalingsvarsel i Vipps-appen din, eller kan bruke denne lenken:\n\n' + data.redirectUrl +
               '\n\nMed vennlig hilsen,\nMadina Skole'
           }
         });
       }
-      showToast('✓ Ekte Vipps-krav sendt (' + amountKr + ' kr)! Beløpet registreres automatisk når foresatte betaler.');
+      showToast('✓ Ekte Vipps-krav sendt! Beløpet registreres automatisk når foresatte betaler.');
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
