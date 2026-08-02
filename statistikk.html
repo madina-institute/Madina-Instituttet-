@@ -543,7 +543,11 @@
       })
       .catch(function(err){
         console.error('Kunne ikke hente siste publisering:', err);
-        el.style.display = 'none';
+        // Viser feilmeldingen i selve badgen (i stedet for å skjule den helt)
+        // slik at man faktisk kan se HVORFOR den ikke klarte å hente status
+        // (f.eks. "HTTP 403" = GitHubs offentlige rate-limit er nådd for nå).
+        el.textContent = 'Siste publisering: kunne ikke sjekke (' + (err && err.message ? err.message : 'nettverksfeil') + ')';
+        el.style.color = '#a5504a';
       });
   })();
 </script>
