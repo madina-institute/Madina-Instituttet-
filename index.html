@@ -79,7 +79,6 @@
   html[dir="rtl"] .quick-fact{font-family:'Tajawal',sans-serif;}
   .quick-fact:first-child{border-top:none;}
   .quick-fact b{display:block; font-weight:700; font-size:13.5px; margin-top:2px;}
-  .quick-fact i{display:block; font-style:normal; font-weight:400; font-size:11px; opacity:0.75; margin-top:3px;}
   @media (min-width:560px){
     .quick-facts{ flex-direction:row; padding:16px 0; }
     .quick-fact{ padding:4px 20px; border-top:none; border-inline-start:1px solid rgba(255,255,255,0.25); flex:1 1 0; }
@@ -134,18 +133,7 @@
   .tuition-box .btn-primary{background:var(--coral); color:#fff;}
 
   /* Key dates timeline */
-  .calendar-link-card{
-    display:inline-flex; align-items:center; gap:16px; background:#fff; border:1px solid var(--line); border-radius:16px;
-    padding:24px 30px; box-shadow:var(--shadow); text-decoration:none; color:inherit; max-width:480px; transition:transform .2s, border-color .2s;
-  }
-  .calendar-link-card:hover{transform:translateY(-3px); border-color:var(--coral);}
-  .calendar-link-card .ic{font-size:34px; flex:0 0 auto;}
-  .calendar-link-card .txt{text-align:start;}
-  .calendar-link-card .txt h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; margin:0 0 4px; color:var(--emerald-d);}
-  html[dir="rtl"] .calendar-link-card .txt h3{font-family:'Tajawal',sans-serif; font-size:16px;}
-  .calendar-link-card .txt p{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin:0;}
-  html[dir="rtl"] .calendar-link-card .txt p{font-family:'Tajawal',sans-serif;}
-  .calendar-link-card .arrow{font-size:20px; color:var(--coral); flex:0 0 auto;}
+  .dates-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px;}
   .date-card{border-radius:12px; padding:20px 18px; box-shadow:var(--shadow); text-align:start;}
   .date-card.tone-1{background:#faf1e2;}
   .date-card.tone-2{background:#fce9e9;}
@@ -283,7 +271,7 @@
       <h2 id="datesTitle"></h2>
       <p id="datesDesc"></p>
     </div>
-    <div class="dates-row" id="datesRow" style="display:block; text-align:center;"></div>
+    <div class="dates-row" id="datesRow"></div>
   </section>
 
   <section id="program">
@@ -353,9 +341,9 @@
       heroBadge: '📝 Påmelding er åpen', heroTitle: 'Koranundervisning, arabisk og urdu for barna våre', heroYear: 'Skoleåret 2026/2027',
       heroLead: 'En undervisningsskole tilknyttet Madina Institute Norway (Madina Grorud moske), som tilbyr koranmemorering, arabisk- og urduundervisning samt islamsk oppdragelse for barn og unge.',
       quickFacts: [
-        { l:'Oppstart', v:'5. september 2026' },
-        { l:'Lørdag — Madina Islamske Skole', v:'09:30–13:30', sub:'Koran · Islam · Arabisk/Urdu' },
-        { l:'Søndag — Madinabarn', v:'09:30–11:00', sub:'3–6 år' }
+        { l:'Oppstart', v:'Uke 1 i september' },
+        { l:'Undervisning', v:'Lørdager 09:30–13:30' },
+        { l:'Madinabarn', v:'Søndager, 3–6 år' }
       ],
       heroBtnPrimary: '📝 Meld på nå', heroBtnOutline: 'Se programmet',
 
@@ -365,12 +353,11 @@
         { ic:'✅', h:'Velg program og fag', p:'Velg hovedprogrammet eller Madinabarn, og eventuelt språkspor (arabisk eller urdu).' },
         { ic:'💳', h:'Bekreft plassen din', p:'Ved tilbud om plass betaler du et depositum på 500 kr innen 5 dager for å bekrefte plassen.' }
       ],
-      tuitionTag: 'Skolepenger', tuitionAmt: '2 500 kr / semester', tuitionSub: 'Hovedprogrammet (Lørdag) — per semester. Madinabarn: 1 500 kr per semester.',
+      tuitionTag: 'Skolepenger', tuitionAmt: '2 750 kr / semester', tuitionSub: 'Hovedprogrammet (Lørdag) — per semester. Madinabarn: 1 500 kr per semester.',
       tuitionList: ['Depositum: 500 kr innen 5 dager etter tilbud (trekkes fra totalbeløpet)', 'Skolemateriell/bøker: 450 kr per år, kommer i tillegg'],
       tuitionBtn: '📝 Meld på nå',
 
       datesEyebrow: 'Skoleår', datesTitle: 'Viktige datoer', datesDesc: 'Nøkkeldatoer for høstsemesteret 2026.',
-      calendarLink: { h:'Se hele skolekalenderen', p:'Alle skoledager og fridager, lørdag for lørdag' },
       dates: [
         { h:'5. september 2026', p:'Skolestart — oppstart høstsemesteret.' },
         { h:'3. oktober 2026', p:'Fri — høstferie.' },
@@ -424,9 +411,9 @@
       heroBadge: '📝 التسجيل مفتوح الآن', heroTitle: 'تعليم القرآن الكريم واللغة العربية والأردية لأبنائنا', heroYear: 'العام الدراسي 2026/2027',
       heroLead: 'مدرسة تعليمية تابعة لمعهد مدينة النرويج (مسجد مدينة غرود)، تُعنى بتحفيظ القرآن الكريم وتعليم اللغة العربية والأردية والتربية الإسلامية للأطفال والناشئة.',
       quickFacts: [
-        { l:'البداية', v:'5 سبتمبر 2026' },
-        { l:'السبت — مدرسة مدينة الإسلامية', v:'09:30–13:30', sub:'قرآن · إسلام · عربي/أردو' },
-        { l:'الأحد — مدينة بارن', v:'09:30–11:00', sub:'3–6 سنوات' }
+        { l:'البداية', v:'الأسبوع الأول من سبتمبر' },
+        { l:'التدريس', v:'السبت 09:30–13:30' },
+        { l:'مدينة بارن', v:'الأحد، 3–6 سنوات' }
       ],
       heroBtnPrimary: '📝 سجّل الآن', heroBtnOutline: 'شاهد البرنامج',
 
@@ -436,12 +423,11 @@
         { ic:'✅', h:'اختر البرنامج والمادة', p:'اختر البرنامج الأساسي أو مدينة بارن، ومسار اللغة إن وجد (عربي أو أردو).' },
         { ic:'💳', h:'أكّد مكانك', p:'عند قبول الطالب، يُدفع عربون 500 كرون خلال 5 أيام لتأكيد المكان.' }
       ],
-      tuitionTag: 'الرسوم الدراسية', tuitionAmt: '2500 كرون / الفصل الواحد', tuitionSub: 'البرنامج الأساسي (السبت) — لكل فصل. مدينة بارن: 1500 كرون للفصل الواحد.',
+      tuitionTag: 'الرسوم الدراسية', tuitionAmt: '2750 كرون / الفصل الواحد', tuitionSub: 'البرنامج الأساسي (السبت) — لكل فصل. مدينة بارن: 1500 كرون للفصل الواحد.',
       tuitionList: ['العربون: 500 كرون خلال 5 أيام من القبول (يُخصم من المبلغ الإجمالي)', 'المواد التعليمية/الكتب: 450 كرون سنويًا، إضافية'],
       tuitionBtn: '📝 سجّل الآن',
 
       datesEyebrow: 'العام الدراسي', datesTitle: 'المواعيد المهمة', datesDesc: 'المواعيد الرئيسية للفصل الأول 2026.',
-      calendarLink: { h:'شاهد التقويم الدراسي كاملًا', p:'كل أيام الدراسة والإجازات، سبت بسبت' },
       dates: [
         { h:'5 سبتمبر 2026', p:'بداية الدراسة — انطلاق الفصل الأول.' },
         { h:'3 أكتوبر 2026', p:'إجازة — عطلة الخريف.' },
@@ -495,9 +481,9 @@
       heroBadge: '📝 داخلہ کھلا ہے', heroTitle: 'ہمارے بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم', heroYear: 'تعلیمی سال 2026/2027',
       heroLead: 'مدینہ انسٹی ٹیوٹ ناروے (مدینہ گرورود مسجد) سے منسلک ایک تعلیمی ادارہ، جو بچوں اور نوجوانوں کے لیے قرآن کریم کے حفظ، عربی اور اردو زبان اور اسلامی تربیت پیش کرتا ہے۔',
       quickFacts: [
-        { l:'آغاز', v:'5 ستمبر 2026' },
-        { l:'ہفتہ — مدینہ اسلامک اسکول', v:'09:30–13:30', sub:'قرآن · اسلام · عربی/اردو' },
-        { l:'اتوار — مدینہ بارن', v:'09:30–11:00', sub:'3–6 سال' }
+        { l:'آغاز', v:'ستمبر کا پہلا ہفتہ' },
+        { l:'تدریس', v:'ہفتہ 09:30–13:30' },
+        { l:'مدینہ بارن', v:'اتوار، 3–6 سال' }
       ],
       heroBtnPrimary: '📝 ابھی داخلہ لیں', heroBtnOutline: 'پروگرام دیکھیں',
 
@@ -507,12 +493,11 @@
         { ic:'✅', h:'پروگرام اور مضمون منتخب کریں', p:'بنیادی پروگرام یا مدینہ بارن منتخب کریں، اور زبان کا انتخاب کریں (عربی یا اردو)۔' },
         { ic:'💳', h:'اپنی جگہ کی تصدیق کریں', p:'داخلے کی پیشکش پر، جگہ کی تصدیق کے لیے 5 دن کے اندر 500 کرون کا ڈپازٹ ادا کریں۔' }
       ],
-      tuitionTag: 'فیس', tuitionAmt: '2500 کرون / فی سمسٹر', tuitionSub: 'بنیادی پروگرام (ہفتہ) — فی سمسٹر۔ مدینہ بارن: 1500 کرون فی سمسٹر۔',
+      tuitionTag: 'فیس', tuitionAmt: '2750 کرون / فی سمسٹر', tuitionSub: 'بنیادی پروگرام (ہفتہ) — فی سمسٹر۔ مدینہ بارن: 1500 کرون فی سمسٹر۔',
       tuitionList: ['ڈپازٹ: قبولیت کے 5 دن کے اندر 500 کرون (کل رقم سے منہا)', 'تعلیمی مواد/کتابیں: 450 کرون سالانہ، اضافی'],
       tuitionBtn: '📝 ابھی داخلہ لیں',
 
       datesEyebrow: 'تعلیمی سال', datesTitle: 'اہم تاریخیں', datesDesc: 'خزاں کے سمسٹر 2026 کی اہم تاریخیں۔',
-      calendarLink: { h:'مکمل اسکول کیلنڈر دیکھیں', p:'ہر ہفتہ کے حساب سے تمام تعلیمی دن اور تعطیلات' },
       dates: [
         { h:'5 ستمبر 2026', p:'تعلیم کا آغاز — خزاں سمسٹر کی شروعات۔' },
         { h:'3 اکتوبر 2026', p:'چھٹی — خزاں کی تعطیلات۔' },
@@ -565,9 +550,7 @@
     return list.map(c => `<div class="card"><div class="ic">${c.ic}</div><h3>${c.h}</h3><p>${c.p}</p>${c.video ? `<p style="margin-top:10px;"><a href="${MUTAMMIM_VIDEO_URL}" target="_blank" rel="noopener" style="color:var(--emerald-d); text-decoration:none; font-weight:700;">${c.video}</a></p>` : ''}</div>`).join('');
   }
   function stepsHtml(list){ return list.map((s,i) => `<div class="step-card"><div class="step-num">${i+1}</div><h3>${s.h}</h3><p>${s.p}</p></div>`).join(''); }
-  function calendarLinkHtml(d){
-    return `<a class="calendar-link-card" href="timeplan.html"><span class="ic">📅</span><span class="txt"><h3>${d.h}</h3><p>${d.p}</p></span><span class="arrow">${document.getElementById('htmlRoot').getAttribute('dir')==='rtl' ? '←' : '→'}</span></a>`;
-  }
+  function datesHtml(list){ return list.map((d,i) => `<div class="date-card tone-${(i%3)+1}"><span class="when">${d.h}</span><h3>${d.h}</h3><p>${d.p}</p></div>`).join(''); }
   function mvpHtml(list){ return list.map(m => `<div class="mvp-card"><div class="eyebrow">${m.eyebrow}</div><h3>${m.h}</h3><p>${m.p}</p></div>`).join(''); }
   function teamHtml(list){
     return list.map(t => {
@@ -576,7 +559,7 @@
     }).join('');
   }
   function portalsHtml(list){ return list.map(p => `<a class="portal-card" href="${p.href}"><div class="ic">${p.ic}</div><div class="title">${p.h}</div><div class="desc">${p.p}</div></a>`).join(''); }
-  function quickFactsHtml(list){ return list.map(f => `<span class="quick-fact">${f.l}<b>${f.v}</b>${f.sub ? `<i>${f.sub}</i>` : ''}</span>`).join(''); }
+  function quickFactsHtml(list){ return list.map(f => `<span class="quick-fact">${f.l}<b>${f.v}</b></span>`).join(''); }
   function navHtml(t){
     return `<a href="#register">${t.nav.register}</a><a href="#dates">${t.nav.dates}</a><a href="#program">${t.nav.program}</a><a href="#who">${t.nav.who}</a><a href="#team">${t.nav.team}</a><a href="#portals">${t.nav.portals}</a>`;
   }
@@ -618,7 +601,7 @@
     document.getElementById('datesEyebrow').textContent = t.datesEyebrow;
     document.getElementById('datesTitle').textContent = t.datesTitle;
     document.getElementById('datesDesc').textContent = t.datesDesc;
-    document.getElementById('datesRow').innerHTML = calendarLinkHtml(t.calendarLink);
+    document.getElementById('datesRow').innerHTML = datesHtml(t.dates);
 
     document.getElementById('programEyebrow').textContent = t.programEyebrow;
     document.getElementById('programTitle').textContent = t.programTitle;
