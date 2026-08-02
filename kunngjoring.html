@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="no" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Informasjon til foresatte — Madina Skole</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17232e; --emerald:#332f68; --emerald-d:#211e42; --coral:#e2643a; --coral-d:#c94f28; --leaf:#4a7c59;
+    --gold:#b7924a; --paper:#EEF0FB; --paper-2:#E4E7F7; --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh; line-height:1.85;}
+  html[dir="rtl"] body{font-family:'Tajawal','Lora',serif;}
+  html[lang="ur"] body{line-height:2.2;}
+
+  nav.topbar{
+    position:sticky; top:0; z-index:200; background:rgba(238,240,251,0.94); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line); padding:12px 20px;
+  }
+  .topbar-inner{max-width:720px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .brand img{height:34px; width:auto; border-radius:8px;}
+  .brand-text{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; color:var(--emerald-d);}
+  html[dir="rtl"] .brand-text{font-family:'Tajawal',sans-serif;}
+  .lang-switch-inner{ display:inline-flex; background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
+  .lang-switch-inner button{
+    background:transparent; border:none; color:var(--ink); opacity:0.55; font-family:'Jost',sans-serif;
+    font-size:11px; font-weight:600; letter-spacing:0.04em; padding:7px 14px; cursor:pointer;
+  }
+  .lang-switch-inner button.active{background:var(--emerald); color:#fff; opacity:1;}
+
+  main{max-width:720px; margin:0 auto; padding:40px 20px 70px;}
+
+  .letter-card{background:#fff; border-radius:18px; box-shadow:var(--shadow); overflow:hidden;}
+  .letter-head{
+    background:linear-gradient(135deg, var(--emerald) 0%, var(--emerald-d) 100%); padding:34px 30px; text-align:center; color:#fff;
+  }
+  .letter-head .badge{
+    display:inline-block; background:var(--leaf); color:#fff; font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
+    letter-spacing:0.04em; text-transform:uppercase; padding:6px 16px; border-radius:20px; margin-bottom:16px;
+  }
+  html[dir="rtl"] .letter-head .badge{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
+  .letter-head h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:24px; margin:0; line-height:1.5;}
+  html[dir="rtl"] .letter-head h1{font-family:'Tajawal',sans-serif; font-size:21px;}
+
+  .letter-body{padding:30px 30px 34px;}
+  .letter-body .greeting{font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:17px; color:var(--emerald-d); margin-bottom:18px;}
+  html[dir="rtl"] .letter-body .greeting{font-family:'Tajawal',sans-serif; font-style:normal;}
+  .letter-body p{font-size:15px; color:#37454d; margin:0 0 16px;}
+
+  .subject-list{list-style:none; padding:0; margin:20px 0; display:grid; gap:10px;}
+  .subject-list li{
+    background:var(--paper-2); border-radius:10px; padding:12px 16px; font-family:'Jost',sans-serif; font-weight:700;
+    font-size:14px; color:var(--emerald-d); display:flex; align-items:center; gap:10px;
+  }
+  html[dir="rtl"] .subject-list li{font-family:'Tajawal',sans-serif;}
+
+  .highlight-box{
+    background:#fdf1ec; border-inline-start:4px solid var(--coral); border-radius:10px; padding:16px 18px; margin:22px 0;
+  }
+  .highlight-box p{margin:0; font-weight:700; color:var(--coral-d); font-size:15.5px;}
+
+  .cta-row{text-align:center; margin-top:26px;}
+  .btn{
+    display:inline-block; text-decoration:none; font-family:'Jost',sans-serif; font-weight:700; font-size:14px;
+    padding:14px 30px; border-radius:8px; background:var(--coral); color:#fff;
+  }
+  html[dir="rtl"] .btn{font-family:'Tajawal',sans-serif;}
+
+  footer{text-align:center; margin-top:40px;}
+  footer a{font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald-d); text-decoration:none;}
+  html[dir="rtl"] footer a{font-family:'Tajawal',sans-serif;}
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="https://madina.no/images/logo.png" alt="Madina Skole">
+      <span class="brand-text" id="brandText">Madina Skole</span>
+    </a>
+    <div class="lang-switch-inner">
+      <button id="btnLangNo" class="active" onclick="switchLang('no')">Norsk</button>
+      <button id="btnLangAr" onclick="switchLang('ar')">العربية</button>
+      <button id="btnLangUr" onclick="switchLang('ur')">اردو</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="letter-card">
+    <div class="letter-head">
+      <span class="badge" id="headBadge"></span>
+      <h1 id="headTitle"></h1>
+    </div>
+    <div class="letter-body">
+      <p class="greeting" id="greeting"></p>
+      <p id="p1"></p>
+      <p id="p2"></p>
+      <ul class="subject-list" id="subjectList"></ul>
+      <p id="p3"></p>
+      <div class="highlight-box"><p id="highlight"></p></div>
+      <p id="p4"></p>
+      <p id="p5"></p>
+      <div class="cta-row"><a class="btn" href="index2.html" id="ctaBtn"></a></div>
+    </div>
+  </div>
+  <footer><a href="index.html" id="backLink"></a></footer>
+</main>
+
+<script>
+  const TEXT = {
+    no: {
+      pageTitle: 'Informasjon til foresatte — Madina Skole', brand: 'Madina Skole',
+      headBadge: '📢 Kunngjøring', headTitle: 'Informasjon til foresatte — Madina Skole',
+      greeting: 'Assalamu Alaykum wa rahmatullahi wa barakatuh,',
+      p1: 'Vi har gleden av å fortelle at Madina Helgeskole har gjennomgått en større utvikling og starter opp med et nytt og mer strukturert skoletilbud.',
+      p2: 'Den nye skolen er bygget opp med tre hovedfag:',
+      subjects: ['📖 Koran', '🕌 Islam', '🌍 Morsmål — arabisk eller urdu'],
+      p3: 'Vi har utviklet et nivåbasert pensum og et tydelig skolesystem for å sikre god faglig progresjon og et trygt læringsmiljø. Vårt mål er å gi barna kunnskap, styrke deres muslimske identitet og skape kjærlighet til Allah Ta\u2019ala, Profeten \u25ce og troen.',
+      highlight: 'Påmeldingen til skoleåret 2026/2027 er nå åpnet.',
+      p4: 'Vi ber alle foresatte, også dere som allerede har hatt barn hos oss, om å fylle ut det nye påmeldingsskjemaet. Dette hjelper oss med å planlegge klasser, nivåer og timeplan før skolestart.',
+      p5: 'Endelig skoleplass bekreftes når klassene er satt sammen.',
+      ctaBtn: '📝 Meld på nå', backLink: '← Tilbake til forsiden'
+    },
+    ar: {
+      pageTitle: 'معلومات لأولياء الأمور — مدرسة مدينة', brand: 'مدرسة مدينة',
+      headBadge: '📢 إعلان', headTitle: 'معلومات لأولياء الأمور — مدرسة مدينة',
+      greeting: 'السلام عليكم ورحمة الله وبركاته،',
+      p1: 'يسعدنا أن نخبركم أن مدرسة مدينة لعطلة نهاية الأسبوع مرّت بتطوير كبير، وتنطلق ببرنامج دراسي جديد أكثر تنظيمًا.',
+      p2: 'المدرسة الجديدة مبنية على ثلاث مواد أساسية:',
+      subjects: ['📖 القرآن الكريم', '🕌 الإسلام', '🌍 اللغة الأم — العربية أو الأردية'],
+      p3: 'قمنا بتطوير منهج مبني على المستويات ونظام مدرسي واضح لضمان تقدم دراسي جيد وبيئة تعليمية آمنة. هدفنا أن نمنح الأطفال المعرفة، ونعزز هويتهم الإسلامية، ونزرع فيهم محبة الله تعالى والنبي ﷺ والإيمان.',
+      highlight: 'التسجيل للعام الدراسي 2026/2027 مفتوح الآن.',
+      p4: 'نطلب من جميع أولياء الأمور، وحتى من كان طفلكم عندنا من قبل، تعبئة استمارة التسجيل الجديدة. هذا يساعدنا في التخطيط للفصول والمستويات والجدول الدراسي قبل بداية العام.',
+      p5: 'يتم تأكيد مكان الطالب النهائي بعد تكوين الفصول.',
+      ctaBtn: '📝 سجّل الآن', backLink: '→ العودة للصفحة الرئيسية'
+    },
+    ur: {
+      pageTitle: 'والدین کے لیے معلومات — مدینہ اسکول', brand: 'مدینہ اسکول',
+      headBadge: '📢 اعلان', headTitle: 'والدین کے لیے معلومات — مدینہ اسکول',
+      greeting: 'السلام علیکم ورحمۃ اللہ وبرکاتہ،',
+      p1: 'ہمیں یہ بتاتے ہوئے خوشی ہو رہی ہے کہ مدینہ ویک اینڈ اسکول میں بڑی تبدیلی آئی ہے، اور اب ایک نیا اور زیادہ منظم تعلیمی پروگرام شروع ہو رہا ہے۔',
+      p2: 'نیا اسکول تین بنیادی مضامین پر مبنی ہے:',
+      subjects: ['📖 قرآن کریم', '🕌 اسلام', '🌍 مادری زبان — عربی یا اردو'],
+      p3: 'ہم نے ایک سطح پر مبنی نصاب اور واضح اسکول نظام تیار کیا ہے تاکہ اچھی تعلیمی ترقی اور محفوظ تعلیمی ماحول کو یقینی بنایا جا سکے۔ ہمارا مقصد بچوں کو علم دینا، ان کی اسلامی شناخت کو مضبوط کرنا، اور اللہ تعالیٰ، نبی کریم ﷺ اور ایمان سے محبت پیدا کرنا ہے۔',
+      highlight: 'تعلیمی سال 2026/2027 کے لیے داخلہ اب کھلا ہے۔',
+      p4: 'ہم تمام والدین سے، بشمول ان کے جن کا بچہ پہلے سے ہمارے پاس رہا ہے، درخواست کرتے ہیں کہ نیا داخلہ فارم پُر کریں۔ اس سے ہمیں اسکول شروع ہونے سے پہلے جماعتوں، سطحوں اور ٹائم ٹیبل کی منصوبہ بندی میں مدد ملتی ہے۔',
+      p5: 'حتمی اسکول کی جگہ جماعتیں تشکیل پانے کے بعد تصدیق کی جاتی ہے۔',
+      ctaBtn: '📝 ابھی داخلہ لیں', backLink: '→ ہوم پیج پر واپس جائیں'
+    }
+  };
+
+  function switchLang(lang){
+    const t = TEXT[lang];
+    const isRtl = (lang === 'ar' || lang === 'ur');
+    document.getElementById('htmlRoot').setAttribute('lang', lang);
+    document.getElementById('htmlRoot').setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+    document.getElementById('btnLangNo').classList.toggle('active', lang === 'no');
+    document.getElementById('btnLangAr').classList.toggle('active', lang === 'ar');
+    document.getElementById('btnLangUr').classList.toggle('active', lang === 'ur');
+
+    document.getElementById('pageTitle').textContent = t.pageTitle;
+    document.getElementById('brandText').textContent = t.brand;
+    document.getElementById('headBadge').textContent = t.headBadge;
+    document.getElementById('headTitle').textContent = t.headTitle;
+    document.getElementById('greeting').textContent = t.greeting;
+    document.getElementById('p1').textContent = t.p1;
+    document.getElementById('p2').textContent = t.p2;
+    document.getElementById('subjectList').innerHTML = t.subjects.map(s => `<li>${s}</li>`).join('');
+    document.getElementById('p3').textContent = t.p3;
+    document.getElementById('highlight').textContent = t.highlight;
+    document.getElementById('p4').textContent = t.p4;
+    document.getElementById('p5').textContent = t.p5;
+    document.getElementById('ctaBtn').textContent = t.ctaBtn;
+    document.getElementById('backLink').textContent = t.backLink;
+
+    localStorage.setItem('madinaHomeLang', lang);
+  }
+
+  (function(){
+    const saved = localStorage.getItem('madinaHomeLang');
+    switchLang((saved === 'ar' || saved === 'ur') ? saved : 'no');
+  })();
+</script>
+
+</body>
+</html>
