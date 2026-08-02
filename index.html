@@ -133,7 +133,18 @@
   .tuition-box .btn-primary{background:var(--coral); color:#fff;}
 
   /* Key dates timeline */
-  .dates-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px;}
+  .calendar-link-card{
+    display:inline-flex; align-items:center; gap:16px; background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:24px 30px; box-shadow:var(--shadow); text-decoration:none; color:inherit; max-width:480px; transition:transform .2s, border-color .2s;
+  }
+  .calendar-link-card:hover{transform:translateY(-3px); border-color:var(--coral);}
+  .calendar-link-card .ic{font-size:34px; flex:0 0 auto;}
+  .calendar-link-card .txt{text-align:start;}
+  .calendar-link-card .txt h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; margin:0 0 4px; color:var(--emerald-d);}
+  html[dir="rtl"] .calendar-link-card .txt h3{font-family:'Tajawal',sans-serif; font-size:16px;}
+  .calendar-link-card .txt p{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin:0;}
+  html[dir="rtl"] .calendar-link-card .txt p{font-family:'Tajawal',sans-serif;}
+  .calendar-link-card .arrow{font-size:20px; color:var(--coral); flex:0 0 auto;}
   .date-card{border-radius:12px; padding:20px 18px; box-shadow:var(--shadow); text-align:start;}
   .date-card.tone-1{background:#faf1e2;}
   .date-card.tone-2{background:#fce9e9;}
@@ -271,7 +282,7 @@
       <h2 id="datesTitle"></h2>
       <p id="datesDesc"></p>
     </div>
-    <div class="dates-row" id="datesRow"></div>
+    <div class="dates-row" id="datesRow" style="display:block; text-align:center;"></div>
   </section>
 
   <section id="program">
@@ -358,6 +369,7 @@
       tuitionBtn: '📝 Meld på nå',
 
       datesEyebrow: 'Skoleår', datesTitle: 'Viktige datoer', datesDesc: 'Nøkkeldatoer for høstsemesteret 2026.',
+      calendarLink: { h:'Se hele skolekalenderen', p:'Alle skoledager og fridager, lørdag for lørdag' },
       dates: [
         { h:'5. september 2026', p:'Skolestart — oppstart høstsemesteret.' },
         { h:'3. oktober 2026', p:'Fri — høstferie.' },
@@ -428,6 +440,7 @@
       tuitionBtn: '📝 سجّل الآن',
 
       datesEyebrow: 'العام الدراسي', datesTitle: 'المواعيد المهمة', datesDesc: 'المواعيد الرئيسية للفصل الأول 2026.',
+      calendarLink: { h:'شاهد التقويم الدراسي كاملًا', p:'كل أيام الدراسة والإجازات، سبت بسبت' },
       dates: [
         { h:'5 سبتمبر 2026', p:'بداية الدراسة — انطلاق الفصل الأول.' },
         { h:'3 أكتوبر 2026', p:'إجازة — عطلة الخريف.' },
@@ -498,6 +511,7 @@
       tuitionBtn: '📝 ابھی داخلہ لیں',
 
       datesEyebrow: 'تعلیمی سال', datesTitle: 'اہم تاریخیں', datesDesc: 'خزاں کے سمسٹر 2026 کی اہم تاریخیں۔',
+      calendarLink: { h:'مکمل اسکول کیلنڈر دیکھیں', p:'ہر ہفتہ کے حساب سے تمام تعلیمی دن اور تعطیلات' },
       dates: [
         { h:'5 ستمبر 2026', p:'تعلیم کا آغاز — خزاں سمسٹر کی شروعات۔' },
         { h:'3 اکتوبر 2026', p:'چھٹی — خزاں کی تعطیلات۔' },
@@ -550,7 +564,9 @@
     return list.map(c => `<div class="card"><div class="ic">${c.ic}</div><h3>${c.h}</h3><p>${c.p}</p>${c.video ? `<p style="margin-top:10px;"><a href="${MUTAMMIM_VIDEO_URL}" target="_blank" rel="noopener" style="color:var(--emerald-d); text-decoration:none; font-weight:700;">${c.video}</a></p>` : ''}</div>`).join('');
   }
   function stepsHtml(list){ return list.map((s,i) => `<div class="step-card"><div class="step-num">${i+1}</div><h3>${s.h}</h3><p>${s.p}</p></div>`).join(''); }
-  function datesHtml(list){ return list.map((d,i) => `<div class="date-card tone-${(i%3)+1}"><span class="when">${d.h}</span><h3>${d.h}</h3><p>${d.p}</p></div>`).join(''); }
+  function calendarLinkHtml(d){
+    return `<a class="calendar-link-card" href="timeplan.html"><span class="ic">📅</span><span class="txt"><h3>${d.h}</h3><p>${d.p}</p></span><span class="arrow">${document.getElementById('htmlRoot').getAttribute('dir')==='rtl' ? '←' : '→'}</span></a>`;
+  }
   function mvpHtml(list){ return list.map(m => `<div class="mvp-card"><div class="eyebrow">${m.eyebrow}</div><h3>${m.h}</h3><p>${m.p}</p></div>`).join(''); }
   function teamHtml(list){
     return list.map(t => {
@@ -601,7 +617,7 @@
     document.getElementById('datesEyebrow').textContent = t.datesEyebrow;
     document.getElementById('datesTitle').textContent = t.datesTitle;
     document.getElementById('datesDesc').textContent = t.datesDesc;
-    document.getElementById('datesRow').innerHTML = datesHtml(t.dates);
+    document.getElementById('datesRow').innerHTML = calendarLinkHtml(t.calendarLink);
 
     document.getElementById('programEyebrow').textContent = t.programEyebrow;
     document.getElementById('programTitle').textContent = t.programTitle;
