@@ -360,6 +360,7 @@
   .status-pill.ny{background:rgba(183,146,74,0.18); color:var(--gold);}
   .status-pill.venteliste{background:rgba(90,104,96,0.14); color:#5a6860;}
   .status-pill.godkjent{background:rgba(46,107,83,0.14); color:var(--emerald);}
+  .reg-filter-btn.active{background:var(--emerald); color:#fff; border-color:var(--emerald);}
   .status-pill.avslatt{background:rgba(168,60,60,0.12); color:var(--red);}
 
   .reg-actions{display:flex; gap:6px; flex-wrap:wrap;}
@@ -1132,6 +1133,13 @@
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormVisits">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Besøkte lenken</div></div>
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormStarted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Begynte å fylle ut</div></div>
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormCompleted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Fullførte søknaden</div></div>
+    </div>
+    <div class="toolbar" id="regStatusFilterBar" style="gap:8px; margin-bottom:10px;">
+      <button class="btn btn-ghost reg-filter-btn active" data-status="Ny" onclick="setRegistrationsFilter('Ny')">🆕 Nye</button>
+      <button class="btn btn-ghost reg-filter-btn" data-status="Venteliste" onclick="setRegistrationsFilter('Venteliste')">⏳ Venteliste</button>
+      <button class="btn btn-ghost reg-filter-btn" data-status="Godkjent" onclick="setRegistrationsFilter('Godkjent')">✅ Godkjente</button>
+      <button class="btn btn-ghost reg-filter-btn" data-status="Avslått" onclick="setRegistrationsFilter('Avslått')">🚫 Avslåtte</button>
+      <button class="btn btn-ghost reg-filter-btn" data-status="Alle" onclick="setRegistrationsFilter('Alle')">Alle</button>
     </div>
     <div class="toolbar">
       <input class="search" id="searchRegistrations" placeholder="Søk etter elevnavn, foresatt eller program...">
@@ -2801,6 +2809,12 @@
   let broadcastThreadsCache = [];
   let broadcastMessagesCache = [];
   let editingId = null;
+  let registrationsStatusFilter = 'Ny';
+  window.setRegistrationsFilter = function(status){
+    registrationsStatusFilter = status;
+    document.querySelectorAll('.reg-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.status === status));
+    render('registrations');
+  };
   let editingType = null;
   const readyCollections = new Set();
 
@@ -2873,6 +2887,9 @@
     };
     if(query){
       data = data.filter(row => schema.cols.some(c => colDisplay(row, c).toLowerCase().includes(query)));
+    }
+    if(type === 'registrations' && registrationsStatusFilter !== 'Alle'){
+      data = data.filter(row => (row.status || 'Ny') === registrationsStatusFilter);
     }
     renderRecordCards(type, data);
     const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
@@ -3496,10 +3513,13 @@
       }
       let actionsHtml;
       if(type === 'registrations'){
+        const isPending = (row.status || 'Ny') === 'Ny';
         actionsHtml = `<div class="record-card-actions">
+          ${isPending ? `
           <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
           <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
           <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
+          ` : `<div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; padding:6px 2px; flex-basis:100%;">Allerede behandlet (${escapeHtml(row.status)}). Bruk «Se alt» for å endre status manuelt om nødvendig.</div>`}
           <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
           <button class="btn-edit" onclick="sendVippsPaymentLink('${row.id}')">📤 Send Vipps-lenke (manuell)</button>
           <button class="btn-edit" onclick="sendRealVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>
@@ -4962,6 +4982,10 @@
   window.approveRegistration = async function(id){
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
+    if((reg.status || 'Ny') !== 'Ny'){
+      showToast('Denne søknaden er allerede behandlet (' + reg.status + '). Bruk «Se alt» for å endre status manuelt om nødvendig.');
+      return;
+    }
     const ok = confirm(`Godkjenne søknaden for ${reg.elev_navn || 'denne eleven'}?\n\nDette oppretter elev og foresatt i Administrativ, og kobler dem sammen.`);
     if(!ok) return;
 
