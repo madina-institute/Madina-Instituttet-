@@ -2545,11 +2545,15 @@
 </script>
 <style>
   #lastDeployBadge{
-    position:fixed; bottom:8px; inset-inline-end:10px; z-index:5000;
+    /* iOS Safari's bottom toolbar overlaps position:fixed elements sitting
+       right at the true bottom edge of the viewport, so this is lifted well
+       clear of it (and of the home-indicator safe area on notched iPhones)
+       instead of sitting flush at bottom:8px. */
+    position:fixed; bottom:calc(64px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px; z-index:5000;
     font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
-    background:rgba(255,255,255,0.88); backdrop-filter:blur(3px);
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(3px);
     padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
-    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.06);
+    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
   }
   @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
 </style>
