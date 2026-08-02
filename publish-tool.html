@@ -459,5 +459,41 @@
 
   init();
 </script>
+<style>
+  #lastDeployBadge{
+    position:fixed; bottom:8px; inset-inline-end:10px; z-index:5000;
+    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
+    background:rgba(255,255,255,0.88); backdrop-filter:blur(3px);
+    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
+    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  }
+  @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
+</style>
+<div id="lastDeployBadge">Sjekker siste publisering…</div>
+<script>
+  // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet (hentet
+  // direkte fra GitHub Pages sin build-status), ikke bare siste push — en
+  // push som feiler å bygge skal ikke vises som "publisert". Leser kun
+  // offentlig, ikke-sensitiv informasjon (ingen token nødvendig).
+  (function(){
+    var el = document.getElementById('lastDeployBadge');
+    if(!el) return;
+    var GH_OWNER = 'madina-institute';
+    var GH_REPO = 'Madina-Instituttet-';
+    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/pages/builds?per_page=10')
+      .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(function(builds){
+        var lastGood = Array.isArray(builds) ? builds.find(function(b){ return b.status === 'built'; }) : null;
+        if(!lastGood){ el.textContent = 'Siste vellykkede publisering: ukjent'; return; }
+        var d = new Date(lastGood.updated_at || lastGood.created_at);
+        var datoStr = d.toLocaleDateString('no-NO') + ' kl. ' + d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+        el.textContent = '✓ Siste publisering: ' + datoStr;
+      })
+      .catch(function(err){
+        console.error('Kunne ikke hente siste publisering:', err);
+        el.style.display = 'none';
+      });
+  })();
+</script>
 </body>
 </html>
