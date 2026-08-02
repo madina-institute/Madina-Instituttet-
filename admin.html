@@ -2595,11 +2595,11 @@
   ];
 
   // Suggested payment amounts (kr) — shown as a hint, editable by admin.
-  // Integrert program: 3500 kr dekker BEGGE terminene (helåret) — bokutgifter
+  // Begge programmer prises nå likt: ett flatt beløp som tilsvarer én
+  // termin (samme modell som Madinabarn alltid har brukt) — bokutgifter
   // kommer i tillegg og faktureres/noteres separat, ikke inkludert her.
-  // Madinabarn: 1500 kr per termin.
   const PROGRAM_PRICES = {
-    'Madina Islamske Skole — Integrert program (Lørdag)': '3500',
+    'Madina Islamske Skole — Integrert program (Lørdag)': '2750',
     'Madinabarn (Søndag)': '1500'
   };
 
@@ -2622,11 +2622,11 @@
       {navn:'Omar Said', telefon:'+47 933 44 556', epost:'omar.said@eksempel.no'}
     ],
     students: [
-      {navn:'Yusuf Hassan Ali', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'3500', betalingsdato:'2026-08-15'},
-      {navn:'Amina Hassan Ali', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'3500', betalingsdato:'2026-08-15'},
-      {navn:'Ibrahim Ahmed', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Urdu', klasse:'Klasse B', foresatt:'Layla Ahmed', telefon:'', betalt:'Nei', belop:'3500', betalingsdato:''},
+      {navn:'Yusuf Hassan Ali', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'2750', betalingsdato:'2026-08-15'},
+      {navn:'Amina Hassan Ali', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Hassan Ali', telefon:'', betalt:'Ja', belop:'2750', betalingsdato:'2026-08-15'},
+      {navn:'Ibrahim Ahmed', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Urdu', klasse:'Klasse B', foresatt:'Layla Ahmed', telefon:'', betalt:'Nei', belop:'2750', betalingsdato:''},
       {navn:'Zainab Ahmed', program:'Madinabarn (Søndag)', klasse:'Madinabarn', foresatt:'Layla Ahmed', telefon:'', betalt:'Ja', belop:'1500', betalingsdato:'2026-08-10'},
-      {navn:'Hamza Said', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Omar Said', telefon:'', betalt:'Nei', belop:'3500', betalingsdato:''}
+      {navn:'Hamza Said', program:'Madina Islamske Skole — Integrert program (Lørdag)', sprakvalg:'Arabisk', klasse:'Klasse A', foresatt:'Omar Said', telefon:'', betalt:'Nei', belop:'2750', betalingsdato:''}
     ],
     attendance: [
       {elev:'Yusuf Hassan Ali', klasse:'Klasse A', status:'Til stede'},
@@ -4921,14 +4921,16 @@
     URL.revokeObjectURL(url);
   };
 
+  // Søskenrabatt: 1. barn = full pris, 2. barn = 20% rabatt, 3. barn (og
+  // alle senere barn) = 30% rabatt.
   function computeSoskenPrice(program, guardianId, excludeId){
     const basePrice = parseFloat(PROGRAM_PRICES[program] || 0) || 0;
     if(!guardianId) return { price: basePrice, pos: 1 };
     const siblingCount = cache.students.filter(s => s.foresatt === guardianId && s.id !== excludeId).length;
     const pos = siblingCount + 1;
     let price = basePrice;
-    if(pos === 2) price = Math.round(basePrice * 0.7);
-    else if(pos >= 3) price = Math.round(basePrice * 0.5);
+    if(pos === 2) price = Math.round(basePrice * 0.8);
+    else if(pos >= 3) price = Math.round(basePrice * 0.7);
     return { price, pos };
   }
 
