@@ -825,6 +825,7 @@
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="classes" data-side="admin">Klasser</div>
+  <div class="tab" data-tab="cashier" data-side="admin">💰 Kasserer</div>
   <div class="tab" data-tab="hours" data-side="admin">Timeplan</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
@@ -1295,6 +1296,106 @@
       <button class="btn btn-primary" onclick="openModal('classes')">+ Ny klasse</button>
     </div>
     <div class="records-hidden card-grid" id="tableClasses"></div>
+  </div>
+
+  <!-- CASHIER (Kasserer) -->
+  <div class="panel" id="panel-cashier">
+    <div class="report-card">
+      <h3>💰 Kasserer — betalingsoversikt per klasse</h3>
+      <div class="sub">Velg en klasse for å se alle elevene samlet: skyldig, betalt, restbeløp og full betalingshistorikk</div>
+      <div class="field-row-2">
+        <div class="field">
+          <label>Klasse</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn btn-ghost" type="button" onclick="cashierStepClass(-1)" title="Forrige klasse">←</button>
+            <select id="cashierClassSelect" style="flex:1;" onchange="onCashierClassChange()">
+              <option value="">— Velg klasse —</option>
+            </select>
+            <button class="btn btn-ghost" type="button" onclick="cashierStepClass(1)" title="Neste klasse">→</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Søk elev i klassen</label>
+          <input type="text" id="cashierSearch" placeholder="Søk etter elevnavn..." oninput="renderCashierPanel()">
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="cashierStats" style="margin-top:18px;">
+      <div class="stat-card"><div class="n" id="cashierStatCount">0</div><div class="l">Elever i klassen</div></div>
+      <div class="stat-card"><div class="n" id="cashierStatTotal">0 kr</div><div class="l">Totalt skyldig beløp</div></div>
+      <div class="stat-card"><div class="n" id="cashierStatPaid">0 kr</div><div class="l">Totalt betalt</div></div>
+      <div class="stat-card"><div class="n" id="cashierStatRemaining">0 kr</div><div class="l">Totalt restbeløp</div></div>
+    </div>
+
+    <div class="toolbar" style="margin-top:18px;">
+      <label style="display:flex; align-items:center; gap:6px; font-family:'Jost',sans-serif; font-size:13px; cursor:pointer; white-space:nowrap;">
+        <input type="checkbox" id="cashierSelectAll" onchange="toggleCashierSelectAll(this.checked)"> Velg alle
+      </label>
+      <span class="count-chip" id="cashierSelectedCount">0 valgt</span>
+      <button class="btn btn-ghost" onclick="sendCashierReportBulk()">📧 Send rapport til valgte</button>
+      <button class="btn btn-ghost" onclick="exportCashierCSV(true)">⬇️ Eksporter valgte (CSV)</button>
+      <button class="btn btn-ghost" onclick="exportCashierCSV(false)">⬇️ Eksporter hele klassen (CSV)</button>
+    </div>
+
+    <div style="overflow-x:auto; margin-top:10px;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:1%;"></th>
+            <th>Elev</th>
+            <th>Beløp</th>
+            <th>Betalt</th>
+            <th>Restbeløp</th>
+            <th>Siste betaling</th>
+            <th>Antall</th>
+            <th class="actions-col">Handlinger</th>
+          </tr>
+        </thead>
+        <tbody id="cashierTableBody">
+          <tr class="empty-row"><td colspan="8">Velg en klasse ovenfor for å se elevene.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Cashier: full payment history modal -->
+  <div class="overlay" id="cashierHistoryOverlay">
+    <div class="modal" style="max-width:560px;">
+      <h3 id="cashierHistoryTitle">Betalingshistorikk</h3>
+      <div id="cashierHistoryBody"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeCashierOverlay('cashierHistoryOverlay')">Lukk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cashier: register manual payment modal -->
+  <div class="overlay" id="cashierPayOverlay">
+    <div class="modal">
+      <h3>Registrer betaling</h3>
+      <div class="field">
+        <label>Elev</label>
+        <input type="text" id="cashierPayStudentName" disabled>
+      </div>
+      <div class="field">
+        <label>Beløp (kr)</label>
+        <input type="number" id="cashierPayAmount" min="1" step="1" placeholder="f.eks. 500">
+      </div>
+      <div class="field">
+        <label>Betalingsmåte</label>
+        <select id="cashierPayMethod">
+          <option value="Kontant">Kontant</option>
+          <option value="Bankoverføring">Bankoverføring</option>
+          <option value="Vipps (manuelt registrert)">Vipps (manuelt registrert)</option>
+          <option value="Annet">Annet</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeCashierOverlay('cashierPayOverlay')">Avbryt</button>
+        <button class="btn btn-primary" onclick="submitManualPayment()">Registrer betaling</button>
+      </div>
+    </div>
   </div>
 
   <!-- HOURS -->
@@ -2665,6 +2766,19 @@
     console.error('financeLog', err);
   });
 
+  // Per-payment history for each student (every single innbetaling — Vipps
+  // automatic or manually registered by an admin — with its own date/time),
+  // written by the Vipps webhook (studentPayments collection) and by the
+  // Kasserer panel's manual-payment button below. Not part of SCHEMAS/
+  // attachListener since it's a log, not an editable record type.
+  onSnapshot(collection(db, 'studentPayments'), (snap) => {
+    cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    renderCashierPanel();
+  }, (err) => {
+    console.error('studentPayments', err);
+  });
+
   function renderFinanceLog(){
     const el = document.getElementById('financeLogList');
     if(!el) return;
@@ -2794,7 +2908,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
@@ -2841,6 +2955,294 @@
     });
   }
 
+  // ===================================================================
+  // KASSERER — per-klasse betalingsoversikt (Elever-panelet forteller deg
+  // "hvem", dette panelet forteller deg "hvor mye, når, og hvordan" for en
+  // hel klasse om gangen: totalsummer, full betalingshistorikk per elev
+  // (dato/tid, metode, automatisk vs. manuelt og hvem som registrerte det),
+  // rapport til foresatte (e-post + Foreldreportal), krav om restbeløp,
+  // manuell betalingsregistrering, og eksport for valgte/hele klassen.
+  // ===================================================================
+  let cashierSelectedClass = '';
+  const cashierSelectedIds = new Set();
+
+  const cashierKr = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
+  function cashierFormatDatoTid(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    if(isNaN(d)) return iso;
+    return d.toLocaleDateString('no-NO') + ' kl. ' + d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function populateCashierClassSelect(){
+    const sel = document.getElementById('cashierClassSelect');
+    if(!sel) return;
+    const prevVal = sel.value || cashierSelectedClass;
+    const sorted = [...cache.classes].filter(c => c.navn).sort((a,b) => a.navn.localeCompare(b.navn));
+    sel.innerHTML = '<option value="">— Velg klasse —</option>' +
+      sorted.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
+    if(sorted.some(c => c.id === prevVal)) sel.value = prevVal;
+  }
+
+  window.onCashierClassChange = function(){
+    cashierSelectedClass = document.getElementById('cashierClassSelect').value;
+    cashierSelectedIds.clear();
+    renderCashierPanel();
+  };
+
+  window.cashierStepClass = function(dir){
+    const sel = document.getElementById('cashierClassSelect');
+    if(!sel) return;
+    const opts = Array.from(sel.options).filter(o => o.value);
+    if(opts.length === 0) return;
+    let idx = opts.findIndex(o => o.value === cashierSelectedClass);
+    idx = idx === -1 ? 0 : (idx + dir + opts.length) % opts.length;
+    sel.value = opts[idx].value;
+    onCashierClassChange();
+  };
+
+  function renderCashierPanel(){
+    const tbody = document.getElementById('cashierTableBody');
+    if(!tbody) return;
+    const countEl = document.getElementById('cashierStatCount');
+    const totalEl = document.getElementById('cashierStatTotal');
+    const paidEl = document.getElementById('cashierStatPaid');
+    const remEl = document.getElementById('cashierStatRemaining');
+    const selCountEl = document.getElementById('cashierSelectedCount');
+
+    if(!cashierSelectedClass){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Velg en klasse ovenfor for å se elevene.</td></tr>';
+      countEl.textContent = '0'; totalEl.textContent = '0 kr'; paidEl.textContent = '0 kr'; remEl.textContent = '0 kr';
+      selCountEl.textContent = '0 valgt';
+      return;
+    }
+
+    const q = (document.getElementById('cashierSearch')?.value || '').toLowerCase().trim();
+    let students = cache.students.filter(s => s.klasse === cashierSelectedClass);
+    if(q) students = students.filter(s => (s.navn||'').toLowerCase().includes(q));
+    students = students.sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
+
+    let totalBelop = 0, totalBetalt = 0;
+    const rowsHtml = students.map(s => {
+      const belop = cashierKr(s.belop);
+      const betalt = cashierKr(s.belopBetalt);
+      const rest = belop - betalt;
+      totalBelop += belop; totalBetalt += betalt;
+      const history = cache.studentPayments.filter(p => p.studentId === s.id); // already sorted newest-first
+      const last = history[0];
+      const lastHtml = last
+        ? `${cashierFormatDatoTid(last.dato)}<br><span class="tag-pill">${escapeHtml(last.kilde || '')}</span>`
+        : '<span style="color:#8a9a90;">Ingen ennå</span>';
+      const checked = cashierSelectedIds.has(s.id) ? 'checked' : '';
+      return `
+        <tr>
+          <td><input type="checkbox" class="cashier-row-check" data-id="${escapeHtml(s.id)}" ${checked} onchange="onCashierRowCheck('${s.id}', this.checked)"></td>
+          <td><strong>${escapeHtml(s.navn || '—')}</strong></td>
+          <td>${belop.toLocaleString('no-NO')} kr</td>
+          <td>${betalt.toLocaleString('no-NO')} kr</td>
+          <td style="color:${rest > 0 ? 'var(--red)' : 'var(--emerald)'}; font-weight:700;">${rest.toLocaleString('no-NO')} kr</td>
+          <td style="font-size:12.5px;">${lastHtml}</td>
+          <td>${history.length}</td>
+          <td class="actions-col">
+            <div style="display:flex; flex-direction:column; gap:5px; min-width:150px;">
+              <button class="btn-edit" onclick="showCashierHistory('${s.id}')">🕘 Full historikk</button>
+              <button class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
+              ${rest > 0 ? `<button class="btn-edit" style="background:#ff5b24; color:#fff; border-color:#ff5b24;" onclick="sendStudentVippsRequest('${s.id}')">⚡ Krev resten (Vipps)</button>` : ''}
+              <button class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    tbody.innerHTML = rowsHtml || '<tr class="empty-row"><td colspan="8">Ingen elever funnet i denne klassen.</td></tr>';
+
+    countEl.textContent = students.length;
+    totalEl.textContent = totalBelop.toLocaleString('no-NO') + ' kr';
+    paidEl.textContent = totalBetalt.toLocaleString('no-NO') + ' kr';
+    remEl.textContent = (totalBelop - totalBetalt).toLocaleString('no-NO') + ' kr';
+
+    // Drop selections that scrolled out of view (search filter or class change)
+    const visibleIds = new Set(students.map(s => s.id));
+    [...cashierSelectedIds].forEach(id => { if(!visibleIds.has(id)) cashierSelectedIds.delete(id); });
+    selCountEl.textContent = cashierSelectedIds.size + ' valgt';
+    const selectAllEl = document.getElementById('cashierSelectAll');
+    if(selectAllEl) selectAllEl.checked = students.length > 0 && students.every(s => cashierSelectedIds.has(s.id));
+  }
+
+  window.onCashierRowCheck = function(id, checked){
+    if(checked) cashierSelectedIds.add(id); else cashierSelectedIds.delete(id);
+    document.getElementById('cashierSelectedCount').textContent = cashierSelectedIds.size + ' valgt';
+    const boxes = document.querySelectorAll('#cashierTableBody .cashier-row-check');
+    const selectAllEl = document.getElementById('cashierSelectAll');
+    if(selectAllEl) selectAllEl.checked = boxes.length > 0 && cashierSelectedIds.size === boxes.length;
+  };
+
+  window.toggleCashierSelectAll = function(checked){
+    document.querySelectorAll('#cashierTableBody .cashier-row-check').forEach(cb => {
+      cb.checked = checked;
+      if(checked) cashierSelectedIds.add(cb.dataset.id); else cashierSelectedIds.delete(cb.dataset.id);
+    });
+    document.getElementById('cashierSelectedCount').textContent = cashierSelectedIds.size + ' valgt';
+  };
+
+  function openCashierOverlay(id){ document.getElementById(id).classList.add('open'); }
+  window.closeCashierOverlay = function(id){ document.getElementById(id).classList.remove('open'); };
+
+  window.showCashierHistory = function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return;
+    document.getElementById('cashierHistoryTitle').textContent = 'Betalingshistorikk — ' + (student.navn || '');
+    const history = cache.studentPayments.filter(p => p.studentId === studentId); // sorted newest-first
+    const body = document.getElementById('cashierHistoryBody');
+    if(history.length === 0){
+      body.innerHTML = '<p style="color:#8a9a90; font-family:\'Jost\',sans-serif; font-size:13.5px;">Ingen registrerte betalinger ennå.</p>';
+    } else {
+      body.innerHTML = '<table><thead><tr><th>Dato/tid</th><th>Beløp</th><th>Kilde</th></tr></thead><tbody>' +
+        history.map(p => `<tr>
+          <td>${cashierFormatDatoTid(p.dato)}</td>
+          <td>${cashierKr(p.belop).toLocaleString('no-NO')} kr</td>
+          <td>${escapeHtml(p.kilde || '—')}</td>
+        </tr>`).join('') + '</tbody></table>';
+    }
+    openCashierOverlay('cashierHistoryOverlay');
+  };
+
+  let cashierPayTargetId = null;
+  window.openCashierPayModal = function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return;
+    cashierPayTargetId = studentId;
+    document.getElementById('cashierPayStudentName').value = student.navn || '';
+    document.getElementById('cashierPayAmount').value = '';
+    document.getElementById('cashierPayMethod').value = 'Kontant';
+    openCashierOverlay('cashierPayOverlay');
+  };
+
+  window.submitManualPayment = async function(){
+    const id = cashierPayTargetId;
+    const student = cache.students.find(s => s.id === id);
+    if(!student){ showToast('Fant ikke eleven.'); return; }
+    const amount = parseFloat(document.getElementById('cashierPayAmount').value);
+    const method = document.getElementById('cashierPayMethod').value;
+    if(!amount || amount <= 0){ showToast('Skriv inn et gyldig beløp.'); return; }
+    try{
+      const currentPaid = cashierKr(student.belopBetalt);
+      const belopTotal = cashierKr(student.belop);
+      const newPaid = currentPaid + amount;
+      await updateDoc(doc(db, 'students', id), {
+        belopBetalt: String(newPaid),
+        betalt: newPaid >= belopTotal ? 'Ja' : 'Delvis',
+        sistEndretAv: currentUserEmail || 'ukjent',
+        sistEndretDato: new Date().toISOString().slice(0, 10)
+      });
+      await addDoc(collection(db, 'studentPayments'), {
+        studentId: id,
+        belop: amount,
+        dato: new Date().toISOString(),
+        kilde: 'Manuell (' + method + ') — registrert av ' + (currentUserEmail || 'ukjent')
+      });
+      await logFinanceChange(`Manuell betaling registrert: ${amount} kr (${method}) for ${student.navn || 'elev'}, av ${currentUserEmail || 'ukjent'}`);
+      showToast('✓ Betaling registrert.');
+      closeCashierOverlay('cashierPayOverlay');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  // Sends ONE guardian a full payment report both as an in-portal
+  // notification (a broadcastThread they'll see in Foreldreportalen, same
+  // mechanism as Meldingssenter) AND as an e-post — so it's guaranteed to
+  // reach them even if they don't check the portal.
+  async function sendCashierReportToStudent(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return false;
+    const guardian = cache.guardians.find(g => g.id === student.foresatt);
+    if(!guardian){ showToast('Fant ingen registrert foresatt for ' + (student.navn || 'eleven') + '.'); return false; }
+
+    const belop = cashierKr(student.belop), betalt = cashierKr(student.belopBetalt), rest = belop - betalt;
+    const history = cache.studentPayments.filter(p => p.studentId === studentId);
+
+    const lines = [
+      'Hei ' + (guardian.navn || '') + ',', '',
+      'Her er en oppdatert betalingsoversikt for ' + (student.navn || 'ditt barn') + ':', '',
+      'Totalt beløp: ' + belop.toLocaleString('no-NO') + ' kr',
+      'Betalt så langt: ' + betalt.toLocaleString('no-NO') + ' kr',
+      'Restbeløp: ' + rest.toLocaleString('no-NO') + ' kr', ''
+    ];
+    if(history.length > 0){
+      lines.push('Betalingshistorikk:');
+      history.forEach(p => lines.push('• ' + cashierFormatDatoTid(p.dato) + ' — ' + cashierKr(p.belop).toLocaleString('no-NO') + ' kr (' + (p.kilde || '') + ')'));
+      lines.push('');
+    }
+    lines.push('Med vennlig hilsen,\nMadina Skole');
+    const text = lines.join('\n');
+    const subject = 'Betalingsoversikt — ' + (student.navn || 'ditt barn');
+    const nowIso = new Date().toISOString();
+
+    const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
+      recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '' }],
+      title: subject, groupLabel: 'Betalingsrapport',
+      status: 'open', createdAt: nowIso, lastActivityAt: nowIso,
+      sentBy: currentUserEmail || 'ukjent'
+    });
+    await addDoc(collection(db, 'broadcastMessages'), {
+      threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
+      visibility: 'all', tekst: text, dato: nowIso
+    });
+    if(guardian.epost){
+      await addDoc(collection(db, 'mail'), { to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+    }
+    return true;
+  }
+
+  window.sendCashierReport = async function(studentId){
+    showToast('Sender rapport...');
+    try{
+      const ok = await sendCashierReportToStudent(studentId);
+      if(ok) showToast('✓ Rapport sendt (e-post + Foreldreportal).');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  window.sendCashierReportBulk = async function(){
+    if(cashierSelectedIds.size === 0){ showToast('Velg minst én elev først.'); return; }
+    showToast('Sender rapporter til ' + cashierSelectedIds.size + ' elev(er)...');
+    let sent = 0;
+    for(const id of cashierSelectedIds){
+      try{ if(await sendCashierReportToStudent(id)) sent++; }
+      catch(err){ console.error(err); }
+    }
+    showToast('✓ Rapport sendt til ' + sent + ' elev(er).');
+  };
+
+  window.exportCashierCSV = function(selectedOnly){
+    if(!cashierSelectedClass){ showToast('Velg en klasse først.'); return; }
+    let students = cache.students.filter(s => s.klasse === cashierSelectedClass);
+    if(selectedOnly) students = students.filter(s => cashierSelectedIds.has(s.id));
+    if(students.length === 0){ showToast('Ingen elever å eksportere.'); return; }
+    const className = resolveDynName('classes', cashierSelectedClass) || 'klasse';
+    const headers = ['Elevnavn','Klasse','Beløp totalt','Betalt','Restbeløp','Antall betalinger','Siste betaling (dato/tid)','Siste betaling (kilde)'];
+    const rows = students.map(s => {
+      const history = cache.studentPayments.filter(p => p.studentId === s.id);
+      const last = history[0];
+      const belop = cashierKr(s.belop), betalt = cashierKr(s.belopBetalt);
+      return [
+        s.navn || '', className, belop, betalt, belop - betalt, history.length,
+        last ? cashierFormatDatoTid(last.dato) : '', last ? (last.kilde || '') : ''
+      ].map(v => '"' + String(v).replace(/"/g,'""') + '"');
+    });
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'madina_betalinger_' + className.replace(/[^\p{L}\p{N}]+/gu,'_') + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // Resolves a stable record id (guardian, teacher, class, ...) to its current
@@ -2879,7 +3281,8 @@
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
-    if(type === 'classes') populateAttendanceClassFilter();
+    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); }
+    if(type === 'students') renderCashierPanel();
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teachers') renderLedelseView();
