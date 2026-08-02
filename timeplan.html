@@ -49,9 +49,9 @@
 
   .cal-box{
     max-width:640px; margin:22px auto 0; background:#fff; border:1px solid var(--line); border-radius:14px;
-    overflow:hidden; box-shadow:0 14px 34px -14px rgba(11,61,46,0.2);
+    overflow-x:auto; -webkit-overflow-scrolling:touch; box-shadow:0 14px 34px -14px rgba(11,61,46,0.2);
   }
-  .cal-box table{width:100%; min-width:0; border-collapse:collapse;}
+  .cal-box table{width:100%; min-width:520px; border-collapse:collapse;}
   .cal-box thead th{
     background:var(--emerald-deep); color:#fdf6e3; font-family:'Jost',sans-serif; font-weight:700; font-size:13px;
     padding:11px 10px; text-align:start;
@@ -240,30 +240,49 @@
     <div class="cal-box">
       <table>
         <thead>
-          <tr><th>#</th><th>Dato</th><th>Status</th></tr>
+          <tr><th>#</th><th>Dato</th><th>Program</th><th>Status</th></tr>
         </thead>
         <tbody>
-          <tr class="row-milestone"><td class="num-cell">1</td><td class="date-cell">Lørdag 5. september 2026</td><td><span class="status-pill status-study">📖 Skoledag — Skolestart</span></td></tr>
-          <tr><td class="num-cell">2</td><td class="date-cell">Lørdag 12. september 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">3</td><td class="date-cell">Lørdag 19. september 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">4</td><td class="date-cell">Lørdag 26. september 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr class="row-holiday"><td class="num-cell">5</td><td class="date-cell">Lørdag 3. oktober 2026</td><td><span class="status-pill status-holiday">🍂 Fri — Høstferie</span></td></tr>
-          <tr><td class="num-cell">6</td><td class="date-cell">Lørdag 10. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">7</td><td class="date-cell">Lørdag 17. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">8</td><td class="date-cell">Lørdag 24. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">9</td><td class="date-cell">Lørdag 31. oktober 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">10</td><td class="date-cell">Lørdag 7. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">11</td><td class="date-cell">Lørdag 14. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">12</td><td class="date-cell">Lørdag 21. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">13</td><td class="date-cell">Lørdag 28. november 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">14</td><td class="date-cell">Lørdag 5. desember 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr><td class="num-cell">15</td><td class="date-cell">Lørdag 12. desember 2026</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
-          <tr class="row-milestone"><td class="num-cell">16</td><td class="date-cell">Lørdag 19. desember 2026</td><td><span class="status-pill status-study">✅ Skoledag — Siste dag høstsemester</span></td></tr>
-          <tr class="row-holiday"><td class="num-cell">17</td><td class="date-cell">Lørdag 26. desember 2026</td><td><span class="status-pill status-holiday">🎄 Fri — Juleferie</span></td></tr>
-          <tr class="row-holiday"><td class="num-cell">18</td><td class="date-cell">Lørdag 2. januar 2027</td><td><span class="status-pill status-holiday">🎉 Fri — Nyttårsferie</span></td></tr>
+          <tr class="row-milestone"><td class="num-cell">1</td><td class="date-cell">Lørdag 5. sep 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag — Skolestart</span></td></tr>
+          <tr><td class="num-cell">2</td><td class="date-cell">Søndag 6. sep 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">3</td><td class="date-cell">Lørdag 12. sep 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">4</td><td class="date-cell">Søndag 13. sep 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">5</td><td class="date-cell">Lørdag 19. sep 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">6</td><td class="date-cell">Søndag 20. sep 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">7</td><td class="date-cell">Lørdag 26. sep 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">8</td><td class="date-cell">Søndag 27. sep 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">9</td><td class="date-cell">Lørdag 3. okt 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-holiday">🍂 Fri — Høstferie</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">10</td><td class="date-cell">Søndag 4. okt 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-holiday">🍂 Fri — Høstferie</span></td></tr>
+          <tr><td class="num-cell">11</td><td class="date-cell">Lørdag 10. okt 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">12</td><td class="date-cell">Søndag 11. okt 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">13</td><td class="date-cell">Lørdag 17. okt 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">14</td><td class="date-cell">Søndag 18. okt 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">15</td><td class="date-cell">Lørdag 24. okt 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">16</td><td class="date-cell">Søndag 25. okt 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">17</td><td class="date-cell">Lørdag 31. okt 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">18</td><td class="date-cell">Søndag 1. nov 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">19</td><td class="date-cell">Lørdag 7. nov 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">20</td><td class="date-cell">Søndag 8. nov 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">21</td><td class="date-cell">Lørdag 14. nov 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">22</td><td class="date-cell">Søndag 15. nov 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">23</td><td class="date-cell">Lørdag 21. nov 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">24</td><td class="date-cell">Søndag 22. nov 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">25</td><td class="date-cell">Lørdag 28. nov 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">26</td><td class="date-cell">Søndag 29. nov 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">27</td><td class="date-cell">Lørdag 5. des 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">28</td><td class="date-cell">Søndag 6. des 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">29</td><td class="date-cell">Lørdag 12. des 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr><td class="num-cell">30</td><td class="date-cell">Søndag 13. des 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">📖 Skoledag</span></td></tr>
+          <tr class="row-milestone"><td class="num-cell">31</td><td class="date-cell">Lørdag 19. des 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-study">✅ Skoledag — Siste dag høst</span></td></tr>
+          <tr class="row-milestone"><td class="num-cell">32</td><td class="date-cell">Søndag 20. des 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-study">✅ Skoledag — Siste dag høst</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">33</td><td class="date-cell">Lørdag 26. des 2026</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-holiday">🎄 Fri — Juleferie</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">34</td><td class="date-cell">Søndag 27. des 2026</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-holiday">🎄 Fri — Juleferie</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">35</td><td class="date-cell">Lørdag 2. jan 2027</td><td>🕌 Madina Islamske Skole (6–13 år)</td><td><span class="status-pill status-holiday">🎉 Fri — Nyttårsferie</span></td></tr>
+          <tr class="row-holiday"><td class="num-cell">36</td><td class="date-cell">Søndag 3. jan 2027</td><td>🧒 Madinabarn (09:30–11:00)</td><td><span class="status-pill status-holiday">🎉 Fri — Nyttårsferie</span></td></tr>
         </tbody>
       </table>
     </div>
+    <div class="hint">Madinabarns fridager er antatt å følge samme kalender som hovedskolen — bekreftes senere.</div>
     <div class="hint">Vårsemesteret fortsetter fra januar til slutten av mai 2027 — nøyaktige datoer publiseres senere.</div>
   </header>
 
