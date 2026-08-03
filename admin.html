@@ -3558,8 +3558,12 @@
   // avbryte et utestående (ikke betalt) Vipps-krav, sette et nytt
   // rabattert totalbeløp, og sende faktura til foresatte.
   // ===================================================================
-  const CANCEL_VIPPS_URL = 'https://cancelvippspayment-qgyf6x4aba-uc.a.run.app';
-  const REFUND_VIPPS_URL = 'https://refundvippspayment-qgyf6x4aba-uc.a.run.app';
+  // Faktiske URL-er fra "firebase deploy --only functions" (bekreftet
+  // 2026-08-04) — cancelVippsPayment/refundVippsPayment fikk standard
+  // cloudfunctions.net-format siden de er helt nye funksjoner, ulikt de
+  // eldre *.a.run.app-lenkene til createVippsPayment/vippsWebhook.
+  const CANCEL_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/cancelVippsPayment';
+  const REFUND_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/refundVippsPayment';
 
   // Midlertidige/plassholder bankkontoopplysninger for fakturaer — BYTT UT
   // med skolens reelle kontonummer/KID-oppsett før dette tas i reell bruk.
