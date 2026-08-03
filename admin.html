@@ -821,6 +821,7 @@
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
     <div class="tab" data-tab="financeLog" data-side="eier">Betalingslogg</div>
     <div class="tab" data-tab="meldingssenter" data-side="eier">Meldingssenter</div>
+  <div class="tab" data-tab="cashierLedelse" data-side="eier" id="tabCashierLedelse" style="display:none;">💰 Kasserer (Ledelse)</div>
   <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
@@ -1405,6 +1406,74 @@
     </div>
   </div>
 
+  <!-- CASHIER LEDELSE (kun synlig/tilgjengelig for Eier) -->
+  <div class="panel" id="panel-cashierLedelse">
+    <div class="report-card" style="border:2px solid var(--gold);">
+      <h3>💰 Kasserer (Ledelse) — utvidet betalingsstyring</h3>
+      <div class="sub">Kun for Eier. Samme oversikt som vanlig Kasserer, i tillegg til refusjon, kansellering av utestående krav, rabatt og faktura.</div>
+      <div class="field-row-2">
+        <div class="field">
+          <label>Klasse</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn btn-ghost" type="button" onclick="cashierLedelseStepClass(-1)" title="Forrige klasse">←</button>
+            <select id="cashierLedelseClassSelect" style="flex:1;" onchange="onCashierLedelseClassChange()">
+              <option value="">— Velg klasse —</option>
+            </select>
+            <button class="btn btn-ghost" type="button" onclick="cashierLedelseStepClass(1)" title="Neste klasse">→</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Søk elev i klassen</label>
+          <input type="text" id="cashierLedelseSearch" placeholder="Søk etter elevnavn..." oninput="renderCashierLedelsePanel()">
+        </div>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto; margin-top:14px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Elev</th>
+            <th>Beløp</th>
+            <th>Betalt</th>
+            <th>Restbeløp</th>
+            <th>Utestående Vipps-krav</th>
+            <th class="actions-col">Handlinger</th>
+          </tr>
+        </thead>
+        <tbody id="cashierLedelseTableBody">
+          <tr class="empty-row"><td colspan="6">Velg en klasse ovenfor for å se elevene.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ledelse: sett nytt (rabattert) totalbeløp -->
+  <div class="overlay" id="ledelseDiscountOverlay">
+    <div class="modal">
+      <h3>🏷️ Legg til rabatt</h3>
+      <div class="field"><label>Elev</label><input type="text" id="ledelseDiscountStudentName" disabled></div>
+      <div class="field"><label>Nytt totalbeløp (kr) — etter rabatt</label><input type="number" id="ledelseDiscountAmount" min="0" step="1"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeCashierOverlay('ledelseDiscountOverlay')">Avbryt</button>
+        <button class="btn btn-primary" onclick="submitLedelseDiscount()">Lagre rabatt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ledelse: refunder en betalt Vipps-innbetaling -->
+  <div class="overlay" id="ledelseRefundOverlay">
+    <div class="modal">
+      <h3>💸 Refunder Vipps-betaling</h3>
+      <div class="field"><label>Elev</label><input type="text" id="ledelseRefundStudentName" disabled></div>
+      <div class="field"><label>Beløp å refundere (kr)</label><input type="number" id="ledelseRefundAmount" min="1" step="1"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeCashierOverlay('ledelseRefundOverlay')">Avbryt</button>
+        <button class="btn btn-primary" onclick="submitLedelseRefund()">Refunder</button>
+      </div>
+    </div>
+  </div>
+
   <!-- HOURS -->
   <div class="panel" id="panel-hours">
     <div class="toolbar">
@@ -1742,6 +1811,11 @@
     return await getDownloadURL(fRef);
   }
   let currentUserEmail = null;
+  // Roller (fra adminUsers) for den innloggede brukeren — brukes til å
+  // gate "kun Eier"-handlinger (sletting av ansatte, Kasserer for
+  // Ledelse/Eier) uten å måtte spørre databasen på nytt hver gang.
+  let currentUserRoles = [];
+  function isCurrentUserEier(){ return currentUserRoles.includes('Eier'); }
 
   const LOGO_DATA_URI = "https://madina-institute.github.io/Madina-Instituttet-/logo.png";
 
@@ -1866,10 +1940,13 @@
       try{
         const q = query(collection(db, 'adminUsers'), where('epost', '==', user.email));
         const snap = await getDocs(q);
+        currentUserRoles = [];
         isAuthorizedAdmin = snap.docs.some(d => {
           const data = d.data();
           const roller = (data.roller || data.rolle || '').split(',').map(s => s.trim()).filter(Boolean);
-          return roller.length === 0 || roller.some(r => ADMIN_PANEL_ROLES.includes(r));
+          const grants = roller.length === 0 || roller.some(r => ADMIN_PANEL_ROLES.includes(r));
+          if(grants) currentUserRoles = roller;
+          return grants;
         });
       } catch(err){
         console.error('Kunne ikke bekrefte admin-tilgang:', err);
@@ -1904,6 +1981,8 @@
       document.getElementById('appRoot').style.display = 'block';
       const who = document.getElementById('loggedInAs');
       if(who) who.textContent = user.email;
+      const tabCashierLedelse = document.getElementById('tabCashierLedelse');
+      if(tabCashierLedelse) tabCashierLedelse.style.display = isCurrentUserEier() ? '' : 'none';
       resetInactivityTimer();
       // meetings/finances require request.auth != null in the Firestore
       // rules — attaching their listeners before login used to leave them
@@ -2782,8 +2861,20 @@
     cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     renderCashierPanel();
+    renderCashierLedelsePanel();
   }, (err) => {
     console.error('studentPayments', err);
+  });
+
+  // Utestående (ikke ennå betalte) Vipps-krav — kun brukt av Kasserer
+  // (Ledelse), for å vise/avbryte et krav før foresatte rekker å betale det.
+  onSnapshot(collection(db, 'pendingVippsPayments'), (snap) => {
+    cache.pendingVippsPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(p => p.status === 'pending')
+      .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+    renderCashierLedelsePanel();
+  }, (err) => {
+    console.error('pendingVippsPayments', err);
   });
 
   function renderFinanceLog(){
@@ -2915,7 +3006,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
@@ -3252,6 +3343,231 @@
 
   function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
+  // ===================================================================
+  // KASSERER (LEDELSE) — samme elevliste-tilnærming som vanlig Kasserer,
+  // men kun tilgjengelig for Eier (se isCurrentUserEier()/deleteEntry-
+  // gating og fanens display:none over). I tillegg til vanlig
+  // betalingsregistrering kan Eier her: refundere en Vipps-betaling,
+  // avbryte et utestående (ikke betalt) Vipps-krav, sette et nytt
+  // rabattert totalbeløp, og sende faktura til foresatte.
+  // ===================================================================
+  const CANCEL_VIPPS_URL = 'https://cancelvippspayment-qgyf6x4aba-uc.a.run.app';
+  const REFUND_VIPPS_URL = 'https://refundvippspayment-qgyf6x4aba-uc.a.run.app';
+
+  // Midlertidige/plassholder bankkontoopplysninger for fakturaer — BYTT UT
+  // med skolens reelle kontonummer/KID-oppsett før dette tas i reell bruk.
+  const INVOICE_BANK_PLACEHOLDER = {
+    kontonummer: '1234.56.78900 (MIDLERTIDIG — oppdateres)',
+    iban: 'NO00 0000 0000 000 (MIDLERTIDIG — oppdateres)',
+  };
+
+  let cashierLedelseSelectedClass = '';
+
+  function populateCashierLedelseClassSelect(){
+    const sel = document.getElementById('cashierLedelseClassSelect');
+    if(!sel) return;
+    const prevVal = sel.value || cashierLedelseSelectedClass;
+    const sorted = [...cache.classes].filter(c => c.navn).sort((a,b) => a.navn.localeCompare(b.navn));
+    sel.innerHTML = '<option value="">— Velg klasse —</option>' +
+      sorted.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
+    if(sorted.some(c => c.id === prevVal)) sel.value = prevVal;
+  }
+
+  window.onCashierLedelseClassChange = function(){
+    cashierLedelseSelectedClass = document.getElementById('cashierLedelseClassSelect').value;
+    renderCashierLedelsePanel();
+  };
+
+  window.cashierLedelseStepClass = function(dir){
+    const sel = document.getElementById('cashierLedelseClassSelect');
+    if(!sel) return;
+    const opts = Array.from(sel.options).filter(o => o.value);
+    if(opts.length === 0) return;
+    let idx = opts.findIndex(o => o.value === cashierLedelseSelectedClass);
+    idx = idx === -1 ? 0 : (idx + dir + opts.length) % opts.length;
+    sel.value = opts[idx].value;
+    onCashierLedelseClassChange();
+  };
+
+  function renderCashierLedelsePanel(){
+    const tbody = document.getElementById('cashierLedelseTableBody');
+    if(!tbody) return;
+    if(!cashierLedelseSelectedClass){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Velg en klasse ovenfor for å se elevene.</td></tr>';
+      return;
+    }
+    const q = (document.getElementById('cashierLedelseSearch')?.value || '').toLowerCase().trim();
+    let students = cache.students.filter(s => s.klasse === cashierLedelseSelectedClass);
+    if(q) students = students.filter(s => (s.navn||'').toLowerCase().includes(q));
+    students = students.sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
+
+    tbody.innerHTML = students.map(s => {
+      const belop = cashierKr(s.belop);
+      const betalt = cashierKr(s.belopBetalt);
+      const rest = belop - betalt;
+      const history = cache.studentPayments.filter(p => p.studentId === s.id);
+      const lastVippsPayment = history.find(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0);
+      const pending = cache.pendingVippsPayments.filter(p => p.studentId === s.id);
+
+      const pendingHtml = pending.length === 0
+        ? '<span style="color:#8a9a90; font-size:12.5px;">Ingen</span>'
+        : pending.map(p => `
+            <div style="font-size:12px; margin-bottom:4px;">
+              ${cashierKr(p.amountKr).toLocaleString('no-NO')} kr — ${cashierFormatDatoTid(p.createdAt)}
+              <button class="btn-edit" style="padding:2px 8px; font-size:11px;" onclick="cancelPendingVippsRequest('${p.id}','${escapeHtml(p.reference)}')">✖️ Avbryt</button>
+            </div>`).join('');
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(s.navn || '—')}</strong></td>
+          <td>${belop.toLocaleString('no-NO')} kr</td>
+          <td>${betalt.toLocaleString('no-NO')} kr</td>
+          <td style="color:${rest > 0 ? 'var(--red)' : 'var(--emerald)'}; font-weight:700;">${rest.toLocaleString('no-NO')} kr</td>
+          <td>${pendingHtml}</td>
+          <td class="actions-col">
+            <div style="display:flex; flex-direction:column; gap:5px; min-width:170px;">
+              <button class="btn-edit" onclick="openLedelseDiscountModal('${s.id}')">🏷️ Rabatt</button>
+              <button class="btn-edit" onclick="sendGuardianInvoice('${s.id}')">🧾 Send faktura</button>
+              ${lastVippsPayment ? `<button class="btn-edit" onclick="openLedelseRefundModal('${s.id}','${escapeHtml(lastVippsPayment.reference)}',${cashierKr(lastVippsPayment.belop)})">💸 Refunder</button>` : ''}
+            </div>
+          </td>
+        </tr>`;
+    }).join('') || '<tr class="empty-row"><td colspan="6">Ingen elever funnet i denne klassen.</td></tr>';
+  }
+
+  // ---- Rabatt: setter et nytt (lavere) totalbeløp direkte ----
+  let ledelseDiscountTargetId = null;
+  window.openLedelseDiscountModal = function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return;
+    ledelseDiscountTargetId = studentId;
+    document.getElementById('ledelseDiscountStudentName').value = student.navn || '';
+    document.getElementById('ledelseDiscountAmount').value = cashierKr(student.belop);
+    openCashierOverlay('ledelseDiscountOverlay');
+  };
+
+  window.submitLedelseDiscount = async function(){
+    const id = ledelseDiscountTargetId;
+    const student = cache.students.find(s => s.id === id);
+    if(!student){ showToast('Fant ikke eleven.'); return; }
+    const newAmount = parseFloat(document.getElementById('ledelseDiscountAmount').value);
+    if(newAmount === '' || isNaN(newAmount) || newAmount < 0){ alert('Skriv inn et gyldig beløp (0 eller mer).'); return; }
+    try{
+      const betalt = cashierKr(student.belopBetalt);
+      await updateDoc(doc(db, 'students', id), {
+        belop: String(newAmount),
+        betalt: betalt >= newAmount ? 'Ja' : (betalt > 0 ? 'Delvis' : 'Nei'),
+        sistEndretAv: currentUserEmail || 'ukjent',
+        sistEndretDato: new Date().toISOString().slice(0, 10)
+      });
+      await logFinanceChange(`Rabatt satt av Ledelse: nytt totalbeløp ${newAmount} kr for ${student.navn || 'elev'} (av ${currentUserEmail || 'ukjent'})`);
+      showToast('✓ Rabatt lagret.');
+      closeCashierOverlay('ledelseDiscountOverlay');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  // ---- Refusjon: kaller refundVippsPayment for en allerede betalt innbetaling ----
+  let ledelseRefundTargetId = null, ledelseRefundReference = null;
+  window.openLedelseRefundModal = function(studentId, reference, maxAmount){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return;
+    ledelseRefundTargetId = studentId;
+    ledelseRefundReference = reference;
+    document.getElementById('ledelseRefundStudentName').value = student.navn || '';
+    document.getElementById('ledelseRefundAmount').value = maxAmount;
+    openCashierOverlay('ledelseRefundOverlay');
+  };
+
+  window.submitLedelseRefund = async function(){
+    const id = ledelseRefundTargetId, reference = ledelseRefundReference;
+    const amount = parseFloat(document.getElementById('ledelseRefundAmount').value);
+    if(!amount || amount <= 0){ alert('Skriv inn et gyldig beløp større enn 0.'); return; }
+    if(!confirm('Refundere ' + amount + ' kr via Vipps til foresatte? Dette kan ikke angres.')) return;
+    showToast('Sender refusjon til Vipps...');
+    try{
+      const res = await fetch(REFUND_VIPPS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference, studentId: id, amountKr: amount })
+      });
+      const data = await res.json();
+      if(data.ok){
+        showToast('✓ Refusjon sendt.');
+        closeCashierOverlay('ledelseRefundOverlay');
+      } else {
+        alert('Kunne ikke refundere: ' + (data.error || 'ukjent feil'));
+      }
+    } catch(err){
+      console.error(err);
+      alert('Kunne ikke koble til refusjonstjenesten.');
+    }
+  };
+
+  // ---- Avbryt et utestående (ikke betalt) Vipps-krav ----
+  window.cancelPendingVippsRequest = async function(pendingId, reference){
+    if(!confirm('Avbryte dette Vipps-kravet? Foresatte vil ikke lenger kunne betale det.')) return;
+    showToast('Avbryter Vipps-kravet...');
+    try{
+      const res = await fetch(CANCEL_VIPPS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference })
+      });
+      const data = await res.json();
+      if(data.ok) showToast('✓ Kravet er avbrutt.');
+      else alert('Kunne ikke avbryte: ' + (data.error || 'ukjent feil — kanskje allerede betalt?'));
+    } catch(err){
+      console.error(err);
+      alert('Kunne ikke koble til avbrytelsestjenesten.');
+    }
+  };
+
+  // ---- Faktura til foresatte (e-post + Foreldreportal-varsel) ----
+  window.sendGuardianInvoice = async function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return;
+    const guardian = cache.guardians.find(g => g.id === student.foresatt);
+    if(!guardian){ showToast('Fant ingen registrert foresatt for ' + (student.navn || 'eleven') + '.'); return; }
+    const belop = cashierKr(student.belop), betalt = cashierKr(student.belopBetalt), rest = belop - betalt;
+    if(rest <= 0){ showToast('Ingen restbeløp å fakturere for ' + (student.navn || 'eleven') + '.'); return; }
+
+    const lines = [
+      'Hei ' + (guardian.navn || '') + ',', '',
+      'Dette er en faktura for ' + (student.navn || 'ditt barn') + ':', '',
+      'Beløp å betale: ' + rest.toLocaleString('no-NO') + ' kr', '',
+      'Betalingsopplysninger:',
+      'Kontonummer: ' + INVOICE_BANK_PLACEHOLDER.kontonummer,
+      'IBAN: ' + INVOICE_BANK_PLACEHOLDER.iban,
+      'Merk betalingen med elevens fulle navn.', '',
+      'Med vennlig hilsen,\nMadina Skole'
+    ];
+    const text = lines.join('\n');
+    const subject = 'Faktura — ' + (student.navn || 'ditt barn');
+    const nowIso = new Date().toISOString();
+    try{
+      const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
+        recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '' }],
+        title: subject, groupLabel: 'Faktura',
+        status: 'open', createdAt: nowIso, lastActivityAt: nowIso,
+        sentBy: currentUserEmail || 'ukjent'
+      });
+      await addDoc(collection(db, 'broadcastMessages'), {
+        threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
+        visibility: 'all', tekst: text, dato: nowIso
+      });
+      if(guardian.epost){
+        await addDoc(collection(db, 'mail'), { to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+      }
+      showToast('✓ Faktura sendt (e-post + Foreldreportal).');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
   // Resolves a stable record id (guardian, teacher, class, ...) to its current
   // display name. Falls back to returning the raw stored value as-is if it isn't
   // a known id — this covers legacy name-based values that haven't been migrated
@@ -3297,8 +3613,8 @@
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
-    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); }
-    if(type === 'students') renderCashierPanel();
+    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); }
+    if(type === 'students'){ renderCashierPanel(); renderCashierLedelsePanel(); }
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teachers') renderLedelseView();
@@ -5775,6 +6091,15 @@
   };
 
   window.deleteEntry = async function(type, id){
+    // Ansatte-hierarki: KUN "Eier" kan slette et ansatt/admin-medlem — ingen
+    // andre roller (uansett hvor høyt de ellers rangerer) kan slette en
+    // kollega. 'teachers' er stedet en ansatts rolle faktisk lever (Ledelse
+    // er bare et filtrert view over den), og 'adminUsers' er tilgangslisten
+    // for Administrativt panel — begge regnes som "ansatt"-poster her.
+    if((type === 'teachers' || type === 'adminUsers') && !isCurrentUserEier()){
+      showToast('Kun Eier kan slette et ansatt-/admin-medlem.');
+      return;
+    }
     if(!confirm('Er du sikker på at du vil slette denne oppføringen?')) return;
     try{
       const row = cache[type].find(r => r.id === id);
