@@ -2033,6 +2033,7 @@
         authGatedListenersAttached = true;
         attachListener('meetings');
         attachListener('finances');
+        attachAuthGatedCashierListeners();
       }
     } else {
       currentUserEmail = null;
@@ -2895,30 +2896,34 @@
     console.error('financeLog', err);
   });
 
-  // Per-payment history for each student (every single innbetaling — Vipps
-  // automatic or manually registered by an admin — with its own date/time),
-  // written by the Vipps webhook (studentPayments collection) and by the
-  // Kasserer panel's manual-payment button below. Not part of SCHEMAS/
-  // attachListener since it's a log, not an editable record type.
-  onSnapshot(collection(db, 'studentPayments'), (snap) => {
-    cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-    renderCashierPanel();
-    renderCashierLedelsePanel();
-  }, (err) => {
-    console.error('studentPayments', err);
-  });
+  // Per-payment history (studentPayments) and outstanding Vipps requests
+  // (pendingVippsPayments) BOTH require request.auth != null in the
+  // Firestore rules — their listeners are attached only after a confirmed
+  // login (see attachAuthGatedCashierListeners(), called from
+  // onAuthStateChanged below), exactly like meetings/finances already do.
+  // Attaching them here unconditionally at page load used to fail
+  // permanently with "Missing or insufficient permissions", because
+  // Firestore does not automatically retry a listener that already
+  // errored once auth becomes available later.
+  function attachAuthGatedCashierListeners(){
+    onSnapshot(collection(db, 'studentPayments'), (snap) => {
+      cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      renderCashierPanel();
+      renderCashierLedelsePanel();
+    }, (err) => {
+      console.error('studentPayments', err);
+    });
 
-  // Utestående (ikke ennå betalte) Vipps-krav — kun brukt av Kasserer
-  // (Ledelse), for å vise/avbryte et krav før foresatte rekker å betale det.
-  onSnapshot(collection(db, 'pendingVippsPayments'), (snap) => {
-    cache.pendingVippsPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .filter(p => p.status === 'pending')
-      .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
-    renderCashierLedelsePanel();
-  }, (err) => {
-    console.error('pendingVippsPayments', err);
-  });
+    onSnapshot(collection(db, 'pendingVippsPayments'), (snap) => {
+      cache.pendingVippsPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => p.status === 'pending')
+        .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      renderCashierLedelsePanel();
+    }, (err) => {
+      console.error('pendingVippsPayments', err);
+    });
+  }
 
   function renderFinanceLog(){
     const el = document.getElementById('financeLogList');
