@@ -1758,6 +1758,44 @@
   </div>
 </div>
 
+<!-- PERSON DETAIL — bred, horisontal visning (elever/lærere/foresatte) med
+     bilde/standardavatar, viktigst info i en rad øverst, og resten av
+     feltene skjult bak "Vis flere detaljer" i stedet for en smal,
+     loddrett liste. -->
+<div class="overlay" id="personDetailOverlay">
+  <div class="modal" style="max-width:880px; width:92vw;">
+    <div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">
+      <img id="pdPhoto" src="" alt="" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid var(--line); flex:none;">
+      <div style="flex:1 1 320px; min-width:260px;">
+        <h3 id="pdName" style="margin:0 0 10px;"></h3>
+        <div id="pdEssentialRow" style="display:flex; flex-wrap:wrap; gap:10px 22px;"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" id="pdToggleBtn" style="margin-top:16px;" onclick="togglePersonDetailExtra()">▾ Vis flere detaljer</button>
+    <div id="pdExtraGrid" style="display:none; margin-top:12px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px 18px;"></div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeCashierOverlay('personDetailOverlay')">Lukk</button>
+      <button class="btn btn-primary" onclick="openPersonPrintModal()">🖨️ Skriv ut</button>
+    </div>
+  </div>
+</div>
+
+<!-- Velg hvilke ekstra felt som skal være med på utskriften, i tillegg til
+     de viktigste (som alltid tas med). -->
+<div class="overlay" id="personPrintOverlay">
+  <div class="modal">
+    <h3>🖨️ Skriv ut — velg felt</h3>
+    <div class="sub" style="margin-bottom:10px;">De viktigste opplysningene tas alltid med. Kryss av for eventuelle ekstra felt du også vil ha på utskriften.</div>
+    <div id="pdPrintFieldList" style="max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCashierOverlay('personPrintOverlay')">Avbryt</button>
+      <button class="btn btn-primary" onclick="printPersonDetail()">Skriv ut</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 </div>
@@ -2193,11 +2231,13 @@
     teachers: {
       label: 'lærer', collectionName: 'teachers',
       fields: [
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
-        {key:'dager', label:'Dager', type:'select', options:['Lørdag','Søndag','Lørdag og søndag']},
-        {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'},
+        {key:'navn', label:'Fullt navn', type:'text', essential:true},
+        {key:'bilde', label:'Bilde', type:'file', folder:'person-photos', essential:true},
+        {key:'kjonn', label:'Kjønn', type:'select', options:['','Mann','Kvinne'], essential:true},
+        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet'], essential:true},
+        {key:'dager', label:'Dager', type:'select', options:['Lørdag','Søndag','Lørdag og søndag'], essential:true},
+        {key:'telefon', label:'Telefon', type:'text', essential:true},
+        {key:'epost', label:'E-post', type:'text', essential:true},
         {key:'roller', label:'Roller', type:'role-checklist', options:[
           'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator',
           'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
@@ -2209,10 +2249,12 @@
     guardians: {
       label: 'foresatt', collectionName: 'guardians',
       fields: [
-        {key:'navn', label:'Fullt navn', type:'text'},
-        {key:'relasjon', label:'Relasjon til eleven', type:'select', options:['Mor','Far','Annen']},
-        {key:'telefon', label:'Telefon', type:'text'},
-        {key:'epost', label:'E-post', type:'text'}
+        {key:'navn', label:'Fullt navn', type:'text', essential:true},
+        {key:'bilde', label:'Bilde', type:'file', folder:'person-photos', essential:true},
+        {key:'kjonn', label:'Kjønn', type:'select', options:['','Mann','Kvinne'], essential:true},
+        {key:'relasjon', label:'Relasjon til eleven', type:'select', options:['Mor','Far','Annen'], essential:true},
+        {key:'telefon', label:'Telefon', type:'text', essential:true},
+        {key:'epost', label:'E-post', type:'text', essential:true}
       ],
       cols: ['navn','relasjon','telefon','epost']
     },
@@ -2220,6 +2262,7 @@
       label: 'elev', collectionName: 'students',
       fields: [
         {key:'navn', label:'Fullt navn', type:'text', essential:true},
+        {key:'bilde', label:'Bilde', type:'file', folder:'person-photos', essential:true},
         {key:'elev_fdato', label:'Fødselsdato', type:'text', essential:true},
         {key:'program', label:'Program', type:'select', essential:true, options:[
           'Madina Islamske Skole — Integrert program (Lørdag)',
@@ -2228,7 +2271,7 @@
         {key:'sprakvalg', label:'Språkvalg (Arabisk/Urdu)', type:'select', essential:true, options:['','Arabisk','Urdu']},
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
-        {key:'foresatt1_tlf', label:'Foresatt 1 — telefon', type:'text'},
+        {key:'foresatt1_tlf', label:'Foresatt 1 — telefon', type:'text', essential:true},
         {key:'foresatt2', label:'Foresatt 2 (om registrert som egen konto)', type:'dynamic-select', source:'guardians'},
 
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
@@ -2237,7 +2280,7 @@
         {key:'betalingsdato', label:'Betalingsdato', type:'text'},
         {key:'soskenrekkefolge', label:'Søskenrekkefølge (auto)', type:'text'},
 
-        {key:'kjonn', label:'Kjønn', type:'text'},
+        {key:'kjonn', label:'Kjønn', type:'select', options:['','Mann','Kvinne']},
         {key:'grunnskole', label:'Grunnskole', type:'text'},
         {key:'klassetrinn', label:'Klassetrinn', type:'text'},
         {key:'adresse', label:'Adresse', type:'text'},
@@ -3344,6 +3387,170 @@
   function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ===================================================================
+  // PERSON DETAIL — bred/horisontal visning av en elev/lærer/foresatt,
+  // med bilde (eller kjønnsbasert standardavatar), de viktigste
+  // opplysningene i en rad øverst, og resten av feltene skjult bak "Vis
+  // flere detaljer" i stedet for openModal's smale, loddrette skjema
+  // (som fortsatt brukes for selve REDIGERINGEN, uendret).
+  // ===================================================================
+  const GENDER_AVATAR = {
+    Mann: 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#dbe7f2"/><circle cx="50" cy="38" r="18" fill="#6b8fae"/><path d="M50 60c-22 0-32 14-32 30v10h64V90c0-16-10-30-32-30z" fill="#6b8fae"/></svg>`
+    ),
+    Kvinne: 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f6e3ec"/><circle cx="50" cy="36" r="17" fill="#c46f93"/><path d="M50 20c-14 0-22 10-22 22 0 8 4 14 8 18-14 4-20 16-20 30v10h68V90c0-14-6-26-20-30 4-4 8-10 8-18 0-12-8-22-22-22z" fill="#c46f93"/></svg>`
+    ),
+    Ukjent: 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e6e6ee"/><circle cx="50" cy="38" r="18" fill="#9a9ab0"/><path d="M50 60c-22 0-32 14-32 30v10h64V90c0-16-10-30-32-30z" fill="#9a9ab0"/></svg>`
+    )
+  };
+  function personAvatarUrl(row){
+    if(row.bilde) return row.bilde;
+    const g = row.kjonn === 'Mann' || row.kjonn === 'Kvinne' ? row.kjonn : 'Ukjent';
+    return GENDER_AVATAR[g];
+  }
+  function personComputeAge(fdatoStr){
+    if(!fdatoStr) return null;
+    const d = new Date(fdatoStr);
+    if(isNaN(d.getTime())) return null;
+    const diffMs = Date.now() - d.getTime();
+    if(diffMs < 0) return null;
+    return Math.floor(diffMs / (365.25 * 24 * 3600 * 1000));
+  }
+
+  let pdCurrentType = null, pdCurrentId = null;
+
+  window.showPersonDetail = function(type, id){
+    const schema = SCHEMAS[type];
+    const row = cache[type].find(r => r.id === id);
+    if(!row) return;
+    pdCurrentType = type; pdCurrentId = id;
+
+    const colDisplay = (c) => {
+      const field = schema.fields.find(f=>f.key===c);
+      if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
+      const v = row[c];
+      return Array.isArray(v) ? v.join(', ') : (v || '');
+    };
+
+    document.getElementById('pdPhoto').src = personAvatarUrl(row);
+    document.getElementById('pdName').textContent = row.navn || '—';
+
+    const essentialFields = schema.fields.filter(f => f.essential && f.key !== 'navn' && f.key !== 'bilde');
+    let chips = essentialFields.map(f => {
+      let val = colDisplay(f.key);
+      if(f.key === 'elev_fdato' && val){
+        const age = personComputeAge(val);
+        val = val + (age !== null ? ' (' + age + ' år)' : '');
+      }
+      if(!val) return '';
+      return `<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">${escapeHtml(f.label)}</div><div style="font-weight:600;">${escapeHtml(val)}</div></div>`;
+    }).filter(Boolean);
+
+    // For elever: legg alltid til foresattes kontaktinfo rett i toppraden,
+    // ikke bare navnet — det er nettopp det brukeren ba om å se med en gang.
+    if(type === 'students' && row.foresatt){
+      const guardian = cache.guardians.find(g => g.id === row.foresatt);
+      if(guardian){
+        if(guardian.telefon) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Foresatt — telefon</div><div style="font-weight:600;">📞 ${escapeHtml(guardian.telefon)}</div></div>`);
+        if(guardian.epost) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Foresatt — e-post</div><div style="font-weight:600;">✉️ ${escapeHtml(guardian.epost)}</div></div>`);
+      }
+    }
+    if(type === 'guardians'){
+      const children = cache.students.filter(s => s.foresatt === row.id).map(s => s.navn).filter(Boolean);
+      if(children.length) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Barn</div><div style="font-weight:600;">${escapeHtml(children.join(', '))}</div></div>`);
+    }
+    document.getElementById('pdEssentialRow').innerHTML = chips.join('');
+
+    const extraFields = schema.fields.filter(f => !f.essential && f.key !== 'bilde');
+    const extraGrid = document.getElementById('pdExtraGrid');
+    extraGrid.innerHTML = extraFields.map(f => {
+      const val = colDisplay(f.key);
+      if(!val) return '';
+      return `<div class="record-field" data-pd-key="${escapeHtml(f.key)}"><span class="record-field-label">${escapeHtml(f.label)}</span>${escapeHtml(val)}</div>`;
+    }).join('') || '<div style="color:#8a9a90; font-size:13px;">Ingen flere opplysninger registrert.</div>';
+    extraGrid.style.display = 'none';
+    extraGrid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(220px,1fr))';
+    extraGrid.style.gap = '10px 18px';
+    document.getElementById('pdToggleBtn').textContent = '▾ Vis flere detaljer';
+
+    openCashierOverlay('personDetailOverlay');
+  };
+
+  window.togglePersonDetailExtra = function(){
+    const grid = document.getElementById('pdExtraGrid');
+    const btn = document.getElementById('pdToggleBtn');
+    const show = grid.style.display === 'none';
+    grid.style.display = show ? 'grid' : 'none';
+    btn.textContent = show ? '▴ Vis mindre' : '▾ Vis flere detaljer';
+  };
+
+  window.openPersonPrintModal = function(){
+    const list = document.getElementById('pdPrintFieldList');
+    const extraCards = [...document.querySelectorAll('#pdExtraGrid [data-pd-key]')];
+    if(extraCards.length === 0){
+      list.innerHTML = '<div style="color:#8a9a90; font-size:13px;">Ingen ekstra felt å velge mellom — de viktigste opplysningene skrives ut.</div>';
+    } else {
+      list.innerHTML = extraCards.map(el => {
+        const key = el.dataset.pdKey;
+        const label = el.querySelector('.record-field-label')?.textContent || key;
+        return `<label style="display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer;">
+          <input type="checkbox" class="pd-print-check" value="${escapeHtml(key)}"> ${escapeHtml(label)}
+        </label>`;
+      }).join('');
+    }
+    openCashierOverlay('personPrintOverlay');
+  };
+
+  window.printPersonDetail = function(){
+    const type = pdCurrentType;
+    const schema = SCHEMAS[type];
+    const row = cache[type].find(r => r.id === pdCurrentId);
+    if(!row) return;
+    const colDisplay = (c) => {
+      const field = schema.fields.find(f=>f.key===c);
+      if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
+      const v = row[c];
+      return Array.isArray(v) ? v.join(', ') : (v || '');
+    };
+    const selectedKeys = [...document.querySelectorAll('.pd-print-check:checked')].map(cb => cb.value);
+
+    const essentialRows = schema.fields.filter(f => f.essential && f.key !== 'bilde').map(f => {
+      let val = colDisplay(f.key);
+      if(f.key === 'elev_fdato' && val){
+        const age = personComputeAge(val);
+        val = val + (age !== null ? ' (' + age + ' år)' : '');
+      }
+      return val ? `<tr><th>${escapeHtml(f.label)}</th><td>${escapeHtml(val)}</td></tr>` : '';
+    }).join('');
+    const extraRows = selectedKeys.map(key => {
+      const f = schema.fields.find(ff => ff.key === key);
+      const val = colDisplay(key);
+      return (f && val) ? `<tr><th>${escapeHtml(f.label)}</th><td>${escapeHtml(val)}</td></tr>` : '';
+    }).join('');
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>${escapeHtml(row.navn || 'Utskrift')} — Madina Skole</title>
+      <style>
+        body{font-family:Arial,sans-serif; padding:30px; color:#1c2b24;}
+        h1{font-size:22px; margin-bottom:2px;}
+        .sub{color:#666; font-size:13px; margin-bottom:20px;}
+        table{border-collapse:collapse; width:100%; max-width:640px;}
+        th,td{text-align:start; padding:8px 10px; border-bottom:1px solid #ddd; font-size:14px;}
+        th{width:220px; color:#444; font-weight:600;}
+      </style></head><body>
+        <h1>${escapeHtml(row.navn || '—')}</h1>
+        <div class="sub">Madina Skole — utskrevet ${new Date().toLocaleDateString('no-NO')}</div>
+        <table>${essentialRows}${extraRows}</table>
+      </body></html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  // ===================================================================
   // KASSERER (LEDELSE) — samme elevliste-tilnærming som vanlig Kasserer,
   // men kun tilgjengelig for Eier (se isCurrentUserEier()/deleteEntry-
   // gating og fanens display:none over). I tillegg til vanlig
@@ -4243,6 +4450,7 @@
         const remainingKr = type === 'students' ? (parseKr(row.belop) - parseKr(row.belopBetalt)) : 0;
         actionsHtml = `<div class="record-card-actions">
           ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
+          ${['students','teachers','guardians'].includes(type) ? `<button class="btn-edit" onclick="showPersonDetail('${type}','${row.id}')">👁 Vis</button>` : ''}
           ${(type === 'teachers' || type === 'guardians') && row.epost ? `<button class="btn-edit" onclick="sendPortalAccountSetup('${escapeHtml(row.epost)}')">Send kontooppsett</button>` : ''}
           ${type === 'students' && remainingKr > 0 ? `<button class="btn-edit" onclick="sendStudentVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>` : ''}
           <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
@@ -5372,7 +5580,12 @@
         if(existing[f.key]){
           const linkP = document.createElement('div');
           linkP.style.marginBottom = '6px';
-          linkP.innerHTML = '<a href="' + escapeHtml(existing[f.key]) + '" target="_blank" style="font-size:12px;">Nåværende fil — trykk for å åpne</a>';
+          if(f.key === 'bilde'){
+            linkP.innerHTML = '<img src="' + escapeHtml(existing[f.key]) + '" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; display:block; margin-bottom:6px; border:1px solid var(--line);">' +
+              '<a href="' + escapeHtml(existing[f.key]) + '" target="_blank" style="font-size:12px;">Nåværende bilde — trykk for å åpne</a>';
+          } else {
+            linkP.innerHTML = '<a href="' + escapeHtml(existing[f.key]) + '" target="_blank" style="font-size:12px;">Nåværende fil — trykk for å åpne</a>';
+          }
           wrap.appendChild(linkP);
         }
         const hidden = document.createElement('input');
@@ -5427,7 +5640,7 @@
       if(file){
         try{
           showToast('Laster opp fil...');
-          entry[f.key] = await uploadAttachment(file, 'finance-receipts');
+          entry[f.key] = await uploadAttachment(file, f.folder || 'finance-receipts');
         } catch(err){
           console.error(err);
           showToast('Kunne ikke laste opp filen: ' + err.message);
