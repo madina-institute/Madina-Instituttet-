@@ -1574,6 +1574,28 @@
     </div>
   </div>
 
+  <!-- Rediger og godkjenn en lærers oppmøte/timeregistrering -->
+  <div class="overlay" id="attEditApproveOverlay">
+    <div class="modal">
+      <h3>✏️ Rediger og godkjenn</h3>
+      <div class="sub" style="margin-bottom:10px;">Læreren varsles automatisk (i portalen og på e-post) om at registreringen er endret, sammen med årsaken du skriver under.</div>
+      <div class="field"><label>Status</label>
+        <select id="attEditStatus">
+          <option value="Til stede">Til stede</option>
+          <option value="Fraværende">Fraværende</option>
+          <option value="Syk">Syk</option>
+          <option value="Permisjon">Permisjon</option>
+        </select>
+      </div>
+      <div class="field"><label>Antall timer</label><input type="number" id="attEditTimer" min="0" step="0.5"></div>
+      <div class="field"><label>Årsak til endring (påkrevd)</label><textarea id="attEditArsak" rows="3" placeholder="f.eks. Korrigert fra 3 til 2 timer etter avstemming med timeplanen"></textarea></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeCashierOverlay('attEditApproveOverlay')">Avbryt</button>
+        <button class="btn btn-primary" onclick="submitEditApproveAttendance()">Lagre og godkjenn</button>
+      </div>
+    </div>
+  </div>
+
   <!-- HOURS -->
   <div class="panel" id="panel-hours">
     <div class="toolbar">
@@ -2467,9 +2489,11 @@
         {key:'dato', label:'Dato', type:'text', essential:true, placeholder:'f.eks. 2026-09-06'},
         {key:'status', label:'Status', type:'select', essential:true, options:['Til stede','Fraværende','Syk','Permisjon']},
         {key:'timer', label:'Antall timer denne dagen', type:'text', essential:true, placeholder:'f.eks. 2'},
+        {key:'godkjenningsstatus', label:'Godkjenningsstatus', type:'select', essential:true, options:['Venter godkjenning','Godkjent','Endret av admin']},
+        {key:'adminEndringArsak', label:'Årsak til endring (hvis endret av admin)', type:'text'},
         {key:'merknad', label:'Merknad', type:'text'}
       ],
-      cols: ['larer','dato','status','timer']
+      cols: ['larer','dato','status','timer','godkjenningsstatus']
     },
     lessonPlans: {
       label: 'timeforberedelse', collectionName: 'lessonPlans',
@@ -4725,6 +4749,9 @@
         actionsHtml = `<div class="record-card-actions">
           ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
           ${type === 'monthlyPlans' ? [1,2,3,4].map(n => `<button class="btn-edit" onclick="openOrCreateLessonPlanForWeek('${row.id}',${n})">🔗 Uke ${n} — full time</button>`).join('') : ''}
+          ${type === 'teacherAttendance' && (row.godkjenningsstatus||'Venter godkjenning') === 'Venter godkjenning' ? `
+            <button class="btn-edit" style="background:var(--emerald); color:#fff; border-color:var(--emerald);" onclick="approveTeacherAttendance('${row.id}')">✅ Godkjenn</button>
+            <button class="btn-edit" onclick="openEditApproveAttendance('${row.id}')">✏️ Rediger og godkjenn</button>` : ''}
           ${['students','teachers','guardians'].includes(type) ? `<button class="btn-edit" onclick="showPersonDetail('${type}','${row.id}')">👁 Vis</button>` : ''}
           ${(type === 'teachers' || type === 'guardians') && row.epost ? `<button class="btn-edit" onclick="sendPortalAccountSetup('${escapeHtml(row.epost)}')">Send kontooppsett</button>` : ''}
           ${type === 'students' && remainingKr > 0 ? `<button class="btn-edit" onclick="sendStudentVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>` : ''}
@@ -4787,6 +4814,72 @@
     document.getElementById('finStatSaldo').textContent = saldo.toLocaleString('no-NO') + ' kr';
   }
 
+  // ---- Godkjenning av lærernes egne oppmøte-/timeregistreringer ----
+  window.approveTeacherAttendance = async function(id){
+    try{
+      await updateDoc(doc(db, 'teacherAttendance', id), { godkjenningsstatus: 'Godkjent' });
+      showToast('✓ Godkjent.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  let attEditTargetId = null;
+  window.openEditApproveAttendance = function(id){
+    const row = cache.teacherAttendance.find(a => a.id === id);
+    if(!row) return;
+    attEditTargetId = id;
+    document.getElementById('attEditStatus').value = row.status || 'Til stede';
+    document.getElementById('attEditTimer').value = row.timer || '';
+    document.getElementById('attEditArsak').value = '';
+    openCashierOverlay('attEditApproveOverlay');
+  };
+
+  window.submitEditApproveAttendance = async function(){
+    const id = attEditTargetId;
+    const row = cache.teacherAttendance.find(a => a.id === id);
+    if(!row){ showToast('Fant ikke registreringen.'); return; }
+    const status = document.getElementById('attEditStatus').value;
+    const timer = document.getElementById('attEditTimer').value;
+    const arsak = document.getElementById('attEditArsak').value.trim();
+    if(timer === '' || parseFloat(timer) < 0){ alert('Skriv inn et gyldig antall timer.'); return; }
+    if(!arsak){ alert('Årsak til endring er påkrevd.'); return; }
+    try{
+      await updateDoc(doc(db, 'teacherAttendance', id), {
+        status, timer: String(timer),
+        godkjenningsstatus: 'Endret av admin',
+        adminEndringArsak: arsak
+      });
+
+      // Varsler læreren i Lærerportalen (Fra administrasjonen) og på e-post.
+      const teacher = cache.teachers.find(t => t.id === row.larer);
+      if(teacher){
+        const subject = 'Din oppmøte-/timeregistrering er endret — ' + (row.dato || '');
+        const text = `Hei ${teacher.navn || ''},\n\nDin registrering for ${row.dato || 'valgt dato'} er endret av administrasjonen:\n\nNy status: ${status}\nNytt antall timer: ${timer}\n\nÅrsak: ${arsak}\n\nMed vennlig hilsen,\nMadina Skole`;
+        const nowIso = new Date().toISOString();
+        await addDoc(collection(db, 'broadcastThreads'), {
+          recipients: [{ type: 'teacher', id: teacher.id, name: teacher.navn || '' }],
+          title: subject, groupLabel: 'Timeregistrering endret',
+          status: 'open', createdAt: nowIso, lastActivityAt: nowIso,
+          sentBy: currentUserEmail || 'ukjent'
+        }).then(threadRef => addDoc(collection(db, 'broadcastMessages'), {
+          threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
+          visibility: 'all', tekst: text, dato: nowIso
+        }));
+        if(teacher.epost){
+          await addDoc(collection(db, 'mail'), { to: [teacher.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+        }
+      }
+
+      showToast('✓ Endret, godkjent og lærer varslet.');
+      closeCashierOverlay('attEditApproveOverlay');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
   // Sats og rolle-etikett for en lærer: Frivillig-status overstyrer alt
   // (0 kr uansett timer). Ellers: Assistent-rolle = 150 kr/t, enhver
   // undervisningsrolle (Koran/Islam/Arabisk/Urdu lærer, Fagkoordinator osv.)
@@ -4811,7 +4904,7 @@
     const rows = cache.teachers.filter(t => t.navn).map(t => {
       const { sats, rolleLabel, statusLabel } = lonnSatsForLarer(t);
       const timer = cache.teacherAttendance
-        .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month)
+        .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month && (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
         .reduce((s,a) => s + toNum(a.timer), 0);
       const lonn = sats * timer;
       return { navn: t.navn, rolleLabel, statusLabel, timer, sats, lonn, kontonummer: t.kontonummer || '' };
@@ -4836,7 +4929,7 @@
     const rows = cache.teachers.filter(t => t.navn).map(t => {
       const { sats, rolleLabel, statusLabel } = lonnSatsForLarer(t);
       const timer = cache.teacherAttendance
-        .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month)
+        .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month && (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
         .reduce((s,a) => s + toNum(a.timer), 0);
       return [t.navn, rolleLabel, statusLabel, timer, sats, sats * timer, t.kontonummer || '']
         .map(v => '"' + String(v).replace(/"/g,'""') + '"');
