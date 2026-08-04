@@ -2360,20 +2360,43 @@
     lessonPlans: {
       label: 'timeforberedelse', collectionName: 'lessonPlans',
       fields: [
-        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers'},
-        {key:'klasse', label:'Klasse', type:'text'},
-        {key:'fag', label:'Fag', type:'select', options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
-        {key:'dato', label:'Dato', type:'text'},
-        {key:'emne', label:'Emne/tema', type:'text'},
-        {key:'mal', label:'Læringsmål', type:'text'},
-        {key:'metode', label:'Metode', type:'text'},
-        {key:'materiell', label:'Hjelpemidler', type:'text'},
-        {key:'oppstart', label:'1. Oppstart', type:'text'},
-        {key:'repetisjon', label:'2. Repetisjon', type:'text'},
-        {key:'nyttStoff', label:'3. Nytt læringsstoff', type:'text'},
-        {key:'oving', label:'4. Øving', type:'text'},
-        {key:'oppsummering', label:'5. Oppsummering', type:'text'},
-        {key:'lekser', label:'Lekser', type:'text'}
+        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers', essential:true},
+        {key:'klasse', label:'Klasse', type:'text', essential:true, placeholder:'f.eks. Klasse A'},
+        {key:'fag', label:'Fag', type:'select', essential:true, options:['Koran','Islam','Arabisk','Urdu','Madinabarn','Annet']},
+        {key:'dato', label:'Dato', type:'text', essential:true, placeholder:'f.eks. 2026-10-05'},
+        {key:'emne', label:'Emne/tema for hele timen', type:'text', essential:true, placeholder:'f.eks. Sure Al-Falaq (vers 1–3)'},
+        {key:'malKomplett', label:'Overordnet læringsmål (hele timen, 60 min)', type:'text', essential:true, placeholder:'f.eks. Eleven kan lese versene med riktig uttale og gjenkjenne én tajwid-regel'},
+        {key:'materiell', label:'Hjelpemidler', type:'text', placeholder:'f.eks. Tavle, ordkort, Mushaf'},
+
+        // ØKT 1 — første 30 minutter av timen
+        {key:'okt1_oppstart', label:'Økt 1 — Oppstart/motivasjon (ca. 3 min)', type:'text', essential:true, placeholder:'f.eks. «Hvem husker hvilken sure vi leste sist uke?»'},
+        {key:'okt1_repetisjon', label:'Økt 1 — Repetisjon (ca. 4–5 min)', type:'text', essential:true, placeholder:'f.eks. Felles resitasjon av forrige sure'},
+        {key:'okt1_nyttStoff', label:'Økt 1 — Nytt lærestoff (ca. 13–15 min)', type:'text', essential:true, placeholder:'f.eks. Lærer leser vers for vers, elevene gjentar 3 ganger per vers'},
+        {key:'okt1_oving', label:'Økt 1 — Øving (ca. 7–8 min)', type:'text', essential:true, placeholder:'f.eks. Individuell resitasjon av vers 1'},
+
+        // ØKT 2 — siste 30 minutter, bygger videre på økt 1
+        {key:'okt2_kobling', label:'Økt 2 — Kobling til økt 1 (ca. 2–3 min)', type:'text', essential:true, placeholder:'f.eks. «Nå skal vi se på HVORDAN vi leser dette riktig»'},
+        {key:'okt2_fordypning', label:'Økt 2 — Fordypning (ca. 15–17 min)', type:'text', essential:true, placeholder:'f.eks. Forklarer tajwid-regelen i praksis, med eksempler'},
+        {key:'okt2_individuellOving', label:'Økt 2 — Individuell øving/vurdering (ca. 7–9 min)', type:'text', essential:true, placeholder:'f.eks. Hver elev anvender det de har lært, én og én'},
+        {key:'okt2_avslutning', label:'Økt 2 — Avslutning av hele timen (ca. 3 min)', type:'text', essential:true, placeholder:'f.eks. Felles oppsummering + lekse'},
+        {key:'lekser', label:'Lekser (om noen)', type:'text', placeholder:'f.eks. Pugg vers 1 til neste uke'},
+
+        // Fag-spesifikke felt — vises kun når riktig fag er valgt (se
+        // wireSubjectSpecificFields() i JS-koden lenger nede).
+        {key:'koran_sureVers', label:'Sure og vers', type:'text', essential:true, subjectGroup:'Koran', placeholder:'f.eks. Al-Falaq, vers 1–3'},
+        {key:'koran_tajwidRegel', label:'Tajwid-regel i fokus', type:'text', essential:true, subjectGroup:'Koran', placeholder:'f.eks. Ikhfa (skjult uttale av «n»)'},
+        {key:'koran_hifzDel', label:'Del som skal pugges (hifz)', type:'text', essential:true, subjectGroup:'Koran', placeholder:'f.eks. Kun vers 1'},
+
+        {key:'islam_pensumDel', label:'Emne fra pensum', type:'text', essential:true, subjectGroup:'Islam', placeholder:'f.eks. Del 1, kapittel 2 — Islams fem søyler'},
+        {key:'islam_kilde', label:'Kilde', type:'select', essential:true, subjectGroup:'Islam', options:['','Hadith','Sira (profetens liv)','Aqidah (trosgrunnlag)','Fiqh (praktisk)']},
+
+        {key:'sprak_nyeOrd', label:'Nye ord/bokstaver', type:'text', essential:true, subjectGroup:'Arabisk,Urdu', placeholder:'f.eks. اسمي، عمري، أسكن، أحب، مدرستي'},
+        {key:'sprak_grammatikk', label:'Grammatikk-/rettskrivningspunkt', type:'text', essential:true, subjectGroup:'Arabisk,Urdu', placeholder:'f.eks. Forskjellen i uttale mellom ب og پ'},
+        {key:'sprak_fokus', label:'Fokus for timen', type:'select', essential:true, subjectGroup:'Arabisk,Urdu', options:['','Muntlig (samtale)','Teori (skriving)','Begge deler']},
+
+        // Etter timen — fylles ut ETTER gjennomføring, ikke ved forberedelse
+        {key:'malOppnadd', label:'Ble målet nådd? (fylles ut etter timen)', type:'select', options:['','Ja','Delvis','Nei']},
+        {key:'refleksjon', label:'Refleksjon / justeringer til neste gang', type:'text', placeholder:'f.eks. Elevene slet med tajwid-regelen — bruk flere eksempler neste gang'}
       ],
       cols: ['larer','fag','dato','emne','klasse']
     },
@@ -4459,6 +4482,7 @@
         const remainingKr = type === 'students' ? (parseKr(row.belop) - parseKr(row.belopBetalt)) : 0;
         actionsHtml = `<div class="record-card-actions">
           ${type === 'lessonPlans' ? `<button class="btn-edit" onclick="printLessonPlanPDF('${row.id}')">PDF</button>` : ''}
+          ${type === 'monthlyPlans' ? [1,2,3,4].map(n => `<button class="btn-edit" onclick="openOrCreateLessonPlanForWeek('${row.id}',${n})">🔗 Uke ${n} — full time</button>`).join('') : ''}
           ${['students','teachers','guardians'].includes(type) ? `<button class="btn-edit" onclick="showPersonDetail('${type}','${row.id}')">👁 Vis</button>` : ''}
           ${(type === 'teachers' || type === 'guardians') && row.epost ? `<button class="btn-edit" onclick="sendPortalAccountSetup('${escapeHtml(row.epost)}')">Send kontooppsett</button>` : ''}
           ${type === 'students' && remainingKr > 0 ? `<button class="btn-edit" onclick="sendStudentVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>` : ''}
@@ -5483,6 +5507,47 @@
     return { price, pos };
   }
 
+  // Viser kun de fag-spesifikke feltene (Koran/Islam/Arabisk/Urdu) som
+  // faktisk passer til det valgte faget i timeforberedelsen — resten
+  // holdes skjult i stedet for å vise alle fagenes felt om hverandre.
+  function wireSubjectSpecificFields(container, selectedFag){
+    container.querySelectorAll('[data-subject-group]').forEach(wrap => {
+      const groups = wrap.dataset.subjectGroup.split(',').map(s => s.trim());
+      wrap.style.display = groups.includes(selectedFag) ? 'block' : 'none';
+    });
+  }
+
+  // Kobler en uke i en månedsplan til en full, detaljert timeforberedelse
+  // (60 min, to økter). Klikk første gang: oppretter en ny forberedelse
+  // forhåndsutfylt med tema/mål fra uken, og åpner den for redigering.
+  // Klikk igjen samme uke: åpner den SAMME forberedelsen igjen (gjenkjent
+  // via "fraMaanedsplan"-nøkkelen) i stedet for å lage en duplikat.
+  window.openOrCreateLessonPlanForWeek = async function(monthlyPlanId, weekNum){
+    const mp = cache.monthlyPlans.find(m => m.id === monthlyPlanId);
+    if(!mp){ showToast('Fant ikke månedsplanen.'); return; }
+    const linkKey = monthlyPlanId + '_uke' + weekNum;
+    const existing = cache.lessonPlans.find(lp => lp.fraMaanedsplan === linkKey);
+    if(existing){
+      editEntry('lessonPlans', existing.id);
+      return;
+    }
+    try{
+      const docRef = await addDoc(collection(db, 'lessonPlans'), {
+        larer: mp.larer || '',
+        klasse: mp.klasse || '',
+        fag: mp.fag || '',
+        emne: mp['uke' + weekNum + '_tema'] || '',
+        malKomplett: mp['uke' + weekNum + '_maal'] || '',
+        fraMaanedsplan: linkKey
+      });
+      showToast('✓ Timeforberedelse opprettet for uke ' + weekNum + ' — fyll ut resten.');
+      editEntry('lessonPlans', docRef.id);
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
   function applyStudentDiscountPricing(){
     const programEl = document.getElementById('field_program');
     const foresattEl = document.getElementById('field_foresatt');
@@ -5494,13 +5559,13 @@
     if(soskenEl) soskenEl.value = pos;
   }
 
-  window.openModal = function(type, id=null){
+  window.openModal = function(type, id=null, prefill=null){
     editingType = type; editingId = id;
     const schema = SCHEMAS[type];
     document.getElementById('modalTitle').textContent = (id ? 'Rediger ' : 'Ny ') + schema.label;
     const container = document.getElementById('modalFields');
     container.innerHTML = '';
-    const existing = id ? (cache[type].find(r=>r.id===id) || {}) : {};
+    const existing = id ? (cache[type].find(r=>r.id===id) || {}) : (prefill || {});
     if(id && existing.sistEndretAv){
       const info = document.createElement('div');
       info.className = 'sub';
@@ -5525,6 +5590,9 @@
         });
         if(type === 'students' && f.key === 'program'){
           input.addEventListener('change', () => applyStudentDiscountPricing());
+        }
+        if(type === 'lessonPlans' && f.key === 'fag'){
+          input.addEventListener('change', () => wireSubjectSpecificFields(container, input.value));
         }
       } else if(f.type === 'dynamic-select'){
         input = document.createElement('select');
@@ -5606,9 +5674,11 @@
         input = document.createElement('input');
         input.type = 'text';
         input.value = existing[f.key] || '';
+        if(f.placeholder) input.placeholder = f.placeholder;
       }
       input.id = 'field_' + f.key;
       wrap.appendChild(input);
+      if(f.subjectGroup) wrap.dataset.subjectGroup = f.subjectGroup;
       const hasEssentialFields = schema.fields.some(ff => ff.essential);
       if(hasEssentialFields && !f.essential){
         wrap.classList.add('extra-field');
@@ -5616,6 +5686,7 @@
       }
       container.appendChild(wrap);
     });
+    if(type === 'lessonPlans') wireSubjectSpecificFields(container, existing.fag || '');
     if(schema.fields.some(f => f.essential)){
       const toggleBtn = document.createElement('button');
       toggleBtn.type = 'button';
