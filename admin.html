@@ -4383,7 +4383,7 @@
           await addDoc(collection(db, 'mail'), {
             from: MAIL_FROM,
             to: [r.epost],
-            message: { subject: '[Madina Skole] ' + subject, text: body }
+            message: { subject: '[Madina Skole] ' + subject + (r.name ? ' (' + r.name + ')' : ''), text: body }
           });
         } catch(mailErr){ console.error('E-post-varsling feilet for', r.epost, mailErr); }
       }
@@ -4870,7 +4870,7 @@
       // Varsler læreren i Lærerportalen (Fra administrasjonen) og på e-post.
       const teacher = cache.teachers.find(t => t.id === row.larer);
       if(teacher){
-        const subject = 'Din oppmøte-/timeregistrering er endret — ' + (row.dato || '');
+        const subject = 'Din oppmøte-/timeregistrering er endret — ' + (row.dato || '') + (teacher.navn ? ' (' + teacher.navn + ')' : '');
         const text = `Hei ${teacher.navn || ''},\n\nDin registrering for ${row.dato || 'valgt dato'} er endret av administrasjonen:\n\nNy status: ${status}\nNytt antall timer: ${timer}\n\nÅrsak: ${arsak}\n\nMed vennlig hilsen,\nMadina Skole`;
         const nowIso = new Date().toISOString();
         await addDoc(collection(db, 'broadcastThreads'), {
