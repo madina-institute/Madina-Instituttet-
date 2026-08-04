@@ -1971,6 +1971,12 @@
     await uploadBytes(fRef, file);
     return await getDownloadURL(fRef);
   }
+  // Alle e-poster sendt fra systemet skal vise "Madina Skole" som avsendernavn
+  // og gå fra post@madinaskole.no — brukes overalt addDoc(collection(db,'mail')...)
+  // kalles. NB: dette krever at post@madinaskole.no faktisk er verifisert som
+  // gyldig avsenderadresse hos e-posttjenesten "Trigger Email"-utvidelsen
+  // bruker (SPF/DKIM for domenet madinaskole.no) — se meldingen til brukeren.
+  const MAIL_FROM = 'Madina Skole <post@madinaskole.no>';
   let currentUserEmail = null;
   // Roller (fra adminUsers) for den innloggede brukeren — brukes til å
   // gate "kun Eier"-handlinger (sletting av ansatte, Kasserer for
@@ -3507,7 +3513,7 @@
       visibility: 'all', tekst: text, dato: nowIso
     });
     if(guardian.epost){
-      await addDoc(collection(db, 'mail'), { to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+      await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
     }
     return true;
   }
@@ -4045,7 +4051,7 @@
         visibility: 'all', tekst: text, dato: nowIso
       });
       if(guardian.epost){
-        await addDoc(collection(db, 'mail'), { to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+        await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
       }
       showToast('✓ Faktura sendt (e-post + Foreldreportal).');
     } catch(err){
@@ -4375,6 +4381,7 @@
         if(!r.epost) continue;
         try{
           await addDoc(collection(db, 'mail'), {
+            from: MAIL_FROM,
             to: [r.epost],
             message: { subject: '[Madina Skole] ' + subject, text: body }
           });
@@ -4876,7 +4883,7 @@
           visibility: 'all', tekst: text, dato: nowIso
         }));
         if(teacher.epost){
-          await addDoc(collection(db, 'mail'), { to: [teacher.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+          await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [teacher.epost], message: { subject: '[Madina Skole] ' + subject, text } });
         }
       }
 
@@ -5622,6 +5629,7 @@
     try{
       const backupText = buildFullBackupText();
       await addDoc(collection(db, 'mail'), {
+        from: MAIL_FROM,
         to: ['madina.institute.norway@gmail.com'],
         message: {
           subject: 'Sikkerhetskopi av Madina Skole database – ' + todayISO(),
@@ -6598,6 +6606,7 @@
     try{
       await updateDoc(doc(db, 'registrations', id), { vippsLenke: link.trim() });
       await addDoc(collection(db, 'mail'), {
+        from: MAIL_FROM,
         to: [guardianEmail],
         message: {
           subject: '[Madina Skole] Betal depositum for ' + (reg.elev_navn || 'ditt barn'),
@@ -6647,6 +6656,7 @@
       const guardianEmail = reg.foresatt1_epost || '';
       if(guardianEmail){
         await addDoc(collection(db, 'mail'), {
+          from: MAIL_FROM,
           to: [guardianEmail],
           message: {
             subject: '[Madina Skole] Betal depositum for ' + (reg.elev_navn || 'ditt barn'),
@@ -6703,6 +6713,7 @@
       const guardianEmail = (guardian && guardian.epost) || '';
       if(guardianEmail){
         await addDoc(collection(db, 'mail'), {
+          from: MAIL_FROM,
           to: [guardianEmail],
           message: {
             subject: '[Madina Skole] Betaling for ' + (student.navn || 'ditt barn'),
