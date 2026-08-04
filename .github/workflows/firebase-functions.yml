@@ -25,6 +25,6 @@ jobs:
         run: npm install -g firebase-tools
 
       - name: Deploy
-        run: firebase deploy --only functions --project madina-instituttet --non-interactive
+        run: firebase deploy --only functions --project madina-instituttet --non-interactive --debug
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
