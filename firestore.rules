@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ══════════════════════════════════════════════════════════════
+    // TRINN 1 — Steng offentlig lesing.
+    //
+    // Tidligere hadde ~25 samlinger "allow read: if true", som betyr at
+    // hvem som helst på internett kunne lese elev-, foresatt- og
+    // lærerdata uten å logge inn. Alt krever nå innlogging.
+    //
+    // Kun det offentlige påmeldingsskjemaet (index2.html) skriver uten
+    // innlogging — og det leser aldri noe.
+    //
+    // MERK: denne filen publiseres IKKE av GitHub Action-en. Reglene må
+    // limes inn manuelt i Firebase Console → Firestore → Rules.
+    // Filen her er dokumentasjon/fasit på hva som skal stå der.
+    // ══════════════════════════════════════════════════════════════
+
+    function loggedIn() {
+      return request.auth != null;
+    }
+
+    // ---------- OFFENTLIG SKRIVING (påmeldingsskjemaet) ----------
+
+    // index2.html: addDoc(registrations) — oppretter kun, leser aldri.
+    match /registrations/{id} {
+      allow create: if true;
+      allow read, update, delete: if loggedIn();
+    }
+
+    // index2.html: addDoc(formAnalytics) — anonym besøksteller.
+    match /formAnalytics/{id} {
+      allow create: if true;
+      allow read: if loggedIn();
+      allow update, delete: if false;
+    }
+
+    // ---------- ALT ANNET KREVER INNLOGGING ----------
+
+    // Personopplysninger
+    match /students/{id}        { allow read, write: if loggedIn(); }
+    match /guardians/{id}       { allow read, write: if loggedIn(); }
+    match /teachers/{id}        { allow read, write: if loggedIn(); }
+    match /adminUsers/{id}      { allow read, write: if loggedIn(); }
+    match /ledelse/{id}         { allow read, write: if loggedIn(); }
+    match /classes/{id}         { allow read, write: if loggedIn(); }
+
+    // Undervisning
+    match /attendance/{id}              { allow read, write: if loggedIn(); }
+    match /lessonPlans/{id}             { allow read, write: if loggedIn(); }
+    match /homework/{id}                { allow read, write: if loggedIn(); }
+    match /homeworkSubmissions/{id}     { allow read, write: if loggedIn(); }
+    match /absenceRequests/{id}         { allow read, write: if loggedIn(); }
+    match /studentNotes/{id}            { allow read, write: if loggedIn(); }
+    match /practiceVideos/{id}          { allow read, write: if loggedIn(); }
+    match /dailyPlanTemplates/{id}      { allow read, write: if loggedIn(); }
+    match /monthlyPlanTemplates/{id}    { allow read, write: if loggedIn(); }
+    match /semesterPlanTemplates/{id}   { allow read, write: if loggedIn(); }
+    match /monthlyPlans/{id}            { allow read, write: if loggedIn(); }
+    match /semesterPlans/{id}           { allow read, write: if loggedIn(); }
+    match /hours/{id}                   { allow read, write: if loggedIn(); }
+
+    // Kommunikasjon
+    match /messages/{id}            { allow read, write: if loggedIn(); }
+    match /messageThreads/{id}      { allow read, write: if loggedIn(); }
+    match /broadcastThreads/{id}    { allow read, write: if loggedIn(); }
+    match /broadcastMessages/{id}   { allow read, write: if loggedIn(); }
+    match /classPosts/{id}          { allow read, write: if loggedIn(); }
+    match /classPostComments/{id}   { allow read, write: if loggedIn(); }
+    match /classPollVotes/{id}      { allow read, write: if loggedIn(); }
+    match /eventRSVPs/{id}          { allow read, write: if loggedIn(); }
+    match /announcements/{id}       { allow read, write: if loggedIn(); }
+    match /contactUpdateRequests/{id} { allow read, write: if loggedIn(); }
+
+    // Økonomi
+    match /finances/{id}              { allow read, write: if loggedIn(); }
+    match /financeLog/{id}            { allow read, write: if loggedIn(); }
+    match /paymentRequests/{id}       { allow read, write: if loggedIn(); }
+    match /studentPayments/{id}       { allow read, write: if loggedIn(); }
+    match /pendingVippsPayments/{id}  { allow read, write: if loggedIn(); }
+    match /salaryPayments/{id}        { allow read, write: if loggedIn(); }
+    match /teacherAttendance/{id}     { allow read, write: if loggedIn(); }
+
+    // Drift
+    match /meetings/{id}      { allow read, write: if loggedIn(); }
+    match /settings/{id}      { allow read, write: if loggedIn(); }
+    match /deletionLog/{id}   { allow read, write: if loggedIn(); }
+    match /loginEvents/{id}   { allow read, write: if loggedIn(); }
+
+    // Trigger Email-utvidelsen (Brevo) leser via Admin SDK og går utenom
+    // disse reglene. Klienten trenger kun å kunne opprette e-poster.
+    match /mail/{id} {
+      allow read, write: if loggedIn();
+    }
+
+    // Ukjente samlinger: nekt alt.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
