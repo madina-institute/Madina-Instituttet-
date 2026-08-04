@@ -4630,6 +4630,16 @@
         const childCount = cache.students.filter(s => (s.foresatt||'') === row.id).length;
         fieldsHtml += `<div class="record-field"><span class="record-field-label">Antall barn</span>${childCount}</div>`;
       }
+      if(type === 'students' && row.klasse){
+        // Læreren som er tildelt elevens klasse (via lærerens "Tildelt
+        // klasse"-felt) — vises rett ved siden av klassen, siden det er
+        // nettopp den kombinasjonen man som regel vil se på ett blikk.
+        const classTeachers = cache.teachers.filter(t => t.tildeltKlasse === row.klasse && t.navn);
+        if(classTeachers.length){
+          const namesHtml = classTeachers.map(t => `<span class="record-link" onclick="openRelatedRecord('teachers','${escapeHtml(t.id)}')">${escapeHtml(t.navn)}</span>`).join(', ');
+          fieldsHtml += `<div class="record-field"><span class="record-field-label">Lærer</span>${namesHtml}</div>`;
+        }
+      }
       let actionsHtml;
       if(type === 'registrations'){
         actionsHtml = `<div class="record-card-actions">
