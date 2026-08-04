@@ -1930,7 +1930,7 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-    setPersistence, browserSessionPersistence, sendPasswordResetEmail
+    setPersistence, browserSessionPersistence, browserLocalPersistence, sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -1959,7 +1959,17 @@
   // Persist the login session for the browser tab/window only (sessionStorage-
   // backed): a page refresh keeps the user logged in, but closing the tab or
   // the browser clears the session and requires a real email+password login again.
-  setPersistence(auth, browserSessionPersistence).catch(err => console.error('setPersistence failed:', err));
+  // UNNTAK: kontoene i PERSISTENT_SESSION_EMAILS forblir innlogget også etter
+  // at nettleseren lukkes, og omfattes ikke av inaktivitetslåsen. Dette er et
+  // bevisst valg for eierens egen maskin — enheten MÅ da være beskyttet med
+  // skjermlås/passord, siden panelet gir full tilgang til alle persondata.
+  const PERSISTENT_SESSION_EMAILS = ['yasser.m.s.abdelrahim@gmail.com'];
+  function hasPersistentSession(email){
+    return PERSISTENT_SESSION_EMAILS.includes((email || '').trim().toLowerCase());
+  }
+  setPersistence(auth, hasPersistentSession(localStorage.getItem('madinaAdminEmail'))
+    ? browserLocalPersistence
+    : browserSessionPersistence).catch(err => console.error('setPersistence failed:', err));
 
   const MAX_FILE_MB = 10;
   async function uploadAttachment(file, folder){
@@ -2009,6 +2019,11 @@
       return;
     }
     try{
+      // Velg riktig varighet for sesjonen ut fra hvem som logger inn, FØR
+      // selve innloggingen — Firebase krever at persistence settes først.
+      await setPersistence(auth, hasPersistentSession(email)
+        ? browserLocalPersistence
+        : browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, pw);
       localStorage.setItem('madinaAdminEmail', email);
     } catch(err){
@@ -2055,6 +2070,8 @@
 
   function resetInactivityTimer(){
     if(isLocked || !currentUserEmail) return;
+    // Kontoer med vedvarende sesjon låses ikke ut ved inaktivitet.
+    if(hasPersistentSession(currentUserEmail)){ clearTimeout(inactivityTimer); return; }
     clearTimeout(inactivityTimer);
     inactivityTimer = setTimeout(lockSession, INACTIVITY_LIMIT_MS);
   }
@@ -2064,6 +2081,7 @@
 
   function lockSession(){
     if(!currentUserEmail) return;
+    if(hasPersistentSession(currentUserEmail)) return;
     isLocked = true;
     document.getElementById('lockEmailShown').textContent = currentUserEmail;
     document.getElementById('lockPassword').value = '';
