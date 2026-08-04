@@ -852,6 +852,7 @@
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
+  <div class="tab" data-tab="lonn" data-side="eier">💰 Lønn</div>
     <div class="tab" data-tab="financeLog" data-side="eier">Betalingslogg</div>
     <div class="tab" data-tab="meldingssenter" data-side="eier">Meldingssenter</div>
   <div class="tab" data-tab="cashierLedelse" data-side="eier" id="tabCashierLedelse" style="display:none;">💰 Kasserer (Ledelse)</div>
@@ -1237,6 +1238,52 @@
       <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
     </div>
     <div class="records-hidden card-grid" id="tableFinances"></div>
+  </div>
+
+  <!-- LØNN (Payroll: teacher attendance/hours + monthly payroll summary) -->
+  <div class="panel" id="panel-lonn">
+    <div class="report-card">
+      <h3>💰 Lønn og timeregistrering</h3>
+      <div class="sub">Registrer lærernes oppmøte/timer, og se en automatisk månedlig lønnsoversikt basert på rolle (lærer/assistent) og lønnsstatus (frivillig/lønnet).</div>
+    </div>
+
+    <div class="toolbar" style="margin-top:16px;">
+      <input class="search" id="searchTeacherAttendance" placeholder="Søk etter lærer, dato eller status...">
+      <span class="count-chip" id="countTeacherAttendance" onclick="toggleRecordsById('tableTeacherAttendance')">0 registreringer</span>
+      <button class="btn btn-ghost" onclick="exportCSV('teacherAttendance')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('teacherAttendance')">+ Registrer time/oppmøte</button>
+    </div>
+    <div class="records-hidden card-grid" id="tableTeacherAttendance"></div>
+
+    <div class="report-card" style="margin-top:26px;">
+      <h3>📊 Månedlig lønnsoversikt</h3>
+      <div class="sub" style="margin-bottom:10px;">Lærer/koordinator: 200 kr/t · Assistent: 150 kr/t · Frivillig: 0 kr (uansett timer).</div>
+      <div class="field" style="max-width:220px;">
+        <label>Måned</label>
+        <input type="month" id="lonnMonthFilter" onchange="renderLonnOversikt()">
+      </div>
+    </div>
+    <div style="overflow-x:auto; margin-top:10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Lærer</th>
+            <th>Rolle</th>
+            <th>Lønnsstatus</th>
+            <th>Timer denne måneden</th>
+            <th>Sats (kr/t)</th>
+            <th>Lønn (kr)</th>
+            <th>Kontonummer</th>
+          </tr>
+        </thead>
+        <tbody id="lonnOversiktTableBody">
+          <tr class="empty-row"><td colspan="7">Velg en måned ovenfor for å se lønnsoversikten.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="margin-top:12px;">
+      <button class="btn btn-ghost" onclick="exportLonnCSV()">⬇️ Eksporter lønnsoversikt (CSV)</button>
+    </div>
   </div>
 
   <!-- FINANCE ACTIVITY LOG — visible to everyone with admin access, not hidden.
@@ -2296,6 +2343,8 @@
           'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator',
           'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
         ]},
+        {key:'lonnStatus', label:'Lønnsstatus', type:'select', essential:true, options:['Frivillig (ulønnet)','Lønnet']},
+        {key:'kontonummer', label:'Kontonummer (for lønn)', type:'text', essential:true, placeholder:'f.eks. 1234.56.78900'},
         {key:'tildeltKlasse', label:'Tildelt klasse (for Lærerportal)', type:'dynamic-select', source:'classes'}
       ],
       cols: ['navn','fag','roller','dager','telefon','epost']
@@ -2410,6 +2459,17 @@
         {key:'merknad', label:'Merknad', type:'text'}
       ],
       cols: ['dato','studentId','klasse','status']
+    },
+    teacherAttendance: {
+      label: 'læreroppmøte', collectionName: 'teacherAttendance',
+      fields: [
+        {key:'larer', label:'Lærer', type:'dynamic-select', source:'teachers', essential:true},
+        {key:'dato', label:'Dato', type:'text', essential:true, placeholder:'f.eks. 2026-09-06'},
+        {key:'status', label:'Status', type:'select', essential:true, options:['Til stede','Fraværende','Syk','Permisjon']},
+        {key:'timer', label:'Antall timer denne dagen', type:'text', essential:true, placeholder:'f.eks. 2'},
+        {key:'merknad', label:'Merknad', type:'text'}
+      ],
+      cols: ['larer','dato','status','timer']
     },
     lessonPlans: {
       label: 'timeforberedelse', collectionName: 'lessonPlans',
@@ -3132,7 +3192,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], teacherAttendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
@@ -4012,7 +4072,7 @@
       else if(studentSelectedFolder) data = data.filter(row => row.klasse === studentSelectedFolder && row.elevStatus !== 'Sluttet/trukket');
     }
     renderRecordCards(type, data);
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
+    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', teacherAttendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
     const countEl = document.getElementById('count' + capitalize(type));
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
@@ -4021,6 +4081,7 @@
     if(type === 'students'){ renderCashierPanel(); renderCashierLedelsePanel(); }
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
+    if(type === 'teacherAttendance' || type === 'teachers') renderLonnOversikt();
     if(type === 'teachers') renderLedelseView();
     if(type === 'messages') renderMessagesInbox();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
@@ -4527,6 +4588,7 @@
     classes: { title:'navn', pill:'program' },
     hours: { title:'fag', pill:'dag' },
     attendance: { title:'studentId', pill:'status' },
+    teacherAttendance: { title:'larer', pill:'status' },
     lessonPlans: { title:'emne', pill:'fag' },
     registrations: { title:'elev_navn', pill:'status' },
     homework: { title:'tittel', pill:null },
@@ -4724,6 +4786,69 @@
     document.getElementById('finStatUt').textContent = totalUt.toLocaleString('no-NO') + ' kr';
     document.getElementById('finStatSaldo').textContent = saldo.toLocaleString('no-NO') + ' kr';
   }
+
+  // Sats og rolle-etikett for en lærer: Frivillig-status overstyrer alt
+  // (0 kr uansett timer). Ellers: Assistent-rolle = 150 kr/t, enhver
+  // undervisningsrolle (Koran/Islam/Arabisk/Urdu lærer, Fagkoordinator osv.)
+  // = 200 kr/t som standard.
+  function lonnSatsForLarer(t){
+    const roller = (t.roller || '').split(',').map(s => s.trim()).filter(Boolean);
+    const erFrivillig = (t.lonnStatus || '') !== 'Lønnet';
+    if(erFrivillig) return { sats: 0, rolleLabel: roller.includes('Assistent') ? 'Assistent' : 'Lærer', statusLabel: 'Frivillig' };
+    if(roller.includes('Assistent')) return { sats: 150, rolleLabel: 'Assistent', statusLabel: 'Lønnet' };
+    return { sats: 200, rolleLabel: 'Lærer', statusLabel: 'Lønnet' };
+  }
+
+  function renderLonnOversikt(){
+    const tbody = document.getElementById('lonnOversiktTableBody');
+    if(!tbody) return;
+    const month = document.getElementById('lonnMonthFilter')?.value || '';
+    if(!month){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Velg en måned ovenfor for å se lønnsoversikten.</td></tr>';
+      return;
+    }
+    const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
+    const rows = cache.teachers.filter(t => t.navn).map(t => {
+      const { sats, rolleLabel, statusLabel } = lonnSatsForLarer(t);
+      const timer = cache.teacherAttendance
+        .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month)
+        .reduce((s,a) => s + toNum(a.timer), 0);
+      const lonn = sats * timer;
+      return { navn: t.navn, rolleLabel, statusLabel, timer, sats, lonn, kontonummer: t.kontonummer || '' };
+    });
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><strong>${escapeHtml(r.navn)}</strong></td>
+        <td>${escapeHtml(r.rolleLabel)}</td>
+        <td><span class="tag-pill">${escapeHtml(r.statusLabel)}</span></td>
+        <td>${r.timer.toLocaleString('no-NO')} t</td>
+        <td>${r.sats.toLocaleString('no-NO')} kr</td>
+        <td style="font-weight:700;">${r.lonn.toLocaleString('no-NO')} kr</td>
+        <td>${escapeHtml(r.kontonummer) || '<span style="color:#8a9a90;">Ikke registrert</span>'}</td>
+      </tr>`).join('') || '<tr class="empty-row"><td colspan="7">Ingen lærere registrert.</td></tr>';
+  }
+
+  window.exportLonnCSV = function(){
+    const month = document.getElementById('lonnMonthFilter')?.value;
+    if(!month){ showToast('Velg en måned først.'); return; }
+    const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
+    const headers = ['Lærer','Rolle','Lønnsstatus','Timer','Sats (kr/t)','Lønn (kr)','Kontonummer'];
+    const rows = cache.teachers.filter(t => t.navn).map(t => {
+      const { sats, rolleLabel, statusLabel } = lonnSatsForLarer(t);
+      const timer = cache.teacherAttendance
+        .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month)
+        .reduce((s,a) => s + toNum(a.timer), 0);
+      return [t.navn, rolleLabel, statusLabel, timer, sats, sats * timer, t.kontonummer || '']
+        .map(v => '"' + String(v).replace(/"/g,'""') + '"');
+    });
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'madina_lonn_' + month + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const TP_SUBJECT_CLASS = {
     'Koran':'tp-koran', 'Islam':'tp-islam', 'Arabisk':'tp-sprak', 'Urdu':'tp-sprak',
@@ -6677,6 +6802,7 @@
   attachListener('classes');
   attachListener('hours');
   attachListener('attendance');
+  attachListener('teacherAttendance');
   attachListener('lessonPlans');
   attachListener('dailyPlanTemplates');
   attachListener('monthlyPlanTemplates');
