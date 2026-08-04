@@ -3375,12 +3375,12 @@ ${extraScript || ''}
 <div id="lastDeployBadge">Sjekker siste publisering…</div>
 <script>
   // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet.
-  // Bruker GitHubs Deployments API (miljø "github-pages") i stedet for det
-  // gamle "pages/builds"-endepunktet, siden det gamle kun fungerer for
-  // repoer som fortsatt bruker den klassiske build-metoden og gir 404 for
-  // repoer som publiserer via GitHub Actions/den nyere metoden. Deployments
-  // API fungerer uansett hvilken av de to metodene repoet bruker. Leser kun
+  // Nettstedet ligger nå på Firebase Hosting (ikke GitHub Pages), og
+  // publiseres av GitHub Action-en firebase-hosting.yml. Vi leser derfor
+  // siste vellykkede kjøring av nettopp den workflow-en. Leser kun
   // offentlig, ikke-sensitiv informasjon (ingen token nødvendig).
+  // MERK: publiserer du manuelt fra PC med `firebase deploy --only hosting`,
+  // fanges det ikke opp her — da går publiseringen utenom GitHub.
   (function(){
     var el = document.getElementById('lastDeployBadge');
     if(!el) return;
@@ -3398,19 +3398,15 @@ ${extraScript || ''}
       el.textContent = '✓ Siste publisering: ' + datoStr;
     }
 
-    fetch(API_BASE + '/deployments?environment=github-pages&per_page=1')
-      .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status + ' — deployments'); return res.json(); })
-      .then(function(deployments){
-        if(!Array.isArray(deployments) || deployments.length === 0) throw new Error('ingen deployments funnet');
-        var dep = deployments[0];
-        return fetch(API_BASE + '/deployments/' + dep.id + '/statuses?per_page=10')
-          .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status + ' — statuses'); return res.json(); })
-          .then(function(statuses){
-            var success = Array.isArray(statuses) ? statuses.find(function(s){ return s.state === 'success'; }) : null;
-            // Noen oppsett logger ikke en egen "success"-statusmelding —
-            // faller da tilbake til selve deployment-oppføringens tidspunkt.
-            showSuccess(success ? success.created_at : (dep.updated_at || dep.created_at));
-          });
+    // Nettstedet publiseres nå via Firebase Hosting, ikke GitHub Pages.
+    // Vi leser derfor siste VELLYKKEDE kjøring av GitHub Action-en som
+    // utfører selve Firebase-publiseringen (firebase-hosting.yml).
+    fetch(API_BASE + '/actions/workflows/firebase-hosting.yml/runs?status=success&per_page=1')
+      .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status + ' — workflow runs'); return res.json(); })
+      .then(function(data){
+        var runs = data && data.workflow_runs;
+        if(!Array.isArray(runs) || runs.length === 0) throw new Error('ingen vellykket publisering funnet');
+        showSuccess(runs[0].updated_at || runs[0].created_at);
       })
       .catch(function(err){
         console.error('Kunne ikke hente siste publisering:', err);
