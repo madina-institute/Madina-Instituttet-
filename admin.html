@@ -2320,9 +2320,15 @@
     try{
       const tempPassword = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + 'Aa1!';
       await createUserWithEmailAndPassword(secondaryAuth, email, tempPassword);
-      await sendPasswordResetEmail(secondaryAuth, email);
+      // Lukk den midlertidige sesjonen HELT før e-posten sendes. Sendes
+      // e-posten fra den midlertidige app-instansen, blir forespørselen
+      // avbrutt idet instansen rives ned — og e-posten kommer aldri frem
+      // (dette var årsaken til at nye brukere ikke fikk e-post).
       await signOut(secondaryAuth);
       await deleteApp(secondaryApp);
+      // Send fra hovedinstansen, som ikke rives ned. Dette påvirker ikke
+      // administratorens egen innlogging.
+      await sendPasswordResetEmail(auth, email);
       return { ok:true };
     } catch(err){
       if(err.code === 'auth/email-already-in-use'){
@@ -2330,8 +2336,8 @@
         // or a retry) — still send a password-reset email so the person can
         // set/reset their password, rather than silently doing nothing.
         try{
-          await sendPasswordResetEmail(secondaryAuth, email);
-          await deleteApp(secondaryApp);
+          try{ await deleteApp(secondaryApp); }catch(e4){}
+          await sendPasswordResetEmail(auth, email);
           return { ok:true, reason:'exists' };
         } catch(err2){
           try{ await deleteApp(secondaryApp); }catch(e3){}
