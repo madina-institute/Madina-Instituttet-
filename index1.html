@@ -361,6 +361,7 @@
   <div class="portal-body">
     <nav class="portal-sidebar" id="portalSidebar">
       <button data-sidebar="attendance" onclick="navTo('attendance', showAttendance)"><span class="ic">✅</span><span class="lbl">Ta oppmøte</span></button>
+      <button data-sidebar="myAttendance" onclick="navTo('myAttendance', showMyAttendance)"><span class="ic">⏰</span><span class="lbl">Mitt oppmøte/timer</span></button>
       <button data-sidebar="lesson" onclick="navTo('lesson', showLesson)"><span class="ic">📅</span><span class="lbl">Timeforberedelse</span></button>
       <button data-sidebar="monthlyPlan" onclick="navTo('monthlyPlan', showMonthlyPlan)"><span class="ic">🗂️</span><span class="lbl">Månedsplan</span></button>
       <button data-sidebar="semesterPlan" onclick="navTo('semesterPlan', showSemesterPlan)"><span class="ic">🗃️</span><span class="lbl">Semesterplan</span></button>
@@ -601,6 +602,34 @@
       <h2>Fraværsmeldinger</h2>
       <div class="sub">Ubehandlede meldinger fra foresatte for din klasse</div>
       <div id="absenceReviewList"></div>
+    </div>
+
+    <!-- MY ATTENDANCE / HOURS VIEW -->
+    <div class="card" id="myAttendanceView" style="display:none;">
+      <button class="back-link" onclick="history.back()">← Tilbake</button>
+      <h2>Mitt oppmøte og timer</h2>
+      <div class="sub">Registrer oppmøte og antall timer for en arbeidsdag. Administrasjonen må godkjenne registreringen før timene telles med i lønnsberegningen.</div>
+      <div class="field">
+        <label>Dato</label>
+        <input type="date" id="myAttDato">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="myAttStatus">
+          <option value="Til stede">Til stede</option>
+          <option value="Fraværende">Fraværende</option>
+          <option value="Syk">Syk</option>
+          <option value="Permisjon">Permisjon</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Antall timer</label>
+        <input type="number" id="myAttTimer" min="0" step="0.5" placeholder="f.eks. 2">
+      </div>
+      <button class="btn-primary" onclick="submitMyAttendance()">Send inn for godkjenning</button>
+
+      <h3 style="margin-top:28px;">Mine tidligere registreringer</h3>
+      <div id="myAttendanceList"></div>
     </div>
 
     <!-- STUDENT NOTES VIEW -->
@@ -1436,6 +1465,7 @@
       else if(view === 'homework') navTo('homework', showHomework);
       else if(view === 'homeworkArchive') showHomeworkArchive();
       else if(view === 'absenceReview') navTo('absenceReview', showAbsenceReview);
+      else if(view === 'myAttendance') navTo('myAttendance', showMyAttendance);
       else if(view === 'studentNotes') navTo('studentNotes', showStudentNotes);
       else if(view === 'messages') navTo('messages', showMessages);
       else if(view === 'classPosts') navTo('classPosts', showClassPosts);
@@ -1471,6 +1501,7 @@
     document.getElementById('homeworkView').style.display = 'none';
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
+    document.getElementById('myAttendanceView').style.display = 'none';
     document.getElementById('studentNotesView').style.display = 'none';
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'none';
@@ -1794,6 +1825,70 @@
     renderAbsenceReviewList();
     pushAppView('absenceReview');
   };
+
+  // ---------- Mitt oppmøte/timer (lærerens egen registrering) ----------
+  let myAttendanceCache = [];
+  let myAttendanceListenerAttached = false;
+
+  window.showMyAttendance = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('myAttendanceView').style.display = 'block';
+    const dateEl = document.getElementById('myAttDato');
+    if(dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+    if(!myAttendanceListenerAttached){
+      myAttendanceListenerAttached = true;
+      onSnapshot(collection(db, 'teacherAttendance'), (snap) => {
+        myAttendanceCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderMyAttendanceList();
+      }, (err) => console.error('teacherAttendance', err));
+    } else {
+      renderMyAttendanceList();
+    }
+    pushAppView('myAttendance');
+  };
+
+  window.submitMyAttendance = async function(){
+    const dato = document.getElementById('myAttDato').value;
+    const status = document.getElementById('myAttStatus').value;
+    const timer = document.getElementById('myAttTimer').value;
+    if(!dato){ alert('Velg en dato.'); return; }
+    if(timer === '' || parseFloat(timer) < 0){ alert('Skriv inn et gyldig antall timer.'); return; }
+    try{
+      await addDoc(collection(db, 'teacherAttendance'), {
+        larer: currentTeacher.id,
+        dato, status, timer: String(timer),
+        godkjenningsstatus: 'Venter godkjenning',
+        innsendtDato: new Date().toISOString()
+      });
+      document.getElementById('myAttTimer').value = '';
+      alert('Registreringen er sendt inn og venter på godkjenning fra administrasjonen.');
+    } catch(err){
+      console.error(err);
+      alert('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  function renderMyAttendanceList(){
+    const el = document.getElementById('myAttendanceList');
+    if(!el || !currentTeacher) return;
+    const mine = myAttendanceCache
+      .filter(a => a.larer === currentTeacher.id)
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    if(mine.length === 0){
+      el.innerHTML = '<div class="sub">Ingen registreringer ennå.</div>';
+      return;
+    }
+    const statusBadge = { 'Venter godkjenning':'⏳ Venter godkjenning', 'Godkjent':'✅ Godkjent', 'Endret av admin':'✏️ Endret av admin' };
+    el.innerHTML = mine.map(a => `
+      <div class="card" style="padding:14px 16px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <strong>${escapeHtml(a.dato || '')}</strong>
+          <span>${statusBadge[a.godkjenningsstatus] || '⏳ Venter godkjenning'}</span>
+        </div>
+        <div class="sub">${escapeHtml(a.status || '')} — ${escapeHtml(String(a.timer || 0))} t</div>
+        ${a.adminEndringArsak ? `<div class="sub" style="color:#a5504a; margin-top:4px;">Årsak til endring: ${escapeHtml(a.adminEndringArsak)}</div>` : ''}
+      </div>`).join('');
+  }
 
   window.submitHomework = async function(){
     const tittel = document.getElementById('hwTittel').value.trim();
@@ -3279,31 +3374,47 @@ ${extraScript || ''}
 </style>
 <div id="lastDeployBadge">Sjekker siste publisering…</div>
 <script>
-  // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet (hentet
-  // direkte fra GitHub Pages sin build-status), ikke bare siste push — en
-  // push som feiler å bygge skal ikke vises som "publisert". Leser kun
+  // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet.
+  // Bruker GitHubs Deployments API (miljø "github-pages") i stedet for det
+  // gamle "pages/builds"-endepunktet, siden det gamle kun fungerer for
+  // repoer som fortsatt bruker den klassiske build-metoden og gir 404 for
+  // repoer som publiserer via GitHub Actions/den nyere metoden. Deployments
+  // API fungerer uansett hvilken av de to metodene repoet bruker. Leser kun
   // offentlig, ikke-sensitiv informasjon (ingen token nødvendig).
   (function(){
     var el = document.getElementById('lastDeployBadge');
     if(!el) return;
     var GH_OWNER = 'madina-institute';
     var GH_REPO = 'Madina-Instituttet-';
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/pages/builds?per_page=10')
-      .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-      .then(function(builds){
-        var lastGood = Array.isArray(builds) ? builds.find(function(b){ return b.status === 'built'; }) : null;
-        if(!lastGood){ el.textContent = 'Siste vellykkede publisering: ukjent'; return; }
-        var d = new Date(lastGood.updated_at || lastGood.created_at);
-        var datoStr = d.toLocaleDateString('no-NO') + ' kl. ' + d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
-        el.textContent = '✓ Siste publisering: ' + datoStr;
+    var API_BASE = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO;
+
+    function showError(msg){
+      el.textContent = 'Siste publisering: kunne ikke sjekke (' + msg + ')';
+      el.style.color = '#a5504a';
+    }
+    function showSuccess(iso){
+      var d = new Date(iso);
+      var datoStr = d.toLocaleDateString('no-NO') + ' kl. ' + d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+      el.textContent = '✓ Siste publisering: ' + datoStr;
+    }
+
+    fetch(API_BASE + '/deployments?environment=github-pages&per_page=1')
+      .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status + ' — deployments'); return res.json(); })
+      .then(function(deployments){
+        if(!Array.isArray(deployments) || deployments.length === 0) throw new Error('ingen deployments funnet');
+        var dep = deployments[0];
+        return fetch(API_BASE + '/deployments/' + dep.id + '/statuses?per_page=10')
+          .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status + ' — statuses'); return res.json(); })
+          .then(function(statuses){
+            var success = Array.isArray(statuses) ? statuses.find(function(s){ return s.state === 'success'; }) : null;
+            // Noen oppsett logger ikke en egen "success"-statusmelding —
+            // faller da tilbake til selve deployment-oppføringens tidspunkt.
+            showSuccess(success ? success.created_at : (dep.updated_at || dep.created_at));
+          });
       })
       .catch(function(err){
         console.error('Kunne ikke hente siste publisering:', err);
-        // Viser feilmeldingen i selve badgen (i stedet for å skjule den helt)
-        // slik at man faktisk kan se HVORFOR den ikke klarte å hente status
-        // (f.eks. "HTTP 403" = GitHubs offentlige rate-limit er nådd for nå).
-        el.textContent = 'Siste publisering: kunne ikke sjekke (' + (err && err.message ? err.message : 'nettverksfeil') + ')';
-        el.style.color = '#a5504a';
+        showError(err && err.message ? err.message : 'nettverksfeil');
       });
   })();
 </script>
