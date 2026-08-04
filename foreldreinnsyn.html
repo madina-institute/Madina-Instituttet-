@@ -126,6 +126,28 @@
   });
   const db = getFirestore(app);
   const auth = getAuth(app);
+
+  // ── Datalyttere startes FØRST etter innlogging ──────────────────────
+  // Firestore-reglene krever nå innlogging for lesing. En onSnapshot som
+  // settes opp før innlogging blir permanent avvist (SDK-en prøver ikke
+  // på nytt), og listen blir stående tom for alltid. watch() utsetter
+  // derfor hver lytter til startDataListeners() kalles etter innlogging.
+  let __listenersStarted = false;
+  const __pendingWatchers = [];
+  function watch(collectionName, onData, onError){
+    const start = () => onSnapshot(
+      collection(db, collectionName),
+      onData,
+      onError || ((err) => console.error(collectionName, err))
+    );
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
+  function startDataListeners(){
+    if(__listenersStarted) return;
+    __listenersStarted = true;
+    __pendingWatchers.forEach(fn => fn());
+  }
   setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
 
   window.doLogin = async function(){
@@ -150,6 +172,9 @@
   onAuthStateChanged(auth, (user) => {
     document.getElementById('loginScreen').style.display = user ? 'none' : 'flex';
     document.getElementById('appRoot').style.display = user ? 'block' : 'none';
+    // Start datalytterne først når innloggingen er bekreftet — ellers blir
+    // de avvist permanent av Firestore-reglene.
+    if(user) startDataListeners();
   });
 
   function escapeHtml(str){
@@ -219,28 +244,28 @@
     }).join('');
   }
 
-  onSnapshot(collection(db, 'loginEvents'), (snap) => {
+  watch('loginEvents', (snap) => {
     loginEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
 
-  onSnapshot(collection(db, 'guardians'), (snap) => {
+  watch('guardians', (snap) => {
     guardians = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
     render();
   });
-  onSnapshot(collection(db, 'students'), (snap) => {
+  watch('students', (snap) => {
     students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  onSnapshot(collection(db, 'messageThreads'), (snap) => {
+  watch('messageThreads', (snap) => {
     messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  onSnapshot(collection(db, 'absenceRequests'), (snap) => {
+  watch('absenceRequests', (snap) => {
     absenceRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  onSnapshot(collection(db, 'paymentRequests'), (snap) => {
+  watch('paymentRequests', (snap) => {
     paymentRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
