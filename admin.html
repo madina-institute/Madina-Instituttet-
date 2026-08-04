@@ -393,6 +393,11 @@
     font-family:'Cormorant Garamond',serif; font-weight:700; font-size:20px; color:var(--emerald-d); margin:0 0 6px;
   }
   .choice-card .sub{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860;}
+  .folder-card.active{ border-color:var(--emerald); border-width:2px; background:var(--paper-2); }
+  .folder-count{
+    display:inline-block; margin-inline-start:6px; font-family:'Jost',sans-serif; font-size:13px; font-weight:700;
+    color:var(--emerald-d); background:#fff; border:1px solid var(--line); border-radius:20px; padding:1px 10px; vertical-align:middle;
+  }
   .back-link{
     display:inline-block; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald);
     margin-bottom:16px; cursor:pointer; text-decoration:underline; background:none; border:none; padding:0;
@@ -527,6 +532,9 @@
   .report-toolbar{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;}
   .report-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
   @media (max-width:760px){.report-grid{grid-template-columns:1fr;}}
+  .folder-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  @media (max-width:900px){.folder-row{grid-template-columns:1fr 1fr;}}
+  @media (max-width:500px){.folder-row{grid-template-columns:1fr;}}
   .report-card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 22px; box-shadow:var(--shadow);}
   .report-card h3{
     font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d);
@@ -1152,15 +1160,27 @@
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormStarted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Begynte å fylle ut</div></div>
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormCompleted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Fullførte søknaden</div></div>
     </div>
+    <div class="folder-row" id="regFolderRow" style="margin-bottom:16px;">
+      <div class="choice-card folder-card" data-status="Ny" onclick="setRegFolder('Ny')">
+        <h3>🆕 Nye<span class="folder-count" id="regFolderCount_Ny">0</span></h3>
+        <div class="sub">Ikke behandlet ennå</div>
+      </div>
+      <div class="choice-card folder-card" data-status="Venteliste" onclick="setRegFolder('Venteliste')">
+        <h3>⏳ Venteliste<span class="folder-count" id="regFolderCount_Venteliste">0</span></h3>
+        <div class="sub">Satt på venteliste</div>
+      </div>
+      <div class="choice-card folder-card" data-status="Godkjent" onclick="setRegFolder('Godkjent')">
+        <h3>✅ Godkjent<span class="folder-count" id="regFolderCount_Godkjent">0</span></h3>
+        <div class="sub">Allerede godkjent</div>
+      </div>
+      <div class="choice-card folder-card" data-status="Avslått" onclick="setRegFolder('Avslått')">
+        <h3>❌ Avslått<span class="folder-count" id="regFolderCount_Avslått">0</span></h3>
+        <div class="sub">Avslåtte søknader</div>
+      </div>
+    </div>
     <div class="toolbar">
       <input class="search" id="searchRegistrations" placeholder="Søk etter elevnavn, foresatt eller program...">
-      <select id="regStatusFilter" onchange="render('registrations')" style="font-family:'Jost',sans-serif; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid var(--line);">
-        <option value="">Alle statuser</option>
-        <option value="Ny">🆕 Ny</option>
-        <option value="Venteliste">⏳ Venteliste</option>
-        <option value="Godkjent">✅ Godkjent</option>
-        <option value="Avslått">❌ Avslått</option>
-      </select>
+      <span class="count-chip" id="regFolderActiveLabel" onclick="setRegFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
       <button class="btn btn-ghost" onclick="exportCSV('registrations')">Eksporter CSV</button>
     </div>
@@ -3432,6 +3452,36 @@
   function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ===================================================================
+  // SØKNADER — mappevisning: Ny / Venteliste / Godkjent / Avslått som
+  // fire klikkbare "mapper" med antall, i stedet for en rullegardin.
+  // ===================================================================
+  let regSelectedFolder = '';
+  const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått' };
+
+  window.setRegFolder = function(status){
+    regSelectedFolder = (regSelectedFolder === status) ? '' : status; // klikk på samme mappe igjen = vis alle
+    document.querySelectorAll('.folder-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.status === regSelectedFolder);
+    });
+    const label = document.getElementById('regFolderActiveLabel');
+    if(label){
+      label.textContent = regSelectedFolder
+        ? '📂 Viser: ' + REG_FOLDER_LABELS[regSelectedFolder] + ' — trykk igjen for å vise alle'
+        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+    }
+    render('registrations');
+  };
+
+  function updateRegFolderCounts(registrations){
+    const counts = { Ny:0, Venteliste:0, Godkjent:0, Avslått:0 };
+    registrations.forEach(r => { const s = r.status || 'Ny'; if(counts[s] !== undefined) counts[s]++; });
+    Object.keys(counts).forEach(status => {
+      const el = document.getElementById('regFolderCount_' + status);
+      if(el) el.textContent = counts[status];
+    });
+  }
+
+  // ===================================================================
   // PERSON DETAIL — bred/horisontal visning av en elev/lærer/foresatt,
   // med bilde (eller kjønnsbasert standardavatar), de viktigste
   // opplysningene i en rad øverst, og resten av feltene skjult bak "Vis
@@ -3887,12 +3937,11 @@
     }
     if(type === 'registrations'){
       // Lar administrasjonen dele søknadene inn i Ny / Venteliste / Godkjent /
-      // Avslått og se dem gruppevis, i stedet for å bla gjennom alle om
+      // Avslått og se dem mappevis, i stedet for å bla gjennom alle om
       // hverandre — statusen på hver søknad er allerede satt av
       // Godkjenn/Venteliste/Avslå-knappene og av Vipps-webhooken.
-      const statusFilterEl = document.getElementById('regStatusFilter');
-      const statusFilter = statusFilterEl ? statusFilterEl.value : '';
-      if(statusFilter) data = data.filter(row => (row.status || 'Ny') === statusFilter);
+      updateRegFolderCounts(cache.registrations);
+      if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
     }
     renderRecordCards(type, data);
     const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
