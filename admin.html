@@ -535,6 +535,14 @@
   .folder-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
   @media (max-width:900px){.folder-row{grid-template-columns:1fr 1fr;}}
   @media (max-width:500px){.folder-row{grid-template-columns:1fr;}}
+  /* Dynamisk mappe-rad (klasser + faste spesialmapper): mappene deler
+     tilgjengelig bredde likt — få mapper fyller ut hele bredden, mange
+     mapper krymper for å få plass til alle, og bryter til ny linje kun
+     når de ellers ville blitt for smale til å lese (under ~150px). */
+  .folder-row-dynamic{display:flex; flex-wrap:wrap; gap:12px;}
+  .folder-row-dynamic .folder-card{flex:1 1 150px; padding:16px 14px; min-width:150px;}
+  .folder-row-dynamic .folder-card h3{font-size:15.5px; margin:0 0 4px;}
+  .folder-row-dynamic .folder-card .sub{font-size:11px;}
   .report-card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 22px; box-shadow:var(--shadow);}
   .report-card h3{
     font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d);
@@ -1323,8 +1331,10 @@
 
   <!-- STUDENTS -->
   <div class="panel" id="panel-students">
+    <div class="folder-row-dynamic" id="studentFolderRow" style="margin-bottom:16px;"></div>
     <div class="toolbar">
       <input class="search" id="searchStudents" placeholder="Søk etter navn, klasse eller foresatt...">
+      <span class="count-chip" id="studentFolderActiveLabel" onclick="setStudentFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countStudents" onclick="toggleRecordsById('tableStudents')">0 elever</span>
       <button class="btn btn-ghost" onclick="exportCSV('students')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('students')">+ Ny elev</button>
@@ -2310,6 +2320,7 @@
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
         {key:'foresatt1_tlf', label:'Foresatt 1 — telefon', type:'text', essential:true},
+        {key:'elevStatus', label:'Elevstatus', type:'select', essential:true, options:['Aktiv','Sluttet/trukket']},
         {key:'foresatt2', label:'Foresatt 2 (om registrert som egen konto)', type:'dynamic-select', source:'guardians'},
 
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
@@ -3482,6 +3493,50 @@
   }
 
   // ===================================================================
+  // ELEVER — mappevisning per klasse (dynamisk, én mappe per klasse som
+  // faktisk finnes) pluss to faste spesialmapper: "Uten klasse" (ikke
+  // fordelt ennå) og "Sluttet/trukket" (elever med elevStatus satt til
+  // det, uansett hvilken klasse de sto i — holdes ute av klassemappene
+  // for å ikke rote til aktive klasselister).
+  // ===================================================================
+  let studentSelectedFolder = '';
+
+  function renderStudentFolders(){
+    const row = document.getElementById('studentFolderRow');
+    if(!row) return;
+    const classes = [...cache.classes].filter(c => c.navn).sort((a,b) => a.navn.localeCompare(b.navn));
+    const students = cache.students;
+    const activeStudents = students.filter(s => s.elevStatus !== 'Sluttet/trukket');
+
+    const cards = classes.map(c => {
+      const count = activeStudents.filter(s => s.klasse === c.id).length;
+      return { key: c.id, label: '🏫 ' + c.navn, sub: count + ' elev' + (count === 1 ? '' : 'er'), count };
+    });
+    const noClassCount = activeStudents.filter(s => !s.klasse).length;
+    cards.push({ key: '__none__', label: '📭 Uten klasse', sub: 'Ikke fordelt ennå', count: noClassCount });
+    const withdrawnCount = students.filter(s => s.elevStatus === 'Sluttet/trukket').length;
+    cards.push({ key: '__withdrawn__', label: '🚪 Sluttet/trukket', sub: 'Ikke lenger aktiv', count: withdrawnCount });
+
+    row.innerHTML = cards.map(c => `
+      <div class="choice-card folder-card${studentSelectedFolder === c.key ? ' active' : ''}" data-status="${escapeHtml(c.key)}" onclick="setStudentFolder('${escapeHtml(c.key)}')">
+        <h3>${c.label}<span class="folder-count">${c.count}</span></h3>
+        <div class="sub">${escapeHtml(c.sub)}</div>
+      </div>`).join('');
+  }
+
+  window.setStudentFolder = function(key){
+    studentSelectedFolder = (studentSelectedFolder === key) ? '' : key;
+    const label = document.getElementById('studentFolderActiveLabel');
+    if(label){
+      label.textContent = studentSelectedFolder
+        ? '📂 Filtrert — trykk på mappen igjen for å vise alle'
+        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+    }
+    renderStudentFolders();
+    render('students');
+  };
+
+  // ===================================================================
   // PERSON DETAIL — bred/horisontal visning av en elev/lærer/foresatt,
   // med bilde (eller kjønnsbasert standardavatar), de viktigste
   // opplysningene i en rad øverst, og resten av feltene skjult bak "Vis
@@ -3943,13 +3998,19 @@
       updateRegFolderCounts(cache.registrations);
       if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
     }
+    if(type === 'students'){
+      renderStudentFolders();
+      if(studentSelectedFolder === '__none__') data = data.filter(row => !row.klasse && row.elevStatus !== 'Sluttet/trukket');
+      else if(studentSelectedFolder === '__withdrawn__') data = data.filter(row => row.elevStatus === 'Sluttet/trukket');
+      else if(studentSelectedFolder) data = data.filter(row => row.klasse === studentSelectedFolder && row.elevStatus !== 'Sluttet/trukket');
+    }
     renderRecordCards(type, data);
     const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
     const countEl = document.getElementById('count' + capitalize(type));
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
-    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); }
+    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); }
     if(type === 'students'){ renderCashierPanel(); renderCashierLedelsePanel(); }
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
