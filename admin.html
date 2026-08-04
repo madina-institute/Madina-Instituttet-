@@ -299,6 +299,8 @@
   }
   .record-field{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); }
   .record-field-label{ color:var(--gold); font-weight:600; margin-inline-end:4px; }
+  .record-link{ color:var(--emerald-d); font-weight:600; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .record-link:hover{ color:var(--emerald); }
   .record-contact{ display:flex; flex-direction:column; gap:5px; border-top:1px solid var(--line); padding-top:10px; }
   .record-contact-row{ font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; word-break:break-all; }
   .record-card-actions{ display:flex; gap:8px; margin-top:2px; flex-wrap:wrap; }
@@ -3448,6 +3450,19 @@
 
   let pdCurrentType = null, pdCurrentId = null;
 
+  // Universell krysslenking: brukes overalt et felt viser en referanse til
+  // en annen post (f.eks. en elevs foresatt, en times lærer, en plans
+  // klasse) — ett klikk åpner det tilknyttede kortet direkte, i stedet for
+  // å måtte forlate siden og lete det opp manuelt i en annen fane.
+  window.openRelatedRecord = function(type, id){
+    if(!id || !cache[type]) return;
+    if(['students','teachers','guardians'].includes(type)){
+      showPersonDetail(type, id);
+    } else if(SCHEMAS[type]){
+      editEntry(type, id);
+    }
+  };
+
   window.showPersonDetail = function(type, id){
     const schema = SCHEMAS[type];
     const row = cache[type].find(r => r.id === id);
@@ -3472,21 +3487,30 @@
         val = val + (age !== null ? ' (' + age + ' år)' : '');
       }
       if(!val) return '';
-      return `<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">${escapeHtml(f.label)}</div><div style="font-weight:600;">${escapeHtml(val)}</div></div>`;
+      const isLink = f.type === 'dynamic-select' && row[f.key];
+      const valueHtml = isLink
+        ? `<span class="record-link" onclick="openRelatedRecord('${escapeHtml(f.source)}','${escapeHtml(row[f.key])}')">${escapeHtml(val)}</span>`
+        : escapeHtml(val);
+      return `<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">${escapeHtml(f.label)}</div><div style="font-weight:600;">${valueHtml}</div></div>`;
     }).filter(Boolean);
 
     // For elever: legg alltid til foresattes kontaktinfo rett i toppraden,
     // ikke bare navnet — det er nettopp det brukeren ba om å se med en gang.
+    // Både telefon/e-post-raden og selve foresatt-navnet over er klikkbare
+    // og åpner foresattes eget kort direkte.
     if(type === 'students' && row.foresatt){
       const guardian = cache.guardians.find(g => g.id === row.foresatt);
       if(guardian){
-        if(guardian.telefon) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Foresatt — telefon</div><div style="font-weight:600;">📞 ${escapeHtml(guardian.telefon)}</div></div>`);
-        if(guardian.epost) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Foresatt — e-post</div><div style="font-weight:600;">✉️ ${escapeHtml(guardian.epost)}</div></div>`);
+        if(guardian.telefon) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Foresatt — telefon</div><div style="font-weight:600;"><span class="record-link" onclick="openRelatedRecord('guardians','${escapeHtml(row.foresatt)}')">📞 ${escapeHtml(guardian.telefon)}</span></div></div>`);
+        if(guardian.epost) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Foresatt — e-post</div><div style="font-weight:600;"><span class="record-link" onclick="openRelatedRecord('guardians','${escapeHtml(row.foresatt)}')">✉️ ${escapeHtml(guardian.epost)}</span></div></div>`);
       }
     }
     if(type === 'guardians'){
-      const children = cache.students.filter(s => s.foresatt === row.id).map(s => s.navn).filter(Boolean);
-      if(children.length) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Barn</div><div style="font-weight:600;">${escapeHtml(children.join(', '))}</div></div>`);
+      const children = cache.students.filter(s => s.foresatt === row.id);
+      if(children.length){
+        const childrenHtml = children.map(s => `<span class="record-link" onclick="openRelatedRecord('students','${escapeHtml(s.id)}')">${escapeHtml(s.navn||'—')}</span>`).join(', ');
+        chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Barn</div><div style="font-weight:600;">${childrenHtml}</div></div>`);
+      }
     }
     document.getElementById('pdEssentialRow').innerHTML = chips.join('');
 
@@ -3495,7 +3519,11 @@
     extraGrid.innerHTML = extraFields.map(f => {
       const val = colDisplay(f.key);
       if(!val) return '';
-      return `<div class="record-field" data-pd-key="${escapeHtml(f.key)}"><span class="record-field-label">${escapeHtml(f.label)}</span>${escapeHtml(val)}</div>`;
+      const isLink = f.type === 'dynamic-select' && row[f.key];
+      const valueHtml = isLink
+        ? `<span class="record-link" onclick="openRelatedRecord('${escapeHtml(f.source)}','${escapeHtml(row[f.key])}')">${escapeHtml(val)}</span>`
+        : escapeHtml(val);
+      return `<div class="record-field" data-pd-key="${escapeHtml(f.key)}"><span class="record-field-label">${escapeHtml(f.label)}</span>${valueHtml}</div>`;
     }).join('') || '<div style="color:#8a9a90; font-size:13px;">Ingen flere opplysninger registrert.</div>';
     extraGrid.style.display = 'none';
     extraGrid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(220px,1fr))';
@@ -4459,6 +4487,11 @@
           contactHtml += `<div class="record-contact-row">✉️ ${escapeHtml(val)}</div>`;
         } else if(c === 'telefon' || c === 'nyTelefon' || c === 'foresatt1_tlf'){
           contactHtml += `<div class="record-contact-row">📞 ${escapeHtml(val)}</div>`;
+        } else if(field && field.type === 'dynamic-select' && row[c]){
+          // Krysslenking: navnet på f.eks. en klasse, lærer eller foresatt er
+          // klikkbart og åpner det tilknyttede kortet direkte, i stedet for
+          // at man må forlate denne siden og lete det opp manuelt et annet sted.
+          fieldsHtml += `<div class="record-field"><span class="record-field-label">${escapeHtml(field.label)}</span><span class="record-link" onclick="event.stopPropagation(); openRelatedRecord('${escapeHtml(field.source)}','${escapeHtml(row[c])}')">${escapeHtml(val)}</span></div>`;
         } else {
           fieldsHtml += `<div class="record-field"><span class="record-field-label">${escapeHtml(field.label)}</span>${escapeHtml(val)}</div>`;
         }
