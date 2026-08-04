@@ -1220,11 +1220,17 @@
   <!-- FINANCES -->
   <div class="panel" id="panel-finances">
     <div class="report-grid" style="margin-bottom:20px;">
-      <div class="stat-card"><div class="n" id="finStatInn">0 kr</div><div class="l">Totalt innbetalt</div></div>
+      <div class="stat-card"><div class="n" id="finStatElever">0 kr</div><div class="l">Innbetalt fra elever (skolepenger)</div></div>
+      <div class="stat-card"><div class="n" id="finStatInn">0 kr</div><div class="l">Totalt innbetalt (elever + annet)</div></div>
       <div class="stat-card"><div class="n" id="finStatUt">0 kr</div><div class="l">Totalt utbetalt</div></div>
-      <div class="stat-card"><div class="n" id="finStatSaldo">0 kr</div><div class="l">Saldo (kassebeholdning)</div></div>
+      <div class="stat-card"><div class="n" id="finStatSaldo">0 kr</div><div class="l">Skolens saldo (kassebeholdning)</div></div>
     </div>
     <div class="toolbar">
+      <label style="display:flex; align-items:center; gap:6px; font-family:'Jost',sans-serif; font-size:13px;">
+        📅 Måned:
+        <input type="month" id="finMonthFilter" onchange="renderFinanceSummary()" style="font-family:'Jost',sans-serif; font-size:13px; padding:7px 10px; border-radius:8px; border:1px solid var(--line);">
+      </label>
+      <button class="btn btn-ghost" onclick="document.getElementById('finMonthFilter').value=''; renderFinanceSummary();">Vis hele året</button>
       <input class="search" id="searchFinances" placeholder="Søk etter kategori, beskrivelse eller dato...">
       <span class="count-chip" id="countFinances" onclick="toggleRecordsById('tableFinances')">0 poster</span>
       <button class="btn btn-ghost" onclick="exportCSV('finances')">Eksporter CSV</button>
@@ -2982,6 +2988,7 @@
         .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       renderCashierPanel();
       renderCashierLedelsePanel();
+      renderFinanceSummary();
     }, (err) => {
       console.error('studentPayments', err);
     });
@@ -4681,13 +4688,38 @@
     });
   }
 
+  function extractYearMonth(dateStr){
+    if(!dateStr) return '';
+    if(/^\d{4}-\d{2}/.test(dateStr)) return dateStr.slice(0, 7); // ISO: studentPayments.dato
+    const m = String(dateStr).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/); // Norsk DD.MM.YYYY: finances.dato
+    if(m) return m[3] + '-' + m[2].padStart(2, '0');
+    return '';
+  }
+
   function renderFinanceSummary(){
     const innEl = document.getElementById('finStatInn');
     if(!innEl) return;
     const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
-    const totalInn = cache.finances.filter(f => f.type === 'Innbetaling').reduce((s,f) => s + toNum(f.belop), 0);
-    const totalUt = cache.finances.filter(f => f.type === 'Utbetaling').reduce((s,f) => s + toNum(f.belop), 0);
+    const monthFilter = document.getElementById('finMonthFilter')?.value || '';
+
+    // Skolens saldo = alt elevene faktisk har betalt inn (skolepenger, via
+    // Kasserer/Vipps — refusjoner er allerede negative beløp der og trekkes
+    // dermed automatisk fra) PLUSS eventuelle andre manuelle innbetalinger
+    // registrert her, MINUS alle utbetalinger (husleie o.l.).
+    const paymentsInScope = monthFilter
+      ? cache.studentPayments.filter(p => extractYearMonth(p.dato) === monthFilter)
+      : cache.studentPayments;
+    const financesInScope = monthFilter
+      ? cache.finances.filter(f => extractYearMonth(f.dato) === monthFilter)
+      : cache.finances;
+
+    const totalElever = paymentsInScope.reduce((s,p) => s + toNum(p.belop), 0);
+    const totalInnManuell = financesInScope.filter(f => f.type === 'Innbetaling').reduce((s,f) => s + toNum(f.belop), 0);
+    const totalInn = totalElever + totalInnManuell;
+    const totalUt = financesInScope.filter(f => f.type === 'Utbetaling').reduce((s,f) => s + toNum(f.belop), 0);
     const saldo = totalInn - totalUt;
+
+    document.getElementById('finStatElever').textContent = totalElever.toLocaleString('no-NO') + ' kr';
     innEl.textContent = totalInn.toLocaleString('no-NO') + ' kr';
     document.getElementById('finStatUt').textContent = totalUt.toLocaleString('no-NO') + ' kr';
     document.getElementById('finStatSaldo').textContent = saldo.toLocaleString('no-NO') + ' kr';
