@@ -282,11 +282,19 @@
   .records-hidden{display:none;}
 
   /* Record card grid (used by all list-style sections) */
-  .card-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:16px; }
-  .record-empty{ grid-column:1/-1; background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; text-align:center; color:var(--emerald); font-family:'Jost',sans-serif; font-size:13.5px; box-shadow:var(--shadow); }
-  .record-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; transition:transform .15s, border-color .15s; }
+  .card-grid{ display:flex; flex-direction:column; gap:14px; }
+  .record-empty{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; text-align:center; color:var(--emerald); font-family:'Jost',sans-serif; font-size:13.5px; box-shadow:var(--shadow); }
+  /* Bred, horisontal kort-rad (elever/lærere/foresatte m.fl.) i stedet for
+     smale, loddrette kort i et flerkolonnes rutenett — alt (bilde/navn,
+     felter, kontaktinfo, handlinger) ligger på én linje som fyller
+     bredden, og bryter ned til stablet layout kun på smale skjermer. */
+  .record-card{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 22px;
+    box-shadow:var(--shadow); display:flex; flex-direction:row; align-items:center; flex-wrap:wrap;
+    gap:10px 28px; transition:transform .15s, border-color .15s;
+  }
   .record-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
-  .record-card-top{ display:flex; align-items:center; gap:12px; }
+  .record-card-top{ display:flex; align-items:center; gap:12px; flex:0 0 auto; min-width:190px; }
   .record-avatar{
     flex:none; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(160deg, var(--emerald) 0%, var(--emerald-d) 100%); color:#fff;
@@ -297,13 +305,20 @@
     display:inline-block; margin-top:3px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600;
     color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:20px; padding:3px 10px;
   }
-  .record-field{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); }
+  .record-field{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); white-space:nowrap; }
   .record-field-label{ color:var(--gold); font-weight:600; margin-inline-end:4px; }
   .record-link{ color:var(--emerald-d); font-weight:600; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
   .record-link:hover{ color:var(--emerald); }
-  .record-contact{ display:flex; flex-direction:column; gap:5px; border-top:1px solid var(--line); padding-top:10px; }
-  .record-contact-row{ font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; word-break:break-all; }
-  .record-card-actions{ display:flex; gap:8px; margin-top:2px; flex-wrap:wrap; }
+  .record-contact{ display:flex; flex-direction:row; flex-wrap:wrap; gap:6px 16px; flex:0 0 auto; }
+  .record-contact-row{ font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .record-card-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-inline-start:auto; }
+  @media (max-width:760px){
+    .record-card{ flex-direction:column; align-items:stretch; padding:16px; }
+    .record-card-top{ min-width:0; }
+    .record-field{ white-space:normal; }
+    .record-contact{ flex-direction:column; border-top:1px solid var(--line); padding-top:10px; }
+    .record-card-actions{ margin-inline-start:0; }
+  }
   summary{ list-style:none; }
   summary::-webkit-details-marker{ display:none; }
 
@@ -3487,7 +3502,7 @@
         val = val + (age !== null ? ' (' + age + ' år)' : '');
       }
       if(!val) return '';
-      const isLink = f.type === 'dynamic-select' && row[f.key];
+      const isLink = f.type === 'dynamic-select' && row[f.key] && (cache[f.source] || []).some(r => r.id === row[f.key]);
       const valueHtml = isLink
         ? `<span class="record-link" onclick="openRelatedRecord('${escapeHtml(f.source)}','${escapeHtml(row[f.key])}')">${escapeHtml(val)}</span>`
         : escapeHtml(val);
@@ -3519,7 +3534,7 @@
     extraGrid.innerHTML = extraFields.map(f => {
       const val = colDisplay(f.key);
       if(!val) return '';
-      const isLink = f.type === 'dynamic-select' && row[f.key];
+      const isLink = f.type === 'dynamic-select' && row[f.key] && (cache[f.source] || []).some(r => r.id === row[f.key]);
       const valueHtml = isLink
         ? `<span class="record-link" onclick="openRelatedRecord('${escapeHtml(f.source)}','${escapeHtml(row[f.key])}')">${escapeHtml(val)}</span>`
         : escapeHtml(val);
@@ -3846,7 +3861,12 @@
       const rec = (cache[src] || []).find(r => r.id === val);
       if(rec) return rec.navn || '';
     }
-    return val; // not a known id — show the raw value (legacy/un-migrated)
+    // Ser ut som en Firestore-ID (20 tegn, ingen mellomrom) som ikke finnes i
+    // cachen lenger — mest sannsynlig en slettet klasse/lærer/foresatt.
+    // Viser da en tydelig, lesbar melding i stedet for den rå, kryptiske
+    // IDen (f.eks. "ygyHTJ89OoDMiOLJBaFj") som tidligere ble vist direkte.
+    if(/^[a-zA-Z0-9]{20}$/.test(val)) return '(slettet/ukjent)';
+    return val; // ikke en ID-form — vis rå verdi (legacy/ikke-migrert tekst)
   }
   function escapeHtml(str){
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
@@ -4487,7 +4507,7 @@
           contactHtml += `<div class="record-contact-row">✉️ ${escapeHtml(val)}</div>`;
         } else if(c === 'telefon' || c === 'nyTelefon' || c === 'foresatt1_tlf'){
           contactHtml += `<div class="record-contact-row">📞 ${escapeHtml(val)}</div>`;
-        } else if(field && field.type === 'dynamic-select' && row[c]){
+        } else if(field && field.type === 'dynamic-select' && row[c] && (cache[field.source] || []).some(r => r.id === row[c])){
           // Krysslenking: navnet på f.eks. en klasse, lærer eller foresatt er
           // klikkbart og åpner det tilknyttede kortet direkte, i stedet for
           // at man må forlate denne siden og lete det opp manuelt et annet sted.
