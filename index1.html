@@ -235,6 +235,29 @@
   .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
   table{ max-width:100%; }
   img, video, canvas{ max-width:100%; height:auto; }
+  .home-greeting h2{ margin:0 0 4px; }
+  .home-greeting .date{ color:#6b7a72; font-size:14.5px; text-transform:capitalize; }
+  .home-block{ margin-top:24px; }
+  .home-block h3{ font-size:15px; margin:0 0 10px; }
+  .home-card{
+    background:var(--paper); border:1px solid rgba(31,74,58,.14);
+    border-radius:12px; padding:14px 16px; margin-bottom:9px;
+  }
+  .home-card.task{ display:flex; align-items:flex-start; gap:12px; cursor:pointer; }
+  .home-card.task:hover{ background:var(--paper-2); }
+  .home-card.task .ic{ font-size:19px; line-height:1.2; }
+  .home-card.task .t{ font-weight:600; font-size:14.5px; }
+  .home-card.task .d{ color:#6b7a72; font-size:13px; margin-top:2px; }
+  .home-card.ok{ text-align:center; color:#4a7c59; }
+  .lesson-row{
+    display:flex; align-items:baseline; gap:14px;
+    padding:10px 0; font-size:14.5px;
+  }
+  .lesson-row + .lesson-row{ border-top:1px solid rgba(31,74,58,.10); }
+  .lesson-row .tid{ font-variant-numeric:tabular-nums; color:var(--emerald-d); font-weight:600; min-width:88px; }
+  .lesson-row .fag{ font-weight:600; }
+  .lesson-row .kl{ color:#6b7a72; font-size:13px; margin-inline-start:auto; }
+  .home-day{ color:var(--emerald-d); font-weight:600; font-size:13.5px; margin-bottom:6px; }
   /* Sammendrag av egne timer — det læreren spør om først. */
   .att-summary{
     margin-top:22px; padding:16px 18px; border-radius:12px;
@@ -390,6 +413,7 @@
   <div id="appView">
   <div class="portal-body">
     <nav class="portal-sidebar" id="portalSidebar">
+      <button data-sidebar="home" onclick="navTo('home', showHome)"><span class="ic">🏠</span><span class="lbl">Min side</span></button>
       <button data-sidebar="attendance" onclick="navTo('attendance', showAttendance)"><span class="ic">✅</span><span class="lbl">Ta oppmøte</span></button>
       <button data-sidebar="myAttendance" onclick="navTo('myAttendance', showMyAttendance)"><span class="ic">⏰</span><span class="lbl">Mitt oppmøte/timer</span></button>
       <button data-sidebar="lesson" onclick="navTo('lesson', showLesson)"><span class="ic">📅</span><span class="lbl">Timeforberedelse</span></button>
@@ -632,6 +656,14 @@
       <h2>Fraværsmeldinger</h2>
       <div class="sub">Ubehandlede meldinger fra foresatte for din klasse</div>
       <div id="absenceReviewList"></div>
+    </div>
+
+    <!-- HOME / MIN SIDE -->
+    <div class="card" id="homeView" style="display:none;">
+      <div id="homeGreeting" class="home-greeting"></div>
+      <div id="homeTasks"></div>
+      <div id="homeSchedule"></div>
+      <div id="homeAdmin"></div>
     </div>
 
     <!-- MY ATTENDANCE / HOURS VIEW -->
@@ -1211,6 +1243,7 @@
   let classes = [];
   let programs = [];
   let schoolCalendar = [];
+  let hours = [];
   let guardians = [];
   let currentTeacher = null;
 
@@ -1252,6 +1285,11 @@
     programs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     refreshSchoolCalendars();
   }, (err) => console.error('programs', err));
+
+  watch('hours', (snap) => {
+    hours = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderHome();
+  }, (err) => console.error('hours', err));
 
   watch('schoolCalendar', (snap) => {
     schoolCalendar = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1589,6 +1627,7 @@
   // logic exactly as before.
   window.hideAllViews = function(){
     document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('homeView').style.display = 'none';
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'none';
     document.getElementById('lessonArchiveView').style.display = 'none';
@@ -1620,7 +1659,7 @@
   };
 
   window.showChoice = function(){
-    navTo('attendance', showAttendance);
+    navTo('home', showHome);
   };
 
   window.showAttendance = function(){
@@ -1964,6 +2003,183 @@
       console.error(err);
       notify('Noe gikk galt: ' + err.message);
     }
+  };
+
+  // ── Min side ─────────────────────────────────────────────────────
+  // Samler det læreren trenger å vite når portalen åpnes: hvilken dag det
+  // er, hva som venter på hen, og timeplanen for neste undervisningsdag.
+  // Alt regnes ut fra data som allerede finnes — ingen nye felter.
+
+  const WD_NO = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
+  const WD_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const MND_NO = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+  const MND_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+  function longDate(d, ar){
+    return (ar ? WD_AR : WD_NO)[d.getDay()] + ' ' + d.getDate() + '. ' +
+           (ar ? MND_AR : MND_NO)[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  // Neste undervisningsdag for denne læreren, i dag medregnet.
+  function nextTeachingDay(){
+    if(!currentTeacher) return null;
+    const allowed = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    const d = new Date();
+    for(let i = 0; i < 400; i++){
+      const iso = isoOf(d);
+      if(schoolDayInfo(iso, allowed).ok) return { iso, date: new Date(d) };
+      d.setDate(d.getDate() + 1);
+    }
+    return null;
+  }
+
+  // Undervisningsdager som allerede er passert uten at timer er registrert.
+  // Ser 60 dager tilbake — langt nok til å fange opp glemte uker, kort nok
+  // til at gammel historikk ikke fyller listen.
+  function unregisteredDays(){
+    if(!currentTeacher) return [];
+    const allowed = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    const registered = new Set(myAttendanceCache
+      .filter(a => a.larer === currentTeacher.id)
+      .map(a => a.dato));
+    const out = [];
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    for(let i = 0; i < 60 && out.length < 4; i++){
+      const iso = isoOf(d);
+      if(schoolDayInfo(iso, allowed).ok && !registered.has(iso)) out.push(iso);
+      d.setDate(d.getDate() - 1);
+    }
+    return out;
+  }
+
+  function renderHome(){
+    const g = document.getElementById('homeGreeting');
+    if(!g || !currentTeacher) return;
+    const ar = currentLang === 'ar';
+    const now = new Date();
+    const h = now.getHours();
+    const hello = ar
+      ? (h < 12 ? 'صباح الخير' : h < 18 ? 'مرحبًا' : 'مساء الخير')
+      : (h < 12 ? 'God morgen' : h < 18 ? 'God dag' : 'God kveld');
+    const navn = (currentTeacher.navn || '').split(' ')[0];
+
+    g.innerHTML = `<h2>${hello}, ${escapeHtml(navn)}</h2>
+                   <div class="date">${longDate(now, ar)}</div>`;
+
+    // ── Oppgaver som venter ──
+    const tasks = [];
+
+    unregisteredDays().forEach(iso => {
+      tasks.push({
+        ic: '⏰',
+        t: ar ? 'ساعات غير مسجّلة' : 'Timer ikke registrert',
+        d: iso,
+        go: () => navTo('myAttendance', showMyAttendance)
+      });
+    });
+
+    const pendingAbsence = (typeof absenceRequests !== 'undefined' ? absenceRequests : [])
+      .filter(a => resolveClassName(a.klasse) === resolveClassName(currentTeacher.tildeltKlasse))
+      .filter(a => !a.status || a.status === 'Venter' || a.status === 'Ny');
+    if(pendingAbsence.length){
+      tasks.push({
+        ic: '🚫',
+        t: ar ? 'رسائل غياب بانتظار المعالجة' : 'Fraværsmeldinger til behandling',
+        d: pendingAbsence.length + (ar ? ' رسالة' : ' stk.'),
+        go: () => navTo('absenceReview', showAbsenceReview)
+      });
+    }
+
+    const next = nextTeachingDay();
+    if(next){
+      const harPlan = lessonPlans.some(l => l.dato === next.iso && l.larer === currentTeacher.id);
+      if(!harPlan){
+        tasks.push({
+          ic: '📅',
+          t: ar ? 'تحضير الحصة غير جاهز' : 'Timeforberedelse mangler',
+          d: longDate(next.date, ar),
+          go: () => navTo('lesson', showLesson)
+        });
+      }
+    }
+
+    const keys = [...new Set(myClassMessages().map(threadKey))];
+    const nyeMeldinger = keys.filter(k => isThreadUnread(k)).length;
+    if(nyeMeldinger){
+      tasks.push({
+        ic: '📩',
+        t: ar ? 'رسائل جديدة' : 'Nye meldinger',
+        d: nyeMeldinger + (ar ? ' محادثة' : ' samtale(r)'),
+        go: () => navTo('messages', showMessages)
+      });
+    }
+
+    const tEl = document.getElementById('homeTasks');
+    tEl.innerHTML = `<div class="home-block">
+      <h3>${ar ? 'مهام بانتظار المعالجة' : 'Oppgaver som venter behandling'}</h3>
+      ${tasks.length === 0
+        ? `<div class="home-card ok">${ar ? '✅ لا توجد مهام معلّقة — كل شيء محدّث' : '✅ Ingen oppgaver venter — alt er oppdatert'}</div>`
+        : tasks.map((t, i) => `
+          <div class="home-card task" data-task="${i}">
+            <span class="ic">${t.ic}</span>
+            <span><span class="t">${t.t}</span><span class="d">${escapeHtml(String(t.d))}</span></span>
+          </div>`).join('')}
+    </div>`;
+    tEl.querySelectorAll('[data-task]').forEach(el => {
+      el.addEventListener('click', () => tasks[parseInt(el.dataset.task, 10)].go());
+    });
+
+    // ── Timeplan for neste undervisningsdag ──
+    const sEl = document.getElementById('homeSchedule');
+    if(!next){
+      sEl.innerHTML = '';
+    } else {
+      const dagNavn = WD_NO[next.date.getDay()];
+      const mine = hours
+        .filter(t => t.larer === currentTeacher.id)
+        .filter(t => (t.dag || '').toLowerCase() === dagNavn)
+        .sort((a, b) => (a.tid || '').localeCompare(b.tid || ''));
+      const iDag = isoOf(new Date()) === next.iso;
+
+      sEl.innerHTML = `<div class="home-block">
+        <h3>${ar ? 'حصصي' : 'Mine timer'}</h3>
+        <div class="home-day">${iDag ? (ar ? 'اليوم · ' : 'I dag · ') : ''}${longDate(next.date, ar)}</div>
+        <div class="home-card">
+          ${mine.length === 0
+            ? `<div class="sub">${ar ? 'لا توجد حصص مسجّلة لك في هذا اليوم.' : 'Ingen timer registrert på deg denne dagen.'}</div>`
+            : mine.map(t => `
+              <div class="lesson-row">
+                <span class="tid">${escapeHtml(t.tid || '')}</span>
+                <span class="fag">${escapeHtml(t.fag || '')}</span>
+                <span class="kl">${escapeHtml(resolveClassName(t.klasse) || '')}</span>
+              </div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    // ── Siste melding fra administrasjonen ──
+    const aEl = document.getElementById('homeAdmin');
+    const adminSiste = (typeof broadcastMessages !== 'undefined' ? broadcastMessages : [])
+      .slice()
+      .sort((a, b) => (b.dato || '').localeCompare(a.dato || ''))
+      .slice(0, 3);
+    aEl.innerHTML = adminSiste.length === 0 ? '' : `<div class="home-block">
+      <h3>${ar ? 'من الإدارة' : 'Fra administrasjonen'}</h3>
+      ${adminSiste.map(m => `
+        <div class="home-card task" onclick="navTo('adminMsgs', showAdminMsgs)">
+          <span class="ic">📢</span>
+          <span><span class="t">${escapeHtml((m.tekst || '').slice(0, 70))}${(m.tekst || '').length > 70 ? '…' : ''}</span>
+          <span class="d">${escapeHtml((m.dato || '').slice(0, 10))}</span></span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  window.showHome = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+    renderHome();
+    pushAppView('home');
   };
 
   // Lærerens egen timeoversikt.
