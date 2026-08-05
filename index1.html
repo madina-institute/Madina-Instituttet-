@@ -661,9 +661,9 @@
     <!-- HOME / MIN SIDE -->
     <div class="card" id="homeView" style="display:none;">
       <div id="homeGreeting" class="home-greeting"></div>
+      <div id="homeAdmin"></div>
       <div id="homeTasks"></div>
       <div id="homeSchedule"></div>
-      <div id="homeAdmin"></div>
     </div>
 
     <!-- MY ATTENDANCE / HOURS VIEW -->
@@ -2045,13 +2045,15 @@
     const out = [];
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    for(let i = 0; i < 60 && out.length < 4; i++){
+    for(let i = 0; i < 60 && out.length < 12; i++){
       const iso = isoOf(d);
       if(schoolDayInfo(iso, allowed).ok && !registered.has(iso)) out.push(iso);
       d.setDate(d.getDate() - 1);
     }
     return out;
   }
+
+  let homeShowAllDays = false;
 
   function renderHome(){
     const g = document.getElementById('homeGreeting');
@@ -2070,7 +2072,12 @@
     // ── Oppgaver som venter ──
     const tasks = [];
 
-    unregisteredDays().forEach(iso => {
+    // Har læreren glemt å registrere over flere uker, ville hver dag fått
+    // sin egen rad og skjøvet alt annet ut av syne. Vi viser de to nyeste og
+    // samler resten bak én linje som kan foldes ut.
+    const uregistrerte = unregisteredDays();
+    const synligeDager = homeShowAllDays ? uregistrerte : uregistrerte.slice(0, 2);
+    synligeDager.forEach(iso => {
       tasks.push({
         ic: '⏰',
         t: ar ? 'ساعات غير مسجّلة' : 'Timer ikke registrert',
@@ -2078,6 +2085,22 @@
         go: () => navTo('myAttendance', showMyAttendance)
       });
     });
+    const skjulte = uregistrerte.length - synligeDager.length;
+    if(skjulte > 0){
+      tasks.push({
+        ic: '➕',
+        t: ar ? `إظهار ${skjulte} يومًا آخر` : `Vis ${skjulte} dag(er) til`,
+        d: ar ? 'ساعات غير مسجّلة' : 'Timer ikke registrert',
+        go: () => { homeShowAllDays = true; renderHome(); }
+      });
+    } else if(homeShowAllDays && uregistrerte.length > 2){
+      tasks.push({
+        ic: '➖',
+        t: ar ? 'إخفاء الأيام الإضافية' : 'Vis færre dager',
+        d: '',
+        go: () => { homeShowAllDays = false; renderHome(); }
+      });
+    }
 
     const pendingAbsence = (typeof absenceRequests !== 'undefined' ? absenceRequests : [])
       .filter(a => resolveClassName(a.klasse) === resolveClassName(currentTeacher.tildeltKlasse))
@@ -2123,7 +2146,7 @@
         : tasks.map((t, i) => `
           <div class="home-card task" data-task="${i}">
             <span class="ic">${t.ic}</span>
-            <span><span class="t">${t.t}</span><span class="d">${escapeHtml(String(t.d))}</span></span>
+            <span><span class="t">${t.t}</span>${t.d ? `<span class="d">${escapeHtml(String(t.d))}</span>` : ''}</span>
           </div>`).join('')}
     </div>`;
     tEl.querySelectorAll('[data-task]').forEach(el => {
