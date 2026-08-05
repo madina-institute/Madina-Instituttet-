@@ -611,7 +611,7 @@
       <div class="sub">Registrer oppmøte og antall timer for en arbeidsdag. Administrasjonen må godkjenne registreringen før timene telles med i lønnsberegningen.</div>
       <div class="field">
         <label>Dato</label>
-        <input type="date" id="myAttDato">
+        <input type="text" id="myAttDato" class="school-date-input" readonly placeholder="Velg dato" autocomplete="off">
       </div>
       <div class="field">
         <label>Status</label>
@@ -1177,6 +1177,7 @@
   let students = [];
   let attendance = [];
   let classes = [];
+  let programs = [];
   let guardians = [];
   let currentTeacher = null;
 
@@ -1199,6 +1200,11 @@
   watch('teachers', (snap) => {
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   });
+
+  watch('programs', (snap) => {
+    programs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    refreshSchoolCalendars();
+  }, (err) => console.error('programs', err));
 
   watch('classes', (snap) => {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1383,6 +1389,8 @@
     lastValidAttDate = document.getElementById('attDate').value;
     document.getElementById('lpDato').value = nearestValidDate(allowedDays);
     lastValidLpDato = document.getElementById('lpDato').value;
+    const myAtt = document.getElementById('myAttDato');
+    if(myAtt) myAtt.value = nearestValidDate(allowedDays);
     populateFagSelect();
     showChoice();
     updateMsgDot();
@@ -2868,22 +2876,62 @@
     return cls ? (cls.navn || cls.klassenavn || '') : classId; // fallback: legacy/un-migrated value
   }
 
-  // The school only ever holds classes on Saturday and Sunday — no exceptions,
-  // all year. This is always the outer limit, regardless of what a class's
-  // program field says: a combined program still means "Saturday OR Sunday",
-  // never a weekday, and an unrecognized/missing program falls back to the
-  // same Sat/Sun-only limit rather than lifting the restriction entirely.
-  const SCHOOL_WEEKDAYS = [0, 6]; // Sunday, Saturday
+  // Undervisningsdagene styres nå fra fanen "Programmer" i admin.html
+  // (samlingen `programs`, feltet `dager`). Legger administrasjonen inn et
+  // program på en ny ukedag, åpnes den dagen automatisk — men kun for lærere
+  // som tilhører det programmet.
+  //
+  // SCHOOL_WEEKDAYS brukes bare som reserve når programmet ikke finnes ennå,
+  // eller når posten mangler dager. Da faller vi tilbake til lørdag/søndag,
+  // slik skolen alltid har vært — aldri til "alle dager", for en feil her
+  // skal stramme inn, ikke åpne opp.
+  const SCHOOL_WEEKDAYS = [0, 6]; // søndag, lørdag
+
+  const WEEKDAY_TO_NUM = {
+    'søndag': 0, 'mandag': 1, 'tirsdag': 2, 'onsdag': 3,
+    'torsdag': 4, 'fredag': 5, 'lørdag': 6
+  };
+
+  function daysFromProgramRecord(prog){
+    if(!prog) return null;
+    const nums = String(prog.dager || '')
+      .split(',')
+      .map(x => WEEKDAY_TO_NUM[x.trim().toLowerCase()])
+      .filter(n => n !== undefined);
+    return nums.length ? nums : null;
+  }
 
   function getAllowedWeekdays(classId){
     const cls = classes.find(c => c.id === classId || c.navn === classId || c.klassenavn === classId);
-    const program = (cls && (cls.program || '')) || '';
-    const hasLordag = program.includes('Lørdag');
-    const hasSondag = program.includes('Søndag');
-    if(hasLordag && hasSondag) return SCHOOL_WEEKDAYS; // combined program — still Sat/Sun only
-    if(hasLordag) return [6]; // Saturday only
-    if(hasSondag) return [0]; // Sunday only
-    return SCHOOL_WEEKDAYS; // unknown program — still restricted to Sat/Sun
+    const programName = (cls && (cls.program || '')) || '';
+    if(!programName) return SCHOOL_WEEKDAYS;
+
+    // Klasser peker på programmet med navn; eldre data kan peke med id.
+    const prog = programs.find(pr => pr.navn === programName || pr.id === programName);
+    const fromRecord = daysFromProgramRecord(prog);
+    if(fromRecord) return fromRecord;
+
+    // Ingen programpost ennå — tolk navnet slik det ble gjort før.
+    const hasLordag = programName.includes('Lørdag');
+    const hasSondag = programName.includes('Søndag');
+    if(hasLordag && hasSondag) return SCHOOL_WEEKDAYS;
+    if(hasLordag) return [6];
+    if(hasSondag) return [0];
+    return SCHOOL_WEEKDAYS;
+  }
+
+  // Kalenderne bygges én gang, men dagene leses på nytt hver gang de åpnes.
+  // Denne kalles når programmene lastes, slik at et allerede valgt felt ikke
+  // blir stående med en dato som ikke lenger er en undervisningsdag.
+  const schoolCalendarInputs = [];
+  function refreshSchoolCalendars(){
+    if(!currentTeacher) return;
+    const allowed = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    schoolCalendarInputs.forEach(el => {
+      if(!el || !el.value) return;
+      const d = new Date(el.value + 'T00:00:00');
+      if(!allowed.includes(d.getDay())) el.value = nearestValidDate(allowed);
+    });
   }
 
   function nearestValidDate(allowedDays){
@@ -3031,8 +3079,13 @@
     window.addEventListener('scroll', () => { if(pop.classList.contains('open')) positionPopover(); }, true);
   }
 
-  createSchoolCalendar(document.getElementById('attDate'), () => currentTeacher ? getAllowedWeekdays(currentTeacher.tildeltKlasse) : SCHOOL_WEEKDAYS);
-  createSchoolCalendar(document.getElementById('lpDato'), () => currentTeacher ? getAllowedWeekdays(currentTeacher.tildeltKlasse) : SCHOOL_WEEKDAYS);
+  const allowedNow = () => currentTeacher ? getAllowedWeekdays(currentTeacher.tildeltKlasse) : SCHOOL_WEEKDAYS;
+  ['attDate', 'lpDato', 'myAttDato'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    createSchoolCalendar(el, allowedNow);
+    schoolCalendarInputs.push(el);
+  });
 
   function renderStudentList(){
     if(!currentTeacher) return;
