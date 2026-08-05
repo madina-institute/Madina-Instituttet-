@@ -225,6 +225,11 @@
   html[dir="rtl"] .attach-filename{font-family:'Tajawal',sans-serif;}
 
   /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
+  .school-cal-grid .day.has-note{ position:relative; }
+  .school-cal-grid .day.has-note::after{
+    content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
+    width:4px; height:4px; border-radius:50%; background:#b7924a;
+  }
   .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
   .school-cal-popover{
     position:fixed; z-index:3500; background:#fff; border:1px solid var(--line); border-radius:10px;
@@ -1178,6 +1183,7 @@
   let attendance = [];
   let classes = [];
   let programs = [];
+  let schoolCalendar = [];
   let guardians = [];
   let currentTeacher = null;
 
@@ -1205,6 +1211,11 @@
     programs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     refreshSchoolCalendars();
   }, (err) => console.error('programs', err));
+
+  watch('schoolCalendar', (snap) => {
+    schoolCalendar = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    refreshSchoolCalendars();
+  }, (err) => console.error('schoolCalendar', err));
 
   watch('classes', (snap) => {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -2920,6 +2931,55 @@
     return SCHOOL_WEEKDAYS;
   }
 
+  // ── Skolekalender: fri- og ekstradager ──────────────────────────
+  // Programmet gir de faste ukedagene. Skolekalenderen (styres fra fanen
+  // "Skolekalender" i admin.html) legger unntakene oppå: ferier stenger en
+  // dag som ellers var åpen, ekstradager åpner en dag som ellers var stengt.
+
+  function currentProgramId(){
+    const cls = classes.find(c => c.id === (currentTeacher && currentTeacher.tildeltKlasse)
+                               || c.navn === (currentTeacher && currentTeacher.tildeltKlasse));
+    const navn = (cls && cls.program) || '';
+    const prog = programs.find(pr => pr.navn === navn || pr.id === navn);
+    return prog ? prog.id : '';
+  }
+
+  function calendarEntriesFor(iso){
+    const pid = currentProgramId();
+    return schoolCalendar.filter(e => {
+      // Tomt programfelt = unntaket gjelder alle programmer.
+      if(e.program && e.program !== pid) return false;
+      const fra = e.fraDato || '';
+      if(!fra) return false;
+      const til = e.tilDato || fra;
+      return iso >= fra && iso <= til;
+    });
+  }
+
+  // Returnerer om datoen er en undervisningsdag, og hvorfor den eventuelt
+  // ikke er det. Fridager behandles først, ekstradager sist — en dag som er
+  // lagt inn manuelt som ekstra regnes som et bevisst vedtak og vinner
+  // derfor over en overlappende ferie.
+  function schoolDayInfo(iso, allowed){
+    const d = new Date(iso + 'T00:00:00');
+    let ok = allowed.includes(d.getDay());
+    let label = '';
+    const entries = calendarEntriesFor(iso);
+    entries.filter(e => String(e.type || '').indexOf('Fri') === 0).forEach(e => {
+      ok = false; label = e.beskrivelse || 'Fri';
+    });
+    entries.filter(e => String(e.type || '').indexOf('Ekstra') === 0).forEach(e => {
+      ok = true; label = e.beskrivelse || 'Ekstra undervisningsdag';
+    });
+    return { ok, label };
+  }
+
+  function isoOf(dateObj){
+    return dateObj.getFullYear() + '-' +
+      String(dateObj.getMonth() + 1).padStart(2, '0') + '-' +
+      String(dateObj.getDate()).padStart(2, '0');
+  }
+
   // Kalenderne bygges én gang, men dagene leses på nytt hver gang de åpnes.
   // Denne kalles når programmene lastes, slik at et allerede valgt felt ikke
   // blir stående med en dato som ikke lenger er en undervisningsdag.
@@ -2929,18 +2989,20 @@
     const allowed = getAllowedWeekdays(currentTeacher.tildeltKlasse);
     schoolCalendarInputs.forEach(el => {
       if(!el || !el.value) return;
-      const d = new Date(el.value + 'T00:00:00');
-      if(!allowed.includes(d.getDay())) el.value = nearestValidDate(allowed);
+      if(!schoolDayInfo(el.value, allowed).ok) el.value = nearestValidDate(allowed);
     });
   }
 
+  // Nærmeste gyldige dato framover. Søker et helt år, siden en lang ferie
+  // kan dekke flere uker på rad. Finner den ingenting, returneres dagens
+  // dato — bedre enn en tom verdi, og feltet valideres uansett ved endring.
   function nearestValidDate(allowedDays){
     const d = new Date();
-    for(let i = 0; i < 8; i++){
-      if(allowedDays.includes(d.getDay())) break;
+    for(let i = 0; i < 400; i++){
+      if(schoolDayInfo(isoOf(d), allowedDays).ok) return isoOf(d);
       d.setDate(d.getDate() + 1);
     }
-    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    return todayISO();
   }
 
   let lastValidAttDate = null;
@@ -2950,16 +3012,16 @@
     input.addEventListener('change', function(){
       if(!currentTeacher){ if(afterChange) afterChange(); return; }
       const allowedDays = getAllowedWeekdays(currentTeacher.tildeltKlasse);
-      const picked = new Date(this.value + 'T00:00:00');
-      if(!allowedDays.includes(picked.getDay())){
-        const dayNames = currentLang === 'ar'
-          ? {0:'الأحد',6:'السبت'}
-          : {0:'søndag',6:'lørdag'};
-        const allowedNames = allowedDays.map(d => dayNames[d]).join('/');
+      const info = schoolDayInfo(this.value, allowedDays);
+      if(!info.ok){
         alert(currentLang === 'ar'
-          ? `التدريس يكون فقط يوم ${allowedNames}. اختر تاريخًا يوافق هذا اليوم.`
-          : `Undervisningen er kun på ${allowedNames}. Velg en dato som faller på den dagen.`);
-        this.value = getLastValid() || todayISO();
+          ? (info.label
+              ? `هذا اليوم ليس يوم دراسة (${info.label}). اختر تاريخًا آخر.`
+              : 'هذا اليوم ليس يوم دراسة. اختر تاريخًا آخر.')
+          : (info.label
+              ? `Denne datoen er ikke undervisningsdag (${info.label}). Velg en annen dato.`
+              : 'Denne datoen er ikke undervisningsdag. Velg en annen dato.'));
+        this.value = getLastValid() || nearestValidDate(allowedDays);
         if(afterChange) afterChange();
         return;
       }
@@ -2972,16 +3034,16 @@
     if(!currentTeacher){ renderStudentList(); return; }
     const allowedDays = getAllowedWeekdays(currentTeacher.tildeltKlasse);
     if(allowedDays){
-      const picked = new Date(this.value + 'T00:00:00');
-      if(!allowedDays.includes(picked.getDay())){
-        const dayNames = currentLang === 'ar'
-          ? {0:'الأحد',6:'السبت'}
-          : {0:'søndag',6:'lørdag'};
-        const allowedNames = allowedDays.map(d => dayNames[d]).join('/');
+      const info = schoolDayInfo(this.value, allowedDays);
+      if(!info.ok){
         alert(currentLang === 'ar'
-          ? `هذا الصف يدرس فقط يوم ${allowedNames}. اختر تاريخًا يوافق هذا اليوم.`
-          : `Denne klassen har kun undervisning på ${allowedNames}. Velg en dato som faller på den dagen.`);
-        this.value = lastValidAttDate || todayISO();
+          ? (info.label
+              ? `هذا اليوم ليس يوم دراسة (${info.label}). اختر تاريخًا آخر.`
+              : 'هذا اليوم ليس يوم دراسة. اختر تاريخًا آخر.')
+          : (info.label
+              ? `Denne datoen er ikke undervisningsdag (${info.label}). Velg en annen dato.`
+              : 'Denne datoen er ikke undervisningsdag. Velg en annen dato.'));
+        this.value = lastValidAttDate || nearestValidDate(allowedDays);
         renderStudentList();
         return;
       }
@@ -3031,9 +3093,11 @@
       for(let d = 1; d <= daysInMonth; d++){
         const iso = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
         const dow = new Date(year, month, d).getDay();
-        const isAllowed = allowed.includes(dow);
+        const info = schoolDayInfo(iso, allowed);
+        const isAllowed = info.ok;
         const isSelected = iso === selectedVal;
-        html += `<div class="day ${isAllowed ? 'enabled' : 'disabled'}${isSelected ? ' selected' : ''}" data-date="${iso}">${d}</div>`;
+        const tip = info.label ? ` title="${info.label.replace(/"/g, '&quot;')}"` : '';
+        html += `<div class="day ${isAllowed ? 'enabled' : 'disabled'}${isSelected ? ' selected' : ''}${info.label ? ' has-note' : ''}"${tip} data-date="${iso}">${d}</div>`;
       }
       html += `</div>`;
       pop.innerHTML = html;
