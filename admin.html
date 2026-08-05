@@ -860,6 +860,7 @@
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="classes" data-side="admin">Klasser</div>
+  <div class="tab" data-tab="programs" data-side="admin">📅 Programmer</div>
   <div class="tab" data-tab="cashier" data-side="admin">💰 Kasserer</div>
   <div class="tab" data-tab="hours" data-side="admin">Timeplan</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
@@ -1405,6 +1406,30 @@
       <button class="btn btn-primary" onclick="openModal('classes')">+ Ny klasse</button>
     </div>
     <div class="records-hidden card-grid" id="tableClasses"></div>
+  </div>
+
+  <!-- PROGRAMMER — styrer hvilke ukedager hvert program undervises på -->
+  <div class="panel" id="panel-programs">
+    <div class="report-card">
+      <h3>📅 Programmer og undervisningsdager</h3>
+      <div class="sub">
+        Her bestemmes hvilke ukedager hvert program har undervisning. Lærerportalen
+        henter dagene herfra: en lærer får kun velge datoer som faller på programmets
+        dager. Legger du inn et nytt program på en ny ukedag, åpnes den dagen
+        automatisk — kun for det programmet.
+        <br><br>
+        <b>Merk:</b> elever og klasser knyttes til programmet via <i>navnet</i>.
+        Endrer du navnet på et program som allerede er i bruk, må du oppdatere
+        klassene og elevene som peker på det gamle navnet.
+      </div>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="searchPrograms" placeholder="Søk etter programnavn...">
+      <span class="count-chip" id="countPrograms" onclick="toggleRecordsById('tablePrograms')">0 programmer</span>
+      <button class="btn btn-ghost" onclick="exportCSV('programs')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('programs')">+ Nytt program</button>
+    </div>
+    <div class="records-hidden card-grid" id="tablePrograms"></div>
   </div>
 
   <!-- CASHIER (Kasserer) -->
@@ -2398,6 +2423,8 @@
         ]},
         {key:'lonnStatus', label:'Lønnsstatus', type:'select', essential:true, options:['Frivillig (ulønnet)','Lønnet']},
         {key:'kontonummer', label:'Kontonummer (for lønn)', type:'text', essential:true, placeholder:'f.eks. 1234.56.78900'},
+        {key:'timesats', label:'Egen timesats (kr/t) — la stå tom for standard', type:'text', placeholder:'standard: 200 lærer / 150 assistent'},
+        {key:'timesatsGrunn', label:'Begrunnelse for egen timesats', type:'text', placeholder:'f.eks. fagansvar for koranseksjonen'},
         {key:'tildeltKlasse', label:'Tildelt klasse (for Lærerportal)', type:'dynamic-select', source:'classes'}
       ],
       cols: ['navn','fag','roller','dager','telefon','epost']
@@ -2432,6 +2459,8 @@
         {key:'foresatt2', label:'Foresatt 2 (om registrert som egen konto)', type:'dynamic-select', source:'guardians'},
 
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
+        {key:'spesialpris', label:'Spesialpris (kr) — la stå tom for vanlig pris', type:'text', placeholder:'settes kun i særskilte tilfeller'},
+        {key:'spesialprisGrunn', label:'Begrunnelse for spesialpris', type:'text', placeholder:'f.eks. vedtak om redusert sats'},
         {key:'belop', label:'Beløp totalt (kr)', type:'text'},
         {key:'belopBetalt', label:'Beløp betalt så langt (kr)', type:'text'},
         {key:'betalingsdato', label:'Betalingsdato', type:'text'},
@@ -2480,6 +2509,20 @@
         {key:'samtykke_publisering_nett', label:'Samtykke publisering på nett/sosiale medier', type:'text'}
       ],
       cols: ['navn','program','klasse','foresatt','foresatt1_tlf','betalt']
+    },
+    programs: {
+      label: 'program', collectionName: 'programs',
+      fields: [
+        {key:'navn', label:'Programnavn', type:'text', essential:true,
+         placeholder:'f.eks. Madinabarn (Søndag)'},
+        {key:'dager', label:'Undervisningsdager', type:'role-checklist', essential:true,
+         options:['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']},
+        {key:'pris', label:'Pris per semester (kr)', type:'text', essential:true,
+         placeholder:'f.eks. 2750'},
+        {key:'aktiv', label:'Aktivt', type:'select', options:['Ja','Nei'], essential:true},
+        {key:'merknad', label:'Merknad', type:'text'}
+      ],
+      cols: ['navn','dager','pris','aktiv']
     },
     classes: {
       label: 'klasse', collectionName: 'classes',
@@ -3254,7 +3297,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], hours: [], attendance: [], teacherAttendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [], salaryPayments: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], programs: [], hours: [], attendance: [], teacherAttendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [], salaryPayments: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
@@ -4919,16 +4962,31 @@
     }
   };
 
-  // Sats og rolle-etikett for en lærer: Frivillig-status overstyrer alt
-  // (0 kr uansett timer). Ellers: Assistent-rolle = 150 kr/t, enhver
-  // undervisningsrolle (Koran/Islam/Arabisk/Urdu lærer, Fagkoordinator osv.)
-  // = 200 kr/t som standard.
+  // Sats og rolle-etikett for en lærer.
+  //
+  // Rekkefølgen er bevisst: Frivillig-status overstyrer ALT, også en egen
+  // timesats. En frivillig som ved en feil har fått et tall i timesats-feltet
+  // skal fortsatt ikke lønnes — feltet alene utløser aldri utbetaling.
+  //
+  // For lønnede: står det et gyldig tall i `timesats`, brukes det. Ellers
+  // faller vi tilbake på standardsatsene (assistent 150 kr/t, øvrige
+  // undervisningsroller 200 kr/t).
   function lonnSatsForLarer(t){
     const roller = (t.roller || '').split(',').map(s => s.trim()).filter(Boolean);
+    const erAssistent = roller.includes('Assistent');
     const erFrivillig = (t.lonnStatus || '') !== 'Lønnet';
-    if(erFrivillig) return { sats: 0, rolleLabel: roller.includes('Assistent') ? 'Assistent' : 'Lærer', statusLabel: 'Frivillig' };
-    if(roller.includes('Assistent')) return { sats: 150, rolleLabel: 'Assistent', statusLabel: 'Lønnet' };
-    return { sats: 200, rolleLabel: 'Lærer', statusLabel: 'Lønnet' };
+    const rolleLabel = erAssistent ? 'Assistent' : 'Lærer';
+
+    if(erFrivillig){
+      return { sats: 0, rolleLabel, statusLabel: 'Frivillig', egenSats: false };
+    }
+
+    const egen = parseFloat(String(t.timesats || '').replace(',', '.').replace(/[^\d.]/g, ''));
+    if(!isNaN(egen) && egen > 0){
+      return { sats: egen, rolleLabel, statusLabel: 'Lønnet', egenSats: true };
+    }
+
+    return { sats: erAssistent ? 150 : 200, rolleLabel, statusLabel: 'Lønnet', egenSats: false };
   }
 
   function renderLonnOversikt(){
@@ -4941,13 +4999,14 @@
     }
     const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
     const rows = cache.teachers.filter(t => t.navn).map(t => {
-      const { sats, rolleLabel, statusLabel } = lonnSatsForLarer(t);
+      const { sats, rolleLabel, statusLabel, egenSats } = lonnSatsForLarer(t);
       const timer = cache.teacherAttendance
         .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month && (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
         .reduce((s,a) => s + toNum(a.timer), 0);
       const lonn = sats * timer;
       const alleredeBetalt = cache.salaryPayments.find(p => p.larer === t.id && p.maaned === month);
-      return { id: t.id, navn: t.navn, rolleLabel, statusLabel, timer, sats, lonn, kontonummer: t.kontonummer || '', alleredeBetalt };
+      return { id: t.id, navn: t.navn, rolleLabel: rolleLabel + (egenSats ? ' · egen sats' : ''),
+               statusLabel, timer, sats, lonn, kontonummer: t.kontonummer || '', alleredeBetalt };
     });
     tbody.innerHTML = rows.map(r => `
       <tr>
@@ -5007,11 +5066,12 @@
     const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
     const headers = ['Lærer','Rolle','Lønnsstatus','Timer','Sats (kr/t)','Lønn (kr)','Kontonummer'];
     const rows = cache.teachers.filter(t => t.navn).map(t => {
-      const { sats, rolleLabel, statusLabel } = lonnSatsForLarer(t);
+      const { sats, rolleLabel, statusLabel, egenSats } = lonnSatsForLarer(t);
       const timer = cache.teacherAttendance
         .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month && (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
         .reduce((s,a) => s + toNum(a.timer), 0);
-      return [t.navn, rolleLabel, statusLabel, timer, sats, sats * timer, t.kontonummer || '']
+      return [t.navn, rolleLabel + (egenSats ? ' (egen sats)' : ''), statusLabel,
+              timer, sats, sats * timer, t.kontonummer || '']
         .map(v => '"' + String(v).replace(/"/g,'""') + '"');
     });
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -6001,7 +6061,14 @@
   // Søskenrabatt: 1. barn = full pris, 2. barn = 20% rabatt, 3. barn (og
   // alle senere barn) = 30% rabatt.
   function computeSoskenPrice(program, guardianId, excludeId){
-    const basePrice = parseFloat(PROGRAM_PRICES[program] || 0) || 0;
+    // Prisen ligger på programmet (redigerbart under fanen "Programmer").
+    // PROGRAM_PRICES beholdes kun som reserve for gamle programnavn som ennå
+    // ikke har fått sin egen post — da ville prisen ellers blitt 0.
+    const prog = (cache.programs || []).find(pr => pr.navn === program);
+    const fromProgram = prog ? parseFloat(prog.pris || 0) : NaN;
+    const basePrice = (!isNaN(fromProgram) && fromProgram > 0)
+      ? fromProgram
+      : (parseFloat(PROGRAM_PRICES[program] || 0) || 0);
     if(!guardianId) return { price: basePrice, pos: 1 };
     const siblingCount = cache.students.filter(s => s.foresatt === guardianId && s.id !== excludeId).length;
     const pos = siblingCount + 1;
@@ -6052,15 +6119,28 @@
     }
   };
 
+  // Regner ut beløpet på nytt når program eller foresatt endres.
+  //
+  // Er det satt en spesialpris, er den et bevisst vedtak fra administrasjonen
+  // og skal ikke overskrives av automatikken. Uten dette ville et hvilket som
+  // helst bytte av program eller foresatt stille tilbakestilt en avtalt
+  // redusert sats — uten at noen så det.
   function applyStudentDiscountPricing(){
     const programEl = document.getElementById('field_program');
     const foresattEl = document.getElementById('field_foresatt');
     const belopEl = document.getElementById('field_belop');
     const soskenEl = document.getElementById('field_soskenrekkefolge');
+    const spesialEl = document.getElementById('field_spesialpris');
     if(!programEl || !belopEl) return;
+
     const { price, pos } = computeSoskenPrice(programEl.value, foresattEl ? foresattEl.value : '', editingId);
-    belopEl.value = price;
     if(soskenEl) soskenEl.value = pos;
+
+    const spesial = spesialEl
+      ? parseFloat(String(spesialEl.value || '').replace(',', '.').replace(/[^\d.]/g, ''))
+      : NaN;
+
+    belopEl.value = (!isNaN(spesial) && spesial >= 0) ? spesial : price;
   }
 
   window.openModal = function(type, id=null, prefill=null){
@@ -6181,6 +6261,11 @@
         if(f.placeholder) input.placeholder = f.placeholder;
       }
       input.id = 'field_' + f.key;
+      // Spesialpris slår ut med én gang, slik at beløpsfeltet under alltid
+      // viser det som faktisk blir lagret.
+      if(type === 'students' && f.key === 'spesialpris'){
+        input.addEventListener('input', () => applyStudentDiscountPricing());
+      }
       wrap.appendChild(input);
       if(f.subjectGroup) wrap.dataset.subjectGroup = f.subjectGroup;
       const hasEssentialFields = schema.fields.some(ff => ff.essential);
