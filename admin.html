@@ -7058,6 +7058,7 @@
   if(searchLedelseEl) searchLedelseEl.addEventListener('input', () => renderLedelseView());
 
   // Init: attach real-time listeners for all 3 collections
+  attachListener('programs');
   attachListener('teachers');
   attachListener('guardians');
   attachListener('students');
