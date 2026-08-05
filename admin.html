@@ -861,6 +861,7 @@
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="classes" data-side="admin">Klasser</div>
   <div class="tab" data-tab="programs" data-side="admin">📅 Programmer</div>
+  <div class="tab" data-tab="schoolCalendar" data-side="admin">🗓️ Skolekalender</div>
   <div class="tab" data-tab="cashier" data-side="admin">💰 Kasserer</div>
   <div class="tab" data-tab="hours" data-side="admin">Timeplan</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
@@ -1430,6 +1431,36 @@
       <button class="btn btn-primary" onclick="openModal('programs')">+ Nytt program</button>
     </div>
     <div class="records-hidden card-grid" id="tablePrograms"></div>
+  </div>
+
+  <!-- SKOLEKALENDER — fridager og ekstra undervisningsdager -->
+  <div class="panel" id="panel-schoolCalendar">
+    <div class="report-card">
+      <h3>🗓️ Skolekalender — fridager og ekstra dager</h3>
+      <div class="sub">
+        Programmene bestemmer hvilke ukedager det undervises på. Her legges
+        unntakene inn.
+        <br><br>
+        <b>Fri (ingen undervisning)</b> stenger en dag som ellers ville vært
+        undervisningsdag — f.eks. høstferie eller juleferie.
+        <br>
+        <b>Ekstra undervisningsdag</b> åpner en dag som ellers ville vært
+        stengt — f.eks. en oppsamlingsdag midt i uka.
+        <br><br>
+        La <b>Til dato</b> stå tom for én enkelt dag. La <b>Gjelder program</b>
+        stå tom når unntaket gjelder alle programmer.
+        <br><br>
+        <b>Merk:</b> gjelder både fri og ekstra dag samme dato, vinner den
+        ekstra dagen — en dag lagt inn manuelt regnes som et bevisst vedtak.
+      </div>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="searchSchoolCalendar" placeholder="Søk etter beskrivelse...">
+      <span class="count-chip" id="countSchoolCalendar" onclick="toggleRecordsById('tableSchoolCalendar')">0 dager</span>
+      <button class="btn btn-ghost" onclick="exportCSV('schoolCalendar')">Eksporter CSV</button>
+      <button class="btn btn-primary" onclick="openModal('schoolCalendar')">+ Ny dato</button>
+    </div>
+    <div class="records-hidden card-grid" id="tableSchoolCalendar"></div>
   </div>
 
   <!-- CASHIER (Kasserer) -->
@@ -2524,6 +2555,20 @@
       ],
       cols: ['navn','dager','pris','aktiv']
     },
+    schoolCalendar: {
+      label: 'dato', collectionName: 'schoolCalendar',
+      fields: [
+        {key:'beskrivelse', label:'Beskrivelse', type:'text', essential:true,
+         placeholder:'f.eks. Høstferie'},
+        {key:'type', label:'Type', type:'select', essential:true,
+         options:['Fri (ingen undervisning)','Ekstra undervisningsdag']},
+        {key:'fraDato', label:'Fra dato', type:'date', essential:true},
+        {key:'tilDato', label:'Til dato (tom = kun én dag)', type:'date', essential:true},
+        {key:'program', label:'Gjelder program (tom = alle)', type:'dynamic-select', source:'programs'},
+        {key:'merknad', label:'Merknad', type:'text'}
+      ],
+      cols: ['beskrivelse','type','fraDato','tilDato','program']
+    },
     classes: {
       label: 'klasse', collectionName: 'classes',
       fields: [
@@ -3297,7 +3342,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], programs: [], hours: [], attendance: [], teacherAttendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [], salaryPayments: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], programs: [], schoolCalendar: [], hours: [], attendance: [], teacherAttendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [], salaryPayments: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
@@ -6221,6 +6266,10 @@
         if(type === 'students' && f.key === 'foresatt'){
           input.addEventListener('change', () => applyStudentDiscountPricing());
         }
+      } else if(f.type === 'date'){
+        input = document.createElement('input');
+        input.type = 'date';
+        input.value = existing[f.key] || '';
       } else if(f.type === 'role-checklist'){
         input = document.createElement('div');
         input.className = 'check-row';
@@ -7059,6 +7108,7 @@
 
   // Init: attach real-time listeners for all 3 collections
   attachListener('programs');
+  attachListener('schoolCalendar');
   attachListener('teachers');
   attachListener('guardians');
   attachListener('students');
