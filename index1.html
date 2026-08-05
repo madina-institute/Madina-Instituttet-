@@ -231,6 +231,26 @@
     width:4px; height:4px; border-radius:50%; background:#b7924a;
   }
   .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
+  /* Brede tabeller får egen scroll i stedet for å dra hele siden sidelengs. */
+  .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ max-width:100%; }
+  img, video, canvas{ max-width:100%; height:auto; }
+  /* Sammendrag av egne timer — det læreren spør om først. */
+  .att-summary{
+    margin-top:22px; padding:16px 18px; border-radius:12px;
+    background:var(--paper); border:1px solid rgba(31,74,58,.14);
+  }
+  .att-summary h4{ margin:0 0 12px; font-size:14px; letter-spacing:.02em; }
+  .att-summary .row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    gap:12px; padding:7px 0; font-size:14.5px;
+  }
+  .att-summary .row + .row{ border-top:1px solid rgba(31,74,58,.10); }
+  .att-summary .row b{ font-size:16px; }
+  .att-summary .pay{ margin-top:10px; padding-top:12px; border-top:2px solid rgba(31,74,58,.18); }
+  .att-summary .pay b{ font-size:20px; color:var(--emerald-d); }
+  .att-summary .muted{ color:#6b7a72; font-size:12.5px; margin-top:10px; line-height:1.5; }
+  .att-summary select{ font-size:14px; padding:7px 10px; border-radius:8px; }
   .school-cal-popover{
     position:fixed; z-index:3500; background:#fff; border:1px solid var(--line); border-radius:10px;
     box-shadow:0 14px 32px rgba(15,43,33,0.22); padding:14px; width:270px; display:none;
@@ -271,10 +291,15 @@
   html[dir="rtl"] .back-link{font-family:'Tajawal',sans-serif;}
 
   .toast{
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif; font-size:13px;
-    padding:12px 22px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s; z-index:3800; max-width:90%; text-align:center;
+    position:fixed; left:50%; transform:translateX(-50%) translateY(20px);
+    bottom:calc(24px + env(safe-area-inset-bottom, 0px));
+    background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif;
+    font-size:15px; line-height:1.45;
+    padding:14px 22px; border-radius:10px; opacity:0; pointer-events:none;
+    transition:all .25s; z-index:3800; max-width:min(92vw, 460px); text-align:center;
+    box-shadow:0 8px 28px rgba(0,0,0,.28);
   }
+  .toast.err{ background:#a03028; }
   html[dir="rtl"] .toast{font-family:'Tajawal',sans-serif;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -632,6 +657,8 @@
         <input type="number" id="myAttTimer" min="0" step="0.5" placeholder="f.eks. 2">
       </div>
       <button class="btn-primary" onclick="submitMyAttendance()">Send inn for godkjenning</button>
+
+      <div id="myAttSummary" class="att-summary"></div>
 
       <h3 style="margin-top:28px;">Mine tidligere registreringer</h3>
       <div id="myAttendanceList"></div>
@@ -1192,11 +1219,25 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
-  function showToast(msg){
+  // isError gir rød farge og lengre visetid — en feilmelding må rekke å bli
+  // lest, mens en bekreftelse gjerne kan forsvinne raskt.
+  let toastTimer = null;
+  function showToast(msg, isError){
     const el = document.getElementById('toast');
+    if(!el) return;
     el.textContent = msg;
+    el.classList.toggle('err', !!isError);
     el.classList.add('show');
-    setTimeout(()=>el.classList.remove('show'), 2400);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), isError ? 5000 : 2600);
+  }
+
+  // Erstatter notify() i resten av filen. Meldinger som inneholder «feil»,
+  // «galt» eller «خطأ» vises som feil; resten som vanlig bekreftelse.
+  function notify(msg){
+    const t = String(msg == null ? '' : msg);
+    const looksLikeError = /feil|galt|ikke |kan ikke|må |خطأ|لا يوجد|يرجى|اختر|اكتب/i.test(t);
+    showToast(t, looksLikeError);
   }
 
   function escapeHtml(str){
@@ -1665,7 +1706,7 @@
     const fag = document.getElementById('lpFag').value;
     const tpl = dailyPlanTemplates.find(t => t.fag === fag && t.klasse === currentTeacher.tildeltKlasse);
     if(!tpl){
-      alert(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
+      notify(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
       return;
     }
     if(tpl.emne) document.getElementById('lpEmne').value = tpl.emne;
@@ -1684,7 +1725,7 @@
     if(!currentTeacher) return;
     const tpl = monthlyPlanTemplates.find(t => t.fag === currentTeacher.fag && t.klasse === currentTeacher.tildeltKlasse);
     if(!tpl){
-      alert(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
+      notify(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
       return;
     }
     const map = { mpMaal:'maal', mpUke1Tema:'uke1_tema', mpUke1Maal:'uke1_maal', mpUke2Tema:'uke2_tema', mpUke2Maal:'uke2_maal',
@@ -1708,14 +1749,14 @@
       vurdering: document.getElementById('mpVurdering').value.trim(),
       bok: document.getElementById('mpBok').value.trim()
     };
-    if(!record.maaned){ alert(currentLang === 'ar' ? 'اكتب الشهر أولاً.' : 'Skriv inn måned først.'); return; }
+    if(!record.maaned){ notify(currentLang === 'ar' ? 'اكتب الشهر أولاً.' : 'Skriv inn måned først.'); return; }
     try{
       await addDoc(collection(db, 'monthlyPlans'), record);
       showToast(currentLang === 'ar' ? 'تم إرسال الخطة الشهرية.' : 'Månedsplan sendt inn.');
       ['mpMaaned','mpMaal','mpUke1Tema','mpUke1Maal','mpUke2Tema','mpUke2Maal','mpUke3Tema','mpUke3Maal','mpUke4Tema','mpUke4Maal','mpVurdering','mpBok'].forEach(id => document.getElementById(id).value = '');
     } catch(err){
       console.error(err);
-      alert('Feil: ' + err.message);
+      notify('Feil: ' + err.message);
     }
   };
 
@@ -1752,7 +1793,7 @@
     if(!currentTeacher) return;
     const tpl = semesterPlanTemplates.find(t => t.fag === currentTeacher.fag && t.klasse === currentTeacher.tildeltKlasse);
     if(!tpl){
-      alert(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
+      notify(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
       return;
     }
     const map = { spMaal:'maal', spMnd1:'mnd1', spMnd2:'mnd2', spMnd3:'mnd3', spMnd4:'mnd4', spMnd5:'mnd5', spMnd6:'mnd6', spKjernemaal:'kjernemaal', spBok:'bok' };
@@ -1780,7 +1821,7 @@
       ['spMaal','spMnd1','spMnd2','spMnd3','spMnd4','spMnd5','spMnd6','spKjernemaal','spBok'].forEach(id => document.getElementById(id).value = '');
     } catch(err){
       console.error(err);
-      alert('Feil: ' + err.message);
+      notify('Feil: ' + err.message);
     }
   };
 
@@ -1908,8 +1949,8 @@
     const dato = document.getElementById('myAttDato').value;
     const status = document.getElementById('myAttStatus').value;
     const timer = document.getElementById('myAttTimer').value;
-    if(!dato){ alert('Velg en dato.'); return; }
-    if(timer === '' || parseFloat(timer) < 0){ alert('Skriv inn et gyldig antall timer.'); return; }
+    if(!dato){ notify('Velg en dato.'); return; }
+    if(timer === '' || parseFloat(timer) < 0){ notify('Skriv inn et gyldig antall timer.'); return; }
     try{
       await addDoc(collection(db, 'teacherAttendance'), {
         larer: currentTeacher.id,
@@ -1918,12 +1959,94 @@
         innsendtDato: new Date().toISOString()
       });
       document.getElementById('myAttTimer').value = '';
-      alert('Registreringen er sendt inn og venter på godkjenning fra administrasjonen.');
+      notify('Registreringen er sendt inn og venter på godkjenning fra administrasjonen.');
     } catch(err){
       console.error(err);
-      alert('Noe gikk galt: ' + err.message);
+      notify('Noe gikk galt: ' + err.message);
     }
   };
+
+  // Lærerens egen timeoversikt.
+  //
+  // Satsene speiler lonnSatsForLarer() i admin.html: frivillig gir 0 uansett,
+  // en egen timesats på læreren overstyrer standardsatsen, ellers 150 kr/t
+  // for assistent og 200 kr/t for øvrige undervisningsroller.
+  //
+  // Kun timer administrasjonen har godkjent regnes med i beløpet — timer som
+  // venter vises separat, slik at tallet aldri lover mer enn det som faktisk
+  // er godkjent.
+  function myTimesats(){
+    const t = currentTeacher || {};
+    const roller = (t.roller || '').split(',').map(x => x.trim()).filter(Boolean);
+    if((t.lonnStatus || '') !== 'Lønnet') return 0;
+    const egen = parseFloat(String(t.timesats || '').replace(',', '.').replace(/[^\d.]/g, ''));
+    if(!isNaN(egen) && egen > 0) return egen;
+    return roller.indexOf('Assistent') >= 0 ? 150 : 200;
+  }
+
+  function renderMyAttSummary(){
+    const el = document.getElementById('myAttSummary');
+    if(!el || !currentTeacher) return;
+
+    const mine = myAttendanceCache.filter(a => a.larer === currentTeacher.id);
+    const months = [...new Set(mine.map(a => (a.dato || '').slice(0, 7)).filter(Boolean))]
+      .sort().reverse();
+
+    if(months.length === 0){ el.innerHTML = ''; return; }
+
+    const chosen = el.dataset.month && months.indexOf(el.dataset.month) >= 0
+      ? el.dataset.month : months[0];
+
+    const num = v => parseFloat(String(v || '0').replace(',', '.')) || 0;
+    const inMonth = mine.filter(a => (a.dato || '').slice(0, 7) === chosen);
+    const godkjent = inMonth
+      .filter(a => a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin')
+      .reduce((sum, a) => sum + num(a.timer), 0);
+    const venter = inMonth
+      .filter(a => !a.godkjenningsstatus || a.godkjenningsstatus === 'Venter godkjenning')
+      .reduce((sum, a) => sum + num(a.timer), 0);
+
+    const sats = myTimesats();
+    const belop = Math.round(godkjent * sats);
+    const ar = currentLang === 'ar';
+    const fmt = n => n.toLocaleString('no-NO');
+
+    el.innerHTML = `
+      <h4>${ar ? 'ملخص ساعاتي' : 'Mine timer'}</h4>
+      <div class="row">
+        <span>${ar ? 'الشهر' : 'Måned'}</span>
+        <select id="myAttMonth">
+          ${months.map(m => `<option value="${m}"${m === chosen ? ' selected' : ''}>${m}</option>`).join('')}
+        </select>
+      </div>
+      <div class="row">
+        <span>${ar ? 'ساعات معتمدة' : 'Godkjente timer'}</span>
+        <b>${fmt(godkjent)} t</b>
+      </div>
+      <div class="row">
+        <span>${ar ? 'بانتظار الموافقة' : 'Venter på godkjenning'}</span>
+        <b>${fmt(venter)} t</b>
+      </div>
+      <div class="row">
+        <span>${ar ? 'أجر الساعة' : 'Timesats'}</span>
+        <b>${sats > 0 ? fmt(sats) + ' kr' : (ar ? 'متطوع' : 'Frivillig')}</b>
+      </div>
+      <div class="row pay">
+        <span>${ar ? 'المبلغ عن الساعات المعتمدة' : 'Beløp for godkjente timer'}</span>
+        <b>${fmt(belop)} kr</b>
+      </div>
+      <div class="muted">
+        ${ar
+          ? 'المبلغ يشمل الساعات المعتمدة فقط. الساعات المنتظرة تُضاف بعد موافقة الإدارة. هذا العرض للاطلاع، والتسوية النهائية من الإدارة.'
+          : 'Beløpet gjelder kun godkjente timer. Timer som venter kommer i tillegg når administrasjonen har godkjent dem. Oversikten er veiledende — endelig lønn fastsettes av administrasjonen.'}
+      </div>`;
+
+    const sel = document.getElementById('myAttMonth');
+    if(sel) sel.addEventListener('change', function(){
+      el.dataset.month = this.value;
+      renderMyAttSummary();
+    });
+  }
 
   function renderMyAttendanceList(){
     const el = document.getElementById('myAttendanceList');
@@ -1933,6 +2056,7 @@
       .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(mine.length === 0){
       el.innerHTML = '<div class="sub">Ingen registreringer ennå.</div>';
+      renderMyAttSummary();
       return;
     }
     const statusBadge = { 'Venter godkjenning':'⏳ Venter godkjenning', 'Godkjent':'✅ Godkjent', 'Endret av admin':'✏️ Endret av admin' };
@@ -1945,6 +2069,7 @@
         <div class="sub">${escapeHtml(a.status || '')} — ${escapeHtml(String(a.timer || 0))} t</div>
         ${a.adminEndringArsak ? `<div class="sub" style="color:#a5504a; margin-top:4px;">Årsak til endring: ${escapeHtml(a.adminEndringArsak)}</div>` : ''}
       </div>`).join('');
+    renderMyAttSummary();
   }
 
   window.submitHomework = async function(){
@@ -1952,7 +2077,7 @@
     const beskrivelse = document.getElementById('hwBeskrivelse').value.trim();
     const frist = document.getElementById('hwFrist').value;
     if(!tittel || !beskrivelse){
-      alert(currentLang === 'ar' ? 'يرجى تعبئة العنوان والوصف.' : 'Fyll ut tittel og beskrivelse.');
+      notify(currentLang === 'ar' ? 'يرجى تعبئة العنوان والوصف.' : 'Fyll ut tittel og beskrivelse.');
       return;
     }
     try{
@@ -1979,7 +2104,7 @@
       document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'نشر الواجب' : 'Legg ut lekse';
     } catch(err){
       console.error(err);
-      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+      notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   };
 
@@ -2020,7 +2145,7 @@
       showToast(currentLang === 'ar' ? 'تم تسجيل الحالة.' : 'Fravær registrert.');
     } catch(err){
       console.error(err);
-      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+      notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   };
 
@@ -2041,7 +2166,7 @@
     const studentId = document.getElementById('noteElevSelect').value;
     const tekst = document.getElementById('noteTekst').value.trim();
     if(!studentId || !tekst){
-      alert(currentLang === 'ar' ? 'اختر طالبًا واكتب الملاحظة.' : 'Velg en elev og skriv et notat.');
+      notify(currentLang === 'ar' ? 'اختر طالبًا واكتب الملاحظة.' : 'Velg en elev og skriv et notat.');
       return;
     }
     try{
@@ -2053,7 +2178,7 @@
       document.getElementById('noteTekst').value = '';
     } catch(err){
       console.error(err);
-      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+      notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   };
 
@@ -2206,11 +2331,11 @@
     const titleInput = document.getElementById('newMsgTitle');
     const title = titleInput ? titleInput.value.trim() : '';
     if(!studentId){
-      alert(currentLang === 'ar' ? 'اختر الطالب أولاً.' : 'Velg en elev først.');
+      notify(currentLang === 'ar' ? 'اختر الطالب أولاً.' : 'Velg en elev først.');
       return;
     }
     if(!title){
-      alert(currentLang === 'ar' ? 'اكتب عنوان للمحادثة.' : 'Skriv en tittel på samtalen.');
+      notify(currentLang === 'ar' ? 'اكتب عنوان للمحادثة.' : 'Skriv en tittel på samtalen.');
       return;
     }
     const student = students.find(s => s.id === studentId);
@@ -2374,7 +2499,7 @@
     const tekst = document.getElementById('adminMsgsReplyText').value.trim();
     const visibility = document.querySelector('input[name="adminMsgVisibility"]:checked')?.value || 'private';
     if(!tekst){
-      alert(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
+      notify(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
       return;
     }
     try{
@@ -2387,7 +2512,7 @@
       showToast(currentLang === 'ar' ? 'تم إرسال الرد.' : 'Svaret er sendt.');
     } catch(err){
       console.error(err);
-      alert('Feil: ' + err.message);
+      notify('Feil: ' + err.message);
     }
   };
 
@@ -2524,7 +2649,7 @@
     let vedleggLenke = '';
     const statusEl = document.getElementById('msgReplyUploadStatus');
     if(!tekst){
-      alert(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
+      notify(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
       return;
     }
     try{
@@ -2631,7 +2756,7 @@
     const url = document.getElementById('videoUrlInput').value.trim();
     const beskrivelse = document.getElementById('videoDescInput').value.trim();
     if(!tittel || !url){
-      alert(currentLang === 'ar' ? 'الرجاء إدخال عنوان ورابط.' : 'Fyll ut tittel og lenke.');
+      notify(currentLang === 'ar' ? 'الرجاء إدخال عنوان ورابط.' : 'Fyll ut tittel og lenke.');
       return;
     }
     try{
@@ -2646,7 +2771,7 @@
       document.getElementById('videoDescInput').value = '';
     } catch(err){
       console.error(err);
-      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+      notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   };
 
@@ -2700,7 +2825,7 @@
   window.publishClassPost = async function(){
     const tekst = document.getElementById('classPostText').value.trim();
     if(!tekst){
-      alert(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
+      notify(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
       return;
     }
     const commentsEnabled = document.getElementById('classPostAllowComments').checked;
@@ -2711,7 +2836,7 @@
       const question = document.getElementById('classPostPollQuestion').value.trim();
       const options = [...document.querySelectorAll('.poll-option-input')].map(i => i.value.trim()).filter(Boolean);
       if(!question || options.length < 2){
-        alert(t('pollFillNote'));
+        notify(t('pollFillNote'));
         return;
       }
       extra.pollQuestion = question;
@@ -2721,7 +2846,7 @@
       const eDate = document.getElementById('classPostEventDate').value;
       const eDesc = document.getElementById('classPostEventDesc').value.trim();
       if(!eTitle || !eDate){
-        alert(currentLang === 'ar' ? 'اكتب عنوان وتاريخ الحدث.' : 'Fyll ut tittel og dato for arrangementet.');
+        notify(currentLang === 'ar' ? 'اكتب عنوان وتاريخ الحدث.' : 'Fyll ut tittel og dato for arrangementet.');
         return;
       }
       extra.eventTitle = eTitle;
@@ -2753,7 +2878,7 @@
       }
     } catch(err){
       console.error(err);
-      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+      notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   };
 
@@ -3014,7 +3139,7 @@
       const allowedDays = getAllowedWeekdays(currentTeacher.tildeltKlasse);
       const info = schoolDayInfo(this.value, allowedDays);
       if(!info.ok){
-        alert(currentLang === 'ar'
+        notify(currentLang === 'ar'
           ? (info.label
               ? `هذا اليوم ليس يوم دراسة (${info.label}). اختر تاريخًا آخر.`
               : 'هذا اليوم ليس يوم دراسة. اختر تاريخًا آخر.')
@@ -3036,7 +3161,7 @@
     if(allowedDays){
       const info = schoolDayInfo(this.value, allowedDays);
       if(!info.ok){
-        alert(currentLang === 'ar'
+        notify(currentLang === 'ar'
           ? (info.label
               ? `هذا اليوم ليس يوم دراسة (${info.label}). اختر تاريخًا آخر.`
               : 'هذا اليوم ليس يوم دراسة. اختر تاريخًا آخر.')
@@ -3336,7 +3461,7 @@
   function closeAndReturn(){
     try{ window.close(); }catch(e){}
     setTimeout(function(){
-      alert(${JSON.stringify(currentLang === 'ar'
+      notify(${JSON.stringify(currentLang === 'ar'
         ? 'تعذّر إغلاق هذه النافذة تلقائيًا. استخدم زر الرجوع بالمتصفح أو أغلق هذا التبويب يدويًا للعودة لبوابة المعلم.'
         : 'Kunne ikke lukke vinduet automatisk. Bruk nettleserens tilbake-knapp, eller lukk denne fanen manuelt for å gå tilbake til Lærerportal.')});
     }, 300);
@@ -3349,7 +3474,7 @@ ${extraScript || ''}
   function openPrintWindow(html){
     const win = window.open('', '_blank');
     if(!win){
-      alert(currentLang === 'ar'
+      notify(currentLang === 'ar'
         ? 'المتصفح منع نافذة الطباعة. فعّل النوافذ المنبثقة لهذا الموقع وحاول مرة أخرى.'
         : 'Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for denne siden og prøv igjen.');
       return;
@@ -3376,7 +3501,7 @@ ${extraScript || ''}
   window.printAndSubmitLessonPlan = function(){
     try{
       if(!currentTeacher){
-        alert(currentLang === 'ar' ? 'الرجاء تسجيل الدخول أولاً.' : 'Du må logge inn først.');
+        notify(currentLang === 'ar' ? 'الرجاء تسجيل الدخول أولاً.' : 'Du må logge inn først.');
         return;
       }
 
@@ -3394,7 +3519,7 @@ ${extraScript || ''}
       const lekser = document.getElementById('lpLekser').value.trim();
 
       if(!dato || !emne || !mal || !nyttStoff){
-        alert(t('fillRequiredLesson'));
+        notify(t('fillRequiredLesson'));
         return;
       }
 
@@ -3450,7 +3575,7 @@ ${extraScript || ''}
       openPrintWindow(printDoc);
     } catch(err){
       console.error(err);
-      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+      notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   };
 
@@ -3498,7 +3623,7 @@ ${extraScript || ''}
         .forEach(id => { document.getElementById(id).value = ''; });
     } catch(err){
       console.error(err);
-      alert((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
+      notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
   }
 
