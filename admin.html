@@ -2201,14 +2201,26 @@
       try{
         const q = query(collection(db, 'adminUsers'), where('epost', '==', user.email));
         const snap = await getDocs(q);
-        currentUserRoles = [];
-        isAuthorizedAdmin = snap.docs.some(d => {
+
+        // Finnes det flere poster på samme e-post (gammel data, eller en
+        // gjenoppretting fra sletteloggen), slår vi sammen rollene fra alle
+        // i stedet for å lese bare den første. Ellers kunne en «Eier»-rolle
+        // i én post bli usynlig fordi en annen post kom først i listen.
+        const alleRoller = new Set();
+        snap.docs.forEach(d => {
           const data = d.data();
-          const roller = (data.roller || data.rolle || '').split(',').map(s => s.trim()).filter(Boolean);
-          const grants = roller.length === 0 || roller.some(r => ADMIN_PANEL_ROLES.includes(r));
-          if(grants) currentUserRoles = roller;
-          return grants;
+          (data.roller || data.rolle || '').split(',')
+            .map(x => x.trim()).filter(Boolean)
+            .forEach(r => alleRoller.add(r));
         });
+        currentUserRoles = [...alleRoller];
+        if(snap.docs.length > 1){
+          console.warn('Flere adminUsers-poster på samme e-post:', user.email,
+                       '— ryddes ved neste lagring av personkortet.');
+        }
+        isAuthorizedAdmin = snap.docs.length > 0 &&
+          (currentUserRoles.length === 0 ||
+           currentUserRoles.some(r => ADMIN_PANEL_ROLES.includes(r)));
       } catch(err){
         console.error('Kunne ikke bekrefte admin-tilgang:', err);
         isAuthorizedAdmin = false;
@@ -2308,9 +2320,24 @@
     // adminUsers — directory + access-control entry for EVERY role holder,
     // regardless of whether their specific roles grant panel access (access
     // itself is gated on role content at login time, not on presence here).
-    const existingAdmin = adminUsersCache.find(u => (u.epost||'').trim().toLowerCase() === emailLc);
+    // Én e-post skal ha nøyaktig ÉN post i adminUsers. Blir det flere,
+    // leser innloggingen bare den første den finner — og hvilken det er,
+    // avhenger av rekkefølgen Firestore returnerer. Da kan samme person
+    // ha «Eier» i én post og noe helt annet i en annen, og tilgangen
+    // skifter tilsynelatende tilfeldig mellom økter.
+    //
+    // Vi oppdaterer derfor den eldste posten og fjerner eventuelle
+    // duplikater i samme operasjon.
+    const alleTreff = adminUsersCache.filter(u => (u.epost||'').trim().toLowerCase() === emailLc);
+    const existingAdmin = alleTreff[0];
     if(existingAdmin){
       await updateDoc(doc(db, 'adminUsers', existingAdmin.id), { navn, epost, roller: rollerStr });
+      for(let i = 1; i < alleTreff.length; i++){
+        try{
+          await deleteDoc(doc(db, 'adminUsers', alleTreff[i].id));
+          console.warn('Fjernet duplikat i adminUsers for', emailLc, alleTreff[i].id);
+        }catch(err){ console.error('Kunne ikke fjerne duplikat', err); }
+      }
     } else {
       await addDoc(collection(db, 'adminUsers'), {
         navn, epost, roller: rollerStr,
@@ -6216,6 +6243,27 @@
   // og skal ikke overskrives av automatikken. Uten dette ville et hvilket som
   // helst bytte av program eller foresatt stille tilbakestilt en avtalt
   // redusert sats — uten at noen så det.
+  // Advarer hvis e-posten allerede tilhører en annen person. Samme e-post
+  // på to personkort gir to portalkontoer som peker på samme innlogging —
+  // og da er det tilfeldig hvem systemet tror du er.
+  function sjekkDuplikatEpost(type, epost, egenId){
+    const lc = (epost || '').trim().toLowerCase();
+    if(!lc) return true;
+    const kolleksjoner = ['teachers', 'guardians', 'ledelse'];
+    for(const k of kolleksjoner){
+      const treff = (cache[k] || []).find(r =>
+        r.id !== egenId && (r.epost || '').trim().toLowerCase() === lc);
+      if(treff){
+        return confirm(
+          'E-posten ' + epost + ' er allerede registrert på «' +
+          (treff.navn || 'en annen oppføring') + '».\n\n' +
+          'To kort med samme e-post deler samme innlogging, og systemet kan ' +
+          'da forveksle dem.\n\nVil du lagre likevel?');
+      }
+    }
+    return true;
+  }
+
   function applyStudentDiscountPricing(){
     const programEl = document.getElementById('field_program');
     const foresattEl = document.getElementById('field_foresatt');
@@ -6470,6 +6518,9 @@
       const isRoleDrivenType = editingType === 'teachers';
       const rollerArr = isRoleDrivenType ? (entry.roller || '').split(',').map(s=>s.trim()).filter(Boolean) : [];
       const isNewRolePerson = !editingId && isRoleDrivenType && entry.epost && rollerArr.length > 0;
+
+      // Stopp før lagring hvis e-posten alt tilhører en annen person.
+      if(entry.epost && !sjekkDuplikatEpost(editingType, entry.epost, editingId)) return;
 
       if(editingId){
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
