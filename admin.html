@@ -337,6 +337,11 @@
     font-size:16px; font-family:'Jost',sans-serif; background:#fbfcfe;
   }
   .pw-knapper{ display:flex; gap:9px; justify-content:flex-end; margin-top:18px; }
+  .vipps-sendt{
+    display:inline-flex; align-items:center; align-self:center;
+    background:#fdf3e7; border:1px solid #e8c9a0; color:#8a5a1e;
+    border-radius:9px; padding:9px 13px; font-size:12.5px; line-height:1.5;
+  }
   .rel-forslag{
     display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;
     background:#fdf6ec; border:1px solid #e8d3ae; border-radius:11px;
@@ -4304,6 +4309,34 @@
       if(row.foresatt1_navn) chips.push(chipR('Foresatt', escapeHtml(row.foresatt1_navn)));
       if(row.foresatt1_tlf) chips.push(chipR('Telefon', '📞 ' + escapeHtml(row.foresatt1_tlf)));
       if(row.foresatt1_epost) chips.push(chipR('E-post', '✉️ ' + escapeHtml(row.foresatt1_epost)));
+      if(row.behandletAv){
+        chips.push(chipR('Behandlet av',
+          escapeHtml(row.behandletAv) + (row.behandletDato ? '<br><span style="font-weight:400; font-size:12px; color:#8a9a90;">' + escapeHtml(row.behandletDato) + '</span>' : '')));
+      }
+      // Eleven som ble opprettet fra denne søknaden — motsatt vei av
+      // lenken i elevkortet.
+      const eleven = (cache.students || []).find(st => st.fraSoknadId === row.id);
+      if(eleven){
+        chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Elev i systemet</div><div style="font-weight:600;"><span class="record-link" onclick="showPersonDetail('students','${escapeHtml(eleven.id)}')">👤 ${escapeHtml(eleven.navn || '—')}</span></div></div>`);
+      }
+    }
+
+    // Elevkortet: lenke tilbake til den opprinnelige søknaden.
+    if(type === 'students'){
+      // Nyere elever har fraSoknadId. For elever opprettet før koblingen
+      // fantes, finner vi søknaden på navn — usikkert nok til at det bare
+      // gjøres når det er nøyaktig ett treff.
+      let soknad = row.fraSoknadId
+        ? (cache.registrations || []).find(r => r.id === row.fraSoknadId)
+        : null;
+      if(!soknad && row.navn){
+        const treff = (cache.registrations || []).filter(
+          r => (r.elev_navn || '').trim().toLowerCase() === row.navn.trim().toLowerCase());
+        if(treff.length === 1) soknad = treff[0];
+      }
+      if(soknad){
+        chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Opprinnelig søknad</div><div style="font-weight:600;"><span class="record-link" onclick="showPersonDetail('registrations','${escapeHtml(soknad.id)}')">📄 Se søknaden${soknad.innsendtDato ? ' (' + escapeHtml(soknad.innsendtDato) + ')' : ''}</span></div></div>`);
+      }
     }
 
     if(type === 'guardians'){
@@ -4417,8 +4450,16 @@
         <button class="btn" style="background:#4a7c59; color:#fff;" onclick="approveRegistration('${row.id}')">✅ Godkjenn</button>
         <button class="btn btn-ghost" onclick="waitlistRegistration('${row.id}')">⏳ Venteliste</button>
         <button class="btn btn-ghost" onclick="rejectRegistration('${row.id}')">❌ Avslå</button>
-        <button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendRealVippsRequest('${row.id}')">⚡ Send ekte Vipps-krav</button>
-        <button class="btn btn-ghost" onclick="sendVippsPaymentLink('${row.id}')">📤 Vipps-lenke (manuell)</button>
+        ${(() => {
+          const krav = apentVippsKrav('registrations', row.id);
+          if(!krav){
+            return `<button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendRealVippsRequest('${row.id}')">⚡ Send ekte Vipps-krav</button>
+                    <button class="btn btn-ghost" onclick="sendVippsPaymentLink('${row.id}')">📤 Vipps-lenke (manuell)</button>`;
+          }
+          const sendt = (krav.createdAt || krav.opprettet || '').slice(0, 16).replace('T', ' ');
+          return `<span class="vipps-sendt">⏳ Vipps-krav sendt${sendt ? ' ' + escapeHtml(sendt) : ''} — venter på betaling.
+                    Kravet kan avbrytes under «Kasserer (Ledelse)».</span>`;
+        })()}
         <button class="btn btn-ghost" onclick="editEntry('registrations','${row.id}')">✏️ Rediger</button>
         <button class="btn" style="background:#a83c3c; color:#fff; margin-inline-start:auto;"
                 onclick="slettMedBekreftelse('registrations','${row.id}')">🗑 Slett</button>`
@@ -4429,7 +4470,10 @@
         ${(type === 'teachers' || type === 'guardians') && row.epost
           ? `<button class="btn btn-ghost" onclick="sendPortalAccountSetup('${escapeHtml(row.epost)}')">Send kontooppsett</button>` : ''}
         ${type === 'students' && restKr > 0
-          ? `<button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendStudentVippsRequest('${row.id}')">⚡ Send ekte Vipps-krav</button>` : ''}
+          ? (apentVippsKrav('students', row.id)
+              ? `<span class="vipps-sendt">⏳ Vipps-krav allerede sendt — venter på betaling.</span>`
+              : `<button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendStudentVippsRequest('${row.id}')">⚡ Send ekte Vipps-krav</button>`)
+          : ''}
         <button class="btn" style="background:#a83c3c; color:#fff; margin-inline-start:auto;"
                 onclick="slettMedBekreftelse('${type}','${row.id}')">🗑 Slett</button>`;
     }
@@ -6734,6 +6778,26 @@
       .filter(Boolean);
   }
 
+  /* Er det allerede sendt et Vipps-krav som verken er betalt eller
+   * avbrutt?
+   *
+   * Uten denne sjekken kunne man trykke «Send ekte Vipps-krav» flere ganger
+   * på samme søknad. Foresatte ville da fått to eller tre betalingsvarsler
+   * for samme plass — og i verste fall betalt mer enn én gang, siden hvert
+   * krav er gyldig for seg.
+   *
+   * Kravet regnes som åpent så lenge status verken er «completed» eller
+   * «cancelled». Er det betalt, godkjennes søknaden automatisk av webhooken
+   * og forsvinner uansett fra denne listen.
+   */
+  function apentVippsKrav(type, id){
+    return (cache.pendingVippsPayments || []).find(p => {
+      const st = (p.status || 'pending').toLowerCase();
+      if(st === 'completed' || st === 'cancelled') return false;
+      return p.targetId === id || (type === 'students' && p.studentId === id);
+    }) || null;
+  }
+
   function computeSoskenPrice(program, guardianId, excludeId){
     // Prisen ligger på programmet (redigerbart under fanen "Programmer").
     // PROGRAM_PRICES beholdes kun som reserve for gamle programnavn som ennå
@@ -7418,9 +7482,16 @@
       studentRecord.sistEndretAv = currentUserEmail || 'ukjent';
       studentRecord.sistEndretDato = new Date().toISOString().slice(0,10);
 
+      // Peker tilbake til søknaden. Søknaden slettes aldri — den er det
+      // eneste stedet foresattes egne, uendrede svar og samtykker finnes.
+      // Uten denne koblingen måtte man lete dem opp for hånd.
+      studentRecord.fraSoknadId = id;
       await addDoc(collection(db, 'students'), studentRecord);
-
-      await updateDoc(doc(db, 'registrations', id), { status: 'Godkjent', behandletAv: currentUserEmail || 'ukjent' });
+      await updateDoc(doc(db, 'registrations', id), {
+        status: 'Godkjent',
+        behandletAv: currentUserEmail || 'ukjent',
+        behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
+      });
       showToast('Søknaden er godkjent og eleven er lagt til i Administrativ.');
     } catch(err){
       console.error(err);
@@ -7439,7 +7510,7 @@
     const ok = confirm(`Avslå søknaden for ${reg.elev_navn || 'denne eleven'}? Det opprettes ingen elev i systemet.`);
     if(!ok) return;
     try{
-      await updateDoc(doc(db, 'registrations', id), { status: 'Avslått', behandletAv: currentUserEmail || 'ukjent' });
+      await updateDoc(doc(db, 'registrations', id), { status: 'Avslått', behandletAv: currentUserEmail || 'ukjent', behandletAv: currentUserEmail || 'ukjent', behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ') });
       showToast('Søknaden er avslått.');
     } catch(err){
       console.error(err);
@@ -7497,6 +7568,11 @@
     // Derfor er denne knappen i praksis en opptaksbeslutning, og må ha
     // samme sperre som Godkjenn-knappen.
     if(!krevOpptaksrolle()) return;
+
+    // Knappen skjules når det finnes et åpent krav, men et kort som ikke er
+    // tegnet på nytt kan fortsatt ha den gamle knappen liggende.
+    const apent = apentVippsKrav('registrations', id);
+    if(apent && !confirm('Det er allerede sendt et Vipps-krav på denne søknaden som ikke er betalt.\n\nSende et nytt krav likevel? Foresatte vil da få to betalingsvarsler.')) return;
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     const guardianPhone = reg.foresatt1_tlf || '';
@@ -7601,7 +7677,7 @@
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     try{
-      await updateDoc(doc(db, 'registrations', id), { status: 'Venteliste', behandletAv: currentUserEmail || 'ukjent' });
+      await updateDoc(doc(db, 'registrations', id), { status: 'Venteliste', behandletAv: currentUserEmail || 'ukjent', behandletAv: currentUserEmail || 'ukjent', behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ') });
       showToast('Søknaden er satt på venteliste.');
     } catch(err){
       console.error(err);
