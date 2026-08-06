@@ -206,6 +206,9 @@
     background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif; font-size:13px;
     padding:12px 22px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s; z-index:3800; max-width:90%; text-align:center;
   }
+  .toast{ font-size:15px; padding:14px 22px; max-width:min(92vw,460px);
+          bottom:calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .toast.err{ background:#a03028; }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
   /* Home menu grid */
@@ -1199,11 +1202,25 @@
     const c = classes.find(x => x.id === classId);
     return c ? (c.navn || '') : classId; // fallback: legacy/un-migrated value
   }
-  function showToast(msg){
+  // isError gir rød farge og lengre visetid — en feilmelding må rekke å bli
+  // lest, mens en bekreftelse gjerne kan forsvinne raskt.
+  let toastTimer = null;
+  function showToast(msg, isError){
     const el = document.getElementById('toast');
+    if(!el) return;
     el.textContent = msg;
+    el.classList.toggle('err', !!isError);
     el.classList.add('show');
-    setTimeout(()=>el.classList.remove('show'), 2400);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), isError ? 5000 : 2600);
+  }
+
+  // Erstatter notify(). En systemdialog stopper hele siden og må trykkes bort
+  // — på telefon er det både stygt og tregt.
+  function notify(msg){
+    const t = String(msg == null ? '' : msg);
+    const erFeil = /feil|galt|ikke |kan ikke|må |خطأ|لا يوجد|يرجى/i.test(t);
+    showToast(t, erFeil);
   }
 
   onSnapshot(collection(db, 'guardians'), (snap) => {
@@ -1346,6 +1363,9 @@
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = guardian.navn;
+    // Åpner seksjonen fra adresselinjen hvis den finnes — ellers står
+    // startsiden som før.
+    setTimeout(gjenopprettSeksjon, 0);
     document.getElementById('absDate').value = nearestSchoolDate();
     closeSection();
     refreshMyChildren();
@@ -1435,7 +1455,17 @@
       b.classList.toggle('active', b.dataset.sidebar === name);
     });
   }
+  function gjenopprettSeksjon(){
+    const m = (location.hash || '').match(/del=([A-Za-z]+)/);
+    if(!m) return;
+    const mål = document.getElementById('view-' + m[1]);
+    if(mål) openSection(m[1]);
+  }
+
   window.openSection = function(name){
+    // Seksjonen legges i adresselinjen, slik at en oppdatering ikke sender
+    // deg tilbake til start. Se samme løsning i lærerportalen.
+    try{ history.replaceState(null, '', '#del=' + name); }catch(e){}
     document.getElementById('homeView').style.display = 'none';
     document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + name).style.display = 'block';
@@ -1692,7 +1722,7 @@
     if(!currentGuardian || !currentAdminMsgThreadId) return;
     const tekst = document.getElementById('guardianAdminMsgReplyText').value.trim();
     const visibility = document.querySelector('input[name="guardianAdminMsgVisibility"]:checked')?.value || 'private';
-    if(!tekst){ alert(t('teacherMsgFill')); return; }
+    if(!tekst){ notify(t('teacherMsgFill')); return; }
     try{
       await addDoc(collection(db, 'broadcastMessages'), {
         threadId: currentAdminMsgThreadId, fra: 'Foresatt', avsenderNavn: currentGuardian.navn, avsenderId: currentGuardian.id,
@@ -1703,7 +1733,7 @@
       showToast(t('teacherMsgSent'));
     } catch(err){
       console.error(err);
-      alert('Feil: ' + err.message);
+      notify('Feil: ' + err.message);
     }
   };
 
@@ -1758,7 +1788,7 @@
     const titleInput = document.getElementById('guardianNewMsgTitle');
     const title = titleInput ? titleInput.value.trim() : '';
     if(!title){
-      alert(currentLang === 'ar' ? 'اكتب عنوان للمحادثة.' : 'Skriv en tittel på samtalen.');
+      notify(currentLang === 'ar' ? 'اكتب عنوان للمحادثة.' : 'Skriv en tittel på samtalen.');
       return;
     }
     const child = myChildren[currentChildIndex];
@@ -1849,7 +1879,7 @@
   window.voteOnPoll = async function(postId){
     const checked = document.querySelector(`input[name="poll_${postId}"]:checked`);
     if(!checked){
-      alert(t('pollFillNote'));
+      notify(t('pollFillNote'));
       return;
     }
     await addDoc(collection(db, 'classPollVotes'), {
@@ -1937,7 +1967,7 @@
     let vedleggLenke = '';
     const statusEl = document.getElementById('teacherMsgUploadStatus');
     if(!tekst){
-      alert(t('teacherMsgFill'));
+      notify(t('teacherMsgFill'));
       return;
     }
     try{
@@ -2259,7 +2289,7 @@
     let lenke = document.getElementById('hwSubmitLink').value.trim();
     const statusEl = document.getElementById('hwUploadStatus');
     if(!tittel || (!file && !lenke)){
-      alert(t('fillHwFields'));
+      notify(t('fillHwFields'));
       return;
     }
     try{
@@ -2291,7 +2321,7 @@
     const dato = document.getElementById('absDate').value;
     const arsak = document.getElementById('absReason').value.trim();
     if(!dato || !arsak){
-      alert(t('fillAbsFields'));
+      notify(t('fillAbsFields'));
       return;
     }
     try{
@@ -2303,7 +2333,7 @@
       document.getElementById('absReason').value = '';
     } catch(err){
       console.error(err);
-      alert(t('errorOccurred') + err.message);
+      notify(t('errorOccurred') + err.message);
     }
   };
 
@@ -2313,7 +2343,7 @@
     const nyEpost = document.getElementById('contactNewEmail').value.trim();
     const melding = document.getElementById('contactMessage').value.trim();
     if(!nyTelefon && !nyEpost && !melding){
-      alert(currentLang === 'ar' ? 'يرجى تعبئة حقل واحد على الأقل.' : 'Fyll ut minst ett felt.');
+      notify(currentLang === 'ar' ? 'يرجى تعبئة حقل واحد على الأقل.' : 'Fyll ut minst ett felt.');
       return;
     }
     try{
@@ -2327,7 +2357,7 @@
       document.getElementById('contactMessage').value = '';
     } catch(err){
       console.error(err);
-      alert(t('errorOccurred') + err.message);
+      notify(t('errorOccurred') + err.message);
     }
   };
 
@@ -2360,14 +2390,14 @@
     let belop;
     if(selectedPayType === 'Alt'){
       if(remaining <= 0){
-        alert(t('noRemaining'));
+        notify(t('noRemaining'));
         return;
       }
       belop = remaining;
     } else {
       belop = parseFloat(document.getElementById('payAmountInput').value);
       if(!belop || belop <= 0){
-        alert(t('invalidAmount'));
+        notify(t('invalidAmount'));
         return;
       }
     }
@@ -2382,7 +2412,7 @@
       document.getElementById('payAmountFieldWrap').style.display = 'none';
     } catch(err){
       console.error(err);
-      alert(t('errorOccurred') + err.message);
+      notify(t('errorOccurred') + err.message);
     }
   };
 
@@ -2398,7 +2428,7 @@
     const remaining = toNum(child.belop) - toNum(child.belopBetalt);
     const amountToPay = selectedPayAmountKr > 0 ? selectedPayAmountKr : remaining;
     if(!amountToPay || amountToPay <= 0){
-      alert(t('invalidAmount'));
+      notify(t('invalidAmount'));
       return;
     }
     let phone = (currentGuardian.telefon || '').replace(/\D/g, '');
@@ -2418,14 +2448,14 @@
       });
       const data = await res.json();
       if(!data.ok){
-        alert('Vipps-feil: ' + (data.error || 'Ukjent feil'));
+        notify('Vipps-feil: ' + (data.error || 'Ukjent feil'));
         if(btn) btn.style.pointerEvents = '';
         return;
       }
       window.location.href = data.redirectUrl;
     } catch(err){
       console.error(err);
-      alert('Feil: ' + err.message);
+      notify('Feil: ' + err.message);
       if(btn) btn.style.pointerEvents = '';
     }
   };
@@ -2452,7 +2482,7 @@
       }
     } catch(err){
       console.error(err);
-      alert(t('errorOccurred') + err.message);
+      notify(t('errorOccurred') + err.message);
     }
   };
 
