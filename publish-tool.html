@@ -69,6 +69,14 @@
   }
   .who-bar span{flex:1 1 auto; min-width:0; word-break:break-word;}
   .who-bar button{background:none; border:none; color:var(--red); font-family:'Jost',sans-serif; font-size:11.5px; text-decoration:underline; cursor:pointer;}
+  .notice-info{
+    background:#eef4fb; border:1px solid #c3d8ee; color:#2c5680;
+    border-radius:8px; padding:9px 12px; margin-top:8px; line-height:1.5;
+  }
+  .notice-warn{
+    background:#fdf3e7; border:1px solid #e8c9a0; color:#8a5a1e;
+    border-radius:8px; padding:9px 12px; margin-top:8px; line-height:1.5;
+  }
   .hint{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:4px;}
   .file-loaded-hint{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:10px; display:none;}
   .file-loaded-hint.show{display:block;}
@@ -162,6 +170,12 @@
           <option value="larerinnsyn.html">👁️ Lærerinnsyn (skjult) — larerinnsyn.html</option>
           <option value="slettelogg.html">🗑️ Slettelogg (skjult) — slettelogg.html</option>
           <option value="index3.html">📦 Gammel hovedportal (utgått) — index3.html</option>
+        <option value="madina-brosjyre.html">📄 Brosjyre (deling) — madina-brosjyre.html</option>
+        <option value="timeplan.html">🗓️ Timeplan (offentlig) — timeplan.html</option>
+        <option value="kunngjoring.html">📢 Kunngjøringer — kunngjoring.html</option>
+        <option value="publish-tool.html">🛠️ Dette publiseringsverktøyet — publish-tool.html</option>
+        <option value="functions/index.js">⚙️ Cloud Functions — functions/index.js</option>
+        <option value="firestore.rules">🔐 Sikkerhetsregler (kun dokumentasjon) — firestore.rules</option>
           <option value="sw.js">Service worker (cache) — sw.js</option>
           <option value="publish-tool.html">Dette publiseringsverktøyet — publish-tool.html</option>
           <option value="manifest-admin.json">Manifest — Admin (manifest-admin.json)</option>
@@ -171,10 +185,17 @@
           <option value="__custom__">Annen filsti...</option>
         </select>
         <div class="hint" id="lastPublishedHint"></div>
+        <div id="pathNotice" style="display:none;"></div>
+      </div>
+      <div class="field">
+        <label>Kort beskrivelse av endringen (valgfritt)</label>
+        <input type="text" id="commitNote" placeholder="f.eks. la til 30-dagers sperre i sletteloggen"
+               maxlength="80">
+        <div class="hint">Vises i historikken på GitHub, så du senere kan se hva som ble endret og når.</div>
       </div>
       <div class="field" id="customPathWrap" style="display:none;">
         <label>Egendefinert filsti</label>
-        <input type="text" id="customPath" placeholder="f.eks. mappe/fil.html" oninput="updateLastPublishedHint()">
+        <input type="text" id="customPath" placeholder="f.eks. mappe/fil.html" oninput="updateLastPublishedHint(); updatePathNotice();">
       </div>
       <div class="field">
         <label style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -257,7 +278,41 @@
     const val = document.getElementById('filePreset').value;
     document.getElementById('customPathWrap').style.display = val === '__custom__' ? 'block' : 'none';
     updateLastPublishedHint();
+    updatePathNotice();
   };
+
+  // Filer under functions/ publiseres av en ANNEN GitHub Action enn
+  // nettsidene, og den bruker 3–5 minutter i stedet for under ett.
+  // Uten denne beskjeden sitter man og venter på en publisering som ser
+  // ut til å henge, men som egentlig bare tar lengre tid.
+  //
+  // Advarselen fanger også opp den vanligste feilen: å skrive "index.js"
+  // når man mener "functions/index.js". Da havner filen i rota, ingen
+  // funksjoner blir publisert, og ingenting sier ifra.
+  function updatePathNotice(){
+    const el = document.getElementById('pathNotice');
+    if(!el) return;
+    const path = currentPath();
+    let msg = '', cls = 'hint';
+
+    if(path.indexOf('functions/') === 0){
+      msg = '⚙️ Dette er en Cloud Function. Publiseringen kjøres av en egen ' +
+            'GitHub Action og tar 3–5 minutter — vesentlig lengre enn nettsidene.';
+      cls = 'hint notice-info';
+    } else if(/^index\.js$/i.test(path) || /^[^/]+\.js$/i.test(path)){
+      msg = '⚠️ Mente du «functions/' + path + '»? En .js-fil i rotmappen ' +
+            'publiseres IKKE som Cloud Function, og funksjonene forblir uendret.';
+      cls = 'hint notice-warn';
+    } else if(path === 'firestore.rules'){
+      msg = 'ℹ️ Denne filen er kun dokumentasjon. De ekte reglene må limes inn ' +
+            'manuelt i Firebase Console → Firestore → Rules.';
+      cls = 'hint notice-info';
+    }
+
+    el.textContent = msg;
+    el.className = cls;
+    el.style.display = msg ? 'block' : 'none';
+  }
 
   window.clearFileContent = function(){
     const box = document.getElementById('fileContent');
@@ -342,7 +397,13 @@
         throw new Error('Kunne ikke hente filen (status ' + getRes.status + '): ' + (errData.message || ''));
       }
       const putBody = {
-        message: 'Oppdater ' + path + ' via publiseringsverktøy',
+        message: (function(){
+          const note = (document.getElementById('commitNote') || {}).value;
+          const base = 'Oppdater ' + path;
+          return note && note.trim()
+            ? base + ' — ' + note.trim()
+            : base + ' via publiseringsverktøy';
+        })(),
         content: toBase64(content),
         branch: cfg.branch
       };
