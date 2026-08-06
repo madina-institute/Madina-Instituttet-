@@ -306,6 +306,40 @@
     color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:20px; padding:3px 10px;
   }
   .record-field{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); white-space:nowrap; }
+
+  /* Sammenleggbare seksjoner i personkortet. Med nesten 60 felter på en
+     elev ble alt vist på én gang uleselig — nå åpner man bare det man
+     faktisk er ute etter. */
+  /* Personkortet er den bredeste visningen i panelet — den skal utnytte
+     skjermen, ikke ligge som en smal spalte midt på siden. På telefon går
+     den nesten helt ut i kanten, siden hver piksel teller der. */
+  .pd-modal{ max-width:1080px; width:94vw; padding:26px 28px; }
+  @media (max-width:600px){
+    .pd-modal{ width:98vw; padding:18px 14px; max-height:92vh; border-radius:12px; }
+  }
+  .pd-seksjon{ border:1px solid var(--line); border-radius:11px; margin-bottom:8px; background:#fff; overflow:hidden; }
+  .pd-seksjon-head{
+    width:100%; display:flex; align-items:center; gap:9px; cursor:pointer;
+    background:var(--paper); border:none; padding:13px 15px; text-align:start;
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:600; color:var(--ink);
+  }
+  .pd-seksjon-head:hover{ background:var(--paper-2); }
+  .pd-caret{ color:#8a9a90; font-size:11px; transition:transform .18s; }
+  .pd-seksjon.open .pd-caret{ transform:rotate(90deg); }
+  .pd-seksjon-tittel{ flex:1; }
+  .pd-seksjon-antall{
+    font-size:11.5px; font-weight:500; color:#8a9a90;
+    background:#fff; border:1px solid var(--line); border-radius:999px; padding:2px 9px;
+  }
+  .pd-seksjon-body{ display:none; padding:6px 15px 14px; }
+  .pd-seksjon.open .pd-seksjon-body{ display:block; }
+  .pd-felt{
+    display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+    padding:9px 0; font-family:'Jost',sans-serif; font-size:13.5px;
+  }
+  .pd-felt + .pd-felt{ border-top:1px solid rgba(40,40,90,.07); }
+  .pd-felt-label{ color:#7a838f; flex:0 0 auto; max-width:55%; }
+  .pd-felt-verdi{ font-weight:600; text-align:end; }
   .record-field-label{ color:var(--gold); font-weight:600; margin-inline-end:4px; }
   .record-link{ color:var(--emerald-d); font-weight:600; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
   .record-link:hover{ color:var(--emerald); }
@@ -1943,7 +1977,7 @@
      feltene skjult bak "Vis flere detaljer" i stedet for en smal,
      loddrett liste. -->
 <div class="overlay" id="personDetailOverlay">
-  <div class="modal" style="max-width:880px; width:92vw;">
+  <div class="modal pd-modal">
     <div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">
       <img id="pdPhoto" src="" alt="" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid var(--line); flex:none;">
       <div style="flex:1 1 320px; min-width:260px;">
@@ -3847,6 +3881,55 @@
     }
   };
 
+  // Feltene i elevkortet ble opprinnelig lagt til etter hvert som skjemaet
+  // vokste, ikke etter hva de handler om. Resultatet er at foresatt 1 står
+  // øverst, foresatt 2 midt i betalingsfeltene, og resten av foresatt 2
+  // langt lenger nede — man må lete etter opplysninger som hører sammen.
+  //
+  // Her grupperes feltene etter tema i stedet. Rekkefølgen på feltene i
+  // SCHEMAS røres ikke (den styrer redigeringsskjemaet), kun visningen.
+  //
+  // Felter som ikke står i noen gruppe havner automatisk under «Annet», så
+  // et nytt felt aldri blir usynlig bare fordi det ble glemt her.
+  const PD_SEKSJONER = {
+    students: [
+      { tittel: '👤 Om eleven', ikon: '👤', keys: [
+        'kjonn','elev_fdato','adresse','postnr_sted','grunnskole','klassetrinn','sprak_hjemme'] },
+      { tittel: '👨‍👩‍👧 Foresatt 1', keys: [
+        'foresatt','foresatt1_tlf'] },
+      { tittel: '👨‍👩‍👦 Foresatt 2', keys: [
+        'foresatt2','foresatt2_navn','foresatt2_relasjon','foresatt2_tlf','foresatt2_epost'] },
+      { tittel: '🚨 Nødkontakt', keys: [
+        'nod_navn','nod_tlf','nod_relasjon'] },
+      { tittel: '🩺 Helse', keys: [
+        'allergi','allergi_beskriv','sykdom','sykdom_beskriv','medisin','medisin_hvilke',
+        'helse_annet','larevansker','larevansker_beskriv','bbt_ppt','bbt_ppt_beskriv'] },
+      { tittel: '📖 Faglig bakgrunn', keys: [
+        'tidligere_skole','tidligere_skole_navn','tidligere_skole_ar','tidligere_studert',
+        'koran_lese','koran_qaida','koran_tajwid','koran_memorert','koran_ijazah',
+        'arabisk_tidligere','arabisk_niva','urdu_tidligere','urdu_niva'] },
+      { tittel: '💰 Økonomi', keys: [
+        'betalt','belop','belopBetalt','betalingsdato','soskenrekkefolge',
+        'spesialpris','spesialprisGrunn'] },
+      { tittel: '✅ Samtykker', keys: [
+        'samtykke_personopplysninger','samtykke_bilder','samtykke_fotografering',
+        'samtykke_publisering_nett'] }
+    ],
+    teachers: [
+      { tittel: '👤 Kontakt', keys: ['telefon','adresse','kjonn','fdato'] },
+      { tittel: '📚 Undervisning', keys: ['fag','tildeltKlasse','dager','roller'] },
+      { tittel: '💰 Lønn', keys: ['lonnStatus','kontonummer','timesats','timesatsGrunn'] }
+    ],
+    guardians: [
+      { tittel: '👤 Kontakt', keys: ['telefon','epost','adresse','postnr_sted','relasjon'] }
+    ]
+  };
+
+  window.togglePdSeksjon = function(idx){
+    const el = document.querySelector(`.pd-seksjon[data-seksjon="${idx}"]`);
+    if(el) el.classList.toggle('open');
+  };
+
   window.showPersonDetail = function(type, id){
     const schema = SCHEMAS[type];
     const row = cache[type].find(r => r.id === id);
@@ -3900,18 +3983,61 @@
 
     const extraFields = schema.fields.filter(f => !f.essential && f.key !== 'bilde');
     const extraGrid = document.getElementById('pdExtraGrid');
-    extraGrid.innerHTML = extraFields.map(f => {
+
+    const feltHtml = (f) => {
       const val = colDisplay(f.key);
       if(!val) return '';
       const isLink = f.type === 'dynamic-select' && row[f.key] && (cache[f.source] || []).some(r => r.id === row[f.key]);
       const valueHtml = isLink
         ? `<span class="record-link" onclick="openRelatedRecord('${escapeHtml(f.source)}','${escapeHtml(row[f.key])}')">${escapeHtml(val)}</span>`
         : escapeHtml(val);
-      return `<div class="record-field" data-pd-key="${escapeHtml(f.key)}"><span class="record-field-label">${escapeHtml(f.label)}</span>${valueHtml}</div>`;
-    }).join('') || '<div style="color:#8a9a90; font-size:13px;">Ingen flere opplysninger registrert.</div>';
+      return `<div class="pd-felt" data-pd-key="${escapeHtml(f.key)}"><span class="pd-felt-label">${escapeHtml(f.label)}</span><span class="pd-felt-verdi">${valueHtml}</span></div>`;
+    };
+
+    const seksjoner = PD_SEKSJONER[type] || [];
+    const brukteKeys = new Set();
+    seksjoner.forEach(sek => sek.keys.forEach(k => brukteKeys.add(k)));
+
+    let html = '';
+    seksjoner.forEach((sek, idx) => {
+      const felter = sek.keys
+        .map(k => extraFields.find(f => f.key === k))
+        .filter(Boolean)
+        .map(feltHtml)
+        .filter(Boolean);
+      // En seksjon uten utfylte felter vises ikke — en tom «Helse»-knapp
+      // som åpner ingenting er bare støy.
+      if(felter.length === 0) return;
+      html += `
+        <div class="pd-seksjon" data-seksjon="${idx}">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+            <span class="pd-caret">▶</span>
+            <span class="pd-seksjon-tittel">${escapeHtml(sek.tittel)}</span>
+            <span class="pd-seksjon-antall">${felter.length}</span>
+          </button>
+          <div class="pd-seksjon-body">${felter.join('')}</div>
+        </div>`;
+    });
+
+    // Felter som ikke tilhører noen seksjon.
+    const resterende = extraFields.filter(f => !brukteKeys.has(f.key)).map(feltHtml).filter(Boolean);
+    if(resterende.length){
+      const idx = seksjoner.length;
+      html += `
+        <div class="pd-seksjon" data-seksjon="${idx}">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+            <span class="pd-caret">▶</span>
+            <span class="pd-seksjon-tittel">📋 Annet</span>
+            <span class="pd-seksjon-antall">${resterende.length}</span>
+          </button>
+          <div class="pd-seksjon-body">${resterende.join('')}</div>
+        </div>`;
+    }
+
+    extraGrid.innerHTML = html || '<div style="color:#8a9a90; font-size:13px;">Ingen flere opplysninger registrert.</div>';
     extraGrid.style.display = 'none';
-    extraGrid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(220px,1fr))';
-    extraGrid.style.gap = '10px 18px';
+    extraGrid.style.gridTemplateColumns = '';
+    extraGrid.style.gap = '';
     document.getElementById('pdToggleBtn').textContent = '▾ Vis flere detaljer';
 
     openCashierOverlay('personDetailOverlay');
