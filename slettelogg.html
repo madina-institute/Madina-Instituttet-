@@ -59,7 +59,26 @@
     background:var(--paper-2); color:var(--emerald-d); border:1px solid var(--line); border-radius:6px; padding:9px 14px; cursor:pointer; flex:1 1 auto;
   }
 
-  .log-group{margin-bottom:28px;}
+  .log-group{margin-bottom:14px;}
+  /* Gruppene er lukket som standard. Med flere hundre oppføringer ble
+     siden ellers uendelig lang, og man måtte scrolle forbi alt for å
+     finne én ting. Nå ser man først hvilke typer som finnes og hvor
+     mange — og åpner bare den man faktisk leter i. */
+  .log-group-header{ cursor:pointer; user-select:none; }
+  .log-group-header:hover .log-group-title{ color:var(--emerald-d); }
+  .log-caret{
+    display:inline-block; width:13px; color:#8a9a90; font-size:12px;
+    transition:transform .18s; margin-inline-end:6px;
+  }
+  .log-group.open .log-caret{ transform:rotate(90deg); }
+  .log-group-body{ display:none; padding-top:12px; }
+  .log-group.open .log-group-body{ display:block; }
+  .log-group-preview{
+    font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
+    padding:2px 0 0; line-height:1.5;
+  }
+  .btn-restore-all{ display:none; }
+  .log-group.open .btn-restore-all{ display:inline-block; }
   .log-group-header{
     display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;
     padding-bottom:8px; border-bottom:2px solid var(--line);
@@ -273,6 +292,17 @@
     return Math.max(1, Math.ceil((confirmUnlocksAt(entry) - Date.now()) / (24*60*60*1000)));
   }
 
+  // Hvilke grupper som står åpne. Holdes utenfor render() slik at en
+  // åpen gruppe ikke lukker seg igjen hver gang listen tegnes på nytt
+  // (f.eks. når noe gjenopprettes mens man står i den).
+  const openGroups = new Set();
+
+  window.toggleGroup = function(type){
+    if(openGroups.has(type)) openGroups.delete(type);
+    else openGroups.add(type);
+    render();
+  };
+
   let logEntries = [];
 
   watch('deletionLog', (snap) => {
@@ -316,13 +346,33 @@
 
     el.innerHTML = orderedTypes.map(type => {
       const items = groups[type];
+      // Nyeste sletting øverst i hver gruppe.
+      items.sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
+
+      // En kort linje som viser hva gruppen inneholder uten å åpne den:
+      // når det sist ble slettet, og hvem som gjorde det.
+      const sist = items[0];
+      const slettere = [...new Set(items.map(e => e.deletedBy || 'ukjent'))];
+      const hvem = slettere.length === 1
+        ? slettere[0]
+        : slettere.length + ' personer';
+      const preview = `Sist: ${escapeHtml(formatDate(sist.deletedAt))} · ${escapeHtml(hvem)}`;
+
+      const åpen = openGroups.has(type) ? ' open' : '';
       return `
-        <div class="log-group">
-          <div class="log-group-header">
-            <span class="log-group-title">${escapeHtml(TYPE_LABELS[type] || type)} <span class="log-group-count">(${items.length})</span></span>
-            <button class="btn-restore-all" onclick="restoreGroup('${type}')">Gjenopprett alle (${items.length})</button>
+        <div class="log-group${åpen}" data-type="${escapeHtml(type)}">
+          <div class="log-group-header" onclick="toggleGroup('${escapeHtml(type)}')">
+            <span class="log-group-title">
+              <span class="log-caret">▶</span>${escapeHtml(TYPE_LABELS[type] || type)}
+              <span class="log-group-count">(${items.length})</span>
+              <div class="log-group-preview">${preview}</div>
+            </span>
+            <button class="btn-restore-all"
+                    onclick="event.stopPropagation(); restoreGroup('${escapeHtml(type)}')">Gjenopprett alle (${items.length})</button>
           </div>
-          ${items.map(renderEntryCard).join('')}
+          <div class="log-group-body">
+            ${items.map(renderEntryCard).join('')}
+          </div>
         </div>`;
     }).join('');
   }
