@@ -253,7 +253,7 @@
 
   <!-- HEADER -->
   <div class="cover">
-    <img src="https://madina-institute.github.io/Madina-Instituttet-/logo.png" alt="Madina Institute" class="logo-img">
+    <img src="logo.png" alt="Madina Institute" class="logo-img">
     <div class="eyebrow">Madina Institute — Elevadministrasjon</div>
     <h1>Påmeldingsskjema</h1>
     <div class="sub">For skoleåret 2026/2027 — alle felt må fylles ut. Påmeldingen gjennomgås av administrasjonen før endelig opptak.</div>
@@ -352,7 +352,21 @@
     </div>
 
     <hr class="divider">
-    <p class="hint">Foresatt 2 (valgfritt — fyll ut kun hvis aktuelt)</p>
+
+    <div class="field">
+      <label>Har eleven en foresatt 2?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="har_foresatt2" value="ja" required> Ja</label>
+        <label><input type="radio" name="har_foresatt2" value="nei" required> Nei</label>
+      </div>
+      <div class="note-box" style="margin-top:10px;">
+        Registrerer du foresatt 2, får også hen <strong>egen tilgang til Foreldreportalen</strong>
+        — med eget brukernavn og passord, og med innsyn i barnets oppmøte, lekser og meldinger.
+        Uten registrering er det kun foresatt 1 som kan logge inn.
+      </div>
+    </div>
+
+    <div id="foresatt2Felter" style="display:none;">
     <div class="grid2">
       <div class="field"><label>Navn</label><input type="text" name="foresatt2_navn"></div>
       <div class="field">
@@ -366,6 +380,7 @@
       </div>
       <div class="field"><label>Telefon</label><input type="tel" name="foresatt2_tlf"></div>
       <div class="field"><label>E-post</label><input type="email" name="foresatt2_epost"></div>
+    </div>
     </div>
   </div>
 
@@ -986,6 +1001,44 @@
   wireRequiredOnJa('medisin', ['medisin_hvilke']);
   wireRequiredOnJa('larevansker', ['larevansker_beskriv']);
   wireRequiredOnJa('bbt_ppt', ['bbt_ppt_beskriv']);
+
+  // Foresatt 2 var tidligere bare fire tomme felter merket «valgfritt».
+  // De ble ofte stående tomme — ikke som et valg, men fordi ingen tok
+  // stilling til dem. Nå må man svare ja eller nei, og feltene vises kun
+  // ved «ja». Et tomt felt betyr da at noen har svart nei, ikke at de hoppet
+  // over det.
+  //
+  // Feltnavnene er uendret, så innsending og behandling i panelet fungerer
+  // nøyaktig som før.
+  const foresatt2Felter = document.getElementById('foresatt2Felter');
+  const F2_PAAKREVD = ['foresatt2_navn', 'foresatt2_tlf', 'foresatt2_epost'];
+
+  function oppdaterForesatt2(){
+    const svar = document.querySelector('input[name="har_foresatt2"]:checked')?.value;
+    const vis = svar === 'ja';
+    foresatt2Felter.style.display = vis ? 'block' : 'none';
+
+    F2_PAAKREVD.forEach(n => {
+      const el = document.querySelector(`[name="${n}"]`);
+      if(!el) return;
+      el.required = vis;
+      // Svarer man «nei» etter å ha fylt ut noe, tømmes feltene — ellers
+      // ville halvferdige opplysninger blitt sendt inn for en foresatt
+      // som ikke finnes.
+      if(!vis) el.value = '';
+    });
+
+    if(!vis){
+      document.querySelectorAll('input[name="foresatt2_relasjon"]').forEach(r => { r.checked = false; });
+      const annet = document.querySelector('[name="foresatt2_relasjon_annet"]');
+      if(annet) annet.value = '';
+    }
+  }
+
+  document.querySelectorAll('input[name="har_foresatt2"]').forEach(r => {
+    r.addEventListener('change', oppdaterForesatt2);
+  });
+  oppdaterForesatt2();
 
   // ---------- Multi-step navigation ----------
   const TOTAL_STEPS = 6;
