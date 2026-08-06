@@ -321,7 +321,12 @@ exports.createVippsPayment = onRequest(
         phoneNumber: normalizedPhone,
         status: "pending",
         createdAt: new Date().toISOString(),
-        createdBy: null, // settes av admin.html rett før dette kallet om ønskelig
+        // Hvem som sendte kravet. Betales det, er DET personen som i
+        // praksis tok opptaksbeslutningen — webhooken godkjenner bare
+        // automatisk det et menneske allerede satte i gang. Uten dette sto
+        // det bare «Vipps-betaling (automatisk)» i søknaden, og ingen kunne
+        // se hvem som faktisk hadde ansvaret.
+        createdBy: bruker.epost || null,
       });
 
       res.status(200).json({ ok: true, redirectUrl: paymentData.redirectUrl, reference });
@@ -584,6 +589,7 @@ exports.vippsWebhook = onRequest(
     studentRecord.soskenrekkefolge = String(soskenPos);
     studentRecord.betalingsdato = new Date().toISOString().slice(0, 10);
     studentRecord.sistEndretAv = "vipps-webhook";
+    studentRecord.fraSoknadId = regDoc.id;
     studentRecord.sistEndretDato = new Date().toISOString().slice(0, 10);
 
     const newStudentRef = await db.collection("students").add(studentRecord);
@@ -596,9 +602,26 @@ exports.vippsWebhook = onRequest(
     });
 
     // ---- Oppdaterer søknaden ----
+    //
+    // Vi henter fram hvem som sendte betalingskravet, og fører den personen
+    // som behandler. Selve godkjenningen er automatisk, men beslutningen om
+    // å be om betaling var det et menneske som tok — og det er den som skal
+    // stå i sporingen.
+    let sendtAv = "";
+    try {
+      const pendSnap = await db.collection("pendingVippsPayments")
+        .where("reference", "==", reference).limit(1).get();
+      if (!pendSnap.empty) sendtAv = pendSnap.docs[0].data().createdBy || "";
+    } catch (e) {
+      logger.warn("Fant ikke avsender av Vipps-kravet", e);
+    }
+
     await regDoc.update({
       status: "Godkjent",
-      behandletAv: "Vipps-betaling (automatisk)",
+      behandletAv: sendtAv
+        ? sendtAv + " (via Vipps-betaling)"
+        : "Vipps-betaling (automatisk)",
+      behandletDato: new Date().toISOString().slice(0, 16).replace("T", " "),
       vippsStatus: "AUTHORIZED",
       vippsBetaltDato: new Date().toISOString(),
     });
