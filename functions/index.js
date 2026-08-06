@@ -667,3 +667,159 @@ exports.refundVippsPayment = onRequest(
     }
   }
 );
+
+
+/* ══════════════════════════════════════════════════════════════════
+ * UKENTLIG SIKKERHETSKOPI
+ * ══════════════════════════════════════════════════════════════════
+ *
+ * Kjører automatisk hver søndag kl. 04:00 norsk tid:
+ *   1) leser alle samlinger i Firestore
+ *   2) skriver alt til én JSON-fil i prosjektets Storage-bøtte
+ *   3) sender en e-post med en TIDSBEGRENSET nedlastingslenke
+ *   4) sletter kopier eldre enn 60 dager
+ *
+ * Hvorfor lenke og ikke vedlegg: en e-postleverandør kutter vedlegg over
+ * ~10 MB. Med 13 elever er filen bittesmå, men om noen år — med flere
+ * hundre elever, meldinger og notater — ville vedlegget stille feilet
+ * uten at noen merket det. En lenke fungerer uansett størrelse.
+ *
+ * Hvorfor lenken utløper: filen inneholder personopplysninger om barn og
+ * foresatte. En evigvarende lenke i en innboks er en åpen dør. Lenken her
+ * varer i 7 dager — lenge nok til å laste ned, kort nok til at en gammel
+ * e-post ikke er en lekkasje.
+ *
+ * MERK: dette erstatter ikke Firestore sin egen backup-funksjon i
+ * konsollet. Denne kopien havner utenfor databasen (og kan lastes ned til
+ * egen maskin), mens Firestore-backup beskytter mot feilsletting internt.
+ * De to dekker hver sin risiko — behold begge.
+ */
+
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+
+// Samlingene som sikkerhetskopieres. Nye samlinger må legges til her —
+// ellers er de ikke med i kopien, uten at noe varsler om det.
+const BACKUP_COLLECTIONS = [
+  "students", "guardians", "teachers", "adminUsers", "ledelse", "classes",
+  "programs", "schoolCalendar", "registrations",
+  "attendance", "lessonPlans", "homework", "homeworkSubmissions",
+  "absenceRequests", "studentNotes", "practiceVideos",
+  "dailyPlanTemplates", "monthlyPlanTemplates", "semesterPlanTemplates",
+  "monthlyPlans", "semesterPlans", "hours",
+  "messages", "messageThreads", "broadcastThreads", "broadcastMessages",
+  "classPosts", "classPostComments", "classPollVotes", "eventRSVPs",
+  "announcements", "contactUpdateRequests",
+  "finances", "financeLog", "paymentRequests", "studentPayments",
+  "pendingVippsPayments", "salaryPayments", "teacherAttendance",
+  "meetings", "settings", "deletionLog", "loginEvents"
+];
+
+const BACKUP_EMAIL = "post@madinaskole.no";
+const LINK_DAYS = 7;
+const KEEP_DAYS = 60;
+
+async function lagSikkerhetskopi() {
+  const dump = {};
+  const summary = [];
+  let totalDocs = 0;
+
+  for (const name of BACKUP_COLLECTIONS) {
+    try {
+      const snap = await db.collection(name).get();
+      dump[name] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      totalDocs += snap.size;
+      if (snap.size > 0) summary.push(`${name}: ${snap.size}`);
+    } catch (err) {
+      // En samling som feiler skal ikke stoppe hele kopien — vi noterer
+      // feilen i filen og fortsetter, slik at resten blir sikret.
+      logger.error(`Backup: klarte ikke lese ${name}`, err);
+      dump[name] = { __error: String(err && err.message) };
+      summary.push(`${name}: FEIL`);
+    }
+  }
+
+  const now = new Date();
+  const stamp = now.toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const filnavn = `backups/madina-backup-${stamp}.json`;
+
+  const payload = {
+    generert: now.toISOString(),
+    prosjekt: "madina-instituttet",
+    antallSamlinger: BACKUP_COLLECTIONS.length,
+    antallDokumenter: totalDocs,
+    data: dump
+  };
+
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(filnavn);
+  await file.save(JSON.stringify(payload, null, 2), {
+    contentType: "application/json",
+    metadata: { cacheControl: "no-store" }
+  });
+
+  const [url] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + LINK_DAYS * 24 * 60 * 60 * 1000
+  });
+
+  const sizeMb = (Buffer.byteLength(JSON.stringify(payload)) / 1048576).toFixed(2);
+
+  await db.collection("mail").add({
+    from: "Madina Skole <post@madinaskole.no>",
+    to: [BACKUP_EMAIL],
+    message: {
+      subject: `Ukentlig sikkerhetskopi — ${now.toLocaleDateString("no-NO")} (${totalDocs} dokumenter)`,
+      html: `
+        <p>Sikkerhetskopien av databasen er tatt.</p>
+        <p><b>${totalDocs}</b> dokumenter · <b>${sizeMb} MB</b></p>
+        <p><a href="${url}">Last ned sikkerhetskopien</a><br>
+        <small>Lenken virker i ${LINK_DAYS} dager. Filen inneholder
+        personopplysninger — ikke videresend denne e-posten.</small></p>
+        <hr>
+        <p><small>${summary.join(" · ")}</small></p>
+        <p><small>Kopier eldre enn ${KEEP_DAYS} dager slettes automatisk.</small></p>`
+    }
+  });
+
+  // Rydd bort gamle kopier.
+  try {
+    const [files] = await bucket.getFiles({ prefix: "backups/" });
+    const cutoff = Date.now() - KEEP_DAYS * 24 * 60 * 60 * 1000;
+    for (const f of files) {
+      const created = new Date(f.metadata.timeCreated).getTime();
+      if (created < cutoff) await f.delete();
+    }
+  } catch (err) {
+    logger.error("Backup: opprydding feilet", err);
+  }
+
+  logger.info(`Backup ferdig: ${totalDocs} dokumenter, ${sizeMb} MB`);
+  return { totalDocs, sizeMb, filnavn };
+}
+
+exports.ukentligSikkerhetskopi = onSchedule(
+  {
+    schedule: "0 4 * * 0",
+    timeZone: "Europe/Oslo",
+    timeoutSeconds: 540,
+    memory: "512MiB"
+  },
+  async () => {
+    await lagSikkerhetskopi();
+  }
+);
+
+// Manuell kjøring — nyttig for å teste uten å vente til søndag, og for å
+// ta en ekstra kopi før noe stort skal endres.
+exports.taSikkerhetskopiNa = onRequest(
+  { timeoutSeconds: 540, memory: "512MiB" },
+  async (req, res) => {
+    try {
+      const result = await lagSikkerhetskopi();
+      res.status(200).json({ ok: true, ...result });
+    } catch (err) {
+      logger.error("Manuell sikkerhetskopi feilet", err);
+      res.status(500).json({ ok: false, error: String(err && err.message) });
+    }
+  }
+);
