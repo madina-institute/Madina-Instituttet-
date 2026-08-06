@@ -140,13 +140,55 @@ async function getVippsAccessToken() {
 //      bare belopBetalt, oppretter INGEN ny elev).
 //    Returnerer { ok:true, redirectUrl } eller { ok:false, error }
 // =======================================================================
+
+/* ══════════════════════════════════════════════════════════════════
+ * INNLOGGINGSKRAV FOR VIPPS-FUNKSJONENE
+ * ══════════════════════════════════════════════════════════════════
+ *
+ * Disse funksjonene er HTTP-endepunkter med åpen CORS. Uten en sjekk her
+ * kunne hvem som helst som kjente URL-en sende et ekte Vipps-betalingskrav
+ * til et hvilket som helst telefonnummer — i skolens navn, og uten å åpne
+ * administrasjonspanelet i det hele tatt. URL-mønsteret er lett å gjette.
+ *
+ * Klienten sender nå med et Firebase ID-token i Authorization-headeren.
+ * Tokenet er signert av Firebase og kan ikke forfalskes; det verifiseres
+ * her før noe som helst skjer.
+ *
+ * Returnerer den innloggede brukeren, eller null hvis forespørselen skal
+ * avvises (svaret er da allerede sendt).
+ */
+async function krevInnlogget(req, res) {
+  const header = req.get("Authorization") || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+
+  if (!token) {
+    logger.warn("Vipps-kall uten token", { ip: req.ip, path: req.path });
+    res.status(401).json({ ok: false, error: "Innlogging kreves." });
+    return null;
+  }
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    return { uid: decoded.uid, epost: decoded.email || "" };
+  } catch (err) {
+    logger.warn("Vipps-kall med ugyldig token", { ip: req.ip, feil: String(err && err.message) });
+    res.status(401).json({ ok: false, error: "Ugyldig eller utløpt innlogging." });
+    return null;
+  }
+}
+
 exports.createVippsPayment = onRequest(
   { secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY], cors: true },
   async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
     if (req.method !== "POST") {
       res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
       return;
     }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+
     try {
       const { type, targetId, amountKr, phoneNumber } = req.body || {};
       if (!type || !targetId || !amountKr || !phoneNumber) {
@@ -553,10 +595,15 @@ exports.vippsWebhook = onRequest(
 exports.cancelVippsPayment = onRequest(
   { secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY], cors: true },
   async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
     if (req.method !== "POST") {
       res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
       return;
     }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+
     try {
       const { reference } = req.body || {};
       if (!reference) {
@@ -603,10 +650,15 @@ exports.cancelVippsPayment = onRequest(
 exports.refundVippsPayment = onRequest(
   { secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY], cors: true },
   async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
     if (req.method !== "POST") {
       res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
       return;
     }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+
     try {
       const { reference, studentId, amountKr } = req.body || {};
       if (!reference || !studentId || !amountKr) {
