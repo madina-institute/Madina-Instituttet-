@@ -3955,6 +3955,35 @@
   // 2026-08-04) — cancelVippsPayment/refundVippsPayment fikk standard
   // cloudfunctions.net-format siden de er helt nye funksjoner, ulikt de
   // eldre *.a.run.app-lenkene til createVippsPayment/vippsWebhook.
+  // Vipps-funksjonene krever nå innlogging. Uten dette kunne hvem som helst
+  // som kjente URL-en sende et ekte betalingskrav i skolens navn — URL-ene
+  // er åpne HTTP-endepunkter med lett gjettbart mønster.
+  //
+  // getIdToken() henter et signert token fra Firebase og fornyer det
+  // automatisk om det er i ferd med å utløpe, så en lang økt i panelet
+  // fører ikke til at kallet plutselig avvises.
+  async function kallVippsFunksjon(url, payload){
+    const bruker = auth.currentUser;
+    if(!bruker){
+      showToast('Du må være innlogget for å gjøre dette.');
+      return { ok: false, error: 'Ikke innlogget' };
+    }
+    const token = await bruker.getIdToken();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(payload)
+    });
+    if(res.status === 401){
+      showToast('Innloggingen er utløpt — logg inn på nytt.');
+      return { ok: false, error: 'Utløpt innlogging' };
+    }
+    return await res.json();
+  }
+
   const CANCEL_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/cancelVippsPayment';
   const REFUND_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/refundVippsPayment';
 
@@ -4092,12 +4121,7 @@
     if(!confirm('Refundere ' + amount + ' kr via Vipps til foresatte? Dette kan ikke angres.')) return;
     showToast('Sender refusjon til Vipps...');
     try{
-      const res = await fetch(REFUND_VIPPS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference, studentId: id, amountKr: amount })
-      });
-      const data = await res.json();
+      const data = await kallVippsFunksjon(REFUND_VIPPS_URL, { reference, studentId: id, amountKr: amount });
       if(data.ok){
         showToast('✓ Refusjon sendt.');
         closeCashierOverlay('ledelseRefundOverlay');
@@ -4115,12 +4139,7 @@
     if(!confirm('Avbryte dette Vipps-kravet? Foresatte vil ikke lenger kunne betale det.')) return;
     showToast('Avbryter Vipps-kravet...');
     try{
-      const res = await fetch(CANCEL_VIPPS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference })
-      });
-      const data = await res.json();
+      const data = await kallVippsFunksjon(CANCEL_VIPPS_URL, { reference });
       if(data.ok) showToast('✓ Kravet er avbrutt.');
       else alert('Kunne ikke avbryte: ' + (data.error || 'ukjent feil — kanskje allerede betalt?'));
     } catch(err){
@@ -6799,12 +6818,9 @@
     }
     showToast('Oppretter Vipps-betaling...');
     try{
-      const res = await fetch(VIPPS_CREATE_PAYMENT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'registration', targetId: id, amountKr: 500, phoneNumber: phone.trim() })
+      const data = await kallVippsFunksjon(VIPPS_CREATE_PAYMENT_URL, {
+        type: 'registration', targetId: id, amountKr: 500, phoneNumber: phone.trim()
       });
-      const data = await res.json();
       if(!data.ok){
         showToast('Vipps-feil: ' + (data.error || 'Ukjent feil'));
         return;
@@ -6856,12 +6872,9 @@
     }
     showToast('Oppretter Vipps-betaling...');
     try{
-      const res = await fetch(VIPPS_CREATE_PAYMENT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'balance', targetId: id, amountKr: remainingKr, phoneNumber: phone.trim() })
+      const data = await kallVippsFunksjon(VIPPS_CREATE_PAYMENT_URL, {
+        type: 'balance', targetId: id, amountKr: remainingKr, phoneNumber: phone.trim()
       });
-      const data = await res.json();
       if(!data.ok){
         showToast('Vipps-feil: ' + (data.error || 'Ukjent feil'));
         return;
