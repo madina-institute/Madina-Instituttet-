@@ -189,6 +189,24 @@
   });
   const db = getFirestore(app);
   const auth = getAuth(app);
+
+  // Firestore-reglene krever nå innlogging for lesing. En onSnapshot som
+  // settes opp før innloggingen er bekreftet, blir permanent avvist — SDK-en
+  // prøver ikke på nytt, og listen blir stående tom for alltid. Lytteren
+  // startes derfor først når onAuthStateChanged bekrefter en bruker.
+  let __listenersStarted = false;
+  const __pendingWatchers = [];
+  function watch(collectionName, onData, onError){
+    const start = () => onSnapshot(collection(db, collectionName), onData,
+      onError || ((err) => console.error(collectionName, err)));
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
+  function startDataListeners(){
+    if(__listenersStarted) return;
+    __listenersStarted = true;
+    __pendingWatchers.forEach(fn => fn());
+  }
   setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
 
   window.doLogin = async function(){
@@ -213,6 +231,7 @@
   onAuthStateChanged(auth, (user) => {
     document.getElementById('loginScreen').style.display = user ? 'none' : 'flex';
     document.getElementById('appRoot').style.display = user ? 'block' : 'none';
+    if(user) startDataListeners();
   });
 
   // ===== Fargepalett (samme som resten av systemet) =====
@@ -497,7 +516,7 @@
     ]);
   }
 
-  onSnapshot(collection(db, 'registrations'), (snap) => {
+  watch('registrations', (snap) => {
     const records = snap.docs.map(d => ({ id:d.id, ...d.data() }));
     render(records);
     document.getElementById('loadingMsg').style.display = 'none';
