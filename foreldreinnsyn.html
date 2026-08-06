@@ -71,20 +71,25 @@
 </head>
 <body>
 
-<div id="loginScreen">
-  <div class="login-card">
-    <h2>Foreldreinnsyn</h2>
-    <div class="sub">Samme innlogging som Administrativ-panelet</div>
-    <div class="field">
-      <label>E-post</label>
-      <input type="email" id="loginEmail" autocomplete="username">
+<div id="loginScreen" class="mlogin" style="--mlogin-accent:#b7924a;">
+  <div class="mlogin-inner">
+    <img class="mlogin-logo" src="logo.png" alt="Madina Skole">
+    <div class="mlogin-hello">أهلاً وسهلاً · Velkommen · خوش آمدید</div>
+    <h1 class="mlogin-brand">Madina Skole</h1>
+    <div class="mlogin-card">
+      <div class="mlogin-role"><span class="ic">👁️</span><span class="t">Foreldreinnsyn</span></div>
+      <div class="mlogin-field">
+        <label>E-post</label>
+        <input type="email" id="loginEmail" autocomplete="username" inputmode="email" placeholder="navn@eksempel.no">
+      </div>
+      <div class="mlogin-field">
+        <label>Passord</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="mlogin-btn" onclick="doLogin()">Logg inn</button>
+      <div class="mlogin-err" id="loginError"></div>
     </div>
-    <div class="field">
-      <label>Passord</label>
-      <input type="password" id="loginPassword" autocomplete="current-password">
-    </div>
-    <button class="btn-login" onclick="doLogin()">Logg inn</button>
-    <div class="login-error" id="loginError"></div>
+    <div class="mlogin-foot">Aktivitetsoversikt per foresatt</div>
   </div>
 </div>
 
@@ -126,28 +131,6 @@
   });
   const db = getFirestore(app);
   const auth = getAuth(app);
-
-  // ── Datalyttere startes FØRST etter innlogging ──────────────────────
-  // Firestore-reglene krever nå innlogging for lesing. En onSnapshot som
-  // settes opp før innlogging blir permanent avvist (SDK-en prøver ikke
-  // på nytt), og listen blir stående tom for alltid. watch() utsetter
-  // derfor hver lytter til startDataListeners() kalles etter innlogging.
-  let __listenersStarted = false;
-  const __pendingWatchers = [];
-  function watch(collectionName, onData, onError){
-    const start = () => onSnapshot(
-      collection(db, collectionName),
-      onData,
-      onError || ((err) => console.error(collectionName, err))
-    );
-    __pendingWatchers.push(start);
-    if(__listenersStarted) start();
-  }
-  function startDataListeners(){
-    if(__listenersStarted) return;
-    __listenersStarted = true;
-    __pendingWatchers.forEach(fn => fn());
-  }
   setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
 
   window.doLogin = async function(){
@@ -172,9 +155,6 @@
   onAuthStateChanged(auth, (user) => {
     document.getElementById('loginScreen').style.display = user ? 'none' : 'flex';
     document.getElementById('appRoot').style.display = user ? 'block' : 'none';
-    // Start datalytterne først når innloggingen er bekreftet — ellers blir
-    // de avvist permanent av Firestore-reglene.
-    if(user) startDataListeners();
   });
 
   function escapeHtml(str){
@@ -244,28 +224,28 @@
     }).join('');
   }
 
-  watch('loginEvents', (snap) => {
+  onSnapshot(collection(db, 'loginEvents'), (snap) => {
     loginEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
 
-  watch('guardians', (snap) => {
+  onSnapshot(collection(db, 'guardians'), (snap) => {
     guardians = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
     render();
   });
-  watch('students', (snap) => {
+  onSnapshot(collection(db, 'students'), (snap) => {
     students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  watch('messageThreads', (snap) => {
+  onSnapshot(collection(db, 'messageThreads'), (snap) => {
     messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  watch('absenceRequests', (snap) => {
+  onSnapshot(collection(db, 'absenceRequests'), (snap) => {
     absenceRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  watch('paymentRequests', (snap) => {
+  onSnapshot(collection(db, 'paymentRequests'), (snap) => {
     paymentRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
@@ -283,6 +263,78 @@
     pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
   }
   @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
+
+  /* ══ INNLOGGING ══════════════════════════════════════════════════
+     Innloggingssiden er det første både lærere og foresatte ser. Før
+     var den bare to felter uten avsender — nå bærer den skolens logo
+     og farge.
+
+     Hver portal har sin egen aksentfarge og ikon. Det er ikke bare
+     pynt: portalene deler samme Firebase-konto, så en lærer som åpner
+     foreldreportalen kommer helt gjennom innloggingen før han blir
+     avvist. Med farge og rollenavn over skjemaet ser man at man er
+     feil sted FØR man skriver passordet.
+
+     MERK: siden er offentlig. Derfor står det ingen navn, tall eller
+     annen informasjon om elever her — kun logo, velkomst og hjelp. */
+  .mlogin{
+    position:fixed; inset:0; z-index:9000; overflow-y:auto;
+    background:linear-gradient(165deg, var(--mlogin-accent) 0%, #211e42 100%);
+    display:flex; align-items:center; justify-content:center;
+    padding:26px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+  .mlogin::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 2px, transparent 2px 22px);
+  }
+  .mlogin-inner{ position:relative; width:100%; max-width:390px; text-align:center; }
+  .mlogin-logo{ width:min(200px, 62%); height:auto; margin-bottom:16px; border-radius:6px; }
+  .mlogin-hello{
+    color:#e8e4f5; font-size:13.5px; margin-bottom:4px; letter-spacing:.01em;
+  }
+  .mlogin-brand{
+    font-family:'Cormorant Garamond',serif; font-size:26px; color:#fff;
+    margin:0 0 20px; font-weight:700;
+  }
+  .mlogin-card{
+    background:#fff; border-radius:16px; padding:22px 20px 20px;
+    text-align:start; box-shadow:0 14px 34px rgba(0,0,0,.3);
+  }
+  .mlogin-role{
+    display:flex; align-items:center; gap:9px; justify-content:center;
+    margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid rgba(40,40,90,.12);
+  }
+  .mlogin-role .ic{ font-size:20px; line-height:1; }
+  .mlogin-role .t{ font-size:14.5px; font-weight:600; color:var(--mlogin-accent); }
+  .mlogin-field{ margin-bottom:13px; }
+  .mlogin-field label{
+    display:block; font-size:11.5px; font-weight:600; margin-bottom:5px;
+    color:var(--mlogin-accent); letter-spacing:.02em;
+  }
+  .mlogin-field input{
+    width:100%; padding:12px 13px; border:1px solid rgba(40,40,90,.14);
+    border-radius:9px; font-size:16px; background:#fbfcfe; font-family:inherit;
+  }
+  .mlogin-field input:focus{ outline:2px solid var(--mlogin-accent); outline-offset:1px; }
+  .mlogin-btn{
+    width:100%; margin-top:6px; border:none; border-radius:9px; padding:14px 18px;
+    cursor:pointer; font-family:inherit; font-size:14px; font-weight:600;
+    letter-spacing:.03em; text-transform:uppercase; color:#fff;
+    background:var(--mlogin-accent);
+  }
+  .mlogin-err{
+    display:none; margin-top:12px; font-size:12.5px; color:#a83c3c; text-align:center;
+  }
+  .mlogin-forgot{
+    display:block; text-align:center; margin-top:14px; font-size:12.5px;
+    color:var(--mlogin-accent); text-decoration:underline;
+  }
+  .mlogin-foot{ color:#b9b3d8; font-size:11.5px; margin-top:18px; }
+  .mlogin-foot a{ color:#e0dcf2; }
+  @media (max-width:360px){
+    .mlogin-brand{ font-size:22px; }
+    .mlogin-logo{ width:56%; }
+  }
 </style>
 <div id="lastDeployBadge">Sjekker siste publisering…</div>
 <script>
