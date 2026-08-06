@@ -342,10 +342,29 @@
       loadedHint.textContent = '✓ Lastet inn: ' + file.name + ' (' + Math.round(file.size/1024) + ' kB)';
 
       const sel = document.getElementById('filePreset');
-      const matchingOption = [...sel.options].find(o => o.value === file.name);
-      if(matchingOption){
-        sel.value = file.name;
+
+      // Nettleseren gir oss bare filnavnet — aldri mappen filen lå i. Et
+      // valgt «index.js» ville derfor havnet i rota og aldri blitt publisert
+      // som Cloud Function. Her slås filnavnet opp mot listen over kjente
+      // filer FØRST, slik at riktig full sti velges automatisk.
+      let treff = [...sel.options].find(o => o.value === file.name);
+      if(!treff){
+        // Ingen eksakt match: se om filnavnet finnes som siste ledd i en
+        // sti i listen (f.eks. «index.js» → «functions/index.js»).
+        const kandidater = [...sel.options].filter(
+          o => o.value.indexOf('/') > 0 && o.value.split('/').pop() === file.name
+        );
+        // Bare når det finnes ÉN mulighet — er det flere, kan vi ikke gjette
+        // riktig, og brukeren må velge selv.
+        if(kandidater.length === 1) treff = kandidater[0];
+      }
+
+      if(treff){
+        sel.value = treff.value;
         onPresetChange();
+        if(treff.value !== file.name){
+          showStatus('Filen ble automatisk lagt til stien «' + treff.value + '».', 'ok');
+        }
       } else {
         sel.value = '__custom__';
         document.getElementById('customPath').value = file.name;
