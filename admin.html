@@ -3975,6 +3975,37 @@
         'samtykke_personopplysninger','samtykke_bilder','samtykke_fotografering',
         'samtykke_publisering_nett'] }
     ],
+    registrations: [
+      { tittel: '👤 Om eleven', keys: [
+        'elev_fdato','kjonn','grunnskole','klassetrinn','adresse','postnr_sted',
+        'sprak_hjemme','sprak_hjemme_annet'] },
+      { tittel: '👨‍👩‍👧 Foresatt 1', keys: [
+        'foresatt1_navn','foresatt1_relasjon','foresatt1_relasjon_annet',
+        'foresatt1_tlf','foresatt1_epost'] },
+      { tittel: '👨‍👩‍👦 Foresatt 2', keys: [
+        'har_foresatt2','foresatt2_navn','foresatt2_relasjon','foresatt2_relasjon_annet',
+        'foresatt2_tlf','foresatt2_epost'] },
+      { tittel: '🚨 Nødkontakt', keys: ['nod_navn','nod_tlf','nod_relasjon'] },
+      { tittel: '🩺 Helse', keys: [
+        'allergi','allergi_beskriv','sykdom','sykdom_beskriv','medisin','medisin_hvilke',
+        'helse_annet','larevansker','larevansker_beskriv','bbt_ppt','bbt_ppt_beskriv'] },
+      { tittel: '📖 Ønsket program', keys: ['program','sprakvalg'] },
+      { tittel: '📚 Tidligere undervisning', keys: [
+        'tidligere_skole','tidligere_skole_navn','tidligere_skole_ar',
+        'tidligere_skole_land','botid_norge','tidligere_studert'] },
+      { tittel: '🕌 Nivå — Koran', keys: [
+        'koran_lese','koran_qaida','koran_qaida_hvilken','koran_tajwid',
+        'koran_memorert','koran_memorert_fra','koran_memorert_til','koran_ijazah'] },
+      { tittel: '🔤 Nivå — Arabisk og urdu', keys: [
+        'arabisk_tidligere','arabisk_ar','ar_lese','ar_skrive','ar_forsta','ar_snakke',
+        'arabisk_niva','urdu_tidligere','urdu_ar','urdu_ferdighet','urdu_niva'] },
+      { tittel: '✅ Samtykker', keys: [
+        'samtykke_personvernerklaering','samtykke_personopplysninger','samtykke_bilder',
+        'samtykke_fotografering','samtykke_publisering_nett','dato_signatur',
+        'foresatt_signatur','andre_merknader'] },
+      { tittel: '📝 Innledende svar', keys: [
+        'intro_moske_medlem','intro_elev_status','innsendtDato'] }
+    ],
     teachers: [
       { tittel: '👤 Kontakt', keys: ['telefon','adresse','kjonn','fdato'] },
       { tittel: '📚 Undervisning', keys: ['fag','tildeltKlasse','dager','roller'] },
@@ -4197,7 +4228,8 @@
     };
 
     document.getElementById('pdPhoto').src = personAvatarUrl(row);
-    document.getElementById('pdName').textContent = row.navn || '—';
+    // Søknader har ikke feltet «navn» — eleven heter elev_navn her.
+    document.getElementById('pdName').textContent = row.navn || row.elev_navn || '—';
 
     const essentialFields = schema.fields.filter(f => f.essential && f.key !== 'navn' && f.key !== 'bilde');
     let chips = essentialFields.map(f => {
@@ -4252,6 +4284,26 @@
       } else if(row.betalt){
         chips.push(chip('Betalingsstatus', escapeHtml(colDisplay('betalt'))));
       }
+    }
+
+    // Søknader: status, program og foresattes kontaktinfo øverst — det man
+    // trenger for å ta en beslutning, uten å åpne en eneste seksjon.
+    if(type === 'registrations'){
+      const chipR = (label, verdi, farge) =>
+        `<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">${label}</div><div style="font-weight:600;${farge ? ' color:' + farge + ';' : ''}">${verdi}</div></div>`;
+
+      const st = row.status || 'Ny';
+      const stFarge = { 'Godkjent':'#4a7c59', 'Avslått':'#a83c3c', 'Venteliste':'#b7924a' }[st] || '#2F6CA0';
+      chips.push(chipR('Status', escapeHtml(st), stFarge));
+      if(row.innsendtDato) chips.push(chipR('Innsendt', escapeHtml(row.innsendtDato)));
+      if(row.program) chips.push(chipR('Ønsket program', escapeHtml(row.program)));
+      if(row.elev_fdato){
+        const alder = personComputeAge(row.elev_fdato);
+        chips.push(chipR('Fødselsdato', escapeHtml(row.elev_fdato) + (alder !== null ? ' (' + alder + ' år)' : '')));
+      }
+      if(row.foresatt1_navn) chips.push(chipR('Foresatt', escapeHtml(row.foresatt1_navn)));
+      if(row.foresatt1_tlf) chips.push(chipR('Telefon', '📞 ' + escapeHtml(row.foresatt1_tlf)));
+      if(row.foresatt1_epost) chips.push(chipR('E-post', '✉️ ' + escapeHtml(row.foresatt1_epost)));
     }
 
     if(type === 'guardians'){
@@ -4357,7 +4409,21 @@
     const parseKr = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
     const restKr = type === 'students' ? (parseKr(row.belop) - parseKr(row.belopBetalt)) : 0;
     const handl = document.getElementById('pdHandlinger');
-    if(handl){
+    if(handl && type === 'registrations'){
+      // Alle opptaksbeslutninger samlet ett sted — og bak samme sperre som
+      // knappene i listen: kun opptaksansvarlig kan behandle en søknad.
+      const kanBehandle = isOpptaksansvarlig();
+      handl.innerHTML = kanBehandle ? `
+        <button class="btn" style="background:#4a7c59; color:#fff;" onclick="approveRegistration('${row.id}')">✅ Godkjenn</button>
+        <button class="btn btn-ghost" onclick="waitlistRegistration('${row.id}')">⏳ Venteliste</button>
+        <button class="btn btn-ghost" onclick="rejectRegistration('${row.id}')">❌ Avslå</button>
+        <button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendRealVippsRequest('${row.id}')">⚡ Send ekte Vipps-krav</button>
+        <button class="btn btn-ghost" onclick="sendVippsPaymentLink('${row.id}')">📤 Vipps-lenke (manuell)</button>
+        <button class="btn btn-ghost" onclick="editEntry('registrations','${row.id}')">✏️ Rediger</button>
+        <button class="btn" style="background:#a83c3c; color:#fff; margin-inline-start:auto;"
+                onclick="slettMedBekreftelse('registrations','${row.id}')">🗑 Slett</button>`
+        : `<span class="sub" style="align-self:center;">Kun opptaksansvarlig kan behandle søknader.</span>`;
+    } else if(handl){
       handl.innerHTML = `
         <button class="btn btn-ghost" onclick="editEntry('${type}','${row.id}')">✏️ Rediger</button>
         ${(type === 'teachers' || type === 'guardians') && row.epost
@@ -5386,17 +5452,11 @@
         // Alle med administrativ tilgang SER søknadene — det gir felles
         // oversikt. Men selve beslutningen vises kun for opptaksansvarlig,
         // slik at ingen trykker i god tro på noe de ikke har ansvar for.
-        const kanBehandle = isOpptaksansvarlig();
+        // Som for personkortene: bare «Vis» utenpå. Alle beslutninger —
+        // godkjenn, avslå, Vipps-krav, sletting — ligger inne i kortet, der
+        // man faktisk ser hvem søknaden gjelder før man handler.
         actionsHtml = `<div class="record-card-actions">
-          ${kanBehandle ? `
-          <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
-          <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
-          <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>` : ''}
-          <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
-          ${kanBehandle ? `
-          <button class="btn-edit" onclick="sendVippsPaymentLink('${row.id}')">📤 Send Vipps-lenke (manuell)</button>
-          <button class="btn-edit" onclick="sendRealVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>`
-          : '<span class="sub" style="align-self:center;">Kun opptaksansvarlig kan behandle søknader.</span>'}
+          <button class="btn-edit" onclick="showPersonDetail('registrations','${row.id}')">👁 Vis</button>
         </div>`;
       } else {
         const parseKr = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
@@ -7250,6 +7310,10 @@
 
   window.approveRegistration = async function(id){
     if(!krevOpptaksrolle()) return;
+    // Lukkes med én gang: kortet under viser fortsatt den gamle statusen,
+    // og å la det stå åpent etter en beslutning ser ut som om ingenting
+    // skjedde.
+    closeCashierOverlay('personDetailOverlay');
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     const ok = confirm(`Godkjenne søknaden for ${reg.elev_navn || 'denne eleven'}?\n\nDette oppretter elev og foresatt i Administrativ, og kobler dem sammen.`);
@@ -7366,6 +7430,10 @@
 
   window.rejectRegistration = async function(id){
     if(!krevOpptaksrolle()) return;
+    // Lukkes med én gang: kortet under viser fortsatt den gamle statusen,
+    // og å la det stå åpent etter en beslutning ser ut som om ingenting
+    // skjedde.
+    closeCashierOverlay('personDetailOverlay');
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     const ok = confirm(`Avslå søknaden for ${reg.elev_navn || 'denne eleven'}? Det opprettes ingen elev i systemet.`);
@@ -7526,6 +7594,10 @@
 
   window.waitlistRegistration = async function(id){
     if(!krevOpptaksrolle()) return;
+    // Lukkes med én gang: kortet under viser fortsatt den gamle statusen,
+    // og å la det stå åpent etter en beslutning ser ut som om ingenting
+    // skjedde.
+    closeCashierOverlay('personDetailOverlay');
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     try{
