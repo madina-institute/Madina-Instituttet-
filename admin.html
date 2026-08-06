@@ -3972,6 +3972,35 @@
         if(guardian.epost) chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Foresatt — e-post</div><div style="font-weight:600;"><span class="record-link" onclick="openRelatedRecord('guardians','${escapeHtml(row.foresatt)}')">✉️ ${escapeHtml(guardian.epost)}</span></div></div>`);
       }
     }
+    // Betalingsstatus er det man oftest åpner et elevkort for å sjekke.
+    // Den lå tidligere sammen med resten av økonomifeltene bak «Vis flere
+    // detaljer» — nå står den øverst, sammen med de andre nøkkeltallene.
+    // Feltene finnes fortsatt under Økonomi-seksjonen, så ingenting er borte.
+    if(type === 'students'){
+      const tall = v => parseFloat(String(v || '0').replace(/[^\d.-]/g, '')) || 0;
+      const totalt = tall(row.belop);
+      const betalt = tall(row.belopBetalt);
+      const rest = totalt - betalt;
+      const chip = (label, verdi, farge) =>
+        `<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">${label}</div><div style="font-weight:600;${farge ? ' color:' + farge + ';' : ''}">${verdi}</div></div>`;
+
+      if(totalt > 0 || betalt > 0){
+        const status = rest <= 0
+          ? { tekst: '✅ Betalt', farge: '#4a7c59' }
+          : (betalt > 0
+              ? { tekst: '◐ Delvis betalt', farge: '#b7924a' }
+              : { tekst: '○ Ikke betalt', farge: '#a83c3c' });
+        chips.push(chip('Betalingsstatus', status.tekst, status.farge));
+        chips.push(chip('Beløp totalt', totalt.toLocaleString('no-NO') + ' kr'));
+        chips.push(chip('Betalt', betalt.toLocaleString('no-NO') + ' kr'));
+        if(rest > 0){
+          chips.push(chip('Gjenstår', rest.toLocaleString('no-NO') + ' kr', '#a83c3c'));
+        }
+      } else if(row.betalt){
+        chips.push(chip('Betalingsstatus', escapeHtml(colDisplay('betalt'))));
+      }
+    }
+
     if(type === 'guardians'){
       const children = cache.students.filter(s => s.foresatt === row.id);
       if(children.length){
