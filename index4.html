@@ -397,23 +397,28 @@
 <main>
 
   <!-- LOGIN -->
-  <div class="card" id="loginView">
-    <h2 data-i18n="loginTitle">Logg inn</h2>
-    <div class="sub" data-i18n="loginSub">Logg inn med e-posten og passordet ditt.</div>
-    <div class="field">
-      <label data-i18n="emailLabel">E-post</label>
-      <input type="email" id="loginEmail" autocomplete="username">
+  <div id="loginView" class="mlogin" style="--mlogin-accent:#4a7c59;">
+  <div class="mlogin-inner">
+    <img class="mlogin-logo" src="logo.png" alt="Madina Skole">
+    <div class="mlogin-hello">أهلاً وسهلاً · Velkommen · خوش آمدید</div>
+    <h1 class="mlogin-brand">Madina Skole</h1>
+    <div class="mlogin-card">
+      <div class="mlogin-role"><span class="ic">👨‍👩‍👧</span><span class="t">Foreldreportal</span></div>
+      <div class="mlogin-field">
+        <label>E-post</label>
+        <input type="email" id="loginEmail" autocomplete="username" inputmode="email" placeholder="navn@eksempel.no">
+      </div>
+      <div class="mlogin-field">
+        <label>Passord</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="mlogin-btn" onclick="doParentLogin()">Logg inn</button>
+      <div class="mlogin-err" id="loginError"></div>
+      <a class="mlogin-forgot" href="#" onclick="doForgotPassword(); return false;">Glemt passord?</a>
     </div>
-    <div class="field">
-      <label data-i18n="passwordLabel">Passord</label>
-      <input type="password" id="loginPassword" autocomplete="current-password">
-    </div>
-    <button class="btn btn-primary" onclick="doParentLogin()" data-i18n="loginBtn">Logg inn</button>
-    <div class="error-msg" id="loginError"></div>
-    <div style="text-align:center; margin-top:10px;">
-      <a href="#" onclick="doForgotPassword(); return false;" style="font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald);" data-i18n="forgotPassword">Glemt passord?</a>
-    </div>
+    <div class="mlogin-foot">Ditt barns skolehverdag</div>
   </div>
+</div>
 
   <!-- APP -->
   <div id="appView">
@@ -805,7 +810,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, getDocs
+    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
@@ -832,28 +837,6 @@
   });
   const db = getFirestore(app);
   const auth = getAuth(app);
-
-  // ── Datalyttere startes FØRST etter innlogging ──────────────────────
-  // Firestore-reglene krever nå innlogging for lesing. En onSnapshot som
-  // settes opp før innlogging blir permanent avvist (SDK-en prøver ikke
-  // på nytt), og listen blir stående tom for alltid. watch() utsetter
-  // derfor hver lytter til startDataListeners() kalles etter innlogging.
-  let __listenersStarted = false;
-  const __pendingWatchers = [];
-  function watch(collectionName, onData, onError){
-    const start = () => onSnapshot(
-      collection(db, collectionName),
-      onData,
-      onError || ((err) => console.error(collectionName, err))
-    );
-    __pendingWatchers.push(start);
-    if(__listenersStarted) start();
-  }
-  function startDataListeners(){
-    if(__listenersStarted) return;
-    __listenersStarted = true;
-    __pendingWatchers.forEach(fn => fn());
-  }
   const storage = getStorage(app);
 
   const MAX_FILE_MB = 10;
@@ -1223,66 +1206,66 @@
     setTimeout(()=>el.classList.remove('show'), 2400);
   }
 
-  watch('guardians', (snap) => {
+  onSnapshot(collection(db, 'guardians'), (snap) => {
     guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   });
-  watch('students', (snap) => {
+  onSnapshot(collection(db, 'students'), (snap) => {
     students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) refreshMyChildren();
   });
-  watch('attendance', (snap) => {
+  onSnapshot(collection(db, 'attendance'), (snap) => {
     attendance = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('registrations', (snap) => {
+  onSnapshot(collection(db, 'registrations'), (snap) => {
     registrations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('homework', (snap) => {
+  onSnapshot(collection(db, 'homework'), (snap) => {
     homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let lessonPlans = [];
-  watch('lessonPlans', (snap) => {
+  onSnapshot(collection(db, 'lessonPlans'), (snap) => {
     lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let practiceVideos = [];
-  watch('practiceVideos', (snap) => {
+  onSnapshot(collection(db, 'practiceVideos'), (snap) => {
     practiceVideos = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(currentGuardian) renderChild();
   });
   let classPosts = [];
-  watch('classPosts', (snap) => {
+  onSnapshot(collection(db, 'classPosts'), (snap) => {
     classPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let classPostComments = [];
-  watch('classPostComments', (snap) => {
+  onSnapshot(collection(db, 'classPostComments'), (snap) => {
     classPostComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('announcements', (snap) => {
+  onSnapshot(collection(db, 'announcements'), (snap) => {
     announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('studentNotes', (snap) => {
+  onSnapshot(collection(db, 'studentNotes'), (snap) => {
     studentNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('hours', (snap) => {
+  onSnapshot(collection(db, 'hours'), (snap) => {
     hours = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('teachers', (snap) => {
+  onSnapshot(collection(db, 'teachers'), (snap) => {
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('classes', (snap) => {
+  onSnapshot(collection(db, 'classes'), (snap) => {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('messages', (snap) => {
+  onSnapshot(collection(db, 'messages'), (snap) => {
     messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       renderChild();
@@ -1293,7 +1276,7 @@
     }
   });
   let messageThreads = [];
-  watch('messageThreads', (snap) => {
+  onSnapshot(collection(db, 'messageThreads'), (snap) => {
     messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       updateBadges();
@@ -1302,7 +1285,7 @@
     }
   });
   let broadcastThreads = [], broadcastMessages = [];
-  watch('broadcastThreads', (snap) => {
+  onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
     broadcastThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       updateAdminMsgBadge();
@@ -1310,7 +1293,7 @@
          document.getElementById('adminMsgListInner').style.display !== 'none') renderGuardianAdminMsgsList();
     }
   });
-  watch('broadcastMessages', (snap) => {
+  onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
     broadcastMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       updateAdminMsgBadge();
@@ -1318,12 +1301,12 @@
     }
   });
   let classPollVotes = [];
-  watch('classPollVotes', (snap) => {
+  onSnapshot(collection(db, 'classPollVotes'), (snap) => {
     classPollVotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let eventRSVPs = [];
-  watch('eventRSVPs', (snap) => {
+  onSnapshot(collection(db, 'eventRSVPs'), (snap) => {
     eventRSVPs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
@@ -1343,7 +1326,12 @@
       errEl.style.display = 'block';
       return;
     }
-    // Logg inn FØRST — se samme kommentar i index1.html (lærerportalen).
+    const guardian = guardians.find(g => (g.epost||'').trim().toLowerCase() === email.toLowerCase());
+    if(!guardian){
+      errEl.textContent = t('noAccountForEmail');
+      errEl.style.display = 'block';
+      return;
+    }
     try{
       await signInWithEmailAndPassword(auth, email, password);
     } catch(err){
@@ -1352,21 +1340,6 @@
       errEl.style.display = 'block';
       return;
     }
-    let guardian = null;
-    try{
-      const snap = await getDocs(collection(db, 'guardians'));
-      guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      guardian = guardians.find(g => (g.epost||'').trim().toLowerCase() === email.toLowerCase());
-    } catch(err){
-      console.error('guardians-oppslag', err);
-    }
-    if(!guardian){
-      await signOut(auth).catch(()=>{});
-      errEl.textContent = t('noAccountForEmail');
-      errEl.style.display = 'block';
-      return;
-    }
-    startDataListeners();
     currentGuardian = guardian;
     updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
@@ -1402,11 +1375,10 @@
 
   window.doParentLogout = function(){
     currentGuardian = null;
+    signOut(auth).catch(()=>{});
     document.getElementById('appView').style.display = 'none';
-    document.getElementById('loginView').style.display = 'block';
+    document.getElementById('loginView').style.display = 'flex';
     document.getElementById('loginPassword').value = '';
-    // Se kommentar i index1.html — ren omstart etter utlogging.
-    signOut(auth).catch(()=>{}).finally(() => location.reload());
   };
 
   function refreshMyChildren(){
@@ -2589,6 +2561,78 @@
     pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
   }
   @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
+
+  /* ══ INNLOGGING ══════════════════════════════════════════════════
+     Innloggingssiden er det første både lærere og foresatte ser. Før
+     var den bare to felter uten avsender — nå bærer den skolens logo
+     og farge.
+
+     Hver portal har sin egen aksentfarge og ikon. Det er ikke bare
+     pynt: portalene deler samme Firebase-konto, så en lærer som åpner
+     foreldreportalen kommer helt gjennom innloggingen før han blir
+     avvist. Med farge og rollenavn over skjemaet ser man at man er
+     feil sted FØR man skriver passordet.
+
+     MERK: siden er offentlig. Derfor står det ingen navn, tall eller
+     annen informasjon om elever her — kun logo, velkomst og hjelp. */
+  .mlogin{
+    position:fixed; inset:0; z-index:9000; overflow-y:auto;
+    background:linear-gradient(165deg, var(--mlogin-accent) 0%, #211e42 100%);
+    display:flex; align-items:center; justify-content:center;
+    padding:26px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+  .mlogin::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 2px, transparent 2px 22px);
+  }
+  .mlogin-inner{ position:relative; width:100%; max-width:390px; text-align:center; }
+  .mlogin-logo{ width:min(200px, 62%); height:auto; margin-bottom:16px; border-radius:6px; }
+  .mlogin-hello{
+    color:#e8e4f5; font-size:13.5px; margin-bottom:4px; letter-spacing:.01em;
+  }
+  .mlogin-brand{
+    font-family:'Cormorant Garamond',serif; font-size:26px; color:#fff;
+    margin:0 0 20px; font-weight:700;
+  }
+  .mlogin-card{
+    background:#fff; border-radius:16px; padding:22px 20px 20px;
+    text-align:start; box-shadow:0 14px 34px rgba(0,0,0,.3);
+  }
+  .mlogin-role{
+    display:flex; align-items:center; gap:9px; justify-content:center;
+    margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid rgba(40,40,90,.12);
+  }
+  .mlogin-role .ic{ font-size:20px; line-height:1; }
+  .mlogin-role .t{ font-size:14.5px; font-weight:600; color:var(--mlogin-accent); }
+  .mlogin-field{ margin-bottom:13px; }
+  .mlogin-field label{
+    display:block; font-size:11.5px; font-weight:600; margin-bottom:5px;
+    color:var(--mlogin-accent); letter-spacing:.02em;
+  }
+  .mlogin-field input{
+    width:100%; padding:12px 13px; border:1px solid rgba(40,40,90,.14);
+    border-radius:9px; font-size:16px; background:#fbfcfe; font-family:inherit;
+  }
+  .mlogin-field input:focus{ outline:2px solid var(--mlogin-accent); outline-offset:1px; }
+  .mlogin-btn{
+    width:100%; margin-top:6px; border:none; border-radius:9px; padding:14px 18px;
+    cursor:pointer; font-family:inherit; font-size:14px; font-weight:600;
+    letter-spacing:.03em; text-transform:uppercase; color:#fff;
+    background:var(--mlogin-accent);
+  }
+  .mlogin-err{
+    display:none; margin-top:12px; font-size:12.5px; color:#a83c3c; text-align:center;
+  }
+  .mlogin-forgot{
+    display:block; text-align:center; margin-top:14px; font-size:12.5px;
+    color:var(--mlogin-accent); text-decoration:underline;
+  }
+  .mlogin-foot{ color:#b9b3d8; font-size:11.5px; margin-top:18px; }
+  .mlogin-foot a{ color:#e0dcf2; }
+  @media (max-width:360px){
+    .mlogin-brand{ font-size:22px; }
+    .mlogin-logo{ width:56%; }
+  }
 </style>
 <div id="lastDeployBadge">Sjekker siste publisering…</div>
 <script>
