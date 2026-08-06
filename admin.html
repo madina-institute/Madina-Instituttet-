@@ -317,6 +317,21 @@
   @media (max-width:600px){
     .pd-modal{ width:98vw; padding:18px 14px; max-height:92vh; border-radius:12px; }
   }
+  #toast.toast-err{ background:#a03028; }
+  .rel-forslag{
+    display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;
+    background:#fdf6ec; border:1px solid #e8d3ae; border-radius:11px;
+    padding:12px 15px; margin-bottom:9px;
+    font-family:'Jost',sans-serif; font-size:13.5px; line-height:1.5;
+  }
+  .rel-forslag.rel-info{ background:#eef4fb; border-color:#c3d8ee; }
+  .rel-tekst{ flex:1 1 220px; min-width:0; }
+  .rel-grunn{
+    display:inline-block; font-size:11px; color:#8a7550; background:#fff;
+    border:1px solid #e8d3ae; border-radius:999px; padding:1px 9px; margin-inline-start:7px;
+  }
+  .rel-info .rel-grunn{ color:#2c5680; border-color:#c3d8ee; }
+  .rel-detalj{ color:#6b7480; font-size:12.5px; margin-top:3px; }
   .pd-seksjon{ border:1px solid var(--line); border-radius:11px; margin-bottom:8px; background:#fff; overflow:hidden; }
   .pd-seksjon-head{
     width:100%; display:flex; align-items:center; gap:9px; cursor:pointer;
@@ -1982,7 +1997,9 @@
       <img id="pdPhoto" src="" alt="" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid var(--line); flex:none;">
       <div style="flex:1 1 320px; min-width:260px;">
         <h3 id="pdName" style="margin:0 0 10px;"></h3>
-        <div id="pdEssentialRow" style="display:flex; flex-wrap:wrap; gap:10px 22px;"></div>
+        <div id="pdRelasjoner"></div>
+      <div id="pdRelasjoner"></div>
+      <div id="pdEssentialRow" style="display:flex; flex-wrap:wrap; gap:10px 22px;"></div>
       </div>
     </div>
 
@@ -3930,6 +3947,121 @@
     if(el) el.classList.toggle('open');
   };
 
+  // Bygger forslagsboksene som vises øverst i et kort. Ingen av dem endrer
+  // noe av seg selv — hver av dem er en knapp noen må trykke på.
+  function byggRelasjonsForslag(type, row){
+    let html = '';
+
+    if(type === 'guardians'){
+      // Andre foresatt-poster med samme kontaktinfo: sannsynligvis samme
+      // person registrert to ganger, som da har «to» sett med barn.
+      const dobbel = finnPersonTreff('guardians', row.telefon, row.epost, row.id);
+      dobbel.forEach(t => {
+        const barn = cache.students.filter(s => s.foresatt === t.rad.id || s.foresatt2 === t.rad.id);
+        const barnTekst = barn.length ? barn.map(b => b.navn).filter(Boolean).join(', ') : 'ingen barn';
+        html += `
+          <div class="rel-forslag">
+            <div class="rel-tekst">
+              <b>Mulig samme person:</b> ${escapeHtml(t.rad.navn || '—')}
+              <span class="rel-grunn">samsvar på ${escapeHtml(t.grunn)}</span>
+              <div class="rel-detalj">Barn der: ${escapeHtml(barnTekst)}</div>
+            </div>
+            <button class="btn-edit" onclick="openRelatedRecord('guardians','${escapeHtml(t.rad.id)}')">Se kortet</button>
+          </div>`;
+      });
+
+      // Er denne foresatte også ansatt?
+      const ansatt = finnPersonTreff('teachers', row.telefon, row.epost, null);
+      ansatt.forEach(t => {
+        html += `
+          <div class="rel-forslag rel-info">
+            <div class="rel-tekst">
+              <b>Også ansatt:</b> ${escapeHtml(t.rad.navn || '—')}
+              <span class="rel-grunn">samsvar på ${escapeHtml(t.grunn)}</span>
+              <div class="rel-detalj">${escapeHtml(t.rad.roller || 'ansatt')}</div>
+            </div>
+            <button class="btn-edit" onclick="openRelatedRecord('teachers','${escapeHtml(t.rad.id)}')">Se kortet</button>
+          </div>`;
+      });
+    }
+
+    if(type === 'teachers'){
+      const foresatt = finnPersonTreff('guardians', row.telefon, row.epost, null);
+      foresatt.forEach(t => {
+        const barn = cache.students.filter(s => s.foresatt === t.rad.id || s.foresatt2 === t.rad.id);
+        const barnTekst = barn.map(b => b.navn).filter(Boolean).join(', ') || '—';
+        html += `
+          <div class="rel-forslag rel-info">
+            <div class="rel-tekst">
+              <b>Også foresatt:</b> ${escapeHtml(barnTekst)}
+              <span class="rel-grunn">samsvar på ${escapeHtml(t.grunn)}</span>
+              <div class="rel-detalj">Kan logge inn i Foreldreportalen med samme konto.</div>
+            </div>
+            <button class="btn-edit" onclick="openRelatedRecord('guardians','${escapeHtml(t.rad.id)}')">Se kortet</button>
+          </div>`;
+      });
+    }
+
+    if(type === 'students'){
+      // Mulige søsken: barn som deler kontaktinfo med denne elevens
+      // foresatte, men som er knyttet til en ANNEN foresatt-post.
+      const mine = [row.foresatt, row.foresatt2].filter(Boolean);
+      const minePoster = mine.map(gid => cache.guardians.find(g => g.id === gid)).filter(Boolean);
+      const kandidater = new Map();
+
+      minePoster.forEach(gp => {
+        finnPersonTreff('guardians', gp.telefon, gp.epost, gp.id).forEach(t => {
+          cache.students
+            .filter(st => st.id !== row.id &&
+                          (st.foresatt === t.rad.id || st.foresatt2 === t.rad.id) &&
+                          !mine.includes(st.foresatt) && !mine.includes(st.foresatt2))
+            .forEach(st => kandidater.set(st.id, { elev: st, via: t.rad, grunn: t.grunn }));
+        });
+      });
+
+      kandidater.forEach(k => {
+        html += `
+          <div class="rel-forslag">
+            <div class="rel-tekst">
+              <b>Mulig søsken:</b> ${escapeHtml(k.elev.navn || '—')}
+              <span class="rel-grunn">samsvar på ${escapeHtml(k.grunn)}</span>
+              <div class="rel-detalj">Registrert på «${escapeHtml(k.via.navn || '—')}». Kobles de, regnes de som søsken ved prisberegning.</div>
+            </div>
+            <button class="btn-edit" onclick="koblSosken('${escapeHtml(row.id)}','${escapeHtml(k.elev.id)}')">Koble som søsken</button>
+          </div>`;
+      });
+    }
+
+    return html;
+  }
+
+  // Kobler to elever ved å la dem peke på SAMME foresatt-post. Krever et
+  // bevisst valg av hvilken post som skal beholdes, siden den andre da
+  // ikke lenger har barn knyttet til seg.
+  window.koblSosken = async function(elevId, sosknId){
+    const a = cache.students.find(s => s.id === elevId);
+    const b = cache.students.find(s => s.id === sosknId);
+    if(!a || !b) return;
+    const gA = cache.guardians.find(g => g.id === a.foresatt);
+    const gB = cache.guardians.find(g => g.id === b.foresatt);
+    if(!gA || !gB) { showToast('Mangler foresatt-post på en av elevene.'); return; }
+
+    const svar = confirm(
+      'Koble «' + (a.navn||'') + '» og «' + (b.navn||'') + '» som søsken?\n\n' +
+      '«' + (b.navn||'') + '» flyttes fra foresatt «' + (gB.navn||'') + '» ' +
+      'til «' + (gA.navn||'') + '».\n\n' +
+      'Beløpet må kontrolleres etterpå — søskenrabatten regnes ikke om av seg selv.');
+    if(!svar) return;
+
+    try{
+      await updateDoc(doc(db, 'students', b.id), { foresatt: gA.id });
+      showToast('✓ Koblet som søsken. Kontroller beløpet på begge elevene.');
+    }catch(err){
+      console.error(err);
+      showToast('Kunne ikke koble: ' + err.message, true);
+    }
+  };
+
   window.showPersonDetail = function(type, id){
     const schema = SCHEMAS[type];
     const row = cache[type].find(r => r.id === id);
@@ -4008,7 +4140,10 @@
         chips.push(`<div><div style="font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;">Barn</div><div style="font-weight:600;">${childrenHtml}</div></div>`);
       }
     }
-    document.getElementById('pdEssentialRow').innerHTML = chips.join('');
+    document.getElementById('pdEssentialRow').innerHTML =
+      chips.join('') ;
+    const relBoks = document.getElementById('pdRelasjoner');
+    if(relBoks) relBoks.innerHTML = byggRelasjonsForslag(type, row);
 
     const extraFields = schema.fields.filter(f => !f.essential && f.key !== 'bilde');
     const extraGrid = document.getElementById('pdExtraGrid');
@@ -6333,6 +6468,44 @@
 
   // Søskenrabatt: 1. barn = full pris, 2. barn = 20% rabatt, 3. barn (og
   // alle senere barn) = 30% rabatt.
+  /* ══ Gjenkjenning av samme person ═══════════════════════════════
+   *
+   * Samme menneske kan stå flere steder: som foresatt for ett barn, som
+   * foresatt for et annet, og som ansatt. Systemet kobler dem ikke
+   * automatisk — det FORESLÅR, og et menneske bestemmer.
+   *
+   * Grunnen er at automatisk kobling gjør reell skade når den bommer:
+   * to familier som deler husnummer eller en felles familie-e-post ville
+   * blitt slått sammen, og da ser en forelder et barn som ikke er sitt.
+   * Et forslag som blir avvist koster ingenting. En feilkobling som skjer
+   * i stillhet kan stå uoppdaget lenge.
+   *
+   * Vi matcher på telefon ELLER e-post, og sier alltid hvilken av dem som
+   * traff — slik at den som bestemmer kan vurdere hvor sterkt beviset er.
+   */
+  function normTlf(v){ return String(v || '').replace(/\D/g, '').slice(-8); }
+  function normEpost(v){ return String(v || '').trim().toLowerCase(); }
+
+  // Returnerer treff i en samling, med begrunnelse for hvert treff.
+  function finnPersonTreff(kolleksjon, tlf, epost, ekskluderId){
+    const t = normTlf(tlf), e = normEpost(epost);
+    if(!t && !e) return [];
+    return (cache[kolleksjon] || [])
+      .filter(r => r.id !== ekskluderId)
+      .map(r => {
+        const tMatch = t && normTlf(r.telefon) === t;
+        const eMatch = e && normEpost(r.epost) === e;
+        if(!tMatch && !eMatch) return null;
+        return {
+          rad: r,
+          grunn: (tMatch && eMatch) ? 'telefon og e-post'
+               : (eMatch ? 'e-post' : 'telefon'),
+          sterk: !!eMatch   // e-post deles sjeldnere enn et husnummer
+        };
+      })
+      .filter(Boolean);
+  }
+
   function computeSoskenPrice(program, guardianId, excludeId){
     // Prisen ligger på programmet (redigerbart under fanen "Programmer").
     // PROGRAM_PRICES beholdes kun som reserve for gamle programnavn som ennå
@@ -6677,6 +6850,13 @@
       // Stopp før lagring hvis e-posten alt tilhører en annen person.
       if(entry.epost && !sjekkDuplikatEpost(editingType, entry.epost, editingId)) return;
 
+      // Samme foresatt kan ikke stå som både foresatt 1 og 2 på ett barn.
+      // Det er ikke to foresatte — det er én, talt to ganger.
+      if(editingType === 'students' && entry.foresatt && entry.foresatt === entry.foresatt2){
+        showToast('Foresatt 1 og foresatt 2 kan ikke være samme person.', true);
+        return;
+      }
+
       if(editingId){
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
       } else {
@@ -6934,7 +7114,20 @@
       let guardianId2 = '';
       const guardian2Name = reg.foresatt2_navn || '';
       const guardian2Phone = reg.foresatt2_tlf || '';
-      if(guardian2Name){
+
+      // Skjer det at noen fyller inn sine EGNE opplysninger også i feltene
+      // for foresatt 2, ville koden under funnet foresatt 1 igjen og satt
+      // begge feltene til samme person. Eleven ville da hatt «to» foresatte
+      // som i virkeligheten er én — og alt som teller foresatte eller
+      // sender meldinger, ville gjort det dobbelt.
+      const erSammePerson =
+        (normTlf(guardian2Phone) && normTlf(guardian2Phone) === normTlf(reg.foresatt1_tlf)) ||
+        (normEpost(reg.foresatt2_epost) && normEpost(reg.foresatt2_epost) === normEpost(reg.foresatt1_epost)) ||
+        (guardian2Name.trim() && guardian2Name.trim().toLowerCase() === (reg.foresatt1_navn || '').trim().toLowerCase());
+
+      if(guardian2Name && erSammePerson){
+        showToast('Foresatt 2 hadde samme opplysninger som foresatt 1 — kun én foresatt er registrert.');
+      } else if(guardian2Name){
         const existingGuardian2 = guardian2Phone
           ? cache.guardians.find(g => g.telefon === guardian2Phone)
           : cache.guardians.find(g => g.navn === guardian2Name);
@@ -7341,11 +7534,17 @@
     URL.revokeObjectURL(url);
   };
 
-  function showToast(msg){
+  // isError gir rød farge og lengre visetid — en feilmelding må rekke å bli
+  // lest, mens en bekreftelse gjerne kan forsvinne raskt.
+  let toastTimer = null;
+  function showToast(msg, isError){
     const t = document.getElementById('toast');
+    if(!t) return;
     t.textContent = msg;
+    t.classList.toggle('toast-err', !!isError);
     t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'), 2200);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), isError ? 4500 : 2400);
   }
 
   // Tabs
