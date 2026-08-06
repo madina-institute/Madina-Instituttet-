@@ -289,10 +289,13 @@
      felter, kontaktinfo, handlinger) ligger på én linje som fyller
      bredden, og bryter ned til stablet layout kun på smale skjermer. */
   .record-card{
-    background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 22px;
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 26px;
     box-shadow:var(--shadow); display:flex; flex-direction:row; align-items:center; flex-wrap:wrap;
-    gap:10px 28px; transition:transform .15s, border-color .15s;
+    gap:12px 34px; transition:transform .15s, border-color .15s;
+    width:100%;
   }
+  /* .card-grid er allerede en kolonne med full bredde — kortene får bare
+     litt mer luft, slik at opplysningene ikke presses sammen. */
   .record-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
   .record-card-top{ display:flex; align-items:center; gap:12px; flex:0 0 auto; min-width:190px; }
   .record-avatar{
@@ -2007,6 +2010,7 @@
     <div id="pdExtraGrid" style="display:none; margin-top:12px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px 18px;"></div>
 
     <div class="modal-actions" style="margin-top:20px;">
+      <div id="pdHandlinger" style="display:flex; gap:9px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--line);"></div>
       <button class="btn btn-ghost" onclick="closeCashierOverlay('personDetailOverlay')">Lukk</button>
       <button class="btn btn-primary" onclick="openPersonPrintModal()">🖨️ Skriv ut</button>
     </div>
@@ -2038,7 +2042,8 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-    setPersistence, browserSessionPersistence, browserLocalPersistence, sendPasswordResetEmail
+    setPersistence, browserSessionPersistence, browserLocalPersistence, sendPasswordResetEmail,
+    EmailAuthProvider, reauthenticateWithCredential
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -4062,6 +4067,52 @@
     }
   };
 
+  /* Sletting av en person krever at passordet skrives inn på nytt.
+   *
+   * Panelet holder økten åpen lenge, og en innlogget maskin blir stående
+   * ulåst på et lærerværelse eller et kontor. Uten dette trinnet holder det
+   * at noen andre setter seg ned foran skjermen for å slette en elev med to
+   * klikk. Sletteloggen ville riktignok tatt vare på dataene — men den ville
+   * også ført opp DEG som den som slettet.
+   *
+   * Passordet sendes til Firebase for ny verifisering; det lagres ingen
+   * steder her.
+   */
+  window.slettMedBekreftelse = async function(type, id){
+    const row = (cache[type] || []).find(r => r.id === id);
+    if(!row) return;
+    const navn = row.navn || 'denne oppføringen';
+
+    const bruker = auth.currentUser;
+    if(!bruker || !bruker.email){
+      showToast('Du må være innlogget for å slette.', true);
+      return;
+    }
+
+    const passord = prompt(
+      'Slette «' + navn + '»?\n\n' +
+      'En kopi havner i sletteloggen og kan gjenopprettes i 30 dager.\n\n' +
+      'Skriv inn passordet ditt for å bekrefte:');
+    if(passord === null) return;
+    if(!passord){
+      showToast('Passord kreves for å slette.', true);
+      return;
+    }
+
+    try{
+      showToast('Bekrefter …');
+      const cred = EmailAuthProvider.credential(bruker.email, passord);
+      await reauthenticateWithCredential(bruker, cred);
+    }catch(err){
+      console.error('Reautentisering feilet', err);
+      showToast('Feil passord — sletting avbrutt.', true);
+      return;
+    }
+
+    closeCashierOverlay('personDetailOverlay');
+    deleteEntry(type, id);
+  };
+
   window.showPersonDetail = function(type, id){
     const schema = SCHEMAS[type];
     const row = cache[type].find(r => r.id === id);
@@ -4158,6 +4209,18 @@
       return `<div class="pd-felt" data-pd-key="${escapeHtml(f.key)}"><span class="pd-felt-label">${escapeHtml(f.label)}</span><span class="pd-felt-verdi">${valueHtml}</span></div>`;
     };
 
+    // Sporing: disse feltene skrives allerede av systemet ved oppretting og
+    // lagring, men har aldri vært synlige noe sted. De vises nå i sin egen
+    // seksjon nederst — nyttig når man lurer på hvem som la inn noe, eller
+    // når et kort plutselig ser annerledes ut enn man husket.
+    const sporing = [
+      ['Opprettet av', row.opprettetAv],
+      ['Opprettet dato', row.opprettetDato],
+      ['Sist endret av', row.sistEndretAv],
+      ['Sist endret dato', row.sistEndretDato],
+      ['Årsak til siste endring', row.sistEndretGrunn]
+    ].filter(x => x[1]);
+
     const seksjoner = PD_SEKSJONER[type] || [];
     const brukteKeys = new Set();
     seksjoner.forEach(sek => sek.keys.forEach(k => brukteKeys.add(k)));
@@ -4198,10 +4261,42 @@
         </div>`;
     }
 
+    if(sporing.length){
+      const idx = seksjoner.length + 1;
+      html += `
+        <div class="pd-seksjon" data-seksjon="${idx}">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+            <span class="pd-caret">▶</span>
+            <span class="pd-seksjon-tittel">🕓 Historikk</span>
+            <span class="pd-seksjon-antall">${sporing.length}</span>
+          </button>
+          <div class="pd-seksjon-body">
+            ${sporing.map(([l, v]) =>
+              `<div class="pd-felt"><span class="pd-felt-label">${escapeHtml(l)}</span><span class="pd-felt-verdi">${escapeHtml(String(v))}</span></div>`
+            ).join('')}
+          </div>
+        </div>`;
+    }
+
     extraGrid.innerHTML = html || '<div style="color:#8a9a90; font-size:13px;">Ingen flere opplysninger registrert.</div>';
     extraGrid.style.display = 'none';
     extraGrid.style.gridTemplateColumns = '';
     extraGrid.style.gap = '';
+
+    // Handlingene som tidligere lå utenpå kortet i listen.
+    const parseKr = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
+    const restKr = type === 'students' ? (parseKr(row.belop) - parseKr(row.belopBetalt)) : 0;
+    const handl = document.getElementById('pdHandlinger');
+    if(handl){
+      handl.innerHTML = `
+        <button class="btn btn-ghost" onclick="editEntry('${type}','${row.id}')">✏️ Rediger</button>
+        ${(type === 'teachers' || type === 'guardians') && row.epost
+          ? `<button class="btn btn-ghost" onclick="sendPortalAccountSetup('${escapeHtml(row.epost)}')">Send kontooppsett</button>` : ''}
+        ${type === 'students' && restKr > 0
+          ? `<button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendStudentVippsRequest('${row.id}')">⚡ Send ekte Vipps-krav</button>` : ''}
+        <button class="btn" style="background:#a83c3c; color:#fff; margin-inline-start:auto;"
+                onclick="slettMedBekreftelse('${type}','${row.id}')">🗑 Slett</button>`;
+    }
     document.getElementById('pdToggleBtn').textContent = '▾ Vis flere detaljer';
 
     openCashierOverlay('personDetailOverlay');
@@ -5242,11 +5337,14 @@
           ${type === 'teacherAttendance' && (row.godkjenningsstatus||'Venter godkjenning') === 'Venter godkjenning' ? `
             <button class="btn-edit" style="background:var(--emerald); color:#fff; border-color:var(--emerald);" onclick="approveTeacherAttendance('${row.id}')">✅ Godkjenn</button>
             <button class="btn-edit" onclick="openEditApproveAttendance('${row.id}')">✏️ Rediger og godkjenn</button>` : ''}
-          ${['students','teachers','guardians'].includes(type) ? `<button class="btn-edit" onclick="showPersonDetail('${type}','${row.id}')">👁 Vis</button>` : ''}
-          ${(type === 'teachers' || type === 'guardians') && row.epost ? `<button class="btn-edit" onclick="sendPortalAccountSetup('${escapeHtml(row.epost)}')">Send kontooppsett</button>` : ''}
-          ${type === 'students' && remainingKr > 0 ? `<button class="btn-edit" onclick="sendStudentVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>` : ''}
-          <button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
-          <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>
+          ${['students','teachers','guardians'].includes(type)
+            // Personkort viser bare «Vis» utenpå. Rediger, Vipps-krav og
+            // sletting ligger inne i kortet — det gjør listen rolig å bla i,
+            // og en destruktiv handling krever at man først har åpnet den
+            // personen og sett hvem det faktisk er.
+            ? `<button class="btn-edit" onclick="showPersonDetail('${type}','${row.id}')">👁 Vis</button>`
+            : `<button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
+               <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>`}
         </div>`;
       }
       const card = document.createElement('div');
@@ -6816,7 +6914,17 @@
       return;
     }
     entry.sistEndretAv = currentUserEmail || 'ukjent';
-    entry.sistEndretDato = new Date().toISOString().slice(0,10);
+    // Klokkeslett tas med: to endringer samme dag var tidligere umulig å
+    // skille fra hverandre i historikken.
+    entry.sistEndretDato = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+    // «Opprettet av» ble bare satt for ansatte via syncStaffRoles — for
+    // elever og foresatte sto feltet tomt, og man kunne aldri se hvem som
+    // la dem inn. Settes kun ved oppretting, aldri overskrevet senere.
+    if(!editingId){
+      entry.opprettetAv = currentUserEmail || 'ukjent';
+      entry.opprettetDato = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    }
 
     // Build a human-readable summary for the visible Betalingslogg BEFORE
     // saving, while we still have the old cached values to compare against.
