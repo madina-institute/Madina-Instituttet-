@@ -1657,13 +1657,35 @@
     });
   }
 
+  // Seksjonen legges i adresselinjen. Uten dette havnet man tilbake på
+  // startsiden ved hver oppdatering — og en oppdatering er nettopp det man
+  // gjør når noe ser rart ut, altså akkurat når man IKKE vil miste plassen
+  // sin. Nå virker også nettleserens tilbakeknapp mellom seksjoner.
+  const SEKSJON_FN = {};
+
   window.navTo = function(key, fn){
     hideAllViews();
     fn();
     setActiveSidebar(key);
+    SEKSJON_FN[key] = fn;
+    try{ history.replaceState(null, '', '#del=' + key); }catch(e){}
   };
 
+  function gjenopprettSeksjon(){
+    const m = (location.hash || '').match(/del=([A-Za-z]+)/);
+    if(!m) return false;
+    const knapp = document.querySelector('[data-sidebar="' + m[1] + '"]');
+    if(!knapp) return false;
+    // Klikker knappen i stedet for å kalle funksjonen direkte, slik at all
+    // logikk som henger på klikket kjører som normalt.
+    knapp.click();
+    return true;
+  }
+
   window.showChoice = function(){
+    // Har brukeren en seksjon i adresselinjen fra før, åpnes den i stedet
+    // for startsiden.
+    if(gjenopprettSeksjon()) return;
     navTo('home', showHome);
   };
 
