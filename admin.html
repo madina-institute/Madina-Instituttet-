@@ -321,6 +321,22 @@
     .pd-modal{ width:98vw; padding:18px 14px; max-height:92vh; border-radius:12px; }
   }
   #toast.toast-err{ background:#a03028; }
+  .pw-overlay{
+    position:fixed; inset:0; z-index:9500; background:rgba(20,20,45,.55);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .pw-boks{
+    background:#fff; border-radius:14px; padding:24px 26px; width:100%; max-width:400px;
+    box-shadow:0 20px 50px rgba(0,0,0,.3); font-family:'Jost',sans-serif;
+  }
+  .pw-boks h3{ margin:0 0 8px; font-family:'Cormorant Garamond',serif; font-size:21px; color:var(--ink); }
+  .pw-boks p{ margin:0 0 16px; font-size:13.5px; color:#6b7480; line-height:1.55; }
+  .pw-boks label{ display:block; font-size:11.5px; font-weight:600; color:var(--emerald-d); margin-bottom:6px; }
+  .pw-boks input{
+    width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:9px;
+    font-size:16px; font-family:'Jost',sans-serif; background:#fbfcfe;
+  }
+  .pw-knapper{ display:flex; gap:9px; justify-content:flex-end; margin-top:18px; }
   .rel-forslag{
     display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;
     background:#fdf6ec; border:1px solid #e8d3ae; border-radius:11px;
@@ -3334,16 +3350,38 @@
 
 
 
-  const ADMIN_DELETE_PASSWORD = 'AdminEgypt2026';
-
-  function checkAdminPassword(){
-    const pw = prompt('Skriv inn admin-passordet for å bekrefte sletting:');
-    if(pw === null) return false; // cancelled
-    if(pw !== ADMIN_DELETE_PASSWORD){
-      showToast('Feil passord. Sletting avbrutt.');
+  /* Massesletting krever at DIN egen innlogging bekreftes på nytt.
+   *
+   * Her sto det tidligere ett felles passord skrevet rett inn i koden. Det
+   * ga ingen reell beskyttelse: admin.html ligger offentlig på nettet og i
+   * et åpent repo, så passordet kunne leses av hvem som helst uten å logge
+   * inn — samtidig som det beskyttet nettopp de tre farligste handlingene
+   * i panelet (tøm samling, tøm alt, tøm testdata).
+   *
+   * Nå verifiseres passordet mot Firebase, det er personlig, og det lagres
+   * ingen steder. Sletteloggen fører dermed også opp riktig person.
+   */
+  async function checkAdminPassword(){
+    const bruker = auth.currentUser;
+    if(!bruker || !bruker.email){
+      showToast('Du må være innlogget for å slette.', true);
       return false;
     }
-    return true;
+    const pw = await spørOmPassord('alle valgte oppføringer');
+    if(pw === null) return false;
+    if(!pw){
+      showToast('Passord kreves for å slette.', true);
+      return false;
+    }
+    try{
+      const cred = EmailAuthProvider.credential(bruker.email, pw);
+      await reauthenticateWithCredential(bruker, cred);
+      return true;
+    }catch(err){
+      console.error('Reautentisering feilet', err);
+      showToast('Feil passord. Sletting avbrutt.', true);
+      return false;
+    }
   }
 
   // Safety-net for every hard delete in the admin panel: snapshot the full
@@ -3375,7 +3413,7 @@
       showToast('Det er allerede tomt.');
       return;
     }
-    if(!checkAdminPassword()) return;
+    if(!(await checkAdminPassword())) return;
     const label = TYPE_LABELS[type].toLowerCase();
     const ok = confirm(`Dette sletter PERMANENT ${count} oppføring(er) fra ${label}. Dette kan ikke angres. Fortsett?`);
     if(!ok) return;
@@ -3397,7 +3435,7 @@
       showToast('Databasen er allerede tom.');
       return;
     }
-    if(!checkAdminPassword()) return;
+    if(!(await checkAdminPassword())) return;
     const typed = prompt(`ADVARSEL: Dette sletter PERMANENT alle ${totalCount} oppføringer i hele databasen (lærere, foresatte, elever, klasser, timeplan, oppmøte).\n\nSkriv "SLETT ALT" (med store bokstaver) for å bekrefte:`);
     if(typed !== 'SLETT ALT'){
       showToast('Sletting avbrutt.');
@@ -3424,7 +3462,7 @@
       showToast('Det er allerede ingenting å slette (utenom søknader).');
       return;
     }
-    if(!checkAdminPassword()) return;
+    if(!(await checkAdminPassword())) return;
     const typed = prompt(`ADVARSEL: Dette sletter PERMANENT alle ${totalCount} oppføringer i databasen UNNTATT søknader (Søknader/registrations beholdes urørt).\n\nSkriv "SLETT TESTDATA" (med store bokstaver) for å bekrefte:`);
     if(typed !== 'SLETT TESTDATA'){
       showToast('Sletting avbrutt.');
@@ -4078,6 +4116,38 @@
    * Passordet sendes til Firebase for ny verifisering; det lagres ingen
    * steder her.
    */
+  // Maskert passorddialog. Returnerer passordet, eller null hvis avbrutt.
+  function spørOmPassord(navn){
+    return new Promise(resolve => {
+      const bakgrunn = document.createElement('div');
+      bakgrunn.className = 'pw-overlay';
+      bakgrunn.innerHTML = `
+        <div class="pw-boks">
+          <h3>Slette «${escapeHtml(navn)}»?</h3>
+          <p>En kopi havner i sletteloggen og kan gjenopprettes i 30 dager.</p>
+          <label for="pwFelt">Skriv inn passordet ditt for å bekrefte</label>
+          <input type="password" id="pwFelt" autocomplete="current-password" autofocus>
+          <div class="pw-knapper">
+            <button type="button" class="btn btn-ghost" data-pw="avbryt">Avbryt</button>
+            <button type="button" class="btn" style="background:#a83c3c; color:#fff;" data-pw="ok">Slett</button>
+          </div>
+        </div>`;
+      document.body.appendChild(bakgrunn);
+
+      const felt = bakgrunn.querySelector('#pwFelt');
+      const lukk = (verdi) => { bakgrunn.remove(); resolve(verdi); };
+
+      bakgrunn.querySelector('[data-pw="avbryt"]').onclick = () => lukk(null);
+      bakgrunn.querySelector('[data-pw="ok"]').onclick = () => lukk(felt.value);
+      bakgrunn.addEventListener('click', e => { if(e.target === bakgrunn) lukk(null); });
+      felt.addEventListener('keydown', e => {
+        if(e.key === 'Enter') lukk(felt.value);
+        if(e.key === 'Escape') lukk(null);
+      });
+      setTimeout(() => felt.focus(), 50);
+    });
+  }
+
   window.slettMedBekreftelse = async function(type, id){
     const row = (cache[type] || []).find(r => r.id === id);
     if(!row) return;
@@ -4089,10 +4159,10 @@
       return;
     }
 
-    const passord = prompt(
-      'Slette «' + navn + '»?\n\n' +
-      'En kopi havner i sletteloggen og kan gjenopprettes i 30 dager.\n\n' +
-      'Skriv inn passordet ditt for å bekrefte:');
+    // prompt() viser alltid teksten i klartekst — passordet ville stått
+    // synlig på skjermen mens det skrives. Derfor et ekte <input
+    // type="password"> i stedet, slik at det maskeres som overalt ellers.
+    const passord = await spørOmPassord(navn);
     if(passord === null) return;
     if(!passord){
       showToast('Passord kreves for å slette.', true);
@@ -7656,17 +7726,40 @@
   }
 
   // Tabs
+  //
+  // Fanen legges i adresselinjen (#fane=...). Uten dette havnet man tilbake
+  // på startfanen ved hver oppdatering — og en oppdatering er nettopp det
+  // man gjør når noe ser rart ut, altså akkurat når man IKKE vil miste
+  // plassen sin. Nå virker også nettleserens tilbakeknapp mellom faner.
+  function aktiverFane(tab, oppdaterUrl){
+    if(!tab) return;
+    const panel = document.getElementById('panel-' + tab.dataset.tab);
+    if(!panel) return;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    panel.classList.add('active');
+    const labelEl = document.getElementById('currentTabLabel');
+    if(labelEl) labelEl.textContent = tab.textContent;
+    if(tab.dataset.tab === 'lessonPlans') showLpChoice();
+    if(oppdaterUrl){
+      try{ history.replaceState(null, '', '#fane=' + tab.dataset.tab); }catch(e){}
+    }
+  }
+
   document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-      const labelEl = document.getElementById('currentTabLabel');
-      if(labelEl) labelEl.textContent = tab.textContent;
-      if(tab.dataset.tab === 'lessonPlans') showLpChoice();
-    });
+    tab.addEventListener('click', () => aktiverFane(tab, true));
   });
+
+  function gjenopprettFane(){
+    const m = (location.hash || '').match(/fane=([A-Za-z]+)/);
+    if(!m) return;
+    const tab = document.querySelector('.tab[data-tab="' + m[1] + '"]');
+    // Fanen gjenopprettes bare hvis den finnes OG brukeren har tilgang til
+    // den — ellers ville en gammel lenke kunne åpne en fane man ikke skal se.
+    if(tab && tab.offsetParent !== null) aktiverFane(tab, false);
+  }
+  window.addEventListener('hashchange', gjenopprettFane);
 
   // Search listeners
   ['teachers','guardians','students','classes','hours','attendance','lessonPlans','meetings','finances','registrations','homework','homeworkSubmissions','absenceRequests','announcements','studentNotes'].forEach(type => {
@@ -7679,6 +7772,9 @@
   if(searchLedelseEl) searchLedelseEl.addEventListener('input', () => renderLedelseView());
 
   // Init: attach real-time listeners for all 3 collections
+  // Kalles her fordi fanene først er synlige etter at panelet er åpnet.
+  setTimeout(gjenopprettFane, 0);
+
   attachListener('programs');
   attachListener('schoolCalendar');
   attachListener('teachers');
