@@ -2050,6 +2050,25 @@
   let currentUserRoles = [];
   function isCurrentUserEier(){ return currentUserRoles.includes('Eier'); }
 
+  // Opptak (godkjenne/avslå søknader og sende Vipps-krav) er lagt til én
+  // egen rolle i stedet for til alle med administrativ tilgang. Grunnen er
+  // at et Vipps-krav som blir betalt godkjenner søknaden AUTOMATISK — selve
+  // betalingen ER opptaket. Da må det være tydelig hvem som har ansvaret,
+  // og hvem systemet kan navngi i etterkant.
+  //
+  // Eier har alltid tilgang, slik at skolen aldri blir låst ute av eget
+  // opptak om den eneste opptaksansvarlige er utilgjengelig.
+  function isOpptaksansvarlig(){
+    return currentUserRoles.includes('Eier') || currentUserRoles.includes('Opptaksansvarlig');
+  }
+
+  // Felles sperre for alle opptaksbeslutninger.
+  function krevOpptaksrolle(){
+    if(isOpptaksansvarlig()) return true;
+    showToast('Kun opptaksansvarlig kan behandle søknader.');
+    return false;
+  }
+
   const LOGO_DATA_URI = "https://madina-institute.github.io/Madina-Instituttet-/logo.png";
 
   // "Remember me": we only ever remember the e-post address (safe, not a
@@ -2449,7 +2468,7 @@
         {key:'telefon', label:'Telefon', type:'text', essential:true},
         {key:'epost', label:'E-post', type:'text', essential:true},
         {key:'roller', label:'Roller', type:'role-checklist', options:[
-          'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator',
+          'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator','Opptaksansvarlig',
           'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
         ]},
         {key:'lonnStatus', label:'Lønnsstatus', type:'select', essential:true, options:['Frivillig (ulønnet)','Lønnet']},
@@ -4881,13 +4900,20 @@
       }
       let actionsHtml;
       if(type === 'registrations'){
+        // Alle med administrativ tilgang SER søknadene — det gir felles
+        // oversikt. Men selve beslutningen vises kun for opptaksansvarlig,
+        // slik at ingen trykker i god tro på noe de ikke har ansvar for.
+        const kanBehandle = isOpptaksansvarlig();
         actionsHtml = `<div class="record-card-actions">
+          ${kanBehandle ? `
           <button class="btn-approve" onclick="approveRegistration('${row.id}')">Godkjenn</button>
           <button class="btn-waitlist" onclick="waitlistRegistration('${row.id}')">Venteliste</button>
-          <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>
+          <button class="btn-reject" onclick="rejectRegistration('${row.id}')">Avslå</button>` : ''}
           <button class="btn-edit" onclick="editEntry('registrations','${row.id}')">Se alt</button>
+          ${kanBehandle ? `
           <button class="btn-edit" onclick="sendVippsPaymentLink('${row.id}')">📤 Send Vipps-lenke (manuell)</button>
-          <button class="btn-edit" onclick="sendRealVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>
+          <button class="btn-edit" onclick="sendRealVippsRequest('${row.id}')" style="background:#ff5b24; color:#fff; border-color:#ff5b24;">⚡ Send ekte Vipps-krav</button>`
+          : '<span class="sub" style="align-self:center;">Kun opptaksansvarlig kan behandle søknader.</span>'}
         </div>`;
       } else {
         const parseKr = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
@@ -6328,6 +6354,18 @@
         input.value = existing[f.key] || '';
         if(f.placeholder) input.placeholder = f.placeholder;
       }
+      // Rollen «Opptaksansvarlig» kan kun tildeles av en eier. Uten dette
+      // kunne enhver med administrativ tilgang gi seg selv rollen, og
+      // sperren under ville vært en formalitet.
+      if(f.type === 'role-checklist' && !isCurrentUserEier()){
+        input.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          if(cb.value === 'Opptaksansvarlig' || cb.value === 'Eier'){
+            cb.disabled = true;
+            cb.title = 'Kun en eier kan endre denne rollen.';
+            if(cb.parentElement) cb.parentElement.style.opacity = '0.55';
+          }
+        });
+      }
       input.id = 'field_' + f.key;
       // Spesialpris slår ut med én gang, slik at beløpsfeltet under alltid
       // viser det som faktisk blir lagret.
@@ -6646,6 +6684,7 @@
   }
 
   window.approveRegistration = async function(id){
+    if(!krevOpptaksrolle()) return;
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     const ok = confirm(`Godkjenne søknaden for ${reg.elev_navn || 'denne eleven'}?\n\nDette oppretter elev og foresatt i Administrativ, og kobler dem sammen.`);
@@ -6748,6 +6787,7 @@
   };
 
   window.rejectRegistration = async function(id){
+    if(!krevOpptaksrolle()) return;
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     const ok = confirm(`Avslå søknaden for ${reg.elev_navn || 'denne eleven'}? Det opprettes ingen elev i systemet.`);
@@ -6807,6 +6847,10 @@
   const VIPPS_CREATE_PAYMENT_URL = 'https://createvippspayment-qgyf6x4aba-uc.a.run.app';
 
   window.sendRealVippsRequest = async function(id){
+    // Et betalt Vipps-krav godkjenner søknaden automatisk via webhooken.
+    // Derfor er denne knappen i praksis en opptaksbeslutning, og må ha
+    // samme sperre som Godkjenn-knappen.
+    if(!krevOpptaksrolle()) return;
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     const guardianPhone = reg.foresatt1_tlf || '';
@@ -6903,6 +6947,7 @@
 
 
   window.waitlistRegistration = async function(id){
+    if(!krevOpptaksrolle()) return;
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     try{
