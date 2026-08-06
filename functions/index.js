@@ -157,6 +157,34 @@ async function getVippsAccessToken() {
  * Returnerer den innloggede brukeren, eller null hvis forespørselen skal
  * avvises (svaret er da allerede sendt).
  */
+// Rollene som får sende Vipps-krav. Sperren i admin.html skjuler knappene,
+// men den sperren lever i nettleseren og kan omgås. DENNE er den ekte —
+// et Vipps-krav kan ikke opprettes uten at serveren har slått opp brukeren
+// i 'adminUsers' og funnet en av disse rollene.
+const OPPTAK_ROLLER = ["Eier", "Opptaksansvarlig"];
+
+async function krevOpptaksrolle(bruker, res) {
+  if (!bruker.epost) {
+    res.status(403).json({ ok: false, error: "Kontoen mangler e-post." });
+    return false;
+  }
+  const snap = await db.collection("adminUsers").where("epost", "==", bruker.epost).get();
+  const harRolle = snap.docs.some((d) => {
+    const roller = String((d.data().roller || d.data().rolle || ""))
+      .split(",").map((r) => r.trim());
+    return roller.some((r) => OPPTAK_ROLLER.includes(r));
+  });
+  if (!harRolle) {
+    logger.warn("Vipps-krav avvist — mangler opptaksrolle", { epost: bruker.epost });
+    res.status(403).json({
+      ok: false,
+      error: "Kun opptaksansvarlig kan sende Vipps-krav."
+    });
+    return false;
+  }
+  return true;
+}
+
 async function krevInnlogget(req, res) {
   const header = req.get("Authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
@@ -188,6 +216,7 @@ exports.createVippsPayment = onRequest(
 
     const bruker = await krevInnlogget(req, res);
     if (!bruker) return;
+    if (!(await krevOpptaksrolle(bruker, res))) return;
 
     try {
       const { type, targetId, amountKr, phoneNumber } = req.body || {};
