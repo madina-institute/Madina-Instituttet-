@@ -176,14 +176,14 @@
         <option value="publish-tool.html">🛠️ Dette publiseringsverktøyet — publish-tool.html</option>
         <option value="functions/index.js">⚙️ Cloud Functions — functions/index.js</option>
         <option value="firestore.rules">🔐 Sikkerhetsregler (kun dokumentasjon) — firestore.rules</option>
-          <option value="sw.js">Service worker (cache) — sw.js</option>
-          <option value="publish-tool.html">Dette publiseringsverktøyet — publish-tool.html</option>
+          <option value="sw.js">⚡ Service worker (cache) — sw.js</option>
           <option value="manifest-admin.json">Manifest — Admin (manifest-admin.json)</option>
           <option value="manifest-larer.json">Manifest — Lærerportal (manifest-larer.json)</option>
           <option value="manifest-soknad.json">Manifest — Søknadsskjema (manifest-soknad.json)</option>
           <option value="manifest-foreldre.json">Manifest — Foreldreportal (manifest-foreldre.json)</option>
           <option value="__custom__">Annen filsti...</option>
         </select>
+        <div class="hint" id="fileListStatus"></div>
         <div class="hint" id="lastPublishedHint"></div>
         <div id="pathNotice" style="display:none;"></div>
       </div>
@@ -236,6 +236,102 @@
     hintEl.textContent = (path && log[path]) ? 'Sist publisert: ' + log[path] : '';
   }
 
+  // ===================================================================
+  // FILLISTEN HENTES FRA REPOET
+  // -------------------------------------------------------------------
+  // Listen over filer var tidligere skrevet inn for hånd her i verktøyet.
+  // Hver gang det kom en ny side, måtte verktøyet selv redigeres og
+  // publiseres på nytt — ellers måtte man skrive filstien manuelt hver
+  // eneste gang. Nå spør vi GitHub hvilke filer som faktisk finnes, og
+  // bygger listen av svaret. En ny fil publiseres én gang med
+  // "Annen filsti", og dukker opp i listen av seg selv etterpå.
+  //
+  // Feiler kallet (nett nede, token utløpt), beholdes den innebygde
+  // listen som den er — verktøyet skal aldri bli ubrukelig av dette.
+  // ===================================================================
+
+  // Filtyper det gir mening å publisere herfra. Alt annet (bilder, PDF-er,
+  // node_modules) ville bare fylt listen med støy.
+  const PUBLISERBARE = /\.(html|js|json|css|rules|txt|md|yml|yaml)$/i;
+  const SKJULTE_MAPPER = /^(node_modules|\.git|\.firebase|functions\/node_modules)\//;
+
+  // Ikoner og navn for filene vi allerede kjenner. Ukjente filer får et
+  // nøytralt ikon og vises med sin egen filsti — de forsvinner ikke.
+  const FIL_ETIKETTER = {
+    'index.html':            ['🏠', 'Hovedside (offentlig)'],
+    'admin.html':            ['🛡️', 'Administrativt panel'],
+    'index1.html':           ['📖', 'Lærerportal'],
+    'index2.html':           ['📝', 'Søknadsskjema'],
+    'index3.html':           ['📦', 'Gammel hovedportal (utgått)'],
+    'index4.html':           ['👨‍👩‍👧', 'Foreldreportal'],
+    'personvern.html':       ['🔒', 'Personvernerklæring'],
+    'statistikk.html':       ['📊', 'Statistikk (skjult)'],
+    'foreldreinnsyn.html':   ['👁️', 'Foreldreinnsyn (skjult)'],
+    'larerinnsyn.html':      ['👁️', 'Lærerinnsyn (skjult)'],
+    'slettelogg.html':       ['🗑️', 'Slettelogg (skjult)'],
+    'madina-brosjyre.html':  ['📄', 'Brosjyre (deling)'],
+    'timeplan.html':         ['🗓️', 'Timeplan (offentlig)'],
+    'kunngjoring.html':      ['📢', 'Kunngjøringer'],
+    'publish-tool.html':     ['🛠️', 'Dette publiseringsverktøyet'],
+    'functions/index.js':    ['⚙️', 'Cloud Functions'],
+    'firestore.rules':       ['🔐', 'Sikkerhetsregler (kun dokumentasjon)'],
+    'sw.js':                 ['⚡', 'Service worker (cache)']
+  };
+
+  function filEtikett(sti){
+    const kjent = FIL_ETIKETTER[sti];
+    if(kjent) return kjent[0] + ' ' + kjent[1] + ' — ' + sti;
+    if(sti.indexOf('functions/') === 0) return '⚙️ ' + sti;
+    if(sti.indexOf('.github/') === 0) return '🤖 ' + sti;
+    if(/^manifest-.*\.json$/i.test(sti)) return '📱 Manifest — ' + sti;
+    return '📄 ' + sti;
+  }
+
+  async function hentFillisteFraRepo(){
+    const cfg = loadConfig();
+    const statusEl = document.getElementById('fileListStatus');
+    if(!cfg || !cfg.token) return;
+    if(statusEl) statusEl.textContent = 'Henter filliste fra GitHub…';
+    try{
+      const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo +
+                  '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1';
+      const res = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' },
+        cache: 'no-store'
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const stier = (data.tree || [])
+        .filter(n => n.type === 'blob')
+        .map(n => n.path)
+        .filter(sti => PUBLISERBARE.test(sti) && !SKJULTE_MAPPER.test(sti))
+        .sort((a, b) => {
+          // Kjente filer først, i den rekkefølgen de står i FIL_ETIKETTER —
+          // det er de man publiserer nesten hver gang.
+          const ka = Object.keys(FIL_ETIKETTER).indexOf(a);
+          const kb = Object.keys(FIL_ETIKETTER).indexOf(b);
+          if(ka !== -1 || kb !== -1) return (ka === -1 ? 999 : ka) - (kb === -1 ? 999 : kb);
+          return a.localeCompare(b);
+        });
+
+      if(stier.length === 0) throw new Error('tom filliste');
+
+      const sel = document.getElementById('filePreset');
+      const forrigeValg = sel.value;
+      sel.innerHTML = stier.map(sti =>
+        `<option value="${sti}">${filEtikett(sti)}</option>`).join('') +
+        '<option value="__custom__">Annen filsti...</option>';
+      if([...sel.options].some(o => o.value === forrigeValg)) sel.value = forrigeValg;
+
+      if(statusEl) statusEl.textContent = '✓ ' + stier.length + ' filer hentet fra repoet.';
+      onPresetChange();
+    } catch(err){
+      console.error('Kunne ikke hente filliste', err);
+      if(statusEl) statusEl.textContent = 'Kunne ikke hente fillisten (' +
+        (err.message || 'nettverksfeil') + ') — bruker den innebygde listen.';
+    }
+  }
+
   function init(){
     const cfg = loadConfig();
     if(cfg && cfg.token && cfg.owner && cfg.repo){
@@ -249,6 +345,13 @@
         sel.value = lastFile;
       }
       onPresetChange();
+      // Oppdaterer listen fra repoet i bakgrunnen. Den innebygde listen
+      // står klar med én gang, så verktøyet er brukbart mens dette pågår.
+      hentFillisteFraRepo().then(() => {
+        const lf = localStorage.getItem(LS_LAST_FILE);
+        const s2 = document.getElementById('filePreset');
+        if(lf && [...s2.options].some(o => o.value === lf)) { s2.value = lf; onPresetChange(); }
+      });
     } else {
       document.getElementById('setupView').style.display = 'block';
       document.getElementById('publishView').style.display = 'none';
@@ -470,6 +573,19 @@
     btn.disabled = false;
   };
 
+  // Slår et filnavn opp mot listen over ekte filstier. Finnes navnet som
+  // siste ledd i nøyaktig ÉN sti (f.eks. «index.js» → «functions/index.js»),
+  // brukes den stien. Er det flere muligheter, kan vi ikke gjette — da
+  // beholdes navnet som det er.
+  function finnFullSti(filnavn){
+    const sel = document.getElementById('filePreset');
+    if(!sel) return filnavn;
+    const stier = [...sel.options].map(o => o.value).filter(v => v && v !== '__custom__');
+    if(stier.includes(filnavn)) return filnavn;
+    const kandidater = stier.filter(v => v.indexOf('/') > 0 && v.split('/').pop() === filnavn);
+    return kandidater.length === 1 ? kandidater[0] : filnavn;
+  }
+
   // ===== Multi-file publish =====
   let multiFiles = []; // [{name, content}]
 
@@ -519,7 +635,16 @@
     for(const f of multiFiles){
       const statusEl = document.getElementById('mfstatus-' + CSS.escape(f.name));
       if(statusEl){ statusEl.className = 'fstatus busy'; statusEl.textContent = 'Publiserer...'; }
-      const result = await publishFileToGitHub(f.name, f.content);
+      // Nettleseren gir oss bare filnavnet, aldri mappen filen lå i. Et
+      // valgt «index.js» ville derfor havnet i rota og aldri blitt
+      // publisert som Cloud Function — mens statusen her likevel sa
+      // "✓ Publisert". Vi slår derfor filnavnet opp mot de ekte stiene i
+      // repoet først, akkurat som enkeltfil-opplastingen gjør.
+      const målsti = finnFullSti(f.name);
+      if(målsti !== f.name && statusEl){
+        statusEl.textContent = 'Publiserer til ' + målsti + '...';
+      }
+      const result = await publishFileToGitHub(målsti, f.content);
       if(result.ok){
         okCount++;
         if(statusEl){ statusEl.className = 'fstatus ok'; statusEl.textContent = '✓ Publisert'; }
