@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -760,6 +761,47 @@
   (function(){
     const saved = localStorage.getItem('madinaHomeLang');
     switchLang((saved === 'ar' || saved === 'ur') ? saved : 'no');
+  })();
+</script>
+
+<!-- ══ TIDSSTEMPEL (kun for utvikling) ═══════════════════════════════
+     Denne siden er det første foresatte ser. Et lite merke med dato og
+     klokkeslett i hjørnet ville sett ut som en glemt detalj fra et
+     nettsted under arbeid — derfor vises det bare når man selv legger
+     til «?dev» i adressen. Besøkende ser ingenting.
+
+     Tidspunktet leses fra linjen «SIST-ENDRET» som publiseringsverktøyet
+     skriver øverst i filen ved hver publisering. Er den ikke der, er
+     filen publisert utenom verktøyet — og merket sier nettopp det.
+     ════════════════════════════════════════════════════════════════ -->
+<style>
+  #devEditBadge{
+    display:none; position:fixed; bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+    inset-inline-end:10px; z-index:5000;
+    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
+    background:rgba(255,255,255,0.94); backdrop-filter:blur(3px);
+    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
+    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  }
+</style>
+<div id="devEditBadge">…</div>
+<script>
+  (function(){
+    if(!/(\?|&)dev(\b|=)/.test(location.search)) return;
+    var el = document.getElementById('devEditBadge');
+    if(!el) return;
+    el.style.display = 'block';
+    fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
+        var m = txt.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+        if(!m){ el.textContent = '✏️ Ingen tidsstempel — publisert utenom verktøyet'; return; }
+        var d = new Date(m[1].replace(' ', 'T'));
+        el.textContent = '✏️ Sist endret: ' +
+          d.toLocaleDateString('no-NO') + ' kl. ' +
+          d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      })
+      .catch(function(){ el.textContent = '✏️ Kunne ikke lese tidsstempel'; });
   })();
 </script>
 
