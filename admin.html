@@ -1354,6 +1354,10 @@
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormCompleted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Fullførte søknaden</div></div>
     </div>
     <div class="folder-row" id="regFolderRow" style="margin-bottom:16px;">
+      <div class="choice-card folder-card active" data-status="" onclick="setRegFolder('')">
+        <h3>📋 Alle<span class="folder-count" id="regFolderCount_Alle">0</span></h3>
+        <div class="sub">Hele listen</div>
+      </div>
       <div class="choice-card folder-card" data-status="Ny" onclick="setRegFolder('Ny')">
         <h3>🆕 Nye<span class="folder-count" id="regFolderCount_Ny">0</span></h3>
         <div class="sub">Ikke behandlet ennå</div>
@@ -1547,8 +1551,10 @@
 
   <!-- TEACHERS -->
   <div class="panel active" id="panel-teachers">
+    <div class="folder-row-dynamic" id="teacherFolderRow" style="margin-bottom:16px;"></div>
     <div class="toolbar">
       <input class="search" id="searchTeachers" placeholder="Søk etter navn, fag eller telefon...">
+      <span class="count-chip" id="teacherFolderActiveLabel" onclick="setTeacherFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countTeachers" onclick="toggleRecordsById('tableTeachers')">0 lærere</span>
       <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny lærer</button>
@@ -1558,8 +1564,10 @@
 
   <!-- GUARDIANS -->
   <div class="panel" id="panel-guardians">
+    <div class="folder-row-dynamic" id="guardianFolderRow" style="margin-bottom:16px;"></div>
     <div class="toolbar">
       <input class="search" id="searchGuardians" placeholder="Søk etter navn eller telefon...">
+      <span class="count-chip" id="guardianFolderActiveLabel" onclick="setGuardianFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countGuardians" onclick="toggleRecordsById('tableGuardians')">0 foresatte</span>
       <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('guardians')">+ Ny foresatt</button>
@@ -3955,6 +3963,8 @@
   };
 
   function updateRegFolderCounts(registrations){
+    const alleEl = document.getElementById('regFolderCount_Alle');
+    if(alleEl) alleEl.textContent = registrations.length;
     const counts = { Ny:0, Venteliste:0, Godkjent:0, Avslått:0 };
     registrations.forEach(r => { const s = r.status || 'Ny'; if(counts[s] !== undefined) counts[s]++; });
     Object.keys(counts).forEach(status => {
@@ -3979,9 +3989,12 @@
     const students = cache.students;
     const activeStudents = students.filter(s => s.elevStatus !== 'Sluttet/trukket');
 
-    const cards = classes.map(c => {
+    // «Alle» står alltid først, slik at veien tilbake til hele listen er
+    // like synlig som veien inn i en enkelt mappe.
+    const cards = [{ key: '', label: '📋 Alle', sub: 'Hele listen', count: students.length }];
+    classes.forEach(c => {
       const count = activeStudents.filter(s => s.klasse === c.id).length;
-      return { key: c.id, label: '🏫 ' + c.navn, sub: count + ' elev' + (count === 1 ? '' : 'er'), count };
+      cards.push({ key: c.id, label: '🏫 ' + c.navn, sub: count + ' elev' + (count === 1 ? '' : 'er'), count });
     });
     const noClassCount = activeStudents.filter(s => !s.klasse).length;
     cards.push({ key: '__none__', label: '📭 Uten klasse', sub: 'Ikke fordelt ennå', count: noClassCount });
@@ -3994,6 +4007,97 @@
         <div class="sub">${escapeHtml(c.sub)}</div>
       </div>`).join('');
   }
+
+  // ===================================================================
+  // LÆRERE — mappevisning per fag. Faglisten bygges fra dataene selv, så
+  // et nytt fag dukker opp av seg selv uten at noe må endres her.
+  // ===================================================================
+  let teacherSelectedFolder = '';
+
+  const FAG_IKON = { Koran:'📖', Islam:'🕌', Arabisk:'🔤', Urdu:'🔤', Madinabarn:'🧒', Annet:'📌' };
+
+  function renderTeacherFolders(){
+    const row = document.getElementById('teacherFolderRow');
+    if(!row) return;
+    const teachers = cache.teachers;
+    const fagListe = [...new Set(teachers.map(t => (t.fag||'').trim()).filter(Boolean))].sort();
+
+    const cards = [{ key: '', label: '📋 Alle', sub: 'Hele listen', count: teachers.length }];
+    fagListe.forEach(fag => {
+      const count = teachers.filter(t => (t.fag||'').trim() === fag).length;
+      cards.push({ key: fag, label: (FAG_IKON[fag] || '📌') + ' ' + fag,
+                   sub: count + ' lærer' + (count === 1 ? '' : 'e'), count });
+    });
+    const utenFag = teachers.filter(t => !(t.fag||'').trim()).length;
+    if(utenFag > 0) cards.push({ key: '__nofag__', label: '📭 Uten fag', sub: 'Ikke satt ennå', count: utenFag });
+
+    row.innerHTML = cards.map(c => `
+      <div class="choice-card folder-card${teacherSelectedFolder === c.key ? ' active' : ''}" data-status="${escapeHtml(c.key)}" onclick="setTeacherFolder('${escapeHtml(c.key)}')">
+        <h3>${c.label}<span class="folder-count">${c.count}</span></h3>
+        <div class="sub">${escapeHtml(c.sub)}</div>
+      </div>`).join('');
+  }
+
+  window.setTeacherFolder = function(key){
+    teacherSelectedFolder = (teacherSelectedFolder === key) ? '' : key;
+    const label = document.getElementById('teacherFolderActiveLabel');
+    if(label){
+      label.textContent = teacherSelectedFolder
+        ? '📂 Filtrert — trykk på mappen igjen for å vise alle'
+        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+    }
+    renderTeacherFolders();
+    render('teachers');
+  };
+
+  // ===================================================================
+  // FORESATTE — mappevisning per klasse, basert på hvilken klasse deres
+  // BARN går i. En foresatt med barn i to klasser vises i begge mappene;
+  // det er riktig, siden personen faktisk hører hjemme begge steder.
+  // ===================================================================
+  let guardianSelectedFolder = '';
+
+  // Klassene en foresatt er knyttet til gjennom sine barn (både foresatt
+  // og foresatt2 teller — ellers ville den andre forelderen falt ut).
+  function klasserForForesatt(guardianId){
+    return [...new Set(cache.students
+      .filter(s => s.foresatt === guardianId || s.foresatt2 === guardianId)
+      .map(s => s.klasse).filter(Boolean))];
+  }
+
+  function renderGuardianFolders(){
+    const row = document.getElementById('guardianFolderRow');
+    if(!row) return;
+    const guardians = cache.guardians;
+    const classes = [...cache.classes].filter(c => c.navn).sort((a,b) => a.navn.localeCompare(b.navn));
+
+    const cards = [{ key: '', label: '📋 Alle', sub: 'Hele listen', count: guardians.length }];
+    classes.forEach(c => {
+      const count = guardians.filter(g => klasserForForesatt(g.id).includes(c.id)).length;
+      cards.push({ key: c.id, label: '🏫 ' + c.navn,
+                   sub: count + ' foresatt' + (count === 1 ? '' : 'e'), count });
+    });
+    const utenBarn = guardians.filter(g => klasserForForesatt(g.id).length === 0).length;
+    if(utenBarn > 0) cards.push({ key: '__nobarn__', label: '📭 Uten barn i klasse', sub: 'Ikke fordelt ennå', count: utenBarn });
+
+    row.innerHTML = cards.map(c => `
+      <div class="choice-card folder-card${guardianSelectedFolder === c.key ? ' active' : ''}" data-status="${escapeHtml(c.key)}" onclick="setGuardianFolder('${escapeHtml(c.key)}')">
+        <h3>${c.label}<span class="folder-count">${c.count}</span></h3>
+        <div class="sub">${escapeHtml(c.sub)}</div>
+      </div>`).join('');
+  }
+
+  window.setGuardianFolder = function(key){
+    guardianSelectedFolder = (guardianSelectedFolder === key) ? '' : key;
+    const label = document.getElementById('guardianFolderActiveLabel');
+    if(label){
+      label.textContent = guardianSelectedFolder
+        ? '📂 Filtrert — trykk på mappen igjen for å vise alle'
+        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+    }
+    renderGuardianFolders();
+    render('guardians');
+  };
 
   window.setStudentFolder = function(key){
     studentSelectedFolder = (studentSelectedFolder === key) ? '' : key;
@@ -4954,6 +5058,16 @@
       updateRegFolderCounts(cache.registrations);
       if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
     }
+    if(type === 'teachers'){
+      renderTeacherFolders();
+      if(teacherSelectedFolder === '__nofag__') data = data.filter(row => !(row.fag||'').trim());
+      else if(teacherSelectedFolder) data = data.filter(row => (row.fag||'').trim() === teacherSelectedFolder);
+    }
+    if(type === 'guardians'){
+      renderGuardianFolders();
+      if(guardianSelectedFolder === '__nobarn__') data = data.filter(row => klasserForForesatt(row.id).length === 0);
+      else if(guardianSelectedFolder) data = data.filter(row => klasserForForesatt(row.id).includes(guardianSelectedFolder));
+    }
     if(type === 'students'){
       renderStudentFolders();
       if(studentSelectedFolder === '__none__') data = data.filter(row => !row.klasse && row.elevStatus !== 'Sluttet/trukket');
@@ -4966,7 +5080,7 @@
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
-    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); }
+    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); renderGuardianFolders(); }
     if(type === 'students'){ renderCashierPanel(); renderCashierLedelsePanel(); }
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
