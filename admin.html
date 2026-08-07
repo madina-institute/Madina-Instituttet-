@@ -63,19 +63,38 @@
   .login-error{margin-top:12px; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); display:none;}
 
   header{
-    background:transparent; color:var(--ink); padding:22px 24px 10px; box-shadow:none; position:relative;
-    display:flex; align-items:center; justify-content:center; gap:18px; text-align:center;
+    background:#fff; color:var(--ink);
+    padding:13px 26px; box-shadow:0 1px 3px rgba(6,25,91,.06);
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:400;
+    display:flex; align-items:center; justify-content:space-between; gap:18px;
+    text-align:start;
   }
-  header .logo-img{ height:44px; width:auto; border-radius:6px; flex-shrink:0; }
+  .hdr-merke{ display:flex; align-items:center; gap:13px; min-width:0; }
+  .hdr-navn{ min-width:0; }
+  .hdr-navn h1{ line-height:1.15; }
+  .hdr-midt{ flex:0 0 auto; }
+  .hdr-konto{ flex:0 0 auto; }
+  .hdr-konto #loggedInAs{
+    max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  /* På smale skjermer faller sonene under hverandre, og e-posten skjules —
+     den er sjelden nødvendig og ville tatt hele bredden. */
+  @media (max-width:820px){
+    header{ flex-wrap:wrap; justify-content:center; text-align:center; padding:12px 16px; gap:9px; }
+    .hdr-merke{ flex:1 1 100%; justify-content:center; }
+    .hdr-konto #loggedInAs{ display:none; }
+  }
+  header .logo-img{ height:42px; width:auto; flex-shrink:0; }
   header .header-text{ flex:none; min-width:0; }
-  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; margin:0 0 4px; color:var(--ink);}
-  header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8fa3; margin:0;}
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:23px; margin:0; color:var(--emerald-d); letter-spacing:.01em;}
+  header p{font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:0.11em; text-transform:uppercase; color:#8a92a0; margin:2px 0 0;}
   .side-switch{
     position:absolute; top:20px; right:24px; background:#fff; border:1px solid var(--line);
     color:var(--ink); font-family:'Jost',sans-serif; font-size:12px; padding:8px 14px; border-radius:8px; cursor:pointer; box-shadow:var(--shadow);
   }
   .who-logged-in{
-    position:absolute; top:58px; right:24px; display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; gap:10px;
     font-family:'Jost',sans-serif; font-size:11px; color:#8a8fa3;
   }
   .logout-btn{
@@ -696,9 +715,12 @@
     tbody td::before{content:attr(data-label); font-family:'Jost',sans-serif; font-size:10.5px; text-transform:uppercase; color:var(--gold); font-weight:600; flex:1 1 auto; text-align:start;}
     .empty-row td::before{content:none;}
 
-    header{ flex-wrap:wrap; padding-bottom:70px; }
-    .side-switch{ position:static; order:3; margin-top:10px; }
-    .who-logged-in{ position:static; order:4; margin-top:8px; width:100%; }
+    /* Disse reglene stammer fra det gamle toppfeltet, der elementene lå
+       absolutt plassert og trengte ekstra plass under. Nå ligger sonene i
+       en flex-rad som brytes av seg selv, og den ekstra luften ble bare et
+       tomt felt under overskriften. */
+    header{ flex-wrap:wrap; }
+    .side-switch{ order:3; }
   }
 
   /* Shown only when the page detects it's running inside an app's built-in
@@ -774,15 +796,27 @@
 
 <div id="appRoot" style="display:none;">
 
+<!-- Toppfeltet er delt i tre soner: merket til venstre, tilstand i midten,
+     konto til høyre. Tidligere lå alt stablet i én midtstilt kolonne — logo,
+     tittel, synkroniseringsmerke og undertittel under hverandre — mens
+     e-posten svevde i et absolutt plassert hjørne. Det ga ingen tydelig
+     lesevei, og tilkoblingsmerket havnet midt i overskriften som om det var
+     en del av navnet. -->
 <header>
-  <img src="logo-bla.png" alt="Madina Institute" class="logo-img">
-  <div class="header-text">
-    <h1>Madina Skole — Database</h1>
-    <span class="sync-badge offline" id="syncBadge"><span class="dot"></span><span id="syncText">Kobler til...</span></span>
-    <p>Lærere · Elever · Timeplan</p>
+  <div class="hdr-merke">
+    <img src="logo-bla.png" alt="Madina Institute" class="logo-img">
+    <div class="hdr-navn">
+      <h1>Madina Skole</h1>
+      <p>Database · Lærere · Elever · Timeplan</p>
+    </div>
   </div>
-  <button class="side-switch" id="sideSwitchBtn" onclick="showSideChoice()" style="display:none;">🏠 Bytt side</button>
-  <div class="who-logged-in">
+
+  <div class="hdr-midt">
+    <span class="sync-badge offline" id="syncBadge"><span class="dot"></span><span id="syncText">Kobler til...</span></span>
+  </div>
+
+  <div class="hdr-konto who-logged-in">
+    <button class="side-switch" id="sideSwitchBtn" onclick="showSideChoice()" style="display:none;">🏠 Bytt side</button>
     <span id="loggedInAs"></span>
     <button class="logout-btn" onclick="doAdminLogout()">Logg ut</button>
   </div>
