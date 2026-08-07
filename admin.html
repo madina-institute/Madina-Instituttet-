@@ -3945,6 +3945,17 @@
   // SØKNADER — mappevisning: Ny / Venteliste / Godkjent / Avslått som
   // fire klikkbare "mapper" med antall, i stedet for en rullegardin.
   // ===================================================================
+  // Mappene er inngangen: listen står lukket til man faktisk velger en
+  // mappe, og lukkes igjen når man går tilbake til «Alle». Uten dette
+  // møtte man alltid hele listen med én gang, og mappene ble bare pynt
+  // over noe som allerede lå åpent.
+  function visMappeInnhold(tableId, apen){
+    const tbl = document.getElementById(tableId);
+    if(tbl) tbl.classList.toggle('records-hidden', !apen);
+    const chip = document.getElementById('count' + tableId.replace('table',''));
+    if(chip) chip.classList.toggle('expanded', !!apen);
+  }
+
   let regSelectedFolder = '';
   const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått' };
 
@@ -3959,6 +3970,7 @@
         ? '📂 Viser: ' + REG_FOLDER_LABELS[regSelectedFolder] + ' — trykk igjen for å vise alle'
         : '📂 Viser alle — trykk på en mappe over for å filtrere';
     }
+    visMappeInnhold('tableRegistrations', !!regSelectedFolder);
     render('registrations');
   };
 
@@ -4047,6 +4059,7 @@
         : '📂 Viser alle — trykk på en mappe over for å filtrere';
     }
     renderTeacherFolders();
+    visMappeInnhold('tableTeachers', !!teacherSelectedFolder);
     render('teachers');
   };
 
@@ -4096,6 +4109,7 @@
         : '📂 Viser alle — trykk på en mappe over for å filtrere';
     }
     renderGuardianFolders();
+    visMappeInnhold('tableGuardians', !!guardianSelectedFolder);
     render('guardians');
   };
 
@@ -4108,6 +4122,7 @@
         : '📂 Viser alle — trykk på en mappe over for å filtrere';
     }
     renderStudentFolders();
+    visMappeInnhold('tableStudents', !!studentSelectedFolder);
     render('students');
   };
 
