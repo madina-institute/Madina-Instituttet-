@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-07 23:14:31 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -521,7 +522,7 @@
     if(lav.endsWith('.json')) return innhold;
 
     if(lav.endsWith('.html')){
-      const merke = '<!-- SIST-ENDRET: ' + tid + ' -->';
+      const merke = '';
       const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
       // Etter <!DOCTYPE ...> hvis den finnes, ellers helt øverst.
       const dt = rent.match(/^\s*<!DOCTYPE[^>]*>\s*\n?/i);
@@ -542,7 +543,7 @@
     }
 
     if(lav.endsWith('.md')){
-      const merke = '<!-- SIST-ENDRET: ' + tid + ' -->';
+      const merke = '';
       const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
       return merke + '\n' + rent;
     }
