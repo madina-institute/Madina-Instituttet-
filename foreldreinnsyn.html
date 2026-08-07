@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-07 23:14:41 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -264,6 +265,15 @@
   }
   @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
 
+  #lastEditBadge{
+    position:fixed; bottom:calc(92px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px; z-index:5000;
+    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(3px);
+    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
+    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  }
+  @media (max-width:480px){ #lastEditBadge{ font-size:9.5px; padding:3px 8px; } }
+
   /* ══ INNLOGGING ══════════════════════════════════════════════════
      Innloggingssiden er det første både lærere og foresatte ser. Før
      var den bare to felter uten avsender — nå bærer den skolens logo
@@ -342,6 +352,7 @@
     .mlogin-logo{ width:56%; }
   }
 </style>
+<div id="lastEditBadge">…</div>
 <div id="lastDeployBadge">Sjekker siste publisering…</div>
 <script>
   // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet.
@@ -382,6 +393,28 @@
         console.error('Kunne ikke hente siste publisering:', err);
         showError(err && err.message ? err.message : 'nettverksfeil');
       });
+  })();
+
+  // Leser filens eget tidsstempel — linjen «SIST-ENDRET» som
+  // publiseringsverktøyet skriver inn øverst i filen ved hver publisering.
+  // Dette er noe annet enn «Siste publisering» under: den forteller når
+  // HELE nettstedet sist ble publisert, mens denne forteller når nettopp
+  // DENNE siden sist ble endret. Er de like, ble siden endret i siste
+  // publisering; er de ulike, har siden stått uendret en stund.
+  (function(){
+    var el = document.getElementById('lastEditBadge');
+    if(!el) return;
+    fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
+        var m = txt.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+        if(!m){ el.style.display = 'none'; return; }
+        var d = new Date(m[1].replace(' ', 'T'));
+        el.textContent = '✏️ Sist endret: ' +
+          d.toLocaleDateString('no-NO') + ' kl. ' +
+          d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      })
+      .catch(function(){ el.style.display = 'none'; });
   })();
 </script>
 </body>
