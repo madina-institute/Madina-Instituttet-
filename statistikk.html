@@ -92,9 +92,9 @@
 </head>
 <body>
 
-<div id="loginScreen" class="mlogin" style="--mlogin-accent:#5B4B9E;">
+<div id="loginScreen" class="mlogin" style="--mlogin-accent:#06195B;">
   <div class="mlogin-inner">
-    <img class="mlogin-logo" src="logo.png" alt="Madina Skole">
+    <img class="mlogin-logo" src="logo-hvit.png" alt="Madina Skole">
     <div class="mlogin-hello">أهلاً وسهلاً · Velkommen · خوش آمدید</div>
     <h1 class="mlogin-brand">Madina Skole</h1>
     <div class="mlogin-card">
@@ -560,22 +560,23 @@
      annen informasjon om elever her — kun logo, velkomst og hjelp. */
   .mlogin{
     position:fixed; inset:0; z-index:9000; overflow-y:auto;
-    background:linear-gradient(165deg, var(--mlogin-accent) 0%, #211e42 100%);
+    background:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
     display:flex; align-items:center; justify-content:center;
     padding:26px 18px calc(26px + env(safe-area-inset-bottom, 0px));
   }
   .mlogin::before{
     content:''; position:absolute; inset:0; pointer-events:none;
-    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 2px, transparent 2px 22px);
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.055) 0 2px, transparent 2px 26px);
   }
   .mlogin-inner{ position:relative; width:100%; max-width:390px; text-align:center; }
   .mlogin-logo{ width:min(200px, 62%); height:auto; margin-bottom:16px; border-radius:6px; }
   .mlogin-hello{
-    color:#e8e4f5; font-size:13.5px; margin-bottom:4px; letter-spacing:.01em;
+    font-family:'Jost',sans-serif;
+    color:#eaf6ff; font-size:13.5px; margin-bottom:4px; letter-spacing:.01em;
   }
   .mlogin-brand{
-    font-family:'Cormorant Garamond',serif; font-size:26px; color:#fff;
-    margin:0 0 20px; font-weight:700;
+    font-family:'Cormorant Garamond',serif; font-size:27px; color:#fff;
+    margin:0 0 20px; font-weight:700; letter-spacing:.01em;
   }
   .mlogin-card{
     background:#fff; border-radius:16px; padding:22px 20px 20px;
@@ -586,32 +587,37 @@
     margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid rgba(40,40,90,.12);
   }
   .mlogin-role .ic{ font-size:20px; line-height:1; }
-  .mlogin-role .t{ font-size:14.5px; font-weight:600; color:var(--mlogin-accent); }
+  .mlogin-role .t{ font-family:'Jost',sans-serif; font-size:14.5px; font-weight:600; color:var(--mlogin-accent); }
   .mlogin-field{ margin-bottom:13px; }
   .mlogin-field label{
-    display:block; font-size:11.5px; font-weight:600; margin-bottom:5px;
-    color:var(--mlogin-accent); letter-spacing:.02em;
+    display:block; font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    margin-bottom:5px; color:var(--mlogin-accent); letter-spacing:.02em;
   }
   .mlogin-field input{
     width:100%; padding:12px 13px; border:1px solid rgba(40,40,90,.14);
-    border-radius:9px; font-size:16px; background:#fbfcfe; font-family:inherit;
+    border-radius:9px; font-size:16px; background:#fbfcfe;
+    font-family:'Jost',sans-serif;
   }
   .mlogin-field input:focus{ outline:2px solid var(--mlogin-accent); outline-offset:1px; }
   .mlogin-btn{
     width:100%; margin-top:6px; border:none; border-radius:9px; padding:14px 18px;
-    cursor:pointer; font-family:inherit; font-size:14px; font-weight:600;
-    letter-spacing:.03em; text-transform:uppercase; color:#fff;
-    background:var(--mlogin-accent);
+    cursor:pointer; font-family:'Jost',sans-serif; font-size:14px; font-weight:600;
+    letter-spacing:.04em; text-transform:uppercase; color:#fff;
+    /* Knappen er en nyanse mørkere enn aksentfargen. Med den lyse blå
+       bakgrunnen bak kortet ble den ellers for svak til at hvit tekst
+       leses komfortabelt. */
+    background:#06195B;
   }
   .mlogin-err{
-    display:none; margin-top:12px; font-size:12.5px; color:#a83c3c; text-align:center;
+    display:none; margin-top:12px; font-family:'Jost',sans-serif; font-size:12.5px;
+    color:#a83c3c; text-align:center;
   }
   .mlogin-forgot{
-    display:block; text-align:center; margin-top:14px; font-size:12.5px;
-    color:var(--mlogin-accent); text-decoration:underline;
+    display:block; text-align:center; margin-top:14px; font-family:'Jost',sans-serif;
+    font-size:12.5px; color:var(--mlogin-accent); text-decoration:underline;
   }
-  .mlogin-foot{ color:#b9b3d8; font-size:11.5px; margin-top:18px; }
-  .mlogin-foot a{ color:#e0dcf2; }
+  .mlogin-foot{ font-family:'Jost',sans-serif; color:#d6ecfb; font-size:11.5px; margin-top:18px; }
+  .mlogin-foot a{ color:#ffffff; }
   @media (max-width:360px){
     .mlogin-brand{ font-size:22px; }
     .mlogin-logo{ width:56%; }
