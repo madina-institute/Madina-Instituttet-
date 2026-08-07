@@ -377,9 +377,9 @@
 <main>
 
   <!-- LOGIN -->
-  <div id="loginView" class="mlogin" style="--mlogin-accent:#2F6CA0;">
+  <div id="loginView" class="mlogin" style="--mlogin-accent:#1A9BEC;">
   <div class="mlogin-inner">
-    <img class="mlogin-logo" src="logo.png" alt="Madina Skole">
+    <img class="mlogin-logo" src="logo-hvit.png" alt="Madina Skole">
     <div class="mlogin-hello">أهلاً وسهلاً · Velkommen · خوش آمدید</div>
     <h1 class="mlogin-brand">Madina Skole</h1>
     <div class="mlogin-card">
@@ -3933,18 +3933,18 @@ ${extraScript || ''}
      annen informasjon om elever her — kun logo, velkomst og hjelp. */
   .mlogin{
     position:fixed; inset:0; z-index:9000; overflow-y:auto;
-    background:linear-gradient(165deg, var(--mlogin-accent) 0%, #211e42 100%);
+    background:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
     display:flex; align-items:center; justify-content:center;
     padding:26px 18px calc(26px + env(safe-area-inset-bottom, 0px));
   }
   .mlogin::before{
     content:''; position:absolute; inset:0; pointer-events:none;
-    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 2px, transparent 2px 22px);
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.055) 0 2px, transparent 2px 26px);
   }
   .mlogin-inner{ position:relative; width:100%; max-width:390px; text-align:center; }
   .mlogin-logo{ width:min(200px, 62%); height:auto; margin-bottom:16px; border-radius:6px; }
   .mlogin-hello{
-    color:#e8e4f5; font-size:13.5px; margin-bottom:4px; letter-spacing:.01em;
+    color:#eaf6ff; font-size:13.5px; margin-bottom:4px; letter-spacing:.01em;
   }
   .mlogin-brand{
     font-family:'Cormorant Garamond',serif; font-size:26px; color:#fff;
@@ -3983,8 +3983,8 @@ ${extraScript || ''}
     display:block; text-align:center; margin-top:14px; font-size:12.5px;
     color:var(--mlogin-accent); text-decoration:underline;
   }
-  .mlogin-foot{ color:#b9b3d8; font-size:11.5px; margin-top:18px; }
-  .mlogin-foot a{ color:#e0dcf2; }
+  .mlogin-foot{ color:#d6ecfb; font-size:11.5px; margin-top:18px; }
+  .mlogin-foot a{ color:#ffffff; }
   @media (max-width:360px){
     .mlogin-brand{ font-size:22px; }
     .mlogin-logo{ width:56%; }
