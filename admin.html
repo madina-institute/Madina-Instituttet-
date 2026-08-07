@@ -64,12 +64,23 @@
 
   header{
     background:#fff; color:var(--ink);
-    padding:13px 26px; box-shadow:0 1px 3px rgba(6,25,91,.06);
-    border-bottom:1px solid var(--line);
-    position:sticky; top:0; z-index:400;
     display:flex; align-items:center; justify-content:space-between; gap:18px;
     text-align:start;
+    /* Innholdet holdes innenfor samme 1400 px som resten av siden, slik at
+       logoen står rett over sidemenyen og kontoen rett over høyre kortkant.
+       Den hvite flaten bak går fra kant til kant — se .hdr-bakgrunn. */
+    max-width:1400px; margin:0 auto; width:100%;
+    padding:13px 20px;
   }
+  /* Hvit stripe som går helt ut i skjermkanten, bak det innrammede
+     toppfeltet. Uten den ville den hvite flaten stoppet ved 1400 px og
+     etterlatt to grå felt i sidene. */
+  .hdr-bakgrunn{
+    background:#fff; border-bottom:1px solid var(--line);
+    box-shadow:0 1px 3px rgba(6,25,91,.06);
+    position:sticky; top:0; z-index:400;
+  }
+  .hdr-bakgrunn header{ border-bottom:none; box-shadow:none; position:static; }
   .hdr-merke{ display:flex; align-items:center; gap:13px; min-width:0; }
   .hdr-navn{ min-width:0; }
   .hdr-navn h1{ line-height:1.15; }
@@ -111,12 +122,16 @@
      size (compact icon rail on mobile, full labeled sidebar on desktop).
      Lives inside .app-body (a flex row below the header), so it starts
      right where the header ends and never overlaps the header banner. */
-  .app-body{ display:flex; flex-direction:row; align-items:flex-start; padding:0 20px 24px 20px; gap:14px; }
+  .app-body{
+    display:flex; flex-direction:row; align-items:flex-start;
+    max-width:1400px; margin:0 auto;
+    padding:20px 20px 28px; gap:20px;
+  }
   @media (min-width:640px){ .app-body{ padding:0 36px 32px 36px; } }
   @media (min-width:900px){ .app-body{ padding:0 56px 40px 56px; } }
   @media (min-width:1280px){ .app-body{ padding:0 88px 48px 88px; } }
   .app-sidebar{
-    display:flex; position:sticky; top:16px; flex:0 0 84px; width:84px; z-index:500;
+    display:flex; position:sticky; top:78px; flex:0 0 96px; width:96px; z-index:300;
     background:#fff; border:1px solid var(--line);
     flex-direction:column; align-items:center; padding:18px 4px; gap:8px; overflow-y:auto;
     max-height:calc(100vh - 32px); border-radius:18px; box-shadow:var(--shadow);
@@ -133,7 +148,7 @@
   .app-sidebar button.active{background:var(--stat-blue-bg); color:var(--stat-blue-fg); font-weight:600;}
   #sideChooseView, #subChooseView, .content-layout{ flex:1; min-width:0; }
   @media (min-width:900px){
-    .app-sidebar{ flex-basis:250px; width:250px; align-items:stretch; padding:24px 14px; gap:8px; max-height:calc(100vh - 32px); border-radius:18px; }
+    .app-sidebar{ flex-basis:230px; width:230px; align-items:stretch; padding:22px 14px; gap:8px; max-height:calc(100vh - 100px); border-radius:18px; }
     .app-sidebar .sb-logo{display:flex; align-items:center; gap:10px; padding:6px 10px 18px;}
     .app-sidebar .sb-logo img{height:34px; width:auto; border-radius:5px;}
     .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--ink);}
@@ -531,12 +546,12 @@
   .modal-actions .btn{flex:1 1 auto;}
   @media (max-width:480px){ .modal-actions .btn{flex-basis:100%;} }
 
-  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;}
+  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; align-items:stretch;}
   @media (max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}}
-  .stat-card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow); position:relative;}
+  .stat-card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px 22px; box-shadow:var(--shadow); position:relative; display:flex; flex-direction:column; justify-content:center; min-height:98px;}
   .stat-card .n{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:28px; color:var(--emerald-d);}
   .stat-card .l{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gold);}
-  .dash-strip{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px;}
+  .dash-strip{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:24px; align-items:stretch;}
   @media (min-width:640px){ .dash-strip{ grid-template-columns:repeat(4,1fr); } }
   .stat-card.stat-purple{background:var(--stat-purple-bg); border-color:transparent;}
   .stat-card.stat-purple .n, .stat-card.stat-purple .l{color:var(--stat-purple-fg);}
@@ -553,7 +568,11 @@
   .stat-card.alert.has-items .alert-dot{display:block;}
 
   /* Dashboard widgets — real-data donut, bar chart, and agenda list on the landing screen */
-  .dash-widgets{ display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:26px; }
+  .dash-widgets{ display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:26px; align-items:stretch; }
+  /* Kort i samme rad får lik høyde. Uten dette bestemmer innholdet høyden
+     på hvert kort for seg, og raden blir ujevn — det var årsaken til at
+     venstre kolonne stakk opp over de andre. */
+  .dash-widgets > *{ display:flex; flex-direction:column; }
   @media (min-width:900px){ .dash-widgets{ grid-template-columns:1fr 1fr 2fr; } }
   .widget-card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); }
   .widget-card h3{ font-family:'Cormorant Garamond',serif; font-size:17px; color:var(--ink); margin:0 0 14px; font-weight:700; }
@@ -796,6 +815,7 @@
 
 <div id="appRoot" style="display:none;">
 
+<div class="hdr-bakgrunn">
 <!-- Toppfeltet er delt i tre soner: merket til venstre, tilstand i midten,
      konto til høyre. Tidligere lå alt stablet i én midtstilt kolonne — logo,
      tittel, synkroniseringsmerke og undertittel under hverandre — mens
@@ -821,6 +841,7 @@
     <button class="logout-btn" onclick="doAdminLogout()">Logg ut</button>
   </div>
 </header>
+</div>
 
 <div class="app-body" id="appBody">
 <nav class="app-sidebar" id="appSidebar">
