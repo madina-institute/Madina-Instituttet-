@@ -813,7 +813,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc
+    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, getDocs
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
@@ -834,13 +834,47 @@
     appId: "1:174564736838:web:033f873c8b420d4bc96f47"
   };
   const app = initializeApp(firebaseConfig);
-  const appCheck = initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
-    isTokenAutoRefreshEnabled: true
-  });
+  // App Check settes opp i en try/catch. Safari med "avansert
+  // personvernbeskyttelse" blokkerer google.com/recaptcha, og et kast herfra
+  // stoppet HELE modulen — siden viste seg da helt normalt, men ingen
+  // datalyttere eller innlogging kjørte. Dette var årsaken til at
+  // foreldreportalen sa "fant ingen konto" i Safari, men virket i Firefox.
+  let appCheck = null;
+  try{
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(err){
+    console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
+  }
   const db = getFirestore(app);
   const auth = getAuth(app);
   const storage = getStorage(app);
+
+  // ---- Datalyttere startes FØRST etter bekreftet innlogging ----
+  // Firestore-reglene krever innlogging for lesing. En onSnapshot som settes
+  // opp før innlogging blir permanent avvist (SDK-en prøver ikke på nytt), og
+  // listen blir stående tom for alltid. Samme løsning som i index1.html.
+  let __listenersStarted = false;
+  const __pendingWatchers = [];
+  function watch(collectionName, onData, onError){
+    const start = () => onSnapshot(collection(db, collectionName), onData,
+      onError || ((err) => console.error(collectionName, err)));
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
+  function watchDoc(pathA, pathB, onData, onError){
+    const start = () => onSnapshot(doc(db, pathA, pathB), onData,
+      onError || ((err) => console.error(pathA + '/' + pathB, err)));
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
+  function startDataListeners(){
+    if(__listenersStarted) return;
+    __listenersStarted = true;
+    __pendingWatchers.forEach(fn => fn());
+  }
 
   const MAX_FILE_MB = 10;
   async function uploadAttachment(file, folder){
@@ -1223,66 +1257,66 @@
     showToast(t, erFeil);
   }
 
-  onSnapshot(collection(db, 'guardians'), (snap) => {
+  watch('guardians', (snap) => {
     guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   });
-  onSnapshot(collection(db, 'students'), (snap) => {
+  watch('students', (snap) => {
     students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) refreshMyChildren();
   });
-  onSnapshot(collection(db, 'attendance'), (snap) => {
+  watch('attendance', (snap) => {
     attendance = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'registrations'), (snap) => {
+  watch('registrations', (snap) => {
     registrations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'homework'), (snap) => {
+  watch('homework', (snap) => {
     homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let lessonPlans = [];
-  onSnapshot(collection(db, 'lessonPlans'), (snap) => {
+  watch('lessonPlans', (snap) => {
     lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let practiceVideos = [];
-  onSnapshot(collection(db, 'practiceVideos'), (snap) => {
+  watch('practiceVideos', (snap) => {
     practiceVideos = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(currentGuardian) renderChild();
   });
   let classPosts = [];
-  onSnapshot(collection(db, 'classPosts'), (snap) => {
+  watch('classPosts', (snap) => {
     classPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let classPostComments = [];
-  onSnapshot(collection(db, 'classPostComments'), (snap) => {
+  watch('classPostComments', (snap) => {
     classPostComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'announcements'), (snap) => {
+  watch('announcements', (snap) => {
     announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'studentNotes'), (snap) => {
+  watch('studentNotes', (snap) => {
     studentNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'hours'), (snap) => {
+  watch('hours', (snap) => {
     hours = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'teachers'), (snap) => {
+  watch('teachers', (snap) => {
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'classes'), (snap) => {
+  watch('classes', (snap) => {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(collection(db, 'messages'), (snap) => {
+  watch('messages', (snap) => {
     messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       renderChild();
@@ -1293,7 +1327,7 @@
     }
   });
   let messageThreads = [];
-  onSnapshot(collection(db, 'messageThreads'), (snap) => {
+  watch('messageThreads', (snap) => {
     messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       updateBadges();
@@ -1302,7 +1336,7 @@
     }
   });
   let broadcastThreads = [], broadcastMessages = [];
-  onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
+  watch('broadcastThreads', (snap) => {
     broadcastThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       updateAdminMsgBadge();
@@ -1310,7 +1344,7 @@
          document.getElementById('adminMsgListInner').style.display !== 'none') renderGuardianAdminMsgsList();
     }
   });
-  onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
+  watch('broadcastMessages', (snap) => {
     broadcastMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian){
       updateAdminMsgBadge();
@@ -1318,16 +1352,16 @@
     }
   });
   let classPollVotes = [];
-  onSnapshot(collection(db, 'classPollVotes'), (snap) => {
+  watch('classPollVotes', (snap) => {
     classPollVotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
   let eventRSVPs = [];
-  onSnapshot(collection(db, 'eventRSVPs'), (snap) => {
+  watch('eventRSVPs', (snap) => {
     eventRSVPs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
+  watchDoc('settings', 'betaling', (snap) => {
     paymentLink = snap.exists() ? (snap.data().lenke || '') : '';
     if(currentGuardian) renderChild();
   }, (err) => console.error('settings/betaling', err));
@@ -1343,12 +1377,11 @@
       errEl.style.display = 'block';
       return;
     }
-    const guardian = guardians.find(g => (g.epost||'').trim().toLowerCase() === email.toLowerCase());
-    if(!guardian){
-      errEl.textContent = t('noAccountForEmail');
-      errEl.style.display = 'block';
-      return;
-    }
+    // Logg inn FØRST. Reglene krever innlogging for å lese 'guardians', så
+    // oppslaget må skje etterpå. Tidligere ble listen slått opp før
+    // innlogging — var den tom (f.eks. fordi lytterne aldri fikk lest),
+    // svarte skjemaet "fant ingen konto" selv om kontoen fantes.
+    // Dette hindrer også at skjemaet røper hvilke e-poster som er registrert.
     try{
       await signInWithEmailAndPassword(auth, email, password);
     } catch(err){
@@ -1357,6 +1390,21 @@
       errEl.style.display = 'block';
       return;
     }
+    let guardian = null;
+    try{
+      const snap = await getDocs(collection(db, 'guardians'));
+      guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      guardian = guardians.find(g => (g.epost||'').trim().toLowerCase() === email.toLowerCase());
+    } catch(err){
+      console.error('guardians-oppslag', err);
+    }
+    if(!guardian){
+      await signOut(auth).catch(()=>{});
+      errEl.textContent = t('noAccountForEmail');
+      errEl.style.display = 'block';
+      return;
+    }
+    startDataListeners();
     currentGuardian = guardian;
     updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
@@ -1395,10 +1443,13 @@
 
   window.doParentLogout = function(){
     currentGuardian = null;
-    signOut(auth).catch(()=>{});
     document.getElementById('appView').style.display = 'none';
     document.getElementById('loginView').style.display = 'flex';
     document.getElementById('loginPassword').value = '';
+    // Last siden på nytt: de aktive datalytterne mister lesetilgang idet vi
+    // logger ut, og kan ikke gjenopprettes uten en ren start. Uten dette
+    // ville en ny innlogging i samme fane fått tomme lister.
+    signOut(auth).catch(()=>{}).finally(() => location.reload());
   };
 
   function refreshMyChildren(){
