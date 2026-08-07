@@ -1354,7 +1354,7 @@
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormCompleted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Fullførte søknaden</div></div>
     </div>
     <div class="folder-row" id="regFolderRow" style="margin-bottom:16px;">
-      <div class="choice-card folder-card active" data-status="" onclick="setRegFolder('')">
+      <div class="choice-card folder-card" data-status="" onclick="setRegFolder('')">
         <h3>📋 Alle<span class="folder-count" id="regFolderCount_Alle">0</span></h3>
         <div class="sub">Hele listen</div>
       </div>
@@ -1375,7 +1375,7 @@
         <div class="sub">Avslåtte søknader</div>
       </div>
     </div>
-    <div class="toolbar">
+    <div class="toolbar" id="regToolbar" style="display:none;">
       <input class="search" id="searchRegistrations" placeholder="Søk etter elevnavn, foresatt eller program...">
       <span class="count-chip" id="regFolderActiveLabel" onclick="setRegFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
@@ -1552,7 +1552,7 @@
   <!-- TEACHERS -->
   <div class="panel active" id="panel-teachers">
     <div class="folder-row-dynamic" id="teacherFolderRow" style="margin-bottom:16px;"></div>
-    <div class="toolbar">
+    <div class="toolbar" id="teacherToolbar" style="display:none;">
       <input class="search" id="searchTeachers" placeholder="Søk etter navn, fag eller telefon...">
       <span class="count-chip" id="teacherFolderActiveLabel" onclick="setTeacherFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countTeachers" onclick="toggleRecordsById('tableTeachers')">0 lærere</span>
@@ -1565,7 +1565,7 @@
   <!-- GUARDIANS -->
   <div class="panel" id="panel-guardians">
     <div class="folder-row-dynamic" id="guardianFolderRow" style="margin-bottom:16px;"></div>
-    <div class="toolbar">
+    <div class="toolbar" id="guardianToolbar" style="display:none;">
       <input class="search" id="searchGuardians" placeholder="Søk etter navn eller telefon...">
       <span class="count-chip" id="guardianFolderActiveLabel" onclick="setGuardianFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countGuardians" onclick="toggleRecordsById('tableGuardians')">0 foresatte</span>
@@ -1578,7 +1578,7 @@
   <!-- STUDENTS -->
   <div class="panel" id="panel-students">
     <div class="folder-row-dynamic" id="studentFolderRow" style="margin-bottom:16px;"></div>
-    <div class="toolbar">
+    <div class="toolbar" id="studentToolbar" style="display:none;">
       <input class="search" id="searchStudents" placeholder="Søk etter navn, klasse eller foresatt...">
       <span class="count-chip" id="studentFolderActiveLabel" onclick="setStudentFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countStudents" onclick="toggleRecordsById('tableStudents')">0 elever</span>
@@ -3945,32 +3945,43 @@
   // SØKNADER — mappevisning: Ny / Venteliste / Godkjent / Avslått som
   // fire klikkbare "mapper" med antall, i stedet for en rullegardin.
   // ===================================================================
-  // Mappene er inngangen: listen står lukket til man faktisk velger en
-  // mappe, og lukkes igjen når man går tilbake til «Alle». Uten dette
-  // møtte man alltid hele listen med én gang, og mappene ble bare pynt
-  // over noe som allerede lå åpent.
-  function visMappeInnhold(tableId, apen){
+  // ===================================================================
+  // MAPPER SOM STARTER LUKKET
+  // -------------------------------------------------------------------
+  // null  = ingen mappe valgt → verken søkefelt eller liste vises.
+  // ''    = mappen «Alle» er valgt → hele listen vises.
+  // annet = én bestemt mappe er valgt.
+  //
+  // Grunnen til skillet: listene her kan bli flere hundre rader lange. Å
+  // åpne fanen og møte alt på én gang gjør at man må bla forbi alt for å
+  // finne én ting. Nå ser man først hvilke mapper som finnes og hvor mye
+  // som ligger i hver — og åpner bare den man faktisk skal inn i.
+  // ===================================================================
+  function visMappeInnhold(toolbarId, tableId, erValgt){
+    const tb = document.getElementById(toolbarId);
+    if(tb) tb.style.display = erValgt ? 'flex' : 'none';
     const tbl = document.getElementById(tableId);
-    if(tbl) tbl.classList.toggle('records-hidden', !apen);
+    if(tbl) tbl.classList.toggle('records-hidden', !erValgt);
     const chip = document.getElementById('count' + tableId.replace('table',''));
-    if(chip) chip.classList.toggle('expanded', !!apen);
+    if(chip) chip.classList.toggle('expanded', !!erValgt);
   }
 
-  let regSelectedFolder = '';
+  let regSelectedFolder = null;
   const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått' };
 
   window.setRegFolder = function(status){
-    regSelectedFolder = (regSelectedFolder === status) ? '' : status; // klikk på samme mappe igjen = vis alle
+    // Klikk på samme mappe igjen lukker den, i stedet for å vise alt.
+    regSelectedFolder = (regSelectedFolder === status) ? null : status;
+    visMappeInnhold('regToolbar', 'tableRegistrations', regSelectedFolder !== null);
     document.querySelectorAll('.folder-card').forEach(card => {
       card.classList.toggle('active', card.dataset.status === regSelectedFolder);
     });
     const label = document.getElementById('regFolderActiveLabel');
     if(label){
       label.textContent = regSelectedFolder
-        ? '📂 Viser: ' + REG_FOLDER_LABELS[regSelectedFolder] + ' — trykk igjen for å vise alle'
-        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+        ? '📂 Viser: ' + REG_FOLDER_LABELS[regSelectedFolder] + ' — trykk igjen for å lukke'
+        : '📂 Viser alle — trykk igjen for å lukke';
     }
-    visMappeInnhold('tableRegistrations', !!regSelectedFolder);
     render('registrations');
   };
 
@@ -3992,7 +4003,7 @@
   // det, uansett hvilken klasse de sto i — holdes ute av klassemappene
   // for å ikke rote til aktive klasselister).
   // ===================================================================
-  let studentSelectedFolder = '';
+  let studentSelectedFolder = null;
 
   function renderStudentFolders(){
     const row = document.getElementById('studentFolderRow');
@@ -4024,7 +4035,7 @@
   // LÆRERE — mappevisning per fag. Faglisten bygges fra dataene selv, så
   // et nytt fag dukker opp av seg selv uten at noe må endres her.
   // ===================================================================
-  let teacherSelectedFolder = '';
+  let teacherSelectedFolder = null;
 
   const FAG_IKON = { Koran:'📖', Islam:'🕌', Arabisk:'🔤', Urdu:'🔤', Madinabarn:'🧒', Annet:'📌' };
 
@@ -4051,15 +4062,15 @@
   }
 
   window.setTeacherFolder = function(key){
-    teacherSelectedFolder = (teacherSelectedFolder === key) ? '' : key;
+    teacherSelectedFolder = (teacherSelectedFolder === key) ? null : key;
+    visMappeInnhold('teacherToolbar', 'tableTeachers', teacherSelectedFolder !== null);
     const label = document.getElementById('teacherFolderActiveLabel');
     if(label){
       label.textContent = teacherSelectedFolder
-        ? '📂 Filtrert — trykk på mappen igjen for å vise alle'
-        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+        ? '📂 Filtrert — trykk på mappen igjen for å lukke'
+        : '📂 Viser alle — trykk igjen for å lukke';
     }
     renderTeacherFolders();
-    visMappeInnhold('tableTeachers', !!teacherSelectedFolder);
     render('teachers');
   };
 
@@ -4068,7 +4079,7 @@
   // BARN går i. En foresatt med barn i to klasser vises i begge mappene;
   // det er riktig, siden personen faktisk hører hjemme begge steder.
   // ===================================================================
-  let guardianSelectedFolder = '';
+  let guardianSelectedFolder = null;
 
   // Klassene en foresatt er knyttet til gjennom sine barn (både foresatt
   // og foresatt2 teller — ellers ville den andre forelderen falt ut).
@@ -4101,28 +4112,28 @@
   }
 
   window.setGuardianFolder = function(key){
-    guardianSelectedFolder = (guardianSelectedFolder === key) ? '' : key;
+    guardianSelectedFolder = (guardianSelectedFolder === key) ? null : key;
+    visMappeInnhold('guardianToolbar', 'tableGuardians', guardianSelectedFolder !== null);
     const label = document.getElementById('guardianFolderActiveLabel');
     if(label){
       label.textContent = guardianSelectedFolder
-        ? '📂 Filtrert — trykk på mappen igjen for å vise alle'
-        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+        ? '📂 Filtrert — trykk på mappen igjen for å lukke'
+        : '📂 Viser alle — trykk igjen for å lukke';
     }
     renderGuardianFolders();
-    visMappeInnhold('tableGuardians', !!guardianSelectedFolder);
     render('guardians');
   };
 
   window.setStudentFolder = function(key){
-    studentSelectedFolder = (studentSelectedFolder === key) ? '' : key;
+    studentSelectedFolder = (studentSelectedFolder === key) ? null : key;
+    visMappeInnhold('studentToolbar', 'tableStudents', studentSelectedFolder !== null);
     const label = document.getElementById('studentFolderActiveLabel');
     if(label){
       label.textContent = studentSelectedFolder
-        ? '📂 Filtrert — trykk på mappen igjen for å vise alle'
-        : '📂 Viser alle — trykk på en mappe over for å filtrere';
+        ? '📂 Filtrert — trykk på mappen igjen for å lukke'
+        : '📂 Viser alle — trykk igjen for å lukke';
     }
     renderStudentFolders();
-    visMappeInnhold('tableStudents', !!studentSelectedFolder);
     render('students');
   };
 
@@ -5071,21 +5082,25 @@
       // hverandre — statusen på hver søknad er allerede satt av
       // Godkjenn/Venteliste/Avslå-knappene og av Vipps-webhooken.
       updateRegFolderCounts(cache.registrations);
-      if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
+      if(regSelectedFolder === null) data = [];
+      else if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
     }
     if(type === 'teachers'){
       renderTeacherFolders();
-      if(teacherSelectedFolder === '__nofag__') data = data.filter(row => !(row.fag||'').trim());
+      if(teacherSelectedFolder === null) data = [];
+      else if(teacherSelectedFolder === '__nofag__') data = data.filter(row => !(row.fag||'').trim());
       else if(teacherSelectedFolder) data = data.filter(row => (row.fag||'').trim() === teacherSelectedFolder);
     }
     if(type === 'guardians'){
       renderGuardianFolders();
-      if(guardianSelectedFolder === '__nobarn__') data = data.filter(row => klasserForForesatt(row.id).length === 0);
+      if(guardianSelectedFolder === null) data = [];
+      else if(guardianSelectedFolder === '__nobarn__') data = data.filter(row => klasserForForesatt(row.id).length === 0);
       else if(guardianSelectedFolder) data = data.filter(row => klasserForForesatt(row.id).includes(guardianSelectedFolder));
     }
     if(type === 'students'){
       renderStudentFolders();
-      if(studentSelectedFolder === '__none__') data = data.filter(row => !row.klasse && row.elevStatus !== 'Sluttet/trukket');
+      if(studentSelectedFolder === null) data = [];
+      else if(studentSelectedFolder === '__none__') data = data.filter(row => !row.klasse && row.elevStatus !== 'Sluttet/trukket');
       else if(studentSelectedFolder === '__withdrawn__') data = data.filter(row => row.elevStatus === 'Sluttet/trukket');
       else if(studentSelectedFolder) data = data.filter(row => row.klasse === studentSelectedFolder && row.elevStatus !== 'Sluttet/trukket');
     }
