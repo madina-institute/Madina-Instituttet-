@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 21:24:52 -->
+<!-- SIST-ENDRET: 2026-08-08 21:59:17 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3228,7 +3228,10 @@
         {key:'samtykke_publisering_nett', label:'Samtykke publisering på nett/sosiale medier', type:'text'},
         {key:'dato_signatur', label:'Dato signatur', type:'text'}
       ],
-      cols: ['elev_navn','foresatt1_navn','program','status']
+      // «Innsendt» står med i listevisningen fordi det er det man sorterer
+      // og prioriterer etter — hvor lenge en familie har ventet på svar.
+      // Uten den måtte hvert kort åpnes for å se datoen.
+      cols: ['elev_navn','foresatt1_navn','program','status','innsendtDato']
     },
     homework: {
       label: 'lekse', collectionName: 'homework',
