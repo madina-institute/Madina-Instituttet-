@@ -921,6 +921,81 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
+  // ═════════════════════════════════════════════════════════════════
+  // FEILLOGG — gjør stille feil synlige
+  // -----------------------------------------------------------------
+  // Denne filen har titalls steder som fanger en feil og skriver den til
+  // console. På en telefon finnes det ingen console: feilen skjer,
+  // brukeren ser ingenting, og ingen får vite det.
+  //
+  // I stedet for å endre hvert eneste catch legger vi oss FORAN
+  // console.error. Da blir alle eksisterende feilfangere synlige uten at
+  // én linje av dem røres — og nye som skrives senere blir det av seg selv.
+  //
+  // Fire ting må være på plass, ellers gjør dette mer skade enn nytte:
+  //   1. Ingen løkke — logging som feiler må ikke logge sin egen feil
+  //   2. Tak per økt — en feil inne i en render-løkke kan ellers skrive
+  //      tusenvis av dokumenter på sekunder
+  //   3. Samme feil samles — 40 like feil skal bli én rad
+  //   4. Krever innlogging — reglene tillater ikke skriving uten
+  // ═════════════════════════════════════════════════════════════════
+  (function(){
+    const MAKS_PER_ØKT = 25;
+    const GJENTAKELSE_MS = 10 * 60 * 1000;
+    let antallSkrevet = 0, skriverNå = false;
+    const sett = new Map();
+
+    function kort(v){
+      if(v instanceof Error) return v.message || String(v);
+      if(typeof v === 'string') return v;
+      try { return JSON.stringify(v); } catch(e){ return String(v); }
+    }
+
+    async function loggFeil(type, melding, detalj){
+      if(skriverNå) return;                       // 1
+      if(antallSkrevet >= MAKS_PER_ØKT) return;   // 2
+      if(!auth.currentUser) return;               // 4
+      const tekst = String(melding || '').slice(0, 500);
+      if(!tekst) return;
+      const nøkkel = type + '|' + tekst.slice(0, 120);
+      const nå = Date.now();
+      const forrige = sett.get(nøkkel);
+      if(forrige && nå - forrige < GJENTAKELSE_MS) return;   // 3
+      sett.set(nøkkel, nå);
+      skriverNå = true;
+      try{
+        antallSkrevet++;
+        await addDoc(collection(db, 'feillogg'), {
+          kilde: 'larerportal', type, melding: tekst,
+          detalj: String(detalj || '').slice(0, 800),
+          bruker: (auth.currentUser && auth.currentUser.email) || '',
+          adresse: location.pathname + location.hash,
+          tidspunkt: new Date().toISOString()
+        });
+      } catch(e){
+        // Med vilje tom. Kan vi ikke logge, er det ingenting mer å gjøre —
+        // og å rope om det ville startet nettopp løkken vi unngår.
+      } finally {
+        skriverNå = false;
+      }
+    }
+
+    const origError = console.error.bind(console);
+    console.error = function(...args){
+      origError(...args);
+      const stakk = args.find(a => a instanceof Error);
+      loggFeil('console', args.map(kort).join(' '), stakk && stakk.stack);
+    };
+    window.addEventListener('error', (e) => {
+      loggFeil('uncaught', e.message, (e.filename || '') + ':' + (e.lineno || ''));
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      const r = e.reason;
+      loggFeil('promise', kort(r), r && r.stack);
+    });
+  })();
+
+
   // ── Datalyttere startes FØRST etter innlogging ──────────────────────
   // Firestore-reglene krever nå innlogging for lesing. En onSnapshot som
   // settes opp før innlogging blir permanent avvist (SDK-en prøver ikke
