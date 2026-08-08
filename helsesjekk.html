@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madina Skole — Helsesjekk</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c2c24; --emerald:#1f4a3a; --emerald-d:#0f2b21;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
+    --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10); --red:#a83c3c;
+  }
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden; max-width:100%;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
+  header{
+    background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
+    color:var(--paper); padding:22px 20px; text-align:center; box-shadow:var(--shadow);
+  }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; margin:0 0 4px;}
+  header p{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold-l); margin:0;}
+  main{max-width:560px; margin:0 auto; padding:20px 16px 60px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d); margin:0 0 4px;}
+  .card .sub{font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin-bottom:14px; line-height:1.5;}
+
+  /* Samlet dom øverst. Er den grønn, trenger man ikke lese resten —
+     det er hele hensikten med siden. */
+  .dom{
+    border-radius:10px; padding:22px 20px; text-align:center; margin-bottom:16px;
+    font-family:'Jost',sans-serif; box-shadow:var(--shadow);
+  }
+  .dom .ikon{font-size:34px; line-height:1; margin-bottom:8px;}
+  .dom .tittel{font-size:17px; font-weight:700; letter-spacing:.01em;}
+  .dom .under{font-size:12.5px; margin-top:6px; opacity:.85;}
+  .dom.ok{background:rgba(46,107,83,0.12); color:var(--emerald);}
+  .dom.feil{background:rgba(168,60,60,0.12); color:var(--red);}
+  .dom.venter{background:var(--paper-2); color:#5a6860;}
+
+  .sjekk{
+    display:flex; gap:12px; align-items:flex-start; padding:14px 0;
+    border-bottom:1px solid var(--line); font-family:'Jost',sans-serif;
+  }
+  .sjekk:last-child{border-bottom:none;}
+  .sjekk .lys{font-size:19px; line-height:1.2; flex:0 0 auto;}
+  .sjekk .navn{font-size:13.5px; font-weight:600;}
+  .sjekk .detalj{font-size:12px; color:#5a6860; margin-top:3px; line-height:1.5;}
+  .sjekk .detalj b{color:var(--ink);}
+
+  .btn{
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:700; letter-spacing:0.03em;
+    text-transform:uppercase; padding:13px 20px; border-radius:6px; border:none;
+    cursor:pointer; width:100%; background:var(--emerald); color:#fff;
+  }
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink); margin-top:8px;}
+  .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:11px 13px; border-radius:6px; display:none; white-space:pre-wrap; line-height:1.55;}
+  .status.show{display:block;}
+  .status.err{background:rgba(168,60,60,0.10); color:var(--red);}
+  .status.busy{background:var(--paper-2); color:#5a6860;}
+
+  .mlogin{
+    position:fixed; inset:0; z-index:9000; overflow-y:auto;
+    background:linear-gradient(168deg, #1f4a3a 0%, #17392c 55%, #0f2b21 100%);
+    display:flex; align-items:center; justify-content:center;
+    padding:26px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+  .mlogin-inner{width:100%; max-width:380px; text-align:center;}
+  .mlogin-brand{font-family:'Cormorant Garamond',serif; font-size:26px; color:#fff; margin:0 0 18px; font-weight:700;}
+  .mlogin-card{background:#fff; border-radius:14px; padding:22px 20px; text-align:start; box-shadow:0 14px 34px rgba(0,0,0,.3);}
+  .mlogin-role{
+    display:flex; align-items:center; gap:9px; justify-content:center; margin-bottom:16px;
+    padding-bottom:13px; border-bottom:1px solid rgba(40,40,90,.12);
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:600; color:var(--emerald);
+  }
+  .mlogin-field{margin-bottom:12px;}
+  .mlogin-field label{display:block; font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; margin-bottom:5px; color:var(--emerald);}
+  .mlogin-field input{width:100%; padding:12px 13px; border:1px solid rgba(40,40,90,.14); border-radius:8px; font-size:16px; font-family:'Jost',sans-serif; background:#fbfcfe;}
+  .mlogin-btn{width:100%; margin-top:6px; border:none; border-radius:8px; padding:14px; cursor:pointer; font-family:'Jost',sans-serif; font-size:14px; font-weight:600; text-transform:uppercase; color:#fff; background:var(--emerald);}
+  .mlogin-err{display:none; margin-top:11px; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="mlogin">
+  <div class="mlogin-inner">
+    <h1 class="mlogin-brand">Madina Skole</h1>
+    <div class="mlogin-card">
+      <div class="mlogin-role"><span>🩺</span><span>Helsesjekk</span></div>
+      <div class="mlogin-field">
+        <label>E-post</label>
+        <input type="email" id="loginEmail" autocomplete="username" inputmode="email" placeholder="navn@eksempel.no">
+      </div>
+      <div class="mlogin-field">
+        <label>Passord</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="mlogin-btn" onclick="doLogin()">Logg inn</button>
+      <div class="mlogin-err" id="loginError"></div>
+    </div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+  <header>
+    <h1>Helsesjekk</h1>
+    <p>Kun for eier — intern side</p>
+  </header>
+
+  <main>
+    <div class="dom venter" id="samletDom">
+      <div class="ikon">⏳</div>
+      <div class="tittel">Henter status…</div>
+    </div>
+
+    <div class="card">
+      <h2>Hva som sjekkes</h2>
+      <div class="sub">
+        De fleste feilene i dette systemet sier ingenting fra selv. App Check
+        sto på 0&nbsp;% i fire døgn, og publiseringen av funksjonene feilet mens
+        GitHub viste grønt. Denne siden ser etter tegn på at noe har stanset.
+      </div>
+      <div id="sjekkListe"></div>
+      <button class="btn btn-ghost" onclick="oppdater()">Oppdater</button>
+      <div class="status" id="feilBoks"></div>
+    </div>
+
+    <div class="card">
+      <h2>Logg ut</h2>
+      <div class="sub">Siden viser driftsstatus, ingen persondata.</div>
+      <button class="btn btn-ghost" onclick="doLogout()">Logg ut</button>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, collection, getDocs, query, where, limit }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+           setPersistence, browserSessionPersistence }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { initializeAppCheck, ReCaptchaV3Provider }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  // App Check i try/catch — Safari med «avansert personvernbeskyttelse»
+  // blokkerer google.com/recaptcha, og et kast herfra ville stoppet HELE
+  // modulen. Siden ville vist seg helt normal og vært død innvendig.
+  let appCheck = null;
+  try{
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(err){
+    console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
+  }
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const persistenceReady = setPersistence(auth, browserSessionPersistence)
+    .catch(err => console.warn('setPersistence feilet:', err));
+
+  // Sperre i nettleseren, ikke en sikkerhetsregel. Ekte skjerming må
+  // ligge i firestore.rules.
+  const TILLATTE_EPOSTER = ['yasser.m.s.abdelrahim@gmail.com'];
+
+  window.doLogin = async function(){
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    const e = document.getElementById('loginEmail').value.trim();
+    const p = document.getElementById('loginPassword').value;
+    if(!e || !p){
+      errEl.textContent = 'Fyll ut e-post og passord.';
+      errEl.style.display = 'block';
+      return;
+    }
+    await persistenceReady;
+    try{
+      await signInWithEmailAndPassword(auth, e, p);
+    } catch(err){
+      console.error(err);
+      errEl.textContent = 'Feil e-post eller passord.';
+      errEl.style.display = 'block';
+    }
+  };
+
+  window.doLogout = function(){
+    signOut(auth).catch(()=>{}).finally(() => location.reload());
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    const epost = ((user && user.email) || '').trim().toLowerCase();
+    const harTilgang = !!user && TILLATTE_EPOSTER.includes(epost);
+    if(user && !harTilgang){
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = 'Denne siden er kun for eier.';
+      errEl.style.display = 'block';
+      signOut(auth).catch(()=>{});
+      return;
+    }
+    document.getElementById('loginScreen').style.display = harTilgang ? 'none' : 'flex';
+    document.getElementById('appRoot').style.display = harTilgang ? 'block' : 'none';
+    if(harTilgang) oppdater();
+  });
+
+  // Date.parse(0) leser "0" som årstallet 2000 og gir et gyldig tidspunkt.
+  // Et manglende felt må derfor bli 0, ikke år 2000 — ellers ser alt
+  // håpløst gammelt ut ved første kjøring.
+  function tidspunkt(v){
+    if(!v) return 0;
+    const t = Date.parse(v);
+    return isNaN(t) ? 0 : t;
+  }
+  function alder(ms){
+    if(!ms) return 'aldri';
+    const s = Math.floor((Date.now() - ms) / 1000);
+    if(s < 60) return 'for ' + s + ' sekunder siden';
+    if(s < 3600) return 'for ' + Math.floor(s/60) + ' minutter siden';
+    if(s < 86400) return 'for ' + Math.floor(s/3600) + ' timer siden';
+    return 'for ' + Math.floor(s/86400) + ' døgn siden';
+  }
+  function tid(ms){
+    return ms ? new Date(ms).toLocaleString('no-NO') : '—';
+  }
+
+  function tegnSjekker(sjekker){
+    document.getElementById('sjekkListe').innerHTML = sjekker.map(s => `
+      <div class="sjekk">
+        <span class="lys">${s.ok ? '🟢' : (s.advarsel ? '🟡' : '🔴')}</span>
+        <span>
+          <div class="navn">${s.navn}</div>
+          <div class="detalj">${s.detalj}</div>
+        </span>
+      </div>`).join('');
+
+    const feil = sjekker.filter(s => !s.ok && !s.advarsel).length;
+    const adv = sjekker.filter(s => s.advarsel).length;
+    const dom = document.getElementById('samletDom');
+    if(feil > 0){
+      dom.className = 'dom feil';
+      dom.innerHTML = '<div class="ikon">🛑</div><div class="tittel">' + feil +
+        ' ting virker ikke</div><div class="under">Se listen under.</div>';
+    } else if(adv > 0){
+      dom.className = 'dom venter';
+      dom.innerHTML = '<div class="ikon">🟡</div><div class="tittel">' + adv +
+        ' ting bør følges med på</div><div class="under">Ingenting er ute av drift.</div>';
+    } else {
+      dom.className = 'dom ok';
+      dom.innerHTML = '<div class="ikon">✅</div><div class="tittel">Alt virker</div>' +
+        '<div class="under">Sist kontrollert ' +
+        new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'}) + '</div>';
+    }
+  }
+
+  window.oppdater = async function(){
+    const feilBoks = document.getElementById('feilBoks');
+    feilBoks.className = 'status show busy';
+    feilBoks.textContent = 'Henter status…';
+
+    let helse = {};
+    try{
+      const d = await getDoc(doc(db, 'settings', 'helse'));
+      helse = d.exists() ? (d.data() || {}) : {};
+    } catch(err){
+      feilBoks.className = 'status show err';
+      feilBoks.textContent = '✗ Kunne ikke lese settings/helse: ' + err.message;
+      return;
+    }
+
+    const sjekker = [];
+
+    // 1) Varsel-jobben — pulsen. Den skal slå hvert andre minutt.
+    const puls = tidspunkt(helse.varselSisteKjoring);
+    const pulsAlder = puls ? Date.now() - puls : Infinity;
+    sjekker.push({
+      navn: 'Varsel-jobben kjører',
+      ok: pulsAlder < 10 * 60 * 1000,
+      advarsel: false,
+      detalj: puls
+        ? `Siste kjøring <b>${alder(puls)}</b> (${tid(puls)}). Skal kjøre hvert 2. minutt.`
+        : 'Har aldri kjørt. Er <b>varsleNySoknad</b> publisert? Sjekk Firebase Console → Functions.'
+    });
+
+    // 2) Sikkerhetskopi
+    const kopi = tidspunkt(helse.sikkerhetskopiSiste);
+    const kopiAlder = kopi ? Date.now() - kopi : Infinity;
+    sjekker.push({
+      navn: 'Ukentlig sikkerhetskopi',
+      ok: kopiAlder < 8 * 86400000,
+      advarsel: !kopi,
+      detalj: kopi
+        ? `Siste kopi <b>${alder(kopi)}</b> (${tid(kopi)}). Kjører søndag 04:00.`
+        : 'Ingen kopi registrert ennå. Pulsen skrives først ved neste søndagskjøring.'
+    });
+
+    // 3) Varsler som står fast
+    const fast = tidspunkt(helse.varselFastSiden);
+    sjekker.push({
+      navn: 'Varsler går ut',
+      ok: !fast,
+      advarsel: false,
+      detalj: fast
+        ? `Utsending har feilet siden <b>${tid(fast)}</b>. Søknadene ligger trygt i basen, men ingen har fått beskjed.`
+        : 'Ingen påmeldinger står og venter på varsel.'
+    });
+
+    // 4) E-post som ikke gikk ut
+    try{
+      const q = query(collection(db, 'mail'), where('delivery.state', '==', 'ERROR'), limit(5));
+      const snap = await getDocs(q);
+      const første = snap.empty ? null : (snap.docs[0].data().delivery || {}).error;
+      sjekker.push({
+        navn: 'E-post kommer fram',
+        ok: snap.empty,
+        advarsel: false,
+        detalj: snap.empty
+          ? 'Ingen e-post med feilstatus.'
+          : `<b>${snap.size}</b> e-post kom ikke fram. Første feil: ${String(første || 'ukjent').slice(0, 180)}`
+      });
+    } catch(err){
+      sjekker.push({
+        navn: 'E-post kommer fram',
+        ok: false, advarsel: true,
+        detalj: 'Kunne ikke sjekkes: ' + err.message
+      });
+    }
+
+    // 5) Søknader uten varsel — leses direkte, ikke fra pulsen
+    try{
+      const snap = await getDocs(collection(db, 'registrations'));
+      const uten = snap.docs.filter(d => d.data().varselSendt !== true).length;
+      sjekker.push({
+        navn: 'Påmeldinger er behandlet av varselet',
+        ok: uten === 0,
+        advarsel: uten > 0 && !fast,
+        detalj: uten === 0
+          ? `Alle ${snap.size} påmeldinger er merket som varslet.`
+          : `<b>${uten}</b> av ${snap.size} venter på varsel. Er det færre enn to minutter siden innsending, er dette normalt.`
+      });
+    } catch(err){
+      sjekker.push({
+        navn: 'Påmeldinger er behandlet av varselet',
+        ok: false, advarsel: true,
+        detalj: 'Kunne ikke sjekkes: ' + err.message
+      });
+    }
+
+    tegnSjekker(sjekker);
+    feilBoks.className = 'status';
+    feilBoks.textContent = '';
+  };
+</script>
+
+</body>
+</html>
