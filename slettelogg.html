@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-
+<!-- SIST-ENDRET: 2026-08-09 00:11:11 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -612,13 +612,23 @@
       .then(function(r){ return r.text(); })
       .then(function(txt){
         var m = txt.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
-        if(!m){ el.style.display = 'none'; return; }
+        // Merket forsvant tidligere uten et ord når stempelet manglet. Da
+        // var det umulig å se forskjell på «filen har ikke stempel» og
+        // «merket virker ikke» — to helt ulike problemer. Nå sier det ifra.
+        if(!m){
+          el.textContent = '✏️ Uten tidsstempel — publisert utenom verktøyet';
+          el.style.color = '#a5504a';
+          return;
+        }
         var d = new Date(m[1].replace(' ', 'T'));
         el.textContent = '✏️ Sist endret: ' +
           d.toLocaleDateString('no-NO') + ' kl. ' +
           d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
       })
-      .catch(function(){ el.style.display = 'none'; });
+      .catch(function(err){
+        el.textContent = '✏️ Kunne ikke lese tidsstempel';
+        el.style.color = '#a5504a';
+      });
   })();
 </script>
 </body>
