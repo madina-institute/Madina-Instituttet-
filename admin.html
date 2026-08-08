@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 23:29:52 -->
+<!-- SIST-ENDRET: 2026-08-08 23:34:22 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -977,6 +977,7 @@
   <button data-sb-side="registrering" onclick="sidebarSelectSide('registrering')"><span class="ic">📝</span> Registrering</button>
   <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')"><span class="ic">🏫</span> Skoleoppsett</button>
   <button data-sb-side="oversikt" onclick="sidebarSelectSide('oversikt')"><span class="ic">⚙️</span> Oversikt</button>
+  <button data-sb-side="veiledning" onclick="sidebarSelectSide('veiledning')"><span class="ic">📖</span> Veiledning</button>
   <button data-sb-side="verktoy" onclick="sidebarSelectSide('verktoy')"><span class="ic">🛠️</span> Verktøy</button>
   <button data-sb-side="portaler" onclick="sidebarSelectSide('portaler')"><span class="ic">🔗</span> Portaler</button>
 </nav>
@@ -1049,6 +1050,11 @@
         <div class="ic">⚙️</div>
         <h2>Oversikt</h2>
         <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
+      </div>
+      <div class="side-card" onclick="selectSide('veiledning')">
+        <div class="ic">📖</div>
+        <h2>Veiledning</h2>
+        <p>Bruksanvisning for panelet — seksjoner, roller, priser, eksport og hva man gjør når noe ikke virker</p>
       </div>
       <div class="side-card" onclick="selectSide('verktoy')">
         <div class="ic">🛠️</div>
@@ -1146,6 +1152,7 @@
   <div class="tab" data-tab="betaling" data-side="okonomi">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="utvikler" data-side="verktoy">🛠️ Verktøy og sider</div>
+  <div class="tab" data-tab="veiledning" data-side="veiledning">📖 Veiledning</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
 </div>
@@ -1491,6 +1498,20 @@
         <span><strong>Nullstill testdata</strong> (alt ovenfor UNNTATT søknader — søknader beholdes)</span>
         <button class="btn btn-danger-solid" onclick="clearTestDataKeepRegistrations()">Slett testdata (behold søknader)</button>
       </div>
+    </div>
+  </div>
+
+  <!-- VEILEDNING -->
+  <div class="panel" id="panel-veiledning">
+    <div class="report-card">
+      <h3>📖 Veiledning</h3>
+      <div class="sub">Hvordan panelet henger sammen, hvem som kan gjøre hva, og hvordan man endrer ting</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:16px; line-height:1.6;">
+        Trykk på et tema for å åpne det. Endrer noe seg i panelet, oppdateres
+        teksten her samtidig — en veiledning som ligger ett steg bak sender
+        folk til knapper som ikke finnes lenger.
+      </p>
+      <div id="veiledningListe"></div>
     </div>
   </div>
 
@@ -8289,23 +8310,193 @@
     }
   ];
 
+  // ═══════════════════════════════════════════════════════════════════
+  // VEILEDNING — bruksanvisningen som bor i panelet
+  // -------------------------------------------------------------------
+  // Alt som står her fantes fra før — i hodet til én person, eller i et
+  // sammendrag ingen i administrasjonen leser. Konsekvensen var at hvert
+  // spørsmål måtte stilles til den samme personen.
+  //
+  // 📌 REGEL: endrer noe seg i panelet, endres teksten her i samme
+  // omgang. En veiledning som er ett steg bak, er verre enn ingen —
+  // den sender folk til knapper som ikke lenger finnes.
+  // ═══════════════════════════════════════════════════════════════════
+  const VEILEDNING = [
+    {
+      tittel: '🧭 Slik henger panelet sammen',
+      punkter: [
+        { h: 'Seksjonene er delt etter HVEM som eier beslutningen',
+          t: 'Ikke etter hva slags data det er. Alt som gjelder penger ligger under Økonomi — uansett om det er en lønnsutbetaling eller en foreldrefaktura. Alt som gjelder undervisning ligger under Pedagogisk. Da slipper man å vite hvilken «type» noe er for å finne det.' },
+        { h: '🏛️ Eier / Ledelsen', t: 'Ledelse · Møtereferater · Meldingssenter. Styrenivå.' },
+        { h: '💰 Økonomi', t: 'Kasse · Kasserer · Lønn · Betalingslogg · Betalingsforespørsler · Betalingsinnstillinger.' },
+        { h: '🗂️ Administrativ', t: 'Lærere · Foresatte · Elever · Kontaktendringer · Rapporter. Personregisteret.' },
+        { h: '🎓 Pedagogisk', t: 'Klasser · Timeplan · Oppmøte · Fravær · Forberedelser · Planer · Lekser · Kunngjøringer · Elevnotater · Meldinger.' },
+        { h: '🏫 Skoleoppsett', t: 'Programmer · Skolekalender. Priser og undervisningsdager for hele skolen. Kun eier.' },
+        { h: '📝 Registrering', t: 'Søknader fra påmeldingsskjemaet.' },
+        { h: '⚙️ Oversikt', t: 'Nøkkeltall · Ansatte og tilgang · Varslinger · Sikkerhetskopi · Faresone.' },
+        { h: '🛠️ Verktøy og sider', t: 'Drift av selve nettstedet. Kun eier.' }
+      ]
+    },
+    {
+      tittel: '🔑 Hvem kan gjøre hva',
+      punkter: [
+        { h: 'Roller styrer hva som vises',
+          t: 'En person kan ha flere roller samtidig. Rollene settes under Oversikt → Ansatte og tilgang, og bare en eier kan gi noen rollen «Eier» eller «Opptaksansvarlig».' },
+        { h: 'Kun Eier', t: 'Legge til programmer og datoer i skolekalenderen · endre søskenrabatt og priser · Kasserer (Ledelse) med refusjon og fakturering · Verktøy og sider · slette personer.' },
+        { h: 'Kun Faglig / pedagogisk leder (og eier)', t: 'Opprette klasser og timeplan.' },
+        { h: 'Kun Opptaksansvarlig (og eier)', t: 'Godkjenne, avslå eller sette søknader på venteliste, og sende Vipps-krav.' },
+        { h: 'Alle med administrativ tilgang', t: 'Se listene, legge til elever, foresatte og ansatte, registrere oppmøte og fravær.' },
+        { h: '🔴 Viktig forbehold',
+          t: 'Sperrene over er i grensesnittet — knapper skjules. De hindrer feil bruk, ikke en angriper. Ekte skjerming må ligge i sikkerhetsreglene i Firebase. Det står som punkt 4 på gjenstående-listen.' }
+      ]
+    },
+    {
+      tittel: '📅 Legge til et program',
+      punkter: [
+        { h: 'Hvor', t: 'Skoleoppsett → Programmer → «+ Nytt program». Kun eier ser knappen.' },
+        { h: 'Hva feltene betyr',
+          t: 'Navn er nøkkelen — elever og klasser knyttes til programmet via NAVNET, ikke en id. Dager bestemmer hvilke ukedager lærerne kan føre timer på. Pris per semester brukes i utregningen av hva familien skylder.' },
+        { h: '⚠️ Endrer du navnet på et program som er i bruk',
+          t: 'må klassene og elevene som peker på det gamle navnet oppdateres manuelt. Ellers mister de koblingen — og prisen faller til null.' },
+        { h: 'Prisen gjelder umiddelbart',
+          t: 'Både panelet og Vipps leser den fra samme sted. Elever som allerede har et beløp registrert, beholder sitt.' }
+      ]
+    },
+    {
+      tittel: '💰 Endre priser og søskenrabatt',
+      punkter: [
+        { h: 'Pris per program', t: 'Skoleoppsett → Programmer → Rediger programmet.' },
+        { h: 'Søskenrabatt', t: 'Økonomi → Betalingsinnstillinger → kortet «Søskenrabatt». Feltet viser hva satsene betyr i kroner mens du skriver.' },
+        { h: 'Rekkefølgen på barna', t: '1. barn full pris, 2. barn og 3.+ barn med hver sin sats. Hvem som er «2. barn» avgjøres av hvor mange barn den foresatte allerede har registrert.' },
+        { h: '⚠️ Barn på foresatt 2',
+          t: 'Er barna fordelt på to foresatte, teller de som utgangspunkt ikke som søsken — og familien betaler for mye. Det finnes en avkrysning for å endre dette i samme kort.' }
+      ]
+    },
+    {
+      tittel: '🗓️ Skolekalender — fri og ekstra dager',
+      punkter: [
+        { h: 'Hvor', t: 'Skoleoppsett → Skolekalender → «+ Ny dato». Kun eier.' },
+        { h: '«Fri»', t: 'Stenger en dag som ellers ville vært undervisningsdag.' },
+        { h: '«Ekstra undervisningsdag»', t: 'Åpner en dag som ellers ville vært stengt.' },
+        { h: 'Ved konflikt', t: 'vinner ekstra undervisningsdag over fri.' }
+      ]
+    },
+    {
+      tittel: '👤 Legge til personer',
+      punkter: [
+        { h: 'Alt ett sted', t: 'Oversikt → Ansatte og tilgang → «Legg til en person». Knappene lå tidligere i hver enkelt fane; det gjorde det tilfeldig hvor man havnet, og lett å opprette samme person to ganger.' },
+        { h: 'Oppføring er ikke det samme som tilgang',
+          t: 'Det øverste kortet oppretter en OPPFØRING i registeret. Skal personen også kunne LOGGE INN, opprettes tilgangen i kortet under — der settes e-post og roller.' },
+        { h: 'Redigere', t: 'skjer inne i personkortet: åpne personen med «👁 Vis», og bruk «✏️ Rediger». Sletting ligger samme sted, med bekreftelse — slik at man alltid ser hvem det gjelder før man handler.' }
+      ]
+    },
+    {
+      tittel: '📤 Hente ut lister',
+      punkter: [
+        { h: 'Knappen «Eksporter»', t: 'finnes i alle listene og åpner samme dialog.' },
+        { h: 'Velg hva som skal ut', t: 'Kolonnene som vises i listen er forhåndsvalgt. En elev har 58 felter — en klasseliste trenger som regel to av dem.' },
+        { h: 'Velg hvem', t: 'Alle er avkrysset fra start; fjern dem som ikke skal med.' },
+        { h: 'Format', t: 'CSV åpnes i Excel. «Skriv ut / PDF» åpner utskriftsvinduet — velg «Lagre som PDF» der. E-post laster ned filen og åpner en ferdig melding du legger den ved.' },
+        { h: '🔴 Tenk over hva du tar med',
+          t: 'Helseopplysninger, allergier og samtykker ligger i de samme radene. En liste som skal videre til en lærer eller en forelder bør inneholde navn og kontakt — ikke alt.' }
+      ]
+    },
+    {
+      tittel: '🔔 Varsler og e-post',
+      punkter: [
+        { h: 'Hvem varsles ved ny påmelding', t: 'Oversikt → Varslinger. Kryss av blant de ansatte, eller skriv inn en adresse manuelt.' },
+        { h: 'Foresatte får kvittering', t: 'automatisk når søknaden kommer inn. Kvitteringen bekrefter kun at søknaden er mottatt — den lover ikke plass.' },
+        { h: 'Varselet kan ta opptil to minutter', t: 'Det sendes av en jobb som kjører jevnlig, ikke i samme øyeblikk som skjemaet sendes.' },
+        { h: 'Får ingen varsel?', t: 'Åpne helsesjekk.html (Verktøy og sider → Drift og kontroll). Den sier om jobben kjører og om e-posten kom fram.' }
+      ]
+    },
+    {
+      tittel: '🩺 Når noe ikke virker',
+      punkter: [
+        { h: 'Helsesjekk først', t: 'Verktøy og sider → Drift og kontroll → Helsesjekk. Er alt grønt, ligger feilen et annet sted enn i driften. Knappen «Kopier rapport» gir en tekst som kan limes rett inn i en samtale.' },
+        { h: 'Panelet sier «ikke tilkoblet»', t: 'skal ikke lenger skje. Skjer det likevel, last siden på nytt og si fra — det er en kjent feiltype som har oppstått seks ganger.' },
+        { h: 'Ingenting skjer når jeg trykker', t: 'Sjekk om du har rollen som kreves. Mangler den, står det en forklaring der knappen ellers ville vært.' },
+        { h: '🔴 De fleste feilene her sier ingenting fra selv', t: 'App Check sto på 0 % i fire døgn uten et eneste varsel. Derfor: er du i tvil om noe virker, sjekk det — ikke vent på en feilmelding.' }
+      ]
+    },
+    {
+      tittel: '⚙️ Hva som IKKE kan endres herfra',
+      punkter: [
+        { h: 'Hvem som kan opprette hva', t: 'står i koden i admin.html (OPPRETT_ROLLER). Det er et bevisst valg: kunne rollene endres fra databasen, kunne enhver med skrivetilgang gitt seg selv eierrollen.' },
+        { h: 'Sikkerhetsreglene', t: 'limes inn manuelt i Firebase Console. Filen firestore.rules i repoet er kun dokumentasjon.' },
+        { h: 'Tekstene på de offentlige sidene', t: 'ligger i selve filene og endres med publiseringsverktøyet.' },
+        { h: 'Bankkontonummeret på fakturaer', t: 'står fortsatt som en midlertidig verdi i koden og MÅ byttes før ekte fakturaer sendes.' }
+      ]
+    }
+  ];
+
+  let veiledningApen = null;
+
+  window.setVeiledning = function(i){
+    veiledningApen = (veiledningApen === i) ? null : i;
+    renderVeiledning();
+  };
+
+  function renderVeiledning(){
+    const el = document.getElementById('veiledningListe');
+    if(!el) return;
+    el.innerHTML = VEILEDNING.map((k, i) => `
+      <div style="border:1px solid var(--tabell-linje); border-radius:10px; margin-bottom:9px; overflow:hidden; background:#fff;">
+        <div onclick="setVeiledning(${i})"
+             style="padding:14px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px;
+                    font-family:'Jost',sans-serif; font-size:13.5px; font-weight:600; color:var(--emerald-d);
+                    background:${veiledningApen === i ? 'var(--paper-2)' : '#fff'};">
+          <span>${k.tittel}</span>
+          <span style="color:#8a9a90; font-size:12px;">${veiledningApen === i ? '▾' : '▸'}</span>
+        </div>
+        ${veiledningApen === i ? `
+          <div style="padding:4px 16px 14px;">
+            ${k.punkter.map(p => `
+              <div style="padding:10px 0; border-top:1px solid var(--line);">
+                <div style="font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:3px;">${p.h}</div>
+                <div style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65;">${p.t}</div>
+              </div>`).join('')}
+          </div>` : ''}
+      </div>`).join('');
+  }
+
+  // Seks grupper under hverandre ble en lang rulling — den samme
+  // ulempen Oversikt hadde. Samme løsning: velg mappe først, se bare den.
+  // Ett mønster gjennom hele panelet, ikke et nytt for hvert sted.
+  let verktoyValgt = null;
+
+  window.setVerktoyMappe = function(key){
+    verktoyValgt = (verktoyValgt === key) ? null : key;   // trykk igjen = lukk
+    renderVerktoy();
+  };
+
   function renderVerktoy(){
     const el = document.getElementById('verktoyListe');
     if(!el) return;
-    el.innerHTML = VERKTOY_GRUPPER.map(g => `
-      <div style="margin-bottom:26px;">
-        <div style="font-family:'Jost',sans-serif; font-size:13.5px; font-weight:700; color:var(--emerald-d); margin-bottom:3px;">${g.tittel}</div>
-        <div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin-bottom:11px; line-height:1.5;">${escapeHtml(g.sub)}</div>
-        ${g.lenker.map(l => `
-          <a href="${l.url}" ${g.ekstern ? 'target="_blank" rel="noopener"' : ''}
+
+    const mapper = VERKTOY_GRUPPER.map(g => `
+      <div class="choice-card folder-card${verktoyValgt === g.tittel ? ' active' : ''}"
+           onclick="setVerktoyMappe('${escapeHtml(g.tittel).replace(/'/g, "\\'")}')">
+        <h3>${g.tittel}</h3>
+        <div class="sub">${escapeHtml(g.lenker.length + ' ' + (g.lenker.length === 1 ? 'side' : 'sider'))}</div>
+      </div>`).join('');
+
+    const valgt = VERKTOY_GRUPPER.find(g => g.tittel === verktoyValgt);
+    const innhold = !valgt ? '' : `
+      <div style="margin-top:18px;">
+        <div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin-bottom:11px; line-height:1.5;">${escapeHtml(valgt.sub)}</div>
+        ${valgt.lenker.map(l => `
+          <a href="${l.url}" ${valgt.ekstern ? 'target="_blank" rel="noopener"' : ''}
              style="display:block; text-decoration:none; color:inherit; background:var(--paper);
                     border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:7px;">
             <div style="font-family:'Jost',sans-serif; font-size:13px; font-weight:600; color:var(--emerald-d);">
-              ${escapeHtml(l.navn)} ${g.ekstern ? '<span style="font-size:11px; color:#8a9a90;">↗</span>' : ''}
+              ${escapeHtml(l.navn)} ${valgt.ekstern ? '<span style="font-size:11px; color:#8a9a90;">↗</span>' : ''}
             </div>
             ${l.om ? `<div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#5a6860; margin-top:3px; line-height:1.5;">${escapeHtml(l.om)}</div>` : ''}
           </a>`).join('')}
-      </div>`).join('');
+      </div>`;
+
+    el.innerHTML = '<div class="folder-row-dynamic">' + mapper + '</div>' + innhold;
   }
 
   window.savePrisinnstillinger = async function(){
@@ -9117,6 +9308,7 @@
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     if(tab.dataset.tab === 'overview') renderOvFolders();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
+    if(tab.dataset.tab === 'veiledning') renderVeiledning();
     if(oppdaterUrl){
       try{ history.replaceState(null, '', '#fane=' + tab.dataset.tab); }catch(e){}
     }
