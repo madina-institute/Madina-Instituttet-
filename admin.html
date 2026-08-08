@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-
+<!-- SIST-ENDRET: 2026-08-08 21:24:52 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1060,6 +1060,7 @@
   <div class="tab" data-tab="messages" data-side="pedagogisk">Meldinger</div>
   <div class="tab" data-tab="betaling" data-side="admin">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
+  <div class="tab" data-tab="utvikler" data-side="eier">🛠️ Verktøy og sider</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
 </div>
@@ -1385,6 +1386,19 @@
         <span><strong>Nullstill testdata</strong> (alt ovenfor UNNTATT søknader — søknader beholdes)</span>
         <button class="btn btn-danger-solid" onclick="clearTestDataKeepRegistrations()">Slett testdata (behold søknader)</button>
       </div>
+    </div>
+  </div>
+
+  <!-- VERKTØY OG SIDER (kun Eier) -->
+  <div class="panel" id="panel-utvikler">
+    <div class="report-card">
+      <h3>🛠️ Verktøy og sider</h3>
+      <div class="sub">
+        Alt som hører til driften av nettstedet, samlet på ett sted. Dette er
+        sider administrasjonen ikke trenger i det daglige — de ligger her for
+        at de ikke skal ligge og flyte som løse lenker.
+      </div>
+      <div id="verktoyListe"></div>
     </div>
   </div>
 
@@ -2597,6 +2611,11 @@
       if(who) who.textContent = user.email;
       const tabCashierLedelse = document.getElementById('tabCashierLedelse');
       if(tabCashierLedelse) tabCashierLedelse.style.display = isCurrentUserEier() ? '' : 'none';
+      // Verktøy og sider er kun for eier. Her ligger lenker til innsyns-
+      // sidene og til konsollene — ingenting av det hører hjemme hos en
+      // lærer eller en fagkoordinator.
+      const tabUtvikler = document.querySelector('.tab[data-tab="utvikler"]');
+      if(tabUtvikler) tabUtvikler.style.display = isCurrentUserEier() ? '' : 'none';
       resetInactivityTimer();
       // meetings/finances require request.auth != null in the Firestore
       // rules — attaching their listeners before login used to leave them
@@ -2607,6 +2626,12 @@
       // 'teachers', re-rendered whenever the teachers listener fires.)
       if(!authGatedListenersAttached){
         authGatedListenersAttached = true;
+        // Alle datalytterne kobles opp her — etter at innloggingen er
+        // bekreftet OG e-posten er godkjent mot 'adminUsers'. Sto de i
+        // modulen, ble de avvist for godt ved første innlogging, og
+        // panelet viste «ikke tilkoblet» til man oppdaterte siden.
+        startAlleDatalyttere();
+        startOvrigeLyttere();
         attachListener('meetings');
         attachListener('finances');
         attachAuthGatedCashierListeners();
@@ -3541,6 +3566,10 @@
     }
   }
 
+  // Disse to sto også i modulen, altså før innloggingen — med samme
+  // følge: skjemastatistikken og økonomiloggen ble stående tomme til
+  // siden ble lastet på nytt. De flyttes inn i den samme funksjonen.
+  function startOvrigeLyttere(){
   onSnapshot(collection(db, 'formAnalytics'), (snap) => {
     let visits = 0, started = 0;
     snap.forEach(d => {
@@ -3563,6 +3592,7 @@
   }, (err) => {
     console.error('financeLog', err);
   });
+  }
 
   // Per-payment history (studentPayments) and outstanding Vipps requests
   // (pendingVippsPayments) BOTH require request.auth != null in the
@@ -7947,6 +7977,112 @@
     }
   };
 
+  // ---------- Verktøy og sider (kun Eier) ----------
+  // Nettstedet har vokst til nesten tjue sider. De fleste angår ikke
+  // administrasjonen i det hele tatt — de er drift. Uten et sted å samle
+  // dem, må adressene huskes eller ligge som bokmerker, og et bokmerke
+  // som peker på en nedlagt adresse oppdager man først når det haster.
+  // (Det skjedde: verktøyet ble lenge åpnet fra den døde GitHub
+  // Pages-adressen, og siden ble servert fra nettleserens mellomlager.)
+  const VERKTOY_GRUPPER = [
+    {
+      tittel: '🩺 Drift og kontroll',
+      sub: 'Sier fra når noe har stanset. De fleste feil her sier ingenting fra selv.',
+      lenker: [
+        { navn: 'Helsesjekk', url: 'helsesjekk.html',
+          om: 'Samlet status: kjører varsel-jobben, kom e-posten fram, står noe fast. Har knapp for å kopiere rapporten.' },
+        { navn: 'App Check-diagnose', url: 'appcheck-test.html',
+          om: 'Tester om reCAPTCHA og App Check virker, og sier hvorfor hvis ikke.' },
+        { navn: 'Publiseringsverktøy', url: 'publish-tool.html',
+          om: 'Legger ut endringer. Sperrer for å publisere en eldre kopi over nyere arbeid.' },
+        { navn: 'Slettelogg', url: 'slettelogg.html',
+          om: 'Alt som er slettet, med 30 dagers angrefrist.' },
+        { navn: 'Statistikk', url: 'statistikk.html',
+          om: 'Tall om bruken av påmeldingsskjemaet.' }
+      ]
+    },
+    {
+      tittel: '👁️ Innsyn (kun eier)',
+      sub: 'Aktivitet på tvers av alle. Ikke tenkt for daglig bruk.',
+      lenker: [
+        { navn: 'Foreldreinnsyn', url: 'foreldreinnsyn.html',
+          om: 'Siste innlogging og aktivitet for hver foresatt.' },
+        { navn: 'Lærerinnsyn', url: 'larerinnsyn.html',
+          om: 'Siste innlogging og aktivitet for hver lærer.' }
+      ]
+    },
+    {
+      tittel: '🚪 Portalene',
+      sub: 'Slik de ser ut for dem som bruker dem. Nyttig før man svarer på et spørsmål.',
+      lenker: [
+        { navn: 'Lærerportal', url: 'index1.html', om: 'Det lærerne logger inn i.' },
+        { navn: 'Foreldreportal', url: 'index4.html', om: 'Det foresatte logger inn i.' },
+        { navn: 'Påmeldingsskjema', url: 'index2.html', om: 'Det nye familier fyller ut. Offentlig.' }
+      ]
+    },
+    {
+      tittel: '🌐 Offentlige sider',
+      sub: 'Det alle kan se uten å logge inn.',
+      lenker: [
+        { navn: 'Hovedside', url: 'index.html', om: 'madinaskole.no' },
+        { navn: 'Timeplan', url: 'timeplan.html', om: '' },
+        { navn: 'Kunngjøringer', url: 'kunngjoring.html', om: '' },
+        { navn: 'Brosjyre', url: 'madina-brosjyre.html', om: 'Tre språk, laget for deling.' },
+        { navn: 'Personvernerklæring', url: 'personvern.html', om: '' }
+      ]
+    },
+    {
+      tittel: '⚙️ Utenfor nettstedet',
+      sub: 'Åpnes i ny fane. Krever egen innlogging.',
+      ekstern: true,
+      lenker: [
+        { navn: 'Firebase Console', url: 'https://console.firebase.google.com/project/madina-instituttet/overview',
+          om: 'Database, innlogginger, funksjoner, utvidelser.' },
+        { navn: 'App Check-status', url: 'https://console.firebase.google.com/project/madina-instituttet/appcheck/apps',
+          om: 'Andelen forespørsler med gyldig token. Må stå stabilt over 90 % før Enforced slås på.' },
+        { navn: 'Cloud Functions', url: 'https://console.firebase.google.com/project/madina-instituttet/functions',
+          om: 'Skal vise sju funksjoner.' },
+        { navn: 'GitHub Actions', url: 'https://github.com/madina-institute/Madina-Instituttet-/actions',
+          om: 'Publiseringene. Hosting og Functions er to separate kjøringer — den ene kan lykkes mens den andre feiler.' },
+        { navn: 'reCAPTCHA-nøkler', url: 'https://www.google.com/recaptcha/admin',
+          om: 'Domenene nøkkelen gjelder for. Feil her sto bak fire døgn med 0 % App Check.' },
+        { navn: 'Brevo (e-post)', url: 'https://app.brevo.com/settings/keys/smtp',
+          om: 'SMTP-nøkkelen Trigger Email bruker.' }
+      ]
+    },
+    {
+      tittel: '🧹 Bør ryddes bort',
+      sub: 'Disse ligger fortsatt ute, men brukes ikke. Slettes fra repoet med publiseringsverktøyet.',
+      lenker: [
+        { navn: 'index3.html', url: 'index3.html',
+          om: 'Gammel hovedportal, erstattet. Ingenting peker hit lenger.' },
+        { navn: 'index-homepage-final.html', url: 'index-homepage-final.html',
+          om: 'Foreldreløs fil — publisert på nett, men ikke lenket fra noe sted. Sannsynligvis et gammelt utkast.' },
+        { navn: 'påmelingsskjema/påmelingsskjema/', url: 'p%C3%A5melingsskjema/p%C3%A5melingsskjema/index.html',
+          om: 'Mappe inni seg selv med en fil på 1 byte. Mappenavnet inneholder «å» — ikke-engelske filnavn har brutt publiseringen før.' }
+      ]
+    }
+  ];
+
+  function renderVerktoy(){
+    const el = document.getElementById('verktoyListe');
+    if(!el) return;
+    el.innerHTML = VERKTOY_GRUPPER.map(g => `
+      <div style="margin-bottom:26px;">
+        <div style="font-family:'Jost',sans-serif; font-size:13.5px; font-weight:700; color:var(--emerald-d); margin-bottom:3px;">${g.tittel}</div>
+        <div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin-bottom:11px; line-height:1.5;">${escapeHtml(g.sub)}</div>
+        ${g.lenker.map(l => `
+          <a href="${l.url}" ${g.ekstern ? 'target="_blank" rel="noopener"' : ''}
+             style="display:block; text-decoration:none; color:inherit; background:var(--paper);
+                    border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:7px;">
+            <div style="font-family:'Jost',sans-serif; font-size:13px; font-weight:600; color:var(--emerald-d);">
+              ${escapeHtml(l.navn)} ${g.ekstern ? '<span style="font-size:11px; color:#8a9a90;">↗</span>' : ''}
+            </div>
+            ${l.om ? `<div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#5a6860; margin-top:3px; line-height:1.5;">${escapeHtml(l.om)}</div>` : ''}
+          </a>`).join('')}
+      </div>`).join('');
+  }
+
   window.savePrisinnstillinger = async function(){
     const r2 = parseFloat(document.getElementById('rabatt2Input').value);
     const r3 = parseFloat(document.getElementById('rabatt3Input').value);
@@ -8581,6 +8717,7 @@
     if(labelEl) labelEl.textContent = tab.textContent;
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     if(tab.dataset.tab === 'overview') renderOvFolders();
+    if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(oppdaterUrl){
       try{ history.replaceState(null, '', '#fane=' + tab.dataset.tab); }catch(e){}
     }
@@ -8614,65 +8751,88 @@
   // Kalles her fordi fanene først er synlige etter at panelet er åpnet.
   setTimeout(gjenopprettFane, 0);
 
-  attachListener('programs');
-  attachListener('schoolCalendar');
-  attachListener('teachers');
-  attachListener('guardians');
-  attachListener('students');
-  attachListener('classes');
-  attachListener('hours');
-  attachListener('attendance');
-  attachListener('teacherAttendance');
-  attachListener('lessonPlans');
-  attachListener('dailyPlanTemplates');
-  attachListener('monthlyPlanTemplates');
-  attachListener('semesterPlanTemplates');
-  attachListener('monthlyPlans');
-  attachListener('semesterPlans');
-  attachListener('registrations');
-  attachListener('homework');
-  attachListener('homeworkSubmissions');
-  attachListener('absenceRequests');
-  attachListener('announcements');
-  attachListener('studentNotes');
-  attachListener('contactUpdateRequests');
-  attachListener('paymentRequests');
-  attachListener('messages');
-  onSnapshot(collection(db, 'messageThreads'), (snap) => {
-    messageThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(document.getElementById('panel-messages') && document.getElementById('panel-messages').classList.contains('active')) renderMessagesInbox();
-  });
-  onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
-    broadcastThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderBroadcastInbox();
-  });
-  onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
-    broadcastMessagesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderBroadcastInbox();
-  });
+  // ═══════════════════════════════════════════════════════════════
+  // DATALYTTERE — STARTES FØRST ETTER BEKREFTET INNLOGGING
+  // ---------------------------------------------------------------
+  // Alt under sto tidligere rett i modulen, altså FØR innloggingen.
+  // Firestore-reglene krever innlogging for lesing, og SDK-en prøver
+  // IKKE på nytt når en lytter først er avvist. Resultatet var at
+  // panelet sa «ikke tilkoblet» ved hver eneste innlogging — og at en
+  // rask oppdatering av siden «fikset» det, fordi økten da alt lå der
+  // da lytterne ble koblet opp.
+  //
+  // Det var ikke tilfeldig at oppdateringen hjalp: den byttet ut
+  // rekkefølgen. Nå er rekkefølgen riktig fra starten.
+  //
+  // Samme feil er rettet i index1, index4, foreldreinnsyn, larerinnsyn,
+  // slettelogg og statistikk. Dette var det siste stedet.
+  // ═══════════════════════════════════════════════════════════════
+  let __lyttereStartet = false;
+  function startAlleDatalyttere(){
+    if(__lyttereStartet) return;   // onAuthStateChanged kan fyre flere ganger
+    __lyttereStartet = true;
 
-  onSnapshot(collection(db, 'adminUsers'), (snap) => {
-    const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
-    adminUsersCache = list;
-    // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
-    // nytt for at personen skulle dukke opp i varsel-listen.
-    renderVarselMottakere();
-    const el = document.getElementById('adminUsersList');
-    if(!el) return;
-    if(list.length === 0){
-      el.innerHTML = '<div class="report-empty">Ingen kontoer registrert her ennå.</div>';
-      return;
-    }
-    el.innerHTML = list.map(u => {
-      const roller = (u.roller || u.rolle || '').split(',').map(s => s.trim()).filter(Boolean);
-      const badges = roller.map(r => '<span style="display:inline-block; font-family:\'Jost\',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:2px 9px; margin-inline-start:4px;">' + escapeHtml(r) + '</span>').join('');
-      return `
-      <div class="status-row" style="flex-wrap:wrap;">
-        <span>${escapeHtml(u.navn || u.epost)} <span style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">(${escapeHtml(u.epost)})</span> ${badges}</span>
-        <span style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">opprettet ${escapeHtml(u.opprettetDato||'')} av ${escapeHtml(u.opprettetAv||'')}</span>
-      </div>`;
-    }).join('');
-  });
+    attachListener('programs');
+    attachListener('schoolCalendar');
+    attachListener('teachers');
+    attachListener('guardians');
+    attachListener('students');
+    attachListener('classes');
+    attachListener('hours');
+    attachListener('attendance');
+    attachListener('teacherAttendance');
+    attachListener('lessonPlans');
+    attachListener('dailyPlanTemplates');
+    attachListener('monthlyPlanTemplates');
+    attachListener('semesterPlanTemplates');
+    attachListener('monthlyPlans');
+    attachListener('semesterPlans');
+    attachListener('registrations');
+    attachListener('homework');
+    attachListener('homeworkSubmissions');
+    attachListener('absenceRequests');
+    attachListener('announcements');
+    attachListener('studentNotes');
+    attachListener('contactUpdateRequests');
+    attachListener('paymentRequests');
+    attachListener('messages');
+    onSnapshot(collection(db, 'messageThreads'), (snap) => {
+      messageThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if(document.getElementById('panel-messages') && document.getElementById('panel-messages').classList.contains('active')) renderMessagesInbox();
+    });
+    onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
+      broadcastThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderBroadcastInbox();
+    });
+    onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
+      broadcastMessagesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderBroadcastInbox();
+    });
+
+    onSnapshot(collection(db, 'adminUsers'), (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
+      adminUsersCache = list;
+      // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
+      // nytt for at personen skulle dukke opp i varsel-listen.
+      renderVarselMottakere();
+      const el = document.getElementById('adminUsersList');
+      if(!el) return;
+      if(list.length === 0){
+        el.innerHTML = '<div class="report-empty">Ingen kontoer registrert her ennå.</div>';
+        return;
+      }
+      el.innerHTML = list.map(u => {
+        const roller = (u.roller || u.rolle || '').split(',').map(s => s.trim()).filter(Boolean);
+        const badges = roller.map(r => '<span style="display:inline-block; font-family:\'Jost\',sans-serif; font-size:10.5px; font-weight:600; color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:2px 9px; margin-inline-start:4px;">' + escapeHtml(r) + '</span>').join('');
+        return `
+        <div class="status-row" style="flex-wrap:wrap;">
+          <span>${escapeHtml(u.navn || u.epost)} <span style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">(${escapeHtml(u.epost)})</span> ${badges}</span>
+          <span style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">opprettet ${escapeHtml(u.opprettetDato||'')} av ${escapeHtml(u.opprettetAv||'')}</span>
+        </div>`;
+      }).join('');
+    });
+
+  }
 
   populateCustomTypeDropdown();
 
