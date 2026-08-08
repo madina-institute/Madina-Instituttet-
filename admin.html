@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 21:59:17 -->
+<!-- SIST-ENDRET: 2026-08-08 22:42:46 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -224,6 +224,9 @@
     background:var(--emerald-d); color:#fff; font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; padding:12px 8px;
   }
   .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
+
+  .legg-til-rad{ display:flex; gap:9px; flex-wrap:wrap; }
+  .legg-til-rad .btn{ flex:1 1 180px; width:auto; }
 
   .side-card{
     flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:34px 26px;
@@ -1262,6 +1265,26 @@
     </div>
 
     <div data-ov="ansatte" class="report-card" style="margin-top:20px;">
+      <h3>Legg til en person</h3>
+      <div class="sub">Alle nye personer registreres her — uansett type.</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:16px; line-height:1.6;">
+        Tidligere lå «+ Ny»-knappen i hver enkelt fane. Da var det tilfeldig
+        hvor man havnet når man skulle registrere noen, og lett å opprette
+        samme person to steder. Fanene brukes nå til å se og endre —
+        opprettelsen skjer her.
+      </p>
+      <div class="legg-til-rad">
+        <button class="btn btn-primary" onclick="openModal('teachers')">👤 Ny ansatt / lærer</button>
+        <button class="btn btn-primary" onclick="openModal('guardians')">👨‍👩‍👧 Ny foresatt</button>
+        <button class="btn btn-primary" onclick="openModal('students')">🎓 Ny elev</button>
+      </div>
+      <div class="hint" style="margin-top:12px;">
+        Dette oppretter en <b>oppføring</b>. Skal personen også kunne
+        <b>logge inn</b>, opprettes tilgangen i kortet under.
+      </div>
+    </div>
+
+    <div data-ov="ansatte" class="report-card" style="margin-top:20px;">
       <h3>Ansatte (innlogging)</h3>
       <div class="sub">Opprett tilgang for ansatte — hver person logger inn med sin egen e-post. Én person kan ha flere roller samtidig.</div>
       <div class="field-row-2">
@@ -1446,7 +1469,7 @@
       <input class="search" id="searchLedelse" placeholder="Søk etter navn eller rolle...">
       <span class="count-chip" id="countLedelse" onclick="toggleRecordsById('tableLedelse')">0 ledelsesmedlemmer</span>
       <button class="btn btn-ghost" onclick="exportLedelseCSV()">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny person</button>
+      <span class="hint" style="align-self:center;">Nye legges til under <b>Oversikt → Ansatte og tilgang</b></span>
     </div>
     <div class="records-hidden card-grid" id="tableLedelse"></div>
   </div>
@@ -1613,7 +1636,7 @@
       <span class="count-chip" id="teacherFolderActiveLabel" onclick="setTeacherFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countTeachers" onclick="toggleRecordsById('tableTeachers')">0 lærere</span>
       <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny lærer</button>
+      <span class="hint" style="align-self:center;">Nye legges til under <b>Oversikt → Ansatte og tilgang</b></span>
     </div>
     <div class="records-hidden card-grid" id="tableTeachers"></div>
   </div>
@@ -1626,7 +1649,7 @@
       <span class="count-chip" id="guardianFolderActiveLabel" onclick="setGuardianFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countGuardians" onclick="toggleRecordsById('tableGuardians')">0 foresatte</span>
       <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('guardians')">+ Ny foresatt</button>
+      <span class="hint" style="align-self:center;">Nye legges til under <b>Oversikt → Ansatte og tilgang</b></span>
     </div>
     <div class="records-hidden card-grid" id="tableGuardians"></div>
   </div>
@@ -1639,7 +1662,7 @@
       <span class="count-chip" id="studentFolderActiveLabel" onclick="setStudentFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countStudents" onclick="toggleRecordsById('tableStudents')">0 elever</span>
       <button class="btn btn-ghost" onclick="exportCSV('students')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('students')">+ Ny elev</button>
+      <span class="hint" style="align-self:center;">Nye legges til under <b>Oversikt → Ansatte og tilgang</b></span>
     </div>
     <div class="records-hidden card-grid" id="tableStudents"></div>
   </div>
