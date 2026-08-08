@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-08 16:02:23 */
+/* SIST-ENDRET: 2026-08-08 17:08:44 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -887,7 +887,6 @@ exports.refundVippsPayment = onRequest(
  */
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-
 // Samlingene som sikkerhetskopieres. Nye samlinger må legges til her —
 // ellers er de ikke med i kopien, uten at noe varsler om det.
 const BACKUP_COLLECTIONS = [
@@ -1012,3 +1011,98 @@ exports.taSikkerhetskopiNa = onRequest(
     }
   }
 );
+
+// =====================================================================
+// VARSEL VED NY PÅMELDING
+// ---------------------------------------------------------------------
+// Tidligere ble dette varselet sendt fra selve påmeldingsskjemaet
+// (index2.html) via Web3Forms. Det ga tre problemer:
+//
+//   1. API-nøkkelen sto i klartekst på en OFFENTLIG side. Hvem som helst
+//      kunne bruke skolens kvote til å sende e-post i skolens navn.
+//   2. Mottakeren lå fast hos Web3Forms og kunne ikke endres uten å
+//      redigere og publisere skjemaet på nytt.
+//   3. Barnets navn og foresattes telefonnummer gikk gjennom en
+//      tredjepart — unødvendig for en norsk skole med taushetsplikt.
+//
+// Nå utløses varselet av selve databasen: skrives det en ny søknad,
+// kjører denne funksjonen. Skjemaet trenger ikke lenger kalle noe sted,
+// og mottakerne velges i panelet under «Oversikt → Varslinger».
+//
+// Feiler utsendingen, er søknaden LIKEVEL lagret — varselet er en
+// beskjed om noe som allerede har skjedd, aldri en forutsetning for det.
+// =====================================================================
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+
+// Gjør en rå programkode fra skjemaet lesbar. Uten dette sto det
+// «madina_islamske_skole, sprak_arabisk» i varselet — forståelig for den
+// som skrev koden, ikke for den som skal behandle søknaden.
+function lesbartProgram(rå) {
+  const koder = String(rå || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (koder.length === 0) return "—";
+  const kanonisk = mapRegistrationProgram(rå);
+  const spraak = koder.includes("sprak_urdu") ? "Urdu"
+    : koder.includes("sprak_arabisk") ? "Arabisk" : "";
+  if (!kanonisk) return koder.join(", ");
+  return kanonisk + (spraak ? ` · språkvalg: ${spraak}` : "");
+}
+
+exports.varsleNySoknad = onDocumentCreated("registrations/{soknadId}", async (event) => {
+  const reg = event.data && event.data.data();
+  if (!reg) return;
+
+  let mottakere = [];
+  try {
+    const doc = await db.collection("settings").doc("varsler").get();
+    const d = doc.exists ? (doc.data() || {}) : {};
+    if (d.nySoknadAktiv === false) {
+      logger.info("Varsel ved ny søknad er slått av — hopper over.");
+      return;
+    }
+    mottakere = Array.isArray(d.nySoknadMottakere) ? d.nySoknadMottakere : [];
+  } catch (err) {
+    logger.warn("Kunne ikke lese settings/varsler", err);
+  }
+
+  // Er ingen valgt ennå, går varselet til skolens hovedadresse i stedet
+  // for å forsvinne i stillhet. En søknad som ingen får beskjed om er
+  // verre enn en e-post for mye.
+  if (mottakere.length === 0) mottakere = [BACKUP_EMAIL];
+
+  const navn = reg.elev_navn || "Ukjent navn";
+  const linje = (etikett, verdi) =>
+    `<tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">${etikett}</th>` +
+    `<td style="padding:5px 0;">${verdi || "—"}</td></tr>`;
+
+  try {
+    await db.collection("mail").add({
+      from: "Madina Skole <post@madinaskole.no>",
+      to: mottakere,
+      message: {
+        subject: `Ny påmelding — ${navn}`,
+        html: `
+          <p>Det har kommet en ny påmelding.</p>
+          <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+            ${linje("Elev", navn)}
+            ${linje("Fødselsdato", reg.elev_fdato)}
+            ${linje("Program", lesbartProgram(reg.program))}
+            ${linje("Foresatt", reg.foresatt1_navn)}
+            ${linje("Telefon", reg.foresatt1_tlf)}
+            ${linje("E-post", reg.foresatt1_epost)}
+            ${linje("Innsendt", reg.innsendtDato)}
+          </table>
+          <p style="margin-top:18px;">
+            Behandles i panelet under <b>Registrering → Søknader</b>:<br>
+            <a href="https://madinaskole.no/admin.html#fane=registrations">Åpne søknaden</a>
+          </p>
+          <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+            Du får denne e-posten fordi du står som mottaker under
+            «Oversikt → Varslinger» i panelet.
+          </p>`
+      }
+    });
+    logger.info(`Varsel om ny søknad sendt til ${mottakere.length} mottaker(e).`);
+  } catch (err) {
+    logger.error("Kunne ikke sende varsel om ny søknad", err);
+  }
+});
