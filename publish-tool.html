@@ -77,6 +77,10 @@
   }
   .overstyr-linje input{ width:16px; height:16px; flex:0 0 auto; }
   .logg-skille{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+  /* To knapper side om side. På smale skjermer legger de seg under
+     hverandre av seg selv i stedet for å bli for trange å treffe. */
+  .knapperad{ display:flex; gap:8px; flex-wrap:wrap; }
+  .knapperad .btn{ flex:1 1 130px; margin-top:8px; }
   #setupView{display:none;}
   #publishView{display:none;}
   .who-bar{
@@ -170,6 +174,13 @@
     </div>
 
     <div class="card">
+      <h2>📦 Hele prosjektet</h2>
+      <div class="sub">Pakker alle tekstfilene i repoet, sammen med sammendraget, i ett arkiv — klart til å legges ved i en ny samtale med Claude.</div>
+      <button class="btn btn-primary" id="altBtn" onclick="lastNedAlt()">📦 Last ned hele prosjektet</button>
+      <div class="status" id="altStatus" style="white-space:pre-wrap;"></div>
+    </div>
+
+    <div class="card">
       <h2>Publiser én fil</h2>
       <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
 
@@ -226,7 +237,11 @@
         <textarea id="fileContent" placeholder="Velg en fil ovenfor, eller lim inn innholdet manuelt her..." wrap="soft" oninput="nullstillSperre()"></textarea>
       </div>
       <button class="btn btn-ghost" id="sjekkBtn" onclick="sjekkVersjon()">🔍 Sjekk mot publisert versjon</button>
-      <button class="btn btn-ghost" id="lastNedBtn" onclick="lastNedPublisert()">⬇️ Last ned publisert versjon</button>
+      <div class="knapperad">
+        <button class="btn btn-ghost" id="lastNedBtn" onclick="lastNedPublisert()">⬇️ Last ned</button>
+        <button class="btn btn-ghost" id="kopierBtn" onclick="kopierPublisert()">📋 Kopier</button>
+      </div>
+      <div class="hint">Henter den publiserte versjonen. Den har stempelet sitt i behold, så neste kontroll går umiddelbart.</div>
       <div class="status" id="diffPanel" style="white-space:pre-line;"></div>
       <button class="btn btn-danger" id="overstyrBtn" style="display:none;" onclick="publiserLikevel()">Publiser likevel</button>
 
@@ -241,7 +256,10 @@
         <div id="versjonNedlasting" style="display:none; margin-top:12px;">
           <label style="display:block; font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:5px; font-weight:600;">Hent ned en tidligere versjon</label>
           <select id="versjonValg"></select>
-          <button class="btn btn-ghost" onclick="lastNedVersjon()">⬇️ Last ned valgt versjon</button>
+          <div class="knapperad">
+            <button class="btn btn-ghost" onclick="lastNedVersjon()">⬇️ Last ned</button>
+            <button class="btn btn-ghost" onclick="kopierVersjon()">📋 Kopier</button>
+          </div>
           <div class="hint">Filen får versjonsnummer i navnet, så den ikke forveksles med arbeidsfilen din.</div>
         </div>
       </div>
@@ -1194,6 +1212,268 @@
         'forveksles med arbeidsfilen din. Skal den publiseres, må navnet ' +
         'settes tilbake til «' + filnavnAv(sti) + '» først.'
       : '✗ Nettleseren tillot ikke nedlastingen.';
+  };
+
+  // Kopiering til utklippstavlen.
+  // MERK OM SAFARI: skrivingen må skje inne i selve trykket. Henter vi
+  // filen med await FØRST og kopierer etterpå, er trykket "brukt opp" og
+  // Safari nekter stille. Løsningen er å gi ClipboardItem et LØFTE om
+  // teksten — da holder Safari trykket åpent mens nedlastingen pågår.
+  // Løftet lages én gang og gjenbrukes, så filen aldri hentes to ganger.
+  async function kopierTekst(tekstLøfte){
+    try{
+      if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+        const blobLøfte = Promise.resolve(tekstLøfte)
+          .then(t => new Blob([t], { type: 'text/plain' }));
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blobLøfte })]);
+        return true;
+      }
+    } catch(err){ console.warn('clipboard.write feilet, prøver writeText:', err); }
+
+    try{
+      await navigator.clipboard.writeText(await tekstLøfte);
+      return true;
+    } catch(err){ console.warn('writeText feilet, prøver execCommand:', err); }
+
+    // Siste utvei for eldre nettlesere.
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = await tekstLøfte;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch(err){
+      console.error('Kopiering feilet:', err);
+      return false;
+    }
+  }
+
+  window.kopierPublisert = function(){
+    const path = currentPath();
+    if(!path){
+      visDiff('warn', 'Velg en filsti først.');
+      return;
+    }
+    visDiff('busy', 'Henter ' + path + ' og kopierer...');
+    // Ingen await før kopieringen starter — se merknaden over.
+    const tekstLøfte = hentPublisertFil(path).then(repo => {
+      if(!repo.finnes) throw new Error('filen finnes ikke i repoet');
+      return repo.innhold;
+    });
+    kopierTekst(tekstLøfte).then(async ok => {
+      if(!ok){
+        visDiff('err', '✗ Nettleseren tillot ikke kopiering. Bruk «Last ned» i stedet.');
+        return;
+      }
+      try{
+        const tekst = await tekstLøfte;
+        const stempel = lesStempel(tekst);
+        visDiff('ok', '📋 Kopiert ' + filnavnAv(path) + ' til utklippstavlen\n\n' +
+          'Stempel: ' + (stempel ? visTid(stempel) : 'uten stempel') + '\n' +
+          Math.round(tekst.length / 1024) + ' kB\n\n' +
+          'Denne kopien er den som ligger ute nå. Lim den inn i editoren, ' +
+          'gjør endringene dine, og kontrollen går umiddelbart neste gang.');
+      } catch(err){
+        visDiff('err', '✗ ' + err.message);
+      }
+    });
+  };
+
+  window.kopierVersjon = function(){
+    const i = parseInt(document.getElementById('versjonValg').value, 10);
+    const v = loggVersjoner[i];
+    const boks = document.getElementById('loggResultat');
+    if(!v) return;
+    kopierTekst(Promise.resolve(v.innhold)).then(ok => {
+      boks.className = 'status show ' + (ok ? 'ok' : 'err');
+      boks.textContent = ok
+        ? '📋 Kopiert versjon ' + (i + 1) + ' (' +
+          v.commitDato.toLocaleDateString('no-NO') + ') til utklippstavlen — ' +
+          Math.round(v.innhold.length / 1024) + ' kB.'
+        : '✗ Nettleseren tillot ikke kopiering. Bruk «Last ned» i stedet.';
+    });
+  };
+
+
+  // ===================================================================
+  // HELE PROSJEKTET I ÉN FIL
+  // -------------------------------------------------------------------
+  // Henter hver tekstfil i repoet og pakker dem i ett ZIP-arkiv, sammen
+  // med prosjektsammendraget. Ment for å starte en ny samtale med Claude:
+  // ett trykk her, én fil å legge ved, og innholdet er hentet fra GitHub
+  // — ikke fra kopier som ligger og slenger på telefonen.
+  //
+  // Arkivet skrives uten komprimering («store»). Det gjør filen større,
+  // men koden kort og uten noe eksternt bibliotek å holde ved like.
+  // Binærfiler (bilder o.l.) utelates med vilje: de kan ikke leses som
+  // tekst, og hører ikke hjemme i en samtale om koden.
+  // ===================================================================
+  const TEKST_ENDELSER = ['.html','.js','.json','.css','.rules','.yml','.yaml','.md','.txt','.svg'];
+
+  function erTekstfil(sti){
+    const lav = sti.toLowerCase();
+    return TEKST_ENDELSER.some(e => lav.endsWith(e));
+  }
+
+  const CRC_TAB = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[i] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(bytes) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) c = CRC_TAB[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function dosTid(d) {
+    const tid = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+    const dato = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+    return { tid, dato };
+  }
+
+  function lagZip(filer) {
+    const enc = new TextEncoder();
+    const { tid, dato } = dosTid(new Date());
+    const lokale = [];
+    const sentrale = [];
+    let offset = 0;
+
+    for (const f of filer) {
+      const navn = enc.encode(f.navn);
+      const data = f.bytes;
+      const crc = crc32(data);
+
+      const lh = new Uint8Array(30 + navn.length);
+      const lv = new DataView(lh.buffer);
+      lv.setUint32(0, 0x04034b50, true);
+      lv.setUint16(4, 20, true);
+      lv.setUint16(6, 0x0800, true);   // UTF-8 filnavn
+      lv.setUint16(8, 0, true);        // metode 0 = store
+      lv.setUint16(10, tid, true);
+      lv.setUint16(12, dato, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, data.length, true);
+      lv.setUint32(22, data.length, true);
+      lv.setUint16(26, navn.length, true);
+      lv.setUint16(28, 0, true);
+      lh.set(navn, 30);
+      lokale.push(lh, data);
+
+      const ch = new Uint8Array(46 + navn.length);
+      const cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, tid, true);
+      cv.setUint16(14, dato, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, data.length, true);
+      cv.setUint32(24, data.length, true);
+      cv.setUint16(28, navn.length, true);
+      cv.setUint32(42, offset, true);
+      ch.set(navn, 46);
+      sentrale.push(ch);
+
+      offset += lh.length + data.length;
+    }
+
+    const sdStart = offset;
+    let sdLen = 0;
+    for (const c of sentrale) sdLen += c.length;
+
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, filer.length, true);
+    ev.setUint16(10, filer.length, true);
+    ev.setUint32(12, sdLen, true);
+    ev.setUint32(16, sdStart, true);
+
+    const deler = [...lokale, ...sentrale, eocd];
+    let total = 0;
+    for (const d of deler) total += d.length;
+    const ut = new Uint8Array(total);
+    let p = 0;
+    for (const d of deler) { ut.set(d, p); p += d.length; }
+    return ut;
+  }
+
+  window.lastNedAlt = async function(){
+    const cfg = loadConfig();
+    const boks = document.getElementById('altStatus');
+    const btn = document.getElementById('altBtn');
+    const vis = (cls, tekst) => { boks.className = 'status show ' + cls; boks.textContent = tekst; };
+
+    btn.disabled = true;
+    vis('busy', 'Henter fillisten fra GitHub...');
+
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' };
+    const enc = new TextEncoder();
+
+    try{
+      const treRes = await fetch(base + '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1',
+        { headers, cache: 'no-store' });
+      if(!treRes.ok) throw new Error('filliste: HTTP ' + treRes.status);
+      const tre = await treRes.json();
+
+      const stier = (tre.tree || [])
+        .filter(n => n.type === 'blob' && erTekstfil(n.path))
+        .map(n => n.path)
+        .sort();
+      if(stier.length === 0) throw new Error('fant ingen tekstfiler');
+
+      const filer = [];
+      const hoppet = [];
+      for(let i = 0; i < stier.length; i++){
+        const sti = stier[i];
+        vis('busy', 'Henter fil ' + (i + 1) + ' av ' + stier.length + '\n' + sti);
+        try{
+          const repo = await hentPublisertFil(sti);
+          if(repo.finnes) filer.push({ navn: sti, bytes: enc.encode(repo.innhold) });
+          else hoppet.push(sti);
+        } catch(err){
+          hoppet.push(sti + ' (' + err.message + ')');
+        }
+      }
+
+      vis('busy', 'Pakker ' + filer.length + ' filer...');
+      const bytes = lagZip(filer);
+      const d = new Date();
+      const to = n => String(n).padStart(2, '0');
+      const navn = 'madina-' + d.getFullYear() + '-' + to(d.getMonth()+1) + '-' + to(d.getDate()) + '.zip';
+
+      const blob = new Blob([bytes], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = navn;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+
+      const harSammendrag = filer.some(f => f.navn.toLowerCase().endsWith('.md'));
+      vis(hoppet.length ? 'warn' : 'ok',
+        '📦 ' + navn + '\n\n' +
+        filer.length + ' filer · ' + Math.round(bytes.length / 1024) + ' kB\n' +
+        (harSammendrag ? '✓ sammendraget (.md) er med\n' : '⚠️ fant ingen .md-fil — sammendraget er ikke i repoet\n') +
+        (hoppet.length ? '\nUtelatt:\n  ' + hoppet.join('\n  ') + '\n' : '') +
+        '\nAlt er hentet fra GitHub nå, ikke fra kopier på telefonen. Legg ' +
+        'filen ved i en ny samtale.');
+    } catch(err){
+      vis('err', '✗ ' + err.message);
+    }
+    btn.disabled = false;
   };
 
   window.sjekkVersjon = async function(){
