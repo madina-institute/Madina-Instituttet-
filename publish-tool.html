@@ -580,6 +580,20 @@
            ' ' + to(d.getHours()) + ':' + to(d.getMinutes()) + ':' + to(d.getSeconds());
   }
 
+  // 🔴 Disse settes sammen av biter med vilje. Skrives de rett fram, står
+  // teksten «<!-- SIST-ENDRET:» i verktøyets egen kildekode — og når
+  // verktøyet publiserer SEG SELV, finner uttrykket under den, tror det er
+  // et gammelt stempel, og sletter malen ut av koden.
+  //
+  // Det skjedde. Fra 7. august 23:14 sto det «const merke = ''» i den
+  // publiserte versjonen, og HVER html- og md-fil publisert etterpå fikk
+  // et tomt stempel. Feilen var usynlig: verktøyet meldte «✓ Publisert»
+  // hver gang, og filene så normale ut.
+  //
+  // IKKE skriv disse to som én sammenhengende streng.
+  const MERKE_START = '<' + '!--';
+  const MERKE_SLUTT = '--' + '>';
+
   function stemplFil(sti, innhold){
     const tid = noTid();
     const lav = sti.toLowerCase();
@@ -588,16 +602,18 @@
     if(lav.endsWith('.json')) return innhold;
 
     if(lav.endsWith('.html')){
-      const merke = '';
+      const merke = MERKE_START + ' SIST-ENDRET: ' + tid + ' ' + MERKE_SLUTT;
       const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
       // Etter <!DOCTYPE ...> hvis den finnes, ellers helt øverst.
+      // De ledende linjeskiftene fjernes: den ødelagte versjonen la igjen
+      // en tom linje for hver publisering, og de hopet seg opp.
       const dt = rent.match(/^\s*<!DOCTYPE[^>]*>\s*\n?/i);
-      if(dt) return dt[0] + merke + '\n' + rent.slice(dt[0].length);
-      return merke + '\n' + rent;
+      if(dt) return dt[0] + merke + '\n' + rent.slice(dt[0].length).replace(/^\n+/, '');
+      return merke + '\n' + rent.replace(/^\n+/, '');
     }
 
     if(lav.endsWith('.js') || lav.endsWith('.css') || lav.endsWith('.rules')){
-      const merke = '/* SIST-ENDRET: ' + tid + ' */';
+      const merke = '/' + '* SIST-ENDRET: ' + tid + ' *' + '/';
       const rent = innhold.replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\n?/g, '');
       return merke + '\n' + rent;
     }
@@ -609,9 +625,9 @@
     }
 
     if(lav.endsWith('.md')){
-      const merke = '';
+      const merke = MERKE_START + ' SIST-ENDRET: ' + tid + ' ' + MERKE_SLUTT;
       const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
-      return merke + '\n' + rent;
+      return merke + '\n' + rent.replace(/^\n+/, '');
     }
 
     return innhold;
@@ -1314,8 +1330,13 @@
   // ===================================================================
   const TEKST_ENDELSER = ['.html','.js','.json','.css','.rules','.yml','.yaml','.md','.txt','.svg'];
 
+  // Låsefiler er hundrevis av kilobyte maskingenerert støy og hører ikke
+  // hjemme i et arkiv som skal leses av et menneske eller en samtale.
+  const UTELATT = ['package-lock.json', 'yarn.lock'];
+
   function erTekstfil(sti){
     const lav = sti.toLowerCase();
+    if(UTELATT.some(u => lav.endsWith(u))) return false;
     return TEKST_ENDELSER.some(e => lav.endsWith(e));
   }
 
