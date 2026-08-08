@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 23:42:14 -->
+<!-- SIST-ENDRET: 2026-08-08 23:55:03 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1578,7 +1578,15 @@
   };
 
   function lesProfilSkjema(){
-    const ut = {};
+    // Starter fra det som ALLEREDE står på lærerkortet, og legger
+    // skjemaets verdier oppå.
+    //
+    // Uten dette manglet feltene som var utfylt fra før — de tegnes jo
+    // ikke i skjemaet — og kontrollen meldte dem som «gjenstår». Skjermen
+    // ba da om noe det ikke fantes et felt for, og knappen kunne aldri bli
+    // aktiv. Feilen viste seg først for en lærer som hadde fag og
+    // lønnsstatus fra før, men manglet telefon.
+    const ut = { ...(currentTeacher || {}) };
     PROFIL_FELTER.forEach(f => {
       const el = document.getElementById('profil_' + f.key);
       if(el) ut[f.key] = el.value.trim();
@@ -1587,8 +1595,15 @@
   }
 
   window.lagreProfil = async function(){
-    const verdier = lesProfilSkjema();
-    if(profilMangler(verdier).length > 0){ oppdaterProfilSkjema(); return; }
+    if(profilMangler(lesProfilSkjema()).length > 0){ oppdaterProfilSkjema(); return; }
+    // Skriver KUN feltene som faktisk ble vist. lesProfilSkjema() tar med
+    // hele lærerkortet for kontrollens skyld — å lagre alt tilbake ville
+    // skrevet over felter denne skjermen ikke har noe med å gjøre.
+    const verdier = {};
+    PROFIL_FELTER.forEach(f => {
+      const el = document.getElementById('profil_' + f.key);
+      if(el) verdier[f.key] = el.value.trim();
+    });
     const knapp = document.getElementById('profilLagreBtn');
     knapp.disabled = true;
     const status = document.getElementById('profilStatus');
