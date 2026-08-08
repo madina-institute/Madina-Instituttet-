@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 22:42:46 -->
+<!-- SIST-ENDRET: 2026-08-08 23:10:11 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1673,7 +1673,8 @@
       <input class="search" id="searchClasses" placeholder="Søk etter klassenavn...">
       <span class="count-chip" id="countClasses" onclick="toggleRecordsById('tableClasses')">0 klasser</span>
       <button class="btn btn-ghost" onclick="exportCSV('classes')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('classes')">+ Ny klasse</button>
+      <button class="btn btn-primary" data-opprett="classes" onclick="openModal('classes')">+ Ny klasse</button>
+      <span class="hint" data-opprett-merknad="classes" style="display:none; align-self:center;"></span>
     </div>
     <div class="records-hidden card-grid" id="tableClasses"></div>
   </div>
@@ -1697,7 +1698,8 @@
       <input class="search" id="searchPrograms" placeholder="Søk etter programnavn...">
       <span class="count-chip" id="countPrograms" onclick="toggleRecordsById('tablePrograms')">0 programmer</span>
       <button class="btn btn-ghost" onclick="exportCSV('programs')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('programs')">+ Nytt program</button>
+      <button class="btn btn-primary" data-opprett="programs" onclick="openModal('programs')">+ Nytt program</button>
+      <span class="hint" data-opprett-merknad="programs" style="display:none; align-self:center;"></span>
     </div>
     <div class="records-hidden card-grid" id="tablePrograms"></div>
   </div>
@@ -1727,7 +1729,8 @@
       <input class="search" id="searchSchoolCalendar" placeholder="Søk etter beskrivelse...">
       <span class="count-chip" id="countSchoolCalendar" onclick="toggleRecordsById('tableSchoolCalendar')">0 dager</span>
       <button class="btn btn-ghost" onclick="exportCSV('schoolCalendar')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('schoolCalendar')">+ Ny dato</button>
+      <button class="btn btn-primary" data-opprett="schoolCalendar" onclick="openModal('schoolCalendar')">+ Ny dato</button>
+      <span class="hint" data-opprett-merknad="schoolCalendar" style="display:none; align-self:center;"></span>
     </div>
     <div class="records-hidden card-grid" id="tableSchoolCalendar"></div>
   </div>
@@ -1930,7 +1933,8 @@
       <button class="btn btn-ghost" onclick="toggleWeekView()">Vis ukeplan</button>
       <button class="btn btn-ghost" onclick="seedStandardTimeplan()">Last inn standard timeplan</button>
       <button class="btn btn-ghost" onclick="exportCSV('hours')">Eksporter CSV</button>
-      <button class="btn btn-primary" onclick="openModal('hours')">+ Ny time</button>
+      <button class="btn btn-primary" data-opprett="hours" onclick="openModal('hours')">+ Ny time</button>
+      <span class="hint" data-opprett-merknad="hours" style="display:none; align-self:center;"></span>
     </div>
 
     <div class="report-grid" id="weekView" style="display:none; margin-bottom:22px;">
@@ -2429,6 +2433,50 @@
   let currentUserRoles = [];
   function isCurrentUserEier(){ return currentUserRoles.includes('Eier'); }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // HVEM KAN OPPRETTE HVA
+  // -------------------------------------------------------------------
+  // Programmer og skolekalender styrer priser og undervisningsdager for
+  // HELE skolen — én endring der treffer alle elever og alle fakturaer.
+  // Klasser og timeplan er faglige beslutninger.
+  //
+  // Reglene sto tidligere ingen steder: enhver med administrativ tilgang
+  // kunne opprette hva som helst. Nå står de her, ett sted, slik at det
+  // er mulig å lese hva som gjelder uten å lete gjennom knappene.
+  //
+  // 🔴 MERK: dette er en sperre i grensesnittet, ikke en sikkerhetsregel.
+  // Firestore-reglene tillater fortsatt enhver innlogget konto å skrive.
+  // Ekte skjerming må ligge i firestore.rules — se punkt 4 i seksjon 16.
+  // ═══════════════════════════════════════════════════════════════════
+  const OPPRETT_ROLLER = {
+    programs:       ['Eier'],
+    schoolCalendar: ['Eier'],
+    classes:        ['Eier', 'Faglig / pedagogisk leder'],
+    hours:          ['Eier', 'Faglig / pedagogisk leder']
+  };
+
+  function kanOpprette(type){
+    const krav = OPPRETT_ROLLER[type];
+    if(!krav) return true;                       // ikke begrenset
+    return currentUserRoles.some(r => krav.includes(r));
+  }
+
+  // Skjuler knappen og setter en forklaring i stedet. En knapp som bare
+  // forsvinner får folk til å tro at noe er ødelagt.
+  function oppdaterOpprettKnapper(){
+    Object.keys(OPPRETT_ROLLER).forEach(type => {
+      const knapp = document.querySelector('[data-opprett="' + type + '"]');
+      if(!knapp) return;
+      const lov = kanOpprette(type);
+      knapp.style.display = lov ? '' : 'none';
+      const merknad = document.querySelector('[data-opprett-merknad="' + type + '"]');
+      if(merknad){
+        merknad.style.display = lov ? 'none' : '';
+        merknad.textContent = 'Kun ' + OPPRETT_ROLLER[type].join(' eller ') + ' kan legge til her.';
+      }
+    });
+  }
+
   // Opptak (godkjenne/avslå søknader og sende Vipps-krav) er lagt til én
   // egen rolle i stedet for til alle med administrativ tilgang. Grunnen er
   // at et Vipps-krav som blir betalt godkjenner søknaden AUTOMATISK — selve
@@ -2639,6 +2687,7 @@
       // lærer eller en fagkoordinator.
       const tabUtvikler = document.querySelector('.tab[data-tab="utvikler"]');
       if(tabUtvikler) tabUtvikler.style.display = isCurrentUserEier() ? '' : 'none';
+      oppdaterOpprettKnapper();
       resetInactivityTimer();
       // meetings/finances require request.auth != null in the Firestore
       // rules — attaching their listeners before login used to leave them
@@ -5337,9 +5386,12 @@
       else if(studentSelectedFolder) data = data.filter(row => row.klasse === studentSelectedFolder && row.elevStatus !== 'Sluttet/trukket');
     }
     renderRecordCards(type, data);
-    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', teacherAttendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger' };
+    // Mangler en type her, står det «2 undefined» i telleren — som det
+    // gjorde for Programmer. Reservenavnet «oppføringer» gjør at en ny
+    // type aldri kan produsere det ordet igjen.
+    const countLabels = { teachers:'lærere', guardians:'foresatte', students:'elever', classes:'klasser', hours:'oppføringer', attendance:'registreringer', teacherAttendance:'registreringer', lessonPlans:'forberedelser', meetings:'møtereferater', finances:'poster', registrations:'søknader', homework:'lekser', homeworkSubmissions:'leksesvar', absenceRequests:'fraværsmeldinger', announcements:'kunngjøringer', studentNotes:'elevnotater', messages:'meldinger', programs:'programmer', schoolCalendar:'dager', contactUpdateRequests:'endringer', paymentRequests:'forespørsler', dailyPlanTemplates:'maler', monthlyPlanTemplates:'maler', semesterPlanTemplates:'maler', monthlyPlans:'planer', semesterPlans:'planer' };
     const countEl = document.getElementById('count' + capitalize(type));
-    if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
+    if(countEl) countEl.innerHTML = data.length + ' ' + (countLabels[type] || 'oppføringer') + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
     if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); renderGuardianFolders(); }
@@ -7555,7 +7607,14 @@
       container.appendChild(wrap);
     });
     if(type === 'lessonPlans') wireSubjectSpecificFields(container, existing.fag || '');
-    if(schema.fields.some(f => f.essential)){
+    // Knappen vises kun når det FAKTISK finnes skjulte felter.
+    //
+    // Før var betingelsen «finnes det essensielle felter?» — noe helt
+    // annet. For foresatte er alle seks feltene essensielle, så knappen
+    // kom opp uten at det fantes noe å folde ut: den ble trykket, og
+    // ingenting skjedde. Betingelsen spør nå om det samme som knappen
+    // faktisk gjør.
+    if(container.querySelectorAll('.extra-field').length > 0){
       const toggleBtn = document.createElement('button');
       toggleBtn.type = 'button';
       toggleBtn.className = 'btn btn-ghost';
