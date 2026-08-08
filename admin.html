@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 01:24:48 -->
+<!-- SIST-ENDRET: 2026-08-09 01:57:59 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9623,6 +9623,7 @@
   async function sikreTilgangsindeks(){
     if(tilgangSjekket || !isCurrentUserEier()) return;
     tilgangSjekket = true;
+    let noeFeilet = false;
     for(const u of adminUsersCache){
       const e = (u.epost || '').trim().toLowerCase();
       if(!e) continue;
@@ -9633,7 +9634,20 @@
           epost: e, navn: u.navn || '', roller: u.roller || '',
           sistOppdatert: new Date().toISOString()
         }, { merge: true });
-      } catch(err){ console.error('tilgang:', e, err); }
+      } catch(err){
+        noeFeilet = true;
+        console.error('tilgang:', e, err);
+      }
+    }
+    // Feilet noe, må det prøves igjen. Sto flagget igjen som «gjort»,
+    // ble en person stående uten tilgang til reglene ut hele økten — og
+    // ville oppdaget det først når noe administrativt sluttet å virke.
+    //
+    // Dette skjedde faktisk: reglene ble limt inn ETTER at panelet var
+    // publisert, så det fantes et vindu der alle skrivinger ble avvist.
+    if(noeFeilet){
+      tilgangSjekket = false;
+      console.warn('Tilgangsindeksen er ufullstendig — prøver igjen ved neste oppdatering.');
     }
   }
 
