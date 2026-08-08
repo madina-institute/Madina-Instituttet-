@@ -318,18 +318,30 @@
         : 'Ingen påmeldinger står og venter på varsel.'
     });
 
-    // 4) E-post som ikke gikk ut
+    // 4) E-post som ikke gikk ut — kun den siste uken
+    // Gamle, allerede rettede feil blir liggende i 'mail' for alltid. Talte
+    // de med, ville siden vært rød i all framtid på grunn av noe som ble
+    // ordnet for lenge siden — og da slutter man å tro på den.
     try{
-      const q = query(collection(db, 'mail'), where('delivery.state', '==', 'ERROR'), limit(5));
+      const q = query(collection(db, 'mail'), where('delivery.state', '==', 'ERROR'), limit(25));
       const snap = await getDocs(q);
-      const første = snap.empty ? null : (snap.docs[0].data().delivery || {}).error;
+      const grense = new Date(Date.now() - 7*86400000).toISOString();
+      const ferske = snap.docs.filter(d => {
+        const dd = d.data().delivery || {};
+        const tt = dd.endTime || dd.startTime;
+        const i = tt && tt.toDate ? tt.toDate().toISOString() : tt;
+        return i && i > grense;
+      });
+      const gamle = snap.size - ferske.length;
+      const første = ferske.length ? (ferske[0].data().delivery || {}).error : null;
       sjekker.push({
         navn: 'E-post kommer fram',
-        ok: snap.empty,
+        ok: ferske.length === 0,
         advarsel: false,
-        detalj: snap.empty
-          ? 'Ingen e-post med feilstatus.'
-          : `<b>${snap.size}</b> e-post kom ikke fram. Første feil: ${String(første || 'ukjent').slice(0, 180)}`
+        detalj: ferske.length === 0
+          ? 'Ingen e-postfeil den siste uken.' +
+            (gamle ? ` (${gamle} eldre feil ligger i basen — utenfor vinduet, og teller ikke.)` : '')
+          : `<b>${ferske.length}</b> e-post kom ikke fram den siste uken. Første feil: ${String(første || 'ukjent').slice(0, 180)}`
       });
     } catch(err){
       sjekker.push({
