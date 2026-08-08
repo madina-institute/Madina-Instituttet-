@@ -60,7 +60,7 @@
   /* Inputene ligger som SØSKEN av etiketten sin, ikke inni den, så regelen
      over traff dem aldri — den native filvelgeren ble stående synlig ved
      siden av knappen. «for»-attributtet gjør at etiketten åpner den. */
-  #fileUpload, #multiFileUpload, #testFileUpload{ display:none; }
+  #fileUpload, #multiFileUpload{ display:none; }
   .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:10px 12px; border-radius:6px; display:none;}
   .status.show{display:block;}
   .status.ok{background:rgba(46,107,83,0.10); color:var(--emerald);}
@@ -76,6 +76,7 @@
     font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;
   }
   .overstyr-linje input{ width:16px; height:16px; flex:0 0 auto; }
+  .logg-skille{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
   #setupView{display:none;}
   #publishView{display:none;}
   .who-bar{
@@ -225,39 +226,27 @@
         <textarea id="fileContent" placeholder="Velg en fil ovenfor, eller lim inn innholdet manuelt her..." wrap="soft" oninput="nullstillSperre()"></textarea>
       </div>
       <button class="btn btn-ghost" id="sjekkBtn" onclick="sjekkVersjon()">🔍 Sjekk mot publisert versjon</button>
+      <button class="btn btn-ghost" id="lastNedBtn" onclick="lastNedPublisert()">⬇️ Last ned publisert versjon</button>
       <div class="status" id="diffPanel" style="white-space:pre-line;"></div>
       <button class="btn btn-danger" id="overstyrBtn" style="display:none;" onclick="publiserLikevel()">Publiser likevel</button>
 
       <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
       <div class="status" id="statusBox"></div>
+
+      <div class="logg-skille">
+        <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
+        <div class="hint">Går gjennom historikken til filen over og sier fra om rekkefølgen henger sammen. Publiserer ingenting.</div>
+        <div class="status" id="loggResultat" style="white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:11px; line-height:1.5;"></div>
+
+        <div id="versjonNedlasting" style="display:none; margin-top:12px;">
+          <label style="display:block; font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:5px; font-weight:600;">Hent ned en tidligere versjon</label>
+          <select id="versjonValg"></select>
+          <button class="btn btn-ghost" onclick="lastNedVersjon()">⬇️ Last ned valgt versjon</button>
+          <div class="hint">Filen får versjonsnummer i navnet, så den ikke forveksles med arbeidsfilen din.</div>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>🧪 Logg og kontroll</h2>
-      <div class="sub">Kun for undersøkelse — ingenting publiseres herfra.</div>
-
-      <div class="field">
-        <label>Hvilken fil?</label>
-        <input type="text" id="loggPath" list="loggPathListe" placeholder="f.eks. admin.html"
-               oninput="this.dataset.rort='1'">
-        <datalist id="loggPathListe"></datalist>
-        <div class="hint">Fylles automatisk fra filen du har valgt over.</div>
-      </div>
-
-      <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
-      <div class="status" id="loggResultat" style="white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:11px; line-height:1.5;"></div>
-
-      <div class="field" style="margin-top:18px;">
-        <label>Innhold å undersøke</label>
-        <label class="btn-file-label" for="testFileUpload">📎 Velg fil fra telefonen...</label>
-        <input type="file" id="testFileUpload" accept=".html,.js,.json,.css,.txt,.rules,.yml,.md" onchange="handleTestFileUpload(event)">
-        <div class="file-loaded-hint" id="testLoadedHint"></div>
-        <textarea id="testInnhold" placeholder="Velg en fil over, lim inn innhold her, eller hent fra publiseringsfeltet..." wrap="soft" style="min-height:90px;"></textarea>
-        <button type="button" class="clear-btn" onclick="hentTilTest()">Hent fra publiseringsfeltet</button>
-      </div>
-      <button class="btn btn-ghost" onclick="undersokInnhold()">🔍 Undersøk innholdets alder</button>
-      <div class="status" id="testResultat" style="white-space:pre-wrap;"></div>
-    </div>
   </div>
 
 </main>
@@ -435,7 +424,6 @@
     updatePathNotice();
     // En kontroll gjort for forrige fil skal aldri gjelde for den neste.
     if(window.nullstillSperre) window.nullstillSperre();
-    synkLoggPath();
   };
 
   // Filer under functions/ publiseres av en ANNEN GitHub Action enn
@@ -967,7 +955,7 @@
   }
 
   window.kjorLogg = async function(){
-    const path = document.getElementById('loggPath').value.trim();
+    const path = currentPath();
     const boks = document.getElementById('loggResultat');
     if(!path){
       boks.className = 'status show warn';
@@ -1016,53 +1004,21 @@
 
     const merknader = funn.length ? '\nMerknader:\n' + funn.map(f => '  ' + f.tekst).join('\n') + '\n' : '';
     boks.textContent = topp + merknader + '\nHistorikk (eldst først):\n' + linjer.join('\n');
+
+    // Gjør versjonene tilgjengelige for nedlasting. Er noe rullet
+    // tilbake, er det nettopp her man trenger å få tak i den riktige
+    // versjonen — og da skal man slippe å lete den opp på GitHub selv.
+    loggVersjoner = kron;
+    const sel = document.getElementById('versjonValg');
+    sel.innerHTML = kron.map((v, i) =>
+      '<option value="' + i + '">v' + (i + 1) + ' — ' +
+      v.commitDato.toLocaleDateString('no-NO') + ' ' +
+      v.commitDato.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'}) +
+      '</option>').join('');
+    sel.value = String(kron.length - 1);
+    document.getElementById('versjonNedlasting').style.display = 'block';
   };
 
-  // Ren undersøkelse: sier hva som ville skjedd, uten å publisere noe.
-  window.undersokInnhold = async function(){
-    const path = document.getElementById('loggPath').value.trim();
-    const innhold = document.getElementById('testInnhold').value;
-    const boks = document.getElementById('testResultat');
-    if(!path || !innhold.trim()){
-      boks.className = 'status show warn';
-      boks.textContent = 'Velg en filsti og lim inn innhold (eller last inn en fil over).';
-      return;
-    }
-    boks.className = 'status show busy';
-    boks.textContent = 'Undersøker...';
-
-    const dittStempel = lesStempel(innhold);
-    let r = await sammenlignMedPublisert(path, innhold);
-    if(r.status === 'ukjent'){
-      boks.textContent = 'Innholdet mangler stempel — leter i historikken...';
-      r = await utdypUkjent(path, innhold, r);
-    }
-    const d = beskrivResultat(r, path);
-
-    let publisert = 'kunne ikke leses';
-    try{
-      const p = await hentPublisertFil(path);
-      publisert = p.finnes ? visTid(lesStempel(p.innhold)) : 'filen finnes ikke i repoet';
-    } catch(err){ publisert = 'feil: ' + err.message; }
-
-    const bok = slåOppIBok(path, innhold);
-    const bokLinje = !bok.harBok
-      ? 'ingen oppføringer for denne filen ennå'
-      : (bok.kjent
-          ? (bok.indeks === 0
-              ? 'dette er nøyaktig det du sist publiserte'
-              : 'publisert herfra ' + visTid(bok.dato) + ' — ' + bok.indeks + ' publisering(er) siden')
-          : bok.antall + ' tidligere publiseringer registrert, ingen med dette innholdet');
-
-    boks.className = 'status show ' + d.cls;
-    boks.textContent =
-      'Ditt innhold:      ' + (dittStempel ? visTid(dittStempel) : 'uten SIST-ENDRET-stempel') + '\n' +
-      'Publisert versjon: ' + publisert + '\n' +
-      'Publiseringsbok:   ' + bokLinje + '\n' +
-      'Stempel ved publisering nå: ' + noTid() + '\n' +
-      '\nResultat: ' + (d.sperr ? 'VILLE BLITT SPERRET' : 'ville sluppet gjennom') + '\n\n' +
-      d.tekst;
-  };
 
   function beskrivResultat(r, path){
     if(r.status === 'ny')      return { sperr:false, cls:'ok',   tekst:'🆕 Ny fil — finnes ikke i repoet ennå. Trygt å publisere.' };
@@ -1154,6 +1110,92 @@
     p.textContent = tekst;
   }
 
+  // ===================================================================
+  // NEDLASTING
+  // -------------------------------------------------------------------
+  // Verktøyet henter allerede filinnhold fra GitHub ved hver kontroll —
+  // her lagres det ned i stedet for å kastes.
+  //
+  // Dette er ikke bare en bekvemmelighet: en fil hentet herfra HAR
+  // stempelet sitt i behold. Redigerer du den og laster den opp igjen,
+  // kjenner kontrollen alderen med én gang, uten å måtte grave i
+  // historikken. Det er den korte veien ut av hele problemet.
+  // ===================================================================
+  function lastNed(filnavn, innhold){
+    try{
+      const blob = new Blob([innhold], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filnavn;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+      return true;
+    } catch(err){
+      console.error('Nedlasting feilet:', err);
+      return false;
+    }
+  }
+
+  // Filnavnet uten mappe: «functions/index.js» lastes ned som «index.js».
+  // Da kjenner opplastingen filen igjen og legger den tilbake på riktig
+  // sti av seg selv.
+  function filnavnAv(sti){
+    return String(sti).split('/').pop();
+  }
+
+  window.lastNedPublisert = async function(){
+    const path = currentPath();
+    if(!path){
+      visDiff('warn', 'Velg en filsti først.');
+      return;
+    }
+    visDiff('busy', 'Henter ' + path + ' fra GitHub...');
+    try{
+      const repo = await hentPublisertFil(path);
+      if(!repo.finnes){
+        visDiff('warn', 'Filen «' + path + '» finnes ikke i repoet.');
+        return;
+      }
+      const ok = lastNed(filnavnAv(path), repo.innhold);
+      const stempel = lesStempel(repo.innhold);
+      visDiff(ok ? 'ok' : 'err', ok
+        ? '⬇️ Lastet ned ' + filnavnAv(path) + '\n\n' +
+          'Stempel: ' + (stempel ? visTid(stempel) : 'uten stempel') + '\n\n' +
+          'Denne kopien er den som ligger ute nå. Redigerer du den og laster ' +
+          'den opp igjen, går kontrollen umiddelbart — den slipper å lete i historikken.'
+        : '✗ Nettleseren tillot ikke nedlastingen.');
+    } catch(err){
+      visDiff('err', '✗ Kunne ikke hente filen: ' + err.message);
+    }
+  };
+
+  // Fylles av loggen, slik at en eldre versjon kan hentes ned uten å
+  // måtte spørre GitHub på nytt.
+  let loggVersjoner = [];
+
+  window.lastNedVersjon = function(){
+    const sel = document.getElementById('versjonValg');
+    const i = parseInt(sel.value, 10);
+    const v = loggVersjoner[i];
+    const boks = document.getElementById('loggResultat');
+    if(!v) return;
+    const sti = currentPath();
+    const navn = filnavnAv(sti).replace(/(\.[^.]+)$/, '__v' + (i + 1) + '_' +
+      v.commitDato.toISOString().slice(0, 10) + '$1');
+    const ok = lastNed(navn, v.innhold);
+    boks.className = 'status show ' + (ok ? 'ok' : 'err');
+    boks.textContent = ok
+      ? '⬇️ Lastet ned ' + navn + '\n\n' +
+        'Dette er versjon ' + (i + 1) + ', fra ' +
+        v.commitDato.toLocaleDateString('no-NO') + '.\n\n' +
+        'Navnet er merket med versjonsnummer med vilje, så den ikke ' +
+        'forveksles med arbeidsfilen din. Skal den publiseres, må navnet ' +
+        'settes tilbake til «' + filnavnAv(sti) + '» først.'
+      : '✗ Nettleseren tillot ikke nedlastingen.';
+  };
+
   window.sjekkVersjon = async function(){
     const path = currentPath();
     const content = document.getElementById('fileContent').value;
@@ -1164,11 +1206,34 @@
     visDiff('busy', 'Sammenligner med versjonen som ligger på GitHub...');
     let r = await sammenlignMedPublisert(path, content);
     if(r.status === 'ukjent'){
-      visDiff('busy', 'Filen mangler stempel — leter i historikken på GitHub...');
+      visDiff('busy', 'Filen mangler stempel — sjekker publiseringsboken og historikken...');
       r = await utdypUkjent(path, content, r);
     }
     const d = beskrivResultat(r, path);
-    visDiff(d.cls, d.tekst);
+
+    // Detaljene bygges av det vi ALLEREDE har hentet. Den gamle
+    // undersøkelsesboksen hentet filen fra GitHub en gang til bare for å
+    // vise disse linjene — én forespørsel til uten grunn.
+    const dittStempel = lesStempel(content);
+    const bok = slåOppIBok(path, content);
+    const bokLinje = !bok.harBok
+      ? 'ingen oppføringer for denne filen ennå'
+      : (bok.kjent
+          ? (bok.indeks === 0
+              ? 'dette er nøyaktig det du sist publiserte'
+              : 'publisert herfra ' + visTid(bok.dato) + ' — ' + bok.indeks + ' publisering(er) siden')
+          : bok.antall + ' tidligere publiseringer registrert, ingen med dette innholdet');
+    const publisertLinje = r.status === 'ny'
+      ? 'finnes ikke i repoet ennå'
+      : (r.repoTid ? visTid(r.repoTid) : 'uten stempel');
+
+    visDiff(d.cls,
+      'Din fil:            ' + (dittStempel ? visTid(dittStempel) : 'uten SIST-ENDRET-stempel') + '\n' +
+      'Publisert versjon:  ' + publisertLinje + '\n' +
+      'Publiseringsbok:    ' + bokLinje + '\n' +
+      'Stempel hvis du publiserer nå: ' + noTid() + '\n\n' +
+      d.tekst);
+
     document.getElementById('overstyrBtn').style.display = d.sperr ? 'block' : 'none';
     return d;
   };
@@ -1178,57 +1243,8 @@
     window.publish();
   };
 
-  // Samme opplasting som ved publisering, men her leder den ingen vei
-  // videre — filen blir bare undersøkt. Filstien slås opp fra filnavnet,
-  // slik at «index.js» havner på «functions/index.js» også her.
-  window.handleTestFileUpload = function(event){
-    const file = event.target.files && event.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e){
-      document.getElementById('testInnhold').value = e.target.result;
-      const hint = document.getElementById('testLoadedHint');
-      hint.className = 'file-loaded-hint show';
-      hint.textContent = '✓ Lastet inn: ' + file.name + ' (' + Math.round(file.size/1024) + ' kB)';
-      const felt = document.getElementById('loggPath');
-      const sti = finnFullSti(file.name);
-      felt.value = sti;
-      felt.dataset.rort = '1';
-      if(sti !== file.name){
-        hint.textContent += ' — undersøkes som «' + sti + '»';
-      }
-    };
-    reader.onerror = function(){
-      const hint = document.getElementById('testLoadedHint');
-      hint.className = 'file-loaded-hint show';
-      hint.textContent = '✗ Kunne ikke lese filen.';
-    };
-    reader.readAsText(file, 'UTF-8');
-  };
 
-  window.hentTilTest = function(){
-    document.getElementById('testInnhold').value = document.getElementById('fileContent').value;
-    const p = currentPath();
-    if(p) document.getElementById('loggPath').value = p;
-  };
 
-  // Holder logg-feltet i takt med filen du jobber med, og fyller
-  // forslagslisten fra de samme stiene som publiseringslisten bruker.
-  function synkLoggPath(){
-    const felt = document.getElementById('loggPath');
-    if(!felt) return;
-    const p = currentPath();
-    if(p && !felt.dataset.rort) felt.value = p;
-    const dl = document.getElementById('loggPathListe');
-    const sel = document.getElementById('filePreset');
-    if(dl && sel){
-      dl.innerHTML = [...sel.options]
-        .map(o => o.value)
-        .filter(v => v && v !== '__custom__')
-        .map(v => '<option value="' + v + '"></option>')
-        .join('');
-    }
-  }
 
   window.publish = async function(){
     const path = currentPath();
@@ -1388,7 +1404,6 @@
   };
 
   init();
-  synkLoggPath();
 </script>
 <style>
   #lastDeployBadge{
