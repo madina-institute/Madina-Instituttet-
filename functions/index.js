@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-08 20:18:03 */
+/* SIST-ENDRET: 2026-08-08 20:36:01 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1251,6 +1251,11 @@ const HELSE_SJEKK_INTERVALL_MS = 30 * 60 * 1000;  // sjekk hver halvtime
 const HELSE_VARSEL_PAUSE_MS = 24 * 60 * 60 * 1000; // maks ett varsel i døgnet
 const BACKUP_MAKS_ALDER_MS = 8 * 24 * 60 * 60 * 1000;
 const VARSEL_FAST_GRENSE_MS = 15 * 60 * 1000;
+// Vinduet for e-postfeil er en uke, ikke et døgn. Er man borte noen dager,
+// skal ikke feilen ha rukket å bli «gammel» og forsvinne fra varselet før
+// man er tilbake. Grensen finnes bare for at en feil som er rettet for
+// lenge siden ikke skal utløse varsel i all framtid.
+const HELSE_MAIL_VINDU_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Date.parse(0) leser "0" som årstallet 2000 og gir et GYLDIG tidspunkt.
 // Skriver man `Date.parse(felt || 0) || 0`, blir et manglende felt derfor
@@ -1290,14 +1295,34 @@ async function kjorHelsesjekk() {
       new Date(sisteKopi).toLocaleString("no-NO") + ". Den skal kjøre hver søndag.");
   }
 
-  // 2) E-post som ikke gikk ut
+  // 2) E-post som ikke gikk ut — KUN den siste uken
+  // Uten tidsgrensen ville et gammelt, allerede rettet feilslag utløst
+  // varsel hver eneste dag i all framtid. Da slutter man å lese varslene,
+  // og da er de verdiløse. Et varsel skal si «noe skjer nå», ikke
+  // «noe skjedde en gang».
+  //
+  // En uke er valgt med vilje: kort nok til at rettede feil slipper taket,
+  // langt nok til at en feil overlever en travel uke uten å bli glemt.
   try {
-    const feilet = await db.collection("mail").where("delivery.state", "==", "ERROR").limit(5).get();
-    if (!feilet.empty) {
-      const første = feilet.docs[0].data();
+    const grense = new Date(nå - HELSE_MAIL_VINDU_MS).toISOString();
+    const feilet = await db.collection("mail").where("delivery.state", "==", "ERROR").limit(25).get();
+    const ferske = feilet.docs.filter((d) => {
+      const dd = d.data().delivery || {};
+      // Utvidelsen setter endTime når forsøket ble avsluttet. Mangler den,
+      // regnes dokumentet som gammelt — heller overse et grensetilfelle
+      // enn å varsle om noe som skjedde for måneder siden.
+      const t = dd.endTime || dd.startTime;
+      const iso = t && t.toDate ? t.toDate().toISOString() : t;
+      return iso && iso > grense;
+    });
+    if (ferske.length > 0) {
+      const første = ferske[0].data();
       const grunn = (første.delivery && første.delivery.error) || "ukjent årsak";
-      funn.push(`${feilet.size} e-post${feilet.size === 1 ? "" : "er"} kom ikke fram. ` +
+      funn.push(`${ferske.length} e-post${ferske.length === 1 ? "" : "er"} kom ikke fram den siste uken. ` +
         `Første feil: ${String(grunn).slice(0, 200)}`);
+    } else if (feilet.size > 0) {
+      // Verdt å vite, men ikke verdt å vekke noen for.
+      logger.info(`${feilet.size} eldre e-postfeil i basen — utenfor varselvinduet.`);
     }
   } catch (err) {
     logger.warn("Kunne ikke sjekke mail-feil", err);
