@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-
+<!-- SIST-ENDRET: 2026-08-08 21:56:45 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -61,6 +61,34 @@
      over traff dem aldri — den native filvelgeren ble stående synlig ved
      siden av knappen. «for»-attributtet gjør at etiketten åpner den. */
   #fileUpload, #multiFileUpload{ display:none; }
+  /* Samme kortmønster som panelet — ett visuelt språk, ikke to. */
+  .side-grid{ display:flex; flex-direction:column; gap:14px; margin-bottom:16px; }
+  @media (min-width:640px){
+    .side-grid{ flex-direction:row; flex-wrap:wrap; }
+    .side-grid .side-card{ flex:1 1 calc(50% - 7px); min-width:230px; }
+  }
+  .side-card{
+    flex:1; background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:26px 22px; text-align:center; box-shadow:var(--shadow);
+    cursor:pointer; transition:border-color .2s, transform .2s;
+  }
+  .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .side-card .ic{ font-size:28px; margin-bottom:9px; }
+  .side-card h2{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px;
+    color:var(--emerald-d); margin:0 0 6px;
+  }
+  .side-card p{
+    font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;
+    margin:0; line-height:1.55;
+  }
+  /* Kortene sier hva som skjedde sist — status før man har trykket. */
+  .side-kontekst{
+    font-family:'Jost',sans-serif; font-size:11px; color:var(--gold);
+    margin-top:9px; min-height:14px;
+  }
+  #seksjonTopp{ margin-bottom:12px; }
+
   .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:10px 12px; border-radius:6px; display:none;}
   .status.show{display:block;}
   .status.ok{background:rgba(46,107,83,0.10); color:var(--emerald);}
@@ -156,7 +184,38 @@
       <button onclick="resetSetup()">Endre oppsett</button>
     </div>
 
-    <div class="card">
+    <!-- Verktøyet var én lang rulling der tre ulike oppgaver lå etter
+         hverandre. Man måtte bla forbi det man ikke skulle gjøre for å
+         nå det man skulle. Nå velges oppgave først — samme mønster som
+         panelet, slik at det er ett sted å lære, ikke to. -->
+    <div id="velgOppgave">
+      <div class="side-grid">
+        <div class="side-card" onclick="velgSeksjon('en')">
+          <div class="ic">📤</div>
+          <h2>Publiser én fil</h2>
+          <p>Legg ut én endring. Kontroll mot publisert versjon, nedlasting, kopiering og endringslogg.</p>
+          <div class="side-kontekst" id="ktxEn"></div>
+        </div>
+        <div class="side-card" onclick="velgSeksjon('flere')">
+          <div class="ic">📚</div>
+          <h2>Flere filer samtidig</h2>
+          <p>Velg flere filer på én gang. Hver havner på sin egen sti automatisk.</p>
+          <div class="side-kontekst" id="ktxFlere"></div>
+        </div>
+        <div class="side-card" onclick="velgSeksjon('arkiv')">
+          <div class="ic">📦</div>
+          <h2>Hele prosjektet</h2>
+          <p>Alle tekstfilene og sammendraget i ett arkiv — til en ny samtale.</p>
+          <div class="side-kontekst" id="ktxArkiv"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="seksjonTopp" style="display:none;">
+      <button class="btn btn-ghost" style="width:auto;" onclick="velgSeksjon(null)">← Alle oppgaver</button>
+    </div>
+
+    <div class="card" data-seksjon="flere">
       <h2>Publiser flere filer samtidig</h2>
       <div class="sub">Velg flere filer fra telefonen (f.eks. index.html, index1.html, index4.html) — hver fil publiseres til sin egen filsti automatisk, basert på filnavnet.</div>
 
@@ -174,14 +233,14 @@
       <div class="status" id="multiStatusBox"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-seksjon="arkiv">
       <h2>📦 Hele prosjektet</h2>
       <div class="sub">Pakker alle tekstfilene i repoet, sammen med sammendraget, i ett arkiv — klart til å legges ved i en ny samtale med Claude.</div>
       <button class="btn btn-primary" id="altBtn" onclick="lastNedAlt()">📦 Last ned hele prosjektet</button>
       <div class="status" id="altStatus" style="white-space:pre-wrap;"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-seksjon="en">
       <h2>Publiser én fil</h2>
       <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
 
@@ -383,6 +442,7 @@
       if([...sel.options].some(o => o.value === forrigeValg)) sel.value = forrigeValg;
 
       if(statusEl) statusEl.textContent = '✓ ' + stier.length + ' filer hentet fra repoet.';
+      oppdaterKortkontekst();
       onPresetChange();
     } catch(err){
       console.error('Kunne ikke hente filliste', err);
@@ -873,7 +933,10 @@
     if(!Array.isArray(rad) || rad.length === 0) return { kjent: false, harBok: false };
     const a = avtrykk(innhold);
     const i = rad.findIndex(r => r.a === a);
-    if(i === -1) return { kjent: false, harBok: true, nyeste: rad[0] };
+    // «antall» må være med også når innholdet IKKE finnes — meldingen
+    // under bruker det til å si hvor mange publiseringer boken kjenner.
+    // Uten feltet sto det «undefined tidligere publiseringer registrert».
+    if(i === -1) return { kjent: false, harBok: true, nyeste: rad[0], antall: rad.length };
     return { kjent: true, harBok: true, indeks: i, dato: new Date(rad[i].t), nyeste: rad[0], antall: rad.length };
   }
   // Delt av både sperren før publisering og loggen — hadde de hver sin
@@ -1760,8 +1823,134 @@
     btn.disabled = false;
   };
 
+  // ===================================================================
+  // KOPIER MELDINGEN
+  // -------------------------------------------------------------------
+  // Meldingene her er ofte det eneste holdepunktet når noe feiler — og
+  // de er lange. Å ta skjermbilde av dem, gjerne i flere deler, er en
+  // dårlig måte å bringe dem videre på.
+  //
+  // I stedet for én knapp ved hver av de fem statusboksene — og en
+  // glemt knapp neste gang det kommer en sjette — settes knappen inn
+  // automatisk ved siden av hver boks, og vises kun når boksen faktisk
+  // har noe å si.
+  //
+  // Knappen ligger som SØSKEN, ikke inni boksen. Koden setter
+  // «boks.textContent = ...» mange steder, og det ville slettet en
+  // knapp som lå inni.
+  // ===================================================================
+  // ===================================================================
+  // OPPGAVEVELGER
+  // -------------------------------------------------------------------
+  // Samme mønster som panelet: velg oppgave, se bare den. Verktøyet var
+  // én lang rulling der tre ulike oppgaver lå etter hverandre — man måtte
+  // bla forbi det man ikke skulle gjøre for å nå det man skulle.
+  //
+  // Kortene bærer også en linje med hva som faktisk skjedde sist. Et kort
+  // som bare sier hva det gjør, sier ingenting om tilstanden; den linjen
+  // gjør valget opplyst i stedet for blindt.
+  // ===================================================================
+  let aktivSeksjon = null;
+
+  window.velgSeksjon = function(seksjon){
+    aktivSeksjon = seksjon;
+    document.getElementById('velgOppgave').style.display = seksjon ? 'none' : 'block';
+    document.getElementById('seksjonTopp').style.display = seksjon ? 'block' : 'none';
+    document.querySelectorAll('#publishView [data-seksjon]').forEach(kort => {
+      kort.style.display = (seksjon && kort.dataset.seksjon === seksjon) ? '' : 'none';
+    });
+    if(!seksjon) oppdaterKortkontekst();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  function oppdaterKortkontekst(){
+    // Sist publiserte fil — hentes fra den lokale publiseringsboken, som
+    // uansett føres ved hver publisering.
+    try{
+      const bok = lesBok();
+      const rader = Object.entries(bok)
+        .map(([sti, rad]) => ({ sti, t: (rad && rad[0] && rad[0].t) || '' }))
+        .filter(r => r.t)
+        .sort((a, b) => b.t.localeCompare(a.t));
+      const el = document.getElementById('ktxEn');
+      if(el){
+        el.textContent = rader.length
+          ? 'Sist: ' + rader[0].sti + ' — ' +
+            new Date(rader[0].t).toLocaleString('no-NO', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})
+          : '';
+      }
+    } catch(e){ /* kontekst er en bonus, aldri et krav */ }
+
+    const nFiler = document.getElementById('filePreset');
+    const elFlere = document.getElementById('ktxFlere');
+    if(elFlere && nFiler){
+      const antall = [...nFiler.options].filter(o => o.value && o.value !== '__custom__').length;
+      elFlere.textContent = antall ? antall + ' filer i repoet' : '';
+    }
+  }
+
+  function utstyrStatusboksene(){
+    document.querySelectorAll('.status').forEach(boks => {
+      if(boks.dataset.harKopi) return;
+      boks.dataset.harKopi = '1';
+
+      const knapp = document.createElement('button');
+      knapp.type = 'button';
+      knapp.className = 'btn btn-ghost kopier-melding';
+      knapp.textContent = '📋 Kopier meldingen';
+      knapp.style.display = 'none';
+      knapp.style.marginTop = '6px';
+      boks.insertAdjacentElement('afterend', knapp);
+
+      knapp.addEventListener('click', () => {
+        // Filstien tas med: en feilmelding uten hvilken fil den gjaldt
+        // er halvparten av opplysningen.
+        const sti = (typeof currentPath === 'function' && currentPath()) || '';
+        const tekst = [
+          'PUBLISERINGSVERKTØY',
+          new Date().toLocaleString('no-NO'),
+          sti ? 'Fil: ' + sti : null,
+          '',
+          boks.textContent.trim()
+        ].filter(l => l !== null).join('\n');
+
+        const ferdig = (ok) => {
+          knapp.textContent = ok ? '✓ Kopiert' : '✗ Kunne ikke kopiere';
+          setTimeout(() => { knapp.textContent = '📋 Kopier meldingen'; }, 2500);
+        };
+        // Samme Safari-hensyn som ellers: skrivingen må skje inne i
+        // trykket, ellers nekter den stille.
+        try{
+          if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+            const blob = new Blob([tekst], { type: 'text/plain' });
+            navigator.clipboard.write([new ClipboardItem({ 'text/plain': Promise.resolve(blob) })])
+              .then(() => ferdig(true))
+              .catch(() => navigator.clipboard.writeText(tekst).then(() => ferdig(true)).catch(() => ferdig(false)));
+          } else {
+            navigator.clipboard.writeText(tekst).then(() => ferdig(true)).catch(() => ferdig(false));
+          }
+        } catch(e){ ferdig(false); }
+      });
+
+      // Viser knappen når boksen har innhold, skjuler den ellers.
+      // Observatøren ser på BOKSEN, mens vi endrer KNAPPEN — den utløser
+      // seg derfor ikke selv.
+      const oppdater = () => {
+        const synlig = boks.classList.contains('show') && boks.textContent.trim().length > 0;
+        knapp.style.display = synlig ? 'block' : 'none';
+      };
+      new MutationObserver(oppdater).observe(boks, {
+        childList: true, characterData: true, subtree: true,
+        attributes: true, attributeFilter: ['class']
+      });
+      oppdater();
+    });
+  }
+
   init();
   sjekkEgenVersjon();
+  utstyrStatusboksene();
+  velgSeksjon(null);
 </script>
 <style>
   #lastDeployBadge{
