@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 23:42:18 -->
+<!-- SIST-ENDRET: 2026-08-08 23:53:02 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2716,6 +2716,7 @@
 
   window.doAdminLogout = function(){
     if(!confirm('Logg ut?')) return;
+    avsluttOkt();   // fanger de siste minuttene før man går
     signOut(auth);
   };
 
@@ -2723,6 +2724,77 @@
   // show a lock screen requiring the password again. This does NOT sign
   // the admin out of Firebase (no data/session is lost) — it's a local
   // "lock the screen" measure, same idea as a phone's lock screen.
+  // ═══════════════════════════════════════════════════════════════════
+  // ØKTREGISTRERING
+  // -------------------------------------------------------------------
+  // Panelet førte ingen logg over egen bruk. Portalene skrev til
+  // 'loginEvents', men admin gjorde det ikke — så det fantes ingen måte
+  // å se om en konto var i bruk, eller opprettet og glemt.
+  //
+  // HVORDAN MINUTTER MÅLES: en nettleser sier aldri fra når fanen lukkes.
+  // I stedet oppdateres SAMME oppføring med et livstegn mens man er
+  // aktiv, høyst hvert annet minutt. Varigheten er da tiden fra første
+  // til siste livstegn — nøyaktig innenfor to minutter, og uten å skrive
+  // hundrevis av dokumenter for én økt.
+  //
+  // Livstegnet henger på museklikk og tastetrykk, som allerede lyttes
+  // etter for inaktivitetslåsen. Ligger siden åpen uten at noen rører
+  // den, teller den ikke — det er brukstid vi er ute etter, ikke
+  // hvor lenge en fane sto åpen.
+  //
+  // 🔴 Dette er driftsstatistikk, ikke overvåking: hvem som var pålogget
+  // og hvor lenge. Ikke hva de så på.
+  // ═══════════════════════════════════════════════════════════════════
+  const PULS_INTERVALL_MS = 2 * 60 * 1000;
+  let oktRef = null;
+  let oktStart = null;
+  let sistePuls = 0;
+
+  async function startOkt(){
+    if(oktRef) return;
+    oktStart = new Date();
+    sistePuls = Date.now();
+    try{
+      const doc = await addDoc(collection(db, 'loginEvents'), {
+        role: 'admin',
+        epost: currentUserEmail || '',
+        navn: (cache.teachers || []).find(t => (t.epost||'').toLowerCase() === (currentUserEmail||'').toLowerCase())?.navn || '',
+        roller: currentUserRoles.join(', '),
+        timestamp: oktStart.toISOString(),
+        sisteAktivitet: oktStart.toISOString(),
+        varighetMin: 0
+      });
+      oktRef = doc;
+    } catch(err){
+      console.error('Kunne ikke registrere økt', err);
+    }
+  }
+
+  function oktPuls(){
+    if(!oktRef || isLocked) return;
+    const nå = Date.now();
+    if(nå - sistePuls < PULS_INTERVALL_MS) return;   // høyst hvert 2. minutt
+    sistePuls = nå;
+    const minutter = Math.round((nå - oktStart.getTime()) / 60000);
+    updateDoc(oktRef, {
+      sisteAktivitet: new Date(nå).toISOString(),
+      varighetMin: minutter
+    }).catch(err => console.error('Kunne ikke oppdatere økt', err));
+  }
+
+  // Siste livstegn ved utlogging, slik at de siste minuttene før man går
+  // ikke faller bort.
+  function avsluttOkt(){
+    if(!oktRef) return;
+    const minutter = Math.max(1, Math.round((Date.now() - oktStart.getTime()) / 60000));
+    updateDoc(oktRef, {
+      sisteAktivitet: new Date().toISOString(),
+      varighetMin: minutter,
+      avsluttet: true
+    }).catch(()=>{});
+    oktRef = null; oktStart = null;
+  }
+
   const INACTIVITY_LIMIT_MS = 20 * 60 * 1000;
   let inactivityTimer = null;
   let isLocked = false;
@@ -2736,7 +2808,12 @@
   }
   ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(evt => {
     document.addEventListener(evt, resetInactivityTimer, { passive: true });
+    document.addEventListener(evt, oktPuls, { passive: true });
   });
+  // Siste livstegn når fanen lukkes eller legges bort. Ikke garantert i
+  // alle nettlesere — derfor er den jevnlige pulsen hovedmekanismen, og
+  // dette bare en forbedring når den rekker å kjøre.
+  window.addEventListener('pagehide', avsluttOkt);
 
   function lockSession(){
     if(!currentUserEmail) return;
@@ -2869,6 +2946,7 @@
         // bekreftet OG e-posten er godkjent mot 'adminUsers'. Sto de i
         // modulen, ble de avvist for godt ved første innlogging, og
         // panelet viste «ikke tilkoblet» til man oppdaterte siden.
+        startOkt();
         startAlleDatalyttere();
         startOvrigeLyttere();
         attachListener('meetings');
@@ -8257,6 +8335,8 @@
       tittel: '👁️ Innsyn (kun eier)',
       sub: 'Aktivitet på tvers av alle. Ikke tenkt for daglig bruk.',
       lenker: [
+        { navn: 'Ledelsesinnsyn', url: 'ledelseinnsyn.html',
+          om: 'Bruk av selve panelet: innlogginger og minutter per person, siste 7 og 30 dager. Viser også hvem som er opprettet, men aldri har logget inn.' },
         { navn: 'Foreldreinnsyn', url: 'foreldreinnsyn.html',
           om: 'Siste innlogging og aktivitet for hver foresatt.' },
         { navn: 'Lærerinnsyn', url: 'larerinnsyn.html',
