@@ -371,6 +371,37 @@
       });
     }
 
+    // 6) Feil fanget i portalene
+    // Alle catch-blokkene i panelet og portalene skriver hit nå. Før gikk
+    // de til console — som ingen ser på en telefon.
+    try{
+      const grense = new Date(Date.now() - 7*86400000).toISOString();
+      const q = query(collection(db, 'feillogg'), where('tidspunkt', '>', grense), limit(50));
+      const snap = await getDocs(q);
+      const grupper = new Map();
+      snap.forEach(d => {
+        const m = (d.data().melding || '').slice(0, 90);
+        grupper.set(m, (grupper.get(m) || 0) + 1);
+      });
+      const topp = [...grupper.entries()].sort((a,b) => b[1]-a[1]).slice(0, 3);
+      sjekker.push({
+        navn: 'Feil fanget i portalene',
+        ok: snap.empty,
+        advarsel: false,
+        detalj: snap.empty
+          ? 'Ingen feil registrert den siste uken.'
+          : `<b>${snap.size}</b> feil den siste uken. Vanligste:<br>` +
+            topp.map(([m,n]) => `• ${m} <b>(${n})</b>`).join('<br>')
+      });
+    } catch(err){
+      sjekker.push({
+        navn: 'Feil fanget i portalene',
+        ok: false, advarsel: true,
+        detalj: 'Kunne ikke leses: ' + err.message +
+          '<br>Mangler <b>feillogg</b> en regel i firestore.rules?'
+      });
+    }
+
     tegnSjekker(sjekker);
     feilBoks.className = 'status';
     feilBoks.textContent = '';
