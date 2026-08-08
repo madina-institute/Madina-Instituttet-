@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-
+<!-- SIST-ENDRET: 2026-08-08 23:42:14 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -376,6 +376,25 @@
 </header>
 
 <main>
+
+  <!-- FØRSTEGANGSUTFYLLING -->
+  <div id="profilView" class="mlogin" style="--mlogin-accent:#1A9BEC; display:none;">
+    <div class="mlogin-inner">
+      <h1 class="mlogin-brand">Velkommen, <span id="profilNavn"></span></h1>
+      <div class="mlogin-card">
+        <div class="mlogin-role"><span class="ic">📝</span><span class="t">Fyll ut opplysningene dine</span></div>
+        <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.6; margin:0 0 16px;">
+          Skolen har opprettet kontoen din med navn og e-post. Resten er
+          opplysninger bare du sitter på — de fylles ut én gang, og kan
+          endres senere av administrasjonen.
+        </p>
+        <div id="profilFelter"></div>
+        <div id="profilStatus" style="font-family:'Jost',sans-serif; font-size:12px; color:var(--gold); margin:12px 0 10px; min-height:16px;"></div>
+        <button class="mlogin-btn" id="profilLagreBtn" onclick="lagreProfil()">Lagre og fortsett</button>
+        <a class="mlogin-forgot" onclick="doLogout()" style="cursor:pointer;">Logg ut</a>
+      </div>
+    </div>
+  </div>
 
   <!-- LOGIN -->
   <div id="loginView" class="mlogin" style="--mlogin-accent:#1A9BEC;">
@@ -905,10 +924,7 @@
   const app = initializeApp(firebaseConfig);
   // App Check settes opp i try/catch. Safari med «avansert personvern-
   // beskyttelse» blokkerer google.com/recaptcha, og et kast herfra stopper
-  // HELE modulen: siden vises helt normalt, men ingenting virker — verken
-  // innlogging eller datalyttere — og det kommer ingen feilmelding.
-  // Dette var årsaken til at foreldreportalen sa «fant ingen konto» i
-  // Safari, men virket i Firefox. Samme løsning som i index4.html.
+  // HELE modulen: siden vises helt normalt, men ingenting virker.
   let appCheck = null;
   try{
     appCheck = initializeAppCheck(app, {
@@ -920,47 +936,25 @@
   }
   const db = getFirestore(app);
   const auth = getAuth(app);
-
-  // ═════════════════════════════════════════════════════════════════
-  // FEILLOGG — gjør stille feil synlige
-  // -----------------------------------------------------------------
-  // Denne filen har titalls steder som fanger en feil og skriver den til
-  // console. På en telefon finnes det ingen console: feilen skjer,
-  // brukeren ser ingenting, og ingen får vite det.
-  //
-  // I stedet for å endre hvert eneste catch legger vi oss FORAN
-  // console.error. Da blir alle eksisterende feilfangere synlige uten at
-  // én linje av dem røres — og nye som skrives senere blir det av seg selv.
-  //
-  // Fire ting må være på plass, ellers gjør dette mer skade enn nytte:
-  //   1. Ingen løkke — logging som feiler må ikke logge sin egen feil
-  //   2. Tak per økt — en feil inne i en render-løkke kan ellers skrive
-  //      tusenvis av dokumenter på sekunder
-  //   3. Samme feil samles — 40 like feil skal bli én rad
-  //   4. Krever innlogging — reglene tillater ikke skriving uten
-  // ═════════════════════════════════════════════════════════════════
+  // Feillogg: legger seg foran console.error slik at alle eksisterende
+  // catch-blokker blir synlige uten at én av dem røres. Se admin.html for
+  // full begrunnelse — de fire vaktene er de samme her.
   (function(){
-    const MAKS_PER_ØKT = 25;
-    const GJENTAKELSE_MS = 10 * 60 * 1000;
+    const MAKS_PER_ØKT = 25, GJENTAKELSE_MS = 10 * 60 * 1000;
     let antallSkrevet = 0, skriverNå = false;
     const sett = new Map();
-
     function kort(v){
       if(v instanceof Error) return v.message || String(v);
       if(typeof v === 'string') return v;
       try { return JSON.stringify(v); } catch(e){ return String(v); }
     }
-
     async function loggFeil(type, melding, detalj){
-      if(skriverNå) return;                       // 1
-      if(antallSkrevet >= MAKS_PER_ØKT) return;   // 2
-      if(!auth.currentUser) return;               // 4
+      if(skriverNå || antallSkrevet >= MAKS_PER_ØKT || !auth.currentUser) return;
       const tekst = String(melding || '').slice(0, 500);
       if(!tekst) return;
-      const nøkkel = type + '|' + tekst.slice(0, 120);
-      const nå = Date.now();
+      const nøkkel = type + '|' + tekst.slice(0, 120), nå = Date.now();
       const forrige = sett.get(nøkkel);
-      if(forrige && nå - forrige < GJENTAKELSE_MS) return;   // 3
+      if(forrige && nå - forrige < GJENTAKELSE_MS) return;
       sett.set(nøkkel, nå);
       skriverNå = true;
       try{
@@ -972,27 +966,17 @@
           adresse: location.pathname + location.hash,
           tidspunkt: new Date().toISOString()
         });
-      } catch(e){
-        // Med vilje tom. Kan vi ikke logge, er det ingenting mer å gjøre —
-        // og å rope om det ville startet nettopp løkken vi unngår.
-      } finally {
-        skriverNå = false;
-      }
+      } catch(e){ /* med vilje tom — se admin.html */ }
+      finally { skriverNå = false; }
     }
-
     const origError = console.error.bind(console);
     console.error = function(...args){
       origError(...args);
       const stakk = args.find(a => a instanceof Error);
       loggFeil('console', args.map(kort).join(' '), stakk && stakk.stack);
     };
-    window.addEventListener('error', (e) => {
-      loggFeil('uncaught', e.message, (e.filename || '') + ':' + (e.lineno || ''));
-    });
-    window.addEventListener('unhandledrejection', (e) => {
-      const r = e.reason;
-      loggFeil('promise', kort(r), r && r.stack);
-    });
+    window.addEventListener('error', (e) => loggFeil('uncaught', e.message, (e.filename||'') + ':' + (e.lineno||'')));
+    window.addEventListener('unhandledrejection', (e) => loggFeil('promise', kort(e.reason), e.reason && e.reason.stack));
   })();
 
 
@@ -1517,6 +1501,114 @@
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════════
+  // FØRSTEGANGSUTFYLLING
+  // -------------------------------------------------------------------
+  // Administrasjonen oppretter en lærer med navn og e-post — det er alt
+  // de kan vite. Resten (fag, dager, telefon, kontonummer for lønn) er
+  // opplysninger læreren selv sitter på.
+  //
+  // Før måtte administrasjonen etterspørre dem én for én, og kortene sto
+  // halvtomme i månedsvis. Nå fylles de ut av den som faktisk kjenner
+  // svarene, ved første innlogging — og man kommer ikke videre uten.
+  //
+  // 📌 VIKTIG: dette er IKKE en sperre mot læreren. Det er stedet der
+  // opplysningene hører hjemme. Derfor forklarer skjermen hvorfor hvert
+  // felt trengs, i stedet for bare å kreve dem.
+  //
+  // ⚠️ «tildeltKlasse» er med vilje IKKE med her. Klassetildeling er en
+  // pedagogisk beslutning som tas av skolen, ikke noe læreren velger selv.
+  // ═══════════════════════════════════════════════════════════════════
+  const PROFIL_FELTER = [
+    { key:'telefon', label:'Telefonnummer', type:'tel',
+      hjelp:'Brukes når skolen må nå deg samme dag — ved sykdom eller endring i timeplanen.' },
+    { key:'fag', label:'Fag du underviser i', type:'select',
+      valg:['','Koran','Islam','Arabisk','Urdu','Assistent','Annet'],
+      hjelp:'Bestemmer hvilke felter du får i timeforberedelsen.' },
+    { key:'kjonn', label:'Kjønn', type:'select', valg:['','Mann','Kvinne'],
+      hjelp:'Brukes ved fordeling av klasser og ved oppsett av vikarer.' },
+    { key:'lonnStatus', label:'Lønnsstatus', type:'select',
+      valg:['','Lønnet','Frivillig'],
+      hjelp:'Er du frivillig, registreres timene dine uten lønn.' },
+    { key:'kontonummer', label:'Kontonummer', type:'text', valgfriHvis:'lonnStatus=Frivillig',
+      hjelp:'Kun for utbetaling av lønn. Frivillige lar feltet stå tomt.' }
+  ];
+
+  function profilMangler(teacher){
+    return PROFIL_FELTER.filter(f => {
+      // Kontonummer kreves ikke av frivillige — å be en frivillig om
+      // kontonummer for en lønn som aldri kommer, er å be om noe man
+      // ikke skal ha.
+      if(f.valgfriHvis){
+        const [k, v] = f.valgfriHvis.split('=');
+        if((teacher[k] || '') === v) return false;
+      }
+      return !String(teacher[f.key] || '').trim();
+    });
+  }
+
+  window.visProfilUtfylling = function(teacher){
+    const mangler = profilMangler(teacher);
+    const boks = document.getElementById('profilFelter');
+    boks.innerHTML = mangler.map(f => `
+      <div class="profil-felt">
+        <label>${escapeHtml(f.label)}</label>
+        ${f.type === 'select'
+          ? `<select id="profil_${f.key}" onchange="oppdaterProfilSkjema()">
+               ${f.valg.map(v => `<option value="${escapeHtml(v)}">${v ? escapeHtml(v) : '— velg —'}</option>`).join('')}
+             </select>`
+          : `<input type="${f.type}" id="profil_${f.key}" oninput="oppdaterProfilSkjema()">`}
+        <div class="profil-hjelp">${escapeHtml(f.hjelp)}</div>
+      </div>`).join('');
+    document.getElementById('profilNavn').textContent = teacher.navn || '';
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('profilView').style.display = 'flex';
+    oppdaterProfilSkjema();
+  };
+
+  // Sier hva som gjenstår, i stedet for å la knappen være grå uten grunn.
+  window.oppdaterProfilSkjema = function(){
+    const mangler = profilMangler(lesProfilSkjema());
+    const knapp = document.getElementById('profilLagreBtn');
+    const status = document.getElementById('profilStatus');
+    knapp.disabled = mangler.length > 0;
+    status.textContent = mangler.length === 0
+      ? 'Alt er fylt ut.'
+      : 'Gjenstår: ' + mangler.map(f => f.label.toLowerCase()).join(', ');
+  };
+
+  function lesProfilSkjema(){
+    const ut = {};
+    PROFIL_FELTER.forEach(f => {
+      const el = document.getElementById('profil_' + f.key);
+      if(el) ut[f.key] = el.value.trim();
+    });
+    return ut;
+  }
+
+  window.lagreProfil = async function(){
+    const verdier = lesProfilSkjema();
+    if(profilMangler(verdier).length > 0){ oppdaterProfilSkjema(); return; }
+    const knapp = document.getElementById('profilLagreBtn');
+    knapp.disabled = true;
+    const status = document.getElementById('profilStatus');
+    status.textContent = 'Lagrer…';
+    try{
+      await updateDoc(doc(db, 'teachers', currentTeacher.id), {
+        ...verdier,
+        profilFullfort: new Date().toISOString()
+      });
+      Object.assign(currentTeacher, verdier);
+      document.getElementById('profilView').style.display = 'none';
+      fullforInnlogging(currentTeacher);
+    } catch(err){
+      console.error('Kunne ikke lagre profil', err);
+      // Opplysningene ligger fortsatt i feltene — ingenting er tapt.
+      status.textContent = 'Kunne ikke lagre. Sjekk nettforbindelsen og prøv igjen.';
+      knapp.disabled = false;
+    }
+  };
+
   window.doLogin = async function(){
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
@@ -1563,6 +1655,21 @@
     currentTeacher = teacher;
     updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     addDoc(collection(db, 'loginEvents'), { role: 'teacher', personId: teacher.id, timestamp: new Date().toISOString() }).catch(()=>{});
+
+    // Mangler opplysninger på kortet, må de fylles ut før portalen åpnes.
+    // Innloggingen er allerede godkjent — dette er ikke en ny sperre, men
+    // et steg som må gjøres én gang.
+    if(profilMangler(teacher).length > 0){
+      visProfilUtfylling(teacher);
+      return;
+    }
+    fullforInnlogging(teacher);
+  };
+
+  // Alt som skjer når portalen faktisk åpnes. Skilt ut fordi det nå kan
+  // skje på to tidspunkter: rett etter innlogging, eller etter at
+  // førstegangsutfyllingen er lagret.
+  function fullforInnlogging(teacher){
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('whoText').textContent = teacher.navn + ' · ' + resolveClassName(teacher.tildeltKlasse);
@@ -1577,7 +1684,7 @@
     showChoice();
     updateMsgDot();
     resetInactivityTimer();
-  };
+  }
 
   window.doForgotPassword = async function(){
     const errEl = document.getElementById('loginError');
@@ -4057,6 +4164,21 @@ ${extraScript || ''}
   }
   .mlogin-role .ic{ font-size:20px; line-height:1; }
   .mlogin-role .t{ font-family:'Jost',sans-serif; font-size:14.5px; font-weight:600; color:var(--mlogin-accent); }
+  .profil-felt{ margin-bottom:15px; }
+  .profil-felt label{
+    display:block; font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    margin-bottom:5px; color:var(--mlogin-accent); letter-spacing:.02em;
+  }
+  .profil-felt input, .profil-felt select{
+    width:100%; padding:12px 13px; border:1px solid rgba(40,40,90,.14);
+    border-radius:9px; font-size:16px; background:#fbfcfe; font-family:'Jost',sans-serif;
+  }
+  .profil-hjelp{
+    font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
+    margin-top:4px; line-height:1.5;
+  }
+  .mlogin-btn:disabled{ opacity:.45; cursor:not-allowed; }
+
   .mlogin-field{ margin-bottom:13px; }
   .mlogin-field label{
     display:block; font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
