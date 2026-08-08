@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-08 19:33:26 */
+/* SIST-ENDRET: 2026-08-08 20:18:03 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -994,6 +994,13 @@ exports.ukentligSikkerhetskopi = onSchedule(
   },
   async () => {
     await lagSikkerhetskopi();
+    // Puls: skriver ned at kjøringen faktisk skjedde. Uten dette finnes
+    // det ingen måte å se at sikkerhetskopien har uteblitt — en jobb som
+    // ikke kjører sier ingenting, den bare lar være.
+    await db.collection("settings").doc("helse").set(
+      { sikkerhetskopiSiste: new Date().toISOString() },
+      { merge: true }
+    ).catch((err) => logger.warn("Kunne ikke skrive puls for sikkerhetskopi", err));
   }
 );
 
@@ -1138,6 +1145,18 @@ async function sendVarslerForSoknad(reg, id, oppsett) {
 exports.varsleNySoknad = onSchedule(
   { schedule: "every 2 minutes", timeZone: "Europe/Oslo" },
   async () => {
+    let feilet = 0;
+    // Pulsen skrives ved HVER kjøring, også når det ikke er noe å varsle
+    // om. Da forteller den at jobben lever — ikke bare at den hadde noe
+    // å gjøre.
+    await db.collection("settings").doc("helse")
+      .set({ varselSisteKjoring: new Date().toISOString() }, { merge: true })
+      .catch((err) => logger.warn("Kunne ikke skrive puls", err));
+
+    // Helsesjekken går uansett hva som skjer under — den skal ikke være
+    // avhengig av at det finnes nye søknader den dagen.
+    await kjorHelsesjekk().catch((err) => logger.error("Helsesjekk feilet", err));
+
     let oppsett = {};
     try {
       const doc = await db.collection("settings").doc("varsler").get();
@@ -1148,7 +1167,15 @@ exports.varsleNySoknad = onSchedule(
 
     const snap = await db.collection("registrations").get();
     const uvarslede = snap.docs.filter((d) => d.data().varselSendt !== true);
-    if (uvarslede.length === 0) return;
+    if (uvarslede.length === 0) {
+      // Ingenting står igjen — da er en eventuell tidligere feil over.
+      // Uten dette ville merket blitt hengende, og helsesjekken hadde
+      // fortsatt å varsle om noe som for lengst var i orden.
+      await db.collection("settings").doc("helse")
+        .set({ varselFastSiden: null }, { merge: true })
+        .catch(() => {});
+      return;
+    }
 
     // FØRSTE KJØRING: alle søknader som allerede lå der fra før merkes
     // som håndtert UTEN at det sendes noe. Uten dette ville første
@@ -1174,7 +1201,149 @@ exports.varsleNySoknad = onSchedule(
         await d.ref.update({ varselSendt: true, varselSendtDato: new Date().toISOString() });
       } catch (err) {
         logger.error(`Varsling feilet for søknad ${d.id} — prøves igjen`, err);
+        feilet++;
       }
+    }
+
+    // Setter et merke første gang noe blir stående. Blir merket hengende
+    // i mer enn et kvarter, sier helsesjekken fra. Går alt gjennom,
+    // fjernes det igjen — ellers ville en enkelt gammel feil utløst
+    // varsler i det uendelige.
+    try {
+      const helseRef = db.collection("settings").doc("helse");
+      if (feilet > 0) {
+        const doc = await helseRef.get();
+        if (!doc.exists || !doc.data().varselFastSiden) {
+          await helseRef.set({ varselFastSiden: new Date().toISOString() }, { merge: true });
+        }
+      } else {
+        await helseRef.set({ varselFastSiden: null }, { merge: true });
+      }
+    } catch (err) {
+      logger.warn("Kunne ikke oppdatere feilmerke", err);
     }
   }
 );
+
+// =====================================================================
+// HELSESJEKK — får feilene til å si fra selv
+// ---------------------------------------------------------------------
+// Alle feilene som ble rettet 8. august hadde én ting til felles: de sa
+// ingenting. App Check sto på 0 % i fire døgn, stemplene var slått ut i
+// et døgn, og publiseringen av funksjonene feilet mens GitHub viste
+// grønt hele veien. Systemet virket — bare uten det man trodde det
+// hadde.
+//
+// Denne delen snur på det. Den ser etter tegn på at noe har stanset, og
+// sender én e-post når den finner noe. Den venter ikke på at noen skal
+// komme og se etter.
+//
+// TRE TING SJEKKES:
+//   1. Uteblitt sikkerhetskopi  — pulsen er eldre enn 8 døgn
+//   2. E-post som ikke gikk ut  — dokumenter i 'mail' med delivery ERROR
+//   3. Varsler som står fast    — søknader som ikke ble merket
+//
+// STØYKONTROLL: varsles høyst én gang i døgnet, og bare når noe FAKTISK
+// er galt. Et varsel som kommer hver dag uansett blir ignorert etter en
+// uke, og da er vi like blinde som før.
+// =====================================================================
+const HELSE_SJEKK_INTERVALL_MS = 30 * 60 * 1000;  // sjekk hver halvtime
+const HELSE_VARSEL_PAUSE_MS = 24 * 60 * 60 * 1000; // maks ett varsel i døgnet
+const BACKUP_MAKS_ALDER_MS = 8 * 24 * 60 * 60 * 1000;
+const VARSEL_FAST_GRENSE_MS = 15 * 60 * 1000;
+
+// Date.parse(0) leser "0" som årstallet 2000 og gir et GYLDIG tidspunkt.
+// Skriver man `Date.parse(felt || 0) || 0`, blir et manglende felt derfor
+// til år 2000 i stedet for null — og alt fremstår som håpløst gammelt.
+// Første kjøring ville da meldt at sikkerhetskopien var 9000 døgn gammel.
+function tidspunkt(verdi) {
+  if (!verdi) return 0;
+  const t = Date.parse(verdi);
+  return isNaN(t) ? 0 : t;
+}
+
+async function kjorHelsesjekk() {
+  const helseRef = db.collection("settings").doc("helse");
+  let helse = {};
+  try {
+    const doc = await helseRef.get();
+    helse = doc.exists ? (doc.data() || {}) : {};
+  } catch (err) {
+    logger.warn("Kunne ikke lese settings/helse", err);
+    return;
+  }
+
+  const nå = Date.now();
+  const sisteSjekk = tidspunkt(helse.sisteSjekk);
+  if (nå - sisteSjekk < HELSE_SJEKK_INTERVALL_MS) return;
+
+  const funn = [];
+
+  // 1) Sikkerhetskopi
+  const sisteKopi = tidspunkt(helse.sikkerhetskopiSiste);
+  if (sisteKopi === 0) {
+    funn.push("Ingen sikkerhetskopi er registrert ennå. Første kjøring skjer søndag 04:00 — " +
+      "kommer det ingenting da, har den planlagte jobben stanset.");
+  } else if (nå - sisteKopi > BACKUP_MAKS_ALDER_MS) {
+    const dager = Math.floor((nå - sisteKopi) / 86400000);
+    funn.push(`Sikkerhetskopien har ikke kjørt på ${dager} døgn. Siste: ` +
+      new Date(sisteKopi).toLocaleString("no-NO") + ". Den skal kjøre hver søndag.");
+  }
+
+  // 2) E-post som ikke gikk ut
+  try {
+    const feilet = await db.collection("mail").where("delivery.state", "==", "ERROR").limit(5).get();
+    if (!feilet.empty) {
+      const første = feilet.docs[0].data();
+      const grunn = (første.delivery && første.delivery.error) || "ukjent årsak";
+      funn.push(`${feilet.size} e-post${feilet.size === 1 ? "" : "er"} kom ikke fram. ` +
+        `Første feil: ${String(grunn).slice(0, 200)}`);
+    }
+  } catch (err) {
+    logger.warn("Kunne ikke sjekke mail-feil", err);
+  }
+
+  // 3) Varsler som står fast
+  const fastSiden = tidspunkt(helse.varselFastSiden);
+  if (fastSiden && nå - fastSiden > VARSEL_FAST_GRENSE_MS) {
+    const min = Math.floor((nå - fastSiden) / 60000);
+    funn.push(`En eller flere påmeldinger har ikke blitt varslet om på ${min} minutter. ` +
+      "Utsendingen feiler gjentatte ganger — søknadene ligger trygt i basen, " +
+      "men ingen har fått beskjed.");
+  }
+
+  await helseRef.set({ sisteSjekk: new Date().toISOString() }, { merge: true });
+  if (funn.length === 0) return;
+
+  const sisteVarsel = tidspunkt(helse.sisteHelseVarsel);
+  if (nå - sisteVarsel < HELSE_VARSEL_PAUSE_MS) {
+    logger.info(`Helsesjekk fant ${funn.length} forhold, men varsel er sendt nylig.`);
+    return;
+  }
+
+  try {
+    await db.collection("mail").add({
+      from: "Madina Skole <post@madinaskole.no>",
+      to: [BACKUP_EMAIL],
+      message: {
+        subject: `⚠️ Madina Skole — ${funn.length} forhold trenger tilsyn`,
+        html: `
+          <p>Den automatiske helsesjekken har funnet noe som ikke virker som det skal.</p>
+          <ul style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+            ${funn.map((f) => `<li style="margin-bottom:10px;">${f}</li>`).join("")}
+          </ul>
+          <p style="margin-top:18px;">
+            Full status: <a href="https://madinaskole.no/helsesjekk.html">helsesjekk.html</a>
+          </p>
+          <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+            Denne e-posten sendes høyst én gang i døgnet, og kun når noe faktisk
+            er galt. Får du den ikke, er alt i orden — det er hele poenget.
+          </p>`
+      }
+    });
+    await helseRef.set({ sisteHelseVarsel: new Date().toISOString() }, { merge: true });
+    logger.warn(`Helsevarsel sendt: ${funn.join(" | ")}`);
+  } catch (err) {
+    logger.error("Kunne ikke sende helsevarsel", err);
+  }
+}
