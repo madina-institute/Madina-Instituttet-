@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 23:22:18 -->
+<!-- SIST-ENDRET: 2026-08-08 23:29:52 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -18,6 +18,9 @@
     --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
     --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
     --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
+    /* Tabellinjene i listene trenger mer kontrast enn en kortkant: de
+       skal leses som et rutenett, ikke bare antyde en avgrensning. */
+    --tabell-linje:rgba(40,40,90,0.26);
     --red:#a83c3c;
     --stat-purple-bg:#EDE9FE; --stat-purple-fg:#5B4B9E;
     --stat-yellow-bg:#FDF3C7; --stat-yellow-fg:#8A6D1D;
@@ -228,6 +231,26 @@
   .legg-til-rad{ display:flex; gap:9px; flex-wrap:wrap; }
   .legg-til-rad .btn{ flex:1 1 180px; width:auto; }
 
+  .eksport-kolonner{ display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; }
+  .eksport-boks{ flex:1 1 250px; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+  .eksport-topp{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:8px 11px; background:var(--paper-2); font-family:'Jost',sans-serif;
+    font-size:11.5px; font-weight:600; color:var(--emerald-d);
+  }
+  .eksport-liste{ max-height:260px; overflow-y:auto; padding:6px 10px; background:#fff; }
+  .eksport-valg{
+    display:flex; align-items:center; gap:8px; padding:5px 0;
+    font-family:'Jost',sans-serif; font-size:12.5px; cursor:pointer;
+  }
+  .eksport-valg input{ width:15px; height:15px; flex:0 0 auto; }
+  .eksport-sum{
+    font-family:'Jost',sans-serif; font-size:12.5px; color:var(--gold);
+    font-weight:600; margin-top:12px;
+  }
+  .eksport-handlinger{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .eksport-handlinger .btn{ flex:1 1 150px; width:auto; }
+
   .side-card{
     flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:34px 26px;
     text-align:center; box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s, transform .2s;
@@ -359,7 +382,7 @@
      Grepet gjelder alle listene — elever, lærere, foresatte, søknader,
      programmer, klasser — fordi de deler samme .record-card. */
   .card-grid{ display:flex; flex-direction:column; gap:0; }
-  .card-grid .record-card{ border-radius:0; margin:0; border-top-width:0; }
+  .card-grid .record-card{ border-radius:0; margin:0; border-top-width:0; border-color:var(--tabell-linje); }
   .card-grid .record-card:first-child{ border-top-width:1px; border-radius:12px 12px 0 0; }
   /* Gruppeoverskrifter («Øvre ledelse» / «Administrativt kadre») ligger
      i samme kolonne som kortene. Med gap:0 må kortet rett etter en
@@ -400,9 +423,9 @@
   }
   .record-field{
     font-family:'Jost',sans-serif; font-size:12.5px; color:var(--ink); white-space:nowrap;
-    padding:2px 0 2px 18px; border-inline-start:1px solid var(--line);
+    padding:2px 0 2px 18px; border-inline-start:1px solid var(--tabell-linje);
   }
-  .record-contact-row{ padding-inline-start:18px; border-inline-start:1px solid var(--line); }
+  .record-contact-row{ padding-inline-start:18px; border-inline-start:1px solid var(--tabell-linje); }
 
   /* Under 820 px brytes radene, og loddrette streker mellom felter som
      har havnet under hverandre ser tilfeldige ut. Da byttes de ut med
@@ -410,7 +433,7 @@
   @media (max-width:820px){
     .record-card{ gap:0 !important; padding:14px 16px !important; }
     .record-field, .record-contact-row{
-      border-inline-start:0; border-top:1px solid var(--line);
+      border-inline-start:0; border-top:1px solid var(--tabell-linje);
       padding:7px 0 7px 0; flex:1 1 100%;
     }
   }
@@ -1517,7 +1540,7 @@
       <input class="search" id="searchRegistrations" placeholder="Søk etter elevnavn, foresatt eller program...">
       <span class="count-chip" id="regFolderActiveLabel" onclick="setRegFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
-      <button class="btn btn-ghost" onclick="exportCSV('registrations')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('registrations')">Eksporter CSV</button>
     </div>
     <div class="records-hidden card-grid" id="tableRegistrations"></div>
   </div>
@@ -1538,7 +1561,7 @@
     <div class="toolbar">
       <input class="search" id="searchMeetings" placeholder="Søk etter tema, dato eller referent...">
       <span class="count-chip" id="countMeetings" onclick="toggleRecordsById('tableMeetings')">0 møtereferater</span>
-      <button class="btn btn-ghost" onclick="exportCSV('meetings')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('meetings')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('meetings')">+ Nytt møtereferat</button>
     </div>
     <div class="records-hidden card-grid" id="tableMeetings"></div>
@@ -1560,7 +1583,7 @@
       <button class="btn btn-ghost" onclick="document.getElementById('finMonthFilter').value=''; renderFinanceSummary();">Vis hele året</button>
       <input class="search" id="searchFinances" placeholder="Søk etter kategori, beskrivelse eller dato...">
       <span class="count-chip" id="countFinances" onclick="toggleRecordsById('tableFinances')">0 poster</span>
-      <button class="btn btn-ghost" onclick="exportCSV('finances')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('finances')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('finances')">+ Ny post</button>
     </div>
     <div class="records-hidden card-grid" id="tableFinances"></div>
@@ -1576,7 +1599,7 @@
     <div class="toolbar" style="margin-top:16px;">
       <input class="search" id="searchTeacherAttendance" placeholder="Søk etter lærer, dato eller status...">
       <span class="count-chip" id="countTeacherAttendance" onclick="toggleRecordsById('tableTeacherAttendance')">0 registreringer</span>
-      <button class="btn btn-ghost" onclick="exportCSV('teacherAttendance')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('teacherAttendance')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('teacherAttendance')">+ Registrer time/oppmøte</button>
     </div>
     <div class="records-hidden card-grid" id="tableTeacherAttendance"></div>
@@ -1694,7 +1717,7 @@
       <input class="search" id="searchTeachers" placeholder="Søk etter navn, fag eller telefon...">
       <span class="count-chip" id="teacherFolderActiveLabel" onclick="setTeacherFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countTeachers" onclick="toggleRecordsById('tableTeachers')">0 lærere</span>
-      <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('teachers')">Eksporter CSV</button>
       <span class="hint" style="align-self:center;">Nye legges til under <b>Oversikt → Ansatte og tilgang</b></span>
     </div>
     <div class="records-hidden card-grid" id="tableTeachers"></div>
@@ -1707,7 +1730,7 @@
       <input class="search" id="searchGuardians" placeholder="Søk etter navn eller telefon...">
       <span class="count-chip" id="guardianFolderActiveLabel" onclick="setGuardianFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countGuardians" onclick="toggleRecordsById('tableGuardians')">0 foresatte</span>
-      <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('guardians')">Eksporter CSV</button>
       <span class="hint" style="align-self:center;">Nye legges til under <b>Oversikt → Ansatte og tilgang</b></span>
     </div>
     <div class="records-hidden card-grid" id="tableGuardians"></div>
@@ -1720,7 +1743,7 @@
       <input class="search" id="searchStudents" placeholder="Søk etter navn, klasse eller foresatt...">
       <span class="count-chip" id="studentFolderActiveLabel" onclick="setStudentFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countStudents" onclick="toggleRecordsById('tableStudents')">0 elever</span>
-      <button class="btn btn-ghost" onclick="exportCSV('students')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('students')">Eksporter CSV</button>
       <span class="hint" style="align-self:center;">Nye legges til under <b>Oversikt → Ansatte og tilgang</b></span>
     </div>
     <div class="records-hidden card-grid" id="tableStudents"></div>
@@ -1731,7 +1754,7 @@
     <div class="toolbar">
       <input class="search" id="searchClasses" placeholder="Søk etter klassenavn...">
       <span class="count-chip" id="countClasses" onclick="toggleRecordsById('tableClasses')">0 klasser</span>
-      <button class="btn btn-ghost" onclick="exportCSV('classes')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('classes')">Eksporter CSV</button>
       <button class="btn btn-primary" data-opprett="classes" onclick="openModal('classes')">+ Ny klasse</button>
       <span class="hint" data-opprett-merknad="classes" style="display:none; align-self:center;"></span>
     </div>
@@ -1756,7 +1779,7 @@
     <div class="toolbar">
       <input class="search" id="searchPrograms" placeholder="Søk etter programnavn...">
       <span class="count-chip" id="countPrograms" onclick="toggleRecordsById('tablePrograms')">0 programmer</span>
-      <button class="btn btn-ghost" onclick="exportCSV('programs')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('programs')">Eksporter CSV</button>
       <button class="btn btn-primary" data-opprett="programs" onclick="openModal('programs')">+ Nytt program</button>
       <span class="hint" data-opprett-merknad="programs" style="display:none; align-self:center;"></span>
     </div>
@@ -1787,7 +1810,7 @@
     <div class="toolbar">
       <input class="search" id="searchSchoolCalendar" placeholder="Søk etter beskrivelse...">
       <span class="count-chip" id="countSchoolCalendar" onclick="toggleRecordsById('tableSchoolCalendar')">0 dager</span>
-      <button class="btn btn-ghost" onclick="exportCSV('schoolCalendar')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('schoolCalendar')">Eksporter CSV</button>
       <button class="btn btn-primary" data-opprett="schoolCalendar" onclick="openModal('schoolCalendar')">+ Ny dato</button>
       <span class="hint" data-opprett-merknad="schoolCalendar" style="display:none; align-self:center;"></span>
     </div>
@@ -1991,7 +2014,7 @@
       <span class="count-chip" id="countHours" onclick="toggleRecordsById('tableHours')">0 oppføringer</span>
       <button class="btn btn-ghost" onclick="toggleWeekView()">Vis ukeplan</button>
       <button class="btn btn-ghost" onclick="seedStandardTimeplan()">Last inn standard timeplan</button>
-      <button class="btn btn-ghost" onclick="exportCSV('hours')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('hours')">Eksporter CSV</button>
       <button class="btn btn-primary" data-opprett="hours" onclick="openModal('hours')">+ Ny time</button>
       <span class="hint" data-opprett-merknad="hours" style="display:none; align-self:center;"></span>
     </div>
@@ -2044,7 +2067,7 @@
     <div class="toolbar" style="margin-top:22px;">
       <input class="search" id="searchAttendance" placeholder="Søk etter elev, klasse eller dato...">
       <span class="count-chip" id="countAttendance" onclick="toggleRecordsById('tableAttendance')">0 registreringer</span>
-      <button class="btn btn-ghost" onclick="exportCSV('attendance')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('attendance')">Eksporter CSV</button>
     </div>
     <div class="records-hidden card-grid" id="tableAttendance"></div>
   </div>
@@ -2091,7 +2114,7 @@
       <div class="toolbar">
         <input class="search" id="searchLessonPlans" placeholder="Søk etter lærer, fag eller emne...">
         <span class="count-chip" id="countLessonPlans" onclick="toggleRecordsById('tableLessonPlans')">0 forberedelser</span>
-        <button class="btn btn-ghost" onclick="exportCSV('lessonPlans')">Eksporter CSV</button>
+        <button class="btn btn-ghost" onclick="openExport('lessonPlans')">Eksporter CSV</button>
       </div>
       <div class="records-hidden card-grid" id="tableLessonPlans"></div>
     </div>
@@ -2168,14 +2191,14 @@
     <div class="toolbar">
       <input class="search" id="searchHomework" placeholder="Søk etter klasse, tittel eller lærer...">
       <span class="count-chip" id="countHomework" onclick="toggleRecordsById('tableHomework')">0 lekser</span>
-      <button class="btn btn-ghost" onclick="exportCSV('homework')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('homework')">Eksporter CSV</button>
     </div>
     <div class="records-hidden card-grid" id="tableHomework"></div>
 
     <div class="toolbar" style="margin-top:22px;">
       <input class="search" id="searchHomeworkSubmissions" placeholder="Søk etter elev, lekse eller klasse...">
       <span class="count-chip" id="countHomeworkSubmissions" onclick="toggleRecordsById('tableHomeworkSubmissions')">0 leksesvar</span>
-      <button class="btn btn-ghost" onclick="exportCSV('homeworkSubmissions')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('homeworkSubmissions')">Eksporter CSV</button>
     </div>
     <div class="records-hidden card-grid" id="tableHomeworkSubmissions"></div>
   </div>
@@ -2185,7 +2208,7 @@
     <div class="toolbar">
       <input class="search" id="searchAnnouncements" placeholder="Søk etter tittel eller innhold...">
       <span class="count-chip" id="countAnnouncements" onclick="toggleRecordsById('tableAnnouncements')">0 kunngjøringer</span>
-      <button class="btn btn-ghost" onclick="exportCSV('announcements')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('announcements')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('announcements')">+ Ny kunngjøring</button>
     </div>
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -2199,7 +2222,7 @@
     <div class="toolbar">
       <input class="search" id="searchStudentNotes" placeholder="Søk etter elev, klasse eller lærer...">
       <span class="count-chip" id="countStudentNotes" onclick="toggleRecordsById('tableStudentNotes')">0 elevnotater</span>
-      <button class="btn btn-ghost" onclick="exportCSV('studentNotes')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('studentNotes')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('studentNotes')">+ Nytt notat</button>
     </div>
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -2231,7 +2254,7 @@
     <div class="toolbar">
       <input class="search" id="searchMessagesInbox" placeholder="Søk etter elev, foresatt, lærer eller klasse...">
       <span class="count-chip" id="countMessagesInbox">0 samtaler</span>
-      <button class="btn btn-ghost" onclick="exportCSV('messages')">Eksporter CSV</button>
+      <button class="btn btn-ghost" onclick="openExport('messages')">Eksporter CSV</button>
     </div>
     <div class="sub" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
       Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt). Trykk en samtale for å se hele historikken.
@@ -2275,6 +2298,54 @@
 
 </main>
 </div>
+</div>
+
+
+<!-- EKSPORT -->
+<div class="overlay" id="eksportOverlay">
+  <div class="modal" style="max-width:640px;">
+    <h3 id="eksportTittel">Eksporter</h3>
+    <div class="sub" id="eksportAntall"></div>
+
+    <div class="eksport-kolonner">
+      <div class="eksport-boks">
+        <div class="eksport-topp">
+          <span>Hvilke opplysninger?</span>
+          <span>
+            <button type="button" class="clear-btn" onclick="eksportVelgAlle('kol', true)">Alle</button>
+            <button type="button" class="clear-btn" onclick="eksportVelgAlle('kol', false)">Ingen</button>
+          </span>
+        </div>
+        <div class="eksport-liste" id="eksportKolonner" onchange="oppdaterEksportSum()"></div>
+      </div>
+
+      <div class="eksport-boks">
+        <div class="eksport-topp">
+          <span>Hvem?</span>
+          <span>
+            <button type="button" class="clear-btn" onclick="eksportVelgAlle('rad', true)">Alle</button>
+            <button type="button" class="clear-btn" onclick="eksportVelgAlle('rad', false)">Ingen</button>
+          </span>
+        </div>
+        <div class="eksport-liste" id="eksportRader" onchange="oppdaterEksportSum()"></div>
+      </div>
+    </div>
+
+    <div class="eksport-sum" id="eksportSum"></div>
+
+    <div class="eksport-handlinger">
+      <button class="btn btn-primary eksport-handling" onclick="eksportCSV()">📄 CSV</button>
+      <button class="btn btn-primary eksport-handling" onclick="eksportSkrivUt()">🖨️ Skriv ut / PDF</button>
+      <button class="btn btn-primary eksport-handling" onclick="eksportEpost()">✉️ Send på e-post</button>
+    </div>
+    <div class="hint" style="margin-top:8px;">
+      «Skriv ut / PDF» åpner utskriftsvinduet — velg <b>Lagre som PDF</b> der for en PDF-fil.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeExport()">Lukk</button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -8809,6 +8880,180 @@
       showToast('Kunne ikke slette. Sjekk internettforbindelsen.');
     }
   };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // EKSPORT — velg kolonner, velg rader, velg format
+  // -------------------------------------------------------------------
+  // «Eksporter CSV» ga alt: hver kolonne i skjemaet og hver rad i basen.
+  // For elever er det 58 kolonner. Skulle man ha en klasseliste med navn
+  // og telefon, måtte man laste ned alt og rydde i regnearket etterpå —
+  // og da lå helseopplysninger og samtykker i en fil som gjerne ble sendt
+  // videre på e-post.
+  //
+  // Nå velges det som skal ut, før det går ut. Færre kolonner er ikke
+  // bare ryddigere: det er den eneste måten å dele en liste uten å dele
+  // alt annet man vet om folk.
+  //
+  // Én dialog for alle de atten listene. Skjemaet (SCHEMAS) vet allerede
+  // hvilke felter som finnes og hva de heter — dialogen bygges av det.
+  // ═══════════════════════════════════════════════════════════════════
+  // colDisplay finnes fire steder i filen, men alle er lokale inne i andre
+  // funksjoner. Eksporten trenger sin egen — samme regler: koblede felter
+  // (klasse, foresatt, lærer) vises med navn, ikke med id.
+  function eksportVerdi(schema, row, key){
+    const field = schema.fields.find(f => f.key === key);
+    if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[key]);
+    const v = row[key];
+    if(Array.isArray(v)) return v.join(', ');
+    return v === undefined || v === null ? '' : String(v);
+  }
+
+  let eksportType = null;
+  let eksportRader = [];
+
+  window.openExport = function(type){
+    const schema = SCHEMAS[type];
+    if(!schema){ showToast('Ukjent liste.'); return; }
+    const data = cache[type] || [];
+    if(data.length === 0){ showToast('Ingen data å eksportere.'); return; }
+
+    eksportType = type;
+    eksportRader = data;
+
+    // Kolonnene som vises i listen er forhåndsvalgt. De er allerede
+    // vurdert som de viktigste, og er nesten alltid det man vil ha.
+    const synlige = new Set(schema.cols || []);
+
+    document.getElementById('eksportTittel').textContent =
+      'Eksporter ' + (schema.label || type);
+    document.getElementById('eksportAntall').textContent =
+      data.length + ' rader tilgjengelig';
+
+    document.getElementById('eksportKolonner').innerHTML = schema.fields.map(f => `
+      <label class="eksport-valg">
+        <input type="checkbox" class="eksport-kol" value="${escapeHtml(f.key)}" ${synlige.has(f.key) ? 'checked' : ''}>
+        <span>${escapeHtml(f.label)}</span>
+      </label>`).join('');
+
+    // Radene: navnet slik det vises i listen, så man kjenner igjen hvem
+    // man krysser av. Alle er valgt fra start — det vanligste er hele
+    // listen, og å fjerne noen få er raskere enn å hake av femti.
+    const cfg = (typeof CARD_CONFIG !== 'undefined' && CARD_CONFIG[type]) || {};
+    const titleKey = cfg.title || (schema.cols || [])[0];
+    document.getElementById('eksportRader').innerHTML = data.map((row, i) => `
+      <label class="eksport-valg">
+        <input type="checkbox" class="eksport-rad" value="${i}" checked>
+        <span>${escapeHtml(eksportVerdi(schema, row, titleKey) || '(uten navn)')}</span>
+      </label>`).join('');
+
+    oppdaterEksportSum();
+    document.getElementById('eksportOverlay').classList.add('open');
+  };
+
+  window.closeExport = function(){
+    document.getElementById('eksportOverlay').classList.remove('open');
+    eksportType = null; eksportRader = [];
+  };
+
+  window.eksportVelgAlle = function(gruppe, valgt){
+    document.querySelectorAll('.eksport-' + gruppe).forEach(cb => { cb.checked = valgt; });
+    oppdaterEksportSum();
+  };
+
+  // Sier hva som faktisk kommer ut, før man trykker. En eksport man må
+  // åpne for å se om den ble riktig, er en eksport man gjør to ganger.
+  window.oppdaterEksportSum = function(){
+    const kol = document.querySelectorAll('.eksport-kol:checked').length;
+    const rad = document.querySelectorAll('.eksport-rad:checked').length;
+    const el = document.getElementById('eksportSum');
+    if(!el) return;
+    el.textContent = rad + ' rader × ' + kol + ' kolonner';
+    document.querySelectorAll('.eksport-handling').forEach(b => {
+      b.disabled = (kol === 0 || rad === 0);
+    });
+  };
+
+  function hentEksportValg(){
+    const schema = SCHEMAS[eksportType];
+    const koler = [...document.querySelectorAll('.eksport-kol:checked')].map(cb => cb.value);
+    const felter = schema.fields.filter(f => koler.includes(f.key));
+    const rader = [...document.querySelectorAll('.eksport-rad:checked')]
+      .map(cb => eksportRader[parseInt(cb.value, 10)]);
+    return { felter, rader, tittel: (schema.label || eksportType) };
+  }
+
+  window.eksportCSV = function(){
+    const { felter, rader, tittel } = hentEksportValg();
+    const linjer = [felter.map(f => '"' + f.label.replace(/"/g,'""') + '"').join(',')];
+    rader.forEach(r => {
+      linjer.push(felter.map(f => '"' + String(eksportVerdi(SCHEMAS[eksportType], r, f.key) || '').replace(/"/g,'""') + '"').join(','));
+    });
+    // BOM foran, ellers viser Excel æ, ø og å som krøll.
+    lastNedFil(tittel + '-' + new Date().toISOString().slice(0,10) + '.csv',
+      '\ufeff' + linjer.join('\n'), 'text/csv;charset=utf-8;');
+    closeExport();
+  };
+
+  // PDF og utskrift er samme sak: et rent utskriftsvindu. Nettleseren
+  // tilbyr «Lagre som PDF» i utskriftsdialogen, så vi slipper et
+  // PDF-bibliotek på flere hundre kilobyte for noe nettleseren gjør selv.
+  function byggUtskrift(){
+    const { felter, rader, tittel } = hentEksportValg();
+    return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
+      <title>${escapeHtml(tittel)} — Madina Skole</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif; margin:26px; color:#1c2c24;}
+        h1{font-size:19px; margin:0 0 2px;}
+        .meta{font-size:11px; color:#666; margin-bottom:16px;}
+        table{border-collapse:collapse; width:100%; font-size:11.5px;}
+        th,td{border:1px solid #bbb; padding:6px 8px; text-align:start; vertical-align:top;}
+        th{background:#f0ede5;}
+        tr:nth-child(even) td{background:#fafafa;}
+        @media print{ @page{ margin:14mm; } }
+      </style></head><body>
+      <h1>${escapeHtml(tittel)} — Madina Skole</h1>
+      <div class="meta">${rader.length} rader · skrevet ut ${new Date().toLocaleString('no-NO')}</div>
+      <table><thead><tr>${felter.map(f => '<th>' + escapeHtml(f.label) + '</th>').join('')}</tr></thead>
+      <tbody>${rader.map(r => '<tr>' + felter.map(f =>
+        '<td>' + escapeHtml(String(eksportVerdi(SCHEMAS[eksportType], r, f.key) || '')) + '</td>').join('') + '</tr>').join('')}
+      </tbody></table></body></html>`;
+  }
+
+  window.eksportSkrivUt = function(){
+    const v = window.open('', '_blank');
+    if(!v){ showToast('Nettleseren blokkerte vinduet. Tillat popup for denne siden.'); return; }
+    v.document.write(byggUtskrift());
+    v.document.close();
+    v.focus();
+    setTimeout(() => v.print(), 400);
+  };
+
+  window.eksportEpost = function(){
+    const { felter, rader, tittel } = hentEksportValg();
+    // Selve listen legges IKKE i e-postteksten: en mailto-lenke tåler
+    // ikke femti rader, og persondata skal ikke ligge i en URL som havner
+    // i nettleserhistorikk. Filen lastes ned og legges ved manuelt.
+    const linjer = [felter.map(f => f.label).join('\t')];
+    rader.forEach(r => linjer.push(felter.map(f => String(eksportVerdi(SCHEMAS[eksportType], r, f.key) || '')).join('\t')));
+    lastNedFil(tittel + '-' + new Date().toISOString().slice(0,10) + '.csv',
+      '\ufeff' + linjer.join('\n').replace(/\t/g, ';'), 'text/csv;charset=utf-8;');
+    const emne = encodeURIComponent(tittel + ' — Madina Skole');
+    const brod = encodeURIComponent(
+      'Hei,\n\nVedlagt følger ' + tittel.toLowerCase() + ' (' + rader.length + ' rader).\n\n' +
+      'Filen er lastet ned til enheten din — legg den ved før du sender.\n\n' +
+      'Med vennlig hilsen,\nMadina Skole');
+    window.location.href = 'mailto:?subject=' + emne + '&body=' + brod;
+    showToast('Filen er lastet ned — legg den ved i e-posten.');
+  };
+
+  function lastNedFil(navn, innhold, type){
+    const blob = new Blob([innhold], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = navn;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  }
 
   window.exportCSV = function(type){
     const schema = SCHEMAS[type];
