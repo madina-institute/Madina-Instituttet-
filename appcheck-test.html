@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madina Skole — App Check-diagnose</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c2c24; --emerald:#1f4a3a; --emerald-d:#0f2b21;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
+    --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10); --red:#a83c3c;
+  }
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden; max-width:100%;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
+  header{
+    background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
+    color:var(--paper); padding:22px 20px; text-align:center; box-shadow:var(--shadow);
+  }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; margin:0 0 4px;}
+  header p{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold-l); margin:0;}
+  main{max-width:560px; margin:0 auto; padding:20px 16px 60px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:22px 20px; box-shadow:var(--shadow); margin-bottom:16px;}
+  .card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d); margin:0 0 6px;}
+  .card .sub{font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin-bottom:16px; line-height:1.5;}
+  .btn{
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;
+    padding:13px 20px; border-radius:6px; border:none; cursor:pointer; width:100%;
+    background:var(--emerald); color:#fff;
+  }
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .rad{
+    display:flex; justify-content:space-between; gap:12px; padding:9px 0;
+    border-bottom:1px solid var(--line); font-family:'Jost',sans-serif; font-size:12px;
+  }
+  .rad:last-child{border-bottom:none;}
+  .rad .n{color:#5a6860; flex:0 0 auto;}
+  .rad .v{text-align:end; word-break:break-all; font-weight:600;}
+  .rad .v.ja{color:var(--emerald);}
+  .rad .v.nei{color:var(--red);}
+  .status{
+    font-family:'Jost',sans-serif; font-size:12.5px; margin-top:14px; padding:12px 14px;
+    border-radius:6px; display:none; white-space:pre-wrap; line-height:1.55;
+  }
+  .status.show{display:block;}
+  .status.ok{background:rgba(46,107,83,0.10); color:var(--emerald);}
+  .status.err{background:rgba(168,60,60,0.10); color:var(--red);}
+  .status.busy{background:var(--paper-2); color:#5a6860;}
+  .status.warn{background:rgba(183,146,74,0.14); color:#7a5f20;}
+  code{font-family:ui-monospace,monospace; font-size:11.5px; background:var(--paper-2); padding:1px 5px; border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>App Check-diagnose</h1>
+  <p>Kun for eier — intern side</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Hva denne siden svarer på</h2>
+    <div class="sub">
+      App Check står på <strong>Monitoring</strong>, og teller 0&nbsp;% gyldige tokener.
+      Det betyr at <code>initializeAppCheck</code> feiler overalt — men feilen skjer stille
+      inne i en modul, så ingenting vises på skjermen noe sted.
+      <br><br>
+      Her kjøres oppsettet med feilmeldingen synlig, slik at årsaken kan leses direkte
+      i stedet for å gjettes.
+      <br><br>
+      <strong>Ingenting endres herfra.</strong> Siden bare leser.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Miljø</h2>
+    <div class="sub">Verdiene App Check faktisk ser fra denne nettleseren.</div>
+    <div id="miljo"></div>
+  </div>
+
+  <div class="card">
+    <h2>Kjør testen</h2>
+    <div class="sub">
+      Tre steg: laster reCAPTCHA-skriptet, setter opp App Check, og ber om et token.
+      Feiler ett av dem, stopper vi der og forklarer hvorfor.
+    </div>
+    <button class="btn" id="kjorBtn" onclick="kjorTest()">Kjør App Check-test</button>
+    <div class="status" id="resultat"></div>
+  </div>
+
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { initializeAppCheck, ReCaptchaV3Provider, getToken }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
+
+  // Nøyaktig de samme verdiene som portalene bruker. Endres én av dem her,
+  // tester siden noe annet enn det som faktisk kjører i produksjon.
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  };
+  const RECAPTCHA_NOKKEL = '6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9';
+
+  const app = initializeApp(firebaseConfig);
+
+  function rad(navn, verdi, tilstand){
+    const t = tilstand === true ? ' ja' : tilstand === false ? ' nei' : '';
+    return '<div class="rad"><span class="n">' + navn +
+           '</span><span class="v' + t + '">' + verdi + '</span></div>';
+  }
+
+  document.getElementById('miljo').innerHTML =
+    rad('Domene', location.hostname) +
+    rad('Protokoll', location.protocol.replace(':',''), location.protocol === 'https:') +
+    rad('Prosjekt', firebaseConfig.projectId) +
+    rad('App-ID', firebaseConfig.appId.slice(-12)) +
+    rad('reCAPTCHA-nøkkel', RECAPTCHA_NOKKEL.slice(0, 14) + '…');
+
+  const boks = document.getElementById('resultat');
+  const vis = (cls, tekst) => { boks.className = 'status show ' + cls; boks.textContent = tekst; };
+
+  // Laster reCAPTCHA-skriptet alene FØR App Check settes opp. Blokkeres det —
+  // av Safaris «avanserte personvernbeskyttelse», en utvidelse eller et
+  // nettverk — er det årsaken, og da er det ingen vits i å lete i Firebase.
+  function lastReCaptcha(){
+    return new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = 'https://www.google.com/recaptcha/api.js?render=' + RECAPTCHA_NOKKEL;
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+      setTimeout(() => resolve(!!window.grecaptcha), 8000);
+    });
+  }
+
+  const ARSAKER = {
+    'appCheck/recaptcha-error':
+      'reCAPTCHA klarte ikke å lage et token.\n\nDe tre vanlige grunnene:\n' +
+      '  1. Domenet står ikke i nøkkelens tillatte domener.\n' +
+      '     Legg inn madinaskole.no, www.madinaskole.no og madinaskolen.no.\n' +
+      '  2. Nøkkelen er av typen reCAPTCHA Enterprise, mens koden bruker\n' +
+      '     ReCaptchaV3Provider. De to kan ikke byttes om.\n' +
+      '  3. Nøkkelen tilhører et annet prosjekt enn madina-instituttet.',
+    'appCheck/fetch-status-error':
+      'reCAPTCHA svarte, men Firebase avviste vekslingen.\n\n' +
+      'Da er selve nøkkelen i orden — det er registreringen som mangler:\n' +
+      '  Firebase Console → App Check → Apps → denne web-appen\n' +
+      '  må ha reCAPTCHA v3 aktivert, med BÅDE nettstedsnøkkelen og\n' +
+      '  den hemmelige nøkkelen lagt inn.\n\n' +
+      'Sjekk også at app-IDen over er den samme som står oppført der.',
+    'appCheck/fetch-network-error':
+      'Kom ikke fram til Firebase i det hele tatt. Nettverk, brannmur eller\n' +
+      'en blokkering i nettleseren. Prøv fra et annet nett.',
+    'appCheck/throttled':
+      'Firebase bremser forespørslene fordi det har feilet mange ganger på rad.\n' +
+      'Vent noen minutter og prøv igjen — dette er en følge av feilen, ikke feilen selv.',
+    'appCheck/initial-throttle':
+      'Første forsøk ble bremset. Vent litt og prøv igjen.'
+  };
+
+  window.kjorTest = async function(){
+    const btn = document.getElementById('kjorBtn');
+    btn.disabled = true;
+
+    vis('busy', 'Steg 1 av 3 — laster reCAPTCHA-skriptet…');
+    const lastet = await lastReCaptcha();
+    if(!lastet){
+      vis('err',
+        '🛑 STEG 1 FEILET — reCAPTCHA-skriptet ble ikke lastet.\n\n' +
+        'Skriptet er blokkert i denne nettleseren. Det er samme blokkering ' +
+        'som tok knekken på foreldreportalen i Safari.\n\n' +
+        'Dette er en nettleser-årsak, ikke et feil oppsett i Firebase. ' +
+        'Prøv i en annen nettleser før du endrer noe som helst — er 0 % målt ' +
+        'på tvers av alle brukere, ligger årsaken et annet sted.');
+      btn.disabled = false;
+      return;
+    }
+
+    vis('busy', 'Steg 2 av 3 — setter opp App Check…');
+    let appCheck;
+    try{
+      appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(RECAPTCHA_NOKKEL),
+        isTokenAutoRefreshEnabled: false
+      });
+    } catch(err){
+      vis('err', '🛑 STEG 2 FEILET — oppsettet kastet med én gang.\n\n' +
+        (err && err.code ? 'Kode: ' + err.code + '\n' : '') +
+        'Melding: ' + (err && err.message ? err.message : String(err)));
+      btn.disabled = false;
+      return;
+    }
+
+    vis('busy', 'Steg 3 av 3 — ber om et token…');
+    try{
+      const res = await getToken(appCheck, true);
+      vis('ok',
+        '✅ TOKENET BLE UTSTEDT.\n\n' +
+        'Lengde: ' + res.token.length + ' tegn\n' +
+        'Start: ' + res.token.slice(0, 24) + '…\n\n' +
+        'Oppsettet virker fra denne nettleseren og dette domenet. ' +
+        'Se etter at «Verified» begynner å stige i App Check-oversikten.\n\n' +
+        'Ikke slå på Enforced før tallet står stabilt over 90 % over flere dager — ' +
+        'ett vellykket token her er ikke det samme som at alle brukerne får ett.');
+    } catch(err){
+      const kode = (err && err.code) || 'ukjent';
+      vis('err',
+        '🛑 STEG 3 FEILET — ingen token.\n\n' +
+        'Kode: ' + kode + '\n\n' +
+        (ARSAKER[kode] || ('Melding: ' + (err && err.message ? err.message : String(err)))) +
+        '\n\n— — —\nFull melding:\n' + (err && err.message ? err.message : String(err)));
+    }
+    btn.disabled = false;
+  };
+</script>
+
+</body>
+</html>
