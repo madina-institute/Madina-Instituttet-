@@ -57,6 +57,10 @@
     letter-spacing:0.02em; padding:13px 14px; border-radius:6px; cursor:pointer; margin-bottom:10px;
   }
   .btn-file-label input[type="file"]{ display:none; }
+  /* Inputene ligger som SØSKEN av etiketten sin, ikke inni den, så regelen
+     over traff dem aldri — den native filvelgeren ble stående synlig ved
+     siden av knappen. «for»-attributtet gjør at etiketten åpner den. */
+  #fileUpload, #multiFileUpload, #testFileUpload{ display:none; }
   .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:10px 12px; border-radius:6px; display:none;}
   .status.show{display:block;}
   .status.ok{background:rgba(46,107,83,0.10); color:var(--emerald);}
@@ -221,7 +225,7 @@
         <textarea id="fileContent" placeholder="Velg en fil ovenfor, eller lim inn innholdet manuelt her..." wrap="soft" oninput="nullstillSperre()"></textarea>
       </div>
       <button class="btn btn-ghost" id="sjekkBtn" onclick="sjekkVersjon()">🔍 Sjekk mot publisert versjon</button>
-      <div class="status" id="diffPanel" style="display:none; white-space:pre-line;"></div>
+      <div class="status" id="diffPanel" style="white-space:pre-line;"></div>
       <button class="btn btn-danger" id="overstyrBtn" style="display:none;" onclick="publiserLikevel()">Publiser likevel</button>
 
       <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
@@ -241,7 +245,7 @@
       </div>
 
       <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
-      <div class="status" id="loggResultat" style="display:none; white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:11px; line-height:1.5;"></div>
+      <div class="status" id="loggResultat" style="white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:11px; line-height:1.5;"></div>
 
       <div class="field" style="margin-top:18px;">
         <label>Innhold å undersøke</label>
@@ -252,7 +256,7 @@
         <button type="button" class="clear-btn" onclick="hentTilTest()">Hent fra publiseringsfeltet</button>
       </div>
       <button class="btn btn-ghost" onclick="undersokInnhold()">🔍 Undersøk innholdets alder</button>
-      <div class="status" id="testResultat" style="display:none; white-space:pre-wrap;"></div>
+      <div class="status" id="testResultat" style="white-space:pre-wrap;"></div>
     </div>
   </div>
 
@@ -1136,16 +1140,18 @@
   window.nullstillSperre = function(){
     overstyrSperre = false;
     const p = document.getElementById('diffPanel');
-    if(p){ p.style.display = 'none'; p.textContent = ''; }
+    if(p){ p.className = 'status'; p.textContent = ''; }
     const b = document.getElementById('overstyrBtn');
     if(b) b.style.display = 'none';
   };
 
+  // Alle statusbokser vises og skjules med KLASSEN «show», aldri med
+  // style.display. Blandes de to, vinner en inline display:none over
+  // .status.show uansett — boksen fylles med tekst og forblir usynlig.
   function visDiff(cls, tekst){
     const p = document.getElementById('diffPanel');
     p.className = 'status show ' + cls;
     p.textContent = tekst;
-    p.style.display = 'block';
   }
 
   window.sjekkVersjon = async function(){
