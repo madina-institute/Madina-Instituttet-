@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 15:20:00 -->
+<!-- SIST-ENDRET: 2026-08-08 15:22:39 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -607,9 +607,13 @@
       // Etter <!DOCTYPE ...> hvis den finnes, ellers helt øverst.
       // De ledende linjeskiftene fjernes: den ødelagte versjonen la igjen
       // en tom linje for hver publisering, og de hopet seg opp.
-      const dt = rent.match(/^\s*<!DOCTYPE[^>]*>\s*\n?/i);
-      if(dt) return dt[0] + merke + '\n' + rent.slice(dt[0].length).replace(/^\n+/, '');
-      return merke + '\n' + rent.replace(/^\n+/, '');
+      // Uttrykket fanger KUN selve doctype-taggen. Tok det med linjeskiftene
+      // etter den også, havnet den tomme linjen inne i treffet — og da
+      // hjalp det ikke å rydde i resten: stempelet ble stående UNDER den
+      // tomme linjen i stedet for rett etter doctype.
+      const dt = rent.match(/^\s*<!DOCTYPE[^>]*>/i);
+      if(dt) return dt[0] + '\n' + merke + '\n' + rent.slice(dt[0].length).replace(/^\s*\n+/, '');
+      return merke + '\n' + rent.replace(/^\s*\n+/, '');
     }
 
     if(lav.endsWith('.js') || lav.endsWith('.css') || lav.endsWith('.rules')){
