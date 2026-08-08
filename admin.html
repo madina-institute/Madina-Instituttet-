@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 23:15:27 -->
+<!-- SIST-ENDRET: 2026-08-08 23:22:18 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -949,9 +949,12 @@
   </div>
   <button data-sb-side="eier" onclick="sidebarSelectSide('eier')"><span class="ic">🏛️</span> Eier / Ledelsen</button>
   <button data-sb-side="admin" onclick="sidebarSelectSide('admin')"><span class="ic">🗂️</span> Administrativ</button>
+  <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')"><span class="ic">💰</span> Økonomi</button>
   <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')"><span class="ic">🎓</span> Pedagogisk</button>
   <button data-sb-side="registrering" onclick="sidebarSelectSide('registrering')"><span class="ic">📝</span> Registrering</button>
+  <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')"><span class="ic">🏫</span> Skoleoppsett</button>
   <button data-sb-side="oversikt" onclick="sidebarSelectSide('oversikt')"><span class="ic">⚙️</span> Oversikt</button>
+  <button data-sb-side="verktoy" onclick="sidebarSelectSide('verktoy')"><span class="ic">🛠️</span> Verktøy</button>
   <button data-sb-side="portaler" onclick="sidebarSelectSide('portaler')"><span class="ic">🔗</span> Portaler</button>
 </nav>
 
@@ -994,6 +997,16 @@
         <h2>Eier / Ledelsen</h2>
         <p>Ledelse · Møtereferater · Kasse/Økonomi</p>
       </div>
+      <div class="side-card" onclick="selectSide('okonomi')">
+        <div class="ic">💰</div>
+        <h2>Økonomi</h2>
+        <p>Kasse · Kasserer · Lønn · Betalingslogg · Betalingsforespørsler · Betalingsinnstillinger</p>
+      </div>
+      <div class="side-card" onclick="selectSide('skoleoppsett')">
+        <div class="ic">🏫</div>
+        <h2>Skoleoppsett</h2>
+        <p>Programmer · Skolekalender — priser og undervisningsdager for hele skolen. Kun eier.</p>
+      </div>
       <div class="side-card" onclick="selectSide('admin')">
         <div class="ic">🗂️</div>
         <h2>Administrativ</h2>
@@ -1013,6 +1026,11 @@
         <div class="ic">⚙️</div>
         <h2>Oversikt</h2>
         <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
+      </div>
+      <div class="side-card" onclick="selectSide('verktoy')">
+        <div class="ic">🛠️</div>
+        <h2>Verktøy og sider</h2>
+        <p>Helsesjekk · App Check · Publiseringsverktøy · innsynssider · alle portaler og konsoller</p>
       </div>
     </div>
   </div>
@@ -1078,19 +1096,19 @@
 <div class="tabs" id="tabsBar" style="display:none;">
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
-  <div class="tab" data-tab="finances" data-side="eier">Kasse/Økonomi</div>
-  <div class="tab" data-tab="lonn" data-side="eier">💰 Lønn</div>
-    <div class="tab" data-tab="financeLog" data-side="eier">Betalingslogg</div>
+  <div class="tab" data-tab="finances" data-side="okonomi">Kasse/Økonomi</div>
+  <div class="tab" data-tab="lonn" data-side="okonomi">💰 Lønn</div>
+    <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
     <div class="tab" data-tab="meldingssenter" data-side="eier">Meldingssenter</div>
   <div class="tab" data-tab="cashierLedelse" data-side="eier" id="tabCashierLedelse" style="display:none;">💰 Kasserer (Ledelse)</div>
   <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
-  <div class="tab" data-tab="classes" data-side="admin">Klasser</div>
-  <div class="tab" data-tab="programs" data-side="admin">📅 Programmer</div>
-  <div class="tab" data-tab="schoolCalendar" data-side="admin">🗓️ Skolekalender</div>
-  <div class="tab" data-tab="cashier" data-side="admin">💰 Kasserer</div>
-  <div class="tab" data-tab="hours" data-side="admin">Timeplan</div>
+  <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
+  <div class="tab" data-tab="programs" data-side="skoleoppsett">📅 Programmer</div>
+  <div class="tab" data-tab="schoolCalendar" data-side="skoleoppsett">🗓️ Skolekalender</div>
+  <div class="tab" data-tab="cashier" data-side="okonomi">💰 Kasserer</div>
+  <div class="tab" data-tab="hours" data-side="pedagogisk">Timeplan</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
@@ -1100,11 +1118,11 @@
   <div class="tab" data-tab="announcements" data-side="pedagogisk">Kunngjøringer</div>
   <div class="tab" data-tab="studentNotes" data-side="pedagogisk">Elevnotater</div>
   <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
-  <div class="tab" data-tab="paymentRequests" data-side="admin">Betalingsforespørsler</div>
+  <div class="tab" data-tab="paymentRequests" data-side="okonomi">Betalingsforespørsler</div>
   <div class="tab" data-tab="messages" data-side="pedagogisk">Meldinger</div>
-  <div class="tab" data-tab="betaling" data-side="admin">Betalingsinnstillinger</div>
+  <div class="tab" data-tab="betaling" data-side="okonomi">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
-  <div class="tab" data-tab="utvikler" data-side="eier">🛠️ Verktøy og sider</div>
+  <div class="tab" data-tab="utvikler" data-side="verktoy">🛠️ Verktøy og sider</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
 </div>
@@ -2728,6 +2746,16 @@
       // lærer eller en fagkoordinator.
       const tabUtvikler = document.querySelector('.tab[data-tab="utvikler"]');
       if(tabUtvikler) tabUtvikler.style.display = isCurrentUserEier() ? '' : 'none';
+      // «Verktøy» og «Skoleoppsett» er eierens områder. Skjules både i
+      // sidefeltet og blant snarveiene, slik at de ikke framstår som
+      // steder man har glemt passordet til.
+      ['verktoy', 'skoleoppsett'].forEach(side => {
+        const vis = isCurrentUserEier();
+        const knapp = document.querySelector('[data-sb-side="' + side + '"]');
+        if(knapp) knapp.style.display = vis ? '' : 'none';
+        const kort = document.querySelector('.side-card[onclick*="' + side + '"]');
+        if(kort) kort.style.display = vis ? '' : 'none';
+      });
       oppdaterOpprettKnapper();
       resetInactivityTimer();
       // meetings/finances require request.auth != null in the Firestore
