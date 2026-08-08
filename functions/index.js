@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-08 20:36:01 */
+/* SIST-ENDRET: 2026-08-08 20:56:07 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1335,6 +1335,28 @@ async function kjorHelsesjekk() {
     funn.push(`En eller flere påmeldinger har ikke blitt varslet om på ${min} minutter. ` +
       "Utsendingen feiler gjentatte ganger — søknadene ligger trygt i basen, " +
       "men ingen har fått beskjed.");
+  }
+
+  // 4) Feil fanget i portalene
+  // Uten dette ville feilloggen bare vært et arkiv man måtte huske å
+  // åpne. En logg ingen leser er like stille som ingen logg.
+  try {
+    const grense = new Date(nå - HELSE_MAIL_VINDU_MS).toISOString();
+    const feil = await db.collection("feillogg")
+      .where("tidspunkt", ">", grense).limit(50).get();
+    if (!feil.empty) {
+      // Grupperer på melding: tjue like feil er ÉN sak, ikke tjue.
+      const grupper = new Map();
+      feil.forEach((d) => {
+        const m = (d.data().melding || "").slice(0, 100);
+        grupper.set(m, (grupper.get(m) || 0) + 1);
+      });
+      const topp = [...grupper.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+      funn.push(`${feil.size} feil er fanget i portalene den siste uken. ` +
+        "Vanligste: " + topp.map(([m, n]) => `«${m}» (${n})`).join(", "));
+    }
+  } catch (err) {
+    logger.warn("Kunne ikke lese feillogg", err);
   }
 
   await helseRef.set({ sisteSjekk: new Date().toISOString() }, { merge: true });
