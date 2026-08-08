@@ -245,8 +245,11 @@
 
       <div class="field" style="margin-top:18px;">
         <label>Innhold å undersøke</label>
-        <textarea id="testInnhold" placeholder="Lim inn innhold her, eller trykk «Hent fra feltet over»..." wrap="soft" style="min-height:90px;"></textarea>
-        <button type="button" class="clear-btn" onclick="hentTilTest()">Hent fra feltet over</button>
+        <label class="btn-file-label" for="testFileUpload">📎 Velg fil fra telefonen...</label>
+        <input type="file" id="testFileUpload" accept=".html,.js,.json,.css,.txt,.rules,.yml,.md" onchange="handleTestFileUpload(event)">
+        <div class="file-loaded-hint" id="testLoadedHint"></div>
+        <textarea id="testInnhold" placeholder="Velg en fil over, lim inn innhold her, eller hent fra publiseringsfeltet..." wrap="soft" style="min-height:90px;"></textarea>
+        <button type="button" class="clear-btn" onclick="hentTilTest()">Hent fra publiseringsfeltet</button>
       </div>
       <button class="btn btn-ghost" onclick="undersokInnhold()">🔍 Undersøk innholdets alder</button>
       <div class="status" id="testResultat" style="display:none; white-space:pre-wrap;"></div>
@@ -704,25 +707,53 @@
     const lokalTid = lesStempel(lokaltInnhold);
     const repoTid  = lesStempel(repo.innhold);
 
+    // Avtrykket av det publiserte tas med videre: det lar oss senere
+    // avgjøre om den lokale boken er à jour, uten en eneste ekstra
+    // forespørsel.
+    const repoAvtrykk = avtrykk(repo.innhold);
+
     if(normaliser(lokaltInnhold) === normaliser(repo.innhold)){
-      return { status: 'identisk', lokalTid, repoTid };
+      return { status: 'identisk', lokalTid, repoTid, repoAvtrykk };
     }
     if(lokalTid && repoTid){
-      if(lokalTid.getTime() < repoTid.getTime()) return { status: 'eldre', lokalTid, repoTid };
-      if(lokalTid.getTime() > repoTid.getTime()) return { status: 'nyere', lokalTid, repoTid };
+      if(lokalTid.getTime() < repoTid.getTime()) return { status: 'eldre', lokalTid, repoTid, repoAvtrykk };
+      if(lokalTid.getTime() > repoTid.getTime()) return { status: 'nyere', lokalTid, repoTid, repoAvtrykk };
       // Samme stempel, ulikt innhold: dette er det HELT VANLIGE tilfellet.
       // Du lastet ned filen, endret den, og laster den opp igjen — stempelet
       // står stille til publiseringen setter et nytt. Ville denne blitt
       // sperret, ville verktøyet stoppet hver eneste normale endring.
-      return { status: 'endret', lokalTid, repoTid };
+      return { status: 'endret', lokalTid, repoTid, repoAvtrykk };
     }
-    return { status: 'ukjent', lokalTid, repoTid };
+    return { status: 'ukjent', lokalTid, repoTid, repoAvtrykk };
   }
 
   // Kjøres etter hovedsammenligningen. Er alderen ukjent fordi stempelet
-  // mangler, lar vi historikken avgjøre i stedet.
+  // mangler, avgjøres den her — først av den lokale boken, og bare hvis
+  // den ikke kan svare, av historikken hos GitHub.
   async function utdypUkjent(path, lokaltInnhold, r){
     if(r.status !== 'ukjent') return r;
+
+    const bok = slåOppIBok(path, lokaltInnhold);
+
+    // Er dette nøyaktig noe du har publisert tidligere — og ikke sist —
+    // er saken avgjort på stedet. Null forespørsler.
+    if(bok.kjent && bok.indeks > 0){
+      return { status: 'historisk', treff: {
+        versjonerBak: bok.indeks, dato: bok.dato, melding: 'fra din egen publiseringsbok', kilde: 'bok'
+      }};
+    }
+
+    // Er boken À JOUR med det som faktisk ligger ute — altså: det siste du
+    // publiserte er fortsatt det som er publisert — så kjenner boken hele
+    // historien til denne filen. Da er «ikke i boken» det samme som «aldri
+    // publisert før», og GitHub trenger ikke spørres i det hele tatt.
+    // Dette er det som gjør den vanlige runden umiddelbar.
+    if(!bok.kjent && bok.harBok && r.repoAvtrykk && bok.nyeste && bok.nyeste.a === r.repoAvtrykk){
+      return { status: 'ukjentNy', kilde: 'bok', lokalTid: r.lokalTid, repoTid: r.repoTid };
+    }
+
+    // Boken er tom, eller ute av takt fordi noe ble publisert et annet
+    // sted fra. Da er historikken hos GitHub eneste pålitelige kilde.
     try{
       const treff = await finnIHistorikk(path, lokaltInnhold);
       if(treff) return { status: 'historisk', treff };
@@ -751,7 +782,69 @@
   // Kjøres BARE når stempelet mangler, så det koster ingenting i den
   // vanlige flyten.
   // ===================================================================
-  // Henter de siste versjonene av én fil, nyeste først, med innholdet.
+  // ===================================================================
+  // LOKAL PUBLISERINGSBOK
+  // -------------------------------------------------------------------
+  // Verktøyet vet allerede hva DU har publisert — det er jo det som
+  // publiserer. Her skrives et lite avtrykk av hver publisering ned, slik
+  // at spørsmålet «har jeg lagt ut dette innholdet før?» kan besvares på
+  // stedet, uten å spørre GitHub om noe som helst.
+  //
+  // Dette er laget for arbeidsmåten der man endrer den samme lokale filen
+  // om og om igjen uten å hente ned fra repoet. Da har filen aldri noe
+  // stempel, og stempelsammenligningen har ingenting å gå på.
+  //
+  // Boken lagres i nettleseren. Bytter man telefon eller tømmer
+  // nettleserdata, er den tom — og da faller kontrollen tilbake på
+  // historikken hos GitHub, som alltid virker.
+  // ===================================================================
+  const LS_BOK = 'madina_publish_bok_v1';
+  const BOK_MAKS = 60; // avtrykk per fil
+
+  // cyrb53: kort, rask og god nok her. Avtrykket lagres sammen med
+  // lengden på innholdet, så to ulike filer må kollidere på BEGGE deler
+  // for å forveksles — i praksis utelukket.
+  function avtrykk(tekst){
+    const s = normaliser(tekst);
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for(let i = 0; i < s.length; i++){
+      const ch = s.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36) + '-' + s.length;
+  }
+
+  function lesBok(){
+    try{ return JSON.parse(localStorage.getItem(LS_BOK)) || {}; }
+    catch(e){ return {}; }
+  }
+  function skrivBok(bok){
+    try{ localStorage.setItem(LS_BOK, JSON.stringify(bok)); }
+    catch(e){ console.warn('Kunne ikke lagre publiseringsboken:', e); }
+  }
+  function bokførPublisering(path, innhold){
+    const bok = lesBok();
+    const rad = bok[path] || [];
+    rad.unshift({ a: avtrykk(innhold), t: new Date().toISOString() });
+    bok[path] = rad.slice(0, BOK_MAKS);
+    skrivBok(bok);
+  }
+
+  // Slår opp innholdet i boken.
+  //   {kjent:false}                     — aldri publisert herfra
+  //   {kjent:true, indeks:0}            — det du sist publiserte
+  //   {kjent:true, indeks:n>0, dato}    — en ELDRE publisering: gammel kopi
+  function slåOppIBok(path, innhold){
+    const rad = lesBok()[path];
+    if(!Array.isArray(rad) || rad.length === 0) return { kjent: false, harBok: false };
+    const a = avtrykk(innhold);
+    const i = rad.findIndex(r => r.a === a);
+    if(i === -1) return { kjent: false, harBok: true, nyeste: rad[0] };
+    return { kjent: true, harBok: true, indeks: i, dato: new Date(rad[i].t), nyeste: rad[0], antall: rad.length };
+  }
   // Delt av både sperren før publisering og loggen — hadde de hver sin
   // kopi av denne, ville de før eller siden svart forskjellig på samme
   // spørsmål.
@@ -792,7 +885,7 @@
     return ut;
   }
 
-  async function finnIHistorikk(path, lokaltInnhold, maks = 12){
+  async function finnIHistorikk(path, lokaltInnhold, maks = 30){
     const versjoner = await hentVersjoner(path, maks);
     if(versjoner.length < 2) return null;
     const mål = normaliser(lokaltInnhold);
@@ -948,10 +1041,20 @@
       publisert = p.finnes ? visTid(lesStempel(p.innhold)) : 'filen finnes ikke i repoet';
     } catch(err){ publisert = 'feil: ' + err.message; }
 
+    const bok = slåOppIBok(path, innhold);
+    const bokLinje = !bok.harBok
+      ? 'ingen oppføringer for denne filen ennå'
+      : (bok.kjent
+          ? (bok.indeks === 0
+              ? 'dette er nøyaktig det du sist publiserte'
+              : 'publisert herfra ' + visTid(bok.dato) + ' — ' + bok.indeks + ' publisering(er) siden')
+          : bok.antall + ' tidligere publiseringer registrert, ingen med dette innholdet');
+
     boks.className = 'status show ' + d.cls;
     boks.textContent =
       'Ditt innhold:      ' + (dittStempel ? visTid(dittStempel) : 'uten SIST-ENDRET-stempel') + '\n' +
       'Publisert versjon: ' + publisert + '\n' +
+      'Publiseringsbok:   ' + bokLinje + '\n' +
       'Stempel ved publisering nå: ' + noTid() + '\n' +
       '\nResultat: ' + (d.sperr ? 'VILLE BLITT SPERRET' : 'ville sluppet gjennom') + '\n\n' +
       d.tekst;
@@ -961,8 +1064,8 @@
     if(r.status === 'ny')      return { sperr:false, cls:'ok',   tekst:'🆕 Ny fil — finnes ikke i repoet ennå. Trygt å publisere.' };
     if(r.status === 'nyere')   return { sperr:false, cls:'ok',   tekst:'✓ Din versjon er nyere enn den publiserte (' + visTid(r.lokalTid) + ' mot ' + visTid(r.repoTid) + '). Trygt å publisere.' };
     if(r.status === 'endret')  return { sperr:false, cls:'ok',   tekst:'✓ Endret siden siste publisering. Innholdet er ulikt, stempelet er fra sist du publiserte (' + visTid(r.repoTid) + '). Dette er det normale ved en vanlig endring.' };
-    if(r.status === 'ukjentNy') return { sperr:false, cls:'ok',   tekst:'✓ Innholdet finnes ikke i noen tidligere versjon av filen — dette er nytt arbeid. Trygt å publisere.\n\n(Filen mangler SIST-ENDRET-stempel, så alderen ble avgjort mot historikken på GitHub i stedet.)' };
-    if(r.status === 'historisk')return { sperr:true,  cls:'err',  tekst:'🛑 DETTE ER EN GAMMEL KOPI.\n\nInnholdet er nøyaktig likt en tidligere versjon av filen — den fra ' + visTid(r.treff.dato) + ', som ligger ' + r.treff.versjonerBak + ' versjon(er) bak den som er ute nå.\n\nPubliserer du, ruller du filen tilbake og sletter alt arbeid gjort etter den datoen. Hent siste versjon fra GitHub først.' };
+    if(r.status === 'ukjentNy') return { sperr:false, cls:'ok',   tekst:'✓ Innholdet finnes ikke i noen tidligere versjon av filen — dette er nytt arbeid. Trygt å publisere.\n\n(Filen mangler stempel. Alderen ble avgjort mot ' + (r.kilde === 'bok' ? 'din lokale publiseringsbok, som er à jour med det som ligger ute.' : 'historikken på GitHub.') + ')' };
+    if(r.status === 'historisk')return { sperr:true,  cls:'err',  tekst:'🛑 DETTE ER EN GAMMEL KOPI.\n\nInnholdet er nøyaktig likt en tidligere versjon av filen — den fra ' + visTid(r.treff.dato) + ', som ligger ' + r.treff.versjonerBak + ' versjon(er) bak den som er ute nå.\n\nPubliserer du, ruller du filen tilbake og sletter alt arbeid gjort etter den datoen. Hent siste versjon fra GitHub først.\n\n(Kilde: ' + (r.treff.kilde === 'bok' ? 'din lokale publiseringsbok' : 'historikken på GitHub') + '.)' };
     if(r.status === 'ukjent')  return { sperr:false, cls:'warn', tekst:'⚠️ Kan ikke fastslå alder — stempel mangler' + (r.historikkFeilet ? ', og historikken på GitHub kunne ikke leses' : '') + '. Publisering slippes gjennom, men du er uten sikkerhetsnett her.' };
     if(r.status === 'feil')    return { sperr:false, cls:'warn', tekst:'⚠️ Kunne ikke sjekke mot GitHub (' + r.melding + '). Publisering er ikke sperret, men da er du uten sikkerhetsnett.' };
     if(r.status === 'identisk')return { sperr:true,  cls:'err',  tekst:'⛔ IDENTISK med det som allerede ligger ute. Ingenting ville endret seg. Publisering er stoppet.' };
@@ -1011,6 +1114,10 @@
       });
       if(putRes.status === 200 || putRes.status === 201){
         recordPublished(path);
+        // Avtrykket lagres av innholdet slik DU hadde det — uten stempel.
+        // Det er nettopp den formen filen har neste gang du laster den opp
+        // fra telefonen.
+        bokførPublisering(path, content);
         return { ok: true };
       }
       const errData = await putRes.json().catch(()=>({}));
@@ -1063,6 +1170,34 @@
   window.publiserLikevel = function(){
     overstyrSperre = true;
     window.publish();
+  };
+
+  // Samme opplasting som ved publisering, men her leder den ingen vei
+  // videre — filen blir bare undersøkt. Filstien slås opp fra filnavnet,
+  // slik at «index.js» havner på «functions/index.js» også her.
+  window.handleTestFileUpload = function(event){
+    const file = event.target.files && event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      document.getElementById('testInnhold').value = e.target.result;
+      const hint = document.getElementById('testLoadedHint');
+      hint.className = 'file-loaded-hint show';
+      hint.textContent = '✓ Lastet inn: ' + file.name + ' (' + Math.round(file.size/1024) + ' kB)';
+      const felt = document.getElementById('loggPath');
+      const sti = finnFullSti(file.name);
+      felt.value = sti;
+      felt.dataset.rort = '1';
+      if(sti !== file.name){
+        hint.textContent += ' — undersøkes som «' + sti + '»';
+      }
+    };
+    reader.onerror = function(){
+      const hint = document.getElementById('testLoadedHint');
+      hint.className = 'file-loaded-hint show';
+      hint.textContent = '✗ Kunne ikke lese filen.';
+    };
+    reader.readAsText(file, 'UTF-8');
   };
 
   window.hentTilTest = function(){
