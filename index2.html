@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -859,10 +860,21 @@
     appId: "1:174564736838:web:033f873c8b420d4bc96f47"
   };
   const app = initializeApp(firebaseConfig);
-  const appCheck = initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
-    isTokenAutoRefreshEnabled: true
-  });
+  // App Check settes opp i try/catch. Safari med «avansert personvern-
+  // beskyttelse» blokkerer google.com/recaptcha, og et kast herfra stopper
+  // HELE modulen: siden vises helt normalt, men ingenting virker — verken
+  // innlogging eller datalyttere — og det kommer ingen feilmelding.
+  // Dette var årsaken til at foreldreportalen sa «fant ingen konto» i
+  // Safari, men virket i Firefox. Samme løsning som i index4.html.
+  let appCheck = null;
+  try{
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(err){
+    console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
+  }
   const db = getFirestore(app);
 
   // Silent analytics: log a "visit" the moment the form loads, and a
