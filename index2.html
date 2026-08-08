@@ -1357,43 +1357,16 @@
 
       await addDoc(collection(db, 'registrations'), record);
 
-      // ⚠️ MIDLERTIDIG — SKAL FJERNES
-      // ------------------------------------------------------------------
-      // Varselet skal sendes av Cloud Function-en «varsleNySoknad», som
-      // utløses av at søknaden over ble skrevet. Den funksjonen lot seg
-      // ikke publisere (Deploy Cloud Functions feiler), så inntil videre
-      // sendes varselet herfra igjen.
+      // Varselet sendes IKKE herfra. Cloud Function-en «varsleNySoknad»
+      // ser etter nye søknader hvert andre minutt og sender e-post til
+      // mottakerne som er valgt i panelet under «Oversikt → Varslinger»,
+      // samt kvittering til foresatte.
       //
-      // Dette er en bevisst midlertidig løsning. Ulempene er kjent:
-      //   - API-nøkkelen står i klartekst på en OFFENTLIG side
-      //   - mottakeren kan ikke endres fra panelet
-      //   - barnets navn går gjennom en tredjepart
-      //
-      // Men en søknad som kommer inn UTEN at noen får beskjed er verre.
-      // Fjern hele blokken så snart funksjonen er oppe — da vil begge
-      // sende, og administrasjonen får dobbelt varsel.
-      //
-      // Slik ser du at funksjonen er oppe:
-      //   Firebase Console → Functions → «varsleNySoknad» i listen.
-      // ------------------------------------------------------------------
-      try{
-        await fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
-            subject: 'Ny påmelding mottatt – ' + (record.elev_navn || 'Ukjent navn'),
-            from_name: 'Madina Skole – Påmeldingsskjema',
-            message:
-              'Elev: ' + (record.elev_navn || '—') + '\n' +
-              'Foresatt: ' + (record.foresatt1_navn || '—') + ' — ' + (record.foresatt1_tlf || '—') + '\n' +
-              'Ønsket program: ' + (record.program || '—') + '\n\n' +
-              'Gå til administrasjonspanelet (Registrering) for å behandle påmeldingen.'
-          })
-        });
-      } catch(emailErr){
-        console.error('E-postvarsling feilet:', emailErr);
-      }
+      // Her sto det tidligere et kall til Web3Forms, med API-nøkkelen i
+      // klartekst på denne offentlige siden. Da kunne hvem som helst
+      // bruke skolens kvote, mottakeren kunne ikke endres uten å
+      // publisere skjemaet på nytt, og barnets navn og foresattes
+      // telefonnummer gikk gjennom en tredjepart uten grunn.
 
       document.getElementById('paameldingsForm').style.display = 'none';
       document.getElementById('successBox').style.display = 'block';
