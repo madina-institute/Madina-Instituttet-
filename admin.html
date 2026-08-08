@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 00:03:52 -->
+<!-- SIST-ENDRET: 2026-08-09 00:14:50 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2948,6 +2948,10 @@
         // panelet viste «ikke tilkoblet» til man oppdaterte siden.
         startOkt();
         startAlleDatalyttere();
+        // Nå er panelet synlig og fanene har en plassering — først da kan
+        // adressen gjenopprettes. Uten forsinkelsen rekker ikke visningen
+        // å bli tegnet før vi spør om den.
+        setTimeout(gjenopprettFane, 0);
         startOvrigeLyttere();
         attachListener('meetings');
         attachListener('finances');
@@ -9459,9 +9463,12 @@
   const searchLedelseEl = document.getElementById('searchLedelse');
   if(searchLedelseEl) searchLedelseEl.addEventListener('input', () => renderLedelseView());
 
-  // Init: attach real-time listeners for all 3 collections
-  // Kalles her fordi fanene først er synlige etter at panelet er åpnet.
-  setTimeout(gjenopprettFane, 0);
+  // Gjenopprettingen kjørte tidligere HER — på modulnivå, altså før
+  // innloggingen. Da lå panelet fortsatt skjult, fanene hadde ingen
+  // synlig plassering, og gjenopprettingen ga opp uten å gjøre noe.
+  // Etterpå åpnet innloggingen forsiden, og en oppdatering så ut som om
+  // man ble kastet tilbake til start. Kallet er flyttet til etter at
+  // panelet faktisk er åpnet — se onAuthStateChanged.
 
   // ═══════════════════════════════════════════════════════════════
   // DATALYTTERE — STARTES FØRST ETTER BEKREFTET INNLOGGING
