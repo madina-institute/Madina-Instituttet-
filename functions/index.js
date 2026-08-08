@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-08 20:56:07 */
+/* SIST-ENDRET: 2026-08-08 21:31:53 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -693,10 +693,17 @@ exports.vippsWebhook = onRequest(
     // å be om betaling var det et menneske som tok — og det er den som skal
     // stå i sporingen.
     let sendtAv = "";
+    let pendingRef = null;
     try {
       const pendSnap = await db.collection("pendingVippsPayments")
         .where("reference", "==", reference).limit(1).get();
-      if (!pendSnap.empty) sendtAv = pendSnap.docs[0].data().createdBy || "";
+      if (!pendSnap.empty) {
+        sendtAv = pendSnap.docs[0].data().createdBy || "";
+        // Referansen tas vare på. Oppslaget skjedde allerede her for å
+        // finne avsenderen — uten dette måtte vi slått opp samme dokument
+        // en gang til lenger nede.
+        pendingRef = pendSnap.docs[0].ref;
+      }
     } catch (e) {
       logger.warn("Fant ikke avsender av Vipps-kravet", e);
     }
@@ -710,6 +717,27 @@ exports.vippsWebhook = onRequest(
       vippsStatus: "AUTHORIZED",
       vippsBetaltDato: new Date().toISOString(),
     });
+
+    // Merker det utestående kravet som betalt.
+    //
+    // DETTE MANGLET: betalingsgrenen for EKSISTERENDE elever gjorde det,
+    // men grenen for NYE påmeldinger gjorde det ikke. Følgen var at en
+    // søknad kunne stå som «Godkjent», eleven være opprettet og pengene
+    // være mottatt — mens panelet fortsatt sa «venter på betaling», og
+    // Kasserer (Ledelse) tilbød å avbryte et krav som alt var gjort opp.
+    if (pendingRef) {
+      try {
+        await pendingRef.update({
+          status: "completed",
+          completedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        logger.error("Kunne ikke merke Vipps-kravet som betalt", e);
+      }
+    } else {
+      logger.warn(`Fant ingen utestående Vipps-forespørsel for ${reference} — ` +
+        "kravet kan bli stående som «venter på betaling» i panelet.");
+    }
 
     logger.info(`Elev ${reg.elev_navn} automatisk godkjent via Vipps-betaling.`);
     res.status(200).send("OK");
