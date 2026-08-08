@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-08 23:52:33 -->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madina Skole — Ledelsesinnsyn</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --tabell-linje:rgba(40,40,90,0.26);
+    --shadow:0 10px 26px rgba(40,40,90,0.08); --red:#a83c3c;
+  }
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden; max-width:100%;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
+
+  header{ padding:26px 20px 14px; text-align:center; }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:24px; margin:0 0 6px;}
+  header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8fa3; margin:0;}
+  .btn-logout{
+    margin-top:12px; background:transparent; color:var(--emerald-d);
+    border:1px solid var(--line); border-radius:20px; padding:6px 16px;
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    letter-spacing:0.04em; text-transform:uppercase; cursor:pointer;
+  }
+  main{max-width:860px; margin:0 auto; padding:0 18px 60px;}
+
+  .sammendrag{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .sam-kort{
+    flex:1 1 150px; background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; box-shadow:var(--shadow); font-family:'Jost',sans-serif;
+  }
+  .sam-kort .n{ font-size:26px; font-weight:700; color:var(--emerald-d); line-height:1.1; }
+  .sam-kort .l{ font-size:11px; color:#8a9a90; text-transform:uppercase; letter-spacing:.04em; margin-top:4px; }
+
+  .person{
+    background:#fff; border:1px solid var(--tabell-linje); border-radius:0;
+    box-shadow:none; margin:0; border-top-width:0;
+  }
+  .person:first-of-type{ border-top-width:1px; border-radius:12px 12px 0 0; }
+  .person:last-of-type{ border-radius:0 0 12px 12px; }
+  .person-topp{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap:12px; flex-wrap:wrap; padding:16px 20px 12px;
+  }
+  .person-navn{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; color:var(--emerald-d);}
+  .person-meta{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin-top:2px;}
+  .merke{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600;
+    border-radius:12px; padding:3px 10px; white-space:nowrap;
+  }
+  .merke.aktiv{ color:#1f6b46; background:rgba(46,107,83,.12); }
+  .merke.stille{ color:var(--gold); background:rgba(183,146,74,.14); }
+  .merke.aldri{ color:var(--red); background:rgba(168,60,60,.10); }
+
+  .rutenett{
+    display:grid; grid-template-columns:repeat(2, 1fr);
+    border-top:1px solid var(--tabell-linje);
+  }
+  @media (min-width:640px){ .rutenett{ grid-template-columns:repeat(4, 1fr); } }
+  .rute{
+    padding:11px 20px; font-family:'Jost',sans-serif;
+    border-inline-end:1px solid var(--tabell-linje);
+    border-bottom:1px solid var(--tabell-linje);
+  }
+  .rute:nth-child(2n){ border-inline-end:0; }
+  @media (min-width:640px){
+    .rute:nth-child(2n){ border-inline-end:1px solid var(--tabell-linje); }
+    .rute:nth-child(4n){ border-inline-end:0; }
+  }
+  .rute .lbl{ font-size:10px; color:#8a9a90; text-transform:uppercase; letter-spacing:.03em; }
+  .rute .val{ font-size:15px; font-weight:600; color:var(--ink); margin-top:2px; }
+  .rute .val.tom{ color:#b5bdc4; font-weight:400; font-size:13px; }
+
+  .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:11px 13px; border-radius:6px; display:none; white-space:pre-wrap;}
+  .status.show{display:block;}
+  .status.err{background:rgba(168,60,60,0.10); color:var(--red);}
+  .status.busy{background:var(--paper-2); color:#5a6860;}
+  .btn{
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:700; letter-spacing:0.03em;
+    text-transform:uppercase; padding:12px 18px; border-radius:6px; border:1px solid var(--line);
+    cursor:pointer; background:#fff; color:var(--ink); margin-top:10px;
+  }
+  .empty-msg{
+    font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:40px 20px;
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+  }
+
+  .mlogin{
+    position:fixed; inset:0; z-index:9000; overflow-y:auto;
+    background:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
+    display:flex; align-items:center; justify-content:center;
+    padding:26px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+  .mlogin-inner{width:100%; max-width:380px; text-align:center;}
+  .mlogin-brand{font-family:'Cormorant Garamond',serif; font-size:26px; color:#fff; margin:0 0 18px; font-weight:700;}
+  .mlogin-card{background:#fff; border-radius:14px; padding:22px 20px; text-align:start; box-shadow:0 14px 34px rgba(0,0,0,.3);}
+  .mlogin-role{display:flex; align-items:center; gap:9px; justify-content:center; margin-bottom:16px; padding-bottom:13px; border-bottom:1px solid rgba(40,40,90,.12); font-family:'Jost',sans-serif; font-size:14px; font-weight:600; color:var(--emerald-d);}
+  .mlogin-field{margin-bottom:12px;}
+  .mlogin-field label{display:block; font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; margin-bottom:5px; color:var(--emerald-d);}
+  .mlogin-field input{width:100%; padding:12px 13px; border:1px solid rgba(40,40,90,.14); border-radius:8px; font-size:16px; font-family:'Jost',sans-serif; background:#fbfcfe;}
+  .mlogin-btn{width:100%; margin-top:6px; border:none; border-radius:8px; padding:14px; cursor:pointer; font-family:'Jost',sans-serif; font-size:14px; font-weight:600; text-transform:uppercase; color:#fff; background:#2F6CA0;}
+  .mlogin-err{display:none; margin-top:11px; font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="mlogin">
+  <div class="mlogin-inner">
+    <h1 class="mlogin-brand">Madina Skole</h1>
+    <div class="mlogin-card">
+      <div class="mlogin-role"><span>🏛️</span><span>Ledelsesinnsyn</span></div>
+      <div class="mlogin-field">
+        <label>E-post</label>
+        <input type="email" id="loginEmail" autocomplete="username" inputmode="email" placeholder="navn@eksempel.no">
+      </div>
+      <div class="mlogin-field">
+        <label>Passord</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="mlogin-btn" onclick="doLogin()">Logg inn</button>
+      <div class="mlogin-err" id="loginError"></div>
+    </div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+  <header>
+    <h1>Ledelsesinnsyn</h1>
+    <p>Bruk av panelet per person — kun for eier</p>
+    <button class="btn-logout" onclick="doLogout()">Logg ut</button>
+  </header>
+  <main>
+    <div class="sammendrag" id="sammendrag"></div>
+    <div id="personListe"></div>
+    <button class="btn" onclick="kopierRapport()">📋 Kopier rapport</button>
+    <div class="status" id="statusBoks"></div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+           setPersistence, browserSessionPersistence }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { initializeAppCheck, ReCaptchaV3Provider }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  // App Check i try/catch — et kast herfra ville stoppet hele modulen, og
+  // siden ville sett helt normal ut mens den var død innvendig.
+  let appCheck = null;
+  try{
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(err){
+    console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
+  }
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const persistenceReady = setPersistence(auth, browserSessionPersistence)
+    .catch(err => console.warn('setPersistence feilet:', err));
+
+  // Sperre i nettleseren, ikke en sikkerhetsregel.
+  const TILLATTE_EPOSTER = ['yasser.m.s.abdelrahim@gmail.com'];
+
+  // Lytterne kobles opp FØRST etter bekreftet innlogging. Firestore prøver
+  // ikke en avvist lytter på nytt — samme feil er rettet seks steder før.
+  let __startet = false;
+  const __venter = [];
+  function watch(navn, onData){
+    const start = () => onSnapshot(collection(db, navn), onData,
+      (err) => console.error(navn, err));
+    __venter.push(start);
+    if(__startet) start();
+  }
+  function startLyttere(){
+    if(__startet) return;
+    __startet = true;
+    __venter.forEach(fn => fn());
+  }
+
+  window.doLogin = async function(){
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    const e = document.getElementById('loginEmail').value.trim();
+    const p = document.getElementById('loginPassword').value;
+    if(!e || !p){ errEl.textContent = 'Fyll ut e-post og passord.'; errEl.style.display = 'block'; return; }
+    await persistenceReady;
+    try{ await signInWithEmailAndPassword(auth, e, p); }
+    catch(err){
+      console.error(err);
+      errEl.textContent = 'Feil e-post eller passord.';
+      errEl.style.display = 'block';
+    }
+  };
+
+  window.doLogout = function(){
+    signOut(auth).catch(()=>{}).finally(() => location.reload());
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    const epost = ((user && user.email) || '').trim().toLowerCase();
+    const harTilgang = !!user && TILLATTE_EPOSTER.includes(epost);
+    if(user && !harTilgang){
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = 'Denne siden er kun for eier.';
+      errEl.style.display = 'block';
+      signOut(auth).catch(()=>{});
+      return;
+    }
+    document.getElementById('loginScreen').style.display = harTilgang ? 'none' : 'flex';
+    document.getElementById('appRoot').style.display = harTilgang ? 'block' : 'none';
+    if(harTilgang) startLyttere();
+  });
+
+  function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  let ansatte = [], okter = [], slettelogg = [];
+
+  watch('teachers', snap => { ansatte = snap.docs.map(d => ({ id:d.id, ...d.data() })); render(); });
+  watch('loginEvents', snap => { okter = snap.docs.map(d => ({ id:d.id, ...d.data() })); render(); });
+  watch('deletionLog', snap => { slettelogg = snap.docs.map(d => ({ id:d.id, ...d.data() })); render(); });
+
+  const ADMIN_ROLLER = ['Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator','Opptaksansvarlig'];
+  const erLedelse = (p) => (p.roller || '').split(',').map(s=>s.trim()).some(r => ADMIN_ROLLER.includes(r));
+
+  function iPerioden(iso, dager){
+    if(!iso) return false;
+    const t = Date.parse(iso);
+    return !isNaN(t) && (Date.now() - t) <= dager * 86400000;
+  }
+  function minutter(m){
+    const n = Math.round(m || 0);
+    if(n < 60) return n + ' min';
+    return Math.floor(n/60) + ' t ' + (n % 60) + ' min';
+  }
+  function dagerSiden(iso){
+    if(!iso) return null;
+    const t = Date.parse(iso);
+    if(isNaN(t)) return null;
+    return Math.floor((Date.now() - t) / 86400000);
+  }
+
+  function beregn(){
+    // Kun ledelsen/administrativt kadre — ikke alle lærere.
+    const folk = ansatte.filter(erLedelse);
+    return folk.map(p => {
+      const epost = (p.epost || '').trim().toLowerCase();
+      const mine = okter.filter(o =>
+        (o.epost || '').trim().toLowerCase() === epost && o.role === 'admin');
+      const uke  = mine.filter(o => iPerioden(o.timestamp, 7));
+      const mnd  = mine.filter(o => iPerioden(o.timestamp, 30));
+      const sum  = (arr) => arr.reduce((s,o) => s + (Number(o.varighetMin) || 0), 0);
+      const siste = mine.map(o => o.timestamp).sort().slice(-1)[0] || null;
+      // Sletting er den handlingen som ikke kan angres. Hvem som utførte
+      // den er verdt å ha ved siden av innloggingene.
+      const slettet = slettelogg.filter(s =>
+        (s.slettetAv || s.utfortAv || '').trim().toLowerCase() === epost &&
+        iPerioden(s.slettetDato || s.tidspunkt, 30)).length;
+      return {
+        navn: p.navn || p.epost || '—',
+        epost: p.epost || '',
+        roller: p.roller || '',
+        okterUke: uke.length, okterMnd: mnd.length,
+        minUke: sum(uke), minMnd: sum(mnd),
+        snitt: mnd.length ? Math.round(sum(mnd)/mnd.length) : 0,
+        siste, dagerSiden: dagerSiden(siste),
+        slettet
+      };
+    }).sort((a,b) => (b.okterMnd - a.okterMnd) || a.navn.localeCompare(b.navn));
+  }
+
+  function render(){
+    const rader = beregn();
+    const el = document.getElementById('personListe');
+    if(rader.length === 0){
+      el.innerHTML = '<div class="empty-msg">Ingen i ledelsen registrert ennå.</div>';
+      document.getElementById('sammendrag').innerHTML = '';
+      return;
+    }
+
+    const aldriInne = rader.filter(r => !r.siste).length;
+    const aktivUke  = rader.filter(r => r.okterUke > 0).length;
+    const totMin    = rader.reduce((s,r) => s + r.minMnd, 0);
+
+    document.getElementById('sammendrag').innerHTML = `
+      <div class="sam-kort"><div class="n">${rader.length}</div><div class="l">I ledelsen</div></div>
+      <div class="sam-kort"><div class="n">${aktivUke}</div><div class="l">Aktive siste uke</div></div>
+      <div class="sam-kort"><div class="n">${aldriInne}</div><div class="l">Aldri logget inn</div></div>
+      <div class="sam-kort"><div class="n">${minutter(totMin)}</div><div class="l">Samlet siste 30 dager</div></div>`;
+
+    el.innerHTML = rader.map(r => {
+      // Merket sier hva tallene betyr, slik at man slipper å regne selv.
+      const merke = !r.siste
+        ? '<span class="merke aldri">Aldri logget inn</span>'
+        : r.dagerSiden <= 7
+          ? '<span class="merke aktiv">Aktiv</span>'
+          : `<span class="merke stille">Stille i ${r.dagerSiden} dager</span>`;
+      const rute = (lbl, val, tom) =>
+        `<div class="rute"><div class="lbl">${lbl}</div><div class="val${tom ? ' tom' : ''}">${val}</div></div>`;
+      return `
+        <div class="person">
+          <div class="person-topp">
+            <div>
+              <div class="person-navn">${escapeHtml(r.navn)}</div>
+              <div class="person-meta">${escapeHtml(r.roller || 'uten rolle')}</div>
+            </div>
+            ${merke}
+          </div>
+          <div class="rutenett">
+            ${rute('Økter · 7 dager', r.okterUke || '0', !r.okterUke)}
+            ${rute('Tid · 7 dager', r.minUke ? minutter(r.minUke) : 'ingen', !r.minUke)}
+            ${rute('Økter · 30 dager', r.okterMnd || '0', !r.okterMnd)}
+            ${rute('Tid · 30 dager', r.minMnd ? minutter(r.minMnd) : 'ingen', !r.minMnd)}
+            ${rute('Snitt per økt', r.snitt ? minutter(r.snitt) : '—', !r.snitt)}
+            ${rute('Siste innlogging', r.siste ? new Date(r.siste).toLocaleDateString('no-NO') : 'aldri', !r.siste)}
+            ${rute('Slettinger · 30 dager', r.slettet || '0', !r.slettet)}
+            ${rute('E-post', escapeHtml(r.epost || '—'), !r.epost)}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  window.kopierRapport = function(){
+    const rader = beregn();
+    const tekst = [
+      'MADINA SKOLE — LEDELSESINNSYN',
+      new Date().toLocaleString('no-NO'),
+      '',
+      ...rader.map(r =>
+        `${r.navn} (${r.roller || 'uten rolle'})\n` +
+        `   7 dager:  ${r.okterUke} økter · ${minutter(r.minUke)}\n` +
+        `   30 dager: ${r.okterMnd} økter · ${minutter(r.minMnd)} · snitt ${r.snitt ? minutter(r.snitt) : '—'}\n` +
+        `   Siste innlogging: ${r.siste ? new Date(r.siste).toLocaleString('no-NO') : 'aldri'}` +
+        (r.slettet ? `\n   Slettinger siste 30 dager: ${r.slettet}` : ''))
+    ].join('\n');
+
+    const boks = document.getElementById('statusBoks');
+    const ferdig = (ok) => {
+      boks.className = 'status show ' + (ok ? 'busy' : 'err');
+      boks.textContent = ok ? '📋 Rapporten er kopiert.' : '✗ Kunne ikke kopiere:\n\n' + tekst;
+    };
+    // Safari krever at skrivingen skjer inne i selve trykket.
+    try{
+      if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+        const blob = new Blob([tekst], { type: 'text/plain' });
+        navigator.clipboard.write([new ClipboardItem({ 'text/plain': Promise.resolve(blob) })])
+          .then(() => ferdig(true))
+          .catch(() => navigator.clipboard.writeText(tekst).then(() => ferdig(true)).catch(() => ferdig(false)));
+      } else {
+        navigator.clipboard.writeText(tekst).then(() => ferdig(true)).catch(() => ferdig(false));
+      }
+    } catch(e){ ferdig(false); }
+  };
+</script>
+
+</body>
+</html>
