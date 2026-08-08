@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-07 23:14:41 -->
+
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -42,6 +42,13 @@
   header{ padding:26px 20px 14px; text-align:center; }
   header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:24px; margin:0 0 6px; color:var(--ink);}
   header p{font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8fa3; margin:0;}
+
+  .btn-logout{
+    margin-top:12px; background:transparent; color:var(--emerald-d);
+    border:1px solid var(--line); border-radius:20px; padding:6px 16px;
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    letter-spacing:0.04em; text-transform:uppercase; cursor:pointer;
+  }
 
   main{max-width:760px; margin:0 auto; padding:0 18px 60px;}
 
@@ -98,6 +105,7 @@
   <header>
     <h1>Foreldreinnsyn</h1>
     <p>Aktivitetsoversikt per foresatt — kun for eier</p>
+    <button class="btn-logout" onclick="doLogout()">Logg ut</button>
   </header>
   <main>
     <div id="guardianList"></div>
@@ -110,7 +118,8 @@
     getFirestore, collection, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, setPersistence, inMemoryPersistence
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+    setPersistence, browserSessionPersistence
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     initializeAppCheck, ReCaptchaV3Provider
@@ -126,13 +135,56 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const appCheck = initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
-    isTokenAutoRefreshEnabled: true
-  });
+  // App Check settes opp i try/catch. Safari med "avansert personvern-
+  // beskyttelse" blokkerer google.com/recaptcha. Et kast herfra stoppet HELE
+  // modulen: siden så helt normal ut, men verken innlogging eller datalyttere
+  // kjørte. Samme løsning som i index4.html.
+  let appCheck = null;
+  try{
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(err){
+    console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
+  }
   const db = getFirestore(app);
   const auth = getAuth(app);
-  setPersistence(auth, inMemoryPersistence).catch(err => console.error('setPersistence failed:', err));
+
+  // Var tidligere inMemoryPersistence. Den holder sesjonen kun i minnet til
+  // JS-objektet, så en helt vanlig oppdatering av siden logget deg ut igjen —
+  // og fordi kallet er asynkront rakk innloggingen noen ganger å starte før
+  // innstillingen var satt. browserSessionPersistence gir samme sikkerhet
+  // (sesjonen dør når fanen lukkes), men overlever en oppdatering.
+  const persistenceReady = setPersistence(auth, browserSessionPersistence)
+    .catch(err => console.warn('setPersistence feilet (fortsetter):', err));
+
+  // Kun eieren skal se denne siden — den viser aktivitet for SAMTLIGE
+  // foresatte. Overskriften har alltid sagt "kun for eier", men koden slapp
+  // inn enhver konto som fantes i Firebase Auth (også lærere og foresatte).
+  // MERK: dette er en sperre i nettleseren, ikke en sikkerhetsregel. Den
+  // hindrer feil bruk, ikke en angriper. Ekte skjerming må ligge i
+  // firestore.rules.
+  const TILLATTE_EPOSTER = ['yasser.m.s.abdelrahim@gmail.com'];
+
+  // ---- Datalyttere startes FØRST etter bekreftet innlogging ----
+  // Firestore-reglene krever innlogging for lesing, og SDK-en prøver IKKE på
+  // nytt når en lesing avvises. En onSnapshot som ble satt opp ved lasting av
+  // modulen — altså før innloggingen — ble derfor avvist for godt, og listen
+  // ble stående tom for alltid.
+  let __listenersStarted = false;
+  const __pendingWatchers = [];
+  function watch(collectionName, onData, onError){
+    const start = () => onSnapshot(collection(db, collectionName), onData,
+      onError || ((err) => console.error(collectionName, err)));
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
+  function startDataListeners(){
+    if(__listenersStarted) return;
+    __listenersStarted = true;
+    __pendingWatchers.forEach(fn => fn());
+  }
 
   window.doLogin = async function(){
     const email = document.getElementById('loginEmail').value.trim();
@@ -144,6 +196,9 @@
       errEl.style.display = 'block';
       return;
     }
+    // Vent til lagringsmåten er satt før vi logger inn, ellers kan sesjonen
+    // bli lagret på feil måte i det korte tidsrommet før kallet er ferdig.
+    await persistenceReady;
     try{
       await signInWithEmailAndPassword(auth, email, pw);
     } catch(err){
@@ -153,9 +208,31 @@
     }
   };
 
+  window.doLogout = function(){
+    // Full omlasting: de aktive lytterne mister lesetilgang idet vi logger ut,
+    // og kan ikke gjenopprettes uten en ren start.
+    signOut(auth).catch(()=>{}).finally(() => location.reload());
+  };
+
   onAuthStateChanged(auth, (user) => {
-    document.getElementById('loginScreen').style.display = user ? 'none' : 'flex';
-    document.getElementById('appRoot').style.display = user ? 'block' : 'none';
+    const epost = ((user && user.email) || '').trim().toLowerCase();
+    const harTilgang = !!user && TILLATTE_EPOSTER.includes(epost);
+
+    if(user && !harTilgang){
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = 'Denne siden er kun for eier.';
+      errEl.style.display = 'block';
+      signOut(auth).catch(()=>{});
+      return;
+    }
+
+    document.getElementById('loginScreen').style.display = harTilgang ? 'none' : 'flex';
+    document.getElementById('appRoot').style.display = harTilgang ? 'block' : 'none';
+
+    // Lytterne kobles opp her — etter at innloggingen er bekreftet. Dette
+    // dekker både fersk innlogging og en oppdatering der sesjonen hentes
+    // tilbake fra nettleseren.
+    if(harTilgang) startDataListeners();
   });
 
   function escapeHtml(str){
@@ -225,28 +302,28 @@
     }).join('');
   }
 
-  onSnapshot(collection(db, 'loginEvents'), (snap) => {
+  watch('loginEvents', (snap) => {
     loginEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
 
-  onSnapshot(collection(db, 'guardians'), (snap) => {
+  watch('guardians', (snap) => {
     guardians = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
     render();
   });
-  onSnapshot(collection(db, 'students'), (snap) => {
+  watch('students', (snap) => {
     students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  onSnapshot(collection(db, 'messageThreads'), (snap) => {
+  watch('messageThreads', (snap) => {
     messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  onSnapshot(collection(db, 'absenceRequests'), (snap) => {
+  watch('absenceRequests', (snap) => {
     absenceRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
-  onSnapshot(collection(db, 'paymentRequests'), (snap) => {
+  watch('paymentRequests', (snap) => {
     paymentRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
   });
