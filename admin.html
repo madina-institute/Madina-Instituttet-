@@ -1192,17 +1192,23 @@
 
   <!-- OVERVIEW -->
   <div class="panel" id="panel-overview">
-    <div class="stat-grid">
+    <!-- Oversikt hadde seks lange kort under hverandre i én rulling. For å
+         gjøre én ting måtte man bla forbi alt det andre — inkludert
+         Faresonen, som sletter data permanent. Nå velges seksjon først,
+         og bare den vises. Samme mappemønster som Elever/Lærere. -->
+    <div class="folder-row-dynamic" id="ovFolderRow" style="margin-bottom:18px;"></div>
+
+    <div class="stat-grid" data-ov="start">
       <div class="stat-card"><div class="n" id="statTeachers">0</div><div class="l">Lærere</div></div>
       <div class="stat-card"><div class="n" id="statStudents">0</div><div class="l">Elever</div></div>
       <div class="stat-card"><div class="n" id="statHours">0</div><div class="l">Timeplanoppføringer</div></div>
       <div class="stat-card"><div class="n" id="statPrograms">3</div><div class="l">Programmer</div></div>
     </div>
-    <p style="font-family:'Jost',sans-serif; font-size:13px; color:#5a6860;">
+    <p data-ov="start" style="font-family:'Jost',sans-serif; font-size:13px; color:#5a6860;">
       Denne siden er koblet til en delt database (Firebase). Alle endringer synkroniseres automatisk
       og vises umiddelbart hos alle som har siden åpen — uansett enhet.
     </p>
-    <div class="report-card" style="margin-top:20px;">
+    <div data-ov="data" class="report-card" style="margin-top:20px;">
       <h3>Eksempeldata for demo</h3>
       <div class="sub">Fyll databasen med realistiske eksempeloppføringer (lærere, foresatte, klasser, elever, timeplan og oppmøte)</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -1211,7 +1217,7 @@
       <button class="btn btn-primary" onclick="seedDemoData()">Last inn eksempeldata</button>
     </div>
 
-    <div class="report-card" style="margin-top:20px;">
+    <div data-ov="data" class="report-card" style="margin-top:20px;">
       <h3>Migrer koblinger til stabil ID</h3>
       <div class="sub">Kjøres én gang — oppdaterer eksisterende koblinger (elev↔foresatt, elev↔klasse, lærer↔klasse, timeplan/forberedelser↔lærer/klasse) slik at de peker på et fast ID i stedet for et navn. Etter dette slutter koblinger å knekke når noen bytter navn.</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -1221,7 +1227,7 @@
       <div id="migrationResult" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-top:12px; white-space:pre-line;"></div>
     </div>
 
-    <div class="report-card" style="margin-top:20px;">
+    <div data-ov="backup" class="report-card" style="margin-top:20px;">
       <h3>Sikkerhetskopi</h3>
       <div class="sub">Beskytt dere mot utilsiktet sletting — last ned eller send hele databasen jevnlig</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -1254,7 +1260,7 @@
       </p>
     </div>
 
-    <div class="report-card" style="margin-top:20px;">
+    <div data-ov="ansatte" class="report-card" style="margin-top:20px;">
       <h3>Ansatte (innlogging)</h3>
       <div class="sub">Opprett tilgang for ansatte — hver person logger inn med sin egen e-post. Én person kan ha flere roller samtidig.</div>
       <div class="field-row-2">
@@ -1292,7 +1298,7 @@
       <div id="adminUsersList"></div>
     </div>
 
-    <div class="report-card" style="margin-top:20px;">
+    <div data-ov="varsler" class="report-card" style="margin-top:20px;">
       <h3>🔔 Varslinger</h3>
       <div class="sub">Hvem skal få e-post når det kommer inn en ny påmelding</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px; line-height:1.6;">
@@ -1305,11 +1311,22 @@
         <span>Send varsel ved ny påmelding</span>
       </label>
       <div id="varselMottakerListe" style="display:flex; flex-direction:column; gap:2px; max-height:340px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--paper);"></div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>Legg til en e-post manuelt</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="email" id="varselNyEpost" placeholder="navn@eksempel.no"
+                 style="flex:1 1 200px;" onkeydown="if(event.key==='Enter'){event.preventDefault(); leggTilVarselEpost();}">
+          <button class="btn btn-ghost" style="width:auto; flex:0 0 auto;" onclick="leggTilVarselEpost()">+ Legg til</button>
+        </div>
+        <div class="hint">For noen som skal varsles uten å være registrert som ansatt — f.eks. en felles postkasse.</div>
+      </div>
+
       <div id="varselOppsummering" class="sub" style="margin:12px 0 0;"></div>
       <button class="btn btn-primary" style="width:auto; margin-top:12px;" onclick="saveVarselInnstillinger()">Lagre</button>
     </div>
 
-    <div class="report-card danger-zone" style="margin-top:20px;">
+    <div data-ov="fare" class="report-card danger-zone" style="margin-top:20px;">
       <h3 style="color:var(--red);">Faresone — nullstill data</h3>
       <div class="sub">Disse handlingene sletter data permanent og kan ikke angres</div>
       <div class="danger-row">
@@ -7664,6 +7681,43 @@
       '3. barn ' + Math.round(pris * (1 - r3/100)) + ' kr';
   };
 
+  // ---------- Oversikt: mapper ----------
+  // Seksjonene her har svært ulik risiko: «Sikkerhetskopi» er ufarlig,
+  // «Faresone» sletter alt permanent. Å ha dem i samme rulling gjør at
+  // man passerer den farligste for å nå den tryggeste. Nå åpnes én om
+  // gangen, og Faresonen må velges bevisst.
+  const OV_MAPPER = [
+    { key:'start',   ikon:'📊', navn:'Nøkkeltall',        sub:'Antall lærere, elever og timer' },
+    { key:'ansatte', ikon:'👥', navn:'Ansatte og tilgang', sub:'Opprett kontoer, sett roller' },
+    { key:'varsler', ikon:'🔔', navn:'Varslinger',         sub:'Hvem varsles ved ny påmelding' },
+    { key:'backup',  ikon:'💾', navn:'Sikkerhetskopi',     sub:'Last ned, send og gjenopprett' },
+    { key:'data',    ikon:'🧪', navn:'Data og migrering',  sub:'Eksempeldata og ID-migrering' },
+    { key:'fare',    ikon:'⚠️', navn:'Faresone',           sub:'Sletter data permanent' }
+  ];
+  let ovValgtMappe = 'start';
+
+  function renderOvFolders(){
+    const row = document.getElementById('ovFolderRow');
+    if(!row) return;
+    row.innerHTML = OV_MAPPER.map(m => `
+      <div class="choice-card folder-card${ovValgtMappe === m.key ? ' active' : ''}"
+           ${m.key === 'fare' ? 'style="border-color:rgba(168,60,60,.35);"' : ''}
+           onclick="setOvMappe('${m.key}')">
+        <h3>${m.ikon} ${escapeHtml(m.navn)}</h3>
+        <div class="sub">${escapeHtml(m.sub)}</div>
+      </div>`).join('');
+    document.querySelectorAll('#panel-overview [data-ov]').forEach(el => {
+      el.style.display = el.dataset.ov === ovValgtMappe ? '' : 'none';
+    });
+  }
+
+  window.setOvMappe = function(key){
+    ovValgtMappe = key;
+    renderOvFolders();
+    const panel = document.getElementById('panel-overview');
+    if(panel) panel.scrollIntoView({ behavior:'smooth', block:'start' });
+  };
+
   // ---------- Varslinger ----------
   // Mottakerne lagres som E-POSTADRESSER, ikke som id-er. Da fortsetter
   // varselet å virke selv om et personkort slettes og opprettes på nytt,
@@ -7687,9 +7741,26 @@
       if(e && !sett.has(e)) sett.set(e, { epost: u.epost.trim(), navn: u.navn || '', roller: u.roller || u.rolle || '' });
     });
 
-    const folk = [...sett.values()].sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
+    // Lagrede mottakere som IKKE finnes som ansatt lenger — enten lagt
+    // inn manuelt, eller en ansatt som er slettet siden. De må fortsatt
+    // vises, ellers ville de forsvunnet stille fra listen mens de
+    // fremdeles fikk e-post.
+    varselOppsett.nySoknadMottakere.forEach(e => {
+      const lc = (e || '').trim().toLowerCase();
+      if(lc && !sett.has(lc)) sett.set(lc, { epost: e.trim(), navn: '', roller: '', manuell: true });
+    });
+
+    const folk = [...sett.values()].sort((a,b) => (a.navn || a.epost).localeCompare(b.navn || b.epost));
     if(folk.length === 0){
-      el.innerHTML = '<div class="report-empty">Ingen ansatte med registrert e-post ennå.</div>';
+      // Sier hvorfor listen er tom, ikke bare AT den er det.
+      const antallAnsatte = (cache.teachers || []).length + adminUsersCache.length;
+      el.innerHTML = '<div class="report-empty" style="box-shadow:none; border:none; background:transparent;">' +
+        (antallAnsatte === 0
+          ? 'Ingen ansatte lastet inn ennå — vent til «Synkronisert» vises øverst.'
+          : antallAnsatte + ' ansatte funnet, men ingen av dem har en e-post registrert. ' +
+            'Legg inn e-post på personkortet under «Ansatte», eller skriv en adresse i feltet under.') +
+        '</div>';
+      oppdaterVarselOppsummering();
       return;
     }
 
@@ -7701,12 +7772,38 @@
                onchange="oppdaterVarselOppsummering()" style="width:16px; height:16px; flex:0 0 auto;">
         <span style="flex:1; min-width:0;">
           <strong>${escapeHtml(p.navn || p.epost)}</strong>
-          <span style="color:#8a9a90;"> — ${escapeHtml(p.epost)}</span>
+          ${p.navn ? `<span style="color:#8a9a90;"> — ${escapeHtml(p.epost)}</span>` : ''}
+          ${p.manuell ? '<span style="font-size:11px; color:var(--gold);"> · lagt til manuelt</span>' : ''}
           ${p.roller ? `<br><span style="font-size:11px; color:#8a9a90;">${escapeHtml(p.roller)}</span>` : ''}
         </span>
       </label>`).join('');
     oppdaterVarselOppsummering();
   }
+
+  // En adresse lagt til her lagres først når man trykker «Lagre» — den
+  // legges bare inn i listen som avkrysset, slik at man ser hva man er i
+  // ferd med å lagre før det skjer.
+  window.leggTilVarselEpost = function(){
+    const felt = document.getElementById('varselNyEpost');
+    const e = (felt.value || '').trim();
+    if(!e) return;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){
+      showToast('Det ser ikke ut som en gyldig e-postadresse.', true);
+      return;
+    }
+    if(varselOppsett.nySoknadMottakere.some(x => x.toLowerCase() === e.toLowerCase())){
+      showToast('Denne adressen står allerede i listen.');
+      felt.value = '';
+      return;
+    }
+    // Ta med det som allerede er krysset av, så et valg ikke går tapt
+    // når listen tegnes på nytt.
+    const alleredeValgt = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
+    varselOppsett.nySoknadMottakere = [...new Set([...alleredeValgt, e])];
+    felt.value = '';
+    renderVarselMottakere();
+    showToast('Lagt til i listen — trykk «Lagre» for å bekrefte.');
+  };
 
   // Sier hva som faktisk kommer til å skje, i klartekst. En liste med
   // avkrysninger viser HVEM som er valgt, men ikke hva valget betyr.
@@ -8388,6 +8485,7 @@
     const labelEl = document.getElementById('currentTabLabel');
     if(labelEl) labelEl.textContent = tab.textContent;
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
+    if(tab.dataset.tab === 'overview') renderOvFolders();
     if(oppdaterUrl){
       try{ history.replaceState(null, '', '#fane=' + tab.dataset.tab); }catch(e){}
     }
