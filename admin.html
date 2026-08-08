@@ -1192,23 +1192,17 @@
 
   <!-- OVERVIEW -->
   <div class="panel" id="panel-overview">
-    <!-- Oversikt hadde seks lange kort under hverandre i én rulling. For å
-         gjøre én ting måtte man bla forbi alt det andre — inkludert
-         Faresonen, som sletter data permanent. Nå velges seksjon først,
-         og bare den vises. Samme mappemønster som Elever/Lærere. -->
-    <div class="folder-row-dynamic" id="ovFolderRow" style="margin-bottom:18px;"></div>
-
-    <div class="stat-grid" data-ov="start">
+    <div class="stat-grid">
       <div class="stat-card"><div class="n" id="statTeachers">0</div><div class="l">Lærere</div></div>
       <div class="stat-card"><div class="n" id="statStudents">0</div><div class="l">Elever</div></div>
       <div class="stat-card"><div class="n" id="statHours">0</div><div class="l">Timeplanoppføringer</div></div>
       <div class="stat-card"><div class="n" id="statPrograms">3</div><div class="l">Programmer</div></div>
     </div>
-    <p data-ov="start" style="font-family:'Jost',sans-serif; font-size:13px; color:#5a6860;">
+    <p style="font-family:'Jost',sans-serif; font-size:13px; color:#5a6860;">
       Denne siden er koblet til en delt database (Firebase). Alle endringer synkroniseres automatisk
       og vises umiddelbart hos alle som har siden åpen — uansett enhet.
     </p>
-    <div data-ov="data" class="report-card" style="margin-top:20px;">
+    <div class="report-card" style="margin-top:20px;">
       <h3>Eksempeldata for demo</h3>
       <div class="sub">Fyll databasen med realistiske eksempeloppføringer (lærere, foresatte, klasser, elever, timeplan og oppmøte)</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -1217,7 +1211,7 @@
       <button class="btn btn-primary" onclick="seedDemoData()">Last inn eksempeldata</button>
     </div>
 
-    <div data-ov="data" class="report-card" style="margin-top:20px;">
+    <div class="report-card" style="margin-top:20px;">
       <h3>Migrer koblinger til stabil ID</h3>
       <div class="sub">Kjøres én gang — oppdaterer eksisterende koblinger (elev↔foresatt, elev↔klasse, lærer↔klasse, timeplan/forberedelser↔lærer/klasse) slik at de peker på et fast ID i stedet for et navn. Etter dette slutter koblinger å knekke når noen bytter navn.</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -1227,7 +1221,7 @@
       <div id="migrationResult" style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-top:12px; white-space:pre-line;"></div>
     </div>
 
-    <div data-ov="backup" class="report-card" style="margin-top:20px;">
+    <div class="report-card" style="margin-top:20px;">
       <h3>Sikkerhetskopi</h3>
       <div class="sub">Beskytt dere mot utilsiktet sletting — last ned eller send hele databasen jevnlig</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
@@ -1260,7 +1254,7 @@
       </p>
     </div>
 
-    <div data-ov="ansatte" class="report-card" style="margin-top:20px;">
+    <div class="report-card" style="margin-top:20px;">
       <h3>Ansatte (innlogging)</h3>
       <div class="sub">Opprett tilgang for ansatte — hver person logger inn med sin egen e-post. Én person kan ha flere roller samtidig.</div>
       <div class="field-row-2">
@@ -1298,42 +1292,7 @@
       <div id="adminUsersList"></div>
     </div>
 
-    <div data-ov="varsler" class="report-card" style="margin-top:20px;">
-      <h3>🔔 Varslinger</h3>
-      <div class="sub">Hvem skal få e-post når det kommer inn en ny påmelding</div>
-      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px; line-height:1.6;">
-        Listen bygges av de ansatte som har en e-post registrert. Kryss av for
-        dem som skal varsles — endringen gjelder med én gang, uten at noe må
-        publiseres på nytt.
-      </p>
-      <label style="display:flex; align-items:center; gap:9px; margin-bottom:14px; font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
-        <input type="checkbox" id="varselNySoknadAktiv" onchange="oppdaterVarselOppsummering()" style="width:17px; height:17px; flex:0 0 auto;">
-        <span>Send varsel ved ny påmelding</span>
-      </label>
-      <label style="display:flex; align-items:flex-start; gap:9px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
-        <input type="checkbox" id="varselKvitteringAktiv" onchange="oppdaterVarselOppsummering()" style="width:17px; height:17px; flex:0 0 auto; margin-top:1px;">
-        <span>Send kvittering til foresatte<br>
-        <span style="font-size:12px; color:#8a9a90;">De får en e-post om at påmeldingen er mottatt. Kvitteringen lover ikke plass — den bekrefter kun at søknaden er registrert.</span></span>
-      </label>
-
-      <div style="font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; color:var(--emerald); margin-bottom:6px; letter-spacing:.02em;">HVEM I ADMINISTRASJONEN SKAL VARSLES</div>
-      <div id="varselMottakerListe" style="display:flex; flex-direction:column; gap:2px; max-height:340px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--paper);"></div>
-
-      <div class="field" style="margin-top:14px;">
-        <label>Legg til en e-post manuelt</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <input type="email" id="varselNyEpost" placeholder="navn@eksempel.no"
-                 style="flex:1 1 200px;" onkeydown="if(event.key==='Enter'){event.preventDefault(); leggTilVarselEpost();}">
-          <button class="btn btn-ghost" style="width:auto; flex:0 0 auto;" onclick="leggTilVarselEpost()">+ Legg til</button>
-        </div>
-        <div class="hint">For noen som skal varsles uten å være registrert som ansatt — f.eks. en felles postkasse.</div>
-      </div>
-
-      <div id="varselOppsummering" class="sub" style="margin:12px 0 0;"></div>
-      <button class="btn btn-primary" style="width:auto; margin-top:12px;" onclick="saveVarselInnstillinger()">Lagre</button>
-    </div>
-
-    <div data-ov="fare" class="report-card danger-zone" style="margin-top:20px;">
+    <div class="report-card danger-zone" style="margin-top:20px;">
       <h3 style="color:var(--red);">Faresone — nullstill data</h3>
       <div class="sub">Disse handlingene sletter data permanent og kan ikke angres</div>
       <div class="danger-row">
@@ -1396,10 +1355,6 @@
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormCompleted">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Fullførte søknaden</div></div>
     </div>
     <div class="folder-row" id="regFolderRow" style="margin-bottom:16px;">
-      <div class="choice-card folder-card" data-status="" onclick="setRegFolder('')">
-        <h3>📋 Alle<span class="folder-count" id="regFolderCount_Alle">0</span></h3>
-        <div class="sub">Hele listen</div>
-      </div>
       <div class="choice-card folder-card" data-status="Ny" onclick="setRegFolder('Ny')">
         <h3>🆕 Nye<span class="folder-count" id="regFolderCount_Ny">0</span></h3>
         <div class="sub">Ikke behandlet ennå</div>
@@ -1417,7 +1372,7 @@
         <div class="sub">Avslåtte søknader</div>
       </div>
     </div>
-    <div class="toolbar" id="regToolbar" style="display:none;">
+    <div class="toolbar">
       <input class="search" id="searchRegistrations" placeholder="Søk etter elevnavn, foresatt eller program...">
       <span class="count-chip" id="regFolderActiveLabel" onclick="setRegFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countRegistrations" onclick="toggleRecordsById('tableRegistrations')">0 søknader <span class="toggle-arrow">▾</span></span>
@@ -1593,10 +1548,8 @@
 
   <!-- TEACHERS -->
   <div class="panel active" id="panel-teachers">
-    <div class="folder-row-dynamic" id="teacherFolderRow" style="margin-bottom:16px;"></div>
-    <div class="toolbar" id="teacherToolbar" style="display:none;">
+    <div class="toolbar">
       <input class="search" id="searchTeachers" placeholder="Søk etter navn, fag eller telefon...">
-      <span class="count-chip" id="teacherFolderActiveLabel" onclick="setTeacherFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countTeachers" onclick="toggleRecordsById('tableTeachers')">0 lærere</span>
       <button class="btn btn-ghost" onclick="exportCSV('teachers')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('teachers')">+ Ny lærer</button>
@@ -1606,10 +1559,8 @@
 
   <!-- GUARDIANS -->
   <div class="panel" id="panel-guardians">
-    <div class="folder-row-dynamic" id="guardianFolderRow" style="margin-bottom:16px;"></div>
-    <div class="toolbar" id="guardianToolbar" style="display:none;">
+    <div class="toolbar">
       <input class="search" id="searchGuardians" placeholder="Søk etter navn eller telefon...">
-      <span class="count-chip" id="guardianFolderActiveLabel" onclick="setGuardianFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countGuardians" onclick="toggleRecordsById('tableGuardians')">0 foresatte</span>
       <button class="btn btn-ghost" onclick="exportCSV('guardians')">Eksporter CSV</button>
       <button class="btn btn-primary" onclick="openModal('guardians')">+ Ny foresatt</button>
@@ -1620,7 +1571,7 @@
   <!-- STUDENTS -->
   <div class="panel" id="panel-students">
     <div class="folder-row-dynamic" id="studentFolderRow" style="margin-bottom:16px;"></div>
-    <div class="toolbar" id="studentToolbar" style="display:none;">
+    <div class="toolbar">
       <input class="search" id="searchStudents" placeholder="Søk etter navn, klasse eller foresatt...">
       <span class="count-chip" id="studentFolderActiveLabel" onclick="setStudentFolder('')" style="cursor:pointer;">📂 Viser alle — trykk på en mappe over for å filtrere</span>
       <span class="count-chip" id="countStudents" onclick="toggleRecordsById('tableStudents')">0 elever</span>
@@ -2150,26 +2101,6 @@
       </div>
       <button class="btn btn-primary" style="width:auto;" onclick="saveBetalingSettings()">Lagre</button>
     </div>
-
-    <div class="report-card">
-      <h3>Søskenrabatt</h3>
-      <div class="sub">Gjelder både her i panelet og for Vipps-betalinger. Prisen per program settes under fanen «Programmer» — her settes bare rabatten.</div>
-      <div class="field">
-        <label>Rabatt for 2. barn (%)</label>
-        <input type="number" id="rabatt2Input" min="0" max="100" step="1" placeholder="20" oninput="visRabattForhandsvisning()">
-      </div>
-      <div class="field">
-        <label>Rabatt for 3. barn og flere (%)</label>
-        <input type="number" id="rabatt3Input" min="0" max="100" step="1" placeholder="30" oninput="visRabattForhandsvisning()">
-      </div>
-      <label style="display:flex; align-items:flex-start; gap:9px; margin:14px 0; font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; cursor:pointer;">
-        <input type="checkbox" id="tellForesatt2Input" style="width:17px; height:17px; flex:0 0 auto; margin-top:1px;">
-        <span>Tell også barn som står på <strong>foresatt 2</strong> som søsken.<br>
-        Står denne av, får en familie som har fordelt barna på begge foresatte ingen søskenrabatt — og betaler mer enn den skal.</span>
-      </label>
-      <div id="rabattForhandsvisning" class="sub" style="margin-bottom:14px;"></div>
-      <button class="btn btn-primary" style="width:auto;" onclick="savePrisinnstillinger()">Lagre</button>
-    </div>
   </div>
 
 
@@ -2261,21 +2192,10 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  // App Check settes opp i try/catch. Safari med «avansert personvern-
-  // beskyttelse» blokkerer google.com/recaptcha, og et kast herfra stopper
-  // HELE modulen: siden vises helt normalt, men ingenting virker — verken
-  // innlogging eller datalyttere — og det kommer ingen feilmelding.
-  // Dette var årsaken til at foreldreportalen sa «fant ingen konto» i
-  // Safari, men virket i Firefox. Samme løsning som i index4.html.
-  let appCheck = null;
-  try{
-    appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
-      isTokenAutoRefreshEnabled: true
-    });
-  } catch(err){
-    console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
-  }
+  const appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+    isTokenAutoRefreshEnabled: true
+  });
   const db = getFirestore(app);
   const storage = getStorage(app);
   const auth = getAuth(app);
@@ -3499,34 +3419,6 @@
   // Firestore does not automatically retry a listener that already
   // errored once auth becomes available later.
   function attachAuthGatedCashierListeners(){
-    // ---- Pris- og betalingsinnstillinger ----
-    // Begge lyttere sto tidligere på toppnivå i modulen, altså FØR
-    // innloggingen var bekreftet. Reglene krever innlogging for å lese
-    // 'settings', og Firestore prøver ikke en avvist lytter på nytt — så
-    // betalingslenken ble stående tom uansett hva som lå lagret.
-    onSnapshot(doc(db, 'settings', 'priser'), (snap) => {
-      const d = snap.exists() ? (snap.data() || {}) : {};
-      const r2 = parseFloat(d.soskenRabatt2);
-      const r3 = parseFloat(d.soskenRabatt3);
-      prisOppsett.rabatt2 = (!isNaN(r2) && r2 >= 0 && r2 <= 100) ? r2 : RABATT_RESERVE.barn2;
-      prisOppsett.rabatt3 = (!isNaN(r3) && r3 >= 0 && r3 <= 100) ? r3 : RABATT_RESERVE.barn3;
-      prisOppsett.tellForesatt2 = d.tellForesatt2 === true;
-      fyllPrisinnstillinger();
-    }, (err) => console.error('settings/priser', err));
-
-    onSnapshot(doc(db, 'settings', 'varsler'), (snap) => {
-      const d = snap.exists() ? (snap.data() || {}) : {};
-      varselOppsett.nySoknadAktiv = d.nySoknadAktiv !== false;
-      varselOppsett.kvitteringAktiv = d.kvitteringAktiv !== false;
-      varselOppsett.nySoknadMottakere = Array.isArray(d.nySoknadMottakere) ? d.nySoknadMottakere : [];
-      fyllVarselInnstillinger();
-    }, (err) => console.error('settings/varsler', err));
-
-    onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
-      const input = document.getElementById('vippsLinkInput');
-      if(input && snap.exists()) input.value = snap.data().lenke || '';
-    }, (err) => console.error('settings/betaling', err));
-
     onSnapshot(collection(db, 'studentPayments'), (snap) => {
       cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
@@ -4046,49 +3938,24 @@
   // SØKNADER — mappevisning: Ny / Venteliste / Godkjent / Avslått som
   // fire klikkbare "mapper" med antall, i stedet for en rullegardin.
   // ===================================================================
-  // ===================================================================
-  // MAPPER SOM STARTER LUKKET
-  // -------------------------------------------------------------------
-  // null  = ingen mappe valgt → verken søkefelt eller liste vises.
-  // ''    = mappen «Alle» er valgt → hele listen vises.
-  // annet = én bestemt mappe er valgt.
-  //
-  // Grunnen til skillet: listene her kan bli flere hundre rader lange. Å
-  // åpne fanen og møte alt på én gang gjør at man må bla forbi alt for å
-  // finne én ting. Nå ser man først hvilke mapper som finnes og hvor mye
-  // som ligger i hver — og åpner bare den man faktisk skal inn i.
-  // ===================================================================
-  function visMappeInnhold(toolbarId, tableId, erValgt){
-    const tb = document.getElementById(toolbarId);
-    if(tb) tb.style.display = erValgt ? 'flex' : 'none';
-    const tbl = document.getElementById(tableId);
-    if(tbl) tbl.classList.toggle('records-hidden', !erValgt);
-    const chip = document.getElementById('count' + tableId.replace('table',''));
-    if(chip) chip.classList.toggle('expanded', !!erValgt);
-  }
-
-  let regSelectedFolder = null;
+  let regSelectedFolder = '';
   const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått' };
 
   window.setRegFolder = function(status){
-    // Klikk på samme mappe igjen lukker den, i stedet for å vise alt.
-    regSelectedFolder = (regSelectedFolder === status) ? null : status;
-    visMappeInnhold('regToolbar', 'tableRegistrations', regSelectedFolder !== null);
+    regSelectedFolder = (regSelectedFolder === status) ? '' : status; // klikk på samme mappe igjen = vis alle
     document.querySelectorAll('.folder-card').forEach(card => {
       card.classList.toggle('active', card.dataset.status === regSelectedFolder);
     });
     const label = document.getElementById('regFolderActiveLabel');
     if(label){
       label.textContent = regSelectedFolder
-        ? '📂 Viser: ' + REG_FOLDER_LABELS[regSelectedFolder] + ' — trykk igjen for å lukke'
-        : '📂 Viser alle — trykk igjen for å lukke';
+        ? '📂 Viser: ' + REG_FOLDER_LABELS[regSelectedFolder] + ' — trykk igjen for å vise alle'
+        : '📂 Viser alle — trykk på en mappe over for å filtrere';
     }
     render('registrations');
   };
 
   function updateRegFolderCounts(registrations){
-    const alleEl = document.getElementById('regFolderCount_Alle');
-    if(alleEl) alleEl.textContent = registrations.length;
     const counts = { Ny:0, Venteliste:0, Godkjent:0, Avslått:0 };
     registrations.forEach(r => { const s = r.status || 'Ny'; if(counts[s] !== undefined) counts[s]++; });
     Object.keys(counts).forEach(status => {
@@ -4104,7 +3971,7 @@
   // det, uansett hvilken klasse de sto i — holdes ute av klassemappene
   // for å ikke rote til aktive klasselister).
   // ===================================================================
-  let studentSelectedFolder = null;
+  let studentSelectedFolder = '';
 
   function renderStudentFolders(){
     const row = document.getElementById('studentFolderRow');
@@ -4113,12 +3980,9 @@
     const students = cache.students;
     const activeStudents = students.filter(s => s.elevStatus !== 'Sluttet/trukket');
 
-    // «Alle» står alltid først, slik at veien tilbake til hele listen er
-    // like synlig som veien inn i en enkelt mappe.
-    const cards = [{ key: '', label: '📋 Alle', sub: 'Hele listen', count: students.length }];
-    classes.forEach(c => {
+    const cards = classes.map(c => {
       const count = activeStudents.filter(s => s.klasse === c.id).length;
-      cards.push({ key: c.id, label: '🏫 ' + c.navn, sub: count + ' elev' + (count === 1 ? '' : 'er'), count });
+      return { key: c.id, label: '🏫 ' + c.navn, sub: count + ' elev' + (count === 1 ? '' : 'er'), count };
     });
     const noClassCount = activeStudents.filter(s => !s.klasse).length;
     cards.push({ key: '__none__', label: '📭 Uten klasse', sub: 'Ikke fordelt ennå', count: noClassCount });
@@ -4132,107 +3996,13 @@
       </div>`).join('');
   }
 
-  // ===================================================================
-  // LÆRERE — mappevisning per fag. Faglisten bygges fra dataene selv, så
-  // et nytt fag dukker opp av seg selv uten at noe må endres her.
-  // ===================================================================
-  let teacherSelectedFolder = null;
-
-  const FAG_IKON = { Koran:'📖', Islam:'🕌', Arabisk:'🔤', Urdu:'🔤', Madinabarn:'🧒', Annet:'📌' };
-
-  function renderTeacherFolders(){
-    const row = document.getElementById('teacherFolderRow');
-    if(!row) return;
-    const teachers = cache.teachers;
-    const fagListe = [...new Set(teachers.map(t => (t.fag||'').trim()).filter(Boolean))].sort();
-
-    const cards = [{ key: '', label: '📋 Alle', sub: 'Hele listen', count: teachers.length }];
-    fagListe.forEach(fag => {
-      const count = teachers.filter(t => (t.fag||'').trim() === fag).length;
-      cards.push({ key: fag, label: (FAG_IKON[fag] || '📌') + ' ' + fag,
-                   sub: count + ' lærer' + (count === 1 ? '' : 'e'), count });
-    });
-    const utenFag = teachers.filter(t => !(t.fag||'').trim()).length;
-    if(utenFag > 0) cards.push({ key: '__nofag__', label: '📭 Uten fag', sub: 'Ikke satt ennå', count: utenFag });
-
-    row.innerHTML = cards.map(c => `
-      <div class="choice-card folder-card${teacherSelectedFolder === c.key ? ' active' : ''}" data-status="${escapeHtml(c.key)}" onclick="setTeacherFolder('${escapeHtml(c.key)}')">
-        <h3>${c.label}<span class="folder-count">${c.count}</span></h3>
-        <div class="sub">${escapeHtml(c.sub)}</div>
-      </div>`).join('');
-  }
-
-  window.setTeacherFolder = function(key){
-    teacherSelectedFolder = (teacherSelectedFolder === key) ? null : key;
-    visMappeInnhold('teacherToolbar', 'tableTeachers', teacherSelectedFolder !== null);
-    const label = document.getElementById('teacherFolderActiveLabel');
-    if(label){
-      label.textContent = teacherSelectedFolder
-        ? '📂 Filtrert — trykk på mappen igjen for å lukke'
-        : '📂 Viser alle — trykk igjen for å lukke';
-    }
-    renderTeacherFolders();
-    render('teachers');
-  };
-
-  // ===================================================================
-  // FORESATTE — mappevisning per klasse, basert på hvilken klasse deres
-  // BARN går i. En foresatt med barn i to klasser vises i begge mappene;
-  // det er riktig, siden personen faktisk hører hjemme begge steder.
-  // ===================================================================
-  let guardianSelectedFolder = null;
-
-  // Klassene en foresatt er knyttet til gjennom sine barn (både foresatt
-  // og foresatt2 teller — ellers ville den andre forelderen falt ut).
-  function klasserForForesatt(guardianId){
-    return [...new Set(cache.students
-      .filter(s => s.foresatt === guardianId || s.foresatt2 === guardianId)
-      .map(s => s.klasse).filter(Boolean))];
-  }
-
-  function renderGuardianFolders(){
-    const row = document.getElementById('guardianFolderRow');
-    if(!row) return;
-    const guardians = cache.guardians;
-    const classes = [...cache.classes].filter(c => c.navn).sort((a,b) => a.navn.localeCompare(b.navn));
-
-    const cards = [{ key: '', label: '📋 Alle', sub: 'Hele listen', count: guardians.length }];
-    classes.forEach(c => {
-      const count = guardians.filter(g => klasserForForesatt(g.id).includes(c.id)).length;
-      cards.push({ key: c.id, label: '🏫 ' + c.navn,
-                   sub: count + ' foresatt' + (count === 1 ? '' : 'e'), count });
-    });
-    const utenBarn = guardians.filter(g => klasserForForesatt(g.id).length === 0).length;
-    if(utenBarn > 0) cards.push({ key: '__nobarn__', label: '📭 Uten barn i klasse', sub: 'Ikke fordelt ennå', count: utenBarn });
-
-    row.innerHTML = cards.map(c => `
-      <div class="choice-card folder-card${guardianSelectedFolder === c.key ? ' active' : ''}" data-status="${escapeHtml(c.key)}" onclick="setGuardianFolder('${escapeHtml(c.key)}')">
-        <h3>${c.label}<span class="folder-count">${c.count}</span></h3>
-        <div class="sub">${escapeHtml(c.sub)}</div>
-      </div>`).join('');
-  }
-
-  window.setGuardianFolder = function(key){
-    guardianSelectedFolder = (guardianSelectedFolder === key) ? null : key;
-    visMappeInnhold('guardianToolbar', 'tableGuardians', guardianSelectedFolder !== null);
-    const label = document.getElementById('guardianFolderActiveLabel');
-    if(label){
-      label.textContent = guardianSelectedFolder
-        ? '📂 Filtrert — trykk på mappen igjen for å lukke'
-        : '📂 Viser alle — trykk igjen for å lukke';
-    }
-    renderGuardianFolders();
-    render('guardians');
-  };
-
   window.setStudentFolder = function(key){
-    studentSelectedFolder = (studentSelectedFolder === key) ? null : key;
-    visMappeInnhold('studentToolbar', 'tableStudents', studentSelectedFolder !== null);
+    studentSelectedFolder = (studentSelectedFolder === key) ? '' : key;
     const label = document.getElementById('studentFolderActiveLabel');
     if(label){
       label.textContent = studentSelectedFolder
-        ? '📂 Filtrert — trykk på mappen igjen for å lukke'
-        : '📂 Viser alle — trykk igjen for å lukke';
+        ? '📂 Filtrert — trykk på mappen igjen for å vise alle'
+        : '📂 Viser alle — trykk på en mappe over for å filtrere';
     }
     renderStudentFolders();
     render('students');
@@ -4902,10 +4672,15 @@
   // avbryte et utestående (ikke betalt) Vipps-krav, sette et nytt
   // rabattert totalbeløp, og sende faktura til foresatte.
   // ===================================================================
-  // Faktiske URL-er fra "firebase deploy --only functions" (bekreftet
-  // 2026-08-04) — cancelVippsPayment/refundVippsPayment fikk standard
-  // cloudfunctions.net-format siden de er helt nye funksjoner, ulikt de
-  // eldre *.a.run.app-lenkene til createVippsPayment/vippsWebhook.
+  // Faktiske URL-er, kopiert fra Firebase Console -> Functions
+  // (bekreftet 2026-08-07). ALLE funksjonene er 2. generasjon og bruker
+  // derfor *.a.run.app-format — ikke det gamle cloudfunctions.net-mønsteret.
+  //
+  // MERK: disse to sto tidligere med gjettede cloudfunctions.net-adresser.
+  // Da traff kallene ingenting, og "Refunder"/"Avbryt krav" i Kasserer
+  // (Ledelse) feilet med nettverksfeil uten at årsaken var synlig.
+  // Legger du til en ny funksjon: kopier URL-en fra konsollen, ikke skriv
+  // den av mønsteret — suffikset (qgyf6x4aba) kan ikke gjettes.
   // Vipps-funksjonene krever nå innlogging. Uten dette kunne hvem som helst
   // som kjente URL-en sende et ekte betalingskrav i skolens navn — URL-ene
   // er åpne HTTP-endepunkter med lett gjettbart mønster.
@@ -4935,8 +4710,8 @@
     return await res.json();
   }
 
-  const CANCEL_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/cancelVippsPayment';
-  const REFUND_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/refundVippsPayment';
+  const CANCEL_VIPPS_URL = 'https://cancelvippspayment-qgyf6x4aba-uc.a.run.app';
+  const REFUND_VIPPS_URL = 'https://refundvippspayment-qgyf6x4aba-uc.a.run.app';
 
   // Midlertidige/plassholder bankkontoopplysninger for fakturaer — BYTT UT
   // med skolens reelle kontonummer/KID-oppsett før dette tas i reell bruk.
@@ -5183,25 +4958,11 @@
       // hverandre — statusen på hver søknad er allerede satt av
       // Godkjenn/Venteliste/Avslå-knappene og av Vipps-webhooken.
       updateRegFolderCounts(cache.registrations);
-      if(regSelectedFolder === null) data = [];
-      else if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
-    }
-    if(type === 'teachers'){
-      renderTeacherFolders();
-      if(teacherSelectedFolder === null) data = [];
-      else if(teacherSelectedFolder === '__nofag__') data = data.filter(row => !(row.fag||'').trim());
-      else if(teacherSelectedFolder) data = data.filter(row => (row.fag||'').trim() === teacherSelectedFolder);
-    }
-    if(type === 'guardians'){
-      renderGuardianFolders();
-      if(guardianSelectedFolder === null) data = [];
-      else if(guardianSelectedFolder === '__nobarn__') data = data.filter(row => klasserForForesatt(row.id).length === 0);
-      else if(guardianSelectedFolder) data = data.filter(row => klasserForForesatt(row.id).includes(guardianSelectedFolder));
+      if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
     }
     if(type === 'students'){
       renderStudentFolders();
-      if(studentSelectedFolder === null) data = [];
-      else if(studentSelectedFolder === '__none__') data = data.filter(row => !row.klasse && row.elevStatus !== 'Sluttet/trukket');
+      if(studentSelectedFolder === '__none__') data = data.filter(row => !row.klasse && row.elevStatus !== 'Sluttet/trukket');
       else if(studentSelectedFolder === '__withdrawn__') data = data.filter(row => row.elevStatus === 'Sluttet/trukket');
       else if(studentSelectedFolder) data = data.filter(row => row.klasse === studentSelectedFolder && row.elevStatus !== 'Sluttet/trukket');
     }
@@ -5211,12 +4972,12 @@
     if(countEl) countEl.innerHTML = data.length + ' ' + countLabels[type] + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
-    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); renderGuardianFolders(); }
+    if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); }
     if(type === 'students'){ renderCashierPanel(); renderCashierLedelsePanel(); }
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teacherAttendance' || type === 'teachers') renderLonnOversikt();
-    if(type === 'teachers'){ renderLedelseView(); renderVarselMottakere(); }
+    if(type === 'teachers') renderLedelseView();
     if(type === 'messages') renderMessagesInbox();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
@@ -7151,19 +6912,6 @@
     }) || null;
   }
 
-  // Reserveverdier for søskenrabatt, i prosent. De ekte verdiene ligger i
-  // settings/priser og redigeres under fanen «Betaling». Disse brukes bare
-  // hvis dokumentet mangler eller ikke kan leses — da skal panelet regne
-  // som før, ikke stoppe.
-  // MERK: 20/30 er det som gjelder i dag. Notatet om medlemspris foreslår
-  // 10/20, men det står «Beregnet, ikke vedtatt».
-  const RABATT_RESERVE = { barn2: 20, barn3: 30 };
-  const prisOppsett = {
-    rabatt2: RABATT_RESERVE.barn2,
-    rabatt3: RABATT_RESERVE.barn3,
-    tellForesatt2: false
-  };
-
   function computeSoskenPrice(program, guardianId, excludeId){
     // Prisen ligger på programmet (redigerbart under fanen "Programmer").
     // PROGRAM_PRICES beholdes kun som reserve for gamle programnavn som ennå
@@ -7174,18 +6922,11 @@
       ? fromProgram
       : (parseFloat(PROGRAM_PRICES[program] || 0) || 0);
     if(!guardianId) return { price: basePrice, pos: 1 };
-    // Teller barn på foresatt2 også, hvis innstillingen er slått på. Står
-    // den av, er oppførselen som før: et barn registrert under den ANDRE
-    // foresatte teller ikke som søsken, og familien betaler for mye.
-    const siblingCount = (cache.students || []).filter(s =>
-      s.id !== excludeId &&
-      (s.foresatt === guardianId ||
-        (prisOppsett.tellForesatt2 && s.foresatt2 === guardianId))
-    ).length;
+    const siblingCount = cache.students.filter(s => s.foresatt === guardianId && s.id !== excludeId).length;
     const pos = siblingCount + 1;
     let price = basePrice;
-    if(pos === 2) price = Math.round(basePrice * (1 - prisOppsett.rabatt2 / 100));
-    else if(pos >= 3) price = Math.round(basePrice * (1 - prisOppsett.rabatt3 / 100));
+    if(pos === 2) price = Math.round(basePrice * 0.8);
+    else if(pos >= 3) price = Math.round(basePrice * 0.7);
     return { price, pos };
   }
 
@@ -7658,252 +7399,10 @@
   };
 
   // ---------- Betalingsinnstillinger ----------
-  // Lytteren ligger i attachAuthGatedCashierListeners() — den må vente på
-  // bekreftet innlogging.
-  // ---------- Prisinnstillinger ----------
-  function fyllPrisinnstillinger(){
-    const r2 = document.getElementById('rabatt2Input');
-    const r3 = document.getElementById('rabatt3Input');
-    const tf = document.getElementById('tellForesatt2Input');
-    if(!r2 || !r3 || !tf) return;
-    // Skriver ikke over mens noen står og fyller ut feltet.
-    if(document.activeElement !== r2) r2.value = prisOppsett.rabatt2;
-    if(document.activeElement !== r3) r3.value = prisOppsett.rabatt3;
-    tf.checked = prisOppsett.tellForesatt2;
-    visRabattForhandsvisning();
-  }
-
-  // Viser hva satsene faktisk betyr i kroner for det dyreste programmet.
-  // En prosent alene sier lite når det er ekte fakturaer som endrer seg.
-  window.visRabattForhandsvisning = function(){
-    const el = document.getElementById('rabattForhandsvisning');
-    if(!el) return;
-    const r2 = parseFloat(document.getElementById('rabatt2Input').value);
-    const r3 = parseFloat(document.getElementById('rabatt3Input').value);
-    const prog = (cache.programs || [])[0];
-    const pris = prog ? parseFloat(prog.pris || 0) : 0;
-    const navn = prog ? prog.navn : '';
-    if(!pris || isNaN(r2) || isNaN(r3)){ el.textContent = ''; return; }
-    el.innerHTML = 'For <strong>' + escapeHtml(navn) + '</strong> (' + pris + ' kr):<br>' +
-      '1. barn ' + pris + ' kr · 2. barn ' + Math.round(pris * (1 - r2/100)) + ' kr · ' +
-      '3. barn ' + Math.round(pris * (1 - r3/100)) + ' kr';
-  };
-
-  // ---------- Oversikt: mapper ----------
-  // Seksjonene her har svært ulik risiko: «Sikkerhetskopi» er ufarlig,
-  // «Faresone» sletter alt permanent. Å ha dem i samme rulling gjør at
-  // man passerer den farligste for å nå den tryggeste. Nå åpnes én om
-  // gangen, og Faresonen må velges bevisst.
-  const OV_MAPPER = [
-    { key:'start',   ikon:'📊', navn:'Nøkkeltall',        sub:'Antall lærere, elever og timer' },
-    { key:'ansatte', ikon:'👥', navn:'Ansatte og tilgang', sub:'Opprett kontoer, sett roller' },
-    { key:'varsler', ikon:'🔔', navn:'Varslinger',         sub:'Hvem varsles ved ny påmelding' },
-    { key:'backup',  ikon:'💾', navn:'Sikkerhetskopi',     sub:'Last ned, send og gjenopprett' },
-    { key:'data',    ikon:'🧪', navn:'Data og migrering',  sub:'Eksempeldata og ID-migrering' },
-    { key:'fare',    ikon:'⚠️', navn:'Faresone',           sub:'Sletter data permanent' }
-  ];
-  let ovValgtMappe = 'start';
-
-  function renderOvFolders(){
-    const row = document.getElementById('ovFolderRow');
-    if(!row) return;
-    row.innerHTML = OV_MAPPER.map(m => `
-      <div class="choice-card folder-card${ovValgtMappe === m.key ? ' active' : ''}"
-           ${m.key === 'fare' ? 'style="border-color:rgba(168,60,60,.35);"' : ''}
-           onclick="setOvMappe('${m.key}')">
-        <h3>${m.ikon} ${escapeHtml(m.navn)}</h3>
-        <div class="sub">${escapeHtml(m.sub)}</div>
-      </div>`).join('');
-    document.querySelectorAll('#panel-overview [data-ov]').forEach(el => {
-      el.style.display = el.dataset.ov === ovValgtMappe ? '' : 'none';
-    });
-  }
-
-  window.setOvMappe = function(key){
-    ovValgtMappe = key;
-    renderOvFolders();
-    const panel = document.getElementById('panel-overview');
-    if(panel) panel.scrollIntoView({ behavior:'smooth', block:'start' });
-  };
-
-  // ---------- Varslinger ----------
-  // Mottakerne lagres som E-POSTADRESSER, ikke som id-er. Da fortsetter
-  // varselet å virke selv om et personkort slettes og opprettes på nytt,
-  // og Cloud Function-en slipper å slå opp noe for å vite hvor den skal
-  // sende.
-  const varselOppsett = { nySoknadAktiv: true, kvitteringAktiv: true, nySoknadMottakere: [] };
-
-  function renderVarselMottakere(){
-    const el = document.getElementById('varselMottakerListe');
-    if(!el) return;
-
-    // Alle med e-post — både ansatte (teachers) og oppføringer som bare
-    // finnes i tilgangslisten. Samme e-post vises én gang.
-    const sett = new Map();
-    (cache.teachers || []).forEach(t => {
-      const e = (t.epost || '').trim().toLowerCase();
-      if(e) sett.set(e, { epost: t.epost.trim(), navn: t.navn || '', roller: t.roller || '' });
-    });
-    adminUsersCache.forEach(u => {
-      const e = (u.epost || '').trim().toLowerCase();
-      if(e && !sett.has(e)) sett.set(e, { epost: u.epost.trim(), navn: u.navn || '', roller: u.roller || u.rolle || '' });
-    });
-
-    // Lagrede mottakere som IKKE finnes som ansatt lenger — enten lagt
-    // inn manuelt, eller en ansatt som er slettet siden. De må fortsatt
-    // vises, ellers ville de forsvunnet stille fra listen mens de
-    // fremdeles fikk e-post.
-    varselOppsett.nySoknadMottakere.forEach(e => {
-      const lc = (e || '').trim().toLowerCase();
-      if(lc && !sett.has(lc)) sett.set(lc, { epost: e.trim(), navn: '', roller: '', manuell: true });
-    });
-
-    const folk = [...sett.values()].sort((a,b) => (a.navn || a.epost).localeCompare(b.navn || b.epost));
-    if(folk.length === 0){
-      // Sier hvorfor listen er tom, ikke bare AT den er det.
-      const antallAnsatte = (cache.teachers || []).length + adminUsersCache.length;
-      el.innerHTML = '<div class="report-empty" style="box-shadow:none; border:none; background:transparent;">' +
-        (antallAnsatte === 0
-          ? 'Ingen ansatte lastet inn ennå — vent til «Synkronisert» vises øverst.'
-          : antallAnsatte + ' ansatte funnet, men ingen av dem har en e-post registrert. ' +
-            'Legg inn e-post på personkortet under «Ansatte», eller skriv en adresse i feltet under.') +
-        '</div>';
-      oppdaterVarselOppsummering();
-      return;
-    }
-
-    const valgt = new Set(varselOppsett.nySoknadMottakere.map(e => e.toLowerCase()));
-    el.innerHTML = folk.map(p => `
-      <label style="display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid rgba(40,40,90,.06); font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
-        <input type="checkbox" class="varsel-mottaker" value="${escapeHtml(p.epost)}"
-               ${valgt.has(p.epost.toLowerCase()) ? 'checked' : ''}
-               onchange="oppdaterVarselOppsummering()" style="width:16px; height:16px; flex:0 0 auto;">
-        <span style="flex:1; min-width:0;">
-          <strong>${escapeHtml(p.navn || p.epost)}</strong>
-          ${p.navn ? `<span style="color:#8a9a90;"> — ${escapeHtml(p.epost)}</span>` : ''}
-          ${p.manuell ? '<span style="font-size:11px; color:var(--gold);"> · lagt til manuelt</span>' : ''}
-          ${p.roller ? `<br><span style="font-size:11px; color:#8a9a90;">${escapeHtml(p.roller)}</span>` : ''}
-        </span>
-      </label>`).join('');
-    oppdaterVarselOppsummering();
-  }
-
-  // En adresse lagt til her lagres først når man trykker «Lagre» — den
-  // legges bare inn i listen som avkrysset, slik at man ser hva man er i
-  // ferd med å lagre før det skjer.
-  window.leggTilVarselEpost = function(){
-    const felt = document.getElementById('varselNyEpost');
-    const e = (felt.value || '').trim();
-    if(!e) return;
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){
-      showToast('Det ser ikke ut som en gyldig e-postadresse.', true);
-      return;
-    }
-    if(varselOppsett.nySoknadMottakere.some(x => x.toLowerCase() === e.toLowerCase())){
-      showToast('Denne adressen står allerede i listen.');
-      felt.value = '';
-      return;
-    }
-    // Ta med det som allerede er krysset av, så et valg ikke går tapt
-    // når listen tegnes på nytt.
-    const alleredeValgt = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
-    varselOppsett.nySoknadMottakere = [...new Set([...alleredeValgt, e])];
-    felt.value = '';
-    renderVarselMottakere();
-    showToast('Lagt til i listen — trykk «Lagre» for å bekrefte.');
-  };
-
-  // Sier hva som faktisk kommer til å skje, i klartekst. En liste med
-  // avkrysninger viser HVEM som er valgt, men ikke hva valget betyr.
-  window.oppdaterVarselOppsummering = function(){
-    const el = document.getElementById('varselOppsummering');
-    const aktiv = document.getElementById('varselNySoknadAktiv');
-    if(!el || !aktiv) return;
-    const valgte = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
-    if(!aktiv.checked){
-      el.innerHTML = '⚠️ Varsling er slått AV — ingen i administrasjonen får beskjed når en påmelding kommer inn.' + kvitteringLinje();
-      return;
-    }
-    if(valgte.length === 0){
-      el.innerHTML = 'Ingen valgt — varselet går til <strong>post@madinaskole.no</strong> ' +
-        'slik at en påmelding aldri kommer inn uten at noen ser den.' + kvitteringLinje();
-      return;
-    }
-    el.innerHTML = 'Ved ny påmelding varsles <strong>' + valgte.length + ' person' +
-      (valgte.length === 1 ? '' : 'er') + '</strong>: ' +
-      valgte.map(e => escapeHtml(e)).join(', ') + kvitteringLinje();
-  };
-
-  // Kvitteringen går til en HELT annen mottaker enn varselet — foresatte,
-  // ikke ansatte. Den fortjener sin egen setning, ikke å bli antatt.
-  function kvitteringLinje(){
-    const k = document.getElementById('varselKvitteringAktiv');
-    return '<br>' + (k && k.checked
-      ? 'Foresatte får i tillegg en kvittering på at påmeldingen er mottatt.'
-      : '⚠️ Foresatte får <strong>ingen</strong> kvittering — de ser bare bekreftelsen på skjermen.');
-  }
-
-  function fyllVarselInnstillinger(){
-    const aktiv = document.getElementById('varselNySoknadAktiv');
-    if(aktiv) aktiv.checked = varselOppsett.nySoknadAktiv;
-    const kvitt = document.getElementById('varselKvitteringAktiv');
-    if(kvitt) kvitt.checked = varselOppsett.kvitteringAktiv;
-    renderVarselMottakere();
-  }
-
-  window.saveVarselInnstillinger = async function(){
-    const aktiv = document.getElementById('varselNySoknadAktiv').checked;
-    const mottakere = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
-    try{
-      await setDoc(doc(db, 'settings', 'varsler'), {
-        nySoknadAktiv: aktiv,
-        kvitteringAktiv: document.getElementById('varselKvitteringAktiv').checked,
-        nySoknadMottakere: mottakere,
-        sistEndretAv: currentUserEmail || '',
-        sistEndretDato: new Date().toISOString()
-      }, { merge: true });
-      showToast(aktiv
-        ? 'Lagret — ' + (mottakere.length || 'ingen valgt, går til post@madinaskole.no') +
-          (mottakere.length ? ' mottaker(e) varsles.' : '')
-        : 'Lagret — varsling er slått av.');
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt under lagring.', true);
-    }
-  };
-
-  window.savePrisinnstillinger = async function(){
-    const r2 = parseFloat(document.getElementById('rabatt2Input').value);
-    const r3 = parseFloat(document.getElementById('rabatt3Input').value);
-    const tf = document.getElementById('tellForesatt2Input').checked;
-    if(isNaN(r2) || isNaN(r3) || r2 < 0 || r2 > 100 || r3 < 0 || r3 > 100){
-      showToast('Rabattene må være tall mellom 0 og 100.');
-      return;
-    }
-    // Disse tallene styrer ekte fakturaer og Vipps-krav. Et tastetrykk for
-    // mye skal ikke kunne endre dem uten at det blir sagt høyt først.
-    if(!confirm(
-      'Endre søskenrabatten?\n\n' +
-      '2. barn: ' + prisOppsett.rabatt2 + ' % → ' + r2 + ' %\n' +
-      '3. barn: ' + prisOppsett.rabatt3 + ' % → ' + r3 + ' %\n\n' +
-      'Dette gjelder umiddelbart for nye beregninger, både her og for ' +
-      'Vipps-betalinger. Elever som allerede har et beløp registrert, ' +
-      'beholder sitt.'
-    )) return;
-    try{
-      await setDoc(doc(db, 'settings', 'priser'), {
-        soskenRabatt2: r2,
-        soskenRabatt3: r3,
-        tellForesatt2: tf,
-        sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
-        sistEndretDato: new Date().toISOString()
-      }, { merge: true });
-      showToast('Prisinnstillinger lagret.');
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt under lagring.');
-    }
-  };
+  onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
+    const input = document.getElementById('vippsLinkInput');
+    if(input && snap.exists()) input.value = snap.data().lenke || '';
+  }, (err) => console.error('settings/betaling', err));
 
   window.saveBetalingSettings = async function(){
     const lenke = document.getElementById('vippsLinkInput').value.trim();
@@ -8505,7 +8004,6 @@
     const labelEl = document.getElementById('currentTabLabel');
     if(labelEl) labelEl.textContent = tab.textContent;
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
-    if(tab.dataset.tab === 'overview') renderOvFolders();
     if(oppdaterUrl){
       try{ history.replaceState(null, '', '#fane=' + tab.dataset.tab); }catch(e){}
     }
@@ -8579,9 +8077,6 @@
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
     adminUsersCache = list;
-    // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
-    // nytt for at personen skulle dukke opp i varsel-listen.
-    renderVarselMottakere();
     const el = document.getElementById('adminUsersList');
     if(!el) return;
     if(list.length === 0){
@@ -8728,15 +8223,6 @@
   }
   @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
 
-  #lastEditBadge{
-    position:fixed; bottom:calc(92px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px; z-index:5000;
-    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
-    background:rgba(255,255,255,0.92); backdrop-filter:blur(3px);
-    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
-    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
-  }
-  @media (max-width:480px){ #lastEditBadge{ font-size:9.5px; padding:3px 8px; } }
-
   /* ══ INNLOGGING ══════════════════════════════════════════════════
      Innloggingssiden er det første både lærere og foresatte ser. Før
      var den bare to felter uten avsender — nå bærer den skolens logo
@@ -8815,7 +8301,6 @@
     .mlogin-logo{ width:56%; }
   }
 </style>
-<div id="lastEditBadge">…</div>
 <div id="lastDeployBadge">Sjekker siste publisering…</div>
 <script>
   // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet.
@@ -8856,28 +8341,6 @@
         console.error('Kunne ikke hente siste publisering:', err);
         showError(err && err.message ? err.message : 'nettverksfeil');
       });
-  })();
-
-  // Leser filens eget tidsstempel — linjen «SIST-ENDRET» som
-  // publiseringsverktøyet skriver inn øverst i filen ved hver publisering.
-  // Dette er noe annet enn «Siste publisering» under: den forteller når
-  // HELE nettstedet sist ble publisert, mens denne forteller når nettopp
-  // DENNE siden sist ble endret. Er de like, ble siden endret i siste
-  // publisering; er de ulike, har siden stått uendret en stund.
-  (function(){
-    var el = document.getElementById('lastEditBadge');
-    if(!el) return;
-    fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' })
-      .then(function(r){ return r.text(); })
-      .then(function(txt){
-        var m = txt.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
-        if(!m){ el.style.display = 'none'; return; }
-        var d = new Date(m[1].replace(' ', 'T'));
-        el.textContent = '✏️ Sist endret: ' +
-          d.toLocaleDateString('no-NO') + ' kl. ' +
-          d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-      })
-      .catch(function(){ el.style.display = 'none'; });
   })();
 </script>
 </body>
