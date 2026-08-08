@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 23:53:02 -->
+<!-- SIST-ENDRET: 2026-08-09 00:03:52 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -7032,6 +7032,22 @@
     } else if(state && state.appView === 'sub'){
       selectSide(state.side);
     } else {
+      // Uten state: les adressen i stedet for å gå rett til forsiden.
+      // Etter en oppdatering finnes ikke state-objektet lenger — det er
+      // bundet til økten, ikke til adressen — og tilbake-knappen kastet
+      // en derfor helt ut selv om adressen visste hvor man var.
+      const hash = location.hash || '';
+      const mFane = hash.match(/fane=([A-Za-z]+)/);
+      const mSide = hash.match(/side=([A-Za-z]+)/);
+      if(mFane){
+        const tab = document.querySelector('.tab[data-tab="' + mFane[1] + '"]');
+        if(tab && tab.offsetParent !== null){
+          if(mSide) { try{ selectSide(mSide[1]); }catch(err){} }
+          aktiverFane(tab, false);
+          appNavigating = false;
+          return;
+        }
+      }
       showSideChoice();
     }
     appNavigating = false;
@@ -9396,7 +9412,13 @@
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
     if(oppdaterUrl){
-      try{ history.replaceState(null, '', '#fane=' + tab.dataset.tab); }catch(e){}
+      // Både seksjon OG fane skrives i adressen. Sto bare fanen der, visste
+      // ikke siden hvilken gruppe man var inne i etter en oppdatering — og
+      // man havnet på forsiden igjen.
+      try{
+        const side = tab.dataset.side || '';
+        history.replaceState(null, '', '#side=' + side + '&fane=' + tab.dataset.tab);
+      }catch(e){}
     }
   }
 
@@ -9405,12 +9427,25 @@
   });
 
   function gjenopprettFane(){
-    const m = (location.hash || '').match(/fane=([A-Za-z]+)/);
-    if(!m) return;
-    const tab = document.querySelector('.tab[data-tab="' + m[1] + '"]');
+    const hash = location.hash || '';
+    const mFane = hash.match(/fane=([A-Za-z]+)/);
+    const mSide = hash.match(/side=([A-Za-z]+)/);
+    if(!mFane) return;
+    const tab = document.querySelector('.tab[data-tab="' + mFane[1] + '"]');
     // Fanen gjenopprettes bare hvis den finnes OG brukeren har tilgang til
     // den — ellers ville en gammel lenke kunne åpne en fane man ikke skal se.
-    if(tab && tab.offsetParent !== null) aktiverFane(tab, false);
+    if(!tab || tab.offsetParent === null) return;
+
+    // Åpne seksjonen FØRST. Uten dette ble panelet aktivert mens forsiden
+    // fortsatt lå over — og en oppdatering så ut som om man ble kastet ut
+    // til forsiden, enda fanen egentlig var valgt.
+    const side = mSide ? mSide[1] : tab.dataset.side;
+    if(side && typeof selectSide === 'function'){
+      appNavigating = true;
+      try{ selectSide(side); }catch(e){}
+      appNavigating = false;
+    }
+    aktiverFane(tab, false);
   }
   window.addEventListener('hashchange', gjenopprettFane);
 
@@ -9783,13 +9818,23 @@
       .then(function(r){ return r.text(); })
       .then(function(txt){
         var m = txt.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
-        if(!m){ el.style.display = 'none'; return; }
+        // Merket forsvant tidligere uten et ord når stempelet manglet. Da
+        // var det umulig å se forskjell på «filen har ikke stempel» og
+        // «merket virker ikke» — to helt ulike problemer. Nå sier det ifra.
+        if(!m){
+          el.textContent = '✏️ Uten tidsstempel — publisert utenom verktøyet';
+          el.style.color = '#a5504a';
+          return;
+        }
         var d = new Date(m[1].replace(' ', 'T'));
         el.textContent = '✏️ Sist endret: ' +
           d.toLocaleDateString('no-NO') + ' kl. ' +
           d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
       })
-      .catch(function(){ el.style.display = 'none'; });
+      .catch(function(err){
+        el.textContent = '✏️ Kunne ikke lese tidsstempel';
+        el.style.color = '#a5504a';
+      });
   })();
 </script>
 </body>
