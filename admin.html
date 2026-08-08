@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-07 23:14:44 -->
+
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2109,6 +2109,26 @@
       </div>
       <button class="btn btn-primary" style="width:auto;" onclick="saveBetalingSettings()">Lagre</button>
     </div>
+
+    <div class="report-card">
+      <h3>Søskenrabatt</h3>
+      <div class="sub">Gjelder både her i panelet og for Vipps-betalinger. Prisen per program settes under fanen «Programmer» — her settes bare rabatten.</div>
+      <div class="field">
+        <label>Rabatt for 2. barn (%)</label>
+        <input type="number" id="rabatt2Input" min="0" max="100" step="1" placeholder="20" oninput="visRabattForhandsvisning()">
+      </div>
+      <div class="field">
+        <label>Rabatt for 3. barn og flere (%)</label>
+        <input type="number" id="rabatt3Input" min="0" max="100" step="1" placeholder="30" oninput="visRabattForhandsvisning()">
+      </div>
+      <label style="display:flex; align-items:flex-start; gap:9px; margin:14px 0; font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; cursor:pointer;">
+        <input type="checkbox" id="tellForesatt2Input" style="width:17px; height:17px; flex:0 0 auto; margin-top:1px;">
+        <span>Tell også barn som står på <strong>foresatt 2</strong> som søsken.<br>
+        Står denne av, får en familie som har fordelt barna på begge foresatte ingen søskenrabatt — og betaler mer enn den skal.</span>
+      </label>
+      <div id="rabattForhandsvisning" class="sub" style="margin-bottom:14px;"></div>
+      <button class="btn btn-primary" style="width:auto;" onclick="savePrisinnstillinger()">Lagre</button>
+    </div>
   </div>
 
 
@@ -3427,6 +3447,26 @@
   // Firestore does not automatically retry a listener that already
   // errored once auth becomes available later.
   function attachAuthGatedCashierListeners(){
+    // ---- Pris- og betalingsinnstillinger ----
+    // Begge lyttere sto tidligere på toppnivå i modulen, altså FØR
+    // innloggingen var bekreftet. Reglene krever innlogging for å lese
+    // 'settings', og Firestore prøver ikke en avvist lytter på nytt — så
+    // betalingslenken ble stående tom uansett hva som lå lagret.
+    onSnapshot(doc(db, 'settings', 'priser'), (snap) => {
+      const d = snap.exists() ? (snap.data() || {}) : {};
+      const r2 = parseFloat(d.soskenRabatt2);
+      const r3 = parseFloat(d.soskenRabatt3);
+      prisOppsett.rabatt2 = (!isNaN(r2) && r2 >= 0 && r2 <= 100) ? r2 : RABATT_RESERVE.barn2;
+      prisOppsett.rabatt3 = (!isNaN(r3) && r3 >= 0 && r3 <= 100) ? r3 : RABATT_RESERVE.barn3;
+      prisOppsett.tellForesatt2 = d.tellForesatt2 === true;
+      fyllPrisinnstillinger();
+    }, (err) => console.error('settings/priser', err));
+
+    onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
+      const input = document.getElementById('vippsLinkInput');
+      if(input && snap.exists()) input.value = snap.data().lenke || '';
+    }, (err) => console.error('settings/betaling', err));
+
     onSnapshot(collection(db, 'studentPayments'), (snap) => {
       cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
@@ -7051,6 +7091,19 @@
     }) || null;
   }
 
+  // Reserveverdier for søskenrabatt, i prosent. De ekte verdiene ligger i
+  // settings/priser og redigeres under fanen «Betaling». Disse brukes bare
+  // hvis dokumentet mangler eller ikke kan leses — da skal panelet regne
+  // som før, ikke stoppe.
+  // MERK: 20/30 er det som gjelder i dag. Notatet om medlemspris foreslår
+  // 10/20, men det står «Beregnet, ikke vedtatt».
+  const RABATT_RESERVE = { barn2: 20, barn3: 30 };
+  const prisOppsett = {
+    rabatt2: RABATT_RESERVE.barn2,
+    rabatt3: RABATT_RESERVE.barn3,
+    tellForesatt2: false
+  };
+
   function computeSoskenPrice(program, guardianId, excludeId){
     // Prisen ligger på programmet (redigerbart under fanen "Programmer").
     // PROGRAM_PRICES beholdes kun som reserve for gamle programnavn som ennå
@@ -7061,11 +7114,18 @@
       ? fromProgram
       : (parseFloat(PROGRAM_PRICES[program] || 0) || 0);
     if(!guardianId) return { price: basePrice, pos: 1 };
-    const siblingCount = cache.students.filter(s => s.foresatt === guardianId && s.id !== excludeId).length;
+    // Teller barn på foresatt2 også, hvis innstillingen er slått på. Står
+    // den av, er oppførselen som før: et barn registrert under den ANDRE
+    // foresatte teller ikke som søsken, og familien betaler for mye.
+    const siblingCount = (cache.students || []).filter(s =>
+      s.id !== excludeId &&
+      (s.foresatt === guardianId ||
+        (prisOppsett.tellForesatt2 && s.foresatt2 === guardianId))
+    ).length;
     const pos = siblingCount + 1;
     let price = basePrice;
-    if(pos === 2) price = Math.round(basePrice * 0.8);
-    else if(pos >= 3) price = Math.round(basePrice * 0.7);
+    if(pos === 2) price = Math.round(basePrice * (1 - prisOppsett.rabatt2 / 100));
+    else if(pos >= 3) price = Math.round(basePrice * (1 - prisOppsett.rabatt3 / 100));
     return { price, pos };
   }
 
@@ -7538,10 +7598,69 @@
   };
 
   // ---------- Betalingsinnstillinger ----------
-  onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
-    const input = document.getElementById('vippsLinkInput');
-    if(input && snap.exists()) input.value = snap.data().lenke || '';
-  }, (err) => console.error('settings/betaling', err));
+  // Lytteren ligger i attachAuthGatedCashierListeners() — den må vente på
+  // bekreftet innlogging.
+  // ---------- Prisinnstillinger ----------
+  function fyllPrisinnstillinger(){
+    const r2 = document.getElementById('rabatt2Input');
+    const r3 = document.getElementById('rabatt3Input');
+    const tf = document.getElementById('tellForesatt2Input');
+    if(!r2 || !r3 || !tf) return;
+    // Skriver ikke over mens noen står og fyller ut feltet.
+    if(document.activeElement !== r2) r2.value = prisOppsett.rabatt2;
+    if(document.activeElement !== r3) r3.value = prisOppsett.rabatt3;
+    tf.checked = prisOppsett.tellForesatt2;
+    visRabattForhandsvisning();
+  }
+
+  // Viser hva satsene faktisk betyr i kroner for det dyreste programmet.
+  // En prosent alene sier lite når det er ekte fakturaer som endrer seg.
+  window.visRabattForhandsvisning = function(){
+    const el = document.getElementById('rabattForhandsvisning');
+    if(!el) return;
+    const r2 = parseFloat(document.getElementById('rabatt2Input').value);
+    const r3 = parseFloat(document.getElementById('rabatt3Input').value);
+    const prog = (cache.programs || [])[0];
+    const pris = prog ? parseFloat(prog.pris || 0) : 0;
+    const navn = prog ? prog.navn : '';
+    if(!pris || isNaN(r2) || isNaN(r3)){ el.textContent = ''; return; }
+    el.innerHTML = 'For <strong>' + escapeHtml(navn) + '</strong> (' + pris + ' kr):<br>' +
+      '1. barn ' + pris + ' kr · 2. barn ' + Math.round(pris * (1 - r2/100)) + ' kr · ' +
+      '3. barn ' + Math.round(pris * (1 - r3/100)) + ' kr';
+  };
+
+  window.savePrisinnstillinger = async function(){
+    const r2 = parseFloat(document.getElementById('rabatt2Input').value);
+    const r3 = parseFloat(document.getElementById('rabatt3Input').value);
+    const tf = document.getElementById('tellForesatt2Input').checked;
+    if(isNaN(r2) || isNaN(r3) || r2 < 0 || r2 > 100 || r3 < 0 || r3 > 100){
+      showToast('Rabattene må være tall mellom 0 og 100.');
+      return;
+    }
+    // Disse tallene styrer ekte fakturaer og Vipps-krav. Et tastetrykk for
+    // mye skal ikke kunne endre dem uten at det blir sagt høyt først.
+    if(!confirm(
+      'Endre søskenrabatten?\n\n' +
+      '2. barn: ' + prisOppsett.rabatt2 + ' % → ' + r2 + ' %\n' +
+      '3. barn: ' + prisOppsett.rabatt3 + ' % → ' + r3 + ' %\n\n' +
+      'Dette gjelder umiddelbart for nye beregninger, både her og for ' +
+      'Vipps-betalinger. Elever som allerede har et beløp registrert, ' +
+      'beholder sitt.'
+    )) return;
+    try{
+      await setDoc(doc(db, 'settings', 'priser'), {
+        soskenRabatt2: r2,
+        soskenRabatt3: r3,
+        tellForesatt2: tf,
+        sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
+        sistEndretDato: new Date().toISOString()
+      }, { merge: true });
+      showToast('Prisinnstillinger lagret.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt under lagring.');
+    }
+  };
 
   window.saveBetalingSettings = async function(){
     const lenke = document.getElementById('vippsLinkInput').value.trim();
