@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 00:31:51 -->
+<!-- SIST-ENDRET: 2026-08-09 01:24:48 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3095,6 +3095,31 @@
         opprettetDato: new Date().toISOString().slice(0,10)
       });
     }
+    // ── Tilgangsindeks for sikkerhetsreglene ──────────────────────
+    // Reglene i Firestore kan ikke gjøre spørringer — bare slå opp én
+    // kjent sti. 'adminUsers' er indeksert på en tilfeldig id, så en regel
+    // har ingen måte å spørre «er denne e-posten en administrator?».
+    //
+    // Derfor føres en liten speiling her, med E-POSTEN som dokument-id.
+    // Da kan reglene svare med ett enkelt exists()-oppslag.
+    //
+    // 🔴 Denne samlingen ER tilgangskontrollen. Skrivetilgang til den må
+    // være begrenset til administratorer i reglene — ellers kan hvem som
+    // helst legge seg selv inn.
+    try{
+      if(grantsAdmin){
+        await setDoc(doc(db, 'tilgang', emailLc), {
+          epost: emailLc, navn, roller: rollerStr,
+          sistOppdatert: new Date().toISOString()
+        });
+      } else {
+        // Mistet panel-rollene sine — da skal oppslaget slutte å svare ja.
+        await deleteDoc(doc(db, 'tilgang', emailLc)).catch(()=>{});
+      }
+    } catch(err){
+      console.error('Kunne ikke oppdatere tilgangsindeksen', err);
+    }
+
     parts.push(grantsAdmin ? 'tilgang til Administrativt panel' : 'registrert i ansattoversikten');
 
     // teachers is now the single master staff record — created/updated for
@@ -9591,9 +9616,31 @@
       renderBroadcastInbox();
     });
 
-    onSnapshot(collection(db, 'adminUsers'), (snap) => {
+    // Fyller tilgangsindeksen for kontoer som fantes FØR indeksen ble
+  // innført. Uten dette ville alle bli utestengt i det reglene strammes,
+  // fordi oppslaget ikke fant noen. Kjøres én gang per økt, av eieren.
+  let tilgangSjekket = false;
+  async function sikreTilgangsindeks(){
+    if(tilgangSjekket || !isCurrentUserEier()) return;
+    tilgangSjekket = true;
+    for(const u of adminUsersCache){
+      const e = (u.epost || '').trim().toLowerCase();
+      if(!e) continue;
+      const roller = (u.roller || '').split(',').map(s => s.trim());
+      if(!roller.some(r => ADMIN_PANEL_ROLES.includes(r))) continue;
+      try{
+        await setDoc(doc(db, 'tilgang', e), {
+          epost: e, navn: u.navn || '', roller: u.roller || '',
+          sistOppdatert: new Date().toISOString()
+        }, { merge: true });
+      } catch(err){ console.error('tilgang:', e, err); }
+    }
+  }
+
+  onSnapshot(collection(db, 'adminUsers'), (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
       adminUsersCache = list;
+    sikreTilgangsindeks();
       // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
       // nytt for at personen skulle dukke opp i varsel-listen.
       renderVarselMottakere();
