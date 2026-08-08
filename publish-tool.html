@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-07 23:14:31 -->
+
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -62,6 +62,16 @@
   .status.ok{background:rgba(46,107,83,0.10); color:var(--emerald);}
   .status.err{background:rgba(168,60,60,0.10); color:var(--red);}
   .status.busy{background:var(--paper-2); color:#5a6860;}
+  .status.warn{background:rgba(183,146,74,0.14); color:#7a5f20;}
+  .btn-danger{
+    background:transparent; border:1px solid var(--red); color:var(--red);
+    margin-top:8px;
+  }
+  .overstyr-linje{
+    display:flex; align-items:center; gap:8px; margin-top:12px;
+    font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;
+  }
+  .overstyr-linje input{ width:16px; height:16px; flex:0 0 auto; }
   #setupView{display:none;}
   #publishView{display:none;}
   .who-bar{
@@ -145,6 +155,11 @@
 
       <div id="multiFileList"></div>
 
+      <label class="overstyr-linje">
+        <input type="checkbox" id="multiOverstyr">
+        <span>Publiser likevel — hopp over kontrollen mot GitHub</span>
+      </label>
+
       <button class="btn btn-primary" id="multiPublishBtn" style="display:none; margin-top:10px;" onclick="publishAll()">Publiser alle filene</button>
       <div class="status" id="multiStatusBox"></div>
     </div>
@@ -196,17 +211,45 @@
       </div>
       <div class="field" id="customPathWrap" style="display:none;">
         <label>Egendefinert filsti</label>
-        <input type="text" id="customPath" placeholder="f.eks. mappe/fil.html" oninput="updateLastPublishedHint(); updatePathNotice();">
+        <input type="text" id="customPath" placeholder="f.eks. mappe/fil.html" oninput="updateLastPublishedHint(); updatePathNotice(); nullstillSperre();">
       </div>
       <div class="field">
         <label style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
           <span>Filinnhold</span>
           <button type="button" class="clear-btn" onclick="clearFileContent()">Tøm innhold</button>
         </label>
-        <textarea id="fileContent" placeholder="Velg en fil ovenfor, eller lim inn innholdet manuelt her..." wrap="soft"></textarea>
+        <textarea id="fileContent" placeholder="Velg en fil ovenfor, eller lim inn innholdet manuelt her..." wrap="soft" oninput="nullstillSperre()"></textarea>
       </div>
+      <button class="btn btn-ghost" id="sjekkBtn" onclick="sjekkVersjon()">🔍 Sjekk mot publisert versjon</button>
+      <div class="status" id="diffPanel" style="display:none; white-space:pre-line;"></div>
+      <button class="btn btn-danger" id="overstyrBtn" style="display:none;" onclick="publiserLikevel()">Publiser likevel</button>
+
       <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
       <div class="status" id="statusBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>🧪 Logg og kontroll</h2>
+      <div class="sub">Kun for undersøkelse — ingenting publiseres herfra.</div>
+
+      <div class="field">
+        <label>Hvilken fil?</label>
+        <input type="text" id="loggPath" list="loggPathListe" placeholder="f.eks. admin.html"
+               oninput="this.dataset.rort='1'">
+        <datalist id="loggPathListe"></datalist>
+        <div class="hint">Fylles automatisk fra filen du har valgt over.</div>
+      </div>
+
+      <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
+      <div class="status" id="loggResultat" style="display:none; white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:11px; line-height:1.5;"></div>
+
+      <div class="field" style="margin-top:18px;">
+        <label>Innhold å undersøke</label>
+        <textarea id="testInnhold" placeholder="Lim inn innhold her, eller trykk «Hent fra feltet over»..." wrap="soft" style="min-height:90px;"></textarea>
+        <button type="button" class="clear-btn" onclick="hentTilTest()">Hent fra feltet over</button>
+      </div>
+      <button class="btn btn-ghost" onclick="undersokInnhold()">🔍 Undersøk innholdets alder</button>
+      <div class="status" id="testResultat" style="display:none; white-space:pre-wrap;"></div>
     </div>
   </div>
 
@@ -383,6 +426,9 @@
     document.getElementById('customPathWrap').style.display = val === '__custom__' ? 'block' : 'none';
     updateLastPublishedHint();
     updatePathNotice();
+    // En kontroll gjort for forrige fil skal aldri gjelde for den neste.
+    if(window.nullstillSperre) window.nullstillSperre();
+    synkLoggPath();
   };
 
   // Filer under functions/ publiseres av en ANNEN GitHub Action enn
@@ -429,6 +475,7 @@
     loadedHint.className = 'file-loaded-hint';
     loadedHint.textContent = '';
     document.getElementById('fileUpload').value = '';
+    nullstillSperre();
   };
 
   // Reads the picked file straight from the phone's storage (Downloads/
@@ -474,6 +521,12 @@
         document.getElementById('customPath').value = file.name;
         onPresetChange();
       }
+
+      // Kontrollen kjøres med én gang filen er lest inn, ikke først når du
+      // trykker «Publiser». Da ser du at kopien er gammel FØR du har
+      // bestemt deg — som er hele poenget med den.
+      nullstillSperre();
+      sjekkVersjon();
     };
     reader.onerror = function(){
       showStatus('✗ Kunne ikke lese filen. Prøv å lime inn innholdet manuelt i stedet.', 'err');
@@ -556,6 +609,367 @@
     return btoa(unescape(encodeURIComponent(str)));
   }
 
+  // UTF-8 safe base64 DEkoding — GitHub leverer filinnholdet base64-kodet,
+  // med linjeskift inni. atob() alene gir mojibake på æ/ø/å og arabisk.
+  function fraBase64(b64){
+    const bin = atob(String(b64).replace(/\s+/g, ''));
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  // ===================================================================
+  // VERSJONSKONTROLL FØR PUBLISERING
+  // -------------------------------------------------------------------
+  // Verktøyet hentet allerede filen fra GitHub før hver publisering, men
+  // brukte bare «sha» fra svaret og kastet resten. Innholdet lå der hele
+  // tiden. Nå sammenlignes det med det du er i ferd med å legge over.
+  //
+  // Hvorfor: en gammel kopi som legges over nyere arbeid ser helt normal
+  // ut i det den publiseres — «✓ Publisert» kommer opp som vanlig, og
+  // timene som forsvant merkes først senere.
+  //
+  // SIST-ENDRET-linjen fjernes fra BEGGE sider før sammenligningen.
+  // Uten det ville hver eneste fil sett endret ut, siden stempelet alene
+  // alltid er nytt.
+  // ===================================================================
+  function fjernStempel(txt){
+    return String(txt)
+      .replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\r?\n?/g, '')
+      .replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\r?\n?/g, '')
+      .replace(/^#\s*SIST-ENDRET:.*\r?\n?/gm, '');
+  }
+
+  // Linjeskift normaliseres også: en fil lastet ned til en PC får gjerne
+  // CRLF, mens GitHub har LF. Uten dette ville to identiske filer sett
+  // forskjellige ut på hver eneste linje.
+  function normaliser(txt){
+    return fjernStempel(txt).replace(/\r\n/g, '\n').replace(/\s+$/, '');
+  }
+
+  function lesStempel(txt){
+    const m = String(txt).match(/SIST-ENDRET:\s*(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/);
+    if(!m) return null;
+    const d = new Date(m[1] + 'T' + m[2]);
+    return isNaN(d) ? null : d;
+  }
+
+  function visTid(d){
+    if(!d) return 'uten stempel';
+    return d.toLocaleDateString('no-NO') + ' kl. ' +
+           d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  }
+
+  async function hentPublisertFil(path){
+    const cfg = loadConfig();
+    const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
+    const headers = {
+      'Authorization': 'Bearer ' + cfg.token,
+      'Accept': 'application/vnd.github+json'
+    };
+    const res = await fetch(apiBase + '?ref=' + encodeURIComponent(cfg.branch), { headers, cache: 'no-store' });
+    if(res.status === 404) return { finnes: false };
+    if(res.status !== 200){
+      const e = await res.json().catch(()=>({}));
+      throw new Error('status ' + res.status + ' ' + (e.message || ''));
+    }
+    const data = await res.json();
+    // Filer over 1 MB leveres uten innhold av contents-API-et. Da hentes
+    // råfilen i stedet, ellers ville store filer alltid sett «tomme» ut og
+    // kontrollen blitt meningsløs nettopp for de største filene.
+    if(!data.content && data.download_url){
+      const rå = await fetch(data.download_url, { cache: 'no-store' });
+      if(!rå.ok) throw new Error('kunne ikke hente råfil (HTTP ' + rå.status + ')');
+      return { finnes: true, innhold: await rå.text() };
+    }
+    return { finnes: true, innhold: fraBase64(data.content || '') };
+  }
+
+  // Returnerer en av:
+  //   ny        — finnes ikke i repoet ennå                → slipper gjennom
+  //   identisk  — nøyaktig samme innhold                   → SPERRES
+  //   eldre     — stempelet ditt er eldre enn det i repoet → SPERRES
+  //   nyere     — stempelet ditt er nyest                  → slipper gjennom
+  //   endret    — samme stempel, ulikt innhold             → slipper gjennom
+  //   ukjent    — stempel mangler på minst én side         → slipper gjennom
+  //   feil      — nettverk/tilgang                         → slipper gjennom
+  async function sammenlignMedPublisert(path, lokaltInnhold){
+    let repo;
+    try{
+      repo = await hentPublisertFil(path);
+    } catch(err){
+      return { status: 'feil', melding: err.message };
+    }
+    if(!repo.finnes) return { status: 'ny' };
+
+    const lokalTid = lesStempel(lokaltInnhold);
+    const repoTid  = lesStempel(repo.innhold);
+
+    if(normaliser(lokaltInnhold) === normaliser(repo.innhold)){
+      return { status: 'identisk', lokalTid, repoTid };
+    }
+    if(lokalTid && repoTid){
+      if(lokalTid.getTime() < repoTid.getTime()) return { status: 'eldre', lokalTid, repoTid };
+      if(lokalTid.getTime() > repoTid.getTime()) return { status: 'nyere', lokalTid, repoTid };
+      // Samme stempel, ulikt innhold: dette er det HELT VANLIGE tilfellet.
+      // Du lastet ned filen, endret den, og laster den opp igjen — stempelet
+      // står stille til publiseringen setter et nytt. Ville denne blitt
+      // sperret, ville verktøyet stoppet hver eneste normale endring.
+      return { status: 'endret', lokalTid, repoTid };
+    }
+    return { status: 'ukjent', lokalTid, repoTid };
+  }
+
+  // Kjøres etter hovedsammenligningen. Er alderen ukjent fordi stempelet
+  // mangler, lar vi historikken avgjøre i stedet.
+  async function utdypUkjent(path, lokaltInnhold, r){
+    if(r.status !== 'ukjent') return r;
+    try{
+      const treff = await finnIHistorikk(path, lokaltInnhold);
+      if(treff) return { status: 'historisk', treff };
+    } catch(err){
+      console.warn('Historikk-kontroll feilet:', err);
+      return { status: 'ukjent', lokalTid: r.lokalTid, repoTid: r.repoTid, historikkFeilet: true };
+    }
+    return { status: 'ukjentNy', lokalTid: r.lokalTid, repoTid: r.repoTid };
+  }
+
+  const SPERRENDE = ['identisk', 'eldre', 'historisk'];
+
+  // ===================================================================
+  // HISTORIKK-KONTROLL — for filer UTEN stempel
+  // -------------------------------------------------------------------
+  // Stempelet skrives kun inn i kopien som sendes til GitHub. Filen som
+  // ligger på telefonen din blir aldri rørt. Jobber du slik at du endrer
+  // den samme lokale filen om og om igjen, får den derfor ALDRI et
+  // stempel — og aldersammenligningen over har ingenting å gå på.
+  //
+  // Da spør vi GitHub i stedet: er dette innholdet nøyaktig en av de
+  // tidligere versjonene av filen? Er det det, er saken avgjort — du
+  // holder på å legge ut igjen noe som allerede er erstattet, og det
+  // trengs verken stempel eller klokke for å slå det fast.
+  //
+  // Kjøres BARE når stempelet mangler, så det koster ingenting i den
+  // vanlige flyten.
+  // ===================================================================
+  // Henter de siste versjonene av én fil, nyeste først, med innholdet.
+  // Delt av både sperren før publisering og loggen — hadde de hver sin
+  // kopi av denne, ville de før eller siden svart forskjellig på samme
+  // spørsmål.
+  async function hentVersjoner(path, maks = 12){
+    const cfg = loadConfig();
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = {
+      'Authorization': 'Bearer ' + cfg.token,
+      'Accept': 'application/vnd.github+json'
+    };
+    const listeRes = await fetch(base + '/commits?path=' + encodeURIComponent(path) +
+      '&sha=' + encodeURIComponent(cfg.branch) + '&per_page=' + maks, { headers, cache: 'no-store' });
+    if(!listeRes.ok) throw new Error('historikk: HTTP ' + listeRes.status);
+    const commits = await listeRes.json();
+    if(!Array.isArray(commits)) return [];
+
+    const ut = [];
+    for(const c of commits){
+      const res = await fetch(base + '/contents/' + path + '?ref=' + c.sha, { headers, cache: 'no-store' });
+      if(!res.ok) continue;
+      const data = await res.json();
+      let tekst;
+      if(!data.content && data.download_url){
+        const rå = await fetch(data.download_url, { cache: 'no-store' });
+        if(!rå.ok) continue;
+        tekst = await rå.text();
+      } else {
+        tekst = fraBase64(data.content || '');
+      }
+      ut.push({
+        sha: c.sha,
+        commitDato: new Date(c.commit.author.date),
+        melding: (c.commit.message || '').split('\n')[0],
+        innhold: tekst,
+        stempel: lesStempel(tekst)
+      });
+    }
+    return ut;
+  }
+
+  async function finnIHistorikk(path, lokaltInnhold, maks = 12){
+    const versjoner = await hentVersjoner(path, maks);
+    if(versjoner.length < 2) return null;
+    const mål = normaliser(lokaltInnhold);
+    // Hopper over versjoner[0] — det er den som ligger ute nå, og den er
+    // allerede sammenlignet.
+    for(let i = 1; i < versjoner.length; i++){
+      if(normaliser(versjoner[i].innhold) === mål){
+        return {
+          versjonerBak: i,
+          dato: versjoner[i].commitDato,
+          melding: versjoner[i].melding
+        };
+      }
+    }
+    return null;
+  }
+
+  // ===================================================================
+  // ENDRINGS- OG PUBLISERINGSLOGG
+  // -------------------------------------------------------------------
+  // Går gjennom historikken til én fil og sjekker at rekkefølgen henger
+  // sammen. Er alt i orden, sier den det med én gang — er den ikke det,
+  // peker den på NØYAKTIG hvilken versjon rekkefølgen brøt sammen ved,
+  // slik at man slipper å lete.
+  //
+  // MERK OM KLOKKESLETT: stempelet skrives med lokal tid fra telefonen,
+  // mens commit-datoen fra GitHub er UTC. I Oslo om sommeren gir det to
+  // timers forskjell — helt uten at noe er galt. Derfor sammenlignes
+  // ALDRI stempel mot commit-dato som feil. Kontrollene under holder seg
+  // til stempel-mot-stempel og innhold-mot-innhold, som er upåvirket av
+  // tidssone.
+  // ===================================================================
+  function analyserHistorikk(versjoner){
+    // Snus til kronologisk: eldst først. Da leses funnene i samme
+    // retning som ting faktisk skjedde.
+    const kron = [...versjoner].reverse();
+    const funn = [];
+
+    kron.forEach((v, i) => {
+      const nr = i + 1;
+      const merke = 'v' + nr + ' (' + v.sha.slice(0, 7) + ', ' +
+                    v.commitDato.toLocaleDateString('no-NO') + ')';
+
+      if(!v.stempel){
+        funn.push({ alvor: 'warn', nr,
+          tekst: '⚠️ ' + merke + ' mangler stempel — publisert utenom verktøyet.' });
+      }
+
+      if(i > 0){
+        const forrige = kron[i - 1];
+        // Stempelet gikk bakover: en eldre fil ble lagt over en nyere.
+        if(v.stempel && forrige.stempel && v.stempel.getTime() < forrige.stempel.getTime()){
+          funn.push({ alvor: 'err', nr,
+            tekst: '🛑 ' + merke + ' har ELDRE stempel enn versjonen før (' +
+                   visTid(v.stempel) + ' mot ' + visTid(forrige.stempel) +
+                   '). Her ble en gammel kopi lagt over nyere arbeid.' });
+        }
+        // Identisk innhold som en tidligere versjon = tilbakerulling.
+        // Dette fanger tilfellet der stempelet mangler helt, og er derfor
+        // det som virkelig avdekker en gammel kopi.
+        const like = kron.slice(0, i).findIndex(t => normaliser(t.innhold) === normaliser(v.innhold));
+        if(like !== -1){
+          funn.push({ alvor: like === i - 1 ? 'warn' : 'err', nr,
+            tekst: (like === i - 1 ? '⚠️ ' : '🛑 ') + merke +
+                   (like === i - 1
+                     ? ' er identisk med versjonen rett før — publiseringen endret ingenting.'
+                     : ' er identisk med v' + (like + 1) + '. Filen ble rullet tilbake ' +
+                       (i - like) + ' versjoner, og arbeidet imellom forsvant.') });
+        }
+      }
+    });
+
+    const førsteFeil = funn.find(f => f.alvor === 'err');
+    return { kron, funn, førsteFeil };
+  }
+
+  window.kjorLogg = async function(){
+    const path = document.getElementById('loggPath').value.trim();
+    const boks = document.getElementById('loggResultat');
+    if(!path){
+      boks.className = 'status show warn';
+      boks.textContent = 'Velg en fil først.';
+      return;
+    }
+    boks.className = 'status show busy';
+    boks.textContent = 'Henter historikken for ' + path + '...';
+
+    let versjoner;
+    try{
+      versjoner = await hentVersjoner(path, 12);
+    } catch(err){
+      boks.className = 'status show err';
+      boks.textContent = '✗ Kunne ikke hente historikken: ' + err.message;
+      return;
+    }
+    if(versjoner.length === 0){
+      boks.className = 'status show warn';
+      boks.textContent = 'Fant ingen historikk for «' + path + '». Er filstien riktig?';
+      return;
+    }
+
+    const { kron, funn, førsteFeil } = analyserHistorikk(versjoner);
+
+    const linjer = kron.map((v, i) =>
+      'v' + (i + 1) + '  ' + v.commitDato.toLocaleDateString('no-NO') + ' ' +
+      v.commitDato.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'}) +
+      '  ' + (v.stempel ? 'stempel ' + visTid(v.stempel) : 'uten stempel') +
+      '\n     ' + v.melding
+    );
+
+    let topp;
+    if(førsteFeil){
+      topp = '🛑 LOGGEN HENGER IKKE SAMMEN.\n\nDet begynte ved v' + førsteFeil.nr + ':\n' +
+             førsteFeil.tekst + '\n';
+      boks.className = 'status show err';
+    } else if(funn.length){
+      topp = '⚠️ Rekkefølgen er i orden, men det er merknader:\n';
+      boks.className = 'status show warn';
+    } else {
+      topp = '✅ ALT I ORDEN.\n\n' + kron.length + ' versjoner, i riktig rekkefølge. ' +
+             'Ingen tilbakerulling, ingen stempler ute av stilling.\n';
+      boks.className = 'status show ok';
+    }
+
+    const merknader = funn.length ? '\nMerknader:\n' + funn.map(f => '  ' + f.tekst).join('\n') + '\n' : '';
+    boks.textContent = topp + merknader + '\nHistorikk (eldst først):\n' + linjer.join('\n');
+  };
+
+  // Ren undersøkelse: sier hva som ville skjedd, uten å publisere noe.
+  window.undersokInnhold = async function(){
+    const path = document.getElementById('loggPath').value.trim();
+    const innhold = document.getElementById('testInnhold').value;
+    const boks = document.getElementById('testResultat');
+    if(!path || !innhold.trim()){
+      boks.className = 'status show warn';
+      boks.textContent = 'Velg en filsti og lim inn innhold (eller last inn en fil over).';
+      return;
+    }
+    boks.className = 'status show busy';
+    boks.textContent = 'Undersøker...';
+
+    const dittStempel = lesStempel(innhold);
+    let r = await sammenlignMedPublisert(path, innhold);
+    if(r.status === 'ukjent'){
+      boks.textContent = 'Innholdet mangler stempel — leter i historikken...';
+      r = await utdypUkjent(path, innhold, r);
+    }
+    const d = beskrivResultat(r, path);
+
+    let publisert = 'kunne ikke leses';
+    try{
+      const p = await hentPublisertFil(path);
+      publisert = p.finnes ? visTid(lesStempel(p.innhold)) : 'filen finnes ikke i repoet';
+    } catch(err){ publisert = 'feil: ' + err.message; }
+
+    boks.className = 'status show ' + d.cls;
+    boks.textContent =
+      'Ditt innhold:      ' + (dittStempel ? visTid(dittStempel) : 'uten SIST-ENDRET-stempel') + '\n' +
+      'Publisert versjon: ' + publisert + '\n' +
+      'Stempel ved publisering nå: ' + noTid() + '\n' +
+      '\nResultat: ' + (d.sperr ? 'VILLE BLITT SPERRET' : 'ville sluppet gjennom') + '\n\n' +
+      d.tekst;
+  };
+
+  function beskrivResultat(r, path){
+    if(r.status === 'ny')      return { sperr:false, cls:'ok',   tekst:'🆕 Ny fil — finnes ikke i repoet ennå. Trygt å publisere.' };
+    if(r.status === 'nyere')   return { sperr:false, cls:'ok',   tekst:'✓ Din versjon er nyere enn den publiserte (' + visTid(r.lokalTid) + ' mot ' + visTid(r.repoTid) + '). Trygt å publisere.' };
+    if(r.status === 'endret')  return { sperr:false, cls:'ok',   tekst:'✓ Endret siden siste publisering. Innholdet er ulikt, stempelet er fra sist du publiserte (' + visTid(r.repoTid) + '). Dette er det normale ved en vanlig endring.' };
+    if(r.status === 'ukjentNy') return { sperr:false, cls:'ok',   tekst:'✓ Innholdet finnes ikke i noen tidligere versjon av filen — dette er nytt arbeid. Trygt å publisere.\n\n(Filen mangler SIST-ENDRET-stempel, så alderen ble avgjort mot historikken på GitHub i stedet.)' };
+    if(r.status === 'historisk')return { sperr:true,  cls:'err',  tekst:'🛑 DETTE ER EN GAMMEL KOPI.\n\nInnholdet er nøyaktig likt en tidligere versjon av filen — den fra ' + visTid(r.treff.dato) + ', som ligger ' + r.treff.versjonerBak + ' versjon(er) bak den som er ute nå.\n\nPubliserer du, ruller du filen tilbake og sletter alt arbeid gjort etter den datoen. Hent siste versjon fra GitHub først.' };
+    if(r.status === 'ukjent')  return { sperr:false, cls:'warn', tekst:'⚠️ Kan ikke fastslå alder — stempel mangler' + (r.historikkFeilet ? ', og historikken på GitHub kunne ikke leses' : '') + '. Publisering slippes gjennom, men du er uten sikkerhetsnett her.' };
+    if(r.status === 'feil')    return { sperr:false, cls:'warn', tekst:'⚠️ Kunne ikke sjekke mot GitHub (' + r.melding + '). Publisering er ikke sperret, men da er du uten sikkerhetsnett.' };
+    if(r.status === 'identisk')return { sperr:true,  cls:'err',  tekst:'⛔ IDENTISK med det som allerede ligger ute. Ingenting ville endret seg. Publisering er stoppet.' };
+    if(r.status === 'eldre')   return { sperr:true,  cls:'err',  tekst:'🛑 FILEN DIN ER ELDRE ENN DEN PUBLISERTE.\n\nDin fil:        ' + visTid(r.lokalTid) + '\nPå GitHub:  ' + visTid(r.repoTid) + '\n\nPubliserer du nå, legger du en gammel kopi over nyere arbeid. Hent siste versjon fra GitHub først.' };
+    return { sperr:false, cls:'warn', tekst:'Ukjent resultat.' };
+  }
+
   // Shared core used by both the single-file and multi-file publish flows.
   // Returns {ok:true} on success or {ok:false, message} on failure — never
   // throws, so callers (especially the multi-file loop) can keep going to
@@ -607,6 +1021,74 @@
     }
   }
 
+  // Settes bare av «Publiser likevel», og nullstilles så snart filen,
+  // innholdet eller filstien endrer seg — slik at en overstyring aldri
+  // henger igjen og gjelder for neste fil også.
+  let overstyrSperre = false;
+
+  window.nullstillSperre = function(){
+    overstyrSperre = false;
+    const p = document.getElementById('diffPanel');
+    if(p){ p.style.display = 'none'; p.textContent = ''; }
+    const b = document.getElementById('overstyrBtn');
+    if(b) b.style.display = 'none';
+  };
+
+  function visDiff(cls, tekst){
+    const p = document.getElementById('diffPanel');
+    p.className = 'status show ' + cls;
+    p.textContent = tekst;
+    p.style.display = 'block';
+  }
+
+  window.sjekkVersjon = async function(){
+    const path = currentPath();
+    const content = document.getElementById('fileContent').value;
+    if(!path || !content.trim()){
+      visDiff('warn', 'Velg en fil og en filsti først.');
+      return null;
+    }
+    visDiff('busy', 'Sammenligner med versjonen som ligger på GitHub...');
+    let r = await sammenlignMedPublisert(path, content);
+    if(r.status === 'ukjent'){
+      visDiff('busy', 'Filen mangler stempel — leter i historikken på GitHub...');
+      r = await utdypUkjent(path, content, r);
+    }
+    const d = beskrivResultat(r, path);
+    visDiff(d.cls, d.tekst);
+    document.getElementById('overstyrBtn').style.display = d.sperr ? 'block' : 'none';
+    return d;
+  };
+
+  window.publiserLikevel = function(){
+    overstyrSperre = true;
+    window.publish();
+  };
+
+  window.hentTilTest = function(){
+    document.getElementById('testInnhold').value = document.getElementById('fileContent').value;
+    const p = currentPath();
+    if(p) document.getElementById('loggPath').value = p;
+  };
+
+  // Holder logg-feltet i takt med filen du jobber med, og fyller
+  // forslagslisten fra de samme stiene som publiseringslisten bruker.
+  function synkLoggPath(){
+    const felt = document.getElementById('loggPath');
+    if(!felt) return;
+    const p = currentPath();
+    if(p && !felt.dataset.rort) felt.value = p;
+    const dl = document.getElementById('loggPathListe');
+    const sel = document.getElementById('filePreset');
+    if(dl && sel){
+      dl.innerHTML = [...sel.options]
+        .map(o => o.value)
+        .filter(v => v && v !== '__custom__')
+        .map(v => '<option value="' + v + '"></option>')
+        .join('');
+    }
+  }
+
   window.publish = async function(){
     const path = currentPath();
     const content = document.getElementById('fileContent').value;
@@ -620,15 +1102,31 @@
     }
     const btn = document.getElementById('publishBtn');
     btn.disabled = true;
+
+    // Kontrollen kjøres her, rett før selve publiseringen — ikke bare når
+    // du trykker «Sjekk». Ellers ville en sjekk gjort for fem minutter
+    // siden, på et annet innhold, kunne slippe en gammel fil gjennom.
+    if(!overstyrSperre){
+      showStatus('Sjekker mot publisert versjon...', 'busy');
+      const d = await window.sjekkVersjon();
+      if(d && d.sperr){
+        showStatus('✗ Publisering stoppet — se meldingen over.', 'err');
+        btn.disabled = false;
+        return;
+      }
+    }
+
     showStatus('Publiserer...', 'busy');
     const result = await publishFileToGitHub(path, content);
     if(result.ok){
       showStatus('✓ Publisert! Endringen er live om noen sekunder.', 'ok');
       localStorage.setItem(LS_LAST_FILE, document.getElementById('filePreset').value);
       updateLastPublishedHint();
+      window.nullstillSperre();
     } else {
       showStatus('✗ ' + result.message, 'err');
     }
+    overstyrSperre = false;
     btn.disabled = false;
   };
 
@@ -686,7 +1184,7 @@
     statusBox.className = 'status show busy';
     statusBox.textContent = 'Publiserer ' + multiFiles.length + ' filer, én etter én...';
 
-    let okCount = 0, errCount = 0;
+    let okCount = 0, errCount = 0, hoppetOver = 0;
     // Published one at a time, with a short pause between each — publishing
     // several files back-to-back too fast is what caused files to silently
     // "supersede" each other and never actually go live (seen before with
@@ -703,6 +1201,30 @@
       if(målsti !== f.name && statusEl){
         statusEl.textContent = 'Publiserer til ' + målsti + '...';
       }
+
+      // Samme versjonskontroll som for enkeltfil. Her er den viktigst: ved
+      // opplasting av en hel mappe er det lett å få med en gammel kopi uten
+      // å legge merke til det, og statusen ville sagt «✓ Publisert».
+      if(!document.getElementById('multiOverstyr').checked){
+        if(statusEl) statusEl.textContent = 'Sjekker...';
+        let r = await sammenlignMedPublisert(målsti, f.content);
+        if(r.status === 'ukjent'){
+          if(statusEl) statusEl.textContent = 'Sjekker historikk...';
+          r = await utdypUkjent(målsti, f.content, r);
+        }
+        if(SPERRENDE.includes(r.status)){
+          hoppetOver++;
+          if(statusEl){
+            statusEl.className = 'fstatus err';
+            statusEl.textContent =
+              r.status === 'identisk' ? '⛔ Identisk — hoppet over' :
+              r.status === 'historisk' ? '🛑 Gammel kopi (' + visTid(r.treff.dato) + ') — hoppet over' :
+              '🛑 Eldre (' + visTid(r.lokalTid) + ') — hoppet over';
+          }
+          continue;
+        }
+      }
+
       const result = await publishFileToGitHub(målsti, f.content);
       if(result.ok){
         okCount++;
@@ -714,14 +1236,18 @@
       await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
-    statusBox.className = 'status show ' + (errCount === 0 ? 'ok' : 'err');
-    statusBox.textContent = errCount === 0
+    const deler = [okCount + ' publisert'];
+    if(hoppetOver) deler.push(hoppetOver + ' hoppet over (identisk eller eldre)');
+    if(errCount)   deler.push(errCount + ' feilet');
+    statusBox.className = 'status show ' + (errCount === 0 ? (hoppetOver ? 'warn' : 'ok') : 'err');
+    statusBox.textContent = (errCount === 0 && hoppetOver === 0)
       ? '✓ Alle ' + okCount + ' filer publisert!'
-      : okCount + ' av ' + multiFiles.length + ' publisert — ' + errCount + ' feilet (se status per fil ovenfor).';
+      : 'Av ' + multiFiles.length + ' filer: ' + deler.join(' · ') + '. Se status per fil ovenfor.';
     btn.disabled = false;
   };
 
   init();
+  synkLoggPath();
 </script>
 <style>
   #lastDeployBadge{
