@@ -1,3 +1,4 @@
+/* SIST-ENDRET: 2026-08-08 16:02:23 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -35,16 +36,74 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // ---------------------------------------------------------------------
-// PRISER PER PROGRAM — samme tall og samme søskenrabatt-logikk som
-// admin-panelet (Elever-skjemaet) bruker. Holdt i sync manuelt siden
-// dette er en egen kodebase (Cloud Functions), men MÅ oppdateres begge
-// steder samtidig hvis prisene endres.
-// Begge programmer prises som ett flatt beløp tilsvarende én termin.
+// PRISER OG SØSKENRABATT — LESES FRA FIRESTORE
+// ---------------------------------------------------------------------
+// Tallene under er RESERVEVERDIER, ikke fasit. De brukes bare når
+// databasen ikke svarer, eller når et program mangler pris.
+//
+// Bakgrunnen: admin-panelet gikk over til å lese prisen fra 'programs'
+// (redigerbart under fanen «Programmer»), mens denne filen fortsatt leste
+// sine egne faste tall. Endret man en pris i panelet, regnet panelet med
+// den nye prisen mens Vipps krevde den gamle — uten at noe sa ifra.
+//
+// Begge sider leser nå det samme stedet. Endres en pris ett sted,
+// endres den overalt.
 // ---------------------------------------------------------------------
 const PROGRAM_PRICES = {
   "Madina Islamske Skole — Integrert program (Lørdag)": 2750,
   "Madinabarn (Søndag)": 1500,
 };
+
+// Reserveverdier for søskenrabatt, i prosent. Endres i panelet under
+// settings/priser — MERK at 20/30 fortsatt er det vedtatte. Notatet om
+// medlemspris foreslår 10/20, men det er «Beregnet, ikke vedtatt».
+const RABATT_RESERVE = { barn2: 20, barn3: 30 };
+
+// Ett kall kan regne pris for flere barn. Uten denne ville hver utregning
+// slått opp de samme to dokumentene på nytt.
+let _prisCache = null;
+function nullstillPrisCache() { _prisCache = null; }
+
+async function hentPrisoppsett() {
+  if (_prisCache) return _prisCache;
+  const oppsett = {
+    programPriser: {},
+    rabatt: { ...RABATT_RESERVE },
+    tellForesatt2: false,
+  };
+
+  // Prisene: samme kilde som panelet bruker.
+  try {
+    const snap = await db.collection("programs").get();
+    snap.forEach((d) => {
+      const p = d.data();
+      const pris = parseFloat(p.pris);
+      if (p.navn && !isNaN(pris) && pris > 0) oppsett.programPriser[p.navn] = pris;
+    });
+  } catch (err) {
+    logger.warn("Kunne ikke lese 'programs' — bruker reserveprisene", err);
+  }
+
+  // Rabattsatsene.
+  try {
+    const doc = await db.collection("settings").doc("priser").get();
+    if (doc.exists) {
+      const d = doc.data() || {};
+      const r2 = parseFloat(d.soskenRabatt2);
+      const r3 = parseFloat(d.soskenRabatt3);
+      if (!isNaN(r2) && r2 >= 0 && r2 <= 100) oppsett.rabatt.barn2 = r2;
+      if (!isNaN(r3) && r3 >= 0 && r3 <= 100) oppsett.rabatt.barn3 = r3;
+      // Teller barn registrert på foresatt2 som søsken? Står som false
+      // fordi det er dagens oppførsel — se merknaden i computeSoskenPrice.
+      oppsett.tellForesatt2 = d.tellForesatt2 === true;
+    }
+  } catch (err) {
+    logger.warn("Kunne ikke lese settings/priser — bruker reservesatsene", err);
+  }
+
+  _prisCache = oppsett;
+  return oppsett;
+}
 
 // Oversetter søknadens rå program-koder (avkrysningsbokser i
 // påmeldingsskjemaet, f.eks. "sprak_arabisk,madina_islamske_skole") til
@@ -70,17 +129,39 @@ function mapRegistrationSprakvalg(reg) {
   return "";
 }
 
-// Søskenrabatt: 1. barn = full pris, 2. barn = 20% rabatt, 3. barn (og
-// alle senere barn) = 30% rabatt — basert på hvor mange barn denne
-// foresatte allerede har registrert i 'students'.
+// Søskenrabatt: 1. barn full pris, 2. barn og 3.+ barn med satsene fra
+// settings/priser — basert på hvor mange barn denne foresatte allerede
+// har registrert i 'students'.
+//
+// ⚠️ Barn registrert på foresatt2 telles IKKE som søsken med mindre
+// tellForesatt2 er slått på. Det er dagens oppførsel i både panelet og
+// her: står barnet under den andre foresatte, får familien ikke rabatt
+// og betaler for mye. Innstillingen finnes for å kunne rette det uten
+// at satsene endrer seg av seg selv.
 async function computeSoskenPrice(program, guardianId) {
-  const basePrice = PROGRAM_PRICES[program] || 0;
+  const oppsett = await hentPrisoppsett();
+  const basePrice = oppsett.programPriser[program] || PROGRAM_PRICES[program] || 0;
   if (!guardianId) return { price: basePrice, pos: 1 };
-  const siblingsSnap = await db.collection("students").where("foresatt", "==", guardianId).get();
-  const pos = siblingsSnap.size + 1;
+
+  let antall = 0;
+  try {
+    const snap = await db.collection("students").where("foresatt", "==", guardianId).get();
+    antall = snap.size;
+    if (oppsett.tellForesatt2) {
+      const snap2 = await db.collection("students").where("foresatt2", "==", guardianId).get();
+      // Samme barn kan stå på begge feltene — telles én gang.
+      const ider = new Set(snap.docs.map((d) => d.id));
+      snap2.forEach((d) => { if (!ider.has(d.id)) antall++; });
+    }
+  } catch (err) {
+    logger.warn("Kunne ikke telle søsken — regner full pris", err);
+    return { price: basePrice, pos: 1 };
+  }
+
+  const pos = antall + 1;
   let price = basePrice;
-  if (pos === 2) price = Math.round(basePrice * 0.8);
-  else if (pos >= 3) price = Math.round(basePrice * 0.7);
+  if (pos === 2) price = Math.round(basePrice * (1 - oppsett.rabatt.barn2 / 100));
+  else if (pos >= 3) price = Math.round(basePrice * (1 - oppsett.rabatt.barn3 / 100));
   return { price, pos };
 }
 
@@ -400,6 +481,10 @@ function verifyVippsWebhookSignature(req) {
 exports.vippsWebhook = onRequest(
   { secrets: [VIPPS_WEBHOOK_SECRET] },
   async (req, res) => {
+  // Cloud Functions gjenbruker en varm instans mellom kall. Uten dette
+  // ville prisene fra første kall blitt liggende i minnet, og en
+  // prisendring i panelet ikke slått inn før instansen ble byttet ut.
+  nullstillPrisCache();
   try {
     if (!verifyVippsWebhookSignature(req)) {
       res.status(401).send("Ugyldig signatur");
