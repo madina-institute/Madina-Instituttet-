@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 15:29:12 -->
+
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -121,6 +121,7 @@
 </header>
 
 <main>
+  <div id="versjonBanner" style="display:none; background:rgba(168,60,60,.10); border:1px solid rgba(168,60,60,.35); color:#a83c3c; border-radius:10px; padding:14px 16px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:13px; line-height:1.6;"></div>
 
   <!-- FIRST-TIME SETUP -->
   <div class="card" id="setupView">
@@ -580,6 +581,20 @@
            ' ' + to(d.getHours()) + ':' + to(d.getMinutes()) + ':' + to(d.getSeconds());
   }
 
+  // 🔴 Disse settes sammen av biter med vilje. Skrives de rett fram, står
+  // teksten «<!-- SIST-ENDRET:» i verktøyets egen kildekode — og når
+  // verktøyet publiserer SEG SELV, finner uttrykket under den, tror det er
+  // et gammelt stempel, og sletter malen ut av koden.
+  //
+  // Det skjedde. Fra 7. august 23:14 sto det «const merke = ''» i den
+  // publiserte versjonen, og HVER html- og md-fil publisert etterpå fikk
+  // et tomt stempel. Feilen var usynlig: verktøyet meldte «✓ Publisert»
+  // hver gang, og filene så normale ut.
+  //
+  // IKKE skriv disse to som én sammenhengende streng.
+  const MERKE_START = '<' + '!--';
+  const MERKE_SLUTT = '--' + '>';
+
   function stemplFil(sti, innhold){
     const tid = noTid();
     const lav = sti.toLowerCase();
@@ -588,16 +603,22 @@
     if(lav.endsWith('.json')) return innhold;
 
     if(lav.endsWith('.html')){
-      const merke = '';
+      const merke = MERKE_START + ' SIST-ENDRET: ' + tid + ' ' + MERKE_SLUTT;
       const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
       // Etter <!DOCTYPE ...> hvis den finnes, ellers helt øverst.
-      const dt = rent.match(/^\s*<!DOCTYPE[^>]*>\s*\n?/i);
-      if(dt) return dt[0] + merke + '\n' + rent.slice(dt[0].length);
-      return merke + '\n' + rent;
+      // De ledende linjeskiftene fjernes: den ødelagte versjonen la igjen
+      // en tom linje for hver publisering, og de hopet seg opp.
+      // Uttrykket fanger KUN selve doctype-taggen. Tok det med linjeskiftene
+      // etter den også, havnet den tomme linjen inne i treffet — og da
+      // hjalp det ikke å rydde i resten: stempelet ble stående UNDER den
+      // tomme linjen i stedet for rett etter doctype.
+      const dt = rent.match(/^\s*<!DOCTYPE[^>]*>/i);
+      if(dt) return dt[0] + '\n' + merke + '\n' + rent.slice(dt[0].length).replace(/^\s*\n+/, '');
+      return merke + '\n' + rent.replace(/^\s*\n+/, '');
     }
 
     if(lav.endsWith('.js') || lav.endsWith('.css') || lav.endsWith('.rules')){
-      const merke = '/* SIST-ENDRET: ' + tid + ' */';
+      const merke = '/' + '* SIST-ENDRET: ' + tid + ' *' + '/';
       const rent = innhold.replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\n?/g, '');
       return merke + '\n' + rent;
     }
@@ -609,9 +630,9 @@
     }
 
     if(lav.endsWith('.md')){
-      const merke = '';
+      const merke = MERKE_START + ' SIST-ENDRET: ' + tid + ' ' + MERKE_SLUTT;
       const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
-      return merke + '\n' + rent;
+      return merke + '\n' + rent.replace(/^\n+/, '');
     }
 
     return innhold;
@@ -1314,8 +1335,13 @@
   // ===================================================================
   const TEKST_ENDELSER = ['.html','.js','.json','.css','.rules','.yml','.yaml','.md','.txt','.svg'];
 
+  // Låsefiler er hundrevis av kilobyte maskingenerert støy og hører ikke
+  // hjemme i et arkiv som skal leses av et menneske eller en samtale.
+  const UTELATT = ['package-lock.json', 'yarn.lock'];
+
   function erTekstfil(sti){
     const lav = sti.toLowerCase();
+    if(UTELATT.some(u => lav.endsWith(u))) return false;
     return TEKST_ENDELSER.some(e => lav.endsWith(e));
   }
 
@@ -1475,6 +1501,57 @@
     }
     btn.disabled = false;
   };
+
+  // ===================================================================
+  // ER SIDEN DU SER PÅ DEN NYESTE?
+  // -------------------------------------------------------------------
+  // En fane som har stått åpen siden i morges kjører fortsatt koden fra
+  // i morges — uansett hvor mange ganger verktøyet er publisert siden.
+  // Det skjedde to ganger 8. august: filer ble publisert av den gamle,
+  // ødelagte utgaven, og kom ut uten stempel. Ingenting sa fra.
+  //
+  // Her sammenlignes stempelet i siden som FAKTISK KJØRER (kommentar-
+  // noden i DOM-en) med stempelet i filen som ligger ute nå. Er de ulike,
+  // sier vi fra med én gang — før noe publiseres med gammel kode.
+  // ===================================================================
+  function egetStempel(){
+    // Kommentaren står mellom <!DOCTYPE> og <html>, altså som barn av
+    // dokumentet selv. Dette er versjonen som kjører i nettleseren nå —
+    // ikke den som ligger på serveren.
+    for(const node of document.childNodes){
+      if(node.nodeType === Node.COMMENT_NODE){
+        const m = String(node.nodeValue).match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+        if(m) return m[1];
+      }
+    }
+    return null;
+  }
+
+  async function sjekkEgenVersjon(){
+    const banner = document.getElementById('versjonBanner');
+    if(!banner) return;
+    let servertekst;
+    try{
+      const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
+      servertekst = await r.text();
+    } catch(err){
+      return; // Uten nett kan vi ikke vite. Da sier vi heller ingenting.
+    }
+    const m = servertekst.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+    const påServer = m ? m[1] : null;
+    const iFanen = egetStempel();
+
+    if(!påServer) return;              // Serverfilen mangler stempel — ingenting å sammenligne
+    if(!iFanen || iFanen < påServer){
+      banner.innerHTML =
+        '<b>⚠️ Du kjører en gammel utgave av verktøyet.</b><br>' +
+        'Fanen ble lastet ' + (iFanen ? 'fra utgaven av ' + iFanen : 'før stempling ble innført') +
+        ', mens utgaven som ligger ute er fra ' + påServer + '.<br>' +
+        'Publiserer du nå, brukes den gamle koden. ' +
+        '<a href="#" onclick="location.reload(true); return false;"><b>Last siden på nytt</b></a> først.';
+      banner.style.display = 'block';
+    }
+  }
 
   window.sjekkVersjon = async function(){
     const path = currentPath();
@@ -1684,6 +1761,7 @@
   };
 
   init();
+  sjekkEgenVersjon();
 </script>
 <style>
   #lastDeployBadge{
