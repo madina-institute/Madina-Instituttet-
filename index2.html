@@ -1357,26 +1357,16 @@
 
       await addDoc(collection(db, 'registrations'), record);
 
-      // Best-effort email notification to administrasjonen — submission is
-      // already saved above regardless of whether this succeeds.
-      try{
-        await fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            access_key: '93e54814-0408-4748-bf5c-7b00b5778d78',
-            subject: 'Ny påmelding mottatt – ' + (record.elev_navn || 'Ukjent navn'),
-            from_name: 'Madina Skole – Påmeldingsskjema',
-            message:
-              'Elev: ' + (record.elev_navn || '—') + '\n' +
-              'Foresatt: ' + (record.foresatt1_navn || '—') + ' — ' + (record.foresatt1_tlf || '—') + '\n' +
-              'Ønsket program: ' + (record.program || '—') + '\n\n' +
-              'Gå til administrasjonspanelet (Registrering) for å behandle påmeldingen.'
-          })
-        });
-      } catch(emailErr){
-        console.error('E-postvarsling feilet:', emailErr);
-      }
+      // Varselet til administrasjonen sendes IKKE herfra lenger.
+      // Cloud Function-en «varsleNySoknad» utløses av at søknaden over
+      // ble skrevet, og sender e-post til mottakerne som er valgt i
+      // panelet under «Oversikt → Varslinger».
+      //
+      // Før sto det et kall til Web3Forms her, med API-nøkkelen i
+      // klartekst på denne offentlige siden. Da kunne hvem som helst
+      // bruke skolens kvote, mottakeren kunne ikke endres uten å
+      // publisere skjemaet på nytt, og barnets navn og foresattes
+      // telefonnummer gikk gjennom en tredjepart uten grunn.
 
       document.getElementById('paameldingsForm').style.display = 'none';
       document.getElementById('successBox').style.display = 'block';
