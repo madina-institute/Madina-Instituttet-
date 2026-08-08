@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-08 17:08:44 */
+/* SIST-ENDRET: 2026-08-08 17:31:39 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1104,5 +1104,63 @@ exports.varsleNySoknad = onDocumentCreated("registrations/{soknadId}", async (ev
     logger.info(`Varsel om ny søknad sendt til ${mottakere.length} mottaker(e).`);
   } catch (err) {
     logger.error("Kunne ikke sende varsel om ny søknad", err);
+  }
+
+  // ---- Kvittering til foresatte ----
+  // Den som fyller ut skjemaet ser bare «Påmeldingen er mottatt» på
+  // skjermen, og lukker fanen. Uten en kvittering på e-post har de
+  // ingenting igjen som viser at søknaden faktisk kom fram — og ringer
+  // skolen for å høre. Dette er svaret på det spørsmålet, sendt før det
+  // blir stilt.
+  //
+  // MERK: kvitteringen lover ikke plass. Den bekrefter kun at søknaden
+  // er mottatt og at den skal behandles.
+  try {
+    let kvitteringPå = true;
+    try {
+      const doc = await db.collection("settings").doc("varsler").get();
+      if (doc.exists && doc.data().kvitteringAktiv === false) kvitteringPå = false;
+    } catch (err) { /* standard: på */ }
+    if (!kvitteringPå) return;
+
+    // Begge foresatte får kvittering hvis begge har oppgitt e-post — men
+    // samme adresse skrevet inn to ganger skal ikke gi to e-poster.
+    const adresser = [...new Set(
+      [reg.foresatt1_epost, reg.foresatt2_epost]
+        .map((e) => String(e || "").trim())
+        .filter((e) => e.includes("@"))
+        .map((e) => e.toLowerCase())
+    )];
+    if (adresser.length === 0) {
+      logger.info("Ingen e-post oppgitt av foresatte — ingen kvittering sendt.");
+      return;
+    }
+
+    await db.collection("mail").add({
+      from: "Madina Skole <post@madinaskole.no>",
+      to: adresser,
+      message: {
+        subject: `Vi har mottatt påmeldingen for ${navn}`,
+        html: `
+          <p>Hei ${reg.foresatt1_navn || ""},</p>
+          <p>Vi har mottatt påmeldingen for <b>${navn}</b>. Takk for at du sendte den inn.</p>
+          <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;margin:14px 0;">
+            ${linje("Elev", navn)}
+            ${linje("Program", lesbartProgram(reg.program))}
+            ${linje("Mottatt", reg.innsendtDato)}
+          </table>
+          <p>Administrasjonen går gjennom opplysningene og tar kontakt med deg
+          om opptak. Du trenger ikke gjøre noe mer nå.</p>
+          <p>Har du spørsmål i mellomtiden, svar gjerne på denne e-posten.</p>
+          <p style="margin-top:22px;">Med vennlig hilsen,<br><b>Madina Skole</b></p>
+          <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+            Dette er en automatisk bekreftelse på at påmeldingen er registrert.
+            Den er ikke et vedtak om skoleplass.
+          </p>`
+      }
+    });
+    logger.info(`Kvittering sendt til ${adresser.length} foresatt-adresse(r).`);
+  } catch (err) {
+    logger.error("Kunne ikke sende kvittering til foresatte", err);
   }
 });
