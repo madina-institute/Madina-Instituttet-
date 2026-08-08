@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 00:14:50 -->
+<!-- SIST-ENDRET: 2026-08-09 00:23:41 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -898,7 +898,18 @@
 <div class="corner-deco corner-deco-left"></div>
 <div class="corner-deco corner-deco-right"></div>
 
-<div id="loginScreen" class="mlogin" style="--mlogin-accent:#06195B;">
+<!-- Firebase henter økten fra nettleseren ASYNKRONT. Uten dette ble
+     innloggingsskjermen vist i et brøkdels sekund ved hver oppdatering,
+     før den forsvant igjen — det så ut som om økten ble avbrutt og startet
+     på nytt. Nå vises en rolig flate til vi faktisk VET svaret. -->
+<div id="venteSkjerm" class="mlogin" style="--mlogin-accent:#06195B;">
+  <div class="mlogin-inner">
+    <img class="mlogin-logo" src="logo-hvit.png" alt="Madina Skole">
+    <div class="mlogin-hello" style="margin-top:14px;">Henter økten din…</div>
+  </div>
+</div>
+
+<div id="loginScreen" class="mlogin" style="--mlogin-accent:#06195B; display:none;">
   <div class="mlogin-inner">
     <img class="mlogin-logo" src="logo-hvit.png" alt="Madina Skole">
     <div class="mlogin-hello">أهلاً وسهلاً · Velkommen · خوش آمدید</div>
@@ -2750,8 +2761,30 @@
   let oktStart = null;
   let sistePuls = 0;
 
+  // En oppdatering av siden er IKKE en ny innlogging. Uten dette ble det
+  // opprettet en ny økt for hver F5 — og «antall innlogginger» i
+  // ledelsesinnsynet ville telt oppdateringer, mens minuttene ble hakket
+  // opp i biter på noen sekunder hver.
+  //
+  // Øktens id legges i sessionStorage, som lever nøyaktig like lenge som
+  // fanen: en oppdatering beholder den, en lukket fane kaster den. Det er
+  // presis samme levetid som selve innloggingen har.
+  const OKT_LAGER = 'madina_admin_okt_v1';
+
   async function startOkt(){
     if(oktRef) return;
+    try{
+      const lagret = JSON.parse(sessionStorage.getItem(OKT_LAGER) || 'null');
+      if(lagret && lagret.id && lagret.start){
+        // Samme økt fortsetter — vi plukker opp der vi slapp.
+        oktRef = doc(db, 'loginEvents', lagret.id);
+        oktStart = new Date(lagret.start);
+        sistePuls = 0;          // tving et livstegn med én gang
+        oktPuls();
+        return;
+      }
+    } catch(e){ /* ødelagt lager — vi lager en ny økt under */ }
+
     oktStart = new Date();
     sistePuls = Date.now();
     try{
@@ -2765,6 +2798,9 @@
         varighetMin: 0
       });
       oktRef = doc;
+      try{
+        sessionStorage.setItem(OKT_LAGER, JSON.stringify({ id: doc.id, start: oktStart.toISOString() }));
+      } catch(e){ /* uten lager blir hver oppdatering en ny økt — ikke kritisk */ }
     } catch(err){
       console.error('Kunne ikke registrere økt', err);
     }
@@ -2793,6 +2829,7 @@
       avsluttet: true
     }).catch(()=>{});
     oktRef = null; oktStart = null;
+    try{ sessionStorage.removeItem(OKT_LAGER); } catch(e){}
   }
 
   const INACTIVITY_LIMIT_MS = 20 * 60 * 1000;
@@ -2911,6 +2948,7 @@
       }
       currentUserEmail = user.email;
       document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('venteSkjerm').style.display = 'none';
       document.getElementById('appRoot').style.display = 'block';
       const who = document.getElementById('loggedInAs');
       if(who) who.textContent = user.email;
@@ -2962,6 +3000,7 @@
       isLocked = false;
       clearTimeout(inactivityTimer);
       document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('venteSkjerm').style.display = 'none';
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('appRoot').style.display = 'none';
     }
