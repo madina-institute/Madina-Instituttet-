@@ -1292,6 +1292,23 @@
       <div id="adminUsersList"></div>
     </div>
 
+    <div class="report-card" style="margin-top:20px;">
+      <h3>🔔 Varslinger</h3>
+      <div class="sub">Hvem skal få e-post når det kommer inn en ny påmelding</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px; line-height:1.6;">
+        Listen bygges av de ansatte som har en e-post registrert. Kryss av for
+        dem som skal varsles — endringen gjelder med én gang, uten at noe må
+        publiseres på nytt.
+      </p>
+      <label style="display:flex; align-items:center; gap:9px; margin-bottom:14px; font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
+        <input type="checkbox" id="varselNySoknadAktiv" onchange="oppdaterVarselOppsummering()" style="width:17px; height:17px; flex:0 0 auto;">
+        <span>Send varsel ved ny påmelding</span>
+      </label>
+      <div id="varselMottakerListe" style="display:flex; flex-direction:column; gap:2px; max-height:340px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--paper);"></div>
+      <div id="varselOppsummering" class="sub" style="margin:12px 0 0;"></div>
+      <button class="btn btn-primary" style="width:auto; margin-top:12px;" onclick="saveVarselInnstillinger()">Lagre</button>
+    </div>
+
     <div class="report-card danger-zone" style="margin-top:20px;">
       <h3 style="color:var(--red);">Faresone — nullstill data</h3>
       <div class="sub">Disse handlingene sletter data permanent og kan ikke angres</div>
@@ -3473,6 +3490,13 @@
       fyllPrisinnstillinger();
     }, (err) => console.error('settings/priser', err));
 
+    onSnapshot(doc(db, 'settings', 'varsler'), (snap) => {
+      const d = snap.exists() ? (snap.data() || {}) : {};
+      varselOppsett.nySoknadAktiv = d.nySoknadAktiv !== false;
+      varselOppsett.nySoknadMottakere = Array.isArray(d.nySoknadMottakere) ? d.nySoknadMottakere : [];
+      fyllVarselInnstillinger();
+    }, (err) => console.error('settings/varsler', err));
+
     onSnapshot(doc(db, 'settings', 'betaling'), (snap) => {
       const input = document.getElementById('vippsLinkInput');
       if(input && snap.exists()) input.value = snap.data().lenke || '';
@@ -5167,7 +5191,7 @@
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teacherAttendance' || type === 'teachers') renderLonnOversikt();
-    if(type === 'teachers') renderLedelseView();
+    if(type === 'teachers'){ renderLedelseView(); renderVarselMottakere(); }
     if(type === 'messages') renderMessagesInbox();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
@@ -7640,6 +7664,97 @@
       '3. barn ' + Math.round(pris * (1 - r3/100)) + ' kr';
   };
 
+  // ---------- Varslinger ----------
+  // Mottakerne lagres som E-POSTADRESSER, ikke som id-er. Da fortsetter
+  // varselet å virke selv om et personkort slettes og opprettes på nytt,
+  // og Cloud Function-en slipper å slå opp noe for å vite hvor den skal
+  // sende.
+  const varselOppsett = { nySoknadAktiv: true, nySoknadMottakere: [] };
+
+  function renderVarselMottakere(){
+    const el = document.getElementById('varselMottakerListe');
+    if(!el) return;
+
+    // Alle med e-post — både ansatte (teachers) og oppføringer som bare
+    // finnes i tilgangslisten. Samme e-post vises én gang.
+    const sett = new Map();
+    (cache.teachers || []).forEach(t => {
+      const e = (t.epost || '').trim().toLowerCase();
+      if(e) sett.set(e, { epost: t.epost.trim(), navn: t.navn || '', roller: t.roller || '' });
+    });
+    adminUsersCache.forEach(u => {
+      const e = (u.epost || '').trim().toLowerCase();
+      if(e && !sett.has(e)) sett.set(e, { epost: u.epost.trim(), navn: u.navn || '', roller: u.roller || u.rolle || '' });
+    });
+
+    const folk = [...sett.values()].sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
+    if(folk.length === 0){
+      el.innerHTML = '<div class="report-empty">Ingen ansatte med registrert e-post ennå.</div>';
+      return;
+    }
+
+    const valgt = new Set(varselOppsett.nySoknadMottakere.map(e => e.toLowerCase()));
+    el.innerHTML = folk.map(p => `
+      <label style="display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid rgba(40,40,90,.06); font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
+        <input type="checkbox" class="varsel-mottaker" value="${escapeHtml(p.epost)}"
+               ${valgt.has(p.epost.toLowerCase()) ? 'checked' : ''}
+               onchange="oppdaterVarselOppsummering()" style="width:16px; height:16px; flex:0 0 auto;">
+        <span style="flex:1; min-width:0;">
+          <strong>${escapeHtml(p.navn || p.epost)}</strong>
+          <span style="color:#8a9a90;"> — ${escapeHtml(p.epost)}</span>
+          ${p.roller ? `<br><span style="font-size:11px; color:#8a9a90;">${escapeHtml(p.roller)}</span>` : ''}
+        </span>
+      </label>`).join('');
+    oppdaterVarselOppsummering();
+  }
+
+  // Sier hva som faktisk kommer til å skje, i klartekst. En liste med
+  // avkrysninger viser HVEM som er valgt, men ikke hva valget betyr.
+  window.oppdaterVarselOppsummering = function(){
+    const el = document.getElementById('varselOppsummering');
+    const aktiv = document.getElementById('varselNySoknadAktiv');
+    if(!el || !aktiv) return;
+    const valgte = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
+    if(!aktiv.checked){
+      el.innerHTML = '⚠️ Varsling er slått AV — ingen får beskjed når en påmelding kommer inn.';
+      return;
+    }
+    if(valgte.length === 0){
+      el.innerHTML = 'Ingen valgt — varselet går til <strong>post@madinaskole.no</strong> ' +
+        'slik at en påmelding aldri kommer inn uten at noen ser den.';
+      return;
+    }
+    el.innerHTML = 'Ved ny påmelding varsles <strong>' + valgte.length + ' person' +
+      (valgte.length === 1 ? '' : 'er') + '</strong>: ' +
+      valgte.map(e => escapeHtml(e)).join(', ');
+  };
+
+  function fyllVarselInnstillinger(){
+    const aktiv = document.getElementById('varselNySoknadAktiv');
+    if(aktiv) aktiv.checked = varselOppsett.nySoknadAktiv;
+    renderVarselMottakere();
+  }
+
+  window.saveVarselInnstillinger = async function(){
+    const aktiv = document.getElementById('varselNySoknadAktiv').checked;
+    const mottakere = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
+    try{
+      await setDoc(doc(db, 'settings', 'varsler'), {
+        nySoknadAktiv: aktiv,
+        nySoknadMottakere: mottakere,
+        sistEndretAv: currentUserEmail || '',
+        sistEndretDato: new Date().toISOString()
+      }, { merge: true });
+      showToast(aktiv
+        ? 'Lagret — ' + (mottakere.length || 'ingen valgt, går til post@madinaskole.no') +
+          (mottakere.length ? ' mottaker(e) varsles.' : '')
+        : 'Lagret — varsling er slått av.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt under lagring.', true);
+    }
+  };
+
   window.savePrisinnstillinger = async function(){
     const r2 = parseFloat(document.getElementById('rabatt2Input').value);
     const r3 = parseFloat(document.getElementById('rabatt3Input').value);
@@ -8346,6 +8461,9 @@
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
     adminUsersCache = list;
+    // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
+    // nytt for at personen skulle dukke opp i varsel-listen.
+    renderVarselMottakere();
     const el = document.getElementById('adminUsersList');
     if(!el) return;
     if(list.length === 0){
