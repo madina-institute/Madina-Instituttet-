@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-
+<!-- SIST-ENDRET: 2026-08-09 11:12:33 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1340,7 +1340,15 @@
 
     try{
       const formData = new FormData(this);
-      const record = { status: 'Ny', innsendtDato: todayISO() };
+      // varselSendt settes til FALSE med vilje — ikke utelatt.
+      //
+      // Cloud Function-en finner nye søknader med en spørring på dette
+      // feltet. Firestore kan ikke spørre etter «feltet mangler», så en
+      // søknad uten feltet ville aldri blitt funnet, og familien ville
+      // aldri fått kvittering. Før spørringen ble innført leste
+      // funksjonen HELE samlingen hvert andre minutt for å slippe dette
+      // — det kostet 36 000 lesinger i døgnet.
+      const record = { status: 'Ny', innsendtDato: todayISO(), varselSendt: false };
 
       MULTI_FIELDS.forEach(key => {
         const values = formData.getAll(key);
