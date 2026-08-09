@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 12:46:32 -->
+<!-- SIST-ENDRET: 2026-08-09 18:41:06 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1023,10 +1023,15 @@
         const tall = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
         let aar = tall(p.prisAar);
         if(aar === 0 && tall(p.pris) > 0) aar = tall(p.pris) * 2;
+        // Materiellavgiften hører til programmet — Madinabarn og det
+        // integrerte programmet bruker ulike bøker. Tomt felt = fellessats.
+        // 0 er en ekte verdi og betyr «ingen avgift».
+        const egetMat = String(p.materiellAvgift === undefined || p.materiellAvgift === null ? '' : p.materiellAvgift).trim();
         programmer[p.navn] = {
           aar,
           mnd: tall(p.prisMedlemMnd),
           maneder: tall(p.antallManeder) || 9,
+          materiell: egetMat !== '' ? tall(egetMat) : null,
           dager: p.dager || ''
         };
       });
@@ -1058,6 +1063,14 @@
   }
 
   const kr = n => Math.round(n).toLocaleString('no-NO').replace(/\u00a0/g, ' ');
+
+  // Programmets egen materiellavgift går foran fellessatsen — nøyaktig
+  // samme regel som i panelet og i Vipps-beregningen.
+  function materiellFor(p){
+    if(!p) return prisData.materiell || 0;
+    return (p.materiell === null || p.materiell === undefined)
+      ? (prisData.materiell || 0) : p.materiell;
+  }
 
   // Tegner ett priskort INNE i hvert program, og viser det bare når
   // programmet er huket av. Familien ser prisen der den hører hjemme,
@@ -1092,7 +1105,9 @@
             ${sparer > 0 ? `<div class="pk-spar">Du sparer ${kr(sparer)} kr i året</div>` : ''}
           </div>` : ''}
         </div>
-        <div class="pk-fot">Bøker og materiell kommer i tillegg.</div>`;
+        <div class="pk-fot">${materiellFor(p) > 0
+          ? 'Bøker og materiell: <strong>' + kr(materiellFor(p)) + ' kr per år</strong> i tillegg.'
+          : 'Bøker og materiell kommer i tillegg.'}</div>`;
     });
 
     // Søskenrabatten gjelder på tvers av programmene og står for seg selv.
@@ -1142,11 +1157,31 @@
 
     const mat = document.getElementById('materiellBoks');
     if(mat){
-      mat.innerHTML = (materiell > 0) ? `
+      // Ett tall holdt så lenge alle programmene kostet det samme. Nå kan
+      // de være ulike, og da må hvert program nevnes med sitt eget beløp —
+      // ellers leser en forelder tallet for det andre programmet.
+      const linjer = Object.entries(prisData.programmer || {})
+        .map(([navn, p]) => ({ navn, mat: materiellFor(p) }))
+        .filter(x => x.mat > 0);
+      const alleLike = linjer.length > 0 && linjer.every(x => x.mat === linjer[0].mat);
+      if(linjer.length === 0){
+        mat.innerHTML = '';
+      } else if(alleLike){
+        mat.innerHTML = `
         <div class="note-box" style="margin-top:10px;">
           <strong>Bøker og materiell:</strong> kommer i tillegg til avgiften over
-          og koster <strong>${kr(materiell)} kr per år</strong> per elev.
-        </div>` : '';
+          og koster <strong>${kr(linjer[0].mat)} kr per år</strong> per elev.
+        </div>`;
+      } else {
+        mat.innerHTML = `
+        <div class="note-box" style="margin-top:10px;">
+          <strong>Bøker og materiell</strong> kommer i tillegg til avgiften over,
+          og er ulik for programmene:
+          <ul style="margin:6px 0 0 18px; padding:0;">
+            ${linjer.map(x => `<li>${x.navn}: <strong>${kr(x.mat)} kr per år</strong> per elev</li>`).join('')}
+          </ul>
+        </div>`;
+      }
     }
   }
 
@@ -1197,7 +1232,10 @@
     priceEl.innerHTML = kr(perTermin) + ' kr' +
       (ter > 1 ? ' <span style="font-size:19px; font-weight:400;">per termin</span>' : '');
     if(detaljEl){
-      detaljEl.innerHTML = kr(p.aar) + ' kr for hele året<br>Bøker og materiell kommer i tillegg';
+      const mat = materiellFor(p);
+      detaljEl.innerHTML = kr(p.aar) + ' kr for hele året<br>' +
+        (mat > 0 ? 'Bøker og materiell: ' + kr(mat) + ' kr per år i tillegg'
+                 : 'Bøker og materiell kommer i tillegg');
     }
   }
 
