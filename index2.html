@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 12:22:47 -->
+<!-- SIST-ENDRET: 2026-08-09 12:46:32 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -548,16 +548,13 @@
       og justerer beløpet før første faktura.
     </div>
 
-    <div class="note-box" style="margin-top:10px;">
-      <strong>Depositum ved opptak:</strong> Dersom eleven tilbys plass, skal foresatte betale et depositum på
-      <strong>500 kr</strong> innen <strong>5 dager</strong> etter at tilbud om skoleplass er mottatt. Depositumet trekkes fra
-      totalbeløpet og er den eneste måten foresatte bekrefter at plassen tas imot. Ved manglende betaling innen fristen
-      kan plassen bli gitt videre til andre.
-    </div>
-
-    <div class="note-box" style="margin-top:10px;">
-      <strong>Bøker:</strong> Skolemateriell/bøker kommer i tillegg til avgiften over og koster <strong>450 kr per år</strong>.
-    </div>
+    <!-- Beløpene her sto tidligere skrevet inn i teksten. Da fantes de
+         to steder: her, og i settings/priser som panelet og Vipps regner
+         med. Endret man det ene, lovet skjemaet ett beløp mens fakturaen
+         viste et annet. Nå bygges begge avsnittene av databasen — og
+         forsvinner helt hvis beløpet ikke er satt. -->
+    <div id="depositumBoks"></div>
+    <div id="materiellBoks"></div>
   </div>
 
 <div class="step-nav"><button type="button" class="btn-step btn-back" onclick="goToStep(2)">← Tilbake</button><button type="button" class="btn-step btn-next" onclick="tryGoToStep(4)">Neste →</button></div>
@@ -1035,6 +1032,7 @@
       });
 
       let rabatt2 = 0, rabatt3 = 0, terminer = 2;
+      let materiell = 0, depositum = 0, depositumFrist = 0;
       try{
         const s = await getDoc(doc(db, 'settings', 'priser'));
         if(s.exists()){
@@ -1042,10 +1040,13 @@
           const r2 = parseFloat(d.soskenRabatt2); if(!isNaN(r2)) rabatt2 = r2;
           const r3 = parseFloat(d.soskenRabatt3); if(!isNaN(r3)) rabatt3 = r3;
           const te = parseFloat(d.terminer); if(!isNaN(te) && te >= 1) terminer = te;
+          const ma = parseFloat(d.materiellAvgift); if(!isNaN(ma) && ma >= 0) materiell = ma;
+          const de = parseFloat(d.depositum); if(!isNaN(de) && de >= 0) depositum = de;
+          const df = parseFloat(d.depositumFrist); if(!isNaN(df) && df >= 1) depositumFrist = df;
         }
       } catch(e){ /* rabattene er en bonus i visningen, ikke et krav */ }
 
-      prisData = { programmer, rabatt2, rabatt3, terminer };
+      prisData = { programmer, rabatt2, rabatt3, terminer, materiell, depositum, depositumFrist };
       tegnPriskort();
       updatePriceDisplay();
     } catch(err){
@@ -1115,7 +1116,38 @@
           </div>
         </div>` : '';
     }
+    tegnVilkar();
     visValgtePriskort();
+  }
+
+  // Depositum og materiellavgift. Er beløpet ikke satt, vises avsnittet
+  // ikke i det hele tatt — et skjema som lover «0 kr» eller et gammelt
+  // tall er verre enn et som lar være å nevne det.
+  function tegnVilkar(){
+    const { materiell, depositum, depositumFrist } = prisData;
+
+    const dep = document.getElementById('depositumBoks');
+    if(dep){
+      dep.innerHTML = (depositum > 0) ? `
+        <div class="note-box" style="margin-top:10px;">
+          <strong>Depositum ved opptak:</strong> Dersom eleven tilbys plass, skal
+          foresatte betale et depositum på <strong>${kr(depositum)} kr</strong>${
+            depositumFrist > 0 ? ` innen <strong>${depositumFrist} dager</strong>` : ''
+          } etter at tilbud om skoleplass er mottatt. Depositumet
+          <strong>trekkes fra totalbeløpet</strong> og er den eneste måten foresatte
+          bekrefter at plassen tas imot. Ved manglende betaling innen fristen kan
+          plassen bli gitt videre til andre.
+        </div>` : '';
+    }
+
+    const mat = document.getElementById('materiellBoks');
+    if(mat){
+      mat.innerHTML = (materiell > 0) ? `
+        <div class="note-box" style="margin-top:10px;">
+          <strong>Bøker og materiell:</strong> kommer i tillegg til avgiften over
+          og koster <strong>${kr(materiell)} kr per år</strong> per elev.
+        </div>` : '';
+    }
   }
 
   // Viser kortet til det valgte programmet, skjuler det andre.
