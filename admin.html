@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 23:38:44 -->
+<!-- SIST-ENDRET: 2026-08-09 23:43:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4687,11 +4687,21 @@
       showToast('Velg mellom 1 og 40 familier.');
       return;
     }
+    // 🔴 Skjemaet sender KODER, ikke programnavn. Avkrysningsboksene har
+    // value="madina_islamske_skole" og value="madinabarn", og
+    // mapRegistrationProgram() oversetter dem til navnet ved godkjenning.
+    //
+    // Første forsøk her skrev programNAVNET rett inn. Da fant oversettelsen
+    // ingen kode, eleven ble opprettet uten program, og prisen ble stående
+    // på 0 + materiell. Det så ut som en feil i prisberegningen — det var
+    // en feil i det som ble sendt inn. Nettopp derfor skal testdataene gå
+    // gjennom søknadsveien og ikke rett inn i elevlisten.
+    const PROGRAM_KODER = ['madina_islamske_skole', 'madinabarn'];
     const programmer = (cache.programs || []).filter(p => p.navn && p.aktiv !== 'Nei');
     if(programmer.length === 0){
       alert('Legg inn minst ett program under Skole → Programmer først.\n\n' +
-            'Søknadene bruker de ekte programnavnene, slik at prisen som ' +
-            'regnes ut ved godkjenning er den skolen faktisk fakturerer.');
+            'Søknadene bruker de samme kodene som påmeldingsskjemaet, slik at ' +
+            'prisen som regnes ut ved godkjenning er den skolen faktisk fakturerer.');
       return;
     }
 
@@ -4715,7 +4725,7 @@
         const antallBarn = 1 + (i % 3);
 
         for(let b = 0; b < antallBarn; b++){
-          const prog = programmer[(i + b) % programmer.length];
+          const kode = PROGRAM_KODER[(i + b) % PROGRAM_KODER.length];
           const harAllergi = (i + b) % 4 === 0;
           const harMedisin = (i + b) % 5 === 0;
           const fdato = (2014 + (b % 6)) + '-0' + (1 + (i % 9)) + '-1' + (b % 9);
@@ -4728,7 +4738,7 @@
             elev_fdato: fdato,
             kjonn: b % 2 === 0 ? 'gutt' : 'jente',
             alder_bekreftet: 'ja',
-            program: prog.navn,
+            program: kode,
             sprakvalg: (i + b) % 2 === 0 ? 'Arabisk' : 'Urdu',
             klassetrinn: String(1 + ((i + b) % 7)) + '. trinn',
             grunnskole: 'Testskolen ' + nr,
