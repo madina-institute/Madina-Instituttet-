@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 13:25:00 -->
+<!-- SIST-ENDRET: 2026-08-09 14:44:01 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8783,16 +8783,30 @@
       el.innerHTML = '<div class="report-empty">Kun eier kan endre roller og tilganger.</div>';
       return;
     }
-    const navn = Object.keys(rolleTabell);
-    if(navn.length === 0){
-      el.innerHTML = '<div class="report-empty">Rolletabellen bygges… vent til «Synkronisert» vises øverst.</div>';
-      return;
+    // Er tabellen ikke lagret ennå, vises reserven — de innstillingene
+    // som gjelder akkurat nå — sammen med en knapp for å skrive dem ned.
+    //
+    // Den automatiske opprettelsen kan feile uten å si fra: en avvist
+    // skriving, en lytter som ikke rakk å starte. Da sto denne fanen tom,
+    // og det fantes ingen vei videre. En knapp gjør feilen synlig og
+    // handlingen mulig.
+    const ulagret = Object.keys(rolleTabell).length === 0;
+    if(ulagret){
+      rolleTabell = JSON.parse(JSON.stringify(ROLLER_UTGANGSPUNKT));
     }
+    const navn = Object.keys(rolleTabell);
+    const banner = ulagret ? `
+      <div class="status show warn" style="margin-bottom:14px;">
+        Rolletabellen er ikke lagret i databasen ennå. Innstillingene under
+        er de som gjelder nå — trykk for å lagre dem, så kan de redigeres.
+      </div>
+      <button class="btn btn-primary" style="width:auto; margin-bottom:16px;"
+              onclick="byggRolletabell()">Opprett rolletabellen</button>` : '';
 
     // Sortert etter myndighet, så listen leses ovenfra og ned.
     navn.sort((a, b) => (rolleTabell[a].niva - rolleTabell[b].niva) || a.localeCompare(b));
 
-    el.innerHTML = navn.map(rolle => {
+    el.innerHTML = banner + navn.map(rolle => {
       const d = rolleTabell[rolle];
       const laast = d.niva === 1;
       const id = rolle.replace(/[^a-zA-Z]/g, '');
@@ -8831,6 +8845,25 @@
         </div>`;
     }).join('');
   }
+
+  // Skriver reserven ned i basen. Sier tydelig fra hva som gikk galt hvis
+  // det feiler — den forrige utgaven feilet i stillhet.
+  window.byggRolletabell = async function(){
+    if(!isCurrentUserEier()){ showToast('Kun eier kan opprette rolletabellen.', true); return; }
+    let antall = 0;
+    try{
+      for(const [navn, def] of Object.entries(ROLLER_UTGANGSPUNKT)){
+        await setDoc(doc(db, 'roller', navn), {
+          ...def, opprettetDato: new Date().toISOString()
+        }, { merge: true });
+        antall++;
+      }
+      showToast(antall + ' roller opprettet.');
+    } catch(err){
+      console.error('Kunne ikke opprette rolletabellen', err);
+      showToast('Avvist etter ' + antall + ' roller: ' + (err.code || err.message), true);
+    }
+  };
 
   window.lagreRolle = async function(rolle){
     if(!isCurrentUserEier()){ showToast('Kun eier kan endre roller.', true); return; }
