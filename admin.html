@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 20:10:55 -->
+<!-- SIST-ENDRET: 2026-08-09 20:52:59 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -486,6 +486,27 @@
     font-family:'Jost',sans-serif; font-weight:700; font-size:15px; letter-spacing:0.02em;
   }
   .record-title{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17.5px; color:var(--ink); line-height:1.25; }
+  /* Pålogget-merket. Prikken pulserer fordi den viser noe som er sant
+     akkurat nå og kan slutte å være det — i motsetning til en rolle
+     eller et navn, som står stille. */
+  .meg-merke{ font-family:'Jost',sans-serif; font-size:10.5px; font-weight:500;
+    color:#1f6b45; background:#e6f4ec; border:1px solid #bcdfcb;
+    border-radius:999px; padding:2px 9px 2px 7px; margin-left:7px; white-space:nowrap;
+    vertical-align:middle; display:inline-flex; align-items:center; gap:5px; }
+  .puls-prikk{ width:7px; height:7px; border-radius:50%; background:#22a35c;
+    box-shadow:0 0 0 0 rgba(34,163,92,.55); animation:pulsPrikk 2.2s infinite; }
+  @keyframes pulsPrikk{
+    70%{ box-shadow:0 0 0 7px rgba(34,163,92,0); }
+    100%{ box-shadow:0 0 0 0 rgba(34,163,92,0); }
+  }
+  @media(prefers-reduced-motion:reduce){ .puls-prikk{ animation:none; } }
+
+  .paalogget-rad{ display:flex; align-items:center; gap:12px; padding:13px 2px;
+    border-bottom:1px solid var(--line); }
+  .paalogget-rad:last-child{ border-bottom:0; }
+  .paalogget-navn{ flex:1; min-width:0; font-family:'Jost',sans-serif;
+    font-size:13.5px; color:var(--ink); line-height:1.5; }
+  .paalogget-navn small{ display:block; color:#7b8a93; font-size:11.5px; margin-top:2px; }
   .record-pill{
     display:inline-block; margin-top:3px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600;
     color:var(--emerald-d); background:var(--paper-2); border:1px solid var(--line); border-radius:20px; padding:3px 10px;
@@ -1318,6 +1339,7 @@
   <div class="tab" data-tab="betaling" data-side="okonomi">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="utvikler" data-side="verktoy">🛠️ Verktøy og sider</div>
+  <div class="tab" data-tab="paalogget" data-side="personale">🟢 Pålogget nå</div>
   <div class="tab" data-tab="eiere" data-side="personale">👑 Eiere</div>
   <div class="tab" data-tab="roller" data-side="personale">🔑 Roller og tilganger</div>
   <div class="tab" data-tab="veiledning" data-side="veiledning">📖 Veiledning</div>
@@ -2525,6 +2547,26 @@
       Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt). Trykk en samtale for å se hele historikken.
     </div>
     <div id="messagesInboxList"></div>
+  </div>
+
+  <!-- PÅLOGGET NÅ -->
+  <!-- Ingen ny skriving. Økt-pulsen som allerede skrives hvert 5. minutt
+       for statistikken er alt systemet trenger for å vite hvem som er
+       inne — den ble bare aldri lest med det formålet. -->
+  <div class="panel" id="panel-paalogget">
+    <div class="report-card">
+      <div class="innst-topp">
+        <h3>🟢 Pålogget nå</h3>
+        <span class="innst-meta" id="paaloggetMeta"></span>
+      </div>
+      <div class="sub">
+        Regnes fra livstegnet hver økt sender mens noen faktisk bruker systemet.
+        En fane som står åpen uten å brukes teller ikke — og fordi nettleseren
+        aldri sier fra når den lukkes, kan noen bli stående i inntil et
+        kvarter etter at de gikk.
+      </div>
+      <div id="paaloggetListe" style="margin-top:14px;"></div>
+    </div>
   </div>
 
   <!-- EIERE -->
@@ -7139,11 +7181,22 @@
       }
       const card = document.createElement('div');
       card.className = 'record-card';
+      // Merket står på kortet i ALLE lister, ikke bare der man kan slette.
+      // Poenget er ikke å advare i siste sekund, men at man hele veien vet
+      // hvilket kort som er ens eget.
+      const e = normEpost(row.epost);
+      const detErMeg = e !== '' && e === normEpost(currentUserEmail);
+      const erPaalogget = e !== '' && paaloggetNa.has(e);
+      const merke = detErMeg
+        ? '<span class="meg-merke"><span class="puls-prikk"></span>Deg — pålogget nå</span>'
+        : erPaalogget
+          ? '<span class="meg-merke"><span class="puls-prikk"></span>Pålogget nå</span>'
+          : '';
       card.innerHTML = `
         <div class="record-card-top">
           <div class="record-avatar">${escapeHtml(initials)}</div>
           <div>
-            <div class="record-title">${escapeHtml(titleVal)}</div>
+            <div class="record-title">${escapeHtml(titleVal)}${merke}</div>
             ${pillHtml}
           </div>
         </div>
@@ -7760,6 +7813,7 @@
     meetings: 'Referater fra styremøter',
     okonomiHub: 'Årets tall og det som venter på en avgjørelse',
     eiere: 'Hvem som har full tilgang, og veien tilbake hvis alt låser seg',
+    paalogget: 'Hvem som bruker systemet akkurat nå',
     finances: 'Inntekter, utgifter og saldo',
     teachers: 'Registrer og administrer lærere',
     guardians: 'Oversikt over foresatte',
@@ -7790,7 +7844,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
-    okonomiHub: '📊', eiere: '👑', personalePorten: '🚪', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
+    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', personalePorten: '🚪', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
   };
 
   let currentSideForBack = null;
@@ -7852,6 +7906,9 @@
 
     const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
     if(targetTab) targetTab.click();
+    // Lytteren på øktene lever bare mens fanen er åpen. En stående lytter
+    // ville kostet lesninger hos alle med panelet oppe, hele dagen.
+    if(tabName === 'paalogget') startPaalogget(); else stoppPaalogget();
     pushAppView({ appView: 'tab', side: currentSideForBack, tab: tabName });
   };
 
@@ -9175,6 +9232,105 @@
 
 
   // ═══════════════════════════════════════════════════════════════════
+  // PÅLOGGET NÅ
+  //
+  // Koster ingenting ekstra å skrive: hver økt oppdaterer allerede
+  // 'sisteAktivitet' hvert 5. minutt for bruksstatistikken. Her leses
+  // den samme pulsen med et nytt formål.
+  //
+  // 🔴 Lytteren startes KUN når fanen er åpen, og stoppes når man går.
+  // En stående lytter ville kostet lesninger døgnet rundt hos alle som
+  // har panelet oppe — og lesekvoten er akkurat det som gikk fra 79 %
+  // til 1,8 % 9. august.
+  //
+  // Spørringen er avgrenset i tid, så den henter aldri hele historikken.
+  // ═══════════════════════════════════════════════════════════════════
+  const PAALOGGET_VINDU_MIN = 15;
+  let paaloggetNa = new Set();
+  let paaloggetOkter = [];
+  let paaloggetStopp = null;
+  let paaloggetTikk = null;
+
+  window.startPaalogget = function(){
+    if(paaloggetStopp) return;
+    const siden = new Date(Date.now() - PAALOGGET_VINDU_MIN * 60 * 1000).toISOString();
+    try{
+      paaloggetStopp = onSnapshot(
+        query(collection(db, 'loginEvents'), where('sisteAktivitet', '>=', siden)),
+        (snap) => {
+          paaloggetOkter = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          oppdaterPaalogget();
+        },
+        (err) => {
+          console.error('loginEvents (pålogget)', err);
+          const el = document.getElementById('paaloggetListe');
+          if(el) el.innerHTML = '<div class="ok-rolig">Kunne ikke lese øktene. ' +
+            'Reglene gir bare administratorer lesetilgang til innloggingene.</div>';
+        }
+      );
+    } catch(err){ console.error('startPaalogget', err); }
+    // Minuttene skal telle opp selv om ingen skriver noe nytt.
+    paaloggetTikk = setInterval(oppdaterPaalogget, 30000);
+  };
+
+  window.stoppPaalogget = function(){
+    if(paaloggetStopp){ try{ paaloggetStopp(); } catch(e){} paaloggetStopp = null; }
+    if(paaloggetTikk){ clearInterval(paaloggetTikk); paaloggetTikk = null; }
+  };
+
+  function oppdaterPaalogget(){
+    const grense = Date.now() - PAALOGGET_VINDU_MIN * 60 * 1000;
+    // Én person kan ha flere økter (telefon og maskin). Vi beholder den
+    // ferskeste per e-post, ellers står samme navn to ganger.
+    const perEpost = new Map();
+    paaloggetOkter.forEach(o => {
+      if(o.avsluttet) return;
+      const sist = Date.parse(o.sisteAktivitet || '');
+      if(!sist || sist < grense) return;
+      const e = normEpost(o.epost);
+      if(!e) return;
+      const finnes = perEpost.get(e);
+      if(!finnes || sist > finnes._sist) perEpost.set(e, { ...o, _sist: sist });
+    });
+
+    paaloggetNa = new Set(perEpost.keys());
+    renderPaalogget([...perEpost.values()].sort((a, b) => b._sist - a._sist));
+    // Kortene i listene viser samme merke — de må tegnes om når noen
+    // kommer eller går, ellers står prikken igjen etter at de logget ut.
+    ['teachers', 'guardians', 'ledelse'].forEach(t => {
+      if(document.getElementById('table' + capitalize(t))) render(t);
+    });
+  }
+
+  function renderPaalogget(liste){
+    const el = document.getElementById('paaloggetListe');
+    const meta = document.getElementById('paaloggetMeta');
+    if(!el) return;
+    if(meta) meta.textContent = liste.length + (liste.length === 1 ? ' person inne' : ' personer inne');
+
+    if(liste.length === 0){
+      el.innerHTML = '<div class="ok-rolig">Ingen er inne akkurat nå.</div>';
+      return;
+    }
+    const portal = { admin: 'Adminpanelet', teacher: 'Lærerportalen', guardian: 'Foreldreportalen' };
+    el.innerHTML = liste.map(o => {
+      const min = Math.max(0, Math.round((Date.now() - o._sist) / 60000));
+      const sist = min < 1 ? 'nettopp' : 'for ' + min + ' min siden';
+      const erMeg = normEpost(o.epost) === normEpost(currentUserEmail);
+      const varighet = Number(o.varighetMin) || 0;
+      return `
+      <div class="paalogget-rad">
+        <span class="puls-prikk"></span>
+        <div class="paalogget-navn">
+          <b>${escapeHtml(o.navn || o.epost || 'Ukjent')}</b>${erMeg ? ' (deg)' : ''}
+          <small>${escapeHtml(portal[o.role] || o.role || 'Ukjent flate')}${
+            o.roller ? ' · ' + escapeHtml(o.roller) : ''} · aktiv ${varighet} min · siste livstegn ${sist}</small>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   // EIERE
   //
   // settings/eierskap er dokumentet REGLENE leser. Rollen «Eier» i
@@ -10080,14 +10236,17 @@
     if(d.utenKort.length){
       html += `<div class="dub-boks">
         <div class="dub-tittel">📇 Tilgang uten personkort (${d.utenKort.length})</div>
-        <div class="dub-hjelp">Disse kan logge inn, men har ingen oppføring under «Lærere» eller «Ledelse» — og vises derfor ikke i listene. Opprett kortet med NØYAKTIG samme e-post.</div>
+        <div class="dub-hjelp">Disse kan logge inn, men har ingen oppføring under «Lærere» eller «Ledelse» — og vises derfor ikke i listene. Hører personen hjemme her, opprett kortet med NØYAKTIG samme e-post. Hører den ikke hjemme her, fjern tilgangen.</div>
         ${d.utenKort.map(u => `
           <div class="dub-rad">
             <div>
               <b>${escapeHtml(u.navn || '(uten navn)')}</b>
               <div class="dub-detalj">${escapeHtml(u.epost)}${u.roller ? ' · ' + escapeHtml(u.roller) : ''}</div>
             </div>
-            <button class="btn-edit" onclick="opprettKortFor('${escapeHtml(u.epost)}')">Opprett kort</button>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+              <button class="btn-edit" onclick="opprettKortFor('${escapeHtml(u.epost)}')">Opprett kort</button>
+              <button class="btn-danger" onclick="fjernTilgangFor('${escapeHtml(u.epost)}')">Fjern tilgang</button>
+            </div>
           </div>`).join('')}
       </div>`;
     }
@@ -10152,6 +10311,70 @@
 
   // Åpner skjemaet ferdig utfylt, slik at e-posten blir NØYAKTIG lik.
   // Skrives den inn for hånd, blir ett tegn feil til en ny person.
+
+  // Fjerner tilgangen til en konto som ikke hører hjemme i systemet.
+  //
+  // Før dette fantes bare «Opprett kort», så eneste vei til å bli kvitt en
+  // konto var å opprette et kort for den og deretter slette kortet — man
+  // måtte altså bygge noe opp for å rive det ned.
+  //
+  // Sletter IKKE personkortet: har personen et kort, hører slettingen
+  // hjemme der, bak passordbekreftelsen.
+  window.fjernTilgangFor = async function(epost){
+    const e = normEpost(epost);
+    if(!e) return;
+
+    // 🔴 Deg selv. Reglene ville tillatt det — panelet skal ikke.
+    // Fjerner du din egen tilgang, kan du ikke legge den tilbake, og
+    // eneste vei inn igjen går gjennom en annen eier eller Console.
+    if(e === normEpost(currentUserEmail)){
+      alert('Dette er kontoen du er logget inn med.\n\n' +
+            'Fjerner du din egen tilgang, mister du panelet med én gang og ' +
+            'kan ikke gi den tilbake selv. En annen eier — eller Firebase ' +
+            'Console — må i så fall gjøre det for deg.\n\n' +
+            'Handlingen ble ikke utført.');
+      return;
+    }
+
+    // Siste eier. Samme grunn som i eierlisten: uten en eier finnes ingen
+    // innlogging igjen som kan endre roller og tilganger.
+    const eiere = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
+      .map(x => normEpost(x));
+    if(eiere.includes(e) && eiere.length <= 1){
+      alert('Dette er den siste eieren.\n\n' +
+            'Legg til en annen eier først, under Personale → Eiere.');
+      return;
+    }
+
+    const u = adminUsersCache.find(x => normEpost(x.epost) === e);
+    const iTilgang = eiere.includes(e);
+    const deler = [];
+    if(u) deler.push('• rollene i tilgangslisten' + (u.roller ? ' (' + u.roller + ')' : ''));
+    deler.push('• oppslaget reglene bruker for å slippe kontoen inn');
+    if(iTilgang) deler.push('• ⚠️ denne kontoen står også i EIERLISTEN — den må fjernes separat under Personale → Eiere');
+
+    if(!confirm(
+      'Fjerne tilgangen for ' + e + '?\n\n' +
+      'Dette fjerner:\n' + deler.join('\n') + '\n\n' +
+      'Kontoen finnes fortsatt i Firebase Authentication og kan logge inn — ' +
+      'men kommer ikke lenger inn i panelet.\n\n' +
+      'Et eventuelt personkort blir IKKE slettet.'
+    )) return;
+
+    try{
+      // Rekkefølgen er med vilje: tilgangsoppslaget FØRST. Feiler noe
+      // underveis, er det bedre at kontoen står uten reell tilgang med
+      // rollene igjen, enn å ha rollene fjernet mens reglene fortsatt
+      // slipper den inn.
+      await deleteDoc(doc(db, 'tilgang', e)).catch(() => {});
+      if(u && u.id) await deleteDoc(doc(db, 'adminUsers', u.id));
+      showToast('Tilgangen for ' + e + ' er fjernet.');
+    } catch(err){
+      console.error('fjernTilgangFor', err);
+      showToast('Kunne ikke fjerne tilgangen: ' + (err.message || 'ukjent feil'));
+    }
+  };
+
   window.opprettKortFor = function(epost){
     const u = adminUsersCache.find(x => normEpost(x.epost) === normEpost(epost));
     openModal('teachers', null, {
