@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 10:08:22 -->
+<!-- SIST-ENDRET: 2026-08-09 10:26:25 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2322,9 +2322,13 @@
         programmet, slik at familien sparer mest. De to kombineres aldri.
       </p>
       <div class="field">
-        <label>Antall måneder i skoleåret</label>
+        <label>Antall måneder — reserve</label>
         <input type="number" id="manederInput" min="1" max="12" step="1" placeholder="9" oninput="visRabattForhandsvisning()">
-        <div class="hint">Medlemsprisen er per måned. Årsbeløpet for et medlem = månedspris × dette tallet. Skoleåret er 4 måneder høst + 5 måneder vår = 9.</div>
+        <div class="hint">
+          Antall måneder settes normalt <b>på hvert program</b>, under fanen Programmer —
+          slik at et kortere kurs kan ha sin egen lengde. Tallet her brukes
+          bare for programmer som mangler sitt eget.
+        </div>
       </div>
       <div class="field">
         <label>Materiellavgift per elev (kr)</label>
@@ -3405,6 +3409,8 @@
          placeholder:'f.eks. 500'},
         {key:'prisAar', label:'Årspris for ikke-medlem (kr)', type:'text', essential:true,
          placeholder:'f.eks. 5500'},
+        {key:'antallManeder', label:'Antall måneder programmet går over', type:'text', essential:true,
+         placeholder:'f.eks. 9'},
         // Det gamle semesterbeløpet beholdes så ingen mister tall som alt
         // er lagt inn. Brukes kun som reserve, og merkes tydelig.
         {key:'pris', label:'Gammel pris per semester (kr) — utgår', type:'text',
@@ -7740,7 +7746,10 @@
   // som før, ikke stoppe.
   // MERK: 20/30 er det som gjelder i dag. Notatet om medlemspris foreslår
   // 10/20, men det står «Beregnet, ikke vedtatt».
-  const RABATT_RESERVE = { barn2: 20, barn3: 30 };
+  // Reserven er 0, ikke en gammel sats. Svarer ikke basen, skal beløpet
+  // bli synlig FEIL — ikke se riktig ut. 20/30 var en tidligere ordning,
+  // og et tall som ser plausibelt ut blir fakturert uten at noen ser etter.
+  const RABATT_RESERVE = { barn2: 0, barn3: 0 };
   const prisOppsett = {
     rabatt2: RABATT_RESERVE.barn2,
     rabatt3: RABATT_RESERVE.barn3,
@@ -7748,7 +7757,10 @@
     // Nye verdier — alle settes under Betalingsinnstillinger.
     // Tallene her er kun reserve hvis basen ikke svarer; de er ikke
     // skolens satser, og skal aldri brukes til å fakturere med.
-    antallManeder: 9,      // 4 mnd høst + 5 mnd vår
+    // Måneder ligger IKKE her lenger — de står på hvert program, fordi
+    // ulike programmer kan gå over ulikt antall måneder. Verdien under
+    // brukes bare hvis et program mangler sitt eget tall.
+    antallManeder: 9,      // reserve: 4 mnd høst + 5 mnd vår
     materiellAvgift: 0,    // bøker og utstyr, per elev, aldri rabattert
     terminer: 1            // hvor mange ganger årsbeløpet deles ved fakturering
   };
@@ -7775,6 +7787,10 @@
     const tall = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
     const mnd  = prog ? tall(prog.prisMedlemMnd) : 0;
     let aar    = prog ? tall(prog.prisAar) : 0;
+    // Antall måneder hører til PROGRAMMET, ikke til skolen. Et kveldskurs
+    // over tre måneder og et helårsprogram kan ikke dele samme tall.
+    const egneMnd = prog ? tall(prog.antallManeder) : 0;
+    const maneder = egneMnd > 0 ? egneMnd : (prisOppsett.antallManeder || 9);
     // Programmer som ennå ikke har fått de nye feltene: fall tilbake på
     // det gamle semesterbeløpet ganget med to. Markeres som «gammel», så
     // panelet kan si ifra i stedet for å vise et tall ingen kan forklare.
@@ -7783,7 +7799,7 @@
       aar = tall(prog.pris) * 2;
       gammel = true;
     }
-    return { mnd, aar, gammel, finnes: !!prog };
+    return { mnd, aar, maneder, gammel, finnes: !!prog };
   }
 
   function erMedlemsElev(s){
@@ -7800,7 +7816,6 @@
   // Returnerer: elev-id → { pris, undervisning, materiell, plass, medlem }
   function familiePriser(guardianId, ekstraElev){
     const oppsett = prisOppsett;
-    const mnd = oppsett.antallManeder || 9;
     const materiell = oppsett.materiellAvgift || 0;
 
     let barn = (cache.students || []).filter(s =>
@@ -7819,7 +7834,7 @@
     // ---- Medlemmer: fast pris, ingen rabatt, ingen rekkefølge ----
     barn.filter(erMedlemsElev).forEach(s => {
       const p = programPriser(s.program);
-      const undervisning = Math.round(p.mnd * mnd);
+      const undervisning = Math.round(p.mnd * p.maneder);
       ut[s.id] = {
         undervisning, materiell, pris: undervisning + materiell,
         plass: 1, medlem: true, mangler: p.mnd === 0
@@ -7875,7 +7890,7 @@
     if(!guardianId){
       const p = programPriser(program);
       const m = String(erMedlem || '') === 'Ja';
-      const undervisning = m ? Math.round(p.mnd * (prisOppsett.antallManeder || 9)) : p.aar;
+      const undervisning = m ? Math.round(p.mnd * p.maneder) : p.aar;
       const materiell = prisOppsett.materiellAvgift || 0;
       return { price: undervisning + materiell, pos: 1, medlem: m, undervisning, materiell };
     }
@@ -7984,7 +7999,7 @@
       const mat = prisOppsett.materiellAvgift || 0;
       const deler = [];
       if(medlem){
-        deler.push('Medlem: ' + pr.mnd + ' kr × ' + (prisOppsett.antallManeder || 9) + ' mnd');
+        deler.push('Medlem: ' + pr.mnd + ' kr × ' + pr.maneder + ' mnd');
       } else {
         deler.push('Ikke medlem: årspris ' + pr.aar + ' kr');
         if(pos === 2) deler.push('barn nr. 2 → −' + prisOppsett.rabatt2 + ' %');
@@ -8441,11 +8456,12 @@
 
     const rad = prog.map(p => {
       const pr = programPriser(p.navn);
-      const medlemAar = Math.round(pr.mnd * mnd);
+      const egneMnd = pr.maneder || mnd;
+      const medlemAar = Math.round(pr.mnd * egneMnd);
       const deler = [];
       deler.push('<div style="margin-top:10px;"><strong>' + escapeHtml(p.navn) + '</strong></div>');
       if(pr.mnd > 0){
-        deler.push('&nbsp;&nbsp;Medlem: ' + pr.mnd + ' × ' + mnd + ' mnd = <strong>' +
+        deler.push('&nbsp;&nbsp;Medlem: ' + pr.mnd + ' × ' + egneMnd + ' mnd = <strong>' +
           (medlemAar + mat) + ' kr</strong> i året' + (mat ? ' (inkl. ' + mat + ' materiell)' : ''));
       } else {
         deler.push('&nbsp;&nbsp;<span style="color:#a5504a;">Medlemspris mangler</span>');
