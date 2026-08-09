@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 14:44:01 -->
+<!-- SIST-ENDRET: 2026-08-09 15:40:45 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -228,23 +228,39 @@
   }
   .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
 
+  .pd-skjult{ color:#a8b2ac; letter-spacing:2px; }
+
   .rolle-kort{
     background:#fff; border:1px solid var(--tabell-linje); border-radius:10px;
     padding:14px 16px; margin-bottom:10px;
   }
   .rolle-kort.laast{ background:var(--paper); opacity:.85; }
+  .rolle-kort{ padding:0; }
   .rolle-topp{
-    display:flex; justify-content:space-between; align-items:flex-start;
-    gap:12px; padding-bottom:10px; border-bottom:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center;
+    gap:12px; padding:13px 16px; cursor:pointer;
+  }
+  .rolle-kort.apen .rolle-topp{ border-bottom:1px solid var(--line); background:var(--paper-2); }
+  .rolle-kort.laast .rolle-topp{ cursor:pointer; }
+  .rolle-pil{ font-size:13px; color:#8a9a90; flex:0 0 auto; }
+  .rolle-innhold{ padding:12px 16px 14px; }
+  .rolle-nivavalg{
+    display:flex; align-items:center; gap:10px; margin-bottom:12px;
+    padding-bottom:12px; border-bottom:1px solid var(--line);
+  }
+  .rolle-nivavalg label{
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:600;
+    letter-spacing:.05em; text-transform:uppercase; color:#8a9a90;
+  }
+  .rolle-nivavalg select{
+    font-family:'Jost',sans-serif; font-size:12.5px; padding:7px 10px;
+    border:1px solid var(--line); border-radius:6px; background:#fff; flex:1;
   }
   .rolle-navn{ font-family:'Jost',sans-serif; font-weight:600; font-size:14px; color:var(--emerald-d); }
   .rolle-niva{ font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:2px; }
   .rolle-merke{ font-family:'Jost',sans-serif; font-size:11px; color:var(--gold); white-space:nowrap; }
-  .rolle-topp select{
-    font-family:'Jost',sans-serif; font-size:12.5px; padding:6px 9px;
-    border:1px solid var(--line); border-radius:6px; background:#fff;
-  }
-  .rolle-valg, .rolle-oppr{ padding-top:10px; }
+  .rolle-valg{ padding-top:2px; }
+  .rolle-oppr{ padding-top:10px; }
   .rolle-oppr{ border-top:1px solid var(--line); margin-top:4px; }
   .rolle-oppr-tittel{
     font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600;
@@ -2999,6 +3015,8 @@
       hjelp:'Vises under «Øvre ledelse», og får se ledelsens faner.' },
     { key:'opptak',  navn:'Behandle søknader',
       hjelp:'Godkjenne, avslå, sette på venteliste og sende Vipps-krav.' },
+    { key:'helse',   navn:'Se helseopplysninger',
+      hjelp:'Allergier, sykdommer, medisiner, lærevansker og PPT. Uten denne vises feltene som ★★★★★. Dette er en «særlig kategori» personopplysninger etter GDPR — de skal kun være tilgjengelige for dem som trenger dem i arbeidet sitt.' },
   ];
 
   // Ting som kan opprettes, og som kan begrenses per rolle.
@@ -3022,19 +3040,19 @@
   // koden før — så første kjøring endrer ingenting for noen. Deretter er
   // det eieren som bestemmer.
   const ROLLER_UTGANGSPUNKT = {
-    'Eier':                       { niva:1, panel:true,  ledelse:true,  opptak:true,  opprett:['programs','schoolCalendar','classes','hours'] },
-    'Skoleleder':                 { niva:2, panel:true,  ledelse:true,  opptak:false, opprett:[] },
-    'Daglig leder':               { niva:2, panel:true,  ledelse:true,  opptak:false, opprett:[] },
-    'Faglig / pedagogisk leder':  { niva:3, panel:true,  ledelse:true,  opptak:false, opprett:['classes','hours'] },
-    'Fagkoordinator':             { niva:3, panel:true,  ledelse:false, opptak:false, opprett:[] },
-    'Opptaksansvarlig':           { niva:3, panel:false, ledelse:false, opptak:true,  opprett:[] },
-    'Koran lærer':                { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
-    'Islam lærer':                { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
-    'Arabisk lærer':              { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
-    'Urdu lærer':                 { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
-    'Assistent':                  { niva:5, panel:false, ledelse:false, opptak:false, opprett:[] },
-    'Frivillig':                  { niva:5, panel:false, ledelse:false, opptak:false, opprett:[] },
-    'Annet':                      { niva:5, panel:false, ledelse:false, opptak:false, opprett:[] },
+    'Eier':                       { niva:1, panel:true,  ledelse:true,  opptak:true,  helse:true,  opprett:['programs','schoolCalendar','classes','hours'] },
+    'Skoleleder':                 { niva:2, panel:true,  ledelse:true,  opptak:false, helse:true, opprett:[] },
+    'Daglig leder':               { niva:2, panel:true,  ledelse:true,  opptak:false, helse:false, opprett:[] },
+    'Faglig / pedagogisk leder':  { niva:3, panel:true,  ledelse:true,  opptak:false, helse:false, opprett:['classes','hours'] },
+    'Fagkoordinator':             { niva:3, panel:true,  ledelse:false, opptak:false, helse:false, opprett:[] },
+    'Opptaksansvarlig':           { niva:3, panel:false, ledelse:false, opptak:true, helse:false,  opprett:[] },
+    'Koran lærer':                { niva:4, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] },
+    'Islam lærer':                { niva:4, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] },
+    'Arabisk lærer':              { niva:4, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] },
+    'Urdu lærer':                 { niva:4, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] },
+    'Assistent':                  { niva:5, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] },
+    'Frivillig':                  { niva:5, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] },
+    'Annet':                      { niva:5, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] },
   };
 
   // Levende kopi. Tom til basen har svart — og en tom tabell gir INGEN
@@ -3067,13 +3085,14 @@
       : String(roller || '').split(',').map(s => s.trim()).filter(Boolean);
     const def = liste.map(rolleDef).filter(Boolean);
     if(def.length === 0){
-      return { niva:99, panel:false, ledelse:false, opptak:false, opprett:[] };
+      return { niva:99, panel:false, ledelse:false, opptak:false, helse:false, opprett:[] };
     }
     return {
       niva:    Math.min(...def.map(d => Number(d.niva) || 99)),
       panel:   def.some(d => d.panel === true),
       ledelse: def.some(d => d.ledelse === true),
       opptak:  def.some(d => d.opptak === true),
+      helse:   def.some(d => d.helse === true),
       opprett: [...new Set(def.flatMap(d => Array.isArray(d.opprett) ? d.opprett : []))],
     };
   }
@@ -3129,7 +3148,7 @@
           ny[d.id] = {
             niva: Number(r.niva) || 99,
             panel: r.panel === true, ledelse: r.ledelse === true,
-            opptak: r.opptak === true,
+            opptak: r.opptak === true, helse: r.helse === true,
             opprett: Array.isArray(r.opprett) ? r.opprett : []
           };
         });
@@ -4299,6 +4318,7 @@
           panel: r.panel === true,
           ledelse: r.ledelse === true,
           opptak: r.opptak === true,
+          helse: r.helse === true,
           opprett: Array.isArray(r.opprett) ? r.opprett : []
         };
       });
@@ -5114,6 +5134,16 @@
   //
   // Felter som ikke står i noen gruppe havner automatisk under «Annet», så
   // et nytt felt aldri blir usynlig bare fordi det ble glemt her.
+  // Helsefeltene defineres ETT sted: seksjonen «🩺 Helse» i PD_SEKSJONER.
+  // Legges et nytt helsefelt til der, blir det skjermet automatisk —
+  // uten at noen må huske å oppdatere en egen liste.
+  function helsefelter(){
+    const sek = (PD_SEKSJONER.students || []).find(s => s.tittel.includes('Helse'));
+    return sek ? sek.keys : [];
+  }
+  function erHelsefelt(key){ return helsefelter().includes(key); }
+  function kanSeHelse(){ return isCurrentUserEier() || minTilgang().helse === true; }
+
   const PD_SEKSJONER = {
     students: [
       { tittel: '👤 Om eleven', ikon: '👤', keys: [
@@ -5515,6 +5545,19 @@
     const feltHtml = (f) => {
       const val = colDisplay(f.key);
       if(!val) return '';
+      // Helseopplysninger vises som ★★★★★ for den som ikke har
+      // rettigheten. Feltet SKJULES IKKE: da ville en lærer ikke vite at
+      // opplysningen finnes, og kunne finne på å spørre foresatte om noe
+      // skolen allerede har fått vite. Stjernene sier «dette finnes, men
+      // ikke for deg».
+      //
+      // ⚠️ Dette er en skjerming i skjermbildet, ikke i databasen. Verdien
+      // følger fortsatt med til nettleseren, og den som åpner konsollen
+      // ser den. Ekte skjerming krever at spørringene i portalene skrives
+      // om først — se seksjon 16.
+      if(erHelsefelt(f.key) && !kanSeHelse()){
+        return `<div class="pd-felt" data-pd-key="${escapeHtml(f.key)}"><span class="pd-felt-label">${escapeHtml(f.label)}</span><span class="pd-felt-verdi pd-skjult">★★★★★</span></div>`;
+      }
       const isLink = f.type === 'dynamic-select' && row[f.key] && (cache[f.source] || []).some(r => r.id === row[f.key]);
       const valueHtml = isLink
         ? `<span class="record-link" onclick="openRelatedRecord('${escapeHtml(f.source)}','${escapeHtml(row[f.key])}')">${escapeHtml(val)}</span>`
@@ -8810,41 +8853,71 @@
       const d = rolleTabell[rolle];
       const laast = d.niva === 1;
       const id = rolle.replace(/[^a-zA-Z]/g, '');
+      const apen = rolleApen === rolle;
+
+      // Sammendraget står i overskriften, så man ser hva rollen har lov
+      // til uten å åpne den. Tretten roller åpne samtidig ble en side
+      // ingen orket å lese.
+      const merker = [];
+      if(d.panel)   merker.push('panel');
+      if(d.ledelse) merker.push('ledelse');
+      if(d.opptak)  merker.push('opptak');
+      const antOppr = (d.opprett || []).length;
+      if(antOppr) merker.push(antOppr + ' oppretting' + (antOppr === 1 ? '' : 'er'));
+      const sammendrag = merker.length ? merker.join(' · ') : 'ingen rettigheter';
+
       return `
-        <div class="rolle-kort${laast ? ' laast' : ''}">
-          <div class="rolle-topp">
-            <div>
+        <div class="rolle-kort${laast ? ' laast' : ''}${apen ? ' apen' : ''}">
+          <div class="rolle-topp" onclick="apneRolle('${escapeHtml(rolle).replace(/'/g, "\\'")}')">
+            <div style="min-width:0;">
               <div class="rolle-navn">${escapeHtml(rolle)}</div>
-              <div class="rolle-niva">${escapeHtml(NIVA_NAVN[d.niva] || ('Nivå ' + d.niva))}</div>
+              <div class="rolle-niva">${escapeHtml(NIVA_NAVN[d.niva] || ('Nivå ' + d.niva))} · ${escapeHtml(sammendrag)}</div>
             </div>
-            ${laast
-              ? '<span class="rolle-merke">🔒 Låst</span>'
-              : `<select id="niva_${id}" onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\\\'")}')">
-                   ${[2,3,4,5].map(n => `<option value="${n}" ${d.niva === n ? 'selected' : ''}>${n} — ${NIVA_NAVN[n]}</option>`).join('')}
-                 </select>`}
+            <span class="rolle-pil">${laast ? '🔒' : (apen ? '▾' : '▸')}</span>
           </div>
-          <div class="rolle-valg">
-            ${RETTIGHETER.map(r => `
-              <label class="rolle-avkryss" title="${escapeHtml(r.hjelp)}">
-                <input type="checkbox" id="rett_${r.key}_${id}" ${d[r.key] ? 'checked' : ''}
-                       ${laast ? 'disabled' : ''}
-                       onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\\\'")}')">
-                <span>${escapeHtml(r.navn)}</span>
-              </label>`).join('')}
-          </div>
-          <div class="rolle-oppr">
-            <div class="rolle-oppr-tittel">Kan opprette</div>
-            ${OPPRETT_TYPER.map(o => `
-              <label class="rolle-avkryss">
-                <input type="checkbox" id="oppr_${o.key}_${id}" ${(d.opprett || []).includes(o.key) ? 'checked' : ''}
-                       ${laast ? 'disabled' : ''}
-                       onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\\\'")}')">
-                <span>${escapeHtml(o.navn)}</span>
-              </label>`).join('')}
-          </div>
+          ${apen ? `
+          <div class="rolle-innhold">
+            ${laast ? `
+              <div class="hint" style="margin-bottom:10px;">
+                Eierrollen kan ikke endres. Nivå 1 er systemets faste punkt —
+                kunne det fjernes, kunne man låse seg ute av sitt eget system.
+              </div>` : `
+              <div class="rolle-nivavalg">
+                <label>Nivå</label>
+                <select id="niva_${id}" onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\'")}')">
+                  ${[2,3,4,5].map(n => `<option value="${n}" ${d.niva === n ? 'selected' : ''}>${n} — ${NIVA_NAVN[n]}</option>`).join('')}
+                </select>
+              </div>`}
+            <div class="rolle-valg">
+              ${RETTIGHETER.map(r => `
+                <label class="rolle-avkryss" title="${escapeHtml(r.hjelp)}">
+                  <input type="checkbox" id="rett_${r.key}_${id}" ${d[r.key] ? 'checked' : ''}
+                         ${laast ? 'disabled' : ''}
+                         onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\'")}')">
+                  <span>${escapeHtml(r.navn)}</span>
+                </label>`).join('')}
+            </div>
+            <div class="rolle-oppr">
+              <div class="rolle-oppr-tittel">Kan opprette</div>
+              ${OPPRETT_TYPER.map(o => `
+                <label class="rolle-avkryss">
+                  <input type="checkbox" id="oppr_${o.key}_${id}" ${(d.opprett || []).includes(o.key) ? 'checked' : ''}
+                         ${laast ? 'disabled' : ''}
+                         onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\'")}')">
+                  <span>${escapeHtml(o.navn)}</span>
+                </label>`).join('')}
+            </div>
+          </div>` : ''}
         </div>`;
     }).join('');
   }
+
+  // Én åpen om gangen. Trykk på den samme igjen for å lukke.
+  let rolleApen = null;
+  window.apneRolle = function(rolle){
+    rolleApen = (rolleApen === rolle) ? null : rolle;
+    renderRoller();
+  };
 
   // Skriver reserven ned i basen. Sier tydelig fra hva som gikk galt hvis
   // det feiler — den forrige utgaven feilet i stillhet.
@@ -9164,114 +9237,220 @@
   // omgang. En veiledning som er ett steg bak, er verre enn ingen —
   // den sender folk til knapper som ikke lenger finnes.
   // ═══════════════════════════════════════════════════════════════════
-  const VEILEDNING = [
-    {
+  // ═══════════════════════════════════════════════════════════════════
+  // VEILEDNINGEN BYGGES AV SYSTEMET SELV
+  // -------------------------------------------------------------------
+  // Den var håndskrevet, og etter én dags arbeid beskrev den et system
+  // som ikke lenger fantes. En veiledning som ligger ett steg bak er
+  // verre enn ingen — den sender folk til knapper som ikke er der.
+  //
+  // Nå leses FAKTA rett fra systemet: hvilke faner som finnes, hvilke
+  // roller som er definert, hva hver rolle har lov til, hvilke priser
+  // som gjelder, hvilke felter som skjermes. Legges det til en fane,
+  // dukker den opp her. Slettes en rolle, forsvinner den.
+  //
+  // Det som IKKE kan leses ut av systemet er BEGRUNNELSENE — hvorfor
+  // søskenrabatten har et tak, hvorfor helsefelt vises som stjerner.
+  // De står i FORKLARINGER under, knyttet til en fast nøkkel. De endrer
+  // seg sjelden, og når de gjør det er det en bevisst beslutning.
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Begrunnelser. Nøkkelen er stabil; teksten forklarer HVORFOR.
+  // Finnes ingen forklaring for noe, vises det uten — bedre enn å ikke
+  // vises i det hele tatt.
+  const FORKLARINGER = {
+    'pris.modeller':
+      'Skolen har to prismodeller som aldri kombineres. Et medlem betaler fast månedspris og får INGEN søskenrabatt. Et ikke-medlem betaler årspris og får deretter søskenrabatt.',
+    'pris.tak':
+      '🔴 Søskenrabatten kan ikke settes fritt. Blir satsen for 3. barn høyere enn ca. 18 %, blir en familie UTEN medlemskap billigere enn en medlemsfamilie med like mange barn — og medlemskapet lønner seg minst for dem med flest barn. Endres medlemsprisen, må denne grensen regnes om.',
+    'pris.dyreste':
+      'Rabatten legges på det DYRESTE programmet, slik at familien sparer mest. Ved lik pris avgjøres rekkefølgen fast, slik at panelet og Vipps alltid fordeler likt.',
+    'pris.medlemskap':
+      'Medlemskap settes på eleven av administrasjonen. Foresatte oppgir det IKKE selv i skjemaet — de skriver det i merknadsfeltet. Ellers kunne hvem som helst krysse av.',
+    'pris.blandet':
+      '⚠️ Skolen har bestemt at en FAMILIE er medlem eller ikke. Har søsken ulik status, regnes beløpene på en forutsetning som ikke holder — panelet advarer under beløpet.',
+    'pris.skjema':
+      'Påmeldingsskjemaet leser de samme tallene. Endrer du en pris, endres skjemaet med én gang — ingenting må publiseres. Feiler lesingen, vises INGEN priser der, ikke gamle tall.',
+    'roller.niva':
+      'Nivået avgjør hvem som kan utnevne hvem: du kan bare gi noen et nivå LAVERE enn ditt eget. Eieren kan i tillegg utnevne en annen eier, og kun en eier kan slette en eier. Uten dette kunne en skoleleder laget en likemann som deretter fjernet ham.',
+    'roller.laast':
+      '🔒 Eierrollen er låst. Nivå 1 er systemets faste punkt — kunne det fjernes, kunne man låse seg ute av sitt eget system. Eierens e-post står også i sikkerhetsreglene, og virker uansett hva som skjer med tabellen.',
+    'roller.regler':
+      '🔴 Panelet skjuler knapper og forklarer hvorfor. Det er sikkerhetsreglene i Firebase som avgjør hva som faktisk går gjennom — den som åpner konsollen møter reglene, ikke skjermbildet.',
+    'helse.stjerner':
+      'Feltene vises som ★★★★★ i stedet for å skjules. Da vet læreren at opplysningen finnes, men ikke er hans å se — og spør ikke foresatte om noe skolen allerede har fått vite.',
+    'helse.eksport':
+      'Eksporten er sperret på samme måte. Å maskere på skjermen mens feltene gikk rett ut i en Excel-fil ville vært verre enn ingen maskering — filen forlater systemet.',
+    'helse.grense':
+      '🔴 Dette er en skjerming i skjermbildet, ikke i databasen. Verdien følger med til nettleseren, og den som åpner konsollen ser den. Ekte skjerming krever at spørringene skrives om først.',
+    'personer.ett_sted':
+      'Alle nye personer registreres under Oversikt → Ansatte og tilgang. Knappene lå tidligere i hver fane; det gjorde det tilfeldig hvor man havnet, og lett å opprette samme person to ganger.',
+    'personer.oppforing':
+      'Å opprette en OPPFØRING er ikke det samme som å gi TILGANG. Skal personen kunne logge inn, opprettes tilgangen i kortet under, der e-post og roller settes.',
+    'eksport.tenk':
+      '🔴 Tenk over hva du tar med. Helseopplysninger og samtykker ligger i de samme radene. En liste som skal videre til en lærer eller forelder bør inneholde navn og kontakt — ikke alt.',
+    'varsler.forsinkelse':
+      'Varselet kan ta opptil to minutter. Det sendes av en jobb som kjører jevnlig, ikke i samme øyeblikk som skjemaet sendes.',
+    'feil.stille':
+      '🔴 De fleste feilene her sier ingenting fra selv. App Check sto på 0 % i fire døgn uten et eneste varsel. Er du i tvil om noe virker, sjekk det — ikke vent på en feilmelding.',
+  };
+
+  const kr0 = (n) => Math.round(Number(n) || 0).toLocaleString('no-NO');
+
+  function byggVeiledning(){
+    const temaer = [];
+    const F = (k) => FORKLARINGER[k];
+
+    // ── Seksjonene: leses fra fanene som faktisk finnes ──────────────
+    const grupper = {};
+    document.querySelectorAll('.tab[data-tab][data-side]').forEach(tab => {
+      const side = tab.dataset.side;
+      (grupper[side] = grupper[side] || []).push(tab.textContent.trim());
+    });
+    const sideNavn = {
+      eier:'🏛️ Eier / Ledelsen', okonomi:'💰 Økonomi', admin:'🗂️ Administrativ',
+      pedagogisk:'🎓 Pedagogisk', skoleoppsett:'🏫 Skoleoppsett', registrering:'📝 Registrering',
+      oversikt:'⚙️ Oversikt', verktoy:'🛠️ Verktøy', veiledning:'📖 Veiledning'
+    };
+    temaer.push({
       tittel: '🧭 Slik henger panelet sammen',
       punkter: [
         { h: 'Seksjonene er delt etter HVEM som eier beslutningen',
-          t: 'Ikke etter hva slags data det er. Alt som gjelder penger ligger under Økonomi — uansett om det er en lønnsutbetaling eller en foreldrefaktura. Alt som gjelder undervisning ligger under Pedagogisk. Da slipper man å vite hvilken «type» noe er for å finne det.' },
-        { h: '🏛️ Eier / Ledelsen', t: 'Ledelse · Møtereferater · Meldingssenter. Styrenivå.' },
-        { h: '💰 Økonomi', t: 'Kasse · Kasserer · Lønn · Betalingslogg · Betalingsforespørsler · Betalingsinnstillinger.' },
-        { h: '🗂️ Administrativ', t: 'Lærere · Foresatte · Elever · Kontaktendringer · Rapporter. Personregisteret.' },
-        { h: '🎓 Pedagogisk', t: 'Klasser · Timeplan · Oppmøte · Fravær · Forberedelser · Planer · Lekser · Kunngjøringer · Elevnotater · Meldinger.' },
-        { h: '🏫 Skoleoppsett', t: 'Programmer · Skolekalender. Priser og undervisningsdager for hele skolen. Kun eier.' },
-        { h: '📝 Registrering', t: 'Søknader fra påmeldingsskjemaet.' },
-        { h: '⚙️ Oversikt', t: 'Nøkkeltall · Ansatte og tilgang · Varslinger · Sikkerhetskopi · Faresone.' },
-        { h: '🛠️ Verktøy og sider', t: 'Drift av selve nettstedet. Kun eier.' }
+          t: 'Ikke etter hva slags data det er. Alt som gjelder penger ligger under Økonomi — uansett om det er en lønnsutbetaling eller en foreldrefaktura.' },
+        ...Object.entries(grupper).map(([side, faner]) => ({
+          h: sideNavn[side] || side,
+          t: faner.join(' · ')
+        }))
       ]
-    },
-    {
-      tittel: '🔑 Hvem kan gjøre hva',
+    });
+
+    // ── Rollene: leses fra tabellen i basen ──────────────────────────
+    const rollePunkter = [];
+    const navn = Object.keys(rolleTabell)
+      .sort((a,b) => (rolleTabell[a].niva - rolleTabell[b].niva) || a.localeCompare(b));
+    navn.forEach(r => {
+      const d = rolleTabell[r];
+      const kan = [];
+      RETTIGHETER.forEach(x => { if(d[x.key]) kan.push(x.navn.toLowerCase()); });
+      const oppr = (d.opprett || [])
+        .map(k => (OPPRETT_TYPER.find(o => o.key === k) || {}).navn)
+        .filter(Boolean);
+      if(oppr.length) kan.push('kan opprette: ' + oppr.join(', '));
+      rollePunkter.push({
+        h: r + '  —  nivå ' + d.niva + (d.niva === 1 ? ' 🔒' : ''),
+        t: kan.length ? kan.join(' · ') : 'ingen rettigheter i panelet'
+      });
+    });
+    temaer.push({
+      tittel: '🔑 Roller og tilganger',
       punkter: [
-        { h: 'Roller styrer hva som vises',
-          t: 'En person kan ha flere roller samtidig. Rollene settes under Oversikt → Ansatte og tilgang, og bare en eier kan gi noen rollen «Eier» eller «Opptaksansvarlig».' },
-        { h: 'Kun Eier', t: 'Legge til programmer og datoer i skolekalenderen · endre søskenrabatt og priser · Kasserer (Ledelse) med refusjon og fakturering · Verktøy og sider · slette personer.' },
-        { h: 'Kun Faglig / pedagogisk leder (og eier)', t: 'Opprette klasser og timeplan.' },
-        { h: 'Kun Opptaksansvarlig (og eier)', t: 'Godkjenne, avslå eller sette søknader på venteliste, og sende Vipps-krav.' },
-        { h: 'Alle med administrativ tilgang', t: 'Se listene, legge til elever, foresatte og ansatte, registrere oppmøte og fravær.' },
-        { h: '🔴 Viktig forbehold',
-          t: 'Sperrene over er i grensesnittet — knapper skjules. De hindrer feil bruk, ikke en angriper. Ekte skjerming må ligge i sikkerhetsreglene i Firebase. Det står som punkt 4 på gjenstående-listen.' }
+        { h: 'Settes under Verktøy → Roller og tilganger', t: 'Kun eier ser fanen. Listen under er hentet direkte fra det som er lagret nå.' },
+        ...rollePunkter,
+        { h: 'Hvem kan utnevne hvem', t: F('roller.niva') },
+        { h: 'Eierrollen', t: F('roller.laast') },
+        { h: 'Hvor det håndheves', t: F('roller.regler') }
       ]
-    },
-    {
-      tittel: '📅 Legge til et program',
+    });
+
+    // ── Prisene: leses fra programmene og innstillingene ─────────────
+    const prisPunkter = [{ h: 'To modeller', t: F('pris.modeller') }];
+    (cache.programs || []).filter(p => p.navn).forEach(p => {
+      const pr = programPriser(p.navn);
+      const medlemAar = Math.round(pr.mnd * pr.maneder);
+      const deler = [];
+      if(pr.mnd) deler.push('medlem ' + kr0(pr.mnd) + ' kr/mnd × ' + pr.maneder + ' mnd = ' + kr0(medlemAar) + ' kr');
+      if(pr.aar) deler.push('ikke medlem ' + kr0(pr.aar) + ' kr/år');
+      if(!deler.length) deler.push('⚠️ pris ikke satt');
+      prisPunkter.push({ h: p.navn, t: deler.join(' · ') });
+    });
+    const o = prisOppsett;
+    prisPunkter.push({
+      h: 'Felles satser',
+      t: 'Søskenrabatt ' + o.rabatt2 + ' % (2. barn) og ' + o.rabatt3 + ' % (3.+) · materiell ' +
+         kr0(o.materiellAvgift) + ' kr · depositum ' + kr0(o.depositum) + ' kr' +
+         (o.depositumFrist ? ' innen ' + o.depositumFrist + ' dager' : '') +
+         ' · ' + o.terminer + ' termin' + (o.terminer === 1 ? '' : 'er') +
+         (o.tellForesatt2 ? ' · barn på foresatt 2 telles som søsken' : ' · ⚠️ barn på foresatt 2 telles IKKE som søsken')
+    });
+    ['pris.tak','pris.dyreste','pris.medlemskap','pris.blandet','pris.skjema'].forEach(k =>
+      prisPunkter.push({ h: '', t: F(k) }));
+    temaer.push({ tittel: '💰 Priser', punkter: prisPunkter });
+
+    // ── Helsefeltene: leses fra seksjonsdefinisjonen ─────────────────
+    const hf = helsefelter();
+    const skjema = SCHEMAS.students;
+    const hfNavn = hf.map(k => (skjema.fields.find(f => f.key === k) || {}).label).filter(Boolean);
+    const harHelse = Object.entries(rolleTabell).filter(([, d]) => d.helse).map(([r]) => r);
+    temaer.push({
+      tittel: '🩺 Helseopplysninger',
       punkter: [
-        { h: 'Hvor', t: 'Skoleoppsett → Programmer → «+ Nytt program». Kun eier ser knappen.' },
-        { h: 'Hva feltene betyr',
-          t: 'Navn er nøkkelen — elever og klasser knyttes til programmet via NAVNET, ikke en id. Dager bestemmer hvilke ukedager lærerne kan føre timer på. Pris per semester brukes i utregningen av hva familien skylder.' },
-        { h: '⚠️ Endrer du navnet på et program som er i bruk',
-          t: 'må klassene og elevene som peker på det gamle navnet oppdateres manuelt. Ellers mister de koblingen — og prisen faller til null.' },
-        { h: 'Prisen gjelder umiddelbart',
-          t: 'Både panelet og Vipps leser den fra samme sted. Elever som allerede har et beløp registrert, beholder sitt.' }
+        { h: 'Felter som skjermes (' + hfNavn.length + ')', t: hfNavn.join(' · ') },
+        { h: 'Roller med tilgang', t: harHelse.length ? harHelse.join(' · ') : '⚠️ ingen' },
+        { h: 'Hvorfor stjerner', t: F('helse.stjerner') },
+        { h: 'Eksport', t: F('helse.eksport') },
+        { h: 'Grensen', t: F('helse.grense') }
       ]
-    },
-    {
-      tittel: '💰 Endre priser og søskenrabatt',
+    });
+
+    // ── Varsler: leses fra innstillingene ────────────────────────────
+    const v = varselOppsett;
+    temaer.push({
+      tittel: '🔔 Varsler ved ny påmelding',
       punkter: [
-        { h: 'Pris per program', t: 'Skoleoppsett → Programmer → Rediger programmet.' },
-        { h: 'Søskenrabatt', t: 'Økonomi → Betalingsinnstillinger → kortet «Søskenrabatt». Feltet viser hva satsene betyr i kroner mens du skriver.' },
-        { h: 'Rekkefølgen på barna', t: '1. barn full pris, 2. barn og 3.+ barn med hver sin sats. Hvem som er «2. barn» avgjøres av hvor mange barn den foresatte allerede har registrert.' },
-        { h: '⚠️ Barn på foresatt 2',
-          t: 'Er barna fordelt på to foresatte, teller de som utgangspunkt ikke som søsken — og familien betaler for mye. Det finnes en avkrysning for å endre dette i samme kort.' }
+        { h: 'Varsel til administrasjonen', t: v.nySoknadAktiv ? 'på' : '⚠️ av' },
+        { h: 'Kvittering til foresatte', t: v.kvitteringAktiv ? 'på' : '⚠️ av' },
+        { h: 'Mottakere (' + (v.nySoknadMottakere || []).length + ')',
+          t: (v.nySoknadMottakere || []).join(' · ') || '⚠️ ingen valgt — varselet går til skolens hovedadresse' },
+        { h: 'Forsinkelse', t: F('varsler.forsinkelse') },
+        { h: 'Får ingen varsel?', t: 'Åpne helsesjekk.html under Verktøy → Drift og kontroll. Den sier om jobben kjører og om e-posten kom fram.' }
       ]
-    },
-    {
-      tittel: '🗓️ Skolekalender — fri og ekstra dager',
-      punkter: [
-        { h: 'Hvor', t: 'Skoleoppsett → Skolekalender → «+ Ny dato». Kun eier.' },
-        { h: '«Fri»', t: 'Stenger en dag som ellers ville vært undervisningsdag.' },
-        { h: '«Ekstra undervisningsdag»', t: 'Åpner en dag som ellers ville vært stengt.' },
-        { h: 'Ved konflikt', t: 'vinner ekstra undervisningsdag over fri.' }
-      ]
-    },
-    {
+    });
+
+    // ── Personer og eksport ─────────────────────────────────────────
+    temaer.push({
       tittel: '👤 Legge til personer',
       punkter: [
-        { h: 'Alt ett sted', t: 'Oversikt → Ansatte og tilgang → «Legg til en person». Knappene lå tidligere i hver enkelt fane; det gjorde det tilfeldig hvor man havnet, og lett å opprette samme person to ganger.' },
-        { h: 'Oppføring er ikke det samme som tilgang',
-          t: 'Det øverste kortet oppretter en OPPFØRING i registeret. Skal personen også kunne LOGGE INN, opprettes tilgangen i kortet under — der settes e-post og roller.' },
-        { h: 'Redigere', t: 'skjer inne i personkortet: åpne personen med «👁 Vis», og bruk «✏️ Rediger». Sletting ligger samme sted, med bekreftelse — slik at man alltid ser hvem det gjelder før man handler.' }
+        { h: 'Alt ett sted', t: F('personer.ett_sted') },
+        { h: 'Oppføring er ikke tilgang', t: F('personer.oppforing') },
+        { h: 'Redigere og slette', t: 'skjer inne i personkortet: åpne med «👁 Vis». Da ser man alltid hvem det gjelder før man handler.' }
       ]
-    },
-    {
+    });
+    temaer.push({
       tittel: '📤 Hente ut lister',
       punkter: [
         { h: 'Knappen «Eksporter»', t: 'finnes i alle listene og åpner samme dialog.' },
-        { h: 'Velg hva som skal ut', t: 'Kolonnene som vises i listen er forhåndsvalgt. En elev har 58 felter — en klasseliste trenger som regel to av dem.' },
-        { h: 'Velg hvem', t: 'Alle er avkrysset fra start; fjern dem som ikke skal med.' },
-        { h: 'Format', t: 'CSV åpnes i Excel. «Skriv ut / PDF» åpner utskriftsvinduet — velg «Lagre som PDF» der. E-post laster ned filen og åpner en ferdig melding du legger den ved.' },
-        { h: '🔴 Tenk over hva du tar med',
-          t: 'Helseopplysninger, allergier og samtykker ligger i de samme radene. En liste som skal videre til en lærer eller en forelder bør inneholde navn og kontakt — ikke alt.' }
+        { h: 'Velg hva som skal ut',
+          t: 'En elev har ' + (SCHEMAS.students.fields || []).length + ' felter — en klasseliste trenger som regel to av dem. Kolonnene som vises i listen er forhåndsvalgt.' },
+        { h: 'Format', t: 'CSV åpnes i Excel. «Skriv ut / PDF» åpner utskriftsvinduet — velg «Lagre som PDF» der.' },
+        { h: 'Tenk over hva du tar med', t: F('eksport.tenk') }
       ]
-    },
-    {
-      tittel: '🔔 Varsler og e-post',
-      punkter: [
-        { h: 'Hvem varsles ved ny påmelding', t: 'Oversikt → Varslinger. Kryss av blant de ansatte, eller skriv inn en adresse manuelt.' },
-        { h: 'Foresatte får kvittering', t: 'automatisk når søknaden kommer inn. Kvitteringen bekrefter kun at søknaden er mottatt — den lover ikke plass.' },
-        { h: 'Varselet kan ta opptil to minutter', t: 'Det sendes av en jobb som kjører jevnlig, ikke i samme øyeblikk som skjemaet sendes.' },
-        { h: 'Får ingen varsel?', t: 'Åpne helsesjekk.html (Verktøy og sider → Drift og kontroll). Den sier om jobben kjører og om e-posten kom fram.' }
-      ]
-    },
-    {
+    });
+
+    // ── Når noe ikke virker ──────────────────────────────────────────
+    temaer.push({
       tittel: '🩺 Når noe ikke virker',
       punkter: [
-        { h: 'Helsesjekk først', t: 'Verktøy og sider → Drift og kontroll → Helsesjekk. Er alt grønt, ligger feilen et annet sted enn i driften. Knappen «Kopier rapport» gir en tekst som kan limes rett inn i en samtale.' },
-        { h: 'Panelet sier «ikke tilkoblet»', t: 'skal ikke lenger skje. Skjer det likevel, last siden på nytt og si fra — det er en kjent feiltype som har oppstått seks ganger.' },
+        { h: 'Helsesjekk først', t: 'Verktøy → Drift og kontroll → Helsesjekk. Er alt grønt, ligger feilen et annet sted. «Kopier rapport» gir en tekst som kan limes rett inn i en samtale.' },
         { h: 'Ingenting skjer når jeg trykker', t: 'Sjekk om du har rollen som kreves. Mangler den, står det en forklaring der knappen ellers ville vært.' },
-        { h: '🔴 De fleste feilene her sier ingenting fra selv', t: 'App Check sto på 0 % i fire døgn uten et eneste varsel. Derfor: er du i tvil om noe virker, sjekk det — ikke vent på en feilmelding.' }
+        { h: 'Stille feil', t: F('feil.stille') }
       ]
-    },
-    {
+    });
+
+    // ── Det som fortsatt står i koden ────────────────────────────────
+    temaer.push({
       tittel: '⚙️ Hva som IKKE kan endres herfra',
       punkter: [
-        { h: 'Hvem som kan opprette hva', t: 'settes under «Roller og tilganger» — en fane kun eieren ser. Der bestemmes per rolle hvem som kommer inn i panelet, hvem som regnes som ledelse, hvem som behandler søknader, og hvem som kan opprette programmer, skolekalender, klasser og timeplan.' },
+        { h: 'Eierrollen selv', t: 'Nivå 1 er låst, og eierens e-post står i sikkerhetsreglene. Det er punktet alt annet kan bygges opp fra igjen.' },
+        { h: 'Timelønnen', t: '200 kr for lærer og 150 for assistent står i koden. En lærer kan få egen sats i personkortet, men grunnsatsen krever publisering.' },
+        { h: 'Kontonummeret på fakturaer', t: '🔴 står fortsatt som en midlertidig verdi og MÅ byttes før ekte fakturaer sendes.' },
         { h: 'Sikkerhetsreglene', t: 'limes inn manuelt i Firebase Console. Filen firestore.rules i repoet er kun dokumentasjon.' },
-        { h: 'Tekstene på de offentlige sidene', t: 'ligger i selve filene og endres med publiseringsverktøyet.' },
-        { h: 'Bankkontonummeret på fakturaer', t: 'står fortsatt som en midlertidig verdi i koden og MÅ byttes før ekte fakturaer sendes.' }
+        { h: 'Tekstene på de offentlige sidene', t: 'ligger i selve filene og endres med publiseringsverktøyet.' }
       ]
-    }
-  ];
+    });
+
+    return temaer;
+  }
+
 
   let veiledningApen = null;
 
@@ -9283,6 +9462,10 @@
   function renderVeiledning(){
     const el = document.getElementById('veiledningListe');
     if(!el) return;
+    // Bygges på nytt hver gang fanen åpnes, så den alltid speiler
+    // systemet slik det er akkurat nå — ikke slik det var da noen
+    // sist husket å oppdatere teksten.
+    const VEILEDNING = byggVeiledning();
     el.innerHTML = VEILEDNING.map((k, i) => `
       <div style="border:1px solid var(--tabell-linje); border-radius:10px; margin-bottom:9px; overflow:hidden; background:#fff;">
         <div onclick="setVeiledning(${i})"
@@ -9294,9 +9477,9 @@
         </div>
         ${veiledningApen === i ? `
           <div style="padding:4px 16px 14px;">
-            ${k.punkter.map(p => `
+            ${k.punkter.filter(p => p.t).map(p => `
               <div style="padding:10px 0; border-top:1px solid var(--line);">
-                <div style="font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:3px;">${p.h}</div>
+                ${p.h ? `<div style="font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:3px;">${p.h}</div>` : ''}
                 <div style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65;">${p.t}</div>
               </div>`).join('')}
           </div>` : ''}
@@ -9997,11 +10180,23 @@
     document.getElementById('eksportAntall').textContent =
       data.length + ' rader tilgjengelig';
 
-    document.getElementById('eksportKolonner').innerHTML = schema.fields.map(f => `
-      <label class="eksport-valg">
-        <input type="checkbox" class="eksport-kol" value="${escapeHtml(f.key)}" ${synlige.has(f.key) ? 'checked' : ''}>
-        <span>${escapeHtml(f.label)}</span>
-      </label>`).join('');
+    // Helsefeltene kan ikke velges av den som ikke har rettigheten.
+    // Å maskere dem på skjermen mens de går rett ut i en Excel-fil ville
+    // vært verre enn å ikke maskere i det hele tatt — filen forlater
+    // systemet og havner i en e-post.
+    const skjulHelse = (type === 'students') && !kanSeHelse();
+    document.getElementById('eksportKolonner').innerHTML = schema.fields.map(f => {
+      if(skjulHelse && erHelsefelt(f.key)){
+        return '<label class="eksport-valg" style="opacity:.5;">'
+          + '<input type="checkbox" disabled>'
+          + '<span>' + escapeHtml(f.label) + ' <span style="font-size:11px; color:#8a9a90;">— krever tilgang</span></span>'
+          + '</label>';
+      }
+      return '<label class="eksport-valg">'
+        + '<input type="checkbox" class="eksport-kol" value="' + escapeHtml(f.key) + '" ' + (synlige.has(f.key) ? 'checked' : '') + '>'
+        + '<span>' + escapeHtml(f.label) + '</span>'
+        + '</label>';
+    }).join('');
 
     // Radene: navnet slik det vises i listen, så man kjenner igjen hvem
     // man krysser av. Alle er valgt fra start — det vanligste er hele
