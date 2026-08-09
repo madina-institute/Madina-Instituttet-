@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-09 18:39:26 */
+/* SIST-ENDRET: 2026-08-09 22:27:33 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1027,7 +1027,11 @@ const BACKUP_COLLECTIONS = [
   "announcements", "contactUpdateRequests",
   "finances", "financeLog", "paymentRequests", "studentPayments",
   "pendingVippsPayments", "salaryPayments", "teacherAttendance",
-  "meetings", "settings", "deletionLog", "loginEvents"
+  "meetings", "settings", "deletionLog", "loginEvents",
+  // Tilgangsindeksene. Uten dem i kopien ville en gjenoppretting gitt
+  // tilbake elevene, men ikke koblingen som lar foreldrene se dem —
+  // og portalene ville stått tomme uten at noe så ødelagt ut.
+  "roller", "tilgang", "foreldreTilgang"
 ];
 
 const BACKUP_EMAIL = "post@madinaskole.no";
