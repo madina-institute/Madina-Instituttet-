@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 13:16:26 -->
+<!-- SIST-ENDRET: 2026-08-09 13:25:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3042,8 +3042,22 @@
   // sekundet nettet var tregt.
   let rolleTabell = {};
 
+  // 🔴 RESERVEN ER AVGJØRENDE, IKKE EN DETALJ.
+  //
+  // Tilgangssjekken ved innlogging trenger denne tabellen — men tabellen
+  // lastes først ETTER at tilgangssjekken har gått gjennom. Uten en
+  // reserve låser det seg selv: tabellen er tom når den leses, ingen får
+  // tilgang, og da blir den heller aldri fylt. Det skjedde, og stengte
+  // eieren ute av sitt eget panel.
+  //
+  // Reserven er ikke «slipp alle inn». Den er nøyaktig de innstillingene
+  // som sto i koden før tabellen fantes — altså kjent, konservativ
+  // oppførsel. Så snart eieren har logget inn og tabellen er skrevet,
+  // er det den som gjelder.
   function rolleDef(navn){
-    return rolleTabell[navn] || null;
+    if(rolleTabell[navn]) return rolleTabell[navn];
+    if(Object.keys(rolleTabell).length === 0) return ROLLER_UTGANGSPUNKT[navn] || null;
+    return null;
   }
 
   // En person kan ha flere roller. Da gjelder den snilleste summen:
@@ -3105,6 +3119,26 @@
 
   onAuthStateChanged(auth, async (user) => {
     if(user){
+      // Hent rolletabellen først. Tilgangssjekken under trenger den, og
+      // lytteren som holder den oppdatert starter først lenger nede.
+      try{
+        const rs = await getDocs(collection(db, 'roller'));
+        const ny = {};
+        rs.forEach(d => {
+          const r = d.data() || {};
+          ny[d.id] = {
+            niva: Number(r.niva) || 99,
+            panel: r.panel === true, ledelse: r.ledelse === true,
+            opptak: r.opptak === true,
+            opprett: Array.isArray(r.opprett) ? r.opprett : []
+          };
+        });
+        if(Object.keys(ny).length > 0) rolleTabell = ny;
+      } catch(err){
+        // Reserven i rolleDef() overtar. Ingen blir stengt ute av at
+        // nettet var tregt i akkurat det sekundet.
+        console.warn('Kunne ikke hente rolletabellen — bruker reserven', err);
+      }
       // SECURITY: signing in with a valid Firebase account is NOT enough by
       // itself — teacher and guardian accounts share the same Firebase Auth
       // pool now that all portals use real e-post/passord login. We must
