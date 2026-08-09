@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 00:11:02 -->
+<!-- SIST-ENDRET: 2026-08-10 01:27:29 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -814,7 +814,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, getDocs
+    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, getDocs,
+    getDoc, query, where, documentId
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
@@ -951,6 +952,72 @@
     __listenersStarted = true;
     __pendingWatchers.forEach(fn => fn());
   }
+
+  // ═════════════════════════════════════════════════════════════════
+  // EGNE BARN — grunnlaget for at portalen bare henter det den skal
+  //
+  // Portalen lastet tidligere HELE samlinger og filtrerte i nettleseren.
+  // Hvert eneste barns journal — helseopplysninger, lærernotater — lå
+  // dermed i minnet hos enhver innlogget forelder, uansett hvor lite
+  // skjermen viste. Filtrering i nettleseren er en visning, ikke en
+  // sperre.
+  //
+  // Nå hentes barne-id-ene fra foreldreTilgang/{e-post} — indeksen
+  // panelet vedlikeholder — og spørringene ber om nøyaktig de barna.
+  // Formen er valgt slik at den samme spørringen fortsatt går gjennom
+  // når sikkerhetsregelen strammes til «id in barn»: en spørring
+  // Firestore ikke kan bevise er innenfor regelen, blir avvist i sin
+  // helhet, og portalen ville blitt tom i stedet for filtrert.
+  // ═════════════════════════════════════════════════════════════════
+  let mineBarnIder = [];
+
+  async function hentMineBarnIder(epost){
+    const e = String(epost || '').trim().toLowerCase();
+    if(!e) return [];
+    const snap = await getDoc(doc(db, 'foreldreTilgang', e));
+    if(!snap.exists()) return null;          // null = fant ingen kobling
+    const d = snap.data() || {};
+    return Array.isArray(d.barn) ? d.barn.filter(Boolean) : [];
+  }
+
+  // 'in' tar høyst 30 verdier. En familie med flere enn 30 barn finnes
+  // ikke, men koden skal ikke stå og falle på det — så listen deles opp,
+  // og delene slås sammen igjen her.
+  function delOpp(liste, storrelse){
+    const ut = [];
+    for(let i = 0; i < liste.length; i += storrelse) ut.push(liste.slice(i, i + storrelse));
+    return ut;
+  }
+
+  // Som watch(), men med en spørring i stedet for hele samlingen.
+  // byggSporring får lov til å returnere null når det ikke finnes noe å
+  // spørre om — da settes ingen lytter, og listen forblir tom.
+  function watchQuery(collectionName, byggSporringer, onData, onError){
+    const start = () => {
+      const sporringer = byggSporringer() || [];
+      if(sporringer.length === 0){ onData([]); return; }
+      const deler = sporringer.map(() => []);
+      sporringer.forEach((q, i) => {
+        onSnapshot(q, (snap) => {
+          deler[i] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          onData(deler.flat());
+        }, onError || ((err) => console.error(collectionName, err)));
+      });
+    };
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
+
+  // Barna mine, slått opp på dokument-id. Samme form som regelen vil
+  // kreve: «id in barn».
+  const sporrBarnaMine = () => mineBarnIder.length === 0 ? []
+    : delOpp(mineBarnIder, 30).map(del =>
+        query(collection(db, 'students'), where(documentId(), 'in', del)));
+
+  // Rader som PEKER på et av barna mine — oppmøte, notater.
+  const sporrPerBarn = (samling, felt) => () => mineBarnIder.length === 0 ? []
+    : delOpp(mineBarnIder, 30).map(del =>
+        query(collection(db, samling), where(felt, 'in', del)));
 
   const MAX_FILE_MB = 10;
   async function uploadAttachment(file, folder){
@@ -1333,19 +1400,28 @@
     showToast(t, erFeil);
   }
 
-  watch('guardians', (snap) => {
-    guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  });
-  watch('students', (snap) => {
-    students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  watchQuery('students', sporrBarnaMine, (rader) => {
+    students = rader;
     if(currentGuardian) refreshMyChildren();
   });
-  watch('attendance', (snap) => {
-    attendance = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  watchQuery('attendance', sporrPerBarn('attendance', 'studentId'), (rader) => {
+    attendance = rader;
     if(currentGuardian) renderChild();
   });
-  watch('registrations', (snap) => {
-    registrations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  // Søknadene inneholder alt familien skrev inn ved påmelding. Hentes nå
+  // på e-postadressen som står PÅ søknaden — den som faktisk sendte den.
+  watchQuery('registrations', () => {
+    const e = (currentGuardian && currentGuardian.epost || '').trim().toLowerCase();
+    if(!e) return [];
+    return [
+      query(collection(db, 'registrations'), where('foresatt1_epost', '==', e)),
+      query(collection(db, 'registrations'), where('foresatt2_epost', '==', e))
+    ];
+  }, (rader) => {
+    // De to spørringene kan gi samme søknad to ganger når begge feltene
+    // har samme adresse.
+    const sett = new Set();
+    registrations = rader.filter(r => sett.has(r.id) ? false : (sett.add(r.id), true));
     if(currentGuardian) renderChild();
   });
   watch('homework', (snap) => {
@@ -1376,8 +1452,11 @@
     announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if(currentGuardian) renderChild();
   });
-  watch('studentNotes', (snap) => {
-    studentNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  // Lærernes notater om elevene. Den mest personlige samlingen i hele
+  // systemet, og den som lå åpnest: hele listen ble lastet ned til hver
+  // eneste forelder.
+  watchQuery('studentNotes', sporrPerBarn('studentNotes', 'studentId'), (rader) => {
+    studentNotes = rader;
     if(currentGuardian) renderChild();
   });
   watch('hours', (snap) => {
@@ -1468,9 +1547,22 @@
     }
     let guardian = null;
     try{
-      const snap = await getDocs(collection(db, 'guardians'));
-      guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      guardian = guardians.find(g => (g.epost||'').trim().toLowerCase() === email.toLowerCase());
+      // Spør på e-posten i stedet for å hente hele listen. Før lastet
+      // innloggingen ned samtlige foresatte — navn, telefon og adresse —
+      // for å finne én rad. Formen her er også den regelen kan bevise:
+      // «epost == min epost».
+      const snap = await getDocs(query(collection(db, 'guardians'),
+        where('epost', '==', email)));
+      const treff = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      guardian = treff[0] || null;
+      // Reserve for adresser som ble lagret med store bokstaver før
+      // feltet ble normalisert. Uten den ville en gammel konto plutselig
+      // ikke funnet seg selv.
+      if(!guardian && email !== email.toLowerCase()){
+        const snap2 = await getDocs(query(collection(db, 'guardians'),
+          where('epost', '==', email.toLowerCase())));
+        guardian = snap2.docs.map(d => ({ id: d.id, ...d.data() }))[0] || null;
+      }
     } catch(err){
       console.error('guardians-oppslag', err);
     }
@@ -1480,8 +1572,30 @@
       errEl.style.display = 'block';
       return;
     }
-    startDataListeners();
     currentGuardian = guardian;
+    // 🔴 Må skje FØR startDataListeners(). Lytterne bygger spørringene
+    // sine i det de starter, og en tom liste her ville gitt en portal som
+    // ser ut til å virke, men ikke viser noen barn.
+    let barn = null;
+    try{
+      barn = await hentMineBarnIder(guardian.epost);
+    } catch(err){
+      console.error('foreldreTilgang', err);
+    }
+    if(barn === null){
+      // Ingen kobling funnet. Å la portalen stå tom uten et ord er den
+      // feilen som er dyrest å finne igjen — foreldre ville trodd at
+      // barnet ikke var registrert.
+      await signOut(auth).catch(()=>{});
+      errEl.textContent = currentLang === 'ar'
+        ? 'لم نعثر على الربط بين حسابك وأبنائك. تواصل مع المدرسة.'
+        : 'Vi finner ingen kobling mellom kontoen din og barna dine. Ta kontakt med skolen.';
+      errEl.style.display = 'block';
+      currentGuardian = null;
+      return;
+    }
+    mineBarnIder = barn;
+    startDataListeners();
     updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
     document.getElementById('loginView').style.display = 'none';
