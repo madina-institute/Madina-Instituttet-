@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 12:12:28 -->
+<!-- SIST-ENDRET: 2026-08-09 12:22:47 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -175,6 +175,8 @@
 
   /* PROGRAM SELECTOR — highlighted */
   .program-opts{display:flex; flex-direction:column; gap:12px;}
+  /* Flat underkant når prisen står rett under. */
+  .prog-opt.har-pris{ border-radius:8px 8px 0 0; }
   .prog-opt{
     display:flex; align-items:flex-start; gap:14px; background:var(--paper-2);
     border:1px solid var(--line); border-radius:8px; padding:16px 18px; cursor:pointer;
@@ -209,7 +211,15 @@
     font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); line-height:1.6; border-radius:0 4px 4px 0;
   }
 
-/* ══ PRISKORT — ett per program ══════════════════════════════════ */
+/* Priskortet ligger rett under programmet det gjelder, og henger
+     visuelt sammen med det — samme bredde, tett inntil, uten egen skygge. */
+  .pris-inline{
+    background:#fff; border:1px solid var(--line); border-top:0;
+    border-radius:0 0 8px 8px; margin:-9px 0 12px; overflow:hidden;
+  }
+  .pris-inline .pk-fot{ border-top:1px solid var(--line); }
+
+  /* ══ PRISKORT — ett per program ══════════════════════════════════ */
   .priskort{
     background:#fff; border:1px solid var(--line); border-radius:10px;
     overflow:hidden; margin-bottom:14px; box-shadow:var(--shadow);
@@ -483,6 +493,10 @@
           <div class="p-sub">Koran, Islam og valgt språk (arabisk eller urdu) — samlet i ett program.</div>
         </div>
       </label>
+      <!-- Prisen står ved programmet den gjelder, og vises først når
+           programmet er valgt. Sto begge prisene alltid framme, måtte
+           familien selv finne ut hvilken som gjaldt dem. -->
+      <div class="pris-inline" id="prisFor_madina_islamske_skole" style="display:none;"></div>
 
       <div class="subject-check" id="sprakValgWrap" style="display:none;">
         <div class="field" style="margin-bottom:0;">
@@ -504,6 +518,7 @@
           <div class="p-sub">Introduksjonsprogram for de yngste barna. Kan ikke kombineres med hovedprogrammet.</div>
         </div>
       </label>
+      <div class="pris-inline" id="prisFor_madinabarn" style="display:none;"></div>
 
       <label class="prog-opt" style="opacity:0.5; cursor:not-allowed;">
         <input type="checkbox" name="program" value="ekstra_koran_hifz" disabled>
@@ -515,10 +530,9 @@
       </label>
     </div>
 
-    <!-- Priskortene bygges av tallene i databasen — de samme som settes
-         under «Programmer» og «Betalingsinnstillinger» i panelet. Endres
-         en pris der, endres den her, uten at skjemaet publiseres på nytt. -->
-    <div id="prisKort"></div>
+    <!-- Søskenrabatten gjelder på tvers av programmene, og står derfor
+         for seg selv. Prisene står inne ved hvert program. -->
+    <div id="soskenKort"></div>
 
     <div class="price-box">
       <div class="price-label">Beregnet avgift</div>
@@ -1044,65 +1058,84 @@
 
   const kr = n => Math.round(n).toLocaleString('no-NO').replace(/\u00a0/g, ' ');
 
+  // Tegner ett priskort INNE i hvert program, og viser det bare når
+  // programmet er huket av. Familien ser prisen der den hører hjemme,
+  // og slipper å finne ut hvilken av to priser som gjelder dem.
   function tegnPriskort(){
-    const el = document.getElementById('prisKort');
-    if(!el || !prisData) return;
+    if(!prisData) return;
     const { programmer, rabatt2, rabatt3, terminer } = prisData;
 
-    const kort = Object.entries(programmer).map(([navn, p]) => {
-      if(!p.aar && !p.mnd) return '';
+    Object.entries(PROGRAM_NAVN).forEach(([verdi, navn]) => {
+      const boks = document.getElementById('prisFor_' + verdi);
+      if(!boks) return;
+      const p = programmer[navn];
+      if(!p || (!p.aar && !p.mnd)){
+        boks.innerHTML = '<div class="pk-fot" style="border:0;">Prisen oppgis ved opptak.</div>';
+        return;
+      }
       const perTermin = terminer > 1 ? Math.round(p.aar / terminer) : p.aar;
       const medlemAar = p.mnd * p.maneder;
       const sparer = p.aar - medlemAar;
-      // Navnet i basen har en parentes med dagen; den står allerede som
-      // egen linje i kortet, så den fjernes fra tittelen.
-      const tittel = navn.replace(/\s*[—(].*$/, '').trim();
-      return `
-        <div class="priskort">
-          <div class="pk-topp">
-            <div class="pk-navn">${tittel}</div>
-            ${p.dager ? `<div class="pk-meta">${p.dager}</div>` : ''}
+      boks.innerHTML = `
+        <div class="pk-priser">
+          <div class="pk-pris">
+            <div class="pk-etikett">Ordinær pris</div>
+            <div class="pk-tall">${kr(perTermin)}</div>
+            <div class="pk-enhet">kr per termin${terminer > 1 ? ' · ' + terminer + ' terminer' : ''}</div>
           </div>
-          <div class="pk-priser">
-            <div class="pk-pris">
-              <div class="pk-etikett">Ordinær pris</div>
-              <div class="pk-tall">${kr(perTermin)}</div>
-              <div class="pk-enhet">kr per termin${terminer > 1 ? ' · ' + terminer + ' terminer' : ''}</div>
-            </div>
-            ${p.mnd ? `
-            <div class="pk-pris medlem">
-              <div class="pk-etikett">★ Medlemspris</div>
-              <div class="pk-tall">${kr(p.mnd)}</div>
-              <div class="pk-enhet">kr per måned · ${p.maneder} måneder</div>
-              ${sparer > 0 ? `<div class="pk-spar">Du sparer ${kr(sparer)} kr i året</div>` : ''}
-            </div>` : ''}
+          ${p.mnd ? `
+          <div class="pk-pris medlem">
+            <div class="pk-etikett">★ Medlemspris</div>
+            <div class="pk-tall">${kr(p.mnd)}</div>
+            <div class="pk-enhet">kr per måned · ${p.maneder} måneder</div>
+            ${sparer > 0 ? `<div class="pk-spar">Du sparer ${kr(sparer)} kr i året</div>` : ''}
+          </div>` : ''}
+        </div>
+        <div class="pk-fot">Bøker og materiell kommer i tillegg.</div>`;
+    });
+
+    // Søskenrabatten gjelder på tvers av programmene og står for seg selv.
+    const sEl = document.getElementById('soskenKort');
+    if(sEl){
+      sEl.innerHTML = (rabatt2 > 0 || rabatt3 > 0) ? `
+        <div class="sosken">
+          <h3>Søskenrabatt</h3>
+          <div class="s-sub">For familier som ikke er medlemmer</div>
+          <div class="s-rad">
+            <div class="s-boks"><div class="s-barn">1. barn</div><div class="s-pst s-full">Full pris</div></div>
+            <div class="s-boks"><div class="s-barn">2. barn</div><div class="s-pst">−${rabatt2} %</div></div>
+            <div class="s-boks"><div class="s-barn">3. barn +</div><div class="s-pst">−${rabatt3} %</div></div>
           </div>
-          <div class="pk-fot">Bøker og materiell kommer i tillegg.</div>
-        </div>`;
-    }).join('');
+          <div class="s-note">
+            Rabatten legges på det dyreste programmet, slik at familien sparer mest.
+            <br><br>
+            <strong>Søskenrabatt og medlemspris kombineres ikke.</strong> Medlemsprisen
+            er allerede den laveste — uansett hvor mange barn familien har, og
+            uansett hvilket program.
+          </div>
+        </div>` : '';
+    }
+    visValgtePriskort();
+  }
 
-    const sosken = (rabatt2 > 0 || rabatt3 > 0) ? `
-      <div class="sosken">
-        <h3>Søskenrabatt</h3>
-        <div class="s-sub">For familier som ikke er medlemmer</div>
-        <div class="s-rad">
-          <div class="s-boks"><div class="s-barn">1. barn</div><div class="s-pst s-full">Full pris</div></div>
-          <div class="s-boks"><div class="s-barn">2. barn</div><div class="s-pst">−${rabatt2} %</div></div>
-          <div class="s-boks"><div class="s-barn">3. barn +</div><div class="s-pst">−${rabatt3} %</div></div>
-        </div>
-        <div class="s-note">
-          Rabatten legges på det dyreste programmet, slik at familien sparer mest.
-          <br><br>
-          <strong>Søskenrabatt og medlemspris kombineres ikke.</strong> Medlemsprisen
-          er allerede den laveste — uansett hvor mange barn familien har, og
-          uansett hvilket program.
-        </div>
-      </div>` : '';
-
-    el.innerHTML = kort + sosken;
+  // Viser kortet til det valgte programmet, skjuler det andre.
+  function visValgtePriskort(){
+    const av = { madina_islamske_skole: chkLordag.checked, madinabarn: chkMadinabarn.checked };
+    Object.entries(av).forEach(([verdi, valgt]) => {
+      const boks = document.getElementById('prisFor_' + verdi);
+      if(!boks) return;
+      boks.style.display = valgt ? 'block' : 'none';
+      // Programboksen over får flat underkant, så de to leses som ett.
+      // Gjøres i JS, ikke med :has() i CSS — den støttes ikke i eldre
+      // nettlesere, og en familie med gammel telefon skal ikke få et
+      // halvferdig utseende.
+      const rute = boks.previousElementSibling;
+      if(rute && rute.classList) rute.classList.toggle('har-pris', valgt);
+    });
   }
 
   function updatePriceDisplay(){
+    visValgtePriskort();
     const priceEl = document.getElementById('priceAmount');
     const detaljEl = document.getElementById('priceDetalj');
     if(!priceEl) return;
