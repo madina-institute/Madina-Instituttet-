@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 23:54:59 -->
+<!-- SIST-ENDRET: 2026-08-10 00:09:45 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -6340,6 +6340,11 @@
         // og beløpet står ved siden av, så søskenrabatten er synlig uten
         // å åpne hvert enkelt kort.
         const priser = familiePriser(row.id);
+        // Sorter etter søskenplassen, ikke etter hvilken rekkefølge basen
+        // svarte i. Rekkefølgen ER forklaringen på rabatten — står «barn 2»
+        // over «barn 1», ser tallene tilfeldige ut.
+        children.sort((a, b) =>
+          ((priser[a.id] || {}).plass || 99) - ((priser[b.id] || {}).plass || 99));
         const rader = children.map(s => {
           const p = priser[s.id] || {};
           const plass = p.plass ? '<span class="fam-plass">' +
