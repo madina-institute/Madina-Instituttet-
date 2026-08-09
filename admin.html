@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 21:14:18 -->
+<!-- SIST-ENDRET: 2026-08-09 21:25:08 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1177,16 +1177,13 @@
     <img src="logo-bla.png" alt="Madina Institute">
     <span>Madina Skole</span>
   </div>
-  <button data-sb-side="eier" onclick="sidebarSelectSide('eier')"><span class="ic">🏛️</span> Eier / Ledelsen</button>
-  <button data-sb-side="admin" onclick="sidebarSelectSide('admin')"><span class="ic">🗂️</span> Administrativ</button>
-  <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')"><span class="ic">💰</span> Økonomi</button>
   <button data-sb-side="personale" onclick="sidebarSelectSide('personale')"><span class="ic">👥</span> Personale</button>
-  <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')"><span class="ic">🎓</span> Pedagogisk</button>
-  <button data-sb-side="registrering" onclick="sidebarSelectSide('registrering')"><span class="ic">📝</span> Registrering</button>
-  <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')"><span class="ic">🏫</span> Skoleoppsett</button>
-  <button data-sb-side="oversikt" onclick="sidebarSelectSide('oversikt')"><span class="ic">⚙️</span> Oversikt</button>
-  <button data-sb-side="veiledning" onclick="sidebarSelectSide('veiledning')"><span class="ic">📖</span> Veiledning</button>
-  <button data-sb-side="verktoy" onclick="sidebarSelectSide('verktoy')"><span class="ic">🛠️</span> Verktøy</button>
+  <button data-sb-side="admin" onclick="sidebarSelectSide('admin')"><span class="ic">🎓</span> Elever og familier</button>
+  <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')"><span class="ic">💰</span> Økonomi</button>
+  <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')"><span class="ic">📚</span> Undervisning</button>
+  <button data-sb-side="kommunikasjon" onclick="sidebarSelectSide('kommunikasjon')"><span class="ic">✉️</span> Kommunikasjon</button>
+  <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')"><span class="ic">🏫</span> Skole</button>
+  <button data-sb-side="system" onclick="sidebarSelectSide('system')"><span class="ic">⚙️</span> System</button>
   <button data-sb-side="portaler" onclick="sidebarSelectSide('portaler')"><span class="ic">🔗</span> Portaler</button>
 </nav>
 
@@ -1195,7 +1192,7 @@
   <div class="wrap">
     <div class="dash-strip" id="dashStrip">
       <div class="stat-card stat-purple" style="cursor:pointer;" onclick="goToTask('admin','students')"><span class="stat-ikon">🎓</span><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
-      <div class="stat-card stat-yellow alert" id="dashCardRegs" style="cursor:pointer;" onclick="goToTask('registrering')"><span class="alert-dot"></span><span class="stat-ikon">📝</span><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
+      <div class="stat-card stat-yellow alert" id="dashCardRegs" style="cursor:pointer;" onclick="goToTask('admin','registrations')"><span class="alert-dot"></span><span class="stat-ikon">📝</span><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
       <div class="stat-card stat-pink alert" id="dashCardRequests" style="cursor:pointer;" onclick="goToTask('pedagogisk','absenceRequests')"><span class="alert-dot"></span><span class="stat-ikon">🔔</span><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
       <div class="stat-card stat-blue alert" id="dashCardUnpaid" style="cursor:pointer;" onclick="goToTask('admin','students')"><span class="alert-dot"></span><span class="stat-ikon">💳</span><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
     </div>
@@ -1331,21 +1328,25 @@
 <div id="subChooseView" style="display:none;"></div>
 
 <div class="tabs" id="tabsBar" style="display:none;">
-  <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
-  <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
-  <div class="tab" data-tab="okonomiHub" data-side="okonomi">Oversikt</div>
-  <div class="tab" data-tab="finances" data-side="okonomi">Kasse/Økonomi</div>
-  <div class="tab" data-tab="lonn" data-side="okonomi personale">💰 Lønn</div>
-    <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
-    <div class="tab" data-tab="meldingssenter" data-side="eier">Meldingssenter</div>
-  <div class="tab" data-tab="cashierLedelse" data-side="eier" id="tabCashierLedelse" style="display:none;">💰 Kasserer (Ledelse)</div>
+  <div class="tab" data-tab="allePersoner" data-side="personale">Alle personer</div>
   <div class="tab active" data-tab="teachers" data-side="personale">Lærere</div>
-  <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
+  <div class="tab" data-tab="ledelse" data-side="personale">Ledelse</div>
+  <div class="tab" data-tab="paalogget" data-side="personale">Pålogget nå</div>
+  <div class="tab" data-tab="roller" data-side="personale">Roller og tilganger</div>
+  <div class="tab" data-tab="eiere" data-side="personale">Eiere</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
+  <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
+  <div class="tab" data-tab="registrations" data-side="admin">Søknader</div>
+  <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
+  <div class="tab" data-tab="okonomiHub" data-side="okonomi">Oversikt</div>
+  <div class="tab" data-tab="cashier" data-side="okonomi">Elevbetalinger</div>
+  <div class="tab" data-tab="cashierLedelse" data-side="okonomi" id="tabCashierLedelse" style="display:none;">Elevbetalinger (ledelse)</div>
+  <div class="tab" data-tab="paymentRequests" data-side="okonomi">Betalingsforespørsler</div>
+  <div class="tab" data-tab="finances" data-side="okonomi">Kasse</div>
+  <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
+  <div class="tab" data-tab="lonn" data-side="okonomi personale">Lønn</div>
+  <div class="tab" data-tab="betaling" data-side="okonomi">Innstillinger</div>
   <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
-  <div class="tab" data-tab="programs" data-side="skoleoppsett">📅 Programmer</div>
-  <div class="tab" data-tab="schoolCalendar" data-side="skoleoppsett">🗓️ Skolekalender</div>
-  <div class="tab" data-tab="cashier" data-side="okonomi">💰 Kasserer</div>
   <div class="tab" data-tab="hours" data-side="pedagogisk">Timeplan</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
@@ -1353,21 +1354,17 @@
   <div class="tab" data-tab="planmaler" data-side="pedagogisk">Planmaler</div>
   <div class="tab" data-tab="planArkiv" data-side="pedagogisk">Planarkiv</div>
   <div class="tab" data-tab="homework" data-side="pedagogisk">Lekser</div>
-  <div class="tab" data-tab="announcements" data-side="pedagogisk">Kunngjøringer</div>
   <div class="tab" data-tab="studentNotes" data-side="pedagogisk">Elevnotater</div>
-  <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
-  <div class="tab" data-tab="paymentRequests" data-side="okonomi">Betalingsforespørsler</div>
-  <div class="tab" data-tab="messages" data-side="pedagogisk">Meldinger</div>
-  <div class="tab" data-tab="betaling" data-side="okonomi">Betalingsinnstillinger</div>
-  <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
-  <div class="tab" data-tab="utvikler" data-side="verktoy">🛠️ Verktøy og sider</div>
-  <div class="tab" data-tab="allePersoner" data-side="personale">👤 Alle personer</div>
-  <div class="tab" data-tab="paalogget" data-side="personale">🟢 Pålogget nå</div>
-  <div class="tab" data-tab="eiere" data-side="personale">👑 Eiere</div>
-  <div class="tab" data-tab="roller" data-side="personale">🔑 Roller og tilganger</div>
-  <div class="tab" data-tab="veiledning" data-side="veiledning">📖 Veiledning</div>
-  <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
-  <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
+  <div class="tab" data-tab="messages" data-side="kommunikasjon">Meldinger</div>
+  <div class="tab" data-tab="meldingssenter" data-side="kommunikasjon">Meldingssenter</div>
+  <div class="tab" data-tab="announcements" data-side="kommunikasjon">Kunngjøringer</div>
+  <div class="tab" data-tab="programs" data-side="skoleoppsett">Programmer</div>
+  <div class="tab" data-tab="schoolCalendar" data-side="skoleoppsett">Skolekalender</div>
+  <div class="tab" data-tab="meetings" data-side="skoleoppsett">Møtereferater</div>
+  <div class="tab" data-tab="reports" data-side="skoleoppsett">Rapporter</div>
+  <div class="tab" data-tab="overview" data-side="system">Oversikt</div>
+  <div class="tab" data-tab="utvikler" data-side="system">Verktøy og sider</div>
+  <div class="tab" data-tab="veiledning" data-side="system">Veiledning</div>
 </div>
 
 <div class="content-layout" id="contentLayout" style="display:none;">
@@ -7893,20 +7890,26 @@
   };
 
   const TAB_ICONS = {
-    ledelse: '👑', meetings: '🗒️', finances: '💰',
-    teachers: '🧑‍🏫', guardians: '👪', students: '🎒', classes: '🏫', hours: '📅',
-    attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
+    ledelse: '🏛️', meetings: '🗒️', finances: '🏦',
+    teachers: '🧑‍🏫', guardians: '👪', students: '🎒', classes: '🏫', hours: '🕐',
+    attendance: '✅', absenceRequests: '🚫', lessonPlans: '📔', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
-    contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
-    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', personalePorten: '🚪', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
+    contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
+    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
+    lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
   let currentSideForBack = null;
 
+  // Faner som krever øvre ledelse. Vakten lå tidligere på GRUPPEN
+  // «Registrering» og «Oversikt». Da fanene flyttet til andre grupper,
+  // ville beskyttelsen forsvunnet med gruppen — derfor står den nå på
+  // fanen selv, og følger den uansett hvor den plasseres senere.
+  const LEDELSE_FANER = ['registrations', 'overview', 'utvikler'];
+
   window.sidebarSelectSide = function(side){
     if(side === 'portaler'){ showPortalLinks(); return; }
-    if(side === 'registrering' || side === 'oversikt') promptPasswordAndSelectSide(side);
-    else selectSide(side);
+    selectSide(side);
   };
 
   window.showPortalLinks = function(){
@@ -7946,7 +7949,10 @@
         <span class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</span> ${tab.textContent}
       </button>
     `).join('');
-    if(tabsForSide.length) selectSubTab(tabsForSide[0].dataset.tab);
+    const forste = tabsForSide.find(t =>
+      !LEDELSE_FANER.includes(t.dataset.tab) || currentUserHasSeniorRole());
+    if(forste) selectSubTab(forste.dataset.tab);
+    else if(tabsForSide.length) selectSubTab(tabsForSide[0].dataset.tab);
   };
 
   window.selectSubTab = function(tabName){
@@ -7958,6 +7964,10 @@
       b.classList.toggle('active', b.dataset.subTab === tabName);
     });
 
+    if(LEDELSE_FANER.includes(tabName) && !currentUserHasSeniorRole()){
+      showToast('Denne fanen er kun for øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder).');
+      return;
+    }
     const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
     if(targetTab) targetTab.click();
     // Lytteren på øktene lever bare mens fanen er åpen. En stående lytter
@@ -9600,7 +9610,7 @@
       <div class="ok-handling">
         <span class="ok-alvor ${alvor}"></span>
         <div class="ok-handling-tekst">${escapeHtml(tekst)}<small>${escapeHtml(detalj)}</small></div>
-        <button onclick="goToTask('oversikt')">Ansatte</button>
+        <button onclick="goToTask('system','overview')">Ansatte</button>
       </div>`).join('');
   }
 
@@ -11035,13 +11045,14 @@
     // ── Seksjonene: leses fra fanene som faktisk finnes ──────────────
     const grupper = {};
     document.querySelectorAll('.tab[data-tab][data-side]').forEach(tab => {
-      const side = tab.dataset.side;
-      (grupper[side] = grupper[side] || []).push(tab.textContent.trim());
+      String(tab.dataset.side || '').split(/\s+/).filter(Boolean).forEach(side => {
+        (grupper[side] = grupper[side] || []).push(tab.textContent.trim());
+      });
     });
     const sideNavn = {
-      eier:'🏛️ Eier / Ledelsen', okonomi:'💰 Økonomi', admin:'🗂️ Administrativ',
-      pedagogisk:'🎓 Pedagogisk', skoleoppsett:'🏫 Skoleoppsett', registrering:'📝 Registrering',
-      oversikt:'⚙️ Oversikt', verktoy:'🛠️ Verktøy', veiledning:'📖 Veiledning'
+      personale:'👥 Personale', admin:'🎓 Elever og familier', okonomi:'💰 Økonomi',
+      pedagogisk:'📚 Undervisning', kommunikasjon:'✉️ Kommunikasjon',
+      skoleoppsett:'🏫 Skole', system:'⚙️ System'
     };
     temaer.push({
       tittel: '🧭 Slik henger panelet sammen',
