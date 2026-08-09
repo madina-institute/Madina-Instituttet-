@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 00:09:45 -->
+<!-- SIST-ENDRET: 2026-08-10 00:44:15 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -10251,8 +10251,10 @@
     const el = document.getElementById('okHandlinger');
     if(!el) return;
     const rader = [];
-    const legg = (alvor, tekst, detalj, knapp, side, fane) =>
-      rader.push({ alvor, tekst, detalj, knapp, side, fane });
+    // handling: kjør noe direkte i stedet for å navigere. En rad som bare
+    // sender deg til fanen du allerede står i, er ikke en handling.
+    const legg = (alvor, tekst, detalj, knapp, side, fane, handling) =>
+      rader.push({ alvor, tekst, detalj, knapp, side, fane, handling });
 
     if(!erGyldigKontonummer(fakturaOppsett.kontonummer)){
       legg('stopp', 'Kontonummer mangler',
@@ -10270,6 +10272,13 @@
       legg('stopp', utenPris.length + ' program uten pris',
         utenPris.map(p => p.navn).join(' · ') + ' — påmeldingsskjemaet viser ingen pris.',
         'Åpne', 'skoleoppsett', 'programs');
+    }
+    const feilBelop = elevermedFeilBelop().filter(x => !x.betalt);
+    if(feilBelop.length){
+      legg('stopp', feilBelop.length + ' elever har et lagret beløp som ikke stemmer',
+        'Portalen og Vipps bruker det LAGREDE tallet — panelet regner om hver gang. ' +
+        'Familien ser og betaler da noe annet enn det som er riktig.',
+        'Rett opp', 'okonomi', 'okonomiHub', 'regnOmAlleFamilier()');
     }
     if(t.utenBelop > 0){
       legg('folg', t.utenBelop + ' elever uten beløp',
@@ -10306,7 +10315,7 @@
       <div class="ok-handling">
         <span class="ok-alvor ${r.alvor}"></span>
         <div class="ok-handling-tekst">${escapeHtml(r.tekst)}<small>${escapeHtml(r.detalj)}</small></div>
-        <button onclick="goToTask('${r.side}','${r.fane}')">${escapeHtml(r.knapp)}</button>
+        <button onclick="${r.handling ? r.handling : "goToTask('" + r.side + "','" + r.fane + "')"}">${escapeHtml(r.knapp)}</button>
       </div>`).join('');
   }
 
@@ -11991,6 +12000,103 @@
     return '';
   }
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // REGN OM HELE FAMILIEN
+  //
+  // Godkjenningen regnet ut prisen for BARNET SOM BLE GODKJENT, og lot
+  // søsknene stå. Det holder ikke når rabatten legges på det DYRESTE
+  // programmet: kommer et barn inn på et dyrere program enn søsknene,
+  // bytter alle plass, og beløpene som allerede står lagret blir feil.
+  //
+  // Slik så det ut for en familie med tre barn:
+  //
+  //     panelet (regnet på nytt):   11 725 kr
+  //     lagret på elevene:          12 300 kr
+  //
+  // Foreldreportalen og Vipps leser det LAGREDE beløpet. Familien ville
+  // altså blitt fakturert 575 kr for mye, mens panelet viste riktig tall
+  // — samme type avvik som mellom panel og Vipps 8. august.
+  //
+  // Derfor regnes hele familien om her, som én enhet, med den samme
+  // funksjonen panelet viser fra.
+  //
+  // 🔴 Barn som har betalt noe, røres ikke. Å endre et beløp noen alt har
+  // betalt på er å endre en faktura i ettertid.
+  async function oppdaterSoskenpriser(guardianId){
+    if(!guardianId) return { endret: 0, hoppetOver: [] };
+    const priser = familiePriser(guardianId);
+    const barn = (cache.students || []).filter(s =>
+      s.foresatt === guardianId || s.foresatt2 === guardianId);
+    let endret = 0;
+    const hoppetOver = [];
+    for(const elev of barn){
+      const p = priser[elev.id];
+      if(!p || !p.pris) continue;
+      const gammelt = cashierKr(elev.belop);
+      const nytt = Math.round(p.pris);
+      if(gammelt === nytt && String(elev.soskenrekkefolge || '') === String(p.plass)) continue;
+      if(cashierKr(elev.belopBetalt) > 0){
+        hoppetOver.push(elev.navn || elev.id);
+        continue;
+      }
+      try{
+        await updateDoc(doc(db, 'students', elev.id), {
+          belop: String(nytt),
+          soskenrekkefolge: String(p.plass),
+          sistEndretAv: currentUserEmail || 'ukjent',
+          sistEndretDato: new Date().toISOString().slice(0,10)
+        });
+        endret++;
+      } catch(err){
+        console.error('oppdaterSoskenpriser', elev.id, err);
+      }
+    }
+    return { endret, hoppetOver };
+  }
+
+  // Lagret beløp mot det prisreglene sier nå. De to kan gli fra hverandre
+  // uten at noe ser galt ut: panelet regner om hver gang det tegner, mens
+  // Foreldreportalen og Vipps leser tallet som ble lagret den gangen.
+  // Avviket vises derfor her, ikke i en logg.
+  function elevermedFeilBelop(){
+    const arr = [];
+    const perForesatt = new Map();
+    (cache.students || []).forEach(s => {
+      if(!s.navn || String(s.status || '') === 'Sluttet') return;
+      const g = s.foresatt || s.foresatt2;
+      if(!g) return;
+      if(!perForesatt.has(g)) perForesatt.set(g, familiePriser(g));
+      const p = perForesatt.get(g)[s.id];
+      if(!p || !p.pris) return;
+      const lagret = cashierKr(s.belop);
+      if(lagret === Math.round(p.pris)) return;
+      // Delvis betalte beløp skal ikke røres — de tas med for å bli sett,
+      // men merkes så de ikke rettes automatisk.
+      arr.push({ elev: s, lagret, riktig: Math.round(p.pris),
+                 betalt: cashierKr(s.belopBetalt) > 0 });
+    });
+    return arr;
+  }
+
+  window.regnOmAlleFamilier = async function(){
+    const avvik = elevermedFeilBelop().filter(x => !x.betalt);
+    if(avvik.length === 0){ showToast('Alle beløp stemmer med prisreglene.'); return; }
+    const linjer = avvik.slice(0, 12).map(x =>
+      '• ' + x.elev.navn + ': ' + kr0(x.lagret) + ' → ' + kr0(x.riktig) + ' kr');
+    if(!confirm('Rette beløpet for ' + avvik.length + ' elever?\n\n' +
+      linjer.join('\n') + (avvik.length > 12 ? '\n… og ' + (avvik.length - 12) + ' til' : '') +
+      '\n\nElever som har betalt noe, røres ikke.')) return;
+    const foresatte = [...new Set(avvik.map(x => x.elev.foresatt || x.elev.foresatt2))];
+    let endret = 0;
+    for(const g of foresatte){
+      const r = await oppdaterSoskenpriser(g);
+      endret += r.endret;
+    }
+    showToast(endret + ' elever fikk rettet beløp.');
+    renderOkonomiHub();
+  };
+
   window.approveRegistration = async function(id){
     if(!krevOpptaksrolle()) return;
     // Lukkes med én gang: kortet under viser fortsatt den gamle statusen,
@@ -12113,13 +12219,34 @@
       // Samme grunn som for foresatte: uten arv blir en godkjent
       // testsøknad til en elev som ser ekte ut i alle lister.
       if(reg.erTestdata === true) studentRecord.erTestdata = true;
-      await addDoc(collection(db, 'students'), studentRecord);
+      const nyElevRef = await addDoc(collection(db, 'students'), studentRecord);
       await updateDoc(doc(db, 'registrations', id), {
         status: 'Godkjent',
         behandletAv: currentUserEmail || 'ukjent',
         behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
       });
-      showToast('Søknaden er godkjent og eleven er lagt til i Administrativ.');
+
+      // Cachen oppdateres av lytteren, men først om et øyeblikk. Legger vi
+      // ikke eleven inn her, regner familieoppdateringen uten det barnet
+      // som nettopp kom — og lar det stå med sin egen, isolerte pris.
+      if(!(cache.students || []).some(x => x.id === nyElevRef.id)){
+        cache.students = [...(cache.students || []), { id: nyElevRef.id, ...studentRecord }];
+      }
+      const res1 = await oppdaterSoskenpriser(guardianId);
+      const res2 = guardianId2 && guardianId2 !== guardianId
+        ? await oppdaterSoskenpriser(guardianId2) : { endret: 0, hoppetOver: [] };
+      const hoppet = [...res1.hoppetOver, ...res2.hoppetOver];
+
+      let melding = 'Søknaden er godkjent og eleven er lagt til.';
+      if(res1.endret + res2.endret > 0){
+        melding += ' ' + (res1.endret + res2.endret) + ' søsken fikk nytt beløp etter søskenrabatt.';
+      }
+      showToast(melding);
+      if(hoppet.length){
+        alert('Beløpet ble IKKE endret for: ' + hoppet.join(', ') + '\n\n' +
+              'De har allerede betalt noe, og et beløp som er delvis betalt ' +
+              'skal ikke endres i ettertid. Juster det manuelt hvis det er riktig.');
+      }
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt under godkjenning.');
