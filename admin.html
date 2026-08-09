@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 11:12:37 -->
+<!-- SIST-ENDRET: 2026-08-09 13:16:26 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -227,6 +227,35 @@
     background:var(--emerald-d); color:#fff; font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; padding:12px 8px;
   }
   .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
+
+  .rolle-kort{
+    background:#fff; border:1px solid var(--tabell-linje); border-radius:10px;
+    padding:14px 16px; margin-bottom:10px;
+  }
+  .rolle-kort.laast{ background:var(--paper); opacity:.85; }
+  .rolle-topp{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap:12px; padding-bottom:10px; border-bottom:1px solid var(--line);
+  }
+  .rolle-navn{ font-family:'Jost',sans-serif; font-weight:600; font-size:14px; color:var(--emerald-d); }
+  .rolle-niva{ font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:2px; }
+  .rolle-merke{ font-family:'Jost',sans-serif; font-size:11px; color:var(--gold); white-space:nowrap; }
+  .rolle-topp select{
+    font-family:'Jost',sans-serif; font-size:12.5px; padding:6px 9px;
+    border:1px solid var(--line); border-radius:6px; background:#fff;
+  }
+  .rolle-valg, .rolle-oppr{ padding-top:10px; }
+  .rolle-oppr{ border-top:1px solid var(--line); margin-top:4px; }
+  .rolle-oppr-tittel{
+    font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase; color:#8a9a90; margin-bottom:6px;
+  }
+  .rolle-avkryss{
+    display:flex; align-items:center; gap:8px; padding:4px 0;
+    font-family:'Jost',sans-serif; font-size:12.5px; cursor:pointer;
+  }
+  .rolle-avkryss input{ width:16px; height:16px; flex:0 0 auto; }
+  .rolle-avkryss input:disabled + span{ color:#a8b2ac; }
 
   .legg-til-rad{ display:flex; gap:9px; flex-wrap:wrap; }
   .legg-til-rad .btn{ flex:1 1 180px; width:auto; }
@@ -1163,6 +1192,7 @@
   <div class="tab" data-tab="betaling" data-side="okonomi">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="utvikler" data-side="verktoy">🛠️ Verktøy og sider</div>
+  <div class="tab" data-tab="roller" data-side="verktoy">🔑 Roller og tilganger</div>
   <div class="tab" data-tab="veiledning" data-side="veiledning">📖 Veiledning</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
@@ -1515,6 +1545,24 @@
         <span><strong>Nullstill testdata</strong> (alt ovenfor UNNTATT søknader — søknader beholdes)</span>
         <button class="btn btn-danger-solid" onclick="clearTestDataKeepRegistrations()">Slett testdata (behold søknader)</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ROLLER OG TILGANGER (kun Eier) -->
+  <div class="panel" id="panel-roller">
+    <div class="report-card">
+      <h3>🔑 Roller og tilganger</h3>
+      <div class="sub">Hva hver rolle har lov til. Kun eier.</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65; margin-bottom:8px;">
+        Dette sto tidligere i koden, og hver endring krevde at filen ble
+        skrevet om og publisert. Nå er det avkrysninger.
+      </p>
+      <div class="hint" style="margin-bottom:16px;">
+        <b>Nivået</b> avgjør hvem som kan utnevne hvem: du kan bare gi noen
+        et nivå <b>lavere</b> enn ditt eget. Eier er nivå 1 og kan ikke endres
+        — det er punktet alt annet kan bygges opp fra igjen hvis noe går galt.
+      </div>
+      <div id="rollerListe"></div>
     </div>
   </div>
 
@@ -2336,6 +2384,15 @@
         <div class="hint">Bøker og utstyr. Kommer i tillegg for alle — både medlemmer og ikke-medlemmer — og påvirkes ikke av søskenrabatt.</div>
       </div>
       <div class="field">
+        <label>Depositum ved opptak (kr)</label>
+        <input type="number" id="depositumInput" min="0" step="50" placeholder="500">
+        <div class="hint">Betales når plassen tilbys, og <b>trekkes fra totalbeløpet</b> — det er ikke et tillegg. Vises i påmeldingsskjemaet. Settes den til 0, nevnes depositum ikke i skjemaet i det hele tatt.</div>
+      </div>
+      <div class="field">
+        <label>Betalingsfrist for depositum (dager)</label>
+        <input type="number" id="depositumFristInput" min="1" max="60" step="1" placeholder="5">
+      </div>
+      <div class="field">
         <label>Antall terminer i året</label>
         <input type="number" id="terminerInput" min="1" max="12" step="1" placeholder="1" oninput="visRabattForhandsvisning()">
         <div class="hint">Hvor mange ganger årsbeløpet deles opp ved fakturering. 1 = hele året samlet · 2 = per termin · 9 = månedlig. Endres her når dere har bestemt dere — ingenting må publiseres.</div>
@@ -2641,23 +2698,17 @@
   // Firestore-reglene tillater fortsatt enhver innlogget konto å skrive.
   // Ekte skjerming må ligge i firestore.rules — se punkt 4 i seksjon 16.
   // ═══════════════════════════════════════════════════════════════════
-  const OPPRETT_ROLLER = {
-    programs:       ['Eier'],
-    schoolCalendar: ['Eier'],
-    classes:        ['Eier', 'Faglig / pedagogisk leder'],
-    hours:          ['Eier', 'Faglig / pedagogisk leder']
-  };
-
+  // Hvem som kan opprette hva står nå i rolletabellen, ikke her.
+  // Eieren krysser av per rolle under «Roller og tilganger».
   function kanOpprette(type){
-    const krav = OPPRETT_ROLLER[type];
-    if(!krav) return true;                       // ikke begrenset
-    return currentUserRoles.some(r => krav.includes(r));
+    if(isCurrentUserEier()) return true;
+    return minTilgang().opprett.includes(type);
   }
 
   // Skjuler knappen og setter en forklaring i stedet. En knapp som bare
   // forsvinner får folk til å tro at noe er ødelagt.
   function oppdaterOpprettKnapper(){
-    Object.keys(OPPRETT_ROLLER).forEach(type => {
+    OPPRETT_TYPER.map(x => x.key).forEach(type => {
       const knapp = document.querySelector('[data-opprett="' + type + '"]');
       if(!knapp) return;
       const lov = kanOpprette(type);
@@ -2665,7 +2716,14 @@
       const merknad = document.querySelector('[data-opprett-merknad="' + type + '"]');
       if(merknad){
         merknad.style.display = lov ? 'none' : '';
-        merknad.textContent = 'Kun ' + OPPRETT_ROLLER[type].join(' eller ') + ' kan legge til her.';
+        // Navnene på rollene som faktisk har rettigheten — hentet fra
+        // tabellen, så teksten alltid stemmer med det eieren har satt.
+        const lov = Object.entries(rolleTabell)
+          .filter(([, d]) => Array.isArray(d.opprett) && d.opprett.includes(type))
+          .map(([navn]) => navn);
+        merknad.textContent = lov.length
+          ? 'Kun ' + lov.join(' eller ') + ' kan legge til her.'
+          : 'Ingen roller har fått denne rettigheten ennå.';
       }
     });
   }
@@ -2913,7 +2971,114 @@
     }
   };
 
-  const ADMIN_PANEL_ROLES = ['Eier', 'Skoleleder', 'Daglig leder', 'Faglig / pedagogisk leder', 'Fagkoordinator'];
+  // ═══════════════════════════════════════════════════════════════════
+  // ROLLER OG TILGANGER — definert av eieren, ikke av koden
+  // -------------------------------------------------------------------
+  // Alt som tidligere sto i fire lister her i filen — hvem som kommer inn
+  // i panelet, hvem som er ledelse, hvem som kan opprette hva, og hvem som
+  // rangerer over hvem — ligger nå i samlingen 'roller' og redigeres under
+  // «Roller og tilganger». Skal en fagkoordinator kunne godkjenne søknader,
+  // er det en avkrysning, ikke en ny utgave av denne filen.
+  //
+  // 🔴 ETT UNNTAK: Eier. Nivå 1 kan ikke gis bort eller defineres vekk, og
+  // eierens e-post står i firestore.rules. Det er det faste punktet alt
+  // annet kan bygges opp fra igjen — blir tabellen tom eller feil, kommer
+  // eieren likevel inn og kan rette den.
+  //
+  // 🔴 REGLENE HÅNDHEVER, IKKE DENNE KODEN. Panelet skjuler knapper og
+  // forklarer hvorfor; firestore.rules avgjør hva som faktisk går gjennom.
+  // Den som åpner konsollen møter reglene, ikke denne tabellen.
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Rettighetene en rolle kan få. Legges det til en ny her, dukker den
+  // opp som avkrysning i panelet av seg selv.
+  const RETTIGHETER = [
+    { key:'panel',   navn:'Tilgang til Administrativt panel',
+      hjelp:'Uten denne kommer personen ikke inn i panelet i det hele tatt.' },
+    { key:'ledelse', navn:'Regnes som ledelse',
+      hjelp:'Vises under «Øvre ledelse», og får se ledelsens faner.' },
+    { key:'opptak',  navn:'Behandle søknader',
+      hjelp:'Godkjenne, avslå, sette på venteliste og sende Vipps-krav.' },
+  ];
+
+  // Ting som kan opprettes, og som kan begrenses per rolle.
+  const OPPRETT_TYPER = [
+    { key:'programs',       navn:'Programmer',      hjelp:'Priser og undervisningsdager for hele skolen.' },
+    { key:'schoolCalendar', navn:'Skolekalender',   hjelp:'Fri og ekstra undervisningsdager.' },
+    { key:'classes',        navn:'Klasser',         hjelp:'' },
+    { key:'hours',          navn:'Timeplan',        hjelp:'' },
+  ];
+
+  // Nivåene. Navnene er beskrivende — det er TALLET som avgjør.
+  const NIVA_NAVN = {
+    1: 'Eier',
+    2: 'Øverste ledelse',
+    3: 'Mellomledelse',
+    4: 'Lærer',
+    5: 'Assistent / frivillig'
+  };
+
+  // Utgangspunktet hvis 'roller' er tom. Dette er nøyaktig det som sto i
+  // koden før — så første kjøring endrer ingenting for noen. Deretter er
+  // det eieren som bestemmer.
+  const ROLLER_UTGANGSPUNKT = {
+    'Eier':                       { niva:1, panel:true,  ledelse:true,  opptak:true,  opprett:['programs','schoolCalendar','classes','hours'] },
+    'Skoleleder':                 { niva:2, panel:true,  ledelse:true,  opptak:false, opprett:[] },
+    'Daglig leder':               { niva:2, panel:true,  ledelse:true,  opptak:false, opprett:[] },
+    'Faglig / pedagogisk leder':  { niva:3, panel:true,  ledelse:true,  opptak:false, opprett:['classes','hours'] },
+    'Fagkoordinator':             { niva:3, panel:true,  ledelse:false, opptak:false, opprett:[] },
+    'Opptaksansvarlig':           { niva:3, panel:false, ledelse:false, opptak:true,  opprett:[] },
+    'Koran lærer':                { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
+    'Islam lærer':                { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
+    'Arabisk lærer':              { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
+    'Urdu lærer':                 { niva:4, panel:false, ledelse:false, opptak:false, opprett:[] },
+    'Assistent':                  { niva:5, panel:false, ledelse:false, opptak:false, opprett:[] },
+    'Frivillig':                  { niva:5, panel:false, ledelse:false, opptak:false, opprett:[] },
+    'Annet':                      { niva:5, panel:false, ledelse:false, opptak:false, opprett:[] },
+  };
+
+  // Levende kopi. Tom til basen har svart — og en tom tabell gir INGEN
+  // tilgang til noen. Å anta det motsatte ville gitt full tilgang i det
+  // sekundet nettet var tregt.
+  let rolleTabell = {};
+
+  function rolleDef(navn){
+    return rolleTabell[navn] || null;
+  }
+
+  // En person kan ha flere roller. Da gjelder den snilleste summen:
+  // laveste nivåtall, og alle rettigheter noen av rollene gir.
+  function samletTilgang(roller){
+    const liste = Array.isArray(roller) ? roller
+      : String(roller || '').split(',').map(s => s.trim()).filter(Boolean);
+    const def = liste.map(rolleDef).filter(Boolean);
+    if(def.length === 0){
+      return { niva:99, panel:false, ledelse:false, opptak:false, opprett:[] };
+    }
+    return {
+      niva:    Math.min(...def.map(d => Number(d.niva) || 99)),
+      panel:   def.some(d => d.panel === true),
+      ledelse: def.some(d => d.ledelse === true),
+      opptak:  def.some(d => d.opptak === true),
+      opprett: [...new Set(def.flatMap(d => Array.isArray(d.opprett) ? d.opprett : []))],
+    };
+  }
+
+  function minTilgang(){ return samletTilgang(currentUserRoles); }
+  function nivaForRoller(roller){ return samletTilgang(roller).niva; }
+  function mittNiva(){ return isCurrentUserEier() ? 1 : minTilgang().niva; }
+
+  // Du kan bare utnevne noen med STRENGT lavere myndighet enn deg selv.
+  // Eieren er unntaket — han kan utnevne en annen eier.
+  function kanUtnevne(roller){
+    const mitt = mittNiva(), deres = nivaForRoller(roller);
+    return mitt === 1 ? deres >= 1 : deres > mitt;
+  }
+  function kanSletteRolle(roller){
+    const mitt = mittNiva(), deres = nivaForRoller(roller);
+    return deres === 1 ? mitt === 1 : deres > mitt;
+  }
+
 
   let authGatedListenersAttached = false;
   // Venteflaten forsvinner når Firebase svarer «innlogget» eller «ikke
@@ -2969,7 +3134,7 @@
         }
         isAuthorizedAdmin = snap.docs.length > 0 &&
           (currentUserRoles.length === 0 ||
-           currentUserRoles.some(r => ADMIN_PANEL_ROLES.includes(r)));
+           minTilgang().panel);
       } catch(err){
         console.error('Kunne ikke bekrefte admin-tilgang:', err);
         isAuthorizedAdmin = false;
@@ -3015,6 +3180,8 @@
       // «Verktøy» og «Skoleoppsett» er eierens områder. Skjules både i
       // sidefeltet og blant snarveiene, slik at de ikke framstår som
       // steder man har glemt passordet til.
+      const tabRoller = document.querySelector('.tab[data-tab="roller"]');
+      if(tabRoller) tabRoller.style.display = isCurrentUserEier() ? '' : 'none';
       ['verktoy', 'skoleoppsett'].forEach(side => {
         const vis = isCurrentUserEier();
         const knapp = document.querySelector('[data-sb-side="' + side + '"]');
@@ -3083,9 +3250,21 @@
   async function syncStaffRoles(navn, epost, rollerArray, opts){
     opts = opts || {};
     if(!epost || rollerArray.length === 0) return { ok:false, reason:'missing-data' };
+
+    // Hierarkiet sjekkes her OG i reglene. Her for å kunne forklare
+    // hvorfor; der for at forklaringen skal bety noe. Uten denne ville
+    // handlingen sett ut som om den gikk gjennom, og først feilet stille
+    // mot reglene et sekund senere.
+    if(!kanUtnevne(rollerArray)){
+      const mitt = mittNiva(), deres = nivaForRoller(rollerArray);
+      showToast(deres <= mitt
+        ? 'Du kan ikke gi noen samme eller høyere myndighet enn din egen.'
+        : 'Du har ikke myndighet til å gi denne rollen.', true);
+      return { ok:false, reason:'niva' };
+    }
     const emailLc = epost.trim().toLowerCase();
     const rollerStr = rollerArray.join(', ');
-    const grantsAdmin = rollerArray.some(r => ADMIN_PANEL_ROLES.includes(r));
+    const grantsAdmin = samletTilgang(rollerArray).panel;
     const teacherRoles = rollerArray.filter(r => TEACHER_ROLE_TO_FAG[r]);
     const grantsTeacher = teacherRoles.length > 0;
     const parts = [];
@@ -3140,6 +3319,9 @@
       if(grantsAdmin){
         await setDoc(doc(db, 'tilgang', emailLc), {
           epost: emailLc, navn, roller: rollerStr,
+          // Nivået er det reglene leser for å avgjøre hvem som kan
+          // utnevne hvem. Mangler det, avviser reglene skrivingen.
+          niva: nivaForRoller(rollerArray),
           sistOppdatert: new Date().toISOString()
         });
       } else {
@@ -4069,6 +4251,30 @@
     // innloggingen var bekreftet. Reglene krever innlogging for å lese
     // 'settings', og Firestore prøver ikke en avvist lytter på nytt — så
     // betalingslenken ble stående tom uansett hva som lå lagret.
+    // ---- Rolletabellen ----
+    // Leses før alt annet vurderes. Er den tom, har ingen tilgang til
+    // noe — bortsett fra eieren, som kommer inn via reglene og kan
+    // fylle den. Å anta det motsatte ville gitt alle full tilgang i det
+    // sekundet nettet var tregt.
+    onSnapshot(collection(db, 'roller'), (snap) => {
+      const ny = {};
+      snap.forEach(d => {
+        const r = d.data() || {};
+        ny[d.id] = {
+          niva: Number(r.niva) || 99,
+          panel: r.panel === true,
+          ledelse: r.ledelse === true,
+          opptak: r.opptak === true,
+          opprett: Array.isArray(r.opprett) ? r.opprett : []
+        };
+      });
+      rolleTabell = ny;
+      sikreRolletabell();
+      // Tilgangene kan ha endret seg mens panelet står åpent.
+      oppdaterOpprettKnapper();
+      renderRoller();
+    }, (err) => console.error('roller', err));
+
     onSnapshot(doc(db, 'settings', 'priser'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
       const r2 = parseFloat(d.soskenRabatt2);
@@ -4086,6 +4292,10 @@
       prisOppsett.materiellAvgift = (!isNaN(mat) && mat >= 0) ? mat : 0;
       const ter = parseFloat(d.terminer);
       prisOppsett.terminer = (!isNaN(ter) && ter >= 1 && ter <= 12) ? ter : 1;
+      const dep = parseFloat(d.depositum);
+      prisOppsett.depositum = (!isNaN(dep) && dep >= 0) ? dep : 0;
+      const dfr = parseFloat(d.depositumFrist);
+      prisOppsett.depositumFrist = (!isNaN(dfr) && dfr >= 1) ? dfr : 0;
       fyllPrisinnstillinger();
     }, (err) => console.error('settings/priser', err));
 
@@ -5993,7 +6203,7 @@
     } else if(val === 'ledelse'){
       raw = cache.teachers.filter(t => {
         const roller = (t.roller||'').split(',').map(s=>s.trim());
-        return roller.some(r => ADMIN_PANEL_ROLES.includes(r));
+        return samletTilgang(roller).panel;
       }).map(t => ({ type:'teacher', id:t.id, name:t.navn, epost:t.epost||'' }));
     } else if(val === 'assistants'){
       raw = cache.teachers.filter(t => {
@@ -6313,10 +6523,9 @@
     finances: { title:'beskrivelse', pill:'type' }
   };
 
-  const SENIOR_LEADERSHIP_ROLES = ['Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder'];
   function isSeniorLeadershipRow(row, roleFieldKey){
     const roller = (row[roleFieldKey] || '').split(',').map(s=>s.trim()).filter(Boolean);
-    return roller.length === 0 || roller.some(r => SENIOR_LEADERSHIP_ROLES.includes(r));
+    return roller.length === 0 || samletTilgang(roller).ledelse;
   }
 
   function renderRecordCards(type, data, opts){
@@ -7045,7 +7254,7 @@
     if(!rec) return true;
     const roller = (rec.roller || rec.rolle || '').split(',').map(s=>s.trim()).filter(Boolean);
     if(roller.length === 0) return true;
-    return roller.some(r => SENIOR_LEADERSHIP_ROLES.includes(r));
+    return samletTilgang(roller).ledelse;
   }
 
   window.promptPasswordAndSelectSide = function(side){
@@ -7767,7 +7976,9 @@
     // brukes bare hvis et program mangler sitt eget tall.
     antallManeder: 9,      // reserve: 4 mnd høst + 5 mnd vår
     materiellAvgift: 0,    // bøker og utstyr, per elev, aldri rabattert
-    terminer: 1            // hvor mange ganger årsbeløpet deles ved fakturering
+    terminer: 1,           // hvor mange ganger årsbeløpet deles ved fakturering
+    depositum: 0,          // trekkes fra totalen, er ikke et tillegg
+    depositumFrist: 0      // dager
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -8430,7 +8641,7 @@
     if(document.activeElement !== r2) r2.value = prisOppsett.rabatt2;
     if(document.activeElement !== r3) r3.value = prisOppsett.rabatt3;
     tf.checked = prisOppsett.tellForesatt2;
-    const felt = [['manederInput','antallManeder'], ['materiellInput','materiellAvgift'], ['terminerInput','terminer']];
+    const felt = [['manederInput','antallManeder'], ['materiellInput','materiellAvgift'], ['terminerInput','terminer'], ['depositumInput','depositum'], ['depositumFristInput','depositumFrist']];
     felt.forEach(([id, nokkel]) => {
       const el = document.getElementById(id);
       if(el && document.activeElement !== el) el.value = prisOppsett[nokkel];
@@ -8525,6 +8736,119 @@
     renderOvFolders();
     const panel = document.getElementById('panel-overview');
     if(panel) panel.scrollIntoView({ behavior:'smooth', block:'start' });
+  };
+
+  // ---------- Roller og tilganger ----------
+  // Én rad per rolle, med nivå og avkrysninger. Eier vises, men er låst:
+  // nivå 1 er systemets faste punkt, og å kunne fjerne det ville gjort
+  // det mulig å låse seg selv ute av sitt eget system.
+  function renderRoller(){
+    const el = document.getElementById('rollerListe');
+    if(!el) return;
+    if(!isCurrentUserEier()){
+      el.innerHTML = '<div class="report-empty">Kun eier kan endre roller og tilganger.</div>';
+      return;
+    }
+    const navn = Object.keys(rolleTabell);
+    if(navn.length === 0){
+      el.innerHTML = '<div class="report-empty">Rolletabellen bygges… vent til «Synkronisert» vises øverst.</div>';
+      return;
+    }
+
+    // Sortert etter myndighet, så listen leses ovenfra og ned.
+    navn.sort((a, b) => (rolleTabell[a].niva - rolleTabell[b].niva) || a.localeCompare(b));
+
+    el.innerHTML = navn.map(rolle => {
+      const d = rolleTabell[rolle];
+      const laast = d.niva === 1;
+      const id = rolle.replace(/[^a-zA-Z]/g, '');
+      return `
+        <div class="rolle-kort${laast ? ' laast' : ''}">
+          <div class="rolle-topp">
+            <div>
+              <div class="rolle-navn">${escapeHtml(rolle)}</div>
+              <div class="rolle-niva">${escapeHtml(NIVA_NAVN[d.niva] || ('Nivå ' + d.niva))}</div>
+            </div>
+            ${laast
+              ? '<span class="rolle-merke">🔒 Låst</span>'
+              : `<select id="niva_${id}" onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\\\'")}')">
+                   ${[2,3,4,5].map(n => `<option value="${n}" ${d.niva === n ? 'selected' : ''}>${n} — ${NIVA_NAVN[n]}</option>`).join('')}
+                 </select>`}
+          </div>
+          <div class="rolle-valg">
+            ${RETTIGHETER.map(r => `
+              <label class="rolle-avkryss" title="${escapeHtml(r.hjelp)}">
+                <input type="checkbox" id="rett_${r.key}_${id}" ${d[r.key] ? 'checked' : ''}
+                       ${laast ? 'disabled' : ''}
+                       onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\\\'")}')">
+                <span>${escapeHtml(r.navn)}</span>
+              </label>`).join('')}
+          </div>
+          <div class="rolle-oppr">
+            <div class="rolle-oppr-tittel">Kan opprette</div>
+            ${OPPRETT_TYPER.map(o => `
+              <label class="rolle-avkryss">
+                <input type="checkbox" id="oppr_${o.key}_${id}" ${(d.opprett || []).includes(o.key) ? 'checked' : ''}
+                       ${laast ? 'disabled' : ''}
+                       onchange="lagreRolle('${escapeHtml(rolle).replace(/'/g, "\\\\'")}')">
+                <span>${escapeHtml(o.navn)}</span>
+              </label>`).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  window.lagreRolle = async function(rolle){
+    if(!isCurrentUserEier()){ showToast('Kun eier kan endre roller.', true); return; }
+    const d = rolleTabell[rolle];
+    if(!d) return;
+    if(d.niva === 1){ showToast('Eierrollen kan ikke endres.', true); return; }
+
+    const id = rolle.replace(/[^a-zA-Z]/g, '');
+    const les = (pre, key) => {
+      const el = document.getElementById(pre + '_' + key + '_' + id);
+      return el ? el.checked : false;
+    };
+    const nivaEl = document.getElementById('niva_' + id);
+    const nyNiva = nivaEl ? parseInt(nivaEl.value, 10) : d.niva;
+
+    const ny = {
+      niva: nyNiva,
+      panel:   les('rett', 'panel'),
+      ledelse: les('rett', 'ledelse'),
+      opptak:  les('rett', 'opptak'),
+      opprett: OPPRETT_TYPER.map(o => o.key).filter(k => les('oppr', k)),
+      sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
+      sistEndretDato: new Date().toISOString()
+    };
+
+    try{
+      await setDoc(doc(db, 'roller', rolle), ny, { merge: true });
+
+      // Nivået står ALLEREDE skrevet i hver persons tilgangsdokument, og
+      // reglene leser det derfra. Endres nivået på rollen, må de skrives
+      // om — ellers ville en person beholdt sin gamle myndighet, og
+      // ingenting ville sagt fra.
+      if(nyNiva !== d.niva){
+        const berort = adminUsersCache.filter(u =>
+          String(u.roller || '').split(',').map(s => s.trim()).includes(rolle));
+        for(const u of berort){
+          const e = (u.epost || '').trim().toLowerCase();
+          if(!e) continue;
+          try{
+            await setDoc(doc(db, 'tilgang', e),
+              { niva: samletTilgang(u.roller).niva }, { merge: true });
+          } catch(err){ console.error('tilgang-nivå:', e, err); }
+        }
+        if(berort.length) showToast('Lagret. ' + berort.length + ' person(er) fikk nytt nivå.');
+        else showToast('Lagret.');
+      } else {
+        showToast('Lagret.');
+      }
+    } catch(err){
+      console.error('Kunne ikke lagre rollen', err);
+      showToast('Noe gikk galt under lagring.', true);
+    }
   };
 
   // ---------- Varslinger ----------
@@ -8874,7 +9198,7 @@
     {
       tittel: '⚙️ Hva som IKKE kan endres herfra',
       punkter: [
-        { h: 'Hvem som kan opprette hva', t: 'står i koden i admin.html (OPPRETT_ROLLER). Det er et bevisst valg: kunne rollene endres fra databasen, kunne enhver med skrivetilgang gitt seg selv eierrollen.' },
+        { h: 'Hvem som kan opprette hva', t: 'settes under «Roller og tilganger» — en fane kun eieren ser. Der bestemmes per rolle hvem som kommer inn i panelet, hvem som regnes som ledelse, hvem som behandler søknader, og hvem som kan opprette programmer, skolekalender, klasser og timeplan.' },
         { h: 'Sikkerhetsreglene', t: 'limes inn manuelt i Firebase Console. Filen firestore.rules i repoet er kun dokumentasjon.' },
         { h: 'Tekstene på de offentlige sidene', t: 'ligger i selve filene og endres med publiseringsverktøyet.' },
         { h: 'Bankkontonummeret på fakturaer', t: 'står fortsatt som en midlertidig verdi i koden og MÅ byttes før ekte fakturaer sendes.' }
@@ -8958,6 +9282,8 @@
     const mnd = parseFloat(document.getElementById('manederInput').value);
     const mat = parseFloat(document.getElementById('materiellInput').value);
     const ter = parseFloat(document.getElementById('terminerInput').value);
+    const dep = parseFloat(document.getElementById('depositumInput').value);
+    const dfr = parseFloat(document.getElementById('depositumFristInput').value);
     if(isNaN(r2) || isNaN(r3) || r2 < 0 || r2 > 100 || r3 < 0 || r3 > 100){
       showToast('Rabattene må være tall mellom 0 og 100.');
       return;
@@ -8974,6 +9300,14 @@
       showToast('Antall terminer må være mellom 1 og 12.');
       return;
     }
+    if(isNaN(dep) || dep < 0){
+      showToast('Depositum må være 0 eller mer.');
+      return;
+    }
+    if(dep > 0 && (isNaN(dfr) || dfr < 1)){
+      showToast('Sett en betalingsfrist for depositumet.');
+      return;
+    }
     // Disse tallene styrer ekte fakturaer og Vipps-krav. Et tastetrykk for
     // mye skal ikke kunne endre dem uten at det blir sagt høyt først.
     if(!confirm(
@@ -8982,7 +9316,8 @@
       '3. barn: ' + prisOppsett.rabatt3 + ' % → ' + r3 + ' %\n' +
       'Måneder: ' + prisOppsett.antallManeder + ' → ' + mnd + '\n' +
       'Materiell: ' + prisOppsett.materiellAvgift + ' kr → ' + mat + ' kr\n' +
-      'Terminer: ' + prisOppsett.terminer + ' → ' + ter + '\n\n' +
+      'Terminer: ' + prisOppsett.terminer + ' → ' + ter + '\n' +
+      'Depositum: ' + prisOppsett.depositum + ' kr → ' + dep + ' kr\n\n' +
       'Dette gjelder umiddelbart for nye beregninger, både her og for ' +
       'Vipps-betalinger. Elever som allerede har et beløp registrert, ' +
       'beholder sitt.'
@@ -8995,6 +9330,8 @@
         antallManeder: mnd,
         materiellAvgift: mat,
         terminer: ter,
+        depositum: dep,
+        depositumFrist: (dep > 0 ? dfr : 0),
         sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
         sistEndretDato: new Date().toISOString()
       }, { merge: true });
@@ -9782,6 +10119,7 @@
     if(tab.dataset.tab === 'overview') renderOvFolders();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
+    if(tab.dataset.tab === 'roller') renderRoller();
     if(oppdaterUrl){
       // Både seksjon OG fane skrives i adressen. Sto bare fanen der, visste
       // ikke siden hvilken gruppe man var inne i etter en oppdatering — og
@@ -9898,6 +10236,28 @@
     // Fyller tilgangsindeksen for kontoer som fantes FØR indeksen ble
   // innført. Uten dette ville alle bli utestengt i det reglene strammes,
   // fordi oppslaget ikke fant noen. Kjøres én gang per økt, av eieren.
+  // Fyller tabellen første gang, med nøyaktig det som sto i koden før.
+  // Da endrer innføringen ingenting for noen — og deretter er det eieren
+  // som bestemmer. Kjøres bare av eieren, og bare når tabellen er tom.
+  let rolletabellSjekket = false;
+  async function sikreRolletabell(){
+    if(rolletabellSjekket || !isCurrentUserEier()) return;
+    if(Object.keys(rolleTabell).length > 0){ rolletabellSjekket = true; return; }
+    rolletabellSjekket = true;
+    try{
+      for(const [navn, def] of Object.entries(ROLLER_UTGANGSPUNKT)){
+        await setDoc(doc(db, 'roller', navn), {
+          ...def,
+          opprettetDato: new Date().toISOString()
+        }, { merge: true });
+      }
+      showToast('Rolletabellen er opprettet med dagens innstillinger.');
+    } catch(err){
+      console.error('Kunne ikke opprette rolletabellen', err);
+      rolletabellSjekket = false;   // prøv igjen ved neste oppdatering
+    }
+  }
+
   let tilgangSjekket = false;
   async function sikreTilgangsindeks(){
     if(tilgangSjekket || !isCurrentUserEier()) return;
@@ -9907,10 +10267,11 @@
       const e = (u.epost || '').trim().toLowerCase();
       if(!e) continue;
       const roller = (u.roller || '').split(',').map(s => s.trim());
-      if(!roller.some(r => ADMIN_PANEL_ROLES.includes(r))) continue;
+      if(!samletTilgang(roller).panel) continue;
       try{
         await setDoc(doc(db, 'tilgang', e), {
           epost: e, navn: u.navn || '', roller: u.roller || '',
+          niva: nivaForRoller(u.roller || ''),
           sistOppdatert: new Date().toISOString()
         }, { merge: true });
       } catch(err){
