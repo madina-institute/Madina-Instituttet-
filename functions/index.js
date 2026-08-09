@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-09 10:07:28 */
+/* SIST-ENDRET: 2026-08-09 10:54:45 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -57,7 +57,10 @@ const PROGRAM_PRICES = {
 // Reserveverdier for søskenrabatt, i prosent. Endres i panelet under
 // settings/priser — MERK at 20/30 fortsatt er det vedtatte. Notatet om
 // medlemspris foreslår 10/20, men det er «Beregnet, ikke vedtatt».
-const RABATT_RESERVE = { barn2: 20, barn3: 30 };
+// Reserven er 0, ikke en gammel sats. Svarer ikke basen, skal beløpet bli
+// synlig FEIL — ikke se riktig ut. 20/30 var en tidligere ordning, og et
+// tall som ser plausibelt ut blir fakturert uten at noen ser etter.
+const RABATT_RESERVE = { barn2: 0, barn3: 0 };
 
 // Ett kall kan regne pris for flere barn. Uten denne ville hver utregning
 // slått opp de samme to dokumentene på nytt.
@@ -84,12 +87,15 @@ async function hentPrisoppsett() {
       const tall = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
       const mnd = tall(p.prisMedlemMnd);
       let aar = tall(p.prisAar);
+      // Måneder hører til programmet — ulike programmer kan gå over ulikt
+      // antall måneder. Samme regel som i panelet.
+      const egneMnd = tall(p.antallManeder);
       // Programmer som ennå ikke har fått årsprisen: fall tilbake på det
       // gamle semesterbeløpet ganget med to, slik panelet også gjør.
       // De to MÅ regne likt — ellers viser panelet ett beløp og Vipps
       // trekker et annet.
       if (aar === 0 && tall(p.pris) > 0) aar = tall(p.pris) * 2;
-      oppsett.programPriser[p.navn] = { mnd, aar };
+      oppsett.programPriser[p.navn] = { mnd, aar, maneder: egneMnd };
     });
   } catch (err) {
     logger.warn("Kunne ikke lese 'programs' — bruker reserveprisene", err);
@@ -177,16 +183,17 @@ async function computeSoskenPrice(program, guardianId, excludeId, erMedlem) {
     const p = oppsett.programPriser[navn];
     // Gamle oppføringer kunne være et enkelt tall. Håndteres, men uten
     // å gjette hva tallet betydde — det ville gitt feil faktura.
-    if (typeof p === "number") return { mnd: 0, aar: p };
-    return p || { mnd: 0, aar: 0 };
+    if (typeof p === "number") return { mnd: 0, aar: p, maneder: 0 };
+    return p || { mnd: 0, aar: 0, maneder: 0 };
   };
   const materiell = oppsett.materiellAvgift || 0;
-  const maneder = oppsett.antallManeder || 9;
+  // Programmets egne måneder går foran. Mangler de, brukes fellesverdien.
+  const manederFor = (navn) => priserFor(navn).maneder || oppsett.antallManeder || 9;
   const medlem = String(erMedlem || "").trim() === "Ja";
 
   // ---- Medlem: fast pris, uavhengig av hvor mange søsken som finnes ----
   if (medlem) {
-    const undervisning = Math.round(priserFor(program).mnd * maneder);
+    const undervisning = Math.round(priserFor(program).mnd * manederFor(program));
     return { price: undervisning + materiell, pos: 1, medlem: true,
              undervisning, materiell };
   }
@@ -1271,8 +1278,22 @@ exports.varsleNySoknad = onSchedule(
       logger.warn("Kunne ikke lese settings/varsler — bruker standardverdier", err);
     }
 
-    const snap = await db.collection("registrations").get();
-    const uvarslede = snap.docs.filter((d) => d.data().varselSendt !== true);
+    // 🔴 KOSTNAD: her lå den dyreste linjen i hele systemet. Den leste
+    // ALLE søknadene hvert andre minutt for å lete etter én ny — 720
+    // ganger i døgnet. Med 50 søknader i basen ble det 36 000 lesinger
+    // per dag, altså 79 % av gratiskvoten, og tallet vokste for hver
+    // eneste nye søknad. Ingenting sa fra; regningen kommer fra Google
+    // en gang i måneden.
+    //
+    // Nå spørres det etter de umerkede i stedet. Er det ingen nye, leses
+    // ingenting — uansett hvor mange søknader som finnes.
+    //
+    // ⚠️ Feltet må være FALSE, ikke fravær: Firestore kan ikke spørre
+    // etter «mangler felt». Derfor merkes hver ny søknad ved opprettelse,
+    // og gamle uten feltet fanges av opprydningen under.
+    const snap = await db.collection("registrations")
+      .where("varselSendt", "==", false).limit(50).get();
+    const uvarslede = snap.docs;
     if (uvarslede.length === 0) {
       // Ingenting står igjen — da er en eventuell tidligere feil over.
       // Uten dette ville merket blitt hengende, og helsesjekken hadde
@@ -1287,14 +1308,16 @@ exports.varsleNySoknad = onSchedule(
     // som håndtert UTEN at det sendes noe. Uten dette ville første
     // kjøring sendt e-post om hver eneste gamle søknad i basen.
     if (oppsett.varselInitiert !== true) {
+      // Første kjøring: hent ALLE (én gang), merk dem, og la det være.
+      const alle = await db.collection("registrations").get();
       const batch = db.batch();
-      uvarslede.forEach((d) => batch.update(d.ref, { varselSendt: true }));
+      alle.docs.forEach((d) => batch.update(d.ref, { varselSendt: true }));
       await batch.commit();
       await db.collection("settings").doc("varsler").set(
         { varselInitiert: true, varselInitiertDato: new Date().toISOString() },
         { merge: true }
       );
-      logger.info(`Første kjøring: ${uvarslede.length} eksisterende søknad(er) merket uten utsending.`);
+      logger.info("Første kjøring: alle eksisterende søknader merket uten utsending.");
       return;
     }
 
@@ -1353,7 +1376,10 @@ exports.varsleNySoknad = onSchedule(
 // er galt. Et varsel som kommer hver dag uansett blir ignorert etter en
 // uke, og da er vi like blinde som før.
 // =====================================================================
-const HELSE_SJEKK_INTERVALL_MS = 30 * 60 * 1000;  // sjekk hver halvtime
+// Hver andre time, ikke hver halvtime. Sjekken leser flere samlinger,
+// og en feil som oppdages 90 minutter senere er like nyttig — varselet
+// sendes uansett høyst én gang i døgnet.
+const HELSE_SJEKK_INTERVALL_MS = 2 * 60 * 60 * 1000;
 const HELSE_VARSEL_PAUSE_MS = 24 * 60 * 60 * 1000; // maks ett varsel i døgnet
 const BACKUP_MAKS_ALDER_MS = 8 * 24 * 60 * 60 * 1000;
 const VARSEL_FAST_GRENSE_MS = 15 * 60 * 1000;
