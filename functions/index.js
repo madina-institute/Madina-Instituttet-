@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-08 21:31:53 */
+/* SIST-ENDRET: 2026-08-09 10:07:28 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -67,9 +67,12 @@ function nullstillPrisCache() { _prisCache = null; }
 async function hentPrisoppsett() {
   if (_prisCache) return _prisCache;
   const oppsett = {
-    programPriser: {},
+    programPriser: {},          // navn -> { mnd, aar }
     rabatt: { ...RABATT_RESERVE },
     tellForesatt2: false,
+    antallManeder: 9,           // 4 mnd høst + 5 mnd vår
+    materiellAvgift: 0,         // 0 er synlig feil; et gjettet beløp blir fakturert
+    terminer: 1,
   };
 
   // Prisene: samme kilde som panelet bruker.
@@ -77,8 +80,16 @@ async function hentPrisoppsett() {
     const snap = await db.collection("programs").get();
     snap.forEach((d) => {
       const p = d.data();
-      const pris = parseFloat(p.pris);
-      if (p.navn && !isNaN(pris) && pris > 0) oppsett.programPriser[p.navn] = pris;
+      if (!p.navn) return;
+      const tall = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+      const mnd = tall(p.prisMedlemMnd);
+      let aar = tall(p.prisAar);
+      // Programmer som ennå ikke har fått årsprisen: fall tilbake på det
+      // gamle semesterbeløpet ganget med to, slik panelet også gjør.
+      // De to MÅ regne likt — ellers viser panelet ett beløp og Vipps
+      // trekker et annet.
+      if (aar === 0 && tall(p.pris) > 0) aar = tall(p.pris) * 2;
+      oppsett.programPriser[p.navn] = { mnd, aar };
     });
   } catch (err) {
     logger.warn("Kunne ikke lese 'programs' — bruker reserveprisene", err);
@@ -93,6 +104,12 @@ async function hentPrisoppsett() {
       const r3 = parseFloat(d.soskenRabatt3);
       if (!isNaN(r2) && r2 >= 0 && r2 <= 100) oppsett.rabatt.barn2 = r2;
       if (!isNaN(r3) && r3 >= 0 && r3 <= 100) oppsett.rabatt.barn3 = r3;
+      const mnd = parseFloat(d.antallManeder);
+      if (!isNaN(mnd) && mnd >= 1 && mnd <= 12) oppsett.antallManeder = mnd;
+      const mat = parseFloat(d.materiellAvgift);
+      if (!isNaN(mat) && mat >= 0) oppsett.materiellAvgift = mat;
+      const ter = parseFloat(d.terminer);
+      if (!isNaN(ter) && ter >= 1 && ter <= 12) oppsett.terminer = ter;
       // Teller barn registrert på foresatt2 som søsken? Står som false
       // fordi det er dagens oppførsel — se merknaden i computeSoskenPrice.
       oppsett.tellForesatt2 = d.tellForesatt2 === true;
@@ -138,31 +155,88 @@ function mapRegistrationSprakvalg(reg) {
 // her: står barnet under den andre foresatte, får familien ikke rabatt
 // og betaler for mye. Innstillingen finnes for å kunne rette det uten
 // at satsene endrer seg av seg selv.
-async function computeSoskenPrice(program, guardianId) {
+// ═══════════════════════════════════════════════════════════════════
+// PRISBEREGNING — MÅ GI NØYAKTIG SAMME BELØP SOM PANELET
+// -------------------------------------------------------------------
+// Denne funksjonen er tvillingen til familiePriser() i admin.html.
+// Endres den ene uten den andre, viser panelet ett beløp mens Vipps
+// trekker et annet — og ingen oppdager det før en familie klager.
+// Det skjedde 8. august, med prisen som lå hardkodet her.
+//
+//   MEDLEM       fast månedspris × antall måneder. INGEN søskenrabatt.
+//   IKKE MEDLEM  fast årspris, DERETTER søskenrabatt.
+//
+// Materiellavgiften kommer PÅ TOPPEN for alle og rabatteres aldri.
+//
+// Ingen beløp står i koden: alt leses fra 'programs' og
+// 'settings/priser', som redigeres i panelet.
+// ═══════════════════════════════════════════════════════════════════
+async function computeSoskenPrice(program, guardianId, excludeId, erMedlem) {
   const oppsett = await hentPrisoppsett();
-  const basePrice = oppsett.programPriser[program] || PROGRAM_PRICES[program] || 0;
-  if (!guardianId) return { price: basePrice, pos: 1 };
+  const priserFor = (navn) => {
+    const p = oppsett.programPriser[navn];
+    // Gamle oppføringer kunne være et enkelt tall. Håndteres, men uten
+    // å gjette hva tallet betydde — det ville gitt feil faktura.
+    if (typeof p === "number") return { mnd: 0, aar: p };
+    return p || { mnd: 0, aar: 0 };
+  };
+  const materiell = oppsett.materiellAvgift || 0;
+  const maneder = oppsett.antallManeder || 9;
+  const medlem = String(erMedlem || "").trim() === "Ja";
 
-  let antall = 0;
-  try {
-    const snap = await db.collection("students").where("foresatt", "==", guardianId).get();
-    antall = snap.size;
-    if (oppsett.tellForesatt2) {
-      const snap2 = await db.collection("students").where("foresatt2", "==", guardianId).get();
-      // Samme barn kan stå på begge feltene — telles én gang.
-      const ider = new Set(snap.docs.map((d) => d.id));
-      snap2.forEach((d) => { if (!ider.has(d.id)) antall++; });
-    }
-  } catch (err) {
-    logger.warn("Kunne ikke telle søsken — regner full pris", err);
-    return { price: basePrice, pos: 1 };
+  // ---- Medlem: fast pris, uavhengig av hvor mange søsken som finnes ----
+  if (medlem) {
+    const undervisning = Math.round(priserFor(program).mnd * maneder);
+    return { price: undervisning + materiell, pos: 1, medlem: true,
+             undervisning, materiell };
   }
 
-  const pos = antall + 1;
-  let price = basePrice;
-  if (pos === 2) price = Math.round(basePrice * (1 - oppsett.rabatt.barn2 / 100));
-  else if (pos >= 3) price = Math.round(basePrice * (1 - oppsett.rabatt.barn3 / 100));
-  return { price, pos };
+  const egen = priserFor(program).aar;
+  if (!guardianId) {
+    return { price: egen + materiell, pos: 1, medlem: false,
+             undervisning: egen, materiell };
+  }
+
+  // ---- Ikke medlem: hent søsknene for å finne plasseringen ----
+  let sosken = [];
+  try {
+    const snap = await db.collection("students").where("foresatt", "==", guardianId).get();
+    snap.forEach((d) => sosken.push({ id: d.id, ...d.data() }));
+    if (oppsett.tellForesatt2) {
+      const snap2 = await db.collection("students").where("foresatt2", "==", guardianId).get();
+      const ider = new Set(sosken.map((s) => s.id));
+      snap2.forEach((d) => { if (!ider.has(d.id)) sosken.push({ id: d.id, ...d.data() }); });
+    }
+  } catch (err) {
+    // Full pris ved feil. Å gjette en rabatt vi ikke kan begrunne ville
+    // trukket for lite, og differansen måtte kreves inn i etterkant.
+    logger.warn("Kunne ikke hente søsken — regner full pris", err);
+    return { price: egen + materiell, pos: 1, medlem: false,
+             undervisning: egen, materiell };
+  }
+
+  // Eleven det gjelder skal telle med, men bare én gang.
+  const nyId = excludeId || "__ny__";
+  sosken = sosken.filter((s) => s.id !== nyId);
+  sosken.push({ id: nyId, program, erMedlem: "Nei" });
+
+  // Kun ikke-medlemmer inngår i søskenrekkefølgen — medlemmer står helt
+  // utenfor rabattsystemet. Sorteres STIGENDE etter pris, så de dypeste
+  // rabattene havner på de DYRESTE programmene, slik skolen har bestemt.
+  // Ved lik pris avgjør id-en, nøyaktig som i panelet, slik at begge to
+  // alltid fordeler likt.
+  const rekke = sosken
+    .filter((s) => String(s.erMedlem || "").trim() !== "Ja")
+    .map((s) => ({ id: s.id, aar: priserFor(s.program).aar }))
+    .sort((a, b) => (a.aar - b.aar) || String(a.id).localeCompare(String(b.id)));
+
+  const plass = rekke.findIndex((r) => r.id === nyId) + 1;
+  let undervisning = egen;
+  if (plass === 2) undervisning = Math.round(egen * (1 - oppsett.rabatt.barn2 / 100));
+  else if (plass >= 3) undervisning = Math.round(egen * (1 - oppsett.rabatt.barn3 / 100));
+
+  return { price: undervisning + materiell, pos: plass, medlem: false,
+           undervisning, materiell };
 }
 
 // ---------------------------------------------------------------------
@@ -654,7 +728,11 @@ exports.vippsWebhook = onRequest(
     // i admin-panelets kode og ikke her i webhooken.
     const mappedProgram = mapRegistrationProgram(reg.program);
     const mappedSprakvalg = mapRegistrationSprakvalg(reg);
-    const { price: discountedPrice, pos: soskenPos } = await computeSoskenPrice(mappedProgram, guardianId);
+    // Medlemsstatus følger med fra søknaden. Mangler den, regnes eleven
+    // som IKKE medlem — det gir høyeste pris, og et for høyt beløp blir
+    // oppdaget og rettet. Et for lavt blir ikke det.
+    const { price: discountedPrice, pos: soskenPos } =
+      await computeSoskenPrice(mappedProgram, guardianId, null, reg.erMedlem);
 
     const studentRecord = { ...reg };
     delete studentRecord.status;
