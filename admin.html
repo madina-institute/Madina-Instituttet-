@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 10:26:25 -->
+<!-- SIST-ENDRET: 2026-08-09 11:12:37 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2781,7 +2781,12 @@
   // 🔴 Dette er driftsstatistikk, ikke overvåking: hvem som var pålogget
   // og hvor lenge. Ikke hva de så på.
   // ═══════════════════════════════════════════════════════════════════
-  const PULS_INTERVALL_MS = 2 * 60 * 1000;
+  // Hvert 5. minutt, ikke hvert 2. Det koster én skriving hver gang, per
+  // påloggede bruker, hele arbeidsdagen. Med tre brukere ble det 2 160
+  // skrivinger i døgnet for å måle noe som uansett bare skal vise
+  // omtrentlig brukstid. Nøyaktigheten faller fra ±2 til ±5 minutter —
+  // uten praktisk betydning for tallet det skal fortelle.
+  const PULS_INTERVALL_MS = 5 * 60 * 1000;
   let oktRef = null;
   let oktStart = null;
   let sistePuls = 0;
