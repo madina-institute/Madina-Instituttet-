@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 15:51:30 -->
+<!-- SIST-ENDRET: 2026-08-09 17:07:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -229,6 +229,30 @@
   .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
 
   .pd-skjult{ color:#a8b2ac; letter-spacing:2px; }
+
+  .dub-boks{
+    border:1px solid var(--tabell-linje); border-radius:10px;
+    padding:13px 15px; margin-bottom:12px; background:#fff;
+  }
+  .dub-boks.dub-rod{ border-color:rgba(168,60,60,.35); background:#fdf7f7; }
+  .dub-tittel{
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:600;
+    color:var(--emerald-d); margin-bottom:4px;
+  }
+  .dub-hjelp{
+    font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7480;
+    line-height:1.55; margin-bottom:10px;
+  }
+  .dub-gruppe{
+    border:1px solid var(--line); border-radius:8px;
+    padding:8px 10px; margin-bottom:8px; background:var(--paper);
+  }
+  .dub-rad{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:12px; padding:7px 0; font-family:'Jost',sans-serif; font-size:13px;
+  }
+  .dub-rad + .dub-rad{ border-top:1px solid var(--line); }
+  .dub-detalj{ font-size:11.5px; color:#8a9a90; margin-top:2px; }
 
   .rolle-kort{
     background:#fff; border:1px solid var(--tabell-linje); border-radius:10px;
@@ -1434,6 +1458,33 @@
         innlogging i Lærerportalen — og kommer ikke videre uten. Du slipper
         å etterspørre dem.
       </div>
+    </div>
+
+    <div data-ov="ansatte" class="report-card" style="margin-top:20px;">
+      <h3>🧹 Rydd opp i personer</h3>
+      <div class="sub">Dubletter, manglende kort og e-poster som ikke ser riktige ut</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65; margin-bottom:14px;">
+        Samme person kan ligge i flere lister, og de knyttes sammen av
+        <b>e-posten alene</b>. Ett tegn forskjell blir til to personer — med
+        hver sin tilgang og hvert sitt kort.
+      </p>
+      <div id="dublettListe"></div>
+    </div>
+
+    <div data-ov="dubletter" class="report-card">
+      <h3>🧹 Dubletter i alle listene</h3>
+      <div class="sub">Like oppføringer i elever, klasser, timeplan, programmer, planer og søknader</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65; margin-bottom:14px;">
+        Hva som gjør to oppføringer like er ikke det samme fra liste til liste.
+        To klasser er like når navnet er likt; to timer kolliderer når samme
+        klasse står på samme dag og klokkeslett. Nøkkelen står oppgitt under
+        hver gruppe.
+      </p>
+      <div class="hint" style="margin-bottom:14px;">
+        Ingenting slettes automatisk. Hvilken oppføring som skal beholdes er en
+        vurdering — den ene kan ha mer utfylt enn den andre. Åpne begge først.
+      </div>
+      <div id="dublettAlleListe"></div>
     </div>
 
     <div data-ov="ansatte" class="report-card" style="margin-top:20px;">
@@ -6112,7 +6163,7 @@
     if((type === 'students' || type === 'classes' || type === 'attendance') && document.getElementById('attTakingList')) renderAttendanceTakingList();
     if(type === 'finances') renderFinanceSummary();
     if(type === 'teacherAttendance' || type === 'teachers') renderLonnOversikt();
-    if(type === 'teachers'){ renderLedelseView(); renderVarselMottakere(); }
+    if(type === 'teachers'){ renderLedelseView(); renderVarselMottakere(); renderDubletter(); }
     if(type === 'messages') renderMessagesInbox();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
@@ -8820,6 +8871,7 @@
     { key:'varsler', ikon:'🔔', navn:'Varslinger',         sub:'Hvem varsles ved ny påmelding' },
     { key:'backup',  ikon:'💾', navn:'Sikkerhetskopi',     sub:'Last ned, send og gjenopprett' },
     { key:'data',    ikon:'🧪', navn:'Data og migrering',  sub:'Eksempeldata og ID-migrering' },
+    { key:'dubletter', ikon:'🧹', navn:'Dubletter',       sub:'Like oppføringer i alle listene' },
     { key:'fare',    ikon:'⚠️', navn:'Faresone',           sub:'Sletter data permanent' }
   ];
   let ovValgtMappe = 'start';
@@ -8842,6 +8894,8 @@
   window.setOvMappe = function(key){
     ovValgtMappe = key;
     renderOvFolders();
+    if(key === 'ansatte') renderDubletter();
+    if(key === 'dubletter') renderAlleDubletter();
     const panel = document.getElementById('panel-overview');
     if(panel) panel.scrollIntoView({ behavior:'smooth', block:'start' });
   };
@@ -9019,6 +9073,363 @@
     } catch(err){
       console.error('Kunne ikke lagre rollen', err);
       showToast('Noe gikk galt under lagring.', true);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // RYDD OPP I PERSONER
+  // -------------------------------------------------------------------
+  // Samme person kan ligge flere steder: 'teachers' (personkortet),
+  // 'adminUsers' (tilgangslisten) og 'tilgang' (det reglene leser).
+  // De knyttes sammen av E-POSTEN, og bare av den.
+  //
+  // Da oppstår to helt ulike problemer, som må løses hver sin vei:
+  //
+  //   1. SAMME e-post flere ganger  → en ekte dublett. Systemet leser
+  //      da vilkårlig én av dem, og hvilken kan skifte mellom økter.
+  //
+  //   2. SAMME navn, ULIKE e-poster → én person registrert flere ganger.
+  //      Ikke en feil i koden — men i praksis fire personer for systemet,
+  //      med hver sin tilgang og hvert sitt kort.
+  //
+  // Verktøyet finner begge og lar eieren rydde. Det sletter aldri av seg
+  // selv: hvilken oppføring som skal beholdes er en vurdering, ikke noe
+  // en regel kan avgjøre.
+  // ═══════════════════════════════════════════════════════════════════
+
+  // normEpost finnes allerede lenger nede — den gjenbrukes her.
+  // To funksjoner med samme navn er en SyntaxError som stopper HELE
+  // modulen, ikke bare denne delen. Nøyaktig samme feil som «lov»
+  // tidligere i dag, og den ble fanget av syntakskontrollen før levering.
+  const normNavn = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+  function finnDubletter(){
+    // Alt som finnes, samlet.
+    const alle = [];
+    (cache.teachers || []).forEach(t => alle.push({
+      kilde:'teachers', id:t.id, navn:t.navn || '', epost:t.epost || '', roller:t.roller || ''
+    }));
+    adminUsersCache.forEach(u => alle.push({
+      kilde:'adminUsers', id:u.id, navn:u.navn || '', epost:u.epost || '', roller:u.roller || u.rolle || ''
+    }));
+
+    // 1) Samme e-post, flere oppføringer i SAMME samling
+    const eksakte = {};
+    alle.forEach(x => {
+      const e = normEpost(x.epost);
+      if(!e) return;
+      const n = e + '|' + x.kilde;
+      (eksakte[n] = eksakte[n] || []).push(x);
+    });
+    const ekteDubletter = Object.values(eksakte).filter(g => g.length > 1);
+
+    // 2) Samme navn, ulike e-poster
+    const perNavn = {};
+    alle.forEach(x => {
+      const n = normNavn(x.navn);
+      if(!n) return;
+      (perNavn[n] = perNavn[n] || []).push(x);
+    });
+    const sammeNavn = Object.entries(perNavn)
+      .map(([navn, rader]) => ({
+        navn: rader[0].navn,
+        eposter: [...new Set(rader.map(r => normEpost(r.epost)).filter(Boolean))],
+        rader
+      }))
+      .filter(g => g.eposter.length > 1);
+
+    // 3) Tilgang uten personkort, og omvendt
+    const teacherEpost = new Set((cache.teachers || []).map(t => normEpost(t.epost)).filter(Boolean));
+    const adminEpost   = new Set(adminUsersCache.map(u => normEpost(u.epost)).filter(Boolean));
+    const utenKort = adminUsersCache
+      .filter(u => normEpost(u.epost) && !teacherEpost.has(normEpost(u.epost)));
+    const utenTilgang = (cache.teachers || [])
+      .filter(t => normEpost(t.epost) && (t.roller || '').trim() && !adminEpost.has(normEpost(t.epost)));
+
+    // 4) E-poster som ikke ser gyldige ut
+    const ugyldige = alle.filter(x => {
+      const e = (x.epost || '').trim();
+      return e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+    });
+
+    return { ekteDubletter, sammeNavn, utenKort, utenTilgang, ugyldige };
+  }
+
+  function renderDubletter(){
+    const el = document.getElementById('dublettListe');
+    if(!el) return;
+    const d = finnDubletter();
+    const antall = d.ekteDubletter.length + d.sammeNavn.length +
+                   d.utenKort.length + d.utenTilgang.length + d.ugyldige.length;
+
+    if(antall === 0){
+      el.innerHTML = '<div class="report-empty">Ingen dubletter eller manglende koblinger funnet.</div>';
+      return;
+    }
+
+    let html = '';
+    const rad = (x) => `
+      <div class="dub-rad">
+        <div>
+          <b>${escapeHtml(x.navn || '(uten navn)')}</b>
+          <div class="dub-detalj">${escapeHtml(x.epost || '(uten e-post)')} · ${escapeHtml(x.kilde)}${x.roller ? ' · ' + escapeHtml(x.roller) : ''}</div>
+        </div>
+        <button class="btn-danger" onclick="slettDublett('${x.kilde}','${escapeHtml(x.id)}','${escapeHtml(x.navn || x.epost).replace(/'/g, "\\'")}')">Slett denne</button>
+      </div>`;
+
+    if(d.ekteDubletter.length){
+      html += `<div class="dub-boks dub-rod">
+        <div class="dub-tittel">🔴 Samme e-post flere ganger (${d.ekteDubletter.length})</div>
+        <div class="dub-hjelp">Systemet leser vilkårlig én av dem, og hvilken kan skifte mellom økter. Behold den med mest utfylt, slett resten.</div>
+        ${d.ekteDubletter.map(g => `<div class="dub-gruppe">${g.map(rad).join('')}</div>`).join('')}
+      </div>`;
+    }
+
+    if(d.sammeNavn.length){
+      html += `<div class="dub-boks">
+        <div class="dub-tittel">⚠️ Samme navn, ulike e-poster (${d.sammeNavn.length})</div>
+        <div class="dub-hjelp">Dette er ikke nødvendigvis feil — men for systemet er det ulike personer, med hver sin tilgang og hvert sitt kort. Er det samme menneske, behold én.</div>
+        ${d.sammeNavn.map(g => `
+          <div class="dub-gruppe">
+            <div class="dub-detalj" style="margin-bottom:6px;">${escapeHtml(g.navn)} — ${g.eposter.length} e-poster</div>
+            ${g.rader.map(rad).join('')}
+          </div>`).join('')}
+      </div>`;
+    }
+
+    if(d.utenKort.length){
+      html += `<div class="dub-boks">
+        <div class="dub-tittel">📇 Tilgang uten personkort (${d.utenKort.length})</div>
+        <div class="dub-hjelp">Disse kan logge inn, men har ingen oppføring under «Lærere» eller «Ledelse» — og vises derfor ikke i listene. Opprett kortet med NØYAKTIG samme e-post.</div>
+        ${d.utenKort.map(u => `
+          <div class="dub-rad">
+            <div>
+              <b>${escapeHtml(u.navn || '(uten navn)')}</b>
+              <div class="dub-detalj">${escapeHtml(u.epost)}${u.roller ? ' · ' + escapeHtml(u.roller) : ''}</div>
+            </div>
+            <button class="btn-edit" onclick="opprettKortFor('${escapeHtml(u.epost)}')">Opprett kort</button>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    if(d.utenTilgang.length){
+      html += `<div class="dub-boks">
+        <div class="dub-tittel">🔑 Personkort med roller, men uten tilgang (${d.utenTilgang.length})</div>
+        <div class="dub-hjelp">Har roller satt, men står ikke i tilgangslisten — kommer altså ikke inn i panelet. Åpne kortet og lagre det på nytt, så bygges tilgangen.</div>
+        ${d.utenTilgang.map(t => `
+          <div class="dub-rad">
+            <div>
+              <b>${escapeHtml(t.navn || '')}</b>
+              <div class="dub-detalj">${escapeHtml(t.epost)} · ${escapeHtml(t.roller)}</div>
+            </div>
+            <button class="btn-edit" onclick="showPersonDetail('teachers','${escapeHtml(t.id)}')">Åpne kortet</button>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    if(d.ugyldige.length){
+      html += `<div class="dub-boks dub-rod">
+        <div class="dub-tittel">🔴 E-poster som ikke ser gyldige ut (${d.ugyldige.length})</div>
+        <div class="dub-hjelp">Ofte tekst som er limt inn i feil felt. En slik oppføring får aldri e-post, og kan ikke logge inn.</div>
+        ${d.ugyldige.map(rad).join('')}
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
+  window.slettDublett = async function(kilde, id, navn){
+    if(!isCurrentUserEier()){ showToast('Kun eier kan slette her.', true); return; }
+    if(!confirm('Slette «' + navn + '» fra ' + kilde + '?\n\nEn kopi havner i sletteloggen og kan gjenopprettes i 30 dager.')) return;
+    try{
+      // Samme spor som all annen sletting — uten dette ville en
+      // opprydding vært den ene handlingen uten angremulighet.
+      const rad = kilde === 'teachers'
+        ? (cache.teachers || []).find(x => x.id === id)
+        : adminUsersCache.find(x => x.id === id);
+      if(rad) await logDeletion(kilde === 'teachers' ? 'teachers' : 'teachers', rad);
+
+      await deleteDoc(doc(db, kilde, id));
+
+      // Står personen ikke lenger noe sted, skal tilgangen bort også.
+      // Ellers ville en slettet person fortsatt hatt myndighet i reglene.
+      if(rad && rad.epost){
+        const e = normEpost(rad.epost);
+        const finnesEnda = (cache.teachers || []).some(x => x.id !== id && normEpost(x.epost) === e)
+          || adminUsersCache.some(x => x.id !== id && normEpost(x.epost) === e);
+        if(!finnesEnda){
+          try{ await deleteDoc(doc(db, 'tilgang', e)); }
+          catch(err){ console.warn('Kunne ikke fjerne tilgang for', e, err); }
+        }
+      }
+      showToast('Slettet.');
+      setTimeout(renderDubletter, 400);
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke slette: ' + (err.code || err.message), true);
+    }
+  };
+
+  // Åpner skjemaet ferdig utfylt, slik at e-posten blir NØYAKTIG lik.
+  // Skrives den inn for hånd, blir ett tegn feil til en ny person.
+  window.opprettKortFor = function(epost){
+    const u = adminUsersCache.find(x => normEpost(x.epost) === normEpost(epost));
+    openModal('teachers', null, {
+      navn: u ? (u.navn || '') : '',
+      epost: (u ? u.epost : epost).trim(),
+      roller: u ? (u.roller || u.rolle || '') : ''
+    });
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // DUBLETTER I ALLE LISTENE
+  // -------------------------------------------------------------------
+  // Hva som GJØR to oppføringer like er ikke det samme fra liste til
+  // liste. To personer er samme person når e-posten er lik. To klasser er
+  // samme klasse når navnet er likt. To timer kolliderer når SAMME klasse
+  // står oppført på samme dag og klokkeslett — der er ikke navnet med i
+  // det hele tatt.
+  //
+  // Derfor står nøkkelen per type her. Uten den ville verktøyet enten
+  // meldt om alt (og blitt ignorert), eller ingenting (og vært til pynt).
+  //
+  // 🔴 Ingenting slettes automatisk. Hvilken av to oppføringer som skal
+  // beholdes er en vurdering — den ene kan ha mer utfylt enn den andre.
+  // ═══════════════════════════════════════════════════════════════════
+  const DUBLETT_NOKLER = {
+    // Personer: e-posten binder dem sammen på tvers av listene.
+    teachers:   { felt:['epost'], navn:'Lærere og ansatte', hva:'samme e-post' },
+    guardians:  { felt:['epost'], navn:'Foresatte', hva:'samme e-post',
+                  ekstra:{ felt:['telefon'], hva:'samme telefon' } },
+    students:   { felt:['navn','elev_fdato'], navn:'Elever', hva:'samme navn og fødselsdato' },
+
+    // Oppsett: navnet ER nøkkelen. Elever og klasser peker på programmet
+    // via navnet, så to like navn gjør koblingen tvetydig.
+    programs:   { felt:['navn'], navn:'Programmer', hva:'samme navn' },
+    classes:    { felt:['navn'], navn:'Klasser', hva:'samme navn' },
+
+    // Timeplan: en klasse kan ikke ha to timer samtidig.
+    hours:      { felt:['dag','tid','klasse'], navn:'Timeplan', hva:'samme klasse, dag og klokkeslett' },
+
+    // Registreringer: samme elev samme dag skal finnes én gang.
+    attendance:        { felt:['dato','studentId'], navn:'Oppmøte', hva:'samme elev samme dato' },
+    teacherAttendance: { felt:['dato','larer'], navn:'Læreroppmøte', hva:'samme lærer samme dato' },
+    absenceRequests:   { felt:['dato','studentId'], navn:'Fraværsmeldinger', hva:'samme elev samme dato' },
+
+    // Planer og maler: én mal per fag og klasse.
+    dailyPlanTemplates:    { felt:['fag','klasse'], navn:'Daglig-maler', hva:'samme fag og klasse' },
+    monthlyPlanTemplates:  { felt:['fag','klasse'], navn:'Månedsplan-maler', hva:'samme fag og klasse' },
+    semesterPlanTemplates: { felt:['fag','klasse'], navn:'Semesterplan-maler', hva:'samme fag og klasse' },
+    monthlyPlans:  { felt:['larer','fag','klasse','maaned'],  navn:'Månedsplaner', hva:'samme lærer, fag, klasse og måned' },
+    semesterPlans: { felt:['larer','fag','klasse','semester'], navn:'Semesterplaner', hva:'samme lærer, fag, klasse og semester' },
+
+    // Søknader: samme barn sendt inn to ganger.
+    registrations: { felt:['elev_navn','elev_fdato'], navn:'Søknader', hva:'samme navn og fødselsdato' },
+
+    // Skolekalender: samme dato lagt inn to ganger for samme program.
+    schoolCalendar: { felt:['fraDato','program'], navn:'Skolekalender', hva:'samme dato og program' },
+  };
+
+  const dubKey = (rad, felt) => felt
+    .map(f => String(rad[f] || '').trim().toLowerCase().replace(/\s+/g, ' '))
+    .join('␟');
+
+  // Finner grupper med lik nøkkel. Rader der nøkkelen er helt tom hoppes
+  // over — to halvutfylte kladder er ikke en dublett, bare uferdige.
+  function dublettGrupper(type, felt){
+    const data = cache[type] || [];
+    const grupper = {};
+    data.forEach(r => {
+      const k = dubKey(r, felt);
+      if(!k.replace(/␟/g, '')) return;
+      (grupper[k] = grupper[k] || []).push(r);
+    });
+    return Object.values(grupper).filter(g => g.length > 1);
+  }
+
+  function alleDubletter(){
+    const funn = [];
+    Object.entries(DUBLETT_NOKLER).forEach(([type, def]) => {
+      if(!cache[type]) return;
+      const g = dublettGrupper(type, def.felt);
+      if(g.length) funn.push({ type, def, hva: def.hva, grupper: g });
+      if(def.ekstra){
+        const g2 = dublettGrupper(type, def.ekstra.felt);
+        // Rader som allerede er meldt på hovednøkkelen tas ikke med igjen.
+        const alt = new Set(g.flat().map(r => r.id));
+        const nye = g2.filter(gr => gr.some(r => !alt.has(r.id)));
+        if(nye.length) funn.push({ type, def, hva: def.ekstra.hva, grupper: nye });
+      }
+    });
+    return funn;
+  }
+
+  function renderAlleDubletter(){
+    const el = document.getElementById('dublettAlleListe');
+    if(!el) return;
+    const funn = alleDubletter();
+    const antall = funn.reduce((s, f) => s + f.grupper.length, 0);
+
+    if(antall === 0){
+      el.innerHTML = '<div class="report-empty">Ingen dubletter funnet i noen av listene.</div>';
+      return;
+    }
+
+    el.innerHTML = funn.map(f => {
+      const schema = SCHEMAS[f.type];
+      const cfg = CARD_CONFIG[f.type] || {};
+      const tittelFelt = cfg.title || (schema.cols || [])[0] || 'navn';
+      const visTekst = (r) => {
+        const v = (k) => {
+          const felt = schema.fields.find(x => x.key === k);
+          if(felt && felt.type === 'dynamic-select') return resolveDynName(felt.source, r[k]);
+          return r[k] || '';
+        };
+        const hoved = v(tittelFelt) || '(uten navn)';
+        const detalj = f.def.felt.map(v).filter(Boolean).join(' · ');
+        return { hoved, detalj };
+      };
+      return `
+        <div class="dub-boks">
+          <div class="dub-tittel">${escapeHtml(f.def.navn)} — ${f.grupper.length} tilfelle${f.grupper.length === 1 ? '' : 'r'}</div>
+          <div class="dub-hjelp">Funnet på: ${escapeHtml(f.hva)}</div>
+          ${f.grupper.map(g => `
+            <div class="dub-gruppe">
+              ${g.map(r => {
+                const x = visTekst(r);
+                return `
+                <div class="dub-rad">
+                  <div style="min-width:0;">
+                    <b>${escapeHtml(x.hoved)}</b>
+                    ${x.detalj ? `<div class="dub-detalj">${escapeHtml(x.detalj)}</div>` : ''}
+                  </div>
+                  <span style="display:flex; gap:6px; flex:0 0 auto;">
+                    <button class="btn-edit" onclick="apneDublett('${f.type}','${escapeHtml(r.id)}')">Åpne</button>
+                    <button class="btn-danger" onclick="slettRadDublett('${f.type}','${escapeHtml(r.id)}','${escapeHtml(x.hoved).replace(/'/g, "\\\\'")}')">Slett</button>
+                  </span>
+                </div>`;
+              }).join('')}
+            </div>`).join('')}
+        </div>`;
+    }).join('');
+  }
+
+  window.apneDublett = function(type, id){
+    if(['students','teachers','guardians','registrations'].includes(type)) showPersonDetail(type, id);
+    else editEntry(type, id);
+  };
+
+  window.slettRadDublett = async function(type, id, navn){
+    if(!confirm('Slette «' + navn + '»?\n\nEn kopi havner i sletteloggen og kan gjenopprettes i 30 dager.')) return;
+    try{
+      const rad = (cache[type] || []).find(r => r.id === id);
+      if(rad) await logDeletion(type, rad);
+      await deleteDoc(doc(db, SCHEMAS[type].collectionName, id));
+      showToast('Slettet.');
+      setTimeout(renderAlleDubletter, 400);
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke slette: ' + (err.code || err.message), true);
     }
   };
 
