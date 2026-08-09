@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 22:27:18 -->
+<!-- SIST-ENDRET: 2026-08-09 23:19:36 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1520,12 +1520,36 @@
       og vises umiddelbart hos alle som har siden åpen — uansett enhet.
     </p>
     <div data-ov="data" class="report-card" style="margin-top:20px;">
-      <h3>Eksempeldata for demo</h3>
-      <div class="sub">Fyll databasen med realistiske eksempeloppføringer (lærere, foresatte, klasser, elever, timeplan og oppmøte)</div>
-      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px;">
-        Nyttig før et møte eller en demonstrasjon. Dette legger til nye oppføringer — det sletter eller endrer ikke eksisterende data.
+      <div class="innst-topp">
+        <h3>Testdata</h3>
+        <span class="innst-meta" id="testdataAntall"></span>
+      </div>
+      <div class="sub">
+        Lager <b>søknader</b> — ikke elever. De havner under Søknader akkurat som
+        om familier hadde fylt ut skjemaet, og blir til elever først når du
+        godkjenner dem.
+      </div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin:12px 0;">
+        Grunnen: det er godkjenningen som er den utrygge delen. Den oppretter
+        foresatt, kobler søsken, lager innlogging og regner ut beløpet. Legger
+        man elevene rett inn i basen, blir nettopp det aldri prøvd.<br><br>
+        Søsken i samme familie får <b>samme telefonnummer</b> — det er slik
+        godkjenningen kjenner dem igjen som én familie.<br><br>
+        Alt merkes <code>erTestdata: true</code>. Å slette etter navn ville før
+        eller siden truffet en ekte elev som het noe liknende.
       </p>
-      <button class="btn btn-primary" onclick="seedDemoData()">Last inn eksempeldata</button>
+      <div class="innst-rad">
+        <div class="field">
+          <label>Antall familier</label>
+          <input type="number" id="testFamilierInput" min="1" max="40" step="1" value="8">
+          <div class="hint">Hver familie sender 1–3 søknader, én per barn.</div>
+        </div>
+      </div>
+      <div class="innst-effekt" id="testdataEffekt"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;">
+        <button class="btn btn-primary" style="width:auto;" onclick="lagTestsoknader()">Lag testsøknader</button>
+        <button class="btn btn-danger-solid" style="width:auto;" onclick="slettTestdata()">Slett alle testdata</button>
+      </div>
     </div>
 
     <div data-ov="data" class="report-card" style="margin-top:20px;">
@@ -1824,6 +1848,13 @@
       <div class="choice-card folder-card" data-status="Avslått" onclick="setRegFolder('Avslått')">
         <h3>❌ Avslått<span class="folder-count" id="regFolderCount_Avslått">0</span></h3>
         <div class="sub">Avslåtte søknader</div>
+      </div>
+      <!-- Testsøknader holdes UTE av de andre mappene. Ligger de blandet
+           inn i «Nye», må man lese hvert kort for å vite hva som er ekte —
+           og en ekte familie kan bli oversett fordi listen ser full ut. -->
+      <div class="choice-card folder-card" data-status="__test__" onclick="setRegFolder('__test__')">
+        <h3>🧪 Testsøknader<span class="folder-count" id="regFolderCount___test__">0</span></h3>
+        <div class="sub">Laget av deg — ikke ekte familier</div>
       </div>
     </div>
     <div class="toolbar" id="regToolbar" style="display:none;">
@@ -4587,7 +4618,212 @@
     ]
   };
 
-  window.seedDemoData = async function(){
+
+  // ═══════════════════════════════════════════════════════════════════
+  // TESTDATA
+  //
+  // Den gamle versjonen la inn fem faste elever med hardkodede navn,
+  // priser og klasser. Tre problemer med det:
+  //
+  //   • Slettingen måtte gjette på navn. Et navn kan tilhøre en ekte elev.
+  //   • Ingen familie hadde to foresatte, så søskenrabatt på tvers av
+  //     foresatt 2 — den som har kostet skolen penger — kunne ikke prøves.
+  //   • Beløpet sto i koden, så prisberegningen ble aldri testet.
+  //
+  // Nå: alt merkes erTestdata, familiene bygges av ekte programmer og
+  // klasser fra basen, og beløpet regnes av det samme apparatet som
+  // fakturerer på ekte.
+  // ═══════════════════════════════════════════════════════════════════
+  const TEST_FORNAVN = ['Amina','Yusuf','Layla','Omar','Maryam','Ibrahim','Sara',
+    'Bilal','Nora','Hamza','Zainab','Idris','Salma','Adam','Rania','Musa'];
+  const TEST_ETTERNAVN = ['Hassan','Karim','Osman','Bashir','Nasser','Farah',
+    'Sultan','Dahir','Jama','Aden'];
+  const TEST_EPOST_DOMENE = 'test.madinaskole.no';
+
+  function tellTestdata(){
+    const t = (liste) => (liste || []).filter(r => r.erTestdata === true).length;
+    return { soknader: t(cache.registrations), elever: t(cache.students),
+             foresatte: t(cache.guardians), larere: t(cache.teachers),
+             klasser: t(cache.classes) };
+  }
+
+  function visTestdataStatus(){
+    const el = document.getElementById('testdataAntall');
+    const eff = document.getElementById('testdataEffekt');
+    const n = tellTestdata();
+    const sum = n.soknader + n.elever + n.foresatte + n.larere + n.klasser;
+    if(el) el.textContent = sum === 0 ? 'Ingen testdata' : sum + ' merkede oppføringer';
+    if(!eff) return;
+    // Ekte oppføringer er de som IKKE er merket. Står det ekte data her,
+    // skal det synes — testdata og ekte elever i samme base er greit så
+    // lenge man vet det, og en felle så snart man ikke gjør det.
+    const ekteElever = (cache.students || []).filter(e => e.navn && e.erTestdata !== true).length;
+    eff.innerHTML = sum === 0
+      ? 'Ingenting er merket som testdata nå.'
+      : '<b>' + n.soknader + ' søknader</b> · <b>' + n.foresatte + ' foresatte</b> · <b>' +
+        n.elever + ' elever</b>' +
+        (n.klasser ? ' · ' + n.klasser + ' klasser' : '') +
+        ' er merket som testdata.' +
+        (ekteElever ? '<br>⚠️ Basen har i tillegg <b>' + ekteElever +
+          ' elever som IKKE er merket</b> — de blir ikke rørt av sletting.' : '');
+  }
+
+  window.lagTestsoknader = async function(){
+    if(!isCurrentUserEier()){ showToast('Kun eier kan lage testdata.'); return; }
+    const antall = parseInt((document.getElementById('testFamilierInput') || {}).value, 10);
+    if(isNaN(antall) || antall < 1 || antall > 40){
+      showToast('Velg mellom 1 og 40 familier.');
+      return;
+    }
+    const programmer = (cache.programs || []).filter(p => p.navn && p.aktiv !== 'Nei');
+    if(programmer.length === 0){
+      alert('Legg inn minst ett program under Skole → Programmer først.\n\n' +
+            'Søknadene bruker de ekte programnavnene, slik at prisen som ' +
+            'regnes ut ved godkjenning er den skolen faktisk fakturerer.');
+      return;
+    }
+
+    if(!confirm(
+      'Lage søknader fra ' + antall + ' familier?\n\n' +
+      'De havner under Søknader med status «Ny», og blir til elever først ' +
+      'når du godkjenner dem — samme vei som ekte søknader.\n\n' +
+      'Ingen varsler sendes ut.'
+    )) return;
+
+    let laget = 0;
+    try{
+      for(let i = 0; i < antall; i++){
+        const etternavn = TEST_ETTERNAVN[i % TEST_ETTERNAVN.length];
+        const nr = i + 1;
+        // 🔴 Samme telefon for alle søsken. Godkjenningen kjenner igjen en
+        // eksisterende foresatt på TELEFON — er nummeret ulikt, blir det
+        // én foresatt per barn, og søskenrabatten uteblir.
+        const tlf = '900' + String(10000 + i).slice(-5);
+        const toForeldre = i % 2 === 0;
+        const antallBarn = 1 + (i % 3);
+
+        for(let b = 0; b < antallBarn; b++){
+          const prog = programmer[(i + b) % programmer.length];
+          const harAllergi = (i + b) % 4 === 0;
+          const harMedisin = (i + b) % 5 === 0;
+          const fdato = (2014 + (b % 6)) + '-0' + (1 + (i % 9)) + '-1' + (b % 9);
+
+          await addDoc(collection(db, 'registrations'), {
+            // Feltnavnene er de samme som påmeldingsskjemaet skriver.
+            // Avviker de, ville godkjenningen lest tomme felter og
+            // opprettet en foresatt uten navn.
+            elev_navn: TEST_FORNAVN[(i * 3 + b) % TEST_FORNAVN.length] + ' ' + etternavn,
+            elev_fdato: fdato,
+            kjonn: b % 2 === 0 ? 'gutt' : 'jente',
+            alder_bekreftet: 'ja',
+            program: prog.navn,
+            sprakvalg: (i + b) % 2 === 0 ? 'Arabisk' : 'Urdu',
+            klassetrinn: String(1 + ((i + b) % 7)) + '. trinn',
+            grunnskole: 'Testskolen ' + nr,
+            adresse: 'Testveien ' + (10 + i),
+            postnr_sted: '0' + (150 + i) + ' Oslo',
+            botid_norge: String(3 + (i % 12)),
+
+            foresatt1_navn: 'Far ' + etternavn,
+            foresatt1_relasjon: 'Far',
+            foresatt1_tlf: tlf,
+            foresatt1_epost: 'far' + nr + '@' + TEST_EPOST_DOMENE,
+            har_foresatt2: toForeldre ? 'ja' : '',
+            foresatt2_navn: toForeldre ? 'Mor ' + etternavn : '',
+            foresatt2_relasjon: toForeldre ? 'Mor' : '',
+            foresatt2_tlf: toForeldre ? '910' + String(10000 + i).slice(-5) : '',
+            foresatt2_epost: toForeldre ? 'mor' + nr + '@' + TEST_EPOST_DOMENE : '',
+
+            nod_navn: 'Onkel ' + etternavn,
+            nod_relasjon: 'Onkel',
+            nod_tlf: '920' + String(10000 + i).slice(-5),
+
+            // Helsefeltene varieres med vilje: det er de som skal vises som
+            // stjerner for den som ikke har rettigheten, og de kan bare
+            // prøves når noen faktisk har en verdi.
+            allergi: harAllergi ? 'ja' : 'nei',
+            allergi_beskriv: harAllergi ? 'Nøtter (test)' : '',
+            sykdom: 'nei', sykdom_beskriv: '',
+            medisin: harMedisin ? 'ja' : 'nei',
+            medisin_hvilke: harMedisin ? 'Astmamedisin (test)' : '',
+            larevansker: 'nei', larevansker_beskriv: '',
+            bbt_ppt: 'nei', bbt_ppt_beskriv: '',
+            helse_annet: '',
+
+            koran_lese: b % 2 === 0 ? 'ja' : 'nei',
+            koran_qaida: 'nei', koran_tajwid: 'nei',
+            koran_memorert: 'nei', koran_ijazah: 'nei',
+            arabisk_tidligere: 'nei', arabisk_niva: '', arabisk_ar: '',
+            urdu_tidligere: 'nei', urdu_niva: '', urdu_ar: '', urdu_ferdighet: '',
+            ar_lese: 'nei', ar_skrive: 'nei', ar_snakke: 'nei', ar_forsta: 'nei',
+            tidligere_skole: 'nei', tidligere_skole_navn: '',
+            tidligere_skole_ar: '', tidligere_skole_land: '', tidligere_studert: '',
+            sprak_hjemme: 'arabisk', sprak_hjemme_annet: '',
+
+            intro_moske_medlem: i % 3 === 0 ? 'ja' : 'nei',
+            intro_elev_status: 'ny',
+
+            samtykke_personopplysninger: 'ja',
+            samtykke_personvernerklaering: 'ja',
+            samtykke_bilder: (i % 2 === 0) ? 'ja' : 'nei',
+            samtykke_fotografering: 'ja',
+            samtykke_publisering_nett: (i % 3 === 0) ? 'ja' : 'nei',
+            foresatt_signatur: 'Far ' + etternavn,
+            dato_signatur: todayISO(),
+            andre_merknader: toForeldre ? '' : 'Enslig forsørger (test)',
+
+            status: 'Ny',
+            innsendtDato: todayISO(),
+            // 🔴 true, ikke false. Den planlagte funksjonen leter etter
+            // varselSendt == false og ville sendt e-post til ledelsen og
+            // kvittering til hver oppdiktede adresse — som ikke finnes.
+            varselSendt: true,
+            erTestdata: true
+          });
+          laget++;
+        }
+      }
+      visTestdataStatus();
+      alert('Ferdig.\n\n' + antall + ' familier · ' + laget + ' søknader.\n\n' +
+        'De ligger under Elever og familier → Søknader, med status «Ny».\n\n' +
+        'Godkjenn dem der for å se hele veien: foresatt opprettes, søsken ' +
+        'kobles på telefonnummer, innlogging lages og beløpet regnes ut.');
+    } catch(err){
+      console.error('lagTestsoknader', err);
+      showToast('Noe gikk galt: ' + (err.message || 'ukjent feil'));
+    }
+  };
+
+  window.slettTestdata = async function(){
+    if(!isCurrentUserEier()){ showToast('Kun eier kan slette testdata.'); return; }
+    const n = tellTestdata();
+    const sum = n.soknader + n.elever + n.foresatte + n.larere + n.klasser;
+    if(sum === 0){ showToast('Det finnes ingen merkede testdata.'); return; }
+    if(!confirm(
+      'Slette alle testdata?\n\n' +
+      n.soknader + ' søknader\n' + n.foresatte + ' foresatte\n' + n.elever + ' elever\n' +
+      (n.klasser ? n.klasser + ' klasser\n' : '') +
+      '\nKun oppføringer merket som testdata fjernes. Ekte elever og ' +
+      'søknader røres ikke.\n\nInnloggingskontoene på ' + TEST_EPOST_DOMENE +
+      ' må slettes i Firebase Console — de ligger utenfor databasen.'
+    )) return;
+    try{
+      let slettet = 0;
+      for(const type of ['registrations', 'students', 'guardians', 'teachers', 'classes']){
+        for(const rad of (cache[type] || []).filter(r => r.erTestdata === true)){
+          await deleteDoc(doc(db, type, rad.id));
+          slettet++;
+        }
+      }
+      visTestdataStatus();
+      showToast(slettet + ' testoppføringer slettet.');
+    } catch(err){
+      console.error('slettTestdata', err);
+      showToast('Noe gikk galt: ' + (err.message || 'ukjent feil'));
+    }
+  };
+
+  window.seedDemoDataGammel = async function(){
     const alreadyLoaded = cache.teachers.some(t => t.navn === 'Ahmed Ali') ||
                            cache.guardians.some(g => g.navn === 'Hassan Ali');
     const warning = alreadyLoaded
@@ -5404,7 +5640,7 @@
   }
 
   let regSelectedFolder = null;
-  const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått' };
+  const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått', __test__:'🧪 Testsøknader' };
 
   window.setRegFolder = function(status){
     // Klikk på samme mappe igjen lukker den, i stedet for å vise alt.
@@ -5423,10 +5659,14 @@
   };
 
   function updateRegFolderCounts(registrations){
+    const ekte = registrations.filter(r => r.erTestdata !== true);
+    const test = registrations.filter(r => r.erTestdata === true);
     const alleEl = document.getElementById('regFolderCount_Alle');
-    if(alleEl) alleEl.textContent = registrations.length;
+    if(alleEl) alleEl.textContent = ekte.length;
+    const testEl = document.getElementById('regFolderCount___test__');
+    if(testEl) testEl.textContent = test.length;
     const counts = { Ny:0, Venteliste:0, Godkjent:0, Avslått:0 };
-    registrations.forEach(r => { const s = r.status || 'Ny'; if(counts[s] !== undefined) counts[s]++; });
+    ekte.forEach(r => { const s = r.status || 'Ny'; if(counts[s] !== undefined) counts[s]++; });
     Object.keys(counts).forEach(status => {
       const el = document.getElementById('regFolderCount_' + status);
       if(el) el.textContent = counts[status];
@@ -6554,7 +6794,10 @@
       // Godkjenn/Venteliste/Avslå-knappene og av Vipps-webhooken.
       updateRegFolderCounts(cache.registrations);
       if(regSelectedFolder === null) data = [];
-      else if(regSelectedFolder) data = data.filter(row => (row.status || 'Ny') === regSelectedFolder);
+      else if(regSelectedFolder === '__test__') data = data.filter(row => row.erTestdata === true);
+      else if(regSelectedFolder) data = data.filter(row =>
+        row.erTestdata !== true && (row.status || 'Ny') === regSelectedFolder);
+      else data = data.filter(row => row.erTestdata !== true);   // 📋 Alle = kun ekte
     }
     if(type === 'teachers'){
       renderTeacherFolders();
@@ -6599,6 +6842,7 @@
     // Foreldre-indeksen avhenger av begge kildene. skrivForeldreIndeks()
     // sammenligner mot forrige resultat og skriver bare ved faktisk endring.
     if(['students','guardians'].includes(type)) skrivForeldreIndeks();
+    if(['registrations','students','guardians','teachers','classes'].includes(type)) visTestdataStatus();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
       updateMsRecipientCount();
@@ -11681,6 +11925,10 @@
             relasjon: reg.foresatt1_relasjon === 'Annen' ? (reg.foresatt1_relasjon_annet || 'Annen') : (reg.foresatt1_relasjon || ''),
             telefon: guardianPhone,
             epost: reg.foresatt1_epost || '',
+            // Merket arves fra søknaden. Ellers blir en godkjent testsøknad
+            // til en foresatt som ikke kan skilles fra en ekte, og
+            // «Slett alle testdata» lar den bli stående for godt.
+            ...(reg.erTestdata === true ? { erTestdata: true } : {}),
             sistEndretAv: currentUserEmail || 'ukjent',
             sistEndretDato: new Date().toISOString().slice(0,10)
           });
@@ -11727,6 +11975,7 @@
             relasjon: reg.foresatt2_relasjon === 'Annen' ? (reg.foresatt2_relasjon_annet || 'Annen') : (reg.foresatt2_relasjon || ''),
             telefon: guardian2Phone,
             epost: reg.foresatt2_epost || '',
+            ...(reg.erTestdata === true ? { erTestdata: true } : {}),
             sistEndretAv: currentUserEmail || 'ukjent',
             sistEndretDato: new Date().toISOString().slice(0,10)
           });
@@ -11768,6 +12017,9 @@
       // eneste stedet foresattes egne, uendrede svar og samtykker finnes.
       // Uten denne koblingen måtte man lete dem opp for hånd.
       studentRecord.fraSoknadId = id;
+      // Samme grunn som for foresatte: uten arv blir en godkjent
+      // testsøknad til en elev som ser ekte ut i alle lister.
+      if(reg.erTestdata === true) studentRecord.erTestdata = true;
       await addDoc(collection(db, 'students'), studentRecord);
       await updateDoc(doc(db, 'registrations', id), {
         status: 'Godkjent',
