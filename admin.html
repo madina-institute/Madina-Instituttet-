@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 17:53:53 -->
+<!-- SIST-ENDRET: 2026-08-09 18:40:30 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2446,9 +2446,12 @@
         </div>
       </div>
       <div class="field">
-        <label>Materiellavgift per elev (kr)</label>
+        <label>Materiellavgift per elev (kr) — fellessats</label>
         <input type="number" id="materiellInput" min="0" step="10" placeholder="450" oninput="visRabattForhandsvisning()">
-        <div class="hint">Bøker og utstyr. Kommer i tillegg for alle — både medlemmer og ikke-medlemmer — og påvirkes ikke av søskenrabatt.</div>
+        <div class="hint">
+          Bøker og utstyr. Kommer i tillegg for alle — både medlemmer og ikke-medlemmer — og påvirkes ikke av søskenrabatt.
+          <b>Hvert program kan ha sin egen sats</b> (fanen Programmer); denne brukes bare for programmer som ikke har satt sin.
+        </div>
       </div>
       <div class="field">
         <label>Depositum ved opptak (kr)</label>
@@ -3728,6 +3731,12 @@
          placeholder:'f.eks. 5500'},
         {key:'antallManeder', label:'Antall måneder programmet går over', type:'text', essential:true,
          placeholder:'f.eks. 9'},
+        // Materiellavgiften hører til PROGRAMMET: Madinabarn og det
+        // integrerte programmet bruker ulike bøker. Står feltet tomt,
+        // brukes reserven i Betalingsinnstillinger — 0 er en gyldig verdi
+        // og betyr «ingen avgift», ikke «ikke satt».
+        {key:'materiellAvgift', label:'Materiellavgift per elev (kr)', type:'text',
+         placeholder:'tomt = bruk fellessatsen'},
         // Det gamle semesterbeløpet beholdes så ingen mister tall som alt
         // er lagt inn. Brukes kun som reserve, og merkes tydelig.
         {key:'pris', label:'Gammel pris per semester (kr) — utgår', type:'text',
@@ -8276,6 +8285,11 @@
     // over tre måneder og et helårsprogram kan ikke dele samme tall.
     const egneMnd = prog ? tall(prog.antallManeder) : 0;
     const maneder = egneMnd > 0 ? egneMnd : (prisOppsett.antallManeder || 9);
+    // Materiellavgift per program. Tomt felt = bruk fellessatsen. 0 er en
+    // ekte verdi: et program uten bøker skal kunne stå til 0 uten at
+    // fellessatsen sniker seg inn igjen. Derfor testes det på TOM, ikke 0.
+    const egetMat = prog ? String(prog.materiellAvgift ?? '').trim() : '';
+    const materiell = egetMat !== '' ? tall(egetMat) : (prisOppsett.materiellAvgift || 0);
     // Programmer som ennå ikke har fått de nye feltene: fall tilbake på
     // det gamle semesterbeløpet ganget med to. Markeres som «gammel», så
     // panelet kan si ifra i stedet for å vise et tall ingen kan forklare.
@@ -8284,7 +8298,7 @@
       aar = tall(prog.pris) * 2;
       gammel = true;
     }
-    return { mnd, aar, maneder, gammel, finnes: !!prog };
+    return { mnd, aar, maneder, materiell, gammel, finnes: !!prog };
   }
 
   function erMedlemsElev(s){
@@ -8301,7 +8315,6 @@
   // Returnerer: elev-id → { pris, undervisning, materiell, plass, medlem }
   function familiePriser(guardianId, ekstraElev){
     const oppsett = prisOppsett;
-    const materiell = oppsett.materiellAvgift || 0;
 
     let barn = (cache.students || []).filter(s =>
       s.foresatt === guardianId ||
@@ -8321,7 +8334,7 @@
       const p = programPriser(s.program);
       const undervisning = Math.round(p.mnd * p.maneder);
       ut[s.id] = {
-        undervisning, materiell, pris: undervisning + materiell,
+        undervisning, materiell: p.materiell, pris: undervisning + p.materiell,
         plass: 1, medlem: true, mangler: p.mnd === 0
       };
     });
@@ -8341,7 +8354,7 @@
       if(plass === 2)      undervisning = Math.round(rad.p.aar * (1 - oppsett.rabatt2 / 100));
       else if(plass >= 3)  undervisning = Math.round(rad.p.aar * (1 - oppsett.rabatt3 / 100));
       ut[rad.s.id] = {
-        undervisning, materiell, pris: undervisning + materiell,
+        undervisning, materiell: rad.p.materiell, pris: undervisning + rad.p.materiell,
         plass, medlem: false, mangler: rad.p.aar === 0, gammelPris: rad.p.gammel
       };
     });
@@ -8376,8 +8389,8 @@
       const p = programPriser(program);
       const m = String(erMedlem || '') === 'Ja';
       const undervisning = m ? Math.round(p.mnd * p.maneder) : p.aar;
-      const materiell = prisOppsett.materiellAvgift || 0;
-      return { price: undervisning + materiell, pos: 1, medlem: m, undervisning, materiell };
+      return { price: undervisning + p.materiell, pos: 1, medlem: m,
+               undervisning, materiell: p.materiell };
     }
     const alle = familiePriser(guardianId, midlertidig);
     const min = alle[midlertidig.id];
@@ -8481,7 +8494,7 @@
     }
     if(merknad){
       const pr = programPriser(programEl.value);
-      const mat = prisOppsett.materiellAvgift || 0;
+      const mat = pr.materiell;
       const deler = [];
       if(medlem){
         deler.push('Medlem: ' + pr.mnd + ' kr × ' + pr.maneder + ' mnd');
@@ -8929,9 +8942,17 @@
         el.value = (lonnOppsett[nokkel] === null || lonnOppsett[nokkel] === undefined) ? '' : lonnOppsett[nokkel];
       }
     });
+    // Meldingen MÅ settes begge veier. Uten else-grenen ble den røde
+    // teksten stående etter at satsene var lagt inn — en advarsel som
+    // lyver er verre enn ingen advarsel.
     const h = document.getElementById('lonnStatusHint');
-    if(h && lonnOppsett.larer === null && lonnOppsett.assistent === null){
-      h.innerHTML = '🔴 <b>Ingen timesats er satt.</b> Ingen lønn kan registreres som utbetalt før dette er fylt ut.';
+    if(h){
+      if(lonnOppsett.larer === null && lonnOppsett.assistent === null){
+        h.innerHTML = '🔴 <b>Ingen timesats er satt.</b> Ingen lønn kan registreres som utbetalt før dette er fylt ut.';
+      } else {
+        h.innerHTML = 'Grunnsatsen for alle lønnede. En lærer som har <b>egen sats</b> i personkortet ' +
+          'beholder sin. Er satsen tom, blir <b>ingen lønn utbetalt</b> — oversikten sier fra i stedet.';
+      }
     }
   }
 
@@ -8972,7 +8993,7 @@
     const r2  = nummer('rabatt2Input', prisOppsett.rabatt2);
     const r3  = nummer('rabatt3Input', prisOppsett.rabatt3);
     const mnd = nummer('manederInput', prisOppsett.antallManeder || 9);
-    const mat = nummer('materiellInput', prisOppsett.materiellAvgift || 0);
+    const matReserve = nummer('materiellInput', prisOppsett.materiellAvgift || 0);
     const ter = Math.max(1, nummer('terminerInput', prisOppsett.terminer || 1));
 
     const prog = (cache.programs || []).filter(p => p.navn);
@@ -8980,6 +9001,11 @@
 
     const rad = prog.map(p => {
       const pr = programPriser(p.navn);
+      // Programmets egen materiellavgift hvis den er satt, ellers det som
+      // står i feltet over akkurat nå (så forhåndsvisningen følger med
+      // mens man skriver).
+      const egetMat = String(p.materiellAvgift ?? '').trim();
+      const mat = egetMat !== '' ? (parseFloat(egetMat) || 0) : matReserve;
       const egneMnd = pr.maneder || mnd;
       const medlemAar = Math.round(pr.mnd * egneMnd);
       const deler = [];
@@ -9951,7 +9977,9 @@
       const deler = [];
       if(pr.mnd) deler.push('medlem ' + kr0(pr.mnd) + ' kr/mnd × ' + pr.maneder + ' mnd = ' + kr0(medlemAar) + ' kr');
       if(pr.aar) deler.push('ikke medlem ' + kr0(pr.aar) + ' kr/år');
-      if(!deler.length) deler.push('⚠️ pris ikke satt');
+      const egetMat = String(p.materiellAvgift ?? '').trim();
+      deler.push('materiell ' + (egetMat !== '' ? kr0(parseFloat(egetMat) || 0) : kr0(prisOppsett.materiellAvgift || 0) + ' (fellessats)') + ' kr');
+      if(deler.length === 1) deler.unshift('⚠️ pris ikke satt');
       prisPunkter.push({ h: p.navn, t: deler.join(' · ') });
     });
     const o = prisOppsett;
