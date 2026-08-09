@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 20:52:59 -->
+<!-- SIST-ENDRET: 2026-08-09 21:14:18 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -500,6 +500,28 @@
     100%{ box-shadow:0 0 0 0 rgba(34,163,92,0); }
   }
   @media(prefers-reduced-motion:reduce){ .puls-prikk{ animation:none; } }
+
+  /* ---- Alle personer ---- */
+  .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
+    border-bottom:1px solid var(--line); }
+  .pers-rad:last-child{ border-bottom:0; }
+  .pers-hoved{ flex:1; min-width:0; }
+  .pers-navn{ font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:700;
+    color:var(--ink); line-height:1.3; }
+  .pers-epost{ font-family:'Jost',sans-serif; font-size:12px; color:#7b8a93; margin-top:1px;
+    word-break:break-all; }
+  .pers-merker{ display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+  .pers-merke{ font-family:'Jost',sans-serif; font-size:10.5px; border-radius:999px;
+    padding:2px 8px; border:1px solid var(--line); color:#5a6860; background:#fff; }
+  .pers-merke.ja{ color:#1f6b45; background:#e9f5ee; border-color:#c3e2ce; }
+  .pers-merke.nei{ color:#8a5a1d; background:#fdf5e3; border-color:#e8d5a8; }
+  .pers-merke.feil{ color:#8f2f2f; background:#fbeded; border-color:#ecc3c3; }
+  .pers-knapper{ display:flex; flex-direction:column; gap:5px; flex:0 0 auto; }
+  .pers-knapper button{ font-family:'Jost',sans-serif; font-size:11.5px; font-weight:500;
+    background:#fff; color:var(--emerald-d); border:1px solid var(--line);
+    border-radius:7px; padding:6px 11px; cursor:pointer; white-space:nowrap; }
+  .pers-knapper button:hover{ border-color:var(--emerald-d); }
+  .pers-knapper button.fare{ color:var(--red); }
 
   .paalogget-rad{ display:flex; align-items:center; gap:12px; padding:13px 2px;
     border-bottom:1px solid var(--line); }
@@ -1339,6 +1361,7 @@
   <div class="tab" data-tab="betaling" data-side="okonomi">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="utvikler" data-side="verktoy">🛠️ Verktøy og sider</div>
+  <div class="tab" data-tab="allePersoner" data-side="personale">👤 Alle personer</div>
   <div class="tab" data-tab="paalogget" data-side="personale">🟢 Pålogget nå</div>
   <div class="tab" data-tab="eiere" data-side="personale">👑 Eiere</div>
   <div class="tab" data-tab="roller" data-side="personale">🔑 Roller og tilganger</div>
@@ -2547,6 +2570,35 @@
       Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt). Trykk en samtale for å se hele historikken.
     </div>
     <div id="messagesInboxList"></div>
+  </div>
+
+  <!-- ALLE PERSONER -->
+  <!-- Én person finnes i inntil fire samlinger: teachers, ledelse,
+       adminUsers og tilgang. Hver liste viser sin del, og de vanlige
+       listene starter dessuten LUKKET og deles i mapper etter fag — så
+       et kort med tomt fagfelt ser ut som om det ikke finnes.
+       Derfor denne: alt, i én rad per e-post, alltid synlig. -->
+  <div class="panel" id="panel-allePersoner">
+    <div class="report-card">
+      <div class="innst-topp">
+        <h3>👤 Alle personer</h3>
+        <span class="innst-meta" id="allePersonerMeta"></span>
+      </div>
+      <div class="sub">
+        Alle som finnes noe sted i systemet, samlet på e-post. Ingen mapper,
+        ingen fag-inndeling, ingenting skjult. Finner du ikke noen her,
+        finnes de ikke.
+      </div>
+      <div class="toolbar" style="margin-top:14px;">
+        <input class="search" id="sokAllePersoner" placeholder="Søk etter navn, e-post eller rolle..."
+               oninput="renderAllePersoner()">
+        <label style="display:flex; align-items:center; gap:7px; font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; cursor:pointer;">
+          <input type="checkbox" id="kunAvvikInput" onchange="renderAllePersoner()" style="width:16px; height:16px;">
+          Vis bare de som mangler noe
+        </label>
+      </div>
+      <div id="allePersonerListe" style="margin-top:8px;"></div>
+    </div>
   </div>
 
   <!-- PÅLOGGET NÅ -->
@@ -6524,6 +6576,7 @@
     // tegnes om når kildene endrer seg.
     if(['students','teachers','teacherAttendance','finances','programs',
         'paymentRequests','guardians','studentPayments'].includes(type)) renderOkonomiHub();
+    if(['teachers','ledelse'].includes(type)) renderAllePersoner();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
       updateMsRecipientCount();
@@ -7814,6 +7867,7 @@
     okonomiHub: 'Årets tall og det som venter på en avgjørelse',
     eiere: 'Hvem som har full tilgang, og veien tilbake hvis alt låser seg',
     paalogget: 'Hvem som bruker systemet akkurat nå',
+    allePersoner: 'Alle personer fra alle kilder — uten mapper og uten filter',
     finances: 'Inntekter, utgifter og saldo',
     teachers: 'Registrer og administrer lærere',
     guardians: 'Oversikt over foresatte',
@@ -7844,7 +7898,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
-    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', personalePorten: '🚪', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
+    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', personalePorten: '🚪', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
   };
 
   let currentSideForBack = null;
@@ -9232,6 +9286,137 @@
 
 
   // ═══════════════════════════════════════════════════════════════════
+  // ALLE PERSONER — ett register, samlet på e-post
+  //
+  // Bakgrunnen: en lærer «forsvant», og et nytt kort ble opprettet fordi
+  // det gamle ikke var å se noe sted. Kortet fantes hele tiden — men
+  // lærerlisten starter lukket og deles i mapper etter fag, så et kort
+  // med tomt fagfelt vises ikke før man åpner akkurat «Uten fag».
+  //
+  // Denne visningen har derfor ingen mapper, ingen standardfiltrering og
+  // ingenting skjult. Den henter fra alle fire kildene og viser hva som
+  // finnes hvor — også når svaret er «ingen steder».
+  //
+  // Ingen nye lesninger: alt ligger allerede i cache.
+  // ═══════════════════════════════════════════════════════════════════
+  function samleAllePersoner(){
+    const per = new Map();   // nøkkel: e-post, eller 'navn:...' uten e-post
+    const hent = (nokkel) => {
+      if(!per.has(nokkel)){
+        per.set(nokkel, { epost:'', navn:'', larer:null, ledelse:null,
+                          admin:null, harTilgang:false, roller:'', fag:'' });
+      }
+      return per.get(nokkel);
+    };
+    const nokkelFor = (epost, navn) => {
+      const e = normEpost(epost);
+      return e ? e : 'navn:' + String(navn || '').trim().toLowerCase();
+    };
+
+    (cache.teachers || []).forEach(t => {
+      if(!t.navn && !t.epost) return;
+      const r = hent(nokkelFor(t.epost, t.navn));
+      r.epost = r.epost || (t.epost || '').trim();
+      r.navn = r.navn || t.navn || '';
+      r.larer = t;
+      r.fag = t.fag || '';
+      if(t.roller) r.roller = r.roller || t.roller;
+    });
+    (cache.ledelse || []).forEach(l => {
+      if(!l.navn && !l.epost) return;
+      const r = hent(nokkelFor(l.epost, l.navn));
+      r.epost = r.epost || (l.epost || '').trim();
+      r.navn = r.navn || l.navn || '';
+      r.ledelse = l;
+      if(l.roller) r.roller = r.roller || l.roller;
+    });
+    (adminUsersCache || []).forEach(u => {
+      if(!u.epost && !u.navn) return;
+      const r = hent(nokkelFor(u.epost, u.navn));
+      r.epost = r.epost || (u.epost || '').trim();
+      r.navn = r.navn || u.navn || '';
+      r.admin = u;
+      r.roller = u.roller || r.roller;
+    });
+    // tilgang leses ikke som samling her — men eierlisten og pålogget-
+    // settet vet vi om, og adminUsers speiler tilgangen.
+    per.forEach(r => { r.harTilgang = !!r.admin; });
+
+    return [...per.values()].sort((a, b) =>
+      (a.navn || a.epost || '').localeCompare(b.navn || b.epost || '', 'no'));
+  }
+
+  function personAvvik(r){
+    const av = [];
+    const e = normEpost(r.epost);
+    if(!e) av.push(['feil', 'Ingen e-post — kan aldri logge inn']);
+    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) av.push(['feil', 'E-posten ser ikke gyldig ut']);
+    if(!r.larer && !r.ledelse) av.push(['nei', 'Ingen personkort']);
+    if(r.larer && r.ledelse) av.push(['nei', 'Kort både under Lærere og Ledelse']);
+    if((r.larer || r.ledelse) && !r.admin && String(r.roller || '').trim())
+      av.push(['nei', 'Roller, men ingen tilgang']);
+    if(r.larer && !String(r.fag || '').trim())
+      av.push(['nei', 'Uten fag — havner i en egen mappe i lærerlisten']);
+    return av;
+  }
+
+  window.renderAllePersoner = function(){
+    const el = document.getElementById('allePersonerListe');
+    if(!el) return;
+    const sok = normEpost((document.getElementById('sokAllePersoner') || {}).value || '');
+    const kunAvvik = !!(document.getElementById('kunAvvikInput') || {}).checked;
+
+    let liste = samleAllePersoner();
+    const totalt = liste.length;
+    if(sok){
+      liste = liste.filter(r =>
+        (r.navn + ' ' + r.epost + ' ' + r.roller + ' ' + r.fag).toLowerCase().includes(sok));
+    }
+    if(kunAvvik) liste = liste.filter(r => personAvvik(r).length > 0);
+
+    const meta = document.getElementById('allePersonerMeta');
+    if(meta) meta.textContent = liste.length === totalt
+      ? totalt + ' personer' : liste.length + ' av ' + totalt;
+
+    if(liste.length === 0){
+      el.innerHTML = '<div class="ok-rolig">' + (kunAvvik
+        ? '✓ Ingen mangler noe. Alle har kort, roller og tilgang som henger sammen.'
+        : 'Ingen treff.') + '</div>';
+      return;
+    }
+
+    el.innerHTML = liste.map(r => {
+      const e = normEpost(r.epost);
+      const av = personAvvik(r);
+      const paa = e && paaloggetNa.has(e);
+      const merker = [];
+      if(paa) merker.push('<span class="pers-merke ja"><span class="puls-prikk" style="display:inline-block; margin-right:4px;"></span>Pålogget</span>');
+      if(r.larer) merker.push('<span class="pers-merke ja">Lærerkort' + (r.fag ? ' · ' + escapeHtml(r.fag) : '') + '</span>');
+      if(r.ledelse) merker.push('<span class="pers-merke ja">Ledelseskort</span>');
+      if(r.roller) merker.push('<span class="pers-merke">' + escapeHtml(r.roller) + '</span>');
+      if(r.admin) merker.push('<span class="pers-merke ja">Har tilgang</span>');
+      av.forEach(([type, tekst]) =>
+        merker.push('<span class="pers-merke ' + type + '">⚠️ ' + escapeHtml(tekst) + '</span>'));
+
+      const knapper = [];
+      if(r.larer) knapper.push(`<button onclick="showPersonDetail('teachers','${r.larer.id}')">Åpne lærerkort</button>`);
+      if(r.ledelse) knapper.push(`<button onclick="showPersonDetail('ledelse','${r.ledelse.id}')">Åpne ledelseskort</button>`);
+      if(!r.larer && !r.ledelse && e) knapper.push(`<button onclick="opprettKortFor('${escapeHtml(r.epost)}')">Opprett kort</button>`);
+      if(r.admin && e) knapper.push(`<button class="fare" onclick="fjernTilgangFor('${escapeHtml(r.epost)}')">Fjern tilgang</button>`);
+
+      return `
+      <div class="pers-rad">
+        <div class="pers-hoved">
+          <div class="pers-navn">${escapeHtml(r.navn || '(uten navn)')}</div>
+          <div class="pers-epost">${escapeHtml(r.epost || 'ingen e-post')}</div>
+          <div class="pers-merker">${merker.join('')}</div>
+        </div>
+        <div class="pers-knapper">${knapper.join('')}</div>
+      </div>`;
+    }).join('');
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
   // PÅLOGGET NÅ
   //
   // Koster ingenting ekstra å skrive: hver økt oppdaterer allerede
@@ -9300,6 +9485,7 @@
     ['teachers', 'guardians', 'ledelse'].forEach(t => {
       if(document.getElementById('table' + capitalize(t))) render(t);
     });
+    renderAllePersoner();
   }
 
   function renderPaalogget(liste){
@@ -12185,6 +12371,7 @@
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
       adminUsersCache = list;
       renderEierAvvik();
+      renderAllePersoner();
     sikreTilgangsindeks();
       // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
       // nytt for at personen skulle dukke opp i varsel-listen.
