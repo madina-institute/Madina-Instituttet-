@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 21:31:02 -->
+<!-- SIST-ENDRET: 2026-08-09 22:27:18 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2603,6 +2603,20 @@
         </label>
       </div>
       <div id="allePersonerListe" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- Foreldre-indeksen er koblingen reglene leser for å avgjøre hvilke
+         barn en forelder får se. Står en elev uten foresatt med e-post,
+         blir portalen TOM for den familien den dagen filtreringen slås
+         på — derfor vises det her, før den dagen. -->
+    <div class="report-card" style="margin-top:16px;">
+      <h3>Foreldrekoblinger</h3>
+      <div class="sub">
+        Hvilke barn hver foresatt kan se i Foreldreportalen. Koblingen leses
+        fra elevkortets <b>Foresatt</b>-felt og e-posten på foresattkortet —
+        ikke fra feltene elevkortet arvet fra søknaden.
+      </div>
+      <div id="foreldreIndeksStatus" style="margin-top:12px;"></div>
     </div>
   </div>
 
@@ -6582,6 +6596,9 @@
     if(['students','teachers','teacherAttendance','finances','programs',
         'paymentRequests','guardians','studentPayments'].includes(type)) renderOkonomiHub();
     if(['teachers','ledelse'].includes(type)) renderAllePersoner();
+    // Foreldre-indeksen avhenger av begge kildene. skrivForeldreIndeks()
+    // sammenligner mot forrige resultat og skriver bare ved faktisk endring.
+    if(['students','guardians'].includes(type)) skrivForeldreIndeks();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
       updateMsRecipientCount();
@@ -8297,7 +8314,7 @@
   };
 
   // ---------- Custom report builder (advanced) ----------
-  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger', announcements:'Kunngjøringer', studentNotes:'Elevnotater', contactUpdateRequests:'Kontaktendringer', paymentRequests:'Betalingsforespørsler', messages:'Meldinger' };
+  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger', announcements:'Kunngjøringer', studentNotes:'Elevnotater', contactUpdateRequests:'Kontaktendringer', paymentRequests:'Betalingsforespørsler', messages:'Meldinger', foreldreTilgang:'Foreldrekoblinger', tilgang:'Tilgangsindeks', roller:'Roller' };
   const OPERATORS = [
     {value:'equals', label:'Er lik', needsValue:true, valueType:'select'},
     {value:'not_equals', label:'Er ikke lik', needsValue:true, valueType:'select'},
@@ -9302,6 +9319,136 @@
     }
   };
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // FORELDRE-INDEKSEN
+  //
+  // Samme grunn som 'tilgang': sikkerhetsreglene kan ikke gjøre
+  // spørringer — bare slå opp én kjent sti. De kan altså ikke svare på
+  // «hvilke barn hører til denne e-posten?». Derfor føres svaret her,
+  // med e-posten som dokument-id:
+  //
+  //     foreldreTilgang/{epost} → { barn: ['id1','id2'], navn }
+  //
+  // 🔴 KILDEN ER students.foresatt → guardians.epost. INGEN ANNEN.
+  //
+  // Elevkortet arver felter fra søknaden (foresatt1_epost o.l.) når en
+  // søker blir elev. De feltene er en kopi av hva som sto i SØKNADEN,
+  // og de oppdateres ikke når koblingen endres i panelet. Testet 9.
+  // august: en elev ble flyttet til en annen foresatt, og det arvede
+  // feltet pekte fortsatt på den opprinnelige søkerens e-post. Bygges
+  // indeksen på det feltet, får feil person tilgang til barnets
+  // journal — og den rette forelderen ser ingenting.
+  //
+  // foresatt2_epost på elevkortet brukes KUN når den andre foresatte
+  // ikke har eget kort, og bare hvis det finnes et navn ved siden av.
+  // En e-post uten navn er en kopiert rute, ikke en person.
+  // ═══════════════════════════════════════════════════════════════════
+  function byggForeldreIndeks(){
+    const kart = new Map();   // epost → { barn:Set, navn }
+    const leggTil = (epost, navn, elevId) => {
+      const e = normEpost(epost);
+      if(!e || e.indexOf('@') < 1) return;
+      if(!kart.has(e)) kart.set(e, { barn: new Set(), navn: navn || '' });
+      const r = kart.get(e);
+      if(elevId) r.barn.add(elevId);
+      if(!r.navn && navn) r.navn = navn;
+    };
+
+    const foresattePerId = new Map(
+      (cache.guardians || []).map(g => [g.id, g]));
+
+    (cache.students || []).forEach(el => {
+      if(!el.id) return;
+      [el.foresatt, el.foresatt2].forEach(id => {
+        const g = id ? foresattePerId.get(id) : null;
+        if(g) leggTil(g.epost, g.navn, el.id);
+      });
+      // Reserve: andre foresatt uten eget kort. Krever navn — ellers er
+      // det en tom rute som har fått en e-post kopiert inn.
+      if(!el.foresatt2 && String(el.foresatt2_navn || '').trim()){
+        leggTil(el.foresatt2_epost, el.foresatt2_navn, el.id);
+      }
+    });
+
+    // Foresatte uten barn skal også stå der, med tom liste. Uten raden
+    // ville reglene svart «finnes ikke» i stedet for «ingen barn», og
+    // de to feilene ser like ut fra portalen.
+    (cache.guardians || []).forEach(g => leggTil(g.epost, g.navn, null));
+
+    return kart;
+  }
+
+  let foreldreIndeksSkrevet = '';
+  async function skrivForeldreIndeks(){
+    if(!isCurrentUserEier() && !currentUserHasSeniorRole()) return;
+    if(!(cache.guardians || []).length || !(cache.students || []).length) return;
+
+    const kart = byggForeldreIndeks();
+    // Skriv bare når noe FAKTISK er endret. Uten denne sammenligningen
+    // ville hver eneste elevendring skrevet hele indeksen på nytt —
+    // og skrivekvoten er det som gikk galt 9. august.
+    const fingeravtrykk = JSON.stringify([...kart.entries()]
+      .map(([e, r]) => [e, [...r.barn].sort()]).sort());
+    if(fingeravtrykk === foreldreIndeksSkrevet) return;
+
+    try{
+      for(const [epost, r] of kart){
+        await setDoc(doc(db, 'foreldreTilgang', epost), {
+          epost, navn: r.navn || '',
+          barn: [...r.barn],
+          oppdatert: new Date().toISOString()
+        }, { merge: true });
+      }
+      // Rader som ikke lenger hører hjemme fjernes — ellers beholder en
+      // foresatt som er slettet fortsatt tilgangen sin i reglene.
+      const finnes = await getDocs(collection(db, 'foreldreTilgang'));
+      for(const d of finnes.docs){
+        if(!kart.has(normEpost(d.id))) await deleteDoc(d.ref).catch(()=>{});
+      }
+      foreldreIndeksSkrevet = fingeravtrykk;
+      renderForeldreIndeksStatus(kart);
+    } catch(err){
+      console.error('foreldreTilgang', err);
+      foreldreIndeksSkrevet = '';   // prøv igjen ved neste endring
+    }
+  }
+
+  // Elever ingen foresatt kan nå. Etter at portalen begynner å filtrere,
+  // vil disse familiene få en TOM portal — og ingen måte å forstå hvorfor.
+  // Derfor skal de være synlige før den dagen, ikke etter.
+  function foreldrelokseElever(){
+    const foresattePerId = new Map((cache.guardians || []).map(g => [g.id, g]));
+    return (cache.students || []).filter(el => {
+      if(!el.navn) return false;
+      if(String(el.status || '') === 'Sluttet') return false;
+      const har = [el.foresatt, el.foresatt2].some(id => {
+        const g = id ? foresattePerId.get(id) : null;
+        return g && normEpost(g.epost).indexOf('@') > 0;
+      });
+      const reserve = !el.foresatt2 && String(el.foresatt2_navn || '').trim() &&
+        normEpost(el.foresatt2_epost).indexOf('@') > 0;
+      return !har && !reserve;
+    });
+  }
+
+  function renderForeldreIndeksStatus(kart){
+    const el = document.getElementById('foreldreIndeksStatus');
+    if(!el) return;
+    const uten = foreldrelokseElever();
+    const medBarn = kart ? [...kart.values()].filter(r => r.barn.size > 0).length : 0;
+    const deler = ['<div class="ok-rolig">✓ ' + medBarn +
+      ' foresatte er koblet til minst ett barn.</div>'];
+    if(uten.length){
+      deler.push('<div class="ok-handling"><span class="ok-alvor stopp"></span>' +
+        '<div class="ok-handling-tekst">' + uten.length +
+        ' elever har ingen foresatt med e-post<small>' +
+        uten.slice(0, 6).map(e => escapeHtml(e.navn)).join(' · ') +
+        (uten.length > 6 ? ' …' : '') +
+        '</small></div><button onclick="goToTask(\'admin\',\'students\')">Se elever</button></div>');
+    }
+    el.innerHTML = deler.join('');
+  }
 
   // ═══════════════════════════════════════════════════════════════════
   // ALLE PERSONER — ett register, samlet på e-post
