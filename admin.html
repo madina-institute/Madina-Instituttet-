@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 01:57:59 -->
+<!-- SIST-ENDRET: 2026-08-09 10:08:22 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2313,15 +2313,36 @@
     </div>
 
     <div class="report-card">
-      <h3>Søskenrabatt</h3>
-      <div class="sub">Gjelder både her i panelet og for Vipps-betalinger. Prisen per program settes under fanen «Programmer» — her settes bare rabatten.</div>
+      <h3>Priser og rabatter</h3>
+      <div class="sub">Gjelder både her i panelet og for Vipps-betalinger. Selve prisene per program settes under fanen «Programmer».</div>
+      <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65; margin-bottom:16px;">
+        Skolen har <b>to prismodeller</b>. Et medlem betaler en fast månedspris
+        og får <b>ingen</b> søskenrabatt. Et ikke-medlem betaler en årspris og
+        får deretter søskenrabatt. Rabatten legges på det <b>dyreste</b>
+        programmet, slik at familien sparer mest. De to kombineres aldri.
+      </p>
+      <div class="field">
+        <label>Antall måneder i skoleåret</label>
+        <input type="number" id="manederInput" min="1" max="12" step="1" placeholder="9" oninput="visRabattForhandsvisning()">
+        <div class="hint">Medlemsprisen er per måned. Årsbeløpet for et medlem = månedspris × dette tallet. Skoleåret er 4 måneder høst + 5 måneder vår = 9.</div>
+      </div>
+      <div class="field">
+        <label>Materiellavgift per elev (kr)</label>
+        <input type="number" id="materiellInput" min="0" step="10" placeholder="450" oninput="visRabattForhandsvisning()">
+        <div class="hint">Bøker og utstyr. Kommer i tillegg for alle — både medlemmer og ikke-medlemmer — og påvirkes ikke av søskenrabatt.</div>
+      </div>
+      <div class="field">
+        <label>Antall terminer i året</label>
+        <input type="number" id="terminerInput" min="1" max="12" step="1" placeholder="1" oninput="visRabattForhandsvisning()">
+        <div class="hint">Hvor mange ganger årsbeløpet deles opp ved fakturering. 1 = hele året samlet · 2 = per termin · 9 = månedlig. Endres her når dere har bestemt dere — ingenting må publiseres.</div>
+      </div>
       <div class="field">
         <label>Rabatt for 2. barn (%)</label>
-        <input type="number" id="rabatt2Input" min="0" max="100" step="1" placeholder="20" oninput="visRabattForhandsvisning()">
+        <input type="number" id="rabatt2Input" min="0" max="100" step="1" placeholder="10" oninput="visRabattForhandsvisning()">
       </div>
       <div class="field">
         <label>Rabatt for 3. barn og flere (%)</label>
-        <input type="number" id="rabatt3Input" min="0" max="100" step="1" placeholder="30" oninput="visRabattForhandsvisning()">
+        <input type="number" id="rabatt3Input" min="0" max="100" step="1" placeholder="20" oninput="visRabattForhandsvisning()">
       </div>
       <label style="display:flex; align-items:flex-start; gap:9px; margin:14px 0; font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; cursor:pointer;">
         <input type="checkbox" id="tellForesatt2Input" style="width:17px; height:17px; flex:0 0 auto; margin-top:1px;">
@@ -3304,6 +3325,13 @@
           'Madina Islamske Skole — Integrert program (Lørdag)',
           'Madinabarn (Søndag)'
         ]},
+        // Medlemskap avgjør HVILKEN prismodell som gjelder — fast
+        // månedspris uten søskenrabatt, eller årspris med. Skolen har
+        // bestemt at en FAMILIE er medlem eller ikke, ikke det enkelte
+        // barnet; feltet står likevel på eleven fordi det er her prisen
+        // regnes ut. Blandes søsken, sier panelet ifra.
+        {key:'erMedlem', label:'Familien er medlem', type:'select', essential:true,
+         options:['', 'Ja', 'Nei']},
         {key:'sprakvalg', label:'Språkvalg (Arabisk/Urdu)', type:'select', essential:true, options:['','Arabisk','Urdu']},
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
         {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
@@ -3370,12 +3398,21 @@
          placeholder:'f.eks. Madinabarn (Søndag)'},
         {key:'dager', label:'Undervisningsdager', type:'role-checklist', essential:true,
          options:['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']},
-        {key:'pris', label:'Pris per semester (kr)', type:'text', essential:true,
-         placeholder:'f.eks. 2750'},
+        // To prismodeller, to felter. Medlemsprisen er PER MÅNED, prisen
+        // for ikke-medlemmer er PER ÅR — slik skolen faktisk oppgir dem.
+        // Ingen av tallene står i koden; de settes her.
+        {key:'prisMedlemMnd', label:'Medlemspris per måned (kr)', type:'text', essential:true,
+         placeholder:'f.eks. 500'},
+        {key:'prisAar', label:'Årspris for ikke-medlem (kr)', type:'text', essential:true,
+         placeholder:'f.eks. 5500'},
+        // Det gamle semesterbeløpet beholdes så ingen mister tall som alt
+        // er lagt inn. Brukes kun som reserve, og merkes tydelig.
+        {key:'pris', label:'Gammel pris per semester (kr) — utgår', type:'text',
+         placeholder:'settes ikke lenger'},
         {key:'aktiv', label:'Aktivt', type:'select', options:['Ja','Nei'], essential:true},
         {key:'merknad', label:'Merknad', type:'text'}
       ],
-      cols: ['navn','dager','pris','aktiv']
+      cols: ['navn','dager','prisMedlemMnd','prisAar','aktiv']
     },
     schoolCalendar: {
       label: 'dato', collectionName: 'schoolCalendar',
@@ -4028,6 +4065,16 @@
       prisOppsett.rabatt2 = (!isNaN(r2) && r2 >= 0 && r2 <= 100) ? r2 : RABATT_RESERVE.barn2;
       prisOppsett.rabatt3 = (!isNaN(r3) && r3 >= 0 && r3 <= 100) ? r3 : RABATT_RESERVE.barn3;
       prisOppsett.tellForesatt2 = d.tellForesatt2 === true;
+      // Nye verdier. Et tall som mangler eller er ugyldig faller tilbake
+      // på reserven — men reserven er IKKE skolens sats, så materiell
+      // settes til 0 heller enn til et gjettet beløp. Null er synlig feil;
+      // et gjettet beløp ser riktig ut og blir fakturert.
+      const mnd = parseFloat(d.antallManeder);
+      prisOppsett.antallManeder = (!isNaN(mnd) && mnd >= 1 && mnd <= 12) ? mnd : 9;
+      const mat = parseFloat(d.materiellAvgift);
+      prisOppsett.materiellAvgift = (!isNaN(mat) && mat >= 0) ? mat : 0;
+      const ter = parseFloat(d.terminer);
+      prisOppsett.terminer = (!isNaN(ter) && ter >= 1 && ter <= 12) ? ter : 1;
       fyllPrisinnstillinger();
     }, (err) => console.error('settings/priser', err));
 
@@ -7697,33 +7744,148 @@
   const prisOppsett = {
     rabatt2: RABATT_RESERVE.barn2,
     rabatt3: RABATT_RESERVE.barn3,
-    tellForesatt2: false
+    tellForesatt2: false,
+    // Nye verdier — alle settes under Betalingsinnstillinger.
+    // Tallene her er kun reserve hvis basen ikke svarer; de er ikke
+    // skolens satser, og skal aldri brukes til å fakturere med.
+    antallManeder: 9,      // 4 mnd høst + 5 mnd vår
+    materiellAvgift: 0,    // bøker og utstyr, per elev, aldri rabattert
+    terminer: 1            // hvor mange ganger årsbeløpet deles ved fakturering
   };
 
-  function computeSoskenPrice(program, guardianId, excludeId){
-    // Prisen ligger på programmet (redigerbart under fanen "Programmer").
-    // PROGRAM_PRICES beholdes kun som reserve for gamle programnavn som ennå
-    // ikke har fått sin egen post — da ville prisen ellers blitt 0.
-    const prog = (cache.programs || []).find(pr => pr.navn === program);
-    const fromProgram = prog ? parseFloat(prog.pris || 0) : NaN;
-    const basePrice = (!isNaN(fromProgram) && fromProgram > 0)
-      ? fromProgram
-      : (parseFloat(PROGRAM_PRICES[program] || 0) || 0);
-    if(!guardianId) return { price: basePrice, pos: 1 };
-    // Teller barn på foresatt2 også, hvis innstillingen er slått på. Står
-    // den av, er oppførselen som før: et barn registrert under den ANDRE
-    // foresatte teller ikke som søsken, og familien betaler for mye.
-    const siblingCount = (cache.students || []).filter(s =>
-      s.id !== excludeId &&
-      (s.foresatt === guardianId ||
-        (prisOppsett.tellForesatt2 && s.foresatt2 === guardianId))
-    ).length;
-    const pos = siblingCount + 1;
-    let price = basePrice;
-    if(pos === 2) price = Math.round(basePrice * (1 - prisOppsett.rabatt2 / 100));
-    else if(pos >= 3) price = Math.round(basePrice * (1 - prisOppsett.rabatt3 / 100));
-    return { price, pos };
+  // ═══════════════════════════════════════════════════════════════════
+  // PRISBEREGNING
+  // -------------------------------------------------------------------
+  // TO PRISMODELLER, som aldri kombineres:
+  //
+  //   MEDLEM       fast månedspris × antall måneder. INGEN søskenrabatt.
+  //   IKKE MEDLEM  fast årspris, DERETTER søskenrabatt.
+  //
+  // Materiellavgiften kommer PÅ TOPPEN for alle, og rabatteres aldri.
+  //
+  // Ingen beløp står i denne koden. Satsene ligger på programmene og i
+  // settings/priser, og endres i panelet — det var hele poenget.
+  //
+  // 🔴 SAMME MODELL MÅ FINNES I functions/index.js. Panelet og Vipps som
+  // regner ulikt er ikke en teoretisk fare: det skjedde 8. august, og
+  // familier ville blitt trukket et annet beløp enn panelet viste.
+  // ═══════════════════════════════════════════════════════════════════
+  function programPriser(programNavn){
+    const prog = (cache.programs || []).find(pr => pr.navn === programNavn);
+    const tall = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+    const mnd  = prog ? tall(prog.prisMedlemMnd) : 0;
+    let aar    = prog ? tall(prog.prisAar) : 0;
+    // Programmer som ennå ikke har fått de nye feltene: fall tilbake på
+    // det gamle semesterbeløpet ganget med to. Markeres som «gammel», så
+    // panelet kan si ifra i stedet for å vise et tall ingen kan forklare.
+    let gammel = false;
+    if(aar === 0 && prog && tall(prog.pris) > 0){
+      aar = tall(prog.pris) * 2;
+      gammel = true;
+    }
+    return { mnd, aar, gammel, finnes: !!prog };
   }
+
+  function erMedlemsElev(s){
+    return String((s && s.erMedlem) || '').trim() === 'Ja';
+  }
+
+  // Regner ut prisen for ALLE barna til én foresatt samtidig.
+  //
+  // Hvorfor hele familien på én gang: rabatten avhenger av hva SØSKNENE
+  // går på, ikke bare av eget program. Regnet man ett barn om gangen,
+  // måtte man gjette rekkefølgen — og to barn med lik pris kunne bytte
+  // plass mellom to kjøringer.
+  //
+  // Returnerer: elev-id → { pris, undervisning, materiell, plass, medlem }
+  function familiePriser(guardianId, ekstraElev){
+    const oppsett = prisOppsett;
+    const mnd = oppsett.antallManeder || 9;
+    const materiell = oppsett.materiellAvgift || 0;
+
+    let barn = (cache.students || []).filter(s =>
+      s.foresatt === guardianId ||
+      (oppsett.tellForesatt2 && s.foresatt2 === guardianId));
+
+    // Et barn som er i ferd med å bli opprettet finnes ikke i basen ennå,
+    // men skal telle med — ellers viser skjemaet full pris helt til det
+    // lagres, og beløpet hopper etterpå.
+    if(ekstraElev){
+      barn = barn.filter(s => s.id !== ekstraElev.id).concat([ekstraElev]);
+    }
+
+    const ut = {};
+
+    // ---- Medlemmer: fast pris, ingen rabatt, ingen rekkefølge ----
+    barn.filter(erMedlemsElev).forEach(s => {
+      const p = programPriser(s.program);
+      const undervisning = Math.round(p.mnd * mnd);
+      ut[s.id] = {
+        undervisning, materiell, pris: undervisning + materiell,
+        plass: 1, medlem: true, mangler: p.mnd === 0
+      };
+    });
+
+    // ---- Ikke-medlemmer: årspris + søskenrabatt ----
+    // Sorteres STIGENDE etter pris. Da havner de dypeste rabattene på de
+    // DYRESTE programmene, slik skolen har bestemt — familien sparer mest.
+    // Ved lik pris avgjør id-en, slik at samme familie alltid får samme
+    // fordeling uansett hvilken rekkefølge radene leses i.
+    const ikke = barn.filter(s => !erMedlemsElev(s))
+      .map(s => ({ s, p: programPriser(s.program) }))
+      .sort((a, b) => (a.p.aar - b.p.aar) || String(a.s.id).localeCompare(String(b.s.id)));
+
+    ikke.forEach((rad, i) => {
+      const plass = i + 1;
+      let undervisning = rad.p.aar;
+      if(plass === 2)      undervisning = Math.round(rad.p.aar * (1 - oppsett.rabatt2 / 100));
+      else if(plass >= 3)  undervisning = Math.round(rad.p.aar * (1 - oppsett.rabatt3 / 100));
+      ut[rad.s.id] = {
+        undervisning, materiell, pris: undervisning + materiell,
+        plass, medlem: false, mangler: rad.p.aar === 0, gammelPris: rad.p.gammel
+      };
+    });
+
+    return ut;
+  }
+
+  // Er noen søsken medlem og andre ikke? Skolen har bestemt at en familie
+  // er medlem eller ikke — ikke det enkelte barnet. Blandes det, regnes
+  // tallene på en forutsetning som ikke holder, og ingen ville oppdaget
+  // det: beløpet ser helt rimelig ut. Derfor sier panelet ifra.
+  function blandetMedlemskap(guardianId){
+    if(!guardianId) return false;
+    const barn = (cache.students || []).filter(s =>
+      s.foresatt === guardianId ||
+      (prisOppsett.tellForesatt2 && s.foresatt2 === guardianId));
+    if(barn.length < 2) return false;
+    const medlem = barn.filter(erMedlemsElev).length;
+    return medlem > 0 && medlem < barn.length;
+  }
+
+  // Inngang for stedene som allerede kaller denne. All regning skjer i
+  // familiePriser(), slik at det finnes ÉN modell og ikke to.
+  function computeSoskenPrice(program, guardianId, excludeId, erMedlem){
+    const midlertidig = {
+      id: excludeId || '__ny__',
+      program,
+      erMedlem: erMedlem || 'Nei',
+      foresatt: guardianId
+    };
+    if(!guardianId){
+      const p = programPriser(program);
+      const m = String(erMedlem || '') === 'Ja';
+      const undervisning = m ? Math.round(p.mnd * (prisOppsett.antallManeder || 9)) : p.aar;
+      const materiell = prisOppsett.materiellAvgift || 0;
+      return { price: undervisning + materiell, pos: 1, medlem: m, undervisning, materiell };
+    }
+    const alle = familiePriser(guardianId, midlertidig);
+    const min = alle[midlertidig.id];
+    if(!min) return { price: 0, pos: 1 };
+    return { price: min.pris, pos: min.plass, medlem: min.medlem,
+             undervisning: min.undervisning, materiell: min.materiell };
+  }
+
 
   // Viser kun de fag-spesifikke feltene (Koran/Islam/Arabisk/Urdu) som
   // faktisk passer til det valgte faget i timeforberedelsen — resten
@@ -7801,8 +7963,39 @@
     const spesialEl = document.getElementById('field_spesialpris');
     if(!programEl || !belopEl) return;
 
-    const { price, pos } = computeSoskenPrice(programEl.value, foresattEl ? foresattEl.value : '', editingId);
-    if(soskenEl) soskenEl.value = pos;
+    const medlemEl = document.getElementById('field_erMedlem');
+    const guardianId = foresattEl ? foresattEl.value : '';
+    const { price, pos, medlem } = computeSoskenPrice(
+      programEl.value, guardianId, editingId, medlemEl ? medlemEl.value : '');
+    if(soskenEl) soskenEl.value = medlem ? 1 : pos;
+
+    // Sier hva beløpet er BYGGET på. Et tall alene skjuler hvilken modell
+    // som ble brukt — og med to modeller er det ikke mulig å se forskjell
+    // på 4950 fra medlemsprisen og 4950 fra en søskenrabatt.
+    let merknad = document.getElementById('prisForklaring');
+    if(!merknad && belopEl && belopEl.parentElement){
+      merknad = document.createElement('div');
+      merknad.id = 'prisForklaring';
+      merknad.className = 'hint';
+      belopEl.parentElement.appendChild(merknad);
+    }
+    if(merknad){
+      const pr = programPriser(programEl.value);
+      const mat = prisOppsett.materiellAvgift || 0;
+      const deler = [];
+      if(medlem){
+        deler.push('Medlem: ' + pr.mnd + ' kr × ' + (prisOppsett.antallManeder || 9) + ' mnd');
+      } else {
+        deler.push('Ikke medlem: årspris ' + pr.aar + ' kr');
+        if(pos === 2) deler.push('barn nr. 2 → −' + prisOppsett.rabatt2 + ' %');
+        else if(pos >= 3) deler.push('barn nr. ' + pos + ' → −' + prisOppsett.rabatt3 + ' %');
+      }
+      if(mat) deler.push('+ ' + mat + ' kr materiell');
+      if(pr.gammel) deler.push('⚠️ regnet fra gammelt semesterbeløp — sett årsprisen på programmet');
+      if(blandetMedlemskap(guardianId))
+        deler.push('⚠️ søsken har ULIK medlemsstatus — beløpene er regnet på en forutsetning som ikke holder');
+      merknad.innerHTML = deler.join(' · ');
+    }
 
     const spesial = spesialEl
       ? parseFloat(String(spesialEl.value || '').replace(',', '.').replace(/[^\d.]/g, ''))
@@ -7960,6 +8153,10 @@
       container.appendChild(wrap);
     });
     if(type === 'lessonPlans') wireSubjectSpecificFields(container, existing.fag || '');
+    // Endres medlemsstatus, bytter hele prismodellen — beløpet må regnes
+    // på nytt med én gang, ikke først når skjemaet lagres.
+    const medlemFelt = document.getElementById('field_erMedlem');
+    if(medlemFelt) medlemFelt.addEventListener('change', applyStudentDiscountPricing);
     // Knappen vises kun når det FAKTISK finnes skjulte felter.
     //
     // Før var betingelsen «finnes det essensielle felter?» — noe helt
@@ -8213,23 +8410,63 @@
     if(document.activeElement !== r2) r2.value = prisOppsett.rabatt2;
     if(document.activeElement !== r3) r3.value = prisOppsett.rabatt3;
     tf.checked = prisOppsett.tellForesatt2;
+    const felt = [['manederInput','antallManeder'], ['materiellInput','materiellAvgift'], ['terminerInput','terminer']];
+    felt.forEach(([id, nokkel]) => {
+      const el = document.getElementById(id);
+      if(el && document.activeElement !== el) el.value = prisOppsett[nokkel];
+    });
     visRabattForhandsvisning();
   }
 
   // Viser hva satsene faktisk betyr i kroner for det dyreste programmet.
   // En prosent alene sier lite når det er ekte fakturaer som endrer seg.
+  // Viser hva satsene faktisk betyr i kroner, for BEGGE modellene.
+  // En prosent alene sier lite når det er ekte fakturaer som endrer seg —
+  // og med to prismodeller er det ikke opplagt hvem som betaler minst.
   window.visRabattForhandsvisning = function(){
     const el = document.getElementById('rabattForhandsvisning');
     if(!el) return;
-    const r2 = parseFloat(document.getElementById('rabatt2Input').value);
-    const r3 = parseFloat(document.getElementById('rabatt3Input').value);
-    const prog = (cache.programs || [])[0];
-    const pris = prog ? parseFloat(prog.pris || 0) : 0;
-    const navn = prog ? prog.navn : '';
-    if(!pris || isNaN(r2) || isNaN(r3)){ el.textContent = ''; return; }
-    el.innerHTML = 'For <strong>' + escapeHtml(navn) + '</strong> (' + pris + ' kr):<br>' +
-      '1. barn ' + pris + ' kr · 2. barn ' + Math.round(pris * (1 - r2/100)) + ' kr · ' +
-      '3. barn ' + Math.round(pris * (1 - r3/100)) + ' kr';
+    const nummer = (id, reserve) => {
+      const v = parseFloat((document.getElementById(id) || {}).value);
+      return isNaN(v) ? reserve : v;
+    };
+    const r2  = nummer('rabatt2Input', prisOppsett.rabatt2);
+    const r3  = nummer('rabatt3Input', prisOppsett.rabatt3);
+    const mnd = nummer('manederInput', prisOppsett.antallManeder || 9);
+    const mat = nummer('materiellInput', prisOppsett.materiellAvgift || 0);
+    const ter = Math.max(1, nummer('terminerInput', prisOppsett.terminer || 1));
+
+    const prog = (cache.programs || []).filter(p => p.navn);
+    if(prog.length === 0){ el.innerHTML = 'Legg inn programmer først, så vises beløpene her.'; return; }
+
+    const rad = prog.map(p => {
+      const pr = programPriser(p.navn);
+      const medlemAar = Math.round(pr.mnd * mnd);
+      const deler = [];
+      deler.push('<div style="margin-top:10px;"><strong>' + escapeHtml(p.navn) + '</strong></div>');
+      if(pr.mnd > 0){
+        deler.push('&nbsp;&nbsp;Medlem: ' + pr.mnd + ' × ' + mnd + ' mnd = <strong>' +
+          (medlemAar + mat) + ' kr</strong> i året' + (mat ? ' (inkl. ' + mat + ' materiell)' : ''));
+      } else {
+        deler.push('&nbsp;&nbsp;<span style="color:#a5504a;">Medlemspris mangler</span>');
+      }
+      if(pr.aar > 0){
+        const b2 = Math.round(pr.aar * (1 - r2/100));
+        const b3 = Math.round(pr.aar * (1 - r3/100));
+        deler.push('&nbsp;&nbsp;Ikke medlem: <strong>' + (pr.aar + mat) + ' kr</strong>' +
+          ' · med søsken ' + (b2 + mat) + ' kr · ' + (b3 + mat) + ' kr' +
+          (pr.gammel ? ' <span style="color:#a5504a;">(regnet fra gammelt semesterbeløp — sett årsprisen)</span>' : ''));
+      } else {
+        deler.push('&nbsp;&nbsp;<span style="color:#a5504a;">Årspris mangler</span>');
+      }
+      return deler.join('<br>');
+    }).join('');
+
+    const oppdeling = ter > 1
+      ? '<div style="margin-top:10px;">Beløpene deles i <strong>' + ter + '</strong> ved fakturering.</div>'
+      : '<div style="margin-top:10px;">Faktureres samlet én gang i året.</div>';
+
+    el.innerHTML = rad + oppdeling;
   };
 
   // ---------- Oversikt: mapper ----------
@@ -8697,16 +8934,34 @@
     const r2 = parseFloat(document.getElementById('rabatt2Input').value);
     const r3 = parseFloat(document.getElementById('rabatt3Input').value);
     const tf = document.getElementById('tellForesatt2Input').checked;
+    const mnd = parseFloat(document.getElementById('manederInput').value);
+    const mat = parseFloat(document.getElementById('materiellInput').value);
+    const ter = parseFloat(document.getElementById('terminerInput').value);
     if(isNaN(r2) || isNaN(r3) || r2 < 0 || r2 > 100 || r3 < 0 || r3 > 100){
       showToast('Rabattene må være tall mellom 0 og 100.');
+      return;
+    }
+    if(isNaN(mnd) || mnd < 1 || mnd > 12){
+      showToast('Antall måneder må være mellom 1 og 12.');
+      return;
+    }
+    if(isNaN(mat) || mat < 0){
+      showToast('Materiellavgiften må være 0 eller mer.');
+      return;
+    }
+    if(isNaN(ter) || ter < 1 || ter > 12){
+      showToast('Antall terminer må være mellom 1 og 12.');
       return;
     }
     // Disse tallene styrer ekte fakturaer og Vipps-krav. Et tastetrykk for
     // mye skal ikke kunne endre dem uten at det blir sagt høyt først.
     if(!confirm(
-      'Endre søskenrabatten?\n\n' +
+      'Endre prisinnstillingene?\n\n' +
       '2. barn: ' + prisOppsett.rabatt2 + ' % → ' + r2 + ' %\n' +
-      '3. barn: ' + prisOppsett.rabatt3 + ' % → ' + r3 + ' %\n\n' +
+      '3. barn: ' + prisOppsett.rabatt3 + ' % → ' + r3 + ' %\n' +
+      'Måneder: ' + prisOppsett.antallManeder + ' → ' + mnd + '\n' +
+      'Materiell: ' + prisOppsett.materiellAvgift + ' kr → ' + mat + ' kr\n' +
+      'Terminer: ' + prisOppsett.terminer + ' → ' + ter + '\n\n' +
       'Dette gjelder umiddelbart for nye beregninger, både her og for ' +
       'Vipps-betalinger. Elever som allerede har et beløp registrert, ' +
       'beholder sitt.'
@@ -8716,6 +8971,9 @@
         soskenRabatt2: r2,
         soskenRabatt3: r3,
         tellForesatt2: tf,
+        antallManeder: mnd,
+        materiellAvgift: mat,
+        terminer: ter,
         sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
         sistEndretDato: new Date().toISOString()
       }, { merge: true });
@@ -8895,7 +9153,7 @@
       // Sibling discount: existing children of the same guardian already in
       // Administrativ determine this child's position (1st = full price,
       // 2nd = 30% off, 3rd+ = 50% off).
-      const { price: discountedPrice, pos: soskenPos } = computeSoskenPrice(program, guardianId, null);
+      const { price: discountedPrice, pos: soskenPos } = computeSoskenPrice(program, guardianId, null, reg.erMedlem);
 
       // Copy every field from the registration into the new student record,
       // then layer on the school-specific fields (program, class, payment).
