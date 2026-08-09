@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 19:03:57 -->
+<!-- SIST-ENDRET: 2026-08-09 19:17:22 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -846,6 +846,64 @@
   .folder-row-dynamic .folder-card .sub{font-size:11px;}
   .report-card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 22px; box-shadow:var(--shadow);}
 
+  /* ════════ ØKONOMI — OVERSIKT ════════
+     Båndet er sidens tese: hvor mye av årets forventede inntekt som
+     faktisk er kommet inn. Tredje segment er det uvanlige valget —
+     elever UTEN registrert beløp får sin egen, skraverte andel i stedet
+     for å bli utelatt. Et tall som ser komplett ut, men mangler femten
+     elever, er verre enn et tall som viser hullet sitt. */
+  .ok-hero{background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:24px 26px 22px; box-shadow:var(--shadow);}
+  .ok-hero-topp{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .ok-eyebrow{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:#8a9a90;}
+  .ok-sum{font-family:'Cormorant Garamond',serif; font-size:44px; line-height:1;
+    font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .ok-sum .enhet{font-size:20px; color:#8a9a90; margin-left:6px;}
+  .ok-band{display:flex; height:15px; border-radius:999px; overflow:hidden;
+    margin:20px 0 14px; background:var(--paper-2);}
+  .ok-band span{display:block; height:100%; transition:width .5s ease;}
+  .ok-b-betalt{background:var(--emerald-d);}
+  .ok-b-rest{background:var(--gold);}
+  .ok-b-ukjent{background:repeating-linear-gradient(45deg,
+    #c3c9dd 0 5px, #d8dcea 5px 10px);}
+  .ok-nokler{display:flex; flex-wrap:wrap; gap:8px 26px;}
+  .ok-nokkel{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860;
+    display:flex; align-items:center; gap:7px;}
+  .ok-prikk{width:10px; height:10px; border-radius:3px; flex:0 0 auto;}
+  .ok-nokkel b{color:var(--ink); font-variant-numeric:tabular-nums;}
+
+  .ok-kolonner{display:grid; grid-template-columns:1.15fr .85fr; gap:18px; margin-top:18px;}
+  @media(max-width:900px){ .ok-kolonner{grid-template-columns:1fr;} }
+
+  /* Handlingslisten. Rekkefølgen er alvorlighet, ikke opprettelsestid. */
+  .ok-handling{display:flex; align-items:flex-start; gap:12px; padding:13px 2px;
+    border-bottom:1px solid var(--line);}
+  .ok-handling:last-child{border-bottom:0;}
+  .ok-alvor{width:9px; height:9px; border-radius:50%; margin-top:6px; flex:0 0 auto;}
+  .ok-alvor.stopp{background:var(--red);}
+  .ok-alvor.folg{background:var(--gold);}
+  .ok-handling-tekst{flex:1; min-width:0; font-family:'Jost',sans-serif;
+    font-size:13px; color:var(--ink); line-height:1.55;}
+  .ok-handling-tekst small{display:block; color:#7b8a93; font-size:11.5px; margin-top:2px;}
+  .ok-handling button{font-family:'Jost',sans-serif; font-size:12px; font-weight:500;
+    background:transparent; color:var(--emerald-d); border:1px solid var(--line);
+    border-radius:7px; padding:6px 11px; cursor:pointer; white-space:nowrap;}
+  .ok-handling button:hover{border-color:var(--emerald-d);}
+  .ok-rolig{font-family:'Jost',sans-serif; font-size:13px; color:#5a6860; padding:16px 2px;}
+
+  .ok-snarvei{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:10px;}
+  .ok-snarvei button{background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:14px 13px; text-align:left; cursor:pointer; font-family:'Jost',sans-serif;
+    transition:border-color .15s, transform .15s;}
+  .ok-snarvei button:hover{border-color:var(--emerald-d); transform:translateY(-1px);}
+  .ok-snarvei .n{font-family:'Cormorant Garamond',serif; font-size:26px; font-weight:600;
+    color:var(--ink); line-height:1.1; font-variant-numeric:tabular-nums;}
+  .ok-snarvei .l{font-size:12px; color:#5a6860; margin-top:3px;}
+  @media(prefers-reduced-motion:reduce){
+    .ok-band span{transition:none;} .ok-snarvei button:hover{transform:none;}
+  }
+
   /* ---- Innstillinger: seksjoner, metadata og konsekvenslinje ---- */
   .innst-nav{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;}
   .innst-chip{font-family:'Jost',sans-serif; font-size:13px; font-weight:500; color:#5a6860;
@@ -1231,6 +1289,7 @@
 <div class="tabs" id="tabsBar" style="display:none;">
   <div class="tab" data-tab="ledelse" data-side="eier">Ledelse</div>
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
+  <div class="tab" data-tab="okonomiHub" data-side="okonomi">Oversikt</div>
   <div class="tab" data-tab="finances" data-side="okonomi">Kasse/Økonomi</div>
   <div class="tab" data-tab="lonn" data-side="okonomi">💰 Lønn</div>
     <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
@@ -2464,6 +2523,50 @@
       Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt). Trykk en samtale for å se hele historikken.
     </div>
     <div id="messagesInboxList"></div>
+  </div>
+
+  <!-- ØKONOMI — OVERSIKT -->
+  <!-- Landingssiden for Økonomi. Før denne falt man rett ned i «Kasse»
+       uten å vite hva som ventet. Siden svarer på tre spørsmål i
+       rekkefølge: hvor står året, hva må gjøres, hvor går jeg videre. -->
+  <div class="panel" id="panel-okonomiHub">
+
+    <div class="ok-hero">
+      <div class="ok-hero-topp">
+        <div>
+          <div class="ok-eyebrow">Innbetalt av årets forventede beløp</div>
+          <div class="ok-sum" id="okSum">—</div>
+        </div>
+        <div class="ok-eyebrow" id="okAndel"></div>
+      </div>
+
+      <div class="ok-band" id="okBand">
+        <span class="ok-b-betalt" style="width:0"></span>
+        <span class="ok-b-rest" style="width:0"></span>
+        <span class="ok-b-ukjent" style="width:0"></span>
+      </div>
+
+      <div class="ok-nokler" id="okNokler"></div>
+    </div>
+
+    <div class="ok-kolonner">
+      <div class="report-card">
+        <h3>Krever en avgjørelse</h3>
+        <div id="okHandlinger"></div>
+      </div>
+
+      <div>
+        <div class="report-card" style="margin-bottom:14px;">
+          <h3>Denne måneden</h3>
+          <div class="ok-snarvei" id="okMaaned" style="margin-top:12px;"></div>
+        </div>
+        <div class="report-card">
+          <h3>Gå videre</h3>
+          <div class="ok-snarvei" id="okSnarveier" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- BETALINGSINNSTILLINGER -->
@@ -4506,6 +4609,7 @@
       prisOppsett.depositumFrist = (!isNaN(dfr) && dfr >= 1) ? dfr : 0;
       innstMeta('priserMeta', d);
       fyllPrisinnstillinger();
+      renderOkonomiHub();
     }, (err) => console.error('settings/priser', err));
 
     onSnapshot(doc(db, 'settings', 'faktura'), (snap) => {
@@ -4515,6 +4619,7 @@
       fakturaOppsett.kontonummer = typeof d.kontonummer === 'string' ? d.kontonummer : '';
       innstMeta('fakturaMeta', d);
       fyllPrisinnstillinger();
+      renderOkonomiHub();
     }, (err) => console.error('settings/faktura', err));
 
     onSnapshot(doc(db, 'settings', 'lonn'), (snap) => {
@@ -4527,6 +4632,7 @@
       lonnOppsett.assistent = gyldig(d.assistent);
       innstMeta('lonnMeta', d);
       fyllLonnsinnstillinger();
+      renderOkonomiHub();
       renderLonnOversikt();
     }, (err) => console.error('settings/lonn', err));
 
@@ -4549,6 +4655,7 @@
       renderCashierPanel();
       renderCashierLedelsePanel();
       renderFinanceSummary();
+      renderOkonomiHub();
     }, (err) => {
       console.error('studentPayments', err);
     });
@@ -6296,6 +6403,10 @@
     if(type === 'teacherAttendance' || type === 'teachers') renderLonnOversikt();
     if(type === 'teachers'){ renderLedelseView(); renderVarselMottakere(); renderDubletter(); }
     if(type === 'messages') renderMessagesInbox();
+    // Økonomioversikten er avledet — den leser ingenting selv, men må
+    // tegnes om når kildene endrer seg.
+    if(['students','teachers','teacherAttendance','finances','programs',
+        'paymentRequests','guardians','studentPayments'].includes(type)) renderOkonomiHub();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
       updateMsRecipientCount();
@@ -7572,6 +7683,7 @@
   const TAB_DESCRIPTIONS = {
     ledelse: 'Ledelsesmedlemmer og deres roller',
     meetings: 'Referater fra styremøter',
+    okonomiHub: 'Årets tall og det som venter på en avgjørelse',
     finances: 'Inntekter, utgifter og saldo',
     teachers: 'Registrer og administrer lærere',
     guardians: 'Oversikt over foresatte',
@@ -7602,7 +7714,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
-    betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
+    okonomiHub: '📊', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
   };
 
   let currentSideForBack = null;
@@ -8981,6 +9093,175 @@
     }
   };
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ØKONOMI — OVERSIKT
+  //
+  // Alt her regnes fra data som allerede er lastet. Ingen nye lyttere,
+  // ingen ekstra lesninger — kostnaden gikk fra 79 % til 1,8 % av
+  // kvoten 9. august, og en oversiktsside er ikke verdt å miste det på.
+  // ═══════════════════════════════════════════════════════════════════
+  function okonomiTall(){
+    const elever = (cache.students || []).filter(s => s.navn && String(s.status || '') !== 'Sluttet');
+    let betalt = 0, rest = 0, utenBelop = 0, antallRest = 0;
+    elever.forEach(s => {
+      const b = cashierKr(s.belop);
+      const p = cashierKr(s.belopBetalt);
+      if(b <= 0){ utenBelop++; return; }
+      betalt += Math.min(p, b);
+      const r = b - p;
+      if(r > 0){ rest += r; antallRest++; }
+    });
+    return { elever, betalt, rest, utenBelop, antallRest };
+  }
+
+  function renderOkonomiHub(){
+    const bandEl = document.getElementById('okBand');
+    if(!bandEl) return;
+
+    const t = okonomiTall();
+    const kjent = t.betalt + t.rest;
+    // Elever uten beløp får en andel basert på ANTALL, ikke kroner — vi
+    // vet jo ikke hva de skulle betalt. Snittet av de kjente er det
+    // ærligste anslaget, og segmentet er skravert for å si at det gjettes.
+    const snitt = t.elever.length > t.utenBelop && kjent > 0
+      ? kjent / (t.elever.length - t.utenBelop) : 0;
+    const ukjent = snitt * t.utenBelop;
+    const total = kjent + ukjent;
+
+    const pst = v => total > 0 ? (v / total * 100) : 0;
+    const seg = bandEl.querySelectorAll('span');
+    seg[0].style.width = pst(t.betalt) + '%';
+    seg[1].style.width = pst(t.rest) + '%';
+    seg[2].style.width = pst(ukjent) + '%';
+
+    document.getElementById('okSum').innerHTML =
+      kr0(t.betalt) + '<span class="enhet">kr</span>';
+    document.getElementById('okAndel').textContent = kjent > 0
+      ? Math.round(t.betalt / kjent * 100) + ' % av det som er fakturerbart'
+      : 'Ingen beløp registrert ennå';
+
+    const nokler = [
+      ['var(--emerald-d)', 'Innbetalt', kr0(t.betalt) + ' kr'],
+      ['var(--gold)', 'Utestående', kr0(t.rest) + ' kr · ' + t.antallRest + ' elever'],
+    ];
+    if(t.utenBelop > 0){
+      nokler.push(['#c3c9dd', 'Uten beløp', t.utenBelop + ' elever — ikke regnet med']);
+    }
+    document.getElementById('okNokler').innerHTML = nokler.map(([f, l, v]) =>
+      '<span class="ok-nokkel"><span class="ok-prikk" style="background:' + f + '"></span>' +
+      l + ': <b>' + v + '</b></span>').join('');
+
+    renderOkonomiHandlinger(t);
+    renderOkonomiMaaned();
+    renderOkonomiSnarveier(t);
+  }
+
+  // Rekkefølgen er alvorlighet: det som STOPPER noe kommer først, så det
+  // som bare bør følges opp. Uten den rekkefølgen leses listen som støy.
+  function renderOkonomiHandlinger(t){
+    const el = document.getElementById('okHandlinger');
+    if(!el) return;
+    const rader = [];
+    const legg = (alvor, tekst, detalj, knapp, side, fane) =>
+      rader.push({ alvor, tekst, detalj, knapp, side, fane });
+
+    if(!erGyldigKontonummer(fakturaOppsett.kontonummer)){
+      legg('stopp', 'Kontonummer mangler',
+        'Ingen faktura kan sendes før det er registrert.',
+        'Sett nå', 'okonomi', 'betaling');
+    }
+    if(lonnOppsett.larer === null && lonnOppsett.assistent === null){
+      legg('stopp', 'Timesats mangler',
+        'Ingen lønn kan registreres som utbetalt.',
+        'Sett nå', 'okonomi', 'lonn');
+    }
+    const utenPris = (cache.programs || []).filter(p => p.navn && p.aktiv !== 'Nei')
+      .filter(p => { const pr = programPriser(p.navn); return pr.mnd === 0 && pr.aar === 0; });
+    if(utenPris.length){
+      legg('stopp', utenPris.length + ' program uten pris',
+        utenPris.map(p => p.navn).join(' · ') + ' — påmeldingsskjemaet viser ingen pris.',
+        'Åpne', 'skoleoppsett', 'programs');
+    }
+    if(t.utenBelop > 0){
+      legg('folg', t.utenBelop + ' elever uten beløp',
+        'De er ikke med i tallene over.',
+        'Se elever', 'admin', 'students');
+    }
+    if(t.antallRest > 0){
+      legg('folg', t.antallRest + ' elever med utestående',
+        'Til sammen ' + kr0(t.rest) + ' kr.',
+        'Åpne kassen', 'okonomi', 'cashier');
+    }
+    const ventende = (cache.paymentRequests || []).filter(r =>
+      !r.status || r.status === 'Venter' || r.status === 'Ny');
+    if(ventende.length){
+      legg('folg', ventende.length + ' betalingsforespørsler venter',
+        'Foresatte har meldt inn beløp som ikke er bekreftet.',
+        'Behandle', 'okonomi', 'paymentRequests');
+    }
+    const blandet = (cache.guardians || []).filter(g => g.id && blandetMedlemskap(g.id));
+    if(blandet.length){
+      legg('folg', blandet.length + ' familier med ulik medlemsstatus',
+        'Søskenberegningen bygger på en forutsetning som ikke holder.',
+        'Se foresatte', 'admin', 'guardians');
+    }
+
+    if(rader.length === 0){
+      el.innerHTML = '<div class="ok-rolig">Ingenting venter på en avgjørelse. ' +
+        'Tallene over er komplette.</div>';
+      return;
+    }
+    const vekt = { stopp: 0, folg: 1 };
+    rader.sort((a, b) => vekt[a.alvor] - vekt[b.alvor]);
+    el.innerHTML = rader.map(r => `
+      <div class="ok-handling">
+        <span class="ok-alvor ${r.alvor}"></span>
+        <div class="ok-handling-tekst">${escapeHtml(r.tekst)}<small>${escapeHtml(r.detalj)}</small></div>
+        <button onclick="goToTask('${r.side}','${r.fane}')">${escapeHtml(r.knapp)}</button>
+      </div>`).join('');
+  }
+
+  function renderOkonomiMaaned(){
+    const el = document.getElementById('okMaaned');
+    if(!el) return;
+    const naa = new Date().toISOString().slice(0, 7);
+    const inn = (cache.studentPayments || [])
+      .filter(p => String(p.dato || '').slice(0, 7) === naa || extractYearMonth(p.dato) === naa)
+      .reduce((s, p) => s + cashierKr(p.belop), 0);
+    const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
+    let lonn = 0;
+    (cache.teachers || []).filter(t => t.navn).forEach(t => {
+      const { sats, mangler } = lonnSatsForLarer(t);
+      if(mangler) return;
+      const timer = (cache.teacherAttendance || [])
+        .filter(a => a.larer === t.id && extractYearMonth(a.dato) === naa &&
+          (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
+        .reduce((x, a) => x + toNum(a.timer), 0);
+      lonn += sats * timer;
+    });
+    el.innerHTML = `
+      <button onclick="goToTask('okonomi','financeLog')">
+        <div class="n">${kr0(inn)}</div><div class="l">kr innbetalt</div></button>
+      <button onclick="goToTask('okonomi','lonn')">
+        <div class="n">${kr0(lonn)}</div><div class="l">kr i lønn (godkjente timer)</div></button>`;
+  }
+
+  function renderOkonomiSnarveier(t){
+    const el = document.getElementById('okSnarveier');
+    if(!el) return;
+    const saldo = (cache.finances || []).reduce((s, f) => {
+      const b = cashierKr(f.belop);
+      return s + (String(f.type || '') === 'Utbetaling' ? -b : b);
+    }, 0);
+    el.innerHTML = `
+      <button onclick="goToTask('okonomi','finances')">
+        <div class="n">${kr0(saldo)}</div><div class="l">kr i kassen</div></button>
+      <button onclick="goToTask('okonomi','cashier')">
+        <div class="n">${t.antallRest}</div><div class="l">elever med restbeløp</div></button>
+      <button onclick="goToTask('okonomi','betaling')">
+        <div class="n">⚙️</div><div class="l">Innstillinger</div></button>`;
+  }
 
   // ---------- Innstillinger: seksjoner og ulagrede endringer ----------
   // Én lang side ga ingen følelse av hvor man var, og ingen måte å vite
