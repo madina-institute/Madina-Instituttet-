@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-09 10:54:45 */
+/* SIST-ENDRET: 2026-08-09 18:39:26 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -95,7 +95,13 @@ async function hentPrisoppsett() {
       // De to MÅ regne likt — ellers viser panelet ett beløp og Vipps
       // trekker et annet.
       if (aar === 0 && tall(p.pris) > 0) aar = tall(p.pris) * 2;
-      oppsett.programPriser[p.navn] = { mnd, aar, maneder: egneMnd };
+      // Materiellavgiften hører også til programmet — ulike programmer
+      // bruker ulike bøker. Tomt felt = fellessatsen. 0 er en ekte verdi.
+      const eget = String(p.materiellAvgift === undefined || p.materiellAvgift === null ? "" : p.materiellAvgift).trim();
+      oppsett.programPriser[p.navn] = {
+        mnd, aar, maneder: egneMnd,
+        materiell: eget !== "" ? tall(eget) : null,
+      };
     });
   } catch (err) {
     logger.warn("Kunne ikke lese 'programs' — bruker reserveprisene", err);
@@ -183,10 +189,17 @@ async function computeSoskenPrice(program, guardianId, excludeId, erMedlem) {
     const p = oppsett.programPriser[navn];
     // Gamle oppføringer kunne være et enkelt tall. Håndteres, men uten
     // å gjette hva tallet betydde — det ville gitt feil faktura.
-    if (typeof p === "number") return { mnd: 0, aar: p, maneder: 0 };
-    return p || { mnd: 0, aar: 0, maneder: 0 };
+    if (typeof p === "number") return { mnd: 0, aar: p, maneder: 0, materiell: null };
+    return p || { mnd: 0, aar: 0, maneder: 0, materiell: null };
   };
-  const materiell = oppsett.materiellAvgift || 0;
+  // Programmets egen materiellavgift går foran fellessatsen — samme regel
+  // som i panelet. Står de to ulikt, trekker Vipps et annet beløp enn
+  // panelet viser; det skjedde 8. august og skal ikke skje igjen.
+  const materiellFor = (navn) => {
+    const eget = priserFor(navn).materiell;
+    return (eget === null || eget === undefined) ? (oppsett.materiellAvgift || 0) : eget;
+  };
+  const materiell = materiellFor(program);
   // Programmets egne måneder går foran. Mangler de, brukes fellesverdien.
   const manederFor = (navn) => priserFor(navn).maneder || oppsett.antallManeder || 9;
   const medlem = String(erMedlem || "").trim() === "Ja";
