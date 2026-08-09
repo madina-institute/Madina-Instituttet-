@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 00:44:15 -->
+<!-- SIST-ENDRET: 2026-08-10 01:01:10 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -12024,18 +12024,20 @@
   // 🔴 Barn som har betalt noe, røres ikke. Å endre et beløp noen alt har
   // betalt på er å endre en faktura i ettertid.
   async function oppdaterSoskenpriser(guardianId){
-    if(!guardianId) return { endret: 0, hoppetOver: [] };
+    if(!guardianId) return { endret: 0, forsokt: 0, hoppetOver: [], feilet: [] };
     const priser = familiePriser(guardianId);
     const barn = (cache.students || []).filter(s =>
       s.foresatt === guardianId || s.foresatt2 === guardianId);
-    let endret = 0;
+    let endret = 0, forsokt = 0;
     const hoppetOver = [];
+    const feilet = [];
     for(const elev of barn){
       const p = priser[elev.id];
       if(!p || !p.pris) continue;
       const gammelt = cashierKr(elev.belop);
       const nytt = Math.round(p.pris);
       if(gammelt === nytt && String(elev.soskenrekkefolge || '') === String(p.plass)) continue;
+      forsokt++;
       if(cashierKr(elev.belopBetalt) > 0){
         hoppetOver.push(elev.navn || elev.id);
         continue;
@@ -12049,10 +12051,15 @@
         });
         endret++;
       } catch(err){
+        // 🔴 Feilen ble tidligere bare skrevet til konsollen. Da sa
+        // knappen «0 elever fikk rettet beløp» uten å nevne at samtlige
+        // skrivinger var avvist — man kunne trykke i det uendelige uten
+        // å få vite hvorfor.
         console.error('oppdaterSoskenpriser', elev.id, err);
+        feilet.push({ navn: elev.navn || elev.id, kode: err.code || err.message || 'ukjent' });
       }
     }
-    return { endret, hoppetOver };
+    return { endret, forsokt, hoppetOver, feilet };
   }
 
   // Lagret beløp mot det prisreglene sier nå. De to kan gli fra hverandre
@@ -12088,13 +12095,37 @@
       linjer.join('\n') + (avvik.length > 12 ? '\n… og ' + (avvik.length - 12) + ' til' : '') +
       '\n\nElever som har betalt noe, røres ikke.')) return;
     const foresatte = [...new Set(avvik.map(x => x.elev.foresatt || x.elev.foresatt2))];
-    let endret = 0;
+    let endret = 0, forsokt = 0;
+    const alleFeil = [];
     for(const g of foresatte){
       const r = await oppdaterSoskenpriser(g);
       endret += r.endret;
+      forsokt += (r.forsokt || 0);
+      alleFeil.push(...(r.feilet || []));
     }
-    showToast(endret + ' elever fikk rettet beløp.');
     renderOkonomiHub();
+    if(alleFeil.length === 0 && forsokt > 0){
+      showToast(endret + ' elever fikk rettet beløp.');
+      return;
+    }
+    if(alleFeil.length === 0 && forsokt === 0){
+      // Ingen skriving ble i det hele tatt forsøkt. Da ligger feilen i
+      // hvilke elever som blir plukket ut, ikke i skrivingen — og de to
+      // krever helt forskjellig leting.
+      alert('Ingen skriving ble forsøkt.\n\n' + avvik.length + ' elever ble ' +
+        'markert som avvikende, men familieberegningen fant dem ikke igjen. ' +
+        'Det peker på koblingen mellom elev og foresatt.\n\n' +
+        'Første elev: ' + (avvik[0] ? avvik[0].elev.navn + ' (foresatt: ' +
+          (avvik[0].elev.foresatt || '—') + ' / ' + (avvik[0].elev.foresatt2 || '—') + ')' : '—'));
+      return;
+    }
+    // Sier hva som gikk galt, ikke bare at ingenting skjedde.
+    const koder = [...new Set(alleFeil.map(f => f.kode))];
+    alert('Rettet ' + endret + ' av ' + avvik.length + '.\n\n' +
+      alleFeil.length + ' skrivinger ble avvist:\n' +
+      alleFeil.slice(0, 8).map(f => '• ' + f.navn + ' — ' + f.kode).join('\n') +
+      (alleFeil.length > 8 ? '\n… og ' + (alleFeil.length - 8) + ' til' : '') +
+      '\n\nÅrsak: ' + koder.join(', '));
   };
 
   window.approveRegistration = async function(id){
@@ -12234,7 +12265,7 @@
       }
       const res1 = await oppdaterSoskenpriser(guardianId);
       const res2 = guardianId2 && guardianId2 !== guardianId
-        ? await oppdaterSoskenpriser(guardianId2) : { endret: 0, hoppetOver: [] };
+        ? await oppdaterSoskenpriser(guardianId2) : { endret: 0, hoppetOver: [], feilet: [] };
       const hoppet = [...res1.hoppetOver, ...res2.hoppetOver];
 
       let melding = 'Søknaden er godkjent og eleven er lagt til.';
