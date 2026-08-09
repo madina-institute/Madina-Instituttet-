@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 17:38:16 -->
+<!-- SIST-ENDRET: 2026-08-09 17:42:48 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2465,6 +2465,18 @@
         <div class="hint">Hvor mange ganger årsbeløpet deles opp ved fakturering. 1 = hele året samlet · 2 = per termin · 9 = månedlig. Endres her når dere har bestemt dere — ingenting må publiseres.</div>
       </div>
       <div class="field">
+        <label>Timesats — lærer (kr/t)</label>
+        <input type="number" id="satsLarerInput" min="0" max="10000" step="10" placeholder="200">
+      </div>
+      <div class="field">
+        <label>Timesats — assistent (kr/t)</label>
+        <input type="number" id="satsAssistentInput" min="0" max="10000" step="10" placeholder="150">
+        <div class="hint" id="lonnStatusHint">
+          Grunnsatsen for alle lønnede. En lærer som har <b>egen sats</b> i personkortet
+          beholder sin. Er satsen tom, blir <b>ingen lønn utbetalt</b> — oversikten sier fra i stedet.
+        </div>
+      </div>
+      <div class="field">
         <label>Skolens kontonummer</label>
         <input type="text" id="kontonummerInput" placeholder="11 siffer" oninput="visKontoStatus()">
         <div class="hint" id="kontonummerStatus">
@@ -4420,6 +4432,18 @@
       prisOppsett.kontonummer = typeof d.kontonummer === 'string' ? d.kontonummer : '';
       fyllPrisinnstillinger();
     }, (err) => console.error('settings/priser', err));
+
+    onSnapshot(doc(db, 'settings', 'lonn'), (snap) => {
+      const d = snap.exists() ? (snap.data() || {}) : {};
+      const gyldig = v => {
+        const n = parseFloat(v);
+        return (!isNaN(n) && n >= 0 && n <= 10000) ? n : null;
+      };
+      lonnOppsett.larer = gyldig(d.larer);
+      lonnOppsett.assistent = gyldig(d.assistent);
+      fyllLonnsinnstillinger();
+      renderLonnOversikt();
+    }, (err) => console.error('settings/lonn', err));
 
     onSnapshot(doc(db, 'settings', 'varsler'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
@@ -6984,10 +7008,16 @@
 
     const egen = parseFloat(String(t.timesats || '').replace(',', '.').replace(/[^\d.]/g, ''));
     if(!isNaN(egen) && egen > 0){
-      return { sats: egen, rolleLabel, statusLabel: 'Lønnet', egenSats: true };
+      return { sats: egen, rolleLabel, statusLabel: 'Lønnet', egenSats: true, mangler: false };
     }
 
-    return { sats: erAssistent ? 150 : 200, rolleLabel, statusLabel: 'Lønnet', egenSats: false };
+    // Grunnsatsen kommer fra basen. Er den ikke satt, er satsen 0 OG merket
+    // som manglende — beløpet blir ikke utbetalt, og oversikten sier hvorfor.
+    const grunn = erAssistent ? lonnOppsett.assistent : lonnOppsett.larer;
+    if(grunn === null || grunn === undefined){
+      return { sats: 0, rolleLabel, statusLabel: 'Lønnet', egenSats: false, mangler: true };
+    }
+    return { sats: grunn, rolleLabel, statusLabel: 'Lønnet', egenSats: false, mangler: false };
   }
 
   function renderLonnOversikt(){
@@ -7000,14 +7030,14 @@
     }
     const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
     const rows = cache.teachers.filter(t => t.navn).map(t => {
-      const { sats, rolleLabel, statusLabel, egenSats } = lonnSatsForLarer(t);
+      const { sats, rolleLabel, statusLabel, egenSats, mangler } = lonnSatsForLarer(t);
       const timer = cache.teacherAttendance
         .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month && (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
         .reduce((s,a) => s + toNum(a.timer), 0);
       const lonn = sats * timer;
       const alleredeBetalt = cache.salaryPayments.find(p => p.larer === t.id && p.maaned === month);
       return { id: t.id, navn: t.navn, rolleLabel: rolleLabel + (egenSats ? ' · egen sats' : ''),
-               statusLabel, timer, sats, lonn, kontonummer: t.kontonummer || '', alleredeBetalt };
+               statusLabel, timer, sats, lonn, mangler, kontonummer: t.kontonummer || '', alleredeBetalt };
     });
     tbody.innerHTML = rows.map(r => `
       <tr>
@@ -7015,11 +7045,12 @@
         <td>${escapeHtml(r.rolleLabel)}</td>
         <td><span class="tag-pill">${escapeHtml(r.statusLabel)}</span></td>
         <td>${r.timer.toLocaleString('no-NO')} t</td>
-        <td>${r.sats.toLocaleString('no-NO')} kr</td>
-        <td style="font-weight:700;">${r.lonn.toLocaleString('no-NO')} kr</td>
+        <td>${r.mangler ? '<span style="color:#b03030; font-weight:600;">⚠️ ikke satt</span>' : r.sats.toLocaleString('no-NO') + ' kr'}</td>
+        <td style="font-weight:700;">${r.mangler ? '—' : r.lonn.toLocaleString('no-NO') + ' kr'}</td>
         <td>${escapeHtml(r.kontonummer) || '<span style="color:#8a9a90;">Ikke registrert</span>'}</td>
         <td>${
           r.statusLabel === 'Frivillig' ? '<span style="color:#8a9a90;">Frivillig</span>'
+          : r.mangler ? '<span style="color:#b03030;">Sett timesats først</span>'
           : r.alleredeBetalt ? `✅ Betalt ${escapeHtml(r.alleredeBetalt.betaltDato || '')}`
           : r.lonn > 0 ? `<button class="btn-edit" onclick="registrerLonnUtbetaling('${r.id}')">💵 Betal lønn</button>`
           : '<span style="color:#8a9a90;">0 kr</span>'
@@ -7036,7 +7067,11 @@
     const teacher = cache.teachers.find(t => t.id === larerId);
     if(!teacher) return;
     const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
-    const { sats } = lonnSatsForLarer(teacher);
+    const { sats, mangler } = lonnSatsForLarer(teacher);
+    if(mangler){
+      showToast('Timesatsen er ikke satt — Økonomi → Betalingsinnstillinger.');
+      return;
+    }
     const timer = cache.teacherAttendance
       .filter(a => a.larer === larerId && extractYearMonth(a.dato) === month && (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
       .reduce((s,a) => s + toNum(a.timer), 0);
@@ -7067,12 +7102,15 @@
     const toNum = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
     const headers = ['Lærer','Rolle','Lønnsstatus','Timer','Sats (kr/t)','Lønn (kr)','Kontonummer'];
     const rows = cache.teachers.filter(t => t.navn).map(t => {
-      const { sats, rolleLabel, statusLabel, egenSats } = lonnSatsForLarer(t);
+      const { sats, rolleLabel, statusLabel, egenSats, mangler } = lonnSatsForLarer(t);
       const timer = cache.teacherAttendance
         .filter(a => a.larer === t.id && extractYearMonth(a.dato) === month && (a.godkjenningsstatus === 'Godkjent' || a.godkjenningsstatus === 'Endret av admin'))
         .reduce((s,a) => s + toNum(a.timer), 0);
       return [t.navn, rolleLabel + (egenSats ? ' (egen sats)' : ''), statusLabel,
-              timer, sats, sats * timer, t.kontonummer || '']
+              timer,
+              mangler ? 'IKKE SATT' : sats,
+              mangler ? 'IKKE SATT' : sats * timer,
+              t.kontonummer || '']
         .map(v => '"' + String(v).replace(/"/g,'""') + '"');
     });
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -8165,7 +8203,11 @@
     kontonummer: ''
   };
 
-  // ---------- Kontonummer ----------
+  // ---------- Lønnssatser ----------
+  // Reserven er null, ikke 200/150. Svarer ikke basen, skal satsen mangle
+  // synlig — et gammelt tall ville blitt utbetalt uten at noen så etter.
+  const lonnOppsett = { larer: null, assistent: null };
+
   // Et norsk kontonummer er 11 siffer, der det siste er et kontrollsiffer
   // (MOD11). Kontrollen fanger tastefeil og ombytte av to siffer — den
   // fanger IKKE at nummeret tilhører feil konto. Den sier bare at nummeret
@@ -8867,6 +8909,20 @@
     if(kn && document.activeElement !== kn) kn.value = formatKontonummer(prisOppsett.kontonummer);
     visKontoStatus();
     visRabattForhandsvisning();
+  }
+
+  function fyllLonnsinnstillinger(){
+    const par = [['satsLarerInput','larer'], ['satsAssistentInput','assistent']];
+    par.forEach(([id, nokkel]) => {
+      const el = document.getElementById(id);
+      if(el && document.activeElement !== el){
+        el.value = (lonnOppsett[nokkel] === null || lonnOppsett[nokkel] === undefined) ? '' : lonnOppsett[nokkel];
+      }
+    });
+    const h = document.getElementById('lonnStatusHint');
+    if(h && lonnOppsett.larer === null && lonnOppsett.assistent === null){
+      h.innerHTML = '🔴 <b>Ingen timesats er satt.</b> Ingen lønn kan registreres som utbetalt før dette er fylt ut.';
+    }
   }
 
   // Viser med en gang om nummeret er skrivbart feil — og hvilken IBAN det gir.
@@ -9898,6 +9954,14 @@
          (o.tellForesatt2 ? ' · barn på foresatt 2 telles som søsken' : ' · ⚠️ barn på foresatt 2 telles IKKE som søsken')
     });
     prisPunkter.push({
+      h: 'Timesats',
+      t: (lonnOppsett.larer === null && lonnOppsett.assistent === null)
+        ? '🔴 ikke satt — ingen lønn kan registreres som utbetalt'
+        : 'lærer ' + (lonnOppsett.larer === null ? '⚠️ ikke satt' : kr0(lonnOppsett.larer) + ' kr/t') +
+          ' · assistent ' + (lonnOppsett.assistent === null ? '⚠️ ikke satt' : kr0(lonnOppsett.assistent) + ' kr/t') +
+          ' · egen sats i personkortet går foran'
+    });
+    prisPunkter.push({
       h: 'Kontonummer på faktura',
       t: erGyldigKontonummer(o.kontonummer)
         ? formatKontonummer(o.kontonummer) + ' · IBAN ' + ibanFraKontonummer(o.kontonummer)
@@ -9972,7 +10036,6 @@
       tittel: '⚙️ Hva som IKKE kan endres herfra',
       punkter: [
         { h: 'Eierrollen selv', t: 'Nivå 1 er låst, og eierens e-post står i sikkerhetsreglene. Det er punktet alt annet kan bygges opp fra igjen.' },
-        { h: 'Timelønnen', t: '200 kr for lærer og 150 for assistent står i koden. En lærer kan få egen sats i personkortet, men grunnsatsen krever publisering.' },
         { h: 'Sikkerhetsreglene', t: 'limes inn manuelt i Firebase Console. Filen firestore.rules i repoet er kun dokumentasjon.' },
         { h: 'Tekstene på de offentlige sidene', t: 'ligger i selve filene og endres med publiseringsverktøyet.' }
       ]
@@ -10090,6 +10153,21 @@
     }
     // Tomt er lov — da stopper fakturaen. Feil er ikke lov: et nummer som
     // ser ferdig ut, men ikke er det, er verre enn et tomt felt.
+    // Tom sats er lov — da stopper lønnsutbetalingen. Et tall utenfor
+    // rimelighet er det ikke: 2000 i stedet for 200 er et tastetrykk unna.
+    const lesSats = id => {
+      const raa = (document.getElementById(id).value || '').trim();
+      if(!raa) return { verdi: null, ok: true };
+      const n = parseFloat(raa.replace(',', '.'));
+      return { verdi: n, ok: !isNaN(n) && n >= 0 && n <= 10000 };
+    };
+    const sLarer = lesSats('satsLarerInput');
+    const sAss = lesSats('satsAssistentInput');
+    if(!sLarer.ok || !sAss.ok){
+      showToast('Timesatsen må være et tall mellom 0 og 10 000 — ingenting ble lagret.');
+      return;
+    }
+
     const kontoRaa = (document.getElementById('kontonummerInput').value || '').trim();
     const kontoSiffer = kontoRaa.replace(/\D/g, '');
     if(kontoRaa && !erGyldigKontonummer(kontoSiffer)){
@@ -10107,7 +10185,9 @@
       'Terminer: ' + prisOppsett.terminer + ' → ' + ter + '\n' +
       'Depositum: ' + prisOppsett.depositum + ' kr → ' + dep + ' kr\n' +
       'Kontonummer: ' + (formatKontonummer(prisOppsett.kontonummer) || '(ikke satt)') +
-        ' → ' + (formatKontonummer(kontoSiffer) || '(ikke satt)') + '\n\n' +
+        ' → ' + (formatKontonummer(kontoSiffer) || '(ikke satt)') + '\n' +
+      'Timesats lærer: ' + (lonnOppsett.larer ?? '(ikke satt)') + ' → ' + (sLarer.verdi ?? '(ikke satt)') + ' kr/t\n' +
+      'Timesats assistent: ' + (lonnOppsett.assistent ?? '(ikke satt)') + ' → ' + (sAss.verdi ?? '(ikke satt)') + ' kr/t\n\n' +
       'Dette gjelder umiddelbart for nye beregninger, både her og for ' +
       'Vipps-betalinger. Elever som allerede har et beløp registrert, ' +
       'beholder sitt.'
@@ -10123,6 +10203,12 @@
         depositum: dep,
         depositumFrist: (dep > 0 ? dfr : 0),
         kontonummer: kontoSiffer,
+        sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
+        sistEndretDato: new Date().toISOString()
+      }, { merge: true });
+      await setDoc(doc(db, 'settings', 'lonn'), {
+        larer: sLarer.verdi,
+        assistent: sAss.verdi,
         sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
         sistEndretDato: new Date().toISOString()
       }, { merge: true });
