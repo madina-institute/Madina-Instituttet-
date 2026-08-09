@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 01:05:51 -->
+<!-- SIST-ENDRET: 2026-08-10 01:28:28 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -520,6 +520,23 @@
   .fam-belop{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;
     font-weight:600; color:var(--ink); }
   .fam-sum td{ border-top:1px solid var(--tabell-linje); padding-top:8px; font-weight:700; }
+
+  /* På smal skjerm er det ikke plass til tre kolonner. Radene ble derfor
+     brutt opp av seg selv — men høyrejusteringen på beløpet ble stående,
+     og da så navnet ut til å ligge feil vei. Her legges hver elev som et
+     lite kort i stedet, med alt venstrestilt. */
+  @media (max-width:560px){
+    .fam-tabell, .fam-tabell tbody, .fam-tabell tr, .fam-tabell td{ display:block; width:100%; }
+    .fam-tabell tr{ padding:9px 0; border-bottom:1px solid var(--line); }
+    .fam-tabell tr:last-child{ border-bottom:0; }
+    .fam-tabell td{ border-bottom:0; padding:1px 0; text-align:start; }
+    .fam-belop{ text-align:start; margin-top:3px; }
+    .fam-plass{ margin-left:0; margin-inline-start:6px; }
+    .fam-sum{ display:flex; justify-content:space-between; align-items:baseline;
+      border-top:1px solid var(--tabell-linje); padding-top:9px; }
+    .fam-sum td{ width:auto; border-top:0; padding-top:0; }
+    .fam-sum td:empty{ display:none; }
+  }
 
   /* ---- Alle personer ---- */
   .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
