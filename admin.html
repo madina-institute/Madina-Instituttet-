@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 17:42:48 -->
+<!-- SIST-ENDRET: 2026-08-09 17:53:53 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4427,11 +4427,16 @@
       prisOppsett.depositum = (!isNaN(dep) && dep >= 0) ? dep : 0;
       const dfr = parseFloat(d.depositumFrist);
       prisOppsett.depositumFrist = (!isNaN(dfr) && dfr >= 1) ? dfr : 0;
-      // Reserven er tom streng, ikke et gammelt nummer. Svarer ikke basen,
-      // skal fakturaen stoppe — ikke gå ut med et nummer ingen har bekreftet.
-      prisOppsett.kontonummer = typeof d.kontonummer === 'string' ? d.kontonummer : '';
       fyllPrisinnstillinger();
     }, (err) => console.error('settings/priser', err));
+
+    onSnapshot(doc(db, 'settings', 'faktura'), (snap) => {
+      const d = snap.exists() ? (snap.data() || {}) : {};
+      // Reserven er tom streng, ikke et gammelt nummer. Svarer ikke basen,
+      // skal fakturaen stoppe — ikke gå ut med et nummer ingen har bekreftet.
+      fakturaOppsett.kontonummer = typeof d.kontonummer === 'string' ? d.kontonummer : '';
+      fyllPrisinnstillinger();
+    }, (err) => console.error('settings/faktura', err));
 
     onSnapshot(doc(db, 'settings', 'lonn'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
@@ -6086,7 +6091,7 @@
 
     // Ingen faktura uten et ekte kontonummer. Et tomt felt stopper her og
     // sier fra; et gjettet nummer hadde gått ut til foresatte uten et lyd.
-    const konto = (prisOppsett.kontonummer || '').trim();
+    const konto = (fakturaOppsett.kontonummer || '').trim();
     if(!erGyldigKontonummer(konto)){
       showToast('Kontonummer er ikke satt. Økonomi → Betalingsinnstillinger.');
       alert(
@@ -8198,10 +8203,15 @@
     terminer: 1,           // hvor mange ganger årsbeløpet deles ved fakturering
     depositum: 0,          // trekkes fra totalen, er ikke et tillegg
     depositumFrist: 0,     // dager
-    // Tom streng er med vilje. Et gjettet kontonummer ser riktig ut og blir
-    // sendt ut; et tomt felt stopper fakturaen og sier fra.
-    kontonummer: ''
   };
+
+  // ---------- Fakturaopplysninger ----------
+  // 🔴 Ligger i settings/faktura, IKKE i settings/priser. Prisdokumentet
+  // er offentlig lesbart (påmeldingsskjemaet viser prisene uten
+  // innlogging) — skolens kontonummer skal ikke være det.
+  // Tom streng er med vilje: et gjettet nummer ser riktig ut og blir
+  // sendt ut; et tomt felt stopper fakturaen og sier fra.
+  const fakturaOppsett = { kontonummer: '' };
 
   // ---------- Lønnssatser ----------
   // Reserven er null, ikke 200/150. Svarer ikke basen, skal satsen mangle
@@ -8906,7 +8916,7 @@
       if(el && document.activeElement !== el) el.value = prisOppsett[nokkel];
     });
     const kn = document.getElementById('kontonummerInput');
-    if(kn && document.activeElement !== kn) kn.value = formatKontonummer(prisOppsett.kontonummer);
+    if(kn && document.activeElement !== kn) kn.value = formatKontonummer(fakturaOppsett.kontonummer);
     visKontoStatus();
     visRabattForhandsvisning();
   }
@@ -9963,8 +9973,8 @@
     });
     prisPunkter.push({
       h: 'Kontonummer på faktura',
-      t: erGyldigKontonummer(o.kontonummer)
-        ? formatKontonummer(o.kontonummer) + ' · IBAN ' + ibanFraKontonummer(o.kontonummer)
+      t: erGyldigKontonummer(fakturaOppsett.kontonummer)
+        ? formatKontonummer(fakturaOppsett.kontonummer) + ' · IBAN ' + ibanFraKontonummer(fakturaOppsett.kontonummer)
         : '🔴 ikke satt — fakturaer blir ikke sendt før det er registrert under Betalingsinnstillinger'
     });
     ['pris.tak','pris.dyreste','pris.medlemskap','pris.blandet','pris.skjema'].forEach(k =>
@@ -10184,7 +10194,7 @@
       'Materiell: ' + prisOppsett.materiellAvgift + ' kr → ' + mat + ' kr\n' +
       'Terminer: ' + prisOppsett.terminer + ' → ' + ter + '\n' +
       'Depositum: ' + prisOppsett.depositum + ' kr → ' + dep + ' kr\n' +
-      'Kontonummer: ' + (formatKontonummer(prisOppsett.kontonummer) || '(ikke satt)') +
+      'Kontonummer: ' + (formatKontonummer(fakturaOppsett.kontonummer) || '(ikke satt)') +
         ' → ' + (formatKontonummer(kontoSiffer) || '(ikke satt)') + '\n' +
       'Timesats lærer: ' + (lonnOppsett.larer ?? '(ikke satt)') + ' → ' + (sLarer.verdi ?? '(ikke satt)') + ' kr/t\n' +
       'Timesats assistent: ' + (lonnOppsett.assistent ?? '(ikke satt)') + ' → ' + (sAss.verdi ?? '(ikke satt)') + ' kr/t\n\n' +
@@ -10202,6 +10212,10 @@
         terminer: ter,
         depositum: dep,
         depositumFrist: (dep > 0 ? dfr : 0),
+        sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
+        sistEndretDato: new Date().toISOString()
+      }, { merge: true });
+      await setDoc(doc(db, 'settings', 'faktura'), {
         kontonummer: kontoSiffer,
         sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
         sistEndretDato: new Date().toISOString()
