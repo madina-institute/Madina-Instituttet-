@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 19:17:22 -->
+<!-- SIST-ENDRET: 2026-08-09 20:10:55 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1137,6 +1137,7 @@
   <button data-sb-side="eier" onclick="sidebarSelectSide('eier')"><span class="ic">🏛️</span> Eier / Ledelsen</button>
   <button data-sb-side="admin" onclick="sidebarSelectSide('admin')"><span class="ic">🗂️</span> Administrativ</button>
   <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')"><span class="ic">💰</span> Økonomi</button>
+  <button data-sb-side="personale" onclick="sidebarSelectSide('personale')"><span class="ic">👥</span> Personale</button>
   <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')"><span class="ic">🎓</span> Pedagogisk</button>
   <button data-sb-side="registrering" onclick="sidebarSelectSide('registrering')"><span class="ic">📝</span> Registrering</button>
   <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')"><span class="ic">🏫</span> Skoleoppsett</button>
@@ -1291,11 +1292,11 @@
   <div class="tab" data-tab="meetings" data-side="eier">Møtereferater</div>
   <div class="tab" data-tab="okonomiHub" data-side="okonomi">Oversikt</div>
   <div class="tab" data-tab="finances" data-side="okonomi">Kasse/Økonomi</div>
-  <div class="tab" data-tab="lonn" data-side="okonomi">💰 Lønn</div>
+  <div class="tab" data-tab="lonn" data-side="okonomi personale">💰 Lønn</div>
     <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
     <div class="tab" data-tab="meldingssenter" data-side="eier">Meldingssenter</div>
   <div class="tab" data-tab="cashierLedelse" data-side="eier" id="tabCashierLedelse" style="display:none;">💰 Kasserer (Ledelse)</div>
-  <div class="tab active" data-tab="teachers" data-side="admin">Lærere</div>
+  <div class="tab active" data-tab="teachers" data-side="personale">Lærere</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
@@ -1317,7 +1318,8 @@
   <div class="tab" data-tab="betaling" data-side="okonomi">Betalingsinnstillinger</div>
   <div class="tab" data-tab="reports" data-side="admin">Rapporter</div>
   <div class="tab" data-tab="utvikler" data-side="verktoy">🛠️ Verktøy og sider</div>
-  <div class="tab" data-tab="roller" data-side="verktoy">🔑 Roller og tilganger</div>
+  <div class="tab" data-tab="eiere" data-side="personale">👑 Eiere</div>
+  <div class="tab" data-tab="roller" data-side="personale">🔑 Roller og tilganger</div>
   <div class="tab" data-tab="veiledning" data-side="veiledning">📖 Veiledning</div>
   <div class="tab" data-tab="overview" data-side="oversikt">Oversikt</div>
   <div class="tab" data-tab="registrations" data-side="registrering">Søknader</div>
@@ -2523,6 +2525,66 @@
       Arkiv over all kommunikasjon mellom foresatte og lærere (skrivebeskyttet oversikt). Trykk en samtale for å se hele historikken.
     </div>
     <div id="messagesInboxList"></div>
+  </div>
+
+  <!-- EIERE -->
+  <!-- Eierskapet ligger i settings/eierskap. Det er dokumentet REGLENE
+       leser — ikke rollen «Eier» i personkortet. De to kan komme ut av
+       takt, og da viser panelet knapper som reglene avviser. Derfor
+       vises begge her, side om side. -->
+  <div class="panel" id="panel-eiere">
+
+    <div class="report-card">
+      <h3>👑 Eiere</h3>
+      <div class="sub">
+        En eier har full tilgang uansett hva som står i rolletabellen, og er
+        den eneste som kan endre roller, tilganger og denne listen.
+      </div>
+      <div id="eiereListe" style="margin-top:16px;"></div>
+
+      <div class="field" style="margin-top:18px;">
+        <label>Legg til eier — e-postadresse</label>
+        <input type="email" id="nyEierInput" placeholder="navn@eksempel.no" autocomplete="off">
+        <div class="hint">
+          Må være <b>nøyaktig</b> den samme adressen personen logger inn med.
+          Reglene sammenligner tegn for tegn, og en adresse som nesten stemmer
+          gir ingen tilgang i det hele tatt.
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:auto;" onclick="leggTilEier()">Legg til eier</button>
+    </div>
+
+    <div class="report-card" style="margin-top:16px;">
+      <h3>Stemmer listen med rollene?</h3>
+      <div class="sub">
+        Rollen «Eier» styrer hva panelet <b>viser</b>. Listen over styrer hva
+        reglene <b>tillater</b>. Er de ulike, får noen knapper som ikke virker
+        — eller full tilgang uten å se den.
+      </div>
+      <div id="eierAvvik" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="report-card" style="margin-top:16px;">
+      <h3>Hvis alle blir låst ute</h3>
+      <div class="sub">
+        Skulle listen bli tom, feilskrevet, eller en eier fjerne de andre,
+        finnes det ingen innlogging igjen som kan rette det opp. Veien tilbake
+        går gjennom Firebase Console, som ikke er bundet av reglene:
+      </div>
+      <ol style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.9; margin:12px 0 0 18px; padding:0;">
+        <li>Åpne Firestore → <code>settings</code> → <code>eierskap</code></li>
+        <li>Legg til <code>gjenopprettingEpost</code> = adressen som skal slippes inn</li>
+        <li>Legg til <code>gjenopprettingUtloper</code> (timestamp) = når det slutter å gjelde</li>
+        <li>Logg inn med den adressen, rett opp listen over</li>
+        <li><b>Slett de to feltene igjen</b></li>
+      </ol>
+      <div class="hint" style="margin-top:10px;">
+        Fristen er ikke pynt: et glemt felt uten utløp er en permanent bakdør
+        ingen husker står der. Feltene kan ikke settes herfra — kun i Console.
+      </div>
+      <div id="eierGjenoppretting" style="margin-top:12px;"></div>
+    </div>
+
   </div>
 
   <!-- ØKONOMI — OVERSIKT -->
@@ -4611,6 +4673,19 @@
       fyllPrisinnstillinger();
       renderOkonomiHub();
     }, (err) => console.error('settings/priser', err));
+
+    onSnapshot(doc(db, 'settings', 'eierskap'), (snap) => {
+      const d = snap.exists() ? (snap.data() || {}) : {};
+      eierskapData = {
+        finnes: snap.exists(),
+        eiere: Array.isArray(d.eiere) ? d.eiere : [],
+        gjenopprettingEpost: d.gjenopprettingEpost || '',
+        gjenopprettingUtloper: d.gjenopprettingUtloper || null
+      };
+      renderEiere();
+      renderEierAvvik();
+      renderEierGjenoppretting();
+    }, (err) => console.error('settings/eierskap', err));
 
     onSnapshot(doc(db, 'settings', 'faktura'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
@@ -7684,6 +7759,7 @@
     ledelse: 'Ledelsesmedlemmer og deres roller',
     meetings: 'Referater fra styremøter',
     okonomiHub: 'Årets tall og det som venter på en avgjørelse',
+    eiere: 'Hvem som har full tilgang, og veien tilbake hvis alt låser seg',
     finances: 'Inntekter, utgifter og saldo',
     teachers: 'Registrer og administrer lærere',
     guardians: 'Oversikt over foresatte',
@@ -7714,7 +7790,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📖', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '💳', messages: '📩',
-    okonomiHub: '📊', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
+    okonomiHub: '📊', eiere: '👑', personalePorten: '🚪', betaling: '🔗', reports: '📊', overview: '⚙️', registrations: '📝', meldingssenter: '📤'
   };
 
   let currentSideForBack = null;
@@ -7752,7 +7828,11 @@
     document.getElementById('contentLayout').style.display = 'flex';
 
     const subSidebar = document.getElementById('subSidebar');
-    const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side="' + side + '"]'));
+    // ~= matcher ETT ord i en mellomromsdelt liste. Da kan én fane høre
+    // til to grupper (Lønn er både økonomi og personale) uten at panelet
+    // må finnes i to eksemplarer — to kopier ville før eller siden
+    // kommet ut av takt med hverandre.
+    const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side~="' + side + '"]'));
     subSidebar.innerHTML = tabsForSide.map(tab => `
       <button data-sub-tab="${tab.dataset.tab}" onclick="selectSubTab('${tab.dataset.tab}')" title="${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}">
         <span class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</span> ${tab.textContent}
@@ -9093,6 +9173,170 @@
     }
   };
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // EIERE
+  //
+  // settings/eierskap er dokumentet REGLENE leser. Rollen «Eier» i
+  // personkortet styrer bare hva panelet viser. De to er ikke koblet
+  // automatisk med vilje: eierskap er den høyeste rettigheten i
+  // systemet, og et system som deler den ut på egen hånd er farligere
+  // enn et som sier fra at noe ikke stemmer.
+  // ═══════════════════════════════════════════════════════════════════
+  let eierskapData = { eiere: [], finnes: false };
+
+  function renderEiere(){
+    const el = document.getElementById('eiereListe');
+    if(!el) return;
+    const liste = Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [];
+
+    if(!eierskapData.finnes){
+      el.innerHTML = '<div class="ok-rolig" style="color:#a83c3c;">' +
+        '🔴 <b>Dokumentet settings/eierskap finnes ikke.</b> Ingen er eier, og ' +
+        'det kan ikke opprettes herfra — se seksjonen nederst.</div>';
+      return;
+    }
+    if(liste.length === 0){
+      el.innerHTML = '<div class="ok-rolig" style="color:#a83c3c;">🔴 Listen er tom.</div>';
+      return;
+    }
+
+    const meg = (currentUserEmail || '').toLowerCase();
+    el.innerHTML = liste.map(e => {
+      const erMeg = String(e).toLowerCase() === meg;
+      // Den siste eieren kan ikke fjernes. Reglene avviser det uansett,
+      // men en knapp som alltid feiler er verre enn ingen knapp.
+      const kanFjerne = liste.length > 1;
+      return `
+      <div class="ok-handling">
+        <span class="ok-alvor" style="background:var(--gold);"></span>
+        <div class="ok-handling-tekst">${escapeHtml(e)}${erMeg ? ' <b>(deg)</b>' : ''}
+          <small>${erMeg ? 'Fjerner du deg selv, mister du tilgangen med én gang.'
+                         : 'Full tilgang uansett rolletabell.'}</small></div>
+        ${kanFjerne
+          ? `<button onclick="fjernEier('${escapeHtml(e)}')">Fjern</button>`
+          : '<button disabled title="Den siste eieren kan ikke fjernes">Fjern</button>'}
+      </div>`;
+    }).join('');
+  }
+
+  // Panelet og reglene kan si ulike ting. Denne seksjonen finnes fordi
+  // akkurat den forskjellen har skjedd: en person hadde rollen «Eier»,
+  // panelet kjørte tilgangsjobben for ham, og reglene avviste hver
+  // eneste skriving. Feilen viste seg som «Missing permissions» i
+  // feilloggen, ikke som noe man kunne se i grensesnittet.
+  function renderEierAvvik(){
+    const el = document.getElementById('eierAvvik');
+    if(!el) return;
+    const liste = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
+      .map(x => String(x).toLowerCase());
+    const medRolle = (adminUsersCache || [])
+      .filter(u => String(u.roller || '').split(',').map(x => x.trim()).includes('Eier'))
+      .map(u => ({ epost: (u.epost || '').trim().toLowerCase(), navn: u.navn || '' }))
+      .filter(u => u.epost);
+
+    const rader = [];
+    medRolle.forEach(u => {
+      if(!liste.includes(u.epost)){
+        rader.push(['stopp', (u.navn || u.epost) + ' har rollen «Eier», men står ikke i listen',
+          'Panelet viser eierknappene. Reglene avviser dem.']);
+      }
+    });
+    const rolleEposter = medRolle.map(u => u.epost);
+    liste.forEach(e => {
+      if(!rolleEposter.includes(e)){
+        rader.push(['folg', e + ' er eier, men har ikke rollen «Eier»',
+          'Full tilgang i reglene, men panelet skjuler knappene.']);
+      }
+    });
+
+    if(rader.length === 0){
+      el.innerHTML = '<div class="ok-rolig">✓ Listen og rollene stemmer overens.</div>';
+      return;
+    }
+    el.innerHTML = rader.map(([alvor, tekst, detalj]) => `
+      <div class="ok-handling">
+        <span class="ok-alvor ${alvor}"></span>
+        <div class="ok-handling-tekst">${escapeHtml(tekst)}<small>${escapeHtml(detalj)}</small></div>
+        <button onclick="goToTask('oversikt')">Ansatte</button>
+      </div>`).join('');
+  }
+
+  // En aktiv gjenopprettingsnøkkel skal ikke kunne stå ubemerket.
+  function renderEierGjenoppretting(){
+    const el = document.getElementById('eierGjenoppretting');
+    if(!el) return;
+    const e = eierskapData.gjenopprettingEpost || '';
+    if(!e){ el.innerHTML = ''; return; }
+    const til = eierskapData.gjenopprettingUtloper;
+    let nar = '';
+    try{
+      const d = til && til.toDate ? til.toDate() : (til ? new Date(til) : null);
+      if(d && !isNaN(d)) nar = d.toLocaleDateString('no-NO') + ' kl. ' +
+        d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+    } catch(err){ /* ukjent format vises som manglende frist */ }
+    const utlopt = nar && new Date(nar) < new Date();
+    el.innerHTML = '<div class="innst-effekt" style="border-left-color:#a83c3c; background:#fbf0f0;">' +
+      '🔑 <b>En gjenopprettingsnøkkel står åpen</b> for ' + escapeHtml(e) +
+      (nar ? ' · gjelder til ' + escapeHtml(nar) : ' · <b>uten utløpstidspunkt</b>') +
+      '.<br>Er den ikke i bruk akkurat nå, bør feltene slettes i Console.' +
+      '</div>';
+  }
+
+  window.leggTilEier = async function(){
+    const inp = document.getElementById('nyEierInput');
+    const ny = (inp.value || '').trim().toLowerCase();
+    if(!ny || ny.indexOf('@') < 1){
+      showToast('Skriv en gyldig e-postadresse.');
+      return;
+    }
+    const liste = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
+      .map(x => String(x).toLowerCase());
+    if(liste.includes(ny)){ showToast(ny + ' er allerede eier.'); return; }
+    if(!confirm(
+      'Gjøre ' + ny + ' til eier?\n\n' +
+      'En eier har full tilgang til alt, kan endre roller og tilganger, ' +
+      'og kan legge til og fjerne andre eiere — inkludert deg.\n\n' +
+      'Adressen må være nøyaktig den personen logger inn med.'
+    )) return;
+    try{
+      await setDoc(doc(db, 'settings', 'eierskap'), { eiere: [...liste, ny] }, { merge: true });
+      inp.value = '';
+      showToast(ny + ' er lagt til som eier.');
+    } catch(err){
+      console.error('leggTilEier', err);
+      showToast('Kunne ikke lagre. Kun en eier kan endre denne listen.');
+    }
+  };
+
+  window.fjernEier = async function(epost){
+    const liste = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
+      .map(x => String(x).toLowerCase());
+    const igjen = liste.filter(x => x !== String(epost).toLowerCase());
+    // Reglene avviser en tom liste. Meldingen her forklarer hvorfor,
+    // i stedet for å la Firestore svare «Missing permissions».
+    if(igjen.length === 0){
+      alert('Den siste eieren kan ikke fjernes.\n\n' +
+            'Uten en eier finnes ingen innlogging som kan endre roller, ' +
+            'tilganger eller denne listen — og eneste vei tilbake går ' +
+            'gjennom Firebase Console.');
+      return;
+    }
+    const megSelv = String(epost).toLowerCase() === (currentUserEmail || '').toLowerCase();
+    if(!confirm(
+      'Fjerne ' + epost + ' som eier?\n\n' +
+      (megSelv ? '⚠️ Dette er DEG. Du mister eiertilgangen med én gang, og ' +
+                 'kan ikke legge deg til igjen selv.\n\n' : '') +
+      'Rollen i personkortet endres ikke — den må rettes separat.'
+    )) return;
+    try{
+      await setDoc(doc(db, 'settings', 'eierskap'), { eiere: igjen }, { merge: true });
+      showToast(epost + ' er ikke lenger eier.');
+    } catch(err){
+      console.error('fjernEier', err);
+      showToast('Kunne ikke lagre. Kun en eier kan endre denne listen.');
+    }
+  };
 
   // ═══════════════════════════════════════════════════════════════════
   // ØKONOMI — OVERSIKT
@@ -11717,6 +11961,7 @@
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
       adminUsersCache = list;
+      renderEierAvvik();
     sikreTilgangsindeks();
       // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
       // nytt for at personen skulle dukke opp i varsel-listen.
