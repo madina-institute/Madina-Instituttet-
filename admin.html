@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 01:01:10 -->
+<!-- SIST-ENDRET: 2026-08-10 01:05:51 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3007,7 +3007,7 @@
 <script type="module">
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDocs, query, where
+    getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDocs, query, where, deleteField
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
@@ -5013,7 +5013,7 @@
   }, (err) => { console.error('formAnalytics', err); });
 
   onSnapshot(collection(db, 'financeLog'), (snap) => {
-    cache.financeLog = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    cache.financeLog = snap.docs.map(d => ({ ...d.data(), id: d.id }))
       .sort((a,b) => (b.changedAt||'').localeCompare(a.changedAt||''));
     renderFinanceLog();
   }, (err) => {
@@ -5138,7 +5138,7 @@
     }, (err) => console.error('settings/betaling', err));
 
     onSnapshot(collection(db, 'studentPayments'), (snap) => {
-      cache.studentPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      cache.studentPayments = snap.docs.map(d => ({ ...d.data(), id: d.id }))
         .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       renderCashierPanel();
       renderCashierLedelsePanel();
@@ -5149,7 +5149,7 @@
     });
 
     onSnapshot(collection(db, 'pendingVippsPayments'), (snap) => {
-      cache.pendingVippsPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      cache.pendingVippsPayments = snap.docs.map(d => ({ ...d.data(), id: d.id }))
         .filter(p => p.status === 'pending')
         .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
       renderCashierLedelsePanel();
@@ -5158,7 +5158,7 @@
     });
 
     onSnapshot(collection(db, 'salaryPayments'), (snap) => {
-      cache.salaryPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      cache.salaryPayments = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       renderLonnOversikt();
     }, (err) => {
       console.error('salaryPayments', err);
@@ -5364,7 +5364,7 @@
   function attachListener(type){
     const colRef = collection(db, SCHEMAS[type].collectionName);
     onSnapshot(colRef, (snapshot) => {
-      cache[type] = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      cache[type] = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
       try{
         render(type);
       } catch(renderErr){
@@ -9945,7 +9945,7 @@
       paaloggetStopp = onSnapshot(
         query(collection(db, 'loginEvents'), where('sisteAktivitet', '>=', siden)),
         (snap) => {
-          paaloggetOkter = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          paaloggetOkter = snap.docs.map(d => ({ ...d.data(), id: d.id }));
           oppdaterPaalogget();
         },
         (err) => {
@@ -12086,6 +12086,27 @@
     return arr;
   }
 
+  // Fjerner det arvede 'id'-feltet fra elever som ble opprettet før
+  // feilen ble rettet. Feltet gjør ingen skade så lenge dokument-id-en
+  // settes sist, men det er en felle som ligger og venter på neste
+  // utvikler som skriver spredningen i motsatt rekkefølge.
+  window.ryddArvetIdFelt = async function(){
+    const berort = (cache.students || []).filter(s => s.fraSoknadId);
+    let ryddet = 0;
+    for(const elev of berort){
+      try{
+        const snap = await getDocs(query(collection(db, 'students'),
+          where('fraSoknadId', '==', elev.fraSoknadId)));
+        for(const d of snap.docs){
+          if(d.data().id === undefined) continue;
+          await updateDoc(doc(db, 'students', d.id), { id: deleteField() });
+          ryddet++;
+        }
+      } catch(err){ console.error('ryddArvetIdFelt', err); }
+    }
+    return ryddet;
+  };
+
   window.regnOmAlleFamilier = async function(){
     const avvik = elevermedFeilBelop().filter(x => !x.betalt);
     if(avvik.length === 0){ showToast('Alle beløp stemmer med prisreglene.'); return; }
@@ -12094,6 +12115,17 @@
     if(!confirm('Rette beløpet for ' + avvik.length + ' elever?\n\n' +
       linjer.join('\n') + (avvik.length > 12 ? '\n… og ' + (avvik.length - 12) + ' til' : '') +
       '\n\nElever som har betalt noe, røres ikke.')) return;
+    // Rydd det arvede id-feltet først. Ellers kan en rad i minnet peke
+    // på søknaden i stedet for eleven, og skrivingen treffer en sti som
+    // ikke finnes.
+    const ryddet = await ryddArvetIdFelt();
+    if(ryddet > 0){
+      alert(ryddet + ' elever hadde et arvet «id»-felt fra søknaden sin.\n\n' +
+        'Det er fjernet nå. Trykk «Rett opp» én gang til — listene måtte ' +
+        'leses inn på nytt først.');
+      return;
+    }
+
     const foresatte = [...new Set(avvik.map(x => x.elev.foresatt || x.elev.foresatt2))];
     let endret = 0, forsokt = 0;
     const alleFeil = [];
@@ -12225,6 +12257,12 @@
       // Copy every field from the registration into the new student record,
       // then layer on the school-specific fields (program, class, payment).
       const studentRecord = { ...reg };
+      // 🔴 Søknadens id skal IKKE følge med. Ble den liggende, fikk eleven
+      // et felt «id» som pekte på søknaden, og det feltet overskrev
+      // dokument-id-en når raden ble lest inn. Enhver oppdatering av
+      // eleven gikk da til en sti som ikke finnes — «not-found», uten at
+      // noe annet så galt ut.
+      delete studentRecord.id;
       delete studentRecord.status;
       delete studentRecord.innsendtDato;
       delete studentRecord.behandletAv;
@@ -12966,15 +13004,15 @@
     attachListener('paymentRequests');
     attachListener('messages');
     onSnapshot(collection(db, 'messageThreads'), (snap) => {
-      messageThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      messageThreadsCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       if(document.getElementById('panel-messages') && document.getElementById('panel-messages').classList.contains('active')) renderMessagesInbox();
     });
     onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
-      broadcastThreadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      broadcastThreadsCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       renderBroadcastInbox();
     });
     onSnapshot(collection(db, 'broadcastMessages'), (snap) => {
-      broadcastMessagesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      broadcastMessagesCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       renderBroadcastInbox();
     });
 
@@ -13037,7 +13075,7 @@
   }
 
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
+      const list = snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
       adminUsersCache = list;
       renderEierAvvik();
       renderAllePersoner();
