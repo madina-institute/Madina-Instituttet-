@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 00:10:31 -->
+<!-- SIST-ENDRET: 2026-08-09 17:53:50 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -992,6 +992,17 @@
       collection(db, collectionName),
       onData,
       onError || ((err) => console.error(collectionName, err))
+    );
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
+  // Samme kø for enkeltdokumenter. Et dokument er like sårbart som en
+  // samling: leses det før innlogging er bekreftet, dør lytteren for godt.
+  function watchDoc(sti, id, onData, onError){
+    const start = () => onSnapshot(
+      doc(db, sti, id),
+      onData,
+      onError || ((err) => console.error(sti + '/' + id, err))
     );
     __pendingWatchers.push(start);
     if(__listenersStarted) start();
@@ -2450,13 +2461,30 @@
   // Kun timer administrasjonen har godkjent regnes med i beløpet — timer som
   // venter vises separat, slik at tallet aldri lover mer enn det som faktisk
   // er godkjent.
+  // Timesatsen leses fra samme sted som admin-panelet (settings/lonn).
+  // Sto den i koden begge steder, ville de før eller siden gått fra
+  // hverandre — akkurat som prisene gjorde mot Vipps.
+  const lonnOppsett = { larer: null, assistent: null };
+  watchDoc('settings', 'lonn', (snap) => {
+    const d = snap.exists() ? (snap.data() || {}) : {};
+    const gyldig = v => {
+      const n = parseFloat(v);
+      return (!isNaN(n) && n >= 0 && n <= 10000) ? n : null;
+    };
+    lonnOppsett.larer = gyldig(d.larer);
+    lonnOppsett.assistent = gyldig(d.assistent);
+    renderMyAttSummary();
+  });
+
+  // Returnerer null når satsen ikke er satt — ikke 0. Null vises som
+  // «ikke satt»; 0 ville vist «0 kr» og sett ut som en beslutning.
   function myTimesats(){
     const t = currentTeacher || {};
     const roller = (t.roller || '').split(',').map(x => x.trim()).filter(Boolean);
     if((t.lonnStatus || '') !== 'Lønnet') return 0;
     const egen = parseFloat(String(t.timesats || '').replace(',', '.').replace(/[^\d.]/g, ''));
     if(!isNaN(egen) && egen > 0) return egen;
-    return roller.indexOf('Assistent') >= 0 ? 150 : 200;
+    return roller.indexOf('Assistent') >= 0 ? lonnOppsett.assistent : lonnOppsett.larer;
   }
 
   function renderMyAttSummary(){
@@ -2482,7 +2510,8 @@
       .reduce((sum, a) => sum + num(a.timer), 0);
 
     const sats = myTimesats();
-    const belop = Math.round(godkjent * sats);
+    const mangler = (sats === null || sats === undefined);
+    const belop = mangler ? 0 : Math.round(godkjent * sats);
     const ar = currentLang === 'ar';
     const fmt = n => n.toLocaleString('no-NO');
 
@@ -2504,16 +2533,20 @@
       </div>
       <div class="row">
         <span>${ar ? 'أجر الساعة' : 'Timesats'}</span>
-        <b>${sats > 0 ? fmt(sats) + ' kr' : (ar ? 'متطوع' : 'Frivillig')}</b>
+        <b>${mangler ? (ar ? 'غير محدّد' : 'Ikke satt') : (sats > 0 ? fmt(sats) + ' kr' : (ar ? 'متطوع' : 'Frivillig'))}</b>
       </div>
       <div class="row pay">
         <span>${ar ? 'المبلغ عن الساعات المعتمدة' : 'Beløp for godkjente timer'}</span>
-        <b>${fmt(belop)} kr</b>
+        <b>${mangler ? '—' : fmt(belop) + ' kr'}</b>
       </div>
       <div class="muted">
-        ${ar
+        ${mangler
+          ? (ar
+            ? 'أجر الساعة لم تسجّله الإدارة بعد، فالمبلغ غير معروض. ساعاتك محفوظة ولن تضيع.'
+            : 'Timesatsen er ikke registrert av administrasjonen ennå, så beløpet vises ikke. Timene dine er lagret og går ikke tapt.')
+          : (ar
           ? 'المبلغ يشمل الساعات المعتمدة فقط. الساعات المنتظرة تُضاف بعد موافقة الإدارة. هذا العرض للاطلاع، والتسوية النهائية من الإدارة.'
-          : 'Beløpet gjelder kun godkjente timer. Timer som venter kommer i tillegg når administrasjonen har godkjent dem. Oversikten er veiledende — endelig lønn fastsettes av administrasjonen.'}
+          : 'Beløpet gjelder kun godkjente timer. Timer som venter kommer i tillegg når administrasjonen har godkjent dem. Oversikten er veiledende — endelig lønn fastsettes av administrasjonen.')}
       </div>`;
 
     const sel = document.getElementById('myAttMonth');
