@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 23:43:40 -->
+<!-- SIST-ENDRET: 2026-08-09 23:54:59 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4816,32 +4816,74 @@
     }
   };
 
+  // Sletter testdata. Tre ting er endret etter at en runde etterlot 15
+  // elever som var korrekt merket:
+  //
+  //   1. Spør BASEN, ikke cache. En liste i minnet kan være filtrert,
+  //      forsinket, eller mangle en samling som ikke har lytter.
+  //   2. Fortsetter ved feil. Før stoppet én avvist sletting hele
+  //      jobben, og resten sto igjen uten at noe sa hvor det stoppet.
+  //   3. Rapporterer per samling. «Noe gikk galt» er ikke et svar man
+  //      kan handle på; det var derfor eneste utvei ble å slette for
+  //      hånd i Firebase Console.
   window.slettTestdata = async function(){
     if(!isCurrentUserEier()){ showToast('Kun eier kan slette testdata.'); return; }
-    const n = tellTestdata();
-    const sum = n.soknader + n.elever + n.foresatte + n.larere + n.klasser;
-    if(sum === 0){ showToast('Det finnes ingen merkede testdata.'); return; }
-    if(!confirm(
-      'Slette alle testdata?\n\n' +
-      n.soknader + ' søknader\n' + n.foresatte + ' foresatte\n' + n.elever + ' elever\n' +
-      (n.klasser ? n.klasser + ' klasser\n' : '') +
-      '\nKun oppføringer merket som testdata fjernes. Ekte elever og ' +
-      'søknader røres ikke.\n\nInnloggingskontoene på ' + TEST_EPOST_DOMENE +
-      ' må slettes i Firebase Console — de ligger utenfor databasen.'
-    )) return;
+
+    const samlinger = ['registrations', 'students', 'guardians', 'teachers', 'classes'];
+    const funnet = {};
+    let total = 0;
     try{
-      let slettet = 0;
-      for(const type of ['registrations', 'students', 'guardians', 'teachers', 'classes']){
-        for(const rad of (cache[type] || []).filter(r => r.erTestdata === true)){
-          await deleteDoc(doc(db, type, rad.id));
+      for(const type of samlinger){
+        const snap = await getDocs(query(collection(db, type), where('erTestdata', '==', true)));
+        funnet[type] = snap.docs.map(d => d.id);
+        total += snap.docs.length;
+      }
+    } catch(err){
+      console.error('slettTestdata/søk', err);
+      alert('Kunne ikke lete opp testdataene.\n\n' + (err.message || 'Ukjent feil') +
+            '\n\nIngenting er slettet.');
+      return;
+    }
+
+    if(total === 0){
+      alert('Fant ingen dokumenter merket erTestdata i basen.\n\n' +
+            'Er det noe der likevel, mangler de merket — bruk «Vis bare de ' +
+            'som mangler noe» under Alle personer for å finne dem.');
+      return;
+    }
+
+    const linjer = samlinger.filter(t => funnet[t].length)
+      .map(t => '• ' + (TYPE_LABELS[t] || t) + ': ' + funnet[t].length);
+    if(!confirm('Slette ' + total + ' dokumenter merket som testdata?\n\n' +
+      linjer.join('\n') + '\n\nEkte elever og søknader røres ikke.')) return;
+
+    const feilet = [];
+    let slettet = 0;
+    for(const type of samlinger){
+      for(const id of funnet[type]){
+        try{
+          await deleteDoc(doc(db, type, id));
           slettet++;
+        } catch(err){
+          // Én avvist sletting skal ikke stoppe resten.
+          feilet.push({ type, id, feil: err.code || err.message || 'ukjent' });
         }
       }
-      visTestdataStatus();
-      showToast(slettet + ' testoppføringer slettet.');
-    } catch(err){
-      console.error('slettTestdata', err);
-      showToast('Noe gikk galt: ' + (err.message || 'ukjent feil'));
+    }
+
+    visTestdataStatus();
+    if(feilet.length === 0){
+      alert('Ferdig. ' + slettet + ' dokumenter slettet.\n\n' +
+            'Innloggingskontoene på ' + TEST_EPOST_DOMENE + ' ligger i ' +
+            'Firebase Authentication og må fjernes der.');
+    } else {
+      console.error('slettTestdata — avvist:', feilet);
+      const grunner = [...new Set(feilet.map(f => f.feil))];
+      alert('Slettet ' + slettet + ' av ' + total + '.\n\n' +
+            feilet.length + ' ble avvist:\n' +
+            [...new Set(feilet.map(f => (TYPE_LABELS[f.type] || f.type)))].join(', ') +
+            '\n\nÅrsak: ' + grunner.join(', ') +
+            '\n\nHele listen ligger i konsollen og i feilloggen.');
     }
   };
 
