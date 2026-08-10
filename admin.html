@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 01:28:28 -->
+<!-- SIST-ENDRET: 2026-08-10 10:01:38 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -766,6 +766,14 @@
   .modal{
     background:#fff; border-radius:10px; padding:28px 30px; max-width:480px; width:100%;
     max-height:88vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.25);
+  }
+  /* På telefon sto begge dialogene på et smalt kort midt på skjermen med
+     luft rundt. Plassen finnes — den ble bare ikke brukt. Ikke helt ut til
+     kanten heller: en dialog som dekker alt ser ut som en ny side, og da
+     mister man følelsen av at det ligger noe bak som man kan lukke. */
+  @media (max-width:640px){
+    .modal{ width:calc(100vw - 24px); max-width:none; padding:22px 18px; max-height:92vh; }
+    .pd-modal{ width:calc(100vw - 24px) !important; padding:22px 18px !important; max-height:92vh; }
   }
   .modal h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; color:var(--emerald-d); margin:0 0 18px;}
   .field{margin-bottom:14px;}
@@ -9294,6 +9302,16 @@
       info.textContent = 'Sist endret av ' + existing.sistEndretAv + (existing.sistEndretDato ? ' (' + existing.sistEndretDato + ')' : '');
       container.appendChild(info);
     }
+    // Samme inndeling som kortet: det som står øverst der (essential),
+    // står øverst her. Resten legges bak nøyaktig samme «Vis flere
+    // detaljer». Skjemaet var før én lang, flat liste — man måtte lete
+    // etter feltet man nettopp så på kortet.
+    const harEssensielle = schema.fields.some(f => f.essential);
+    const boksEssensiell = document.createElement('div');
+    const boksResten = document.createElement('div');
+    boksResten.id = 'modalFieldsExtra';
+    if(harEssensielle) boksResten.style.display = 'none';
+
     schema.fields.forEach(f => {
       const wrap = document.createElement('div');
       wrap.className = 'field';
@@ -9426,8 +9444,24 @@
         wrap.classList.add('extra-field');
         wrap.style.display = 'none';
       }
-      container.appendChild(wrap);
+      (!harEssensielle || f.essential ? boksEssensiell : boksResten).appendChild(wrap);
     });
+
+    container.appendChild(boksEssensiell);
+    if(harEssensielle && boksResten.children.length){
+      const bryter = document.createElement('button');
+      bryter.type = 'button';
+      bryter.className = 'btn btn-ghost';
+      bryter.style.margin = '4px 0 16px';
+      bryter.textContent = '▾ Vis flere detaljer (' + boksResten.children.length + ')';
+      bryter.onclick = () => {
+        const vises = boksResten.style.display !== 'none';
+        boksResten.style.display = vises ? 'none' : '';
+        bryter.textContent = (vises ? '▾ Vis flere detaljer (' + boksResten.children.length + ')' : '▴ Vis mindre');
+      };
+      container.appendChild(bryter);
+    }
+    container.appendChild(boksResten);
     if(type === 'lessonPlans') wireSubjectSpecificFields(container, existing.fag || '');
     // Endres medlemsstatus, bytter hele prismodellen — beløpet må regnes
     // på nytt med én gang, ikke først når skjemaet lagres.
@@ -9457,7 +9491,17 @@
     document.getElementById('overlay').classList.add('open');
   };
 
-  window.closeModal = function(){
+  // etterLagring: kortet skal først tegnes når lytteren har rukket å
+  // oppdatere cachen. Uten ventetiden viser kortet verdiene fra FØR
+  // lagringen, og det ser ut som om ingenting ble lagret.
+  window.closeModal = function(etterLagring){
+    // «Avbryt» skal heller ikke koste deg kortet du sto i.
+    if(kortJegKomFra){
+      const { type: kType, id: kId } = kortJegKomFra;
+      kortJegKomFra = null;
+      setTimeout(() => { try{ showPersonDetail(kType, kId); }catch(e){} },
+                 etterLagring === true ? 400 : 120);
+    }
     document.getElementById('overlay').classList.remove('open');
     editingId = null; editingType = null;
   };
@@ -9554,7 +9598,7 @@
         await addDoc(collection(db, schema.collectionName), entry);
       }
       if(financeLogSummary) logFinanceChange(financeLogSummary);
-      closeModal();
+      closeModal(true);
 
       if(isRoleDrivenType && entry.epost && rollerArr.length > 0){
         // Whether this teacher card was just created OR edited (e.g. an
@@ -9582,7 +9626,22 @@
     }
   };
 
-  window.editEntry = function(type, id){ openModal(type, id); };
+  // Hvilket kort man kom FRA. Redigeringsskjemaet åpnet seg tidligere
+  // bak det åpne kortet, så man måtte lukke kortet for å komme til
+  // skjemaet — og etterpå finne fram til kortet på nytt.
+  let kortJegKomFra = null;
+
+  window.editEntry = function(type, id){
+    const kortetErApent = document.getElementById('personDetailOverlay')
+      && document.getElementById('personDetailOverlay').classList.contains('show');
+    if(kortetErApent){
+      kortJegKomFra = { type, id };
+      closeCashierOverlay('personDetailOverlay');
+    } else {
+      kortJegKomFra = null;
+    }
+    openModal(type, id);
+  };
 
   function renderAbsenceRequests(){
     const el = document.getElementById('absenceRequestsList');
