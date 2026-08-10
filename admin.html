@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 10:23:23 -->
+<!-- SIST-ENDRET: 2026-08-10 10:39:50 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -551,6 +551,11 @@
     padding:5px 14px; font-family:'Jost',sans-serif; font-size:12px; font-weight:600; cursor:pointer;
   }
   body:has(#forhandsvisStripe){ padding-top:38px; }
+
+  /* Låst fane. Den skal være tydelig utilgjengelig, men ikke usynlig —
+     å se at noe finnes er en del av å forstå systemet. */
+  .sub-sidebar button.fane-laast{ opacity:.45; }
+  .sub-sidebar button.fane-laast:hover{ background:transparent; }
 
   /* ---- Alle personer ---- */
   .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
@@ -1399,7 +1404,7 @@
   <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
   <div class="tab" data-tab="okonomiHub" data-side="okonomi">Oversikt</div>
   <div class="tab" data-tab="cashier" data-side="okonomi">Elevbetalinger</div>
-  <div class="tab" data-tab="cashierLedelse" data-side="okonomi" id="tabCashierLedelse" style="display:none;">Elevbetalinger (ledelse)</div>
+  <div class="tab" data-tab="cashierLedelse" data-side="okonomi" id="tabCashierLedelse">Elevbetalinger (ledelse)</div>
   <div class="tab" data-tab="paymentRequests" data-side="okonomi">Betalingsforespørsler</div>
   <div class="tab" data-tab="finances" data-side="okonomi">Kasse</div>
   <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
@@ -3792,25 +3797,12 @@
       document.getElementById('appRoot').style.display = 'block';
       const who = document.getElementById('loggedInAs');
       if(who) who.textContent = user.email;
+      // Fanene skjules ikke lenger. En skjult fane ser ut som noe som
+      // ikke finnes — og da lærer man aldri hvordan systemet henger
+      // sammen. Nå står de der, låst, og sier hvem de er for når man
+      // trykker. Sperren ligger uansett i selve fanen (se faneLast).
       const tabCashierLedelse = document.getElementById('tabCashierLedelse');
-      if(tabCashierLedelse) tabCashierLedelse.style.display = isCurrentUserEier() ? '' : 'none';
-      // Verktøy og sider er kun for eier. Her ligger lenker til innsyns-
-      // sidene og til konsollene — ingenting av det hører hjemme hos en
-      // lærer eller en fagkoordinator.
-      const tabUtvikler = document.querySelector('.tab[data-tab="utvikler"]');
-      if(tabUtvikler) tabUtvikler.style.display = isCurrentUserEier() ? '' : 'none';
-      // «Verktøy» og «Skoleoppsett» er eierens områder. Skjules både i
-      // sidefeltet og blant snarveiene, slik at de ikke framstår som
-      // steder man har glemt passordet til.
-      const tabRoller = document.querySelector('.tab[data-tab="roller"]');
-      if(tabRoller) tabRoller.style.display = isCurrentUserEier() ? '' : 'none';
-      ['verktoy', 'skoleoppsett'].forEach(side => {
-        const vis = isCurrentUserEier();
-        const knapp = document.querySelector('[data-sb-side="' + side + '"]');
-        if(knapp) knapp.style.display = vis ? '' : 'none';
-        const kort = document.querySelector('.side-card[onclick*="' + side + '"]');
-        if(kort) kort.style.display = vis ? '' : 'none';
-      });
+      if(tabCashierLedelse) tabCashierLedelse.style.display = '';
       oppdaterOpprettKnapper();
       resetInactivityTimer();
       // meetings/finances require request.auth != null in the Firestore
@@ -8367,7 +8359,32 @@
   // «Registrering» og «Oversikt». Da fanene flyttet til andre grupper,
   // ville beskyttelsen forsvunnet med gruppen — derfor står den nå på
   // fanen selv, og følger den uansett hvor den plasseres senere.
-  const LEDELSE_FANER = ['registrations', 'overview', 'utvikler'];
+  // Hvem hver begrensede fane er for. Ett sted — ikke spredt utover som
+  // skjulte elementer og ulike sjekker.
+  const FANE_KREVER = {
+    registrations:  { hvem: 'eier',    tekst: 'Opptaksansvarlig eller eier' },
+    overview:       { hvem: 'ledelse', tekst: 'øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder)' },
+    utvikler:       { hvem: 'eier',    tekst: 'eier' },
+    roller:         { hvem: 'eier',    tekst: 'eier' },
+    eiere:          { hvem: 'eier',    tekst: 'eier' },
+    cashierLedelse: { hvem: 'eier',    tekst: 'eier' }
+  };
+  const LEDELSE_FANER = Object.keys(FANE_KREVER);
+
+  // Returnerer null når fanen er åpen, ellers en forklaring.
+  //
+  // 🔴 Låsen erstatter ikke sikkerhetsreglene. Den forteller hvem noe er
+  // for; det er reglene som avgjør hva som faktisk kan leses og skrives.
+  function faneLast(tab){
+    const krav = FANE_KREVER[tab];
+    if(!krav) return null;
+    const harRett = krav.hvem === 'eier' ? isCurrentUserEier() : currentUserHasSeniorRole();
+    if(harRett) return null;
+    const mine = currentUserRoles.length ? currentUserRoles.join(', ') : 'ingen rolle';
+    return 'Denne fanen er for ' + krav.tekst + '.\n\nDu er registrert som: ' +
+           mine + '.\n\nDu kan se at den finnes, men ikke åpne den. ' +
+           'Trenger du tilgang, be en eier om det.';
+  }
 
   window.sidebarSelectSide = function(side){
     if(side === 'portaler'){ showPortalLinks(); return; }
@@ -8406,13 +8423,16 @@
     // må finnes i to eksemplarer — to kopier ville før eller siden
     // kommet ut av takt med hverandre.
     const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side~="' + side + '"]'));
-    subSidebar.innerHTML = tabsForSide.map(tab => `
-      <button data-sub-tab="${tab.dataset.tab}" onclick="selectSubTab('${tab.dataset.tab}')" title="${TAB_DESCRIPTIONS[tab.dataset.tab] || ''}">
-        <span class="ic">${TAB_ICONS[tab.dataset.tab] || '📄'}</span> ${tab.textContent}
-      </button>
-    `).join('');
-    const forste = tabsForSide.find(t =>
-      !LEDELSE_FANER.includes(t.dataset.tab) || currentUserHasSeniorRole());
+    subSidebar.innerHTML = tabsForSide.map(tab => {
+      const laast = faneLast(tab.dataset.tab);
+      return `
+      <button data-sub-tab="${tab.dataset.tab}" class="${laast ? 'fane-laast' : ''}"
+              onclick="selectSubTab('${tab.dataset.tab}')"
+              title="${escapeHtml(laast || TAB_DESCRIPTIONS[tab.dataset.tab] || '')}">
+        <span class="ic">${laast ? '🔒' : (TAB_ICONS[tab.dataset.tab] || '📄')}</span> ${tab.textContent}
+      </button>`;
+    }).join('');
+    const forste = tabsForSide.find(t => !faneLast(t.dataset.tab));
     if(forste) selectSubTab(forste.dataset.tab);
     else if(tabsForSide.length) selectSubTab(tabsForSide[0].dataset.tab);
   };
@@ -8426,8 +8446,10 @@
       b.classList.toggle('active', b.dataset.subTab === tabName);
     });
 
-    if(LEDELSE_FANER.includes(tabName) && !currentUserHasSeniorRole()){
-      showToast('Denne fanen er kun for øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder).');
+    // Låst fane: si hvem den er for, i stedet for å la trykket dø stille.
+    const laastGrunn = faneLast(tabName);
+    if(laastGrunn){
+      alert('🔒 Ingen tilgang\n\n' + laastGrunn);
       return;
     }
     const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
