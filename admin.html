@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 11:32:41 -->
+<!-- SIST-ENDRET: 2026-08-10 11:44:14 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4800,9 +4800,11 @@
     const PROGRAM_KODER = ['madina_islamske_skole', 'madinabarn'];
     const programmer = (cache.programs || []).filter(p => p.navn && p.aktiv !== 'Nei');
     if(programmer.length === 0){
-      alert('Legg inn minst ett program under Skole → Programmer først.\n\n' +
+      melding('ADM-TST-03', '⚠️ Ingen programmer',
+            'Legg inn minst ett program under Skole → Programmer først.\n\n' +
             'Søknadene bruker de samme kodene som påmeldingsskjemaet, slik at ' +
-            'prisen som regnes ut ved godkjenning er den skolen faktisk fakturerer.');
+            'prisen som regnes ut ved godkjenning er den skolen faktisk fakturerer.',
+            'lagTestsoknader · programs · aktive=0');
       return;
     }
 
@@ -4907,10 +4909,12 @@
         }
       }
       visTestdataStatus();
-      alert('Ferdig.\n\n' + antall + ' familier · ' + laget + ' søknader.\n\n' +
+      melding('ADM-TST-05', '✓ Testsøknader laget',
+        antall + ' familier · ' + laget + ' søknader.\n\n' +
         'De ligger under Elever og familier → Søknader, med status «Ny».\n\n' +
         'Godkjenn dem der for å se hele veien: foresatt opprettes, søsken ' +
-        'kobles på telefonnummer, innlogging lages og beløpet regnes ut.');
+        'kobles på telefonnummer, innlogging lages og beløpet regnes ut.',
+        'lagTestsoknader · registrations · laget=' + laget);
     } catch(err){
       console.error('lagTestsoknader', err);
       showToast('Noe gikk galt: ' + (err.message || 'ukjent feil'));
@@ -4948,9 +4952,11 @@
     }
 
     if(total === 0){
-      alert('Fant ingen dokumenter merket erTestdata i basen.\n\n' +
+      melding('ADM-TST-04', 'Ingen testdata funnet',
+            'Fant ingen dokumenter merket erTestdata i basen.\n\n' +
             'Er det noe der likevel, mangler de merket — bruk «Vis bare de ' +
-            'som mangler noe» under Alle personer for å finne dem.');
+            'som mangler noe» under Alle personer for å finne dem.',
+            'slettTestdata · treff=0 i alle samlinger');
       return;
     }
 
@@ -4975,9 +4981,11 @@
 
     visTestdataStatus();
     if(feilet.length === 0){
-      alert('Ferdig. ' + slettet + ' dokumenter slettet.\n\n' +
+      melding('ADM-TST-06', '✓ Testdata slettet',
+            slettet + ' dokumenter slettet.\n\n' +
             'Innloggingskontoene på ' + TEST_EPOST_DOMENE + ' ligger i ' +
-            'Firebase Authentication og må fjernes der.');
+            'Firebase Authentication og må fjernes der.',
+            'slettTestdata · slettet=' + slettet);
     } else {
       console.error('slettTestdata — avvist:', feilet);
       const grunner = [...new Set(feilet.map(f => f.feil))];
@@ -6827,7 +6835,7 @@
     const student = cache.students.find(s => s.id === id);
     if(!student){ showToast('Fant ikke eleven.'); return; }
     const newAmount = parseFloat(document.getElementById('ledelseDiscountAmount').value);
-    if(newAmount === '' || isNaN(newAmount) || newAmount < 0){ alert('Skriv inn et gyldig beløp (0 eller mer).'); return; }
+    if(newAmount === '' || isNaN(newAmount) || newAmount < 0){ showToast('Skriv inn et gyldig beløp (0 eller mer).', true); return; }
     try{
       const betalt = cashierKr(student.belopBetalt);
       await updateDoc(doc(db, 'students', id), {
@@ -6860,7 +6868,7 @@
   window.submitLedelseRefund = async function(){
     const id = ledelseRefundTargetId, reference = ledelseRefundReference;
     const amount = parseFloat(document.getElementById('ledelseRefundAmount').value);
-    if(!amount || amount <= 0){ alert('Skriv inn et gyldig beløp større enn 0.'); return; }
+    if(!amount || amount <= 0){ showToast('Skriv inn et gyldig beløp større enn 0.', true); return; }
     if(!confirm('Refundere ' + amount + ' kr via Vipps til foresatte? Dette kan ikke angres.')) return;
     showToast('Sender refusjon til Vipps...');
     try{
@@ -6913,12 +6921,11 @@
     const konto = (fakturaOppsett.kontonummer || '').trim();
     if(!erGyldigKontonummer(konto)){
       showToast('Kontonummer er ikke satt. Økonomi → Betalingsinnstillinger.');
-      alert(
-        'Fakturaen ble ikke sendt.\n\n' +
+      melding('ADM-FAK-01', '⛔ Fakturaen ble ikke sendt',
         'Skolens kontonummer er ikke registrert, og en faktura uten ' +
         'kontonummer kan ikke betales.\n\n' +
-        'Sett det under Økonomi → Betalingsinnstillinger, og send fakturaen på nytt.'
-      );
+        'Sett det under Økonomi → Betalingsinnstillinger, og send fakturaen på nytt.',
+        'sendGuardianInvoice · settings/faktura · kontonummer mangler');
       return;
     }
 
@@ -7797,8 +7804,8 @@
     const status = document.getElementById('attEditStatus').value;
     const timer = document.getElementById('attEditTimer').value;
     const arsak = document.getElementById('attEditArsak').value.trim();
-    if(timer === '' || parseFloat(timer) < 0){ alert('Skriv inn et gyldig antall timer.'); return; }
-    if(!arsak){ alert('Årsak til endring er påkrevd.'); return; }
+    if(timer === '' || parseFloat(timer) < 0){ showToast('Skriv inn et gyldig antall timer.', true); return; }
+    if(!arsak){ showToast('Årsak til endring er påkrevd.', true); return; }
     try{
       await updateDoc(doc(db, 'teacherAttendance', id), {
         status, timer: String(timer),
@@ -8381,6 +8388,11 @@
   // Hvem hver begrensede fane er for. Ett sted — ikke spredt utover som
   // skjulte elementer og ulike sjekker.
   const FANE_KREVER = {
+    // Programmer og skolekalender styrer priser og undervisningsdager for
+    // HELE skolen. Det er en skoleleders beslutning — men ikke en
+    // koordinators, og slett ikke en lærers.
+    programs:       { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
+    schoolCalendar: { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     registrations:  { hvem: 'eier',    tekst: 'Opptaksansvarlig eller eier' },
     overview:       { hvem: 'ledelse', tekst: 'øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder)' },
     utvikler:       { hvem: 'eier',    tekst: 'eier' },
@@ -12726,7 +12738,10 @@
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
     const guardianEmail = reg.foresatt1_epost || '';
     if(!guardianEmail){
-      alert('Denne søknaden har ingen e-post registrert for foresatt 1 — kan ikke sende lenke.');
+      melding('ADM-VIP-05', '⛔ Ingen e-post på søknaden',
+        'Denne søknaden har ingen e-post registrert for foresatt 1, så ' +
+        'betalingslenken kan ikke sendes.',
+        'sendVippsLenke · registrations · foresatt1_epost tom');
       return;
     }
     const existingLink = reg.vippsLenke || '';
@@ -12775,7 +12790,7 @@
     const phone = prompt('Telefonnummer for Vipps (8 siffer, uten landkode):', guardianPhone.replace(/\D/g,'').slice(-8));
     if(phone === null) return;
     if(!/^\d{8}$/.test(phone.trim())){
-      alert('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).');
+      showToast('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).', true);
       return;
     }
     showToast('Oppretter Vipps-betaling...');
@@ -12822,14 +12837,14 @@
     const manual = prompt(promptLabel, computedRemaining > 0 ? String(computedRemaining) : '');
     if(manual === null) return;
     const manualNum = parseFloat(manual.replace(',', '.'));
-    if(!manualNum || manualNum <= 0){ alert('Skriv inn et gyldig beløp større enn 0.'); return; }
+    if(!manualNum || manualNum <= 0){ showToast('Skriv inn et gyldig beløp større enn 0.', true); return; }
     const remainingKr = manualNum;
     const guardian = cache.guardians.find(g => g.id === student.foresatt);
     const guardianPhone = (guardian && guardian.telefon) || student.foresatt1_tlf || '';
     const phone = prompt('Telefonnummer for Vipps (8 siffer, uten landkode) — beløp: ' + remainingKr + ' kr:', guardianPhone.replace(/\D/g,'').slice(-8));
     if(phone === null) return;
     if(!/^\d{8}$/.test(phone.trim())){
-      alert('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).');
+      showToast('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).', true);
       return;
     }
     showToast('Oppretter Vipps-betaling...');
@@ -12884,7 +12899,12 @@
   window.printLessonPlanPDF = function(id){
     try{
       const plan = cache.lessonPlans.find(p => p.id === id);
-      if(!plan){ alert('Fant ikke forberedelsen (id: ' + id + ').'); return; }
+      if(!plan){
+        melding('ADM-ALM-02', '⛔ Fant ikke forberedelsen',
+          'Oppføringen finnes ikke lenger — den kan være slettet av en annen.',
+          'utskrift · lessonPlans · id=' + id);
+        return;
+      }
 
       const schema = SCHEMAS.lessonPlans;
       const labelFor = key => {
@@ -12980,7 +13000,10 @@
   function closeAndReturn(){
     try{ window.close(); }catch(e){}
     setTimeout(function(){
-      alert('Kunne ikke lukke vinduet automatisk. Bruk nettleserens tilbake-knapp, eller lukk denne fanen manuelt for å gå tilbake til Administrativ.');
+      melding('ADM-UTS-01', 'Vinduet må lukkes manuelt',
+        'Nettleseren tillot ikke at vinduet lukkes automatisk. Bruk ' +
+        'tilbake-knappen, eller lukk fanen selv.',
+        'utskrift · window.close blokkert av nettleseren');
     }, 300);
   }
 <\/script>
@@ -12988,7 +13011,10 @@
 
       const win = window.open('', '_blank');
       if(!win){
-        alert('Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for denne siden og prøv igjen.');
+        melding('ADM-UTS-02', '⛔ Utskrift blokkert',
+          'Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for ' +
+          'denne siden og prøv igjen.',
+          'utskrift · window.open returnerte null (popup-sperre)');
         return;
       }
       win.document.open();
@@ -13499,7 +13525,7 @@
     attDateEl.addEventListener('change', function(){
       const picked = new Date(this.value + 'T00:00:00');
       if(!SCHOOL_WEEKDAYS.includes(picked.getDay())){
-        alert('Skolen har kun undervisning på lørdag og søndag. Velg en dato som faller på en av disse dagene.');
+        showToast('Skolen har kun undervisning på lørdag og søndag.', true);
         this.value = lastValidAdminAttDate || todayISO();
         renderAttendanceTakingList();
         return;
