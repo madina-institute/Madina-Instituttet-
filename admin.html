@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 10:07:03 -->
+<!-- SIST-ENDRET: 2026-08-10 10:23:23 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -537,6 +537,20 @@
     .fam-sum td{ width:auto; border-top:0; padding-top:0; }
     .fam-sum td:empty{ display:none; }
   }
+
+  /* Stripen skal ikke kunne overses. En forhåndsvisning man glemmer at
+     står på, ser ut som at man plutselig har mistet tilganger. */
+  #forhandsvisStripe{
+    position:fixed; top:0; left:0; right:0; z-index:9500;
+    display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+    background:#5a4a1f; color:#fff; font-family:'Jost',sans-serif; font-size:12.5px;
+    padding:9px 16px; box-shadow:0 2px 12px rgba(0,0,0,.25);
+  }
+  #forhandsvisStripe button{
+    background:#fff; color:#5a4a1f; border:none; border-radius:999px;
+    padding:5px 14px; font-family:'Jost',sans-serif; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  body:has(#forhandsvisStripe){ padding-top:38px; }
 
   /* ---- Alle personer ---- */
   .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
@@ -1815,6 +1829,33 @@
 
   <!-- ROLLER OG TILGANGER (kun Eier) -->
   <div class="panel" id="panel-roller">
+
+    <!-- Å lese en avkrysningstabell er noe annet enn å se hva den gjør.
+         Her kan eieren se panelet slik rollen faktisk oppleves. -->
+    <div class="report-card" style="margin-bottom:16px;">
+      <h3>👁️ Se panelet som en annen rolle</h3>
+      <div class="sub">
+        Velg en rolle for å se nøyaktig hvilke grupper, faner og knapper den
+        får. Du forblir innlogget som deg selv.
+      </div>
+      <div class="innst-effekt" style="border-left-color:#8a6d1d; background:#fdf8ec;">
+        🔴 <b>Reglene følger ikke med.</b> Firestore vurderer fortsatt deg som
+        eier, ikke rollen du ser som. Derfor er <b>all lagring sperret</b> mens
+        forhåndsvisningen står på — ellers ville et vellykket lagringsforsøk
+        fått deg til å tro at rollen har lov til noe den ikke har.
+      </div>
+      <div class="innst-rad" style="margin-top:14px;">
+        <div class="field">
+          <label>Rolle</label>
+          <select id="forhandsvisRolleValg"></select>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:auto;"
+              onclick="startForhandsvisning(document.getElementById('forhandsvisRolleValg').value)">
+        Se som denne rollen
+      </button>
+    </div>
+
     <div class="report-card">
       <h3>🔑 Roller og tilganger</h3>
       <div class="sub">Hva hver rolle har lov til. Kun eier.</div>
@@ -3032,7 +3073,8 @@
 <script type="module">
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDocs, query, where, deleteField
+    getFirestore, collection, onSnapshot, doc, getDocs, query, where, deleteField,
+    addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, setDoc as _setDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
@@ -3072,6 +3114,39 @@
     console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
   }
   const db = getFirestore(app);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // FORHÅNDSVISNING SOM EN ANNEN ROLLE
+  //
+  // Eieren kan se panelet slik en skoleleder, koordinator eller lærer
+  // ser det. Grensesnittet bygges hele veien fra currentUserRoles, så
+  // det holder å bytte den ut og tegne på nytt.
+  //
+  // 🔴 MEN: REGLENE FØLGER IKKE MED.
+  // Firestore vurderer fortsatt den PÅLOGGEDE brukeren — altså eieren.
+  // Trykker man «lagre» mens man later som man er lærer, skrives det med
+  // eierens rettigheter. Man ville da tro at læreren har lov, og reglene
+  // sier noe helt annet.
+  //
+  // Derfor sperres ALL skriving mens forhåndsvisningen står på. Sperren
+  // ligger her, rundt selve skrivefunksjonene — ikke i knappene. En
+  // sperre i grensesnittet er den samme typen sannhet vi prøver å teste,
+  // og ville hatt nøyaktig samme svakhet.
+  // ═══════════════════════════════════════════════════════════════════
+  let forhandsvisRoller = null;      // null = av
+  let ekteRoller = null;
+
+  function sperrIForhandsvisning(){
+    if(!forhandsvisRoller) return;
+    showToast('Forhåndsvisning: ingenting lagres. Avslutt for å endre noe.', true);
+    const feil = new Error('Skriving er sperret under forhåndsvisning.');
+    feil.code = 'forhandsvisning';
+    throw feil;
+  }
+  const addDoc    = (...a) => { sperrIForhandsvisning(); return _addDoc(...a); };
+  const updateDoc = (...a) => { sperrIForhandsvisning(); return _updateDoc(...a); };
+  const deleteDoc = (...a) => { sperrIForhandsvisning(); return _deleteDoc(...a); };
+  const setDoc    = (...a) => { sperrIForhandsvisning(); return _setDoc(...a); };
   const storage = getStorage(app);
   const auth = getAuth(app);
 
@@ -10439,6 +10514,55 @@
         <div class="n">⚙️</div><div class="l">Innstillinger</div></button>`;
   }
 
+  // ---------- Forhåndsvisning: start, stopp og stripe ----------
+  window.startForhandsvisning = function(rolleNavn){
+    if(!ekteRoller && !isCurrentUserEier()){
+      showToast('Kun eier kan bruke forhåndsvisning.', true);
+      return;
+    }
+    if(!rolleNavn) return;
+    if(!ekteRoller) ekteRoller = [...currentUserRoles];
+    forhandsvisRoller = [rolleNavn];
+    currentUserRoles = [rolleNavn];
+    tegnForhandsvisStripe();
+    // Bygg navigasjonen på nytt — det er der rollen faktisk merkes.
+    try{ buildSidebar(); }catch(e){}
+    try{ selectSide(currentSideForBack || 'personale'); }catch(e){}
+    try{ renderRoller(); }catch(e){}
+  };
+
+  window.avsluttForhandsvisning = function(){
+    if(!ekteRoller) return;
+    currentUserRoles = [...ekteRoller];
+    ekteRoller = null;
+    forhandsvisRoller = null;
+    tegnForhandsvisStripe();
+    try{ buildSidebar(); }catch(e){}
+    try{ selectSide(currentSideForBack || 'personale'); }catch(e){}
+    try{ renderRoller(); }catch(e){}
+    showToast('Forhåndsvisning avsluttet.');
+  };
+
+  function tegnForhandsvisStripe(){
+    let el = document.getElementById('forhandsvisStripe');
+    if(!forhandsvisRoller){
+      if(el) el.remove();
+      document.body.style.paddingTop = '';
+      return;
+    }
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'forhandsvisStripe';
+      document.body.appendChild(el);
+    }
+    const t = samletTilgang(forhandsvisRoller);
+    el.innerHTML =
+      '<span>👁️ Du ser panelet som <b>' + escapeHtml(forhandsvisRoller[0]) + '</b>' +
+      ' (nivå ' + (t.niva === 99 ? '—' : t.niva) + ')' +
+      ' · <b>ingenting kan lagres</b></span>' +
+      '<button onclick="avsluttForhandsvisning()">Avslutt</button>';
+  }
+
   // ---------- Innstillinger: seksjoner og ulagrede endringer ----------
   // Én lang side ga ingen følelse av hvor man var, og ingen måte å vite
   // om noe var lagret. Begge deler er løst her, ikke i utseendet.
@@ -10735,6 +10859,20 @@
       rolleTabell = JSON.parse(JSON.stringify(ROLLER_UTGANGSPUNKT));
     }
     const navn = Object.keys(rolleTabell);
+
+    // Nedtrekket for forhåndsvisning leser samme tabell. Eier utelates:
+    // å se panelet som seg selv er ingen prøve.
+    const velg = document.getElementById('forhandsvisRolleValg');
+    if(velg){
+      const valgt = velg.value;
+      velg.innerHTML = navn
+        .filter(n => n !== 'Eier')
+        .sort((a, b) => (rolleTabell[a].niva || 99) - (rolleTabell[b].niva || 99))
+        .map(n => '<option value="' + escapeHtml(n) + '">' +
+          escapeHtml(n) + ' — nivå ' + (rolleTabell[n].niva || '—') +
+          (rolleTabell[n].panel ? '' : ' (ingen paneltilgang)') + '</option>').join('');
+      if(valgt) velg.value = valgt;
+    }
     const banner = ulagret ? `
       <div class="status show warn" style="margin-bottom:14px;">
         Rolletabellen er ikke lagret i databasen ennå. Innstillingene under
