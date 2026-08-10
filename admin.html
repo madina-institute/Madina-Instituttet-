@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 00:17:26 -->
+<!-- SIST-ENDRET: 2026-08-11 00:25:55 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -6957,6 +6957,9 @@
   };
 
   window.submitLedelseRefund = async function(){
+    // Refusjon flytter penger tilbake til familien. Samme vei utenom
+    // Firestore, samme sperre.
+    if(!kanSendePengekrav('ADM-VIP-08')) return;
     const id = ledelseRefundTargetId, reference = ledelseRefundReference;
     const amount = parseFloat(document.getElementById('ledelseRefundAmount').value);
     if(!amount || amount <= 0){ showToast('Skriv inn et gyldig beløp større enn 0.', true); return; }
@@ -6982,6 +6985,7 @@
 
   // ---- Avbryt et utestående (ikke betalt) Vipps-krav ----
   window.cancelPendingVippsRequest = async function(pendingId, reference){
+    if(!kanSendePengekrav('ADM-VIP-09')) return;
     if(!confirm('Avbryte dette Vipps-kravet? Foresatte vil ikke lenger kunne betale det.')) return;
     showToast('Avbryter Vipps-kravet...');
     try{
@@ -8410,15 +8414,31 @@
   // and type. If someone has no role record at all yet (e.g. the original
   // admin account from before this role system existed), they're treated
   // as unrestricted rather than locked out.
+  // Rollene til én person kan stå på TO kort: lærerkortet og
+  // adminUsers. Før ble bare det første som ble funnet brukt — og sto
+  // det et utdatert rollenavn der, avgjorde det alene, selv om det andre
+  // kortet hadde riktige roller. Nå slås de sammen.
+  function mineRollerFraAlleKort(){
+    if(!currentUserEmail) return [];
+    const e = currentUserEmail.trim().toLowerCase();
+    const treff = [
+      ...(cache.teachers || []).filter(t => (t.epost||'').trim().toLowerCase() === e),
+      ...(adminUsersCache || []).filter(u => (u.epost||'').trim().toLowerCase() === e),
+      ...(cache.ledelse || []).filter(l => (l.epost||'').trim().toLowerCase() === e)
+    ];
+    const alle = treff.flatMap(r =>
+      String(r.roller || r.rolle || '').split(',').map(x => x.trim()).filter(Boolean));
+    return [...new Set(alle)];
+  }
+
   function currentUserHasSeniorRole(){
     if(!currentUserEmail) return false;
-    const emailLc = currentUserEmail.trim().toLowerCase();
-    const rec = cache.teachers.find(t => (t.epost||'').trim().toLowerCase() === emailLc)
-             || adminUsersCache.find(u => (u.epost||'').trim().toLowerCase() === emailLc);
-    if(!rec) return true;
-    const roller = (rec.roller || rec.rolle || '').split(',').map(s=>s.trim()).filter(Boolean);
+    const roller = mineRollerFraAlleKort();
     if(roller.length === 0) return true;
-    return samletTilgang(roller).ledelse;
+    // Nivået teller også: den øverste ledelsen skal komme inn selv om et
+    // gammelt rollenavn på ett av kortene ikke lenger finnes i tabellen.
+    const t = samletTilgang(roller);
+    return t.ledelse || t.niva <= 2;
   }
 
   window.promptPasswordAndSelectSide = function(side){
@@ -10733,9 +10753,18 @@
       return;
     }
     const GML = 'Eier', NY = 'Øverste leder';
-    const harGammel = (u) => String(u.roller || '')
+    // Rollen står på flere kort. Tar vi bare adminUsers, blir lærer-
+    // eller ledelseskortet stående med et navn som ikke finnes lenger —
+    // og siden rettighetene slås sammen på tvers av kortene, ville
+    // personen mistet myndighet uten at noe sa fra. Det skjedde: fanen
+    // Skolekalender avviste sin egen øverste leder.
+    const harGammel = (u) => String(u.roller || u.rolle || '')
       .split(',').map(x => x.trim()).includes(GML);
-    const berort = (adminUsersCache || []).filter(harGammel);
+    const berort = [
+      ...(adminUsersCache || []).filter(harGammel).map(u => ({ u, samling: 'adminUsers' })),
+      ...((cache.teachers || []).filter(harGammel)).map(u => ({ u, samling: 'teachers' })),
+      ...((cache.ledelse || []).filter(harGammel)).map(u => ({ u, samling: 'ledelse' }))
+    ];
     const rolleFinnes = !!rolleTabell[GML];
 
     if(!berort.length && !rolleFinnes){
@@ -10744,21 +10773,24 @@
         'flyttEierrolle · treff=0');
       return;
     }
-    if(!confirm('Flytte ' + berort.length + ' personer fra «' + GML + '» til «' + NY + '»?\n\n' +
-      berort.map(u => '• ' + (u.navn || u.epost)).join('\n') +
+    if(!confirm('Flytte ' + berort.length + ' kort fra «' + GML + '» til «' + NY + '»?\n\n' +
+      berort.map(x => '• ' + (x.u.navn || x.u.epost) + '  (' + x.samling + ')').join('\n') +
       (rolleFinnes ? '\n\nRolledefinisjonen «Eier» fjernes også.' : '') +
       '\n\nNivået og rettighetene er de samme — bare navnet endres.')) return;
 
     let ok = 0;
     const feil = [];
-    for(const u of berort){
-      const nyeRoller = String(u.roller || '').split(',').map(x => x.trim())
+    for(const { u, samling } of berort){
+      const felt = (u.roller !== undefined) ? 'roller' : 'rolle';
+      const nyeRoller = String(u[felt] || '').split(',').map(x => x.trim())
         .filter(Boolean).map(r => r === GML ? NY : r);
       try{
-        await updateDoc(doc(db, 'adminUsers', u.id), { roller: [...new Set(nyeRoller)].join(', ') });
+        await updateDoc(doc(db, samling, u.id),
+          { [felt]: [...new Set(nyeRoller)].join(', ') });
         ok++;
       } catch(err){
-        feil.push({ navn: u.navn || u.epost, kode: err.code || err.message || 'ukjent' });
+        feil.push({ navn: (u.navn || u.epost) + ' (' + samling + ')',
+                    kode: err.code || err.message || 'ukjent' });
       }
     }
     // Rolledefinisjonen selv: den nye skrives fra den gamle, slik at
@@ -10773,7 +10805,7 @@
     }
     if(feil.length === 0){
       melding('ADM-MIG-03', '✓ Flyttingen er gjort',
-        ok + ' personer har nå rollen «' + NY + '».\n\n' +
+        ok + ' kort har nå rollen «' + NY + '».\n\n' +
         'Last siden på nytt for å se det overalt.',
         'flyttEierrolle · flyttet=' + ok);
     } else {
@@ -13066,10 +13098,54 @@
   // eleven i systemet UTEN at noen i administrasjonen må gjøre noe manuelt.
   const VIPPS_CREATE_PAYMENT_URL = 'https://createvippspayment-qgyf6x4aba-uc.a.run.app';
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SPERRE FOR PENGEKRAV
+  //
+  // Vipps-knappene kaller en skyfunksjon med fetch — de går UTENOM
+  // Firestore, og dermed også utenom sperren rundt skrivefunksjonene.
+  // Lesemodus og forhåndsvisning stoppet alt annet, men ikke det som
+  // faktisk ber en familie om penger.
+  //
+  // Sperren står først i funksjonen, før beløp og telefonnummer spørres
+  // om. En sperre som slår inn ETTER at man har fylt ut, oppleves som en
+  // feil — ikke som en grense.
+  function kanSendePengekrav(kode){
+    if(forhandsvisRoller){
+      melding(kode, '👁️ Forhåndsvisning',
+        'Du ser panelet som ' + forhandsvisRoller[0] + '. Et betalingskrav ' +
+        'ville gått ut på ekte, med DIN tilgang — ikke rollens.',
+        'kanSendePengekrav · forhåndsvisning aktiv');
+      return false;
+    }
+    if(!endringsmodus){
+      melding(kode, '🔒 Lesemodus',
+        'Et betalingskrav går ut til familien med én gang, og kan ikke ' +
+        'trekkes tilbake uten å refundere.\n\nSlå på «Endringsmodus» øverst ' +
+        'hvis du mener å sende det.',
+        'kanSendePengekrav · lesemodus');
+      return false;
+    }
+    // Å be en familie om penger er en økonomisk beslutning. Mellomledelse
+    // og lærere har paneltilgang, men ikke denne.
+    const t = minTilgang();
+    if(!(t && t.niva <= 2)){
+      melding(kode, '🔒 Ingen tilgang',
+        'Å sende et betalingskrav er forbeholdt øverste ledelse og ' +
+        'skoleleder.\n\nDu er registrert som: ' +
+        (currentUserRoles.join(', ') || 'ingen rolle') + '.',
+        'kanSendePengekrav · niva=' + (t ? t.niva : '—') +
+        ' · roller=' + (currentUserRoles.join(', ') || 'ingen'));
+      return false;
+    }
+    return true;
+  }
+
   window.sendRealVippsRequest = async function(id){
     // Et betalt Vipps-krav godkjenner søknaden automatisk via webhooken.
     // Derfor er denne knappen i praksis en opptaksbeslutning, og må ha
-    // samme sperre som Godkjenn-knappen.
+    // samme sperre som Godkjenn-knappen — OG sperren for pengekrav.
+    if(!kanSendePengekrav('ADM-VIP-06')) return;
     if(!krevOpptaksrolle()) return;
 
     // Knappen skjules når det finnes et åpent krav, men et kort som ikke er
@@ -13117,6 +13193,11 @@
   };
 
   window.sendStudentVippsRequest = async function(id){
+    // 🔴 Denne hadde ingen sperre i det hele tatt. Enhver med paneltilgang
+    // kunne be en familie om et hvilket som helst beløp — og fordi den
+    // går utenom Firestore, fanget verken lesemodus eller forhåndsvisning
+    // den opp.
+    if(!kanSendePengekrav('ADM-VIP-07')) return;
     const student = cache.students.find(s => s.id === id);
     if(!student){ showToast('Fant ikke eleven.'); return; }
     const computedRemaining = (parseFloat((student.belop||'0').replace(/[^\d.-]/g,'')) || 0)
