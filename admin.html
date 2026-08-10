@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 10:39:50 -->
+<!-- SIST-ENDRET: 2026-08-10 11:22:04 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -556,6 +556,15 @@
      å se at noe finnes er en del av å forstå systemet. */
   .sub-sidebar button.fane-laast{ opacity:.45; }
   .sub-sidebar button.fane-laast:hover{ background:transparent; }
+
+  .meld-tekst{ font-family:'Jost',sans-serif; font-size:13.5px; color:var(--ink);
+    line-height:1.65; white-space:pre-wrap; margin-bottom:16px; }
+  /* Den tekniske blokken skal se ut som noe man kopierer, ikke som noe
+     man leser. Monospace gjør at koden kan leses høyt uten misforståelser. */
+  .meld-teknisk{ font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-size:11px; line-height:1.6; color:#5a6860; background:var(--paper);
+    border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+    white-space:pre-wrap; word-break:break-word; user-select:all; }
 
   /* ---- Alle personer ---- */
   .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
@@ -4932,8 +4941,9 @@
       }
     } catch(err){
       console.error('slettTestdata/søk', err);
-      alert('Kunne ikke lete opp testdataene.\n\n' + (err.message || 'Ukjent feil') +
-            '\n\nIngenting er slettet.');
+      melding('ADM-TST-01', '⛔ Oppslag feilet',
+            'Kunne ikke lete opp testdataene. Ingenting er slettet.',
+            'slettTestdata/søk · ' + (err.code || '') + ' ' + (err.message || 'ukjent'));
       return;
     }
 
@@ -4971,11 +4981,12 @@
     } else {
       console.error('slettTestdata — avvist:', feilet);
       const grunner = [...new Set(feilet.map(f => f.feil))];
-      alert('Slettet ' + slettet + ' av ' + total + '.\n\n' +
-            feilet.length + ' ble avvist:\n' +
-            [...new Set(feilet.map(f => (TYPE_LABELS[f.type] || f.type)))].join(', ') +
-            '\n\nÅrsak: ' + grunner.join(', ') +
-            '\n\nHele listen ligger i konsollen og i feilloggen.');
+      melding('ADM-TST-02', '⛔ Sletting delvis avvist',
+            'Slettet ' + slettet + ' av ' + total + '.\n\n' +
+            feilet.length + ' ble avvist i: ' +
+            [...new Set(feilet.map(f => (TYPE_LABELS[f.type] || f.type)))].join(', '),
+            'slettTestdata · avvist ' + feilet.length + '/' + total + '\n' +
+            grunner.join(', '));
     }
   };
 
@@ -6858,11 +6869,15 @@
         showToast('✓ Refusjon sendt.');
         closeCashierOverlay('ledelseRefundOverlay');
       } else {
-        alert('Kunne ikke refundere: ' + (data.error || 'ukjent feil'));
+        melding('ADM-VIP-01', '⛔ Refusjon feilet',
+          'Refusjonen ble ikke gjennomført. Beløpet står som før.',
+          'refunder · ' + (data.error || 'ukjent feil'));
       }
     } catch(err){
       console.error(err);
-      alert('Kunne ikke koble til refusjonstjenesten.');
+      melding('ADM-VIP-02', '⛔ Ingen kontakt med Vipps',
+        'Kunne ikke koble til refusjonstjenesten. Ingenting ble endret.',
+        'refunder · nettverk/funksjon svarte ikke');
     }
   };
 
@@ -6873,10 +6888,14 @@
     try{
       const data = await kallVippsFunksjon(CANCEL_VIPPS_URL, { reference });
       if(data.ok) showToast('✓ Kravet er avbrutt.');
-      else alert('Kunne ikke avbryte: ' + (data.error || 'ukjent feil — kanskje allerede betalt?'));
+      else melding('ADM-VIP-03', '⛔ Avbrytelse feilet',
+        'Kravet ble ikke avbrutt. Er det allerede betalt, kan det ikke avbrytes.',
+        'avbryt · ' + (data.error || 'ukjent feil'));
     } catch(err){
       console.error(err);
-      alert('Kunne ikke koble til avbrytelsestjenesten.');
+      melding('ADM-VIP-04', '⛔ Ingen kontakt med Vipps',
+        'Kunne ikke koble til avbrytelsestjenesten. Ingenting ble endret.',
+        'avbryt · nettverk/funksjon svarte ikke');
     }
   };
 
@@ -8449,7 +8468,10 @@
     // Låst fane: si hvem den er for, i stedet for å la trykket dø stille.
     const laastGrunn = faneLast(tabName);
     if(laastGrunn){
-      alert('🔒 Ingen tilgang\n\n' + laastGrunn);
+      melding('ADM-FAN-01', '🔒 Ingen tilgang', laastGrunn,
+        'selectSubTab · fane=' + tabName + '\n' +
+        'krever=' + (FANE_KREVER[tabName] ? FANE_KREVER[tabName].hvem : '—') +
+        ' · roller=' + (currentUserRoles.join(', ') || 'ingen'));
       return;
     }
     const targetTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
@@ -10336,10 +10358,12 @@
     // Reglene avviser en tom liste. Meldingen her forklarer hvorfor,
     // i stedet for å la Firestore svare «Missing permissions».
     if(igjen.length === 0){
-      alert('Den siste eieren kan ikke fjernes.\n\n' +
+      melding('ADM-EIE-01', '🔒 Siste eier',
+            'Den siste eieren kan ikke fjernes.\n\n' +
             'Uten en eier finnes ingen innlogging som kan endre roller, ' +
             'tilganger eller denne listen — og eneste vei tilbake går ' +
-            'gjennom Firebase Console.');
+            'gjennom Firebase Console.',
+            'fjernEier · settings/eierskap · eiere=1');
       return;
     }
     const megSelv = String(epost).toLowerCase() === (currentUserEmail || '').toLowerCase();
@@ -10534,6 +10558,92 @@
         <div class="n">${t.antallRest}</div><div class="l">elever med restbeløp</div></button>
       <button onclick="goToTask('okonomi','betaling')">
         <div class="n">⚙️</div><div class="l">Innstillinger</div></button>`;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MELDINGER — med kildekode og kopiknapp
+  //
+  // Systemets meldinger var vanlige alert()-bokser. De kan ikke kopieres,
+  // og de sier ingenting om HVOR de kom fra. Feilsøkingen ble derfor:
+  // «den sier at ingenting ble endret» → gjett hvilken av femti steder.
+  //
+  // Hver melding har nå en fast kode. Koden skrives inn for hånd, ikke
+  // genereres: en generert kode ville flyttet seg for hver endring i
+  // filen, og en kode som ikke peker på samme sted i morgen er verre
+  // enn ingen kode.
+  //
+  // 🔴 Kopiblokken inneholder ALDRI meldingsteksten. Den kan nevne barn
+  // ved navn — «Beløpet ble ikke endret for Musa Farah» — og en kopiert
+  // melding sendes videre. Blokken tar bare koden og det tekniske.
+  // ═══════════════════════════════════════════════════════════════════
+  function filStempel(){
+    const m = document.documentElement.innerHTML.match(/SIST-ENDRET:\s*([\d-]+ [\d:]+)/);
+    return m ? m[1] : 'ukjent';
+  }
+
+  window.melding = function(kode, tittel, tekst, teknisk){
+    const gml = document.getElementById('meldingOverlay');
+    if(gml) gml.remove();
+
+    const nå = new Date();
+    const blokk = [
+      '[' + kode + ']',
+      'admin.html · ' + filStempel(),
+      teknisk || '',
+      (currentUserEmail || 'ukjent') + ' · ' +
+        nå.toLocaleDateString('no-NO') + ' ' + nå.toLocaleTimeString('no-NO')
+    ].filter(Boolean).join('\n');
+
+    const o = document.createElement('div');
+    o.className = 'overlay open';
+    o.id = 'meldingOverlay';
+    o.innerHTML = `
+      <div class="modal" style="max-width:520px;">
+        <h3 style="margin-bottom:12px;">${escapeHtml(tittel)}</h3>
+        <div class="meld-tekst">${escapeHtml(tekst)}</div>
+        <div class="meld-teknisk" id="meldTeknisk">${escapeHtml(blokk)}</div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="kopierMelding()">📋 Kopier</button>
+          <button class="btn btn-primary" onclick="lukkMelding()">Lukk</button>
+        </div>
+      </div>`;
+    document.body.appendChild(o);
+    o.addEventListener('click', e => { if(e.target === o) lukkMelding(); });
+  };
+
+  window.lukkMelding = function(){
+    const o = document.getElementById('meldingOverlay');
+    if(o) o.remove();
+  };
+
+  window.kopierMelding = function(){
+    const el = document.getElementById('meldTeknisk');
+    if(!el) return;
+    const tekst = el.textContent;
+    const ferdig = () => showToast('Kopiert. Lim inn i meldingen din.');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(tekst).then(ferdig).catch(() => reserveKopi(tekst, ferdig));
+    } else {
+      reserveKopi(tekst, ferdig);
+    }
+  };
+
+  // Utklippstavlen krever sikker tilkobling og kan avvises. Uten reserven
+  // ville knappen sett ut som den virket, og ingenting blitt kopiert.
+  function reserveKopi(tekst, ferdig){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = tekst;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      ferdig();
+    } catch(err){
+      showToast('Kunne ikke kopiere automatisk — marker teksten og kopier selv.', true);
+    }
   }
 
   // ---------- Forhåndsvisning: start, stopp og stripe ----------
@@ -11264,11 +11374,12 @@
     // Fjerner du din egen tilgang, kan du ikke legge den tilbake, og
     // eneste vei inn igjen går gjennom en annen eier eller Console.
     if(e === normEpost(currentUserEmail)){
-      alert('Dette er kontoen du er logget inn med.\n\n' +
+      melding('ADM-TIL-01', '🔒 Dette er deg',
             'Fjerner du din egen tilgang, mister du panelet med én gang og ' +
             'kan ikke gi den tilbake selv. En annen eier — eller Firebase ' +
             'Console — må i så fall gjøre det for deg.\n\n' +
-            'Handlingen ble ikke utført.');
+            'Handlingen ble ikke utført.',
+            'fjernTilgangFor · tilgang/adminUsers · selvsperre');
       return;
     }
 
@@ -11277,8 +11388,10 @@
     const eiere = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
       .map(x => normEpost(x));
     if(eiere.includes(e) && eiere.length <= 1){
-      alert('Dette er den siste eieren.\n\n' +
-            'Legg til en annen eier først, under Personale → Eiere.');
+      melding('ADM-TIL-02', '🔒 Siste eier',
+            'Dette er den siste eieren.\n\n' +
+            'Legg til en annen eier først, under Personale → Eiere.',
+            'fjernTilgangFor · settings/eierskap · eiere=1');
       return;
     }
 
@@ -12359,9 +12472,11 @@
     // ikke finnes.
     const ryddet = await ryddArvetIdFelt();
     if(ryddet > 0){
-      alert(ryddet + ' elever hadde et arvet «id»-felt fra søknaden sin.\n\n' +
+      melding('ADM-PRI-03', '🧹 Arvet id-felt ryddet',
+        ryddet + ' elever hadde et arvet «id»-felt fra søknaden sin.\n\n' +
         'Det er fjernet nå. Trykk «Rett opp» én gang til — listene måtte ' +
-        'leses inn på nytt først.');
+        'leses inn på nytt først.',
+        'ryddArvetIdFelt · students · ryddet=' + ryddet);
       return;
     }
 
@@ -12383,20 +12498,25 @@
       // Ingen skriving ble i det hele tatt forsøkt. Da ligger feilen i
       // hvilke elever som blir plukket ut, ikke i skrivingen — og de to
       // krever helt forskjellig leting.
-      alert('Ingen skriving ble forsøkt.\n\n' + avvik.length + ' elever ble ' +
-        'markert som avvikende, men familieberegningen fant dem ikke igjen. ' +
-        'Det peker på koblingen mellom elev og foresatt.\n\n' +
-        'Første elev: ' + (avvik[0] ? avvik[0].elev.navn + ' (foresatt: ' +
-          (avvik[0].elev.foresatt || '—') + ' / ' + (avvik[0].elev.foresatt2 || '—') + ')' : '—'));
+      melding('ADM-PRI-02', '⚠️ Ingen skriving ble forsøkt',
+        avvik.length + ' elever ble markert som avvikende, men ' +
+        'familieberegningen fant dem ikke igjen. Det peker på koblingen ' +
+        'mellom elev og foresatt — ikke på skrivingen.',
+        'regnOmAlleFamilier · students/guardians\n' +
+        'markert ' + avvik.length + ' · forsøkt 0\n' +
+        'første: foresatt=' + (avvik[0] ? (avvik[0].elev.foresatt || '—') : '—') +
+        ' foresatt2=' + (avvik[0] ? (avvik[0].elev.foresatt2 || '—') : '—'));
       return;
     }
     // Sier hva som gikk galt, ikke bare at ingenting skjedde.
     const koder = [...new Set(alleFeil.map(f => f.kode))];
-    alert('Rettet ' + endret + ' av ' + avvik.length + '.\n\n' +
+    melding('ADM-PRI-01', '⛔ Skriving avvist',
+      'Rettet ' + endret + ' av ' + avvik.length + '.\n\n' +
       alleFeil.length + ' skrivinger ble avvist:\n' +
       alleFeil.slice(0, 8).map(f => '• ' + f.navn + ' — ' + f.kode).join('\n') +
-      (alleFeil.length > 8 ? '\n… og ' + (alleFeil.length - 8) + ' til' : '') +
-      '\n\nÅrsak: ' + koder.join(', '));
+      (alleFeil.length > 8 ? '\n… og ' + (alleFeil.length - 8) + ' til' : ''),
+      'regnOmAlleFamilier → oppdaterSoskenpriser · students\n' +
+      'avvist ' + alleFeil.length + '/' + avvik.length + ' · ' + koder.join(', '));
   };
 
   window.approveRegistration = async function(id){
@@ -12551,9 +12671,12 @@
       }
       showToast(melding);
       if(hoppet.length){
-        alert('Beløpet ble IKKE endret for: ' + hoppet.join(', ') + '\n\n' +
+        melding('ADM-PRI-04', '⚠️ Noen beløp ble stående',
+              'Beløpet ble IKKE endret for: ' + hoppet.join(', ') + '\n\n' +
               'De har allerede betalt noe, og et beløp som er delvis betalt ' +
-              'skal ikke endres i ettertid. Juster det manuelt hvis det er riktig.');
+              'skal ikke endres i ettertid. Juster det manuelt hvis det er riktig.',
+              'approveRegistration → oppdaterSoskenpriser · students\n' +
+              'hoppet over ' + hoppet.length + ' (delvis betalt)');
       }
     } catch(err){
       console.error(err);
@@ -12866,7 +12989,9 @@
       };
     } catch(err){
       console.error(err);
-      alert('En feil oppstod: ' + err.message);
+      melding('ADM-ALM-01', '⛔ En feil oppstod',
+        'Handlingen ble ikke fullført.',
+        (err.code || '') + ' ' + (err.message || 'ukjent feil'));
     }
   };
 
