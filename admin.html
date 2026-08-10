@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 11:54:38 -->
+<!-- SIST-ENDRET: 2026-08-10 22:03:16 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -565,6 +565,24 @@
     font-size:11px; line-height:1.6; color:#5a6860; background:var(--paper);
     border:1px solid var(--line); border-radius:8px; padding:10px 12px;
     white-space:pre-wrap; word-break:break-word; user-select:all; }
+
+  .logg-rad{ border-bottom:1px solid var(--line); padding:12px 2px; }
+  .logg-rad:last-child{ border-bottom:0; }
+  .logg-hode{ display:flex; justify-content:space-between; align-items:baseline;
+    gap:10px; font-family:'Jost',sans-serif; font-size:13.5px; color:var(--ink); }
+  .logg-tid{ font-size:11px; color:#8a9a90; white-space:nowrap; }
+  .logg-meta{ font-family:'Jost',sans-serif; font-size:11.5px; color:#7b8a93; margin-top:2px; }
+  .logg-felt{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+    margin-top:7px; font-family:'Jost',sans-serif; font-size:12.5px; }
+  .logg-navn{ color:var(--emerald-d); font-weight:600; min-width:104px; }
+  .logg-verdi{ flex:1 1 140px; color:#5a6860; }
+  .logg-skjult{ flex:1 1 140px; color:#8a6d1d; font-style:italic; }
+  .logg-beregnet{ font-size:10.5px; color:#8a9a90; background:var(--paper-2);
+    border-radius:999px; padding:2px 9px; }
+  .logg-felt button{ font-family:'Jost',sans-serif; font-size:11.5px;
+    background:#fff; color:var(--emerald-d); border:1px solid var(--line);
+    border-radius:7px; padding:4px 11px; cursor:pointer; }
+  .logg-felt button:hover{ border-color:var(--emerald-d); }
 
   /* ---- Alle personer ---- */
   .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
@@ -1436,6 +1454,7 @@
   <div class="tab" data-tab="meetings" data-side="skoleoppsett">Møtereferater</div>
   <div class="tab" data-tab="reports" data-side="skoleoppsett">Rapporter</div>
   <div class="tab" data-tab="overview" data-side="system">Oversikt</div>
+  <div class="tab" data-tab="endringslogg" data-side="system">Endringslogg</div>
   <div class="tab" data-tab="utvikler" data-side="system">Verktøy og sider</div>
   <div class="tab" data-tab="veiledning" data-side="system">Veiledning</div>
 </div>
@@ -2822,6 +2841,33 @@
     </div>
 
   </div>
+
+  <!-- ENDRINGSLOGG -->
+  <div class="panel" id="panel-endringslogg">
+    <div class="report-card">
+      <div class="innst-topp">
+        <h3>🕘 Endringslogg</h3>
+        <span class="innst-meta" id="loggMeta"></span>
+      </div>
+      <div class="sub">
+        Hvem endret hva, fra hva til hva. Bare feltene som betyr noe —
+        beløp, roller, program, foresatt, klasse, timesats.
+      </div>
+      <div class="innst-effekt">
+        Helseopplysninger vises som <b>«endret»</b> uten verdien. Den gamle
+        verdien ville ellers ligget her, i en fane med andre tilganger enn
+        elevkortet den kom fra.<br>
+        Loggen ryddes automatisk etter <b>14 dager</b>.
+      </div>
+      <div class="toolbar" style="margin-top:14px;">
+        <input class="search" id="sokLogg" placeholder="Søk etter navn, felt eller person..." oninput="renderEndringslogg()">
+        <button class="btn btn-ghost" style="width:auto;" onclick="lastEndringslogg()">🔄 Hent på nytt</button>
+      </div>
+      <div id="loggListe" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ENDRINGSLOGG SLUTT -->
 
   <!-- ØKONOMI — OVERSIKT -->
   <!-- Landingssiden for Økonomi. Før denne falt man rett ned i «Kasse»
@@ -8378,6 +8424,7 @@
     eiere: 'Hvem som har full tilgang, og veien tilbake hvis alt låser seg',
     paalogget: 'Hvem som bruker systemet akkurat nå',
     allePersoner: 'Alle personer fra alle kilder — uten mapper og uten filter',
+    endringslogg: 'Hvem endret hva, de siste 14 dagene',
     finances: 'Inntekter, utgifter og saldo',
     teachers: 'Registrer og administrer lærere',
     guardians: 'Oversikt over foresatte',
@@ -8408,7 +8455,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📔', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
-    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
+    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
@@ -8424,6 +8471,7 @@
     // Programmer og skolekalender styrer priser og undervisningsdager for
     // HELE skolen. Det er en skoleleders beslutning — men ikke en
     // koordinators, og slett ikke en lærers.
+    endringslogg:   { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     programs:       { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     schoolCalendar: { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     registrations:  { hvem: 'eier',    tekst: 'Opptaksansvarlig eller eier' },
@@ -8524,6 +8572,7 @@
     // Lytteren på øktene lever bare mens fanen er åpen. En stående lytter
     // ville kostet lesninger hos alle med panelet oppe, hele dagen.
     if(tabName === 'paalogget') startPaalogget(); else stoppPaalogget();
+    if(tabName === 'endringslogg') lastEndringslogg();
     pushAppView({ appView: 'tab', side: currentSideForBack, tab: tabName });
   };
 
@@ -8840,7 +8889,7 @@
   };
 
   // ---------- Custom report builder (advanced) ----------
-  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger', announcements:'Kunngjøringer', studentNotes:'Elevnotater', contactUpdateRequests:'Kontaktendringer', paymentRequests:'Betalingsforespørsler', messages:'Meldinger', foreldreTilgang:'Foreldrekoblinger', tilgang:'Tilgangsindeks', roller:'Roller' };
+  const TYPE_LABELS = { teachers:'Lærere', guardians:'Foresatte', students:'Elever', classes:'Klasser', hours:'Timeplan', attendance:'Oppmøte', lessonPlans:'Forberedelser', ledelse:'Ledelse', meetings:'Møtereferater', finances:'Kasse/Økonomi', registrations:'Søknader', homework:'Lekser', homeworkSubmissions:'Leksesvar', absenceRequests:'Fraværsmeldinger', announcements:'Kunngjøringer', studentNotes:'Elevnotater', contactUpdateRequests:'Kontaktendringer', paymentRequests:'Betalingsforespørsler', messages:'Meldinger', foreldreTilgang:'Foreldrekoblinger', endringslogg:'Endringslogg', tilgang:'Tilgangsindeks', roller:'Roller' };
   const OPERATORS = [
     {value:'equals', label:'Er lik', needsValue:true, valueType:'select'},
     {value:'not_equals', label:'Er ikke lik', needsValue:true, valueType:'select'},
@@ -9757,7 +9806,11 @@
       }
 
       if(editingId){
+        // Den gamle raden må leses FØR skrivingen — etterpå finnes den
+        // ikke lenger noe sted.
+        const forrige = (cache[editingType] || []).find(r => r.id === editingId);
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
+        await loggEndring(editingType, editingId, entry.navn || (forrige && forrige.navn), forrige, entry);
       } else {
         await addDoc(collection(db, schema.collectionName), entry);
       }
@@ -10701,6 +10754,215 @@
       showToast('Kunne ikke kopiere automatisk — marker teksten og kopier selv.', true);
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ENDRINGSLOGG
+  //
+  // deletionLog fanget bare slettinger. En endring forsvant sporløst:
+  // kortet viste den nye verdien, og den gamle fantes ikke lenger.
+  //
+  // Bare feltene som betyr noe logges. Å logge alle 59 feltene på et
+  // elevkort ville gitt en logg ingen orker å lese — og fire ganger så
+  // mange skrivinger for informasjon ingen leter etter.
+  // ═══════════════════════════════════════════════════════════════════
+  const LOGG_FELT = {
+    belop:'Beløp', belopBetalt:'Betalt', betalt:'Betalingsstatus',
+    spesialpris:'Spesialpris', soskenrekkefolge:'Søskenplass',
+    roller:'Roller', lonnStatus:'Lønnsstatus', timesats:'Timesats',
+    program:'Program', klasse:'Klasse', erMedlem:'Medlem',
+    foresatt:'Foresatt', foresatt2:'Foresatt 2', tildeltKlasse:'Tildelt klasse',
+    epost:'E-post', telefon:'Telefon', navn:'Navn', status:'Status',
+    aktiv:'Aktiv', prisAar:'Årspris', prisMedlemMnd:'Medlemspris/mnd',
+    antallManeder:'Antall måneder', materiellAvgift:'Materiellavgift'
+  };
+
+  // 🔴 Helsefelt logges som «endret», aldri med verdien. Den gamle
+  // verdien ville da ligget i en samling med andre tilganger enn
+  // elevkortet den kom fra — en diagnose ville lekket ut av kortet sitt.
+  const LOGG_SKJULT = ['allergi','allergi_beskriv','sykdom','sykdom_beskriv',
+    'medisin','medisin_hvilke','larevansker','larevansker_beskriv',
+    'bbt_ppt','bbt_ppt_beskriv','helse_annet'];
+
+  // Feltene som regnes ut av panelet. De kan ikke gjenopprettes enkeltvis:
+  // neste prisberegning ville satt dem tilbake, og angringen sett ut som
+  // om systemet overstyrte deg.
+  const LOGG_BEREGNET = ['belop', 'soskenrekkefolge'];
+
+  const LOGG_MAKS_PER_OPERASJON = 50;
+
+  async function loggEndring(type, id, navn, gammel, ny){
+    if(forhandsvisRoller) return;
+    const felter = [];
+    Object.keys(LOGG_FELT).forEach(k => {
+      const f = String(gammel && gammel[k] !== undefined ? gammel[k] : '');
+      const t = String(ny && ny[k] !== undefined ? ny[k] : '');
+      if(f !== t) felter.push({ felt: k, fra: f, til: t });
+    });
+    LOGG_SKJULT.forEach(k => {
+      const f = String(gammel && gammel[k] !== undefined ? gammel[k] : '');
+      const t = String(ny && ny[k] !== undefined ? ny[k] : '');
+      if(f !== t) felter.push({ felt: k, skjult: true });
+    });
+    if(felter.length === 0) return;
+    try{
+      await addDoc(collection(db, 'endringslogg'), {
+        type, dokumentId: id, navn: navn || '',
+        felter: felter.slice(0, 12),
+        antallFelt: felter.length,
+        avAv: currentUserEmail || 'ukjent',
+        tid: new Date().toISOString()
+      });
+    } catch(err){ console.error('loggEndring', err); }
+  }
+
+  // Masseoppdateringer: én rad, ikke tre hundre. En importrunde skal ikke
+  // kunne fylle loggen slik at dagens vanlige endringer blir usynlige.
+  async function loggSamlet(tekst, antall, teknisk){
+    if(forhandsvisRoller) return;
+    try{
+      await addDoc(collection(db, 'endringslogg'), {
+        type: '__samlet__', dokumentId: '', navn: tekst,
+        felter: [], antallFelt: antall, samlet: true,
+        detalj: teknisk || '',
+        avAv: currentUserEmail || 'ukjent',
+        tid: new Date().toISOString()
+      });
+    } catch(err){ console.error('loggSamlet', err); }
+  }
+
+  // ---------- Endringslogg: lesing, visning, angring ----------
+  // Leses når fanen åpnes, ikke med en stående lytter. En logg ingen ser
+  // på skal ikke koste lesninger døgnet rundt.
+  let loggRader = [];
+  const LOGG_DAGER = 14;
+
+  window.lastEndringslogg = async function(){
+    const el = document.getElementById('loggListe');
+    if(el) el.innerHTML = '<div class="ok-rolig">Henter…</div>';
+    const siden = new Date(Date.now() - LOGG_DAGER * 86400000).toISOString();
+    try{
+      const snap = await getDocs(query(collection(db, 'endringslogg'),
+        where('tid', '>=', siden)));
+      loggRader = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+        .sort((a, b) => (b.tid || '').localeCompare(a.tid || ''));
+      renderEndringslogg();
+    } catch(err){
+      console.error('endringslogg', err);
+      melding('ADM-LOG-01', '⛔ Kunne ikke hente loggen',
+        'Loggen kunne ikke leses. Den krever øvre ledelse.',
+        'lastEndringslogg · endringslogg · ' + (err.code || err.message || 'ukjent'));
+      if(el) el.innerHTML = '';
+    }
+  };
+
+  window.renderEndringslogg = function(){
+    const el = document.getElementById('loggListe');
+    if(!el) return;
+    const sok = (document.getElementById('sokLogg') || {}).value || '';
+    const q = sok.trim().toLowerCase();
+    let rader = loggRader;
+    if(q) rader = rader.filter(r =>
+      ((r.navn || '') + ' ' + (r.avAv || '') + ' ' +
+       (r.felter || []).map(f => (LOGG_FELT[f.felt] || f.felt)).join(' ')
+      ).toLowerCase().includes(q));
+
+    const meta = document.getElementById('loggMeta');
+    if(meta) meta.textContent = rader.length === loggRader.length
+      ? loggRader.length + ' endringer siste ' + LOGG_DAGER + ' dager'
+      : rader.length + ' av ' + loggRader.length;
+
+    if(rader.length === 0){
+      el.innerHTML = '<div class="ok-rolig">' +
+        (q ? 'Ingen treff.' : 'Ingen endringer registrert ennå.') + '</div>';
+      return;
+    }
+    el.innerHTML = rader.slice(0, 200).map(r => {
+      const nar = (() => {
+        const d = new Date(r.tid); if(isNaN(d)) return r.tid || '';
+        return d.toLocaleDateString('no-NO') + ' ' +
+               d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+      })();
+      if(r.samlet){
+        return `<div class="logg-rad">
+          <div class="logg-hode"><b>${escapeHtml(r.navn || 'Masseoppdatering')}</b>
+            <span class="logg-tid">${escapeHtml(nar)}</span></div>
+          <div class="logg-meta">${r.antallFelt} oppføringer · ${escapeHtml(r.avAv || '')}</div>
+        </div>`;
+      }
+      const linjer = (r.felter || []).map((f, i) => {
+        const navn = LOGG_FELT[f.felt] || f.felt;
+        if(f.skjult){
+          return `<div class="logg-felt"><span class="logg-navn">${escapeHtml(navn)}</span>
+            <span class="logg-skjult">endret — verdien logges ikke</span></div>`;
+        }
+        const beregnet = LOGG_BEREGNET.includes(f.felt);
+        return `<div class="logg-felt">
+          <span class="logg-navn">${escapeHtml(navn)}</span>
+          <span class="logg-verdi">${escapeHtml(f.fra || '—')} → <b>${escapeHtml(f.til || '—')}</b></span>
+          ${beregnet
+            ? '<span class="logg-beregnet" title="Regnes ut av panelet">beregnet</span>'
+            : `<button onclick="angreFelt('${r.id}', ${i})">Angre</button>`}
+        </div>`;
+      }).join('');
+      return `<div class="logg-rad">
+        <div class="logg-hode"><b>${escapeHtml(r.navn || '(uten navn)')}</b>
+          <span class="logg-tid">${escapeHtml(nar)}</span></div>
+        <div class="logg-meta">${escapeHtml(TYPE_LABELS[r.type] || r.type)} · ${escapeHtml(r.avAv || '')}${
+          r.antallFelt > (r.felter || []).length
+            ? ' · ' + (r.antallFelt - r.felter.length) + ' felt til' : ''}</div>
+        ${linjer}
+      </div>`;
+    }).join('');
+  };
+
+  // 🔴 Angring skriver den gamle verdien tilbake — og logges selv. Uten
+  // det ville et felt plutselig hatt en gammel verdi igjen, og ingenting
+  // sagt hvem som gjorde det.
+  window.angreFelt = async function(loggId, feltIndex){
+    const r = loggRader.find(x => x.id === loggId);
+    if(!r) return;
+    const f = (r.felter || [])[feltIndex];
+    if(!f || f.skjult) return;
+
+    if(LOGG_BEREGNET.includes(f.felt)){
+      melding('ADM-LOG-02', 'Dette feltet regnes ut',
+        (LOGG_FELT[f.felt] || f.felt) + ' regnes ut fra program, medlemskap ' +
+        'og søskenrabatt.\n\nSetter du det tilbake for hånd, blir det regnet ' +
+        'om igjen ved neste gjennomgang — og angringen ser ut som om systemet ' +
+        'overstyrte deg.\n\nEndre det som ligger til grunn i stedet: program ' +
+        'eller foresatt på elevkortet.',
+        'angreFelt · ' + f.felt + ' · beregnet felt');
+      return;
+    }
+    const schema = SCHEMAS[r.type];
+    if(!schema){
+      melding('ADM-LOG-03', '⛔ Ukjent type',
+        'Denne raden peker på en type panelet ikke kjenner.',
+        'angreFelt · type=' + r.type);
+      return;
+    }
+    if(!confirm('Sette ' + (LOGG_FELT[f.felt] || f.felt) + ' tilbake?\n\n' +
+      (f.til || '—') + '  →  ' + (f.fra || '—') + '\n\n' +
+      'For: ' + (r.navn || r.dokumentId) + '\n\n' +
+      'Angringen logges også.')) return;
+    try{
+      await updateDoc(doc(db, schema.collectionName, r.dokumentId), {
+        [f.felt]: f.fra,
+        sistEndretAv: currentUserEmail || 'ukjent',
+        sistEndretDato: new Date().toISOString().slice(0,10)
+      });
+      await loggEndring(r.type, r.dokumentId, r.navn,
+        { [f.felt]: f.til }, { [f.felt]: f.fra });
+      showToast((LOGG_FELT[f.felt] || f.felt) + ' er satt tilbake.');
+      lastEndringslogg();
+    } catch(err){
+      console.error('angreFelt', err);
+      melding('ADM-LOG-04', '⛔ Angring feilet',
+        'Verdien ble ikke satt tilbake.',
+        'angreFelt · ' + schema.collectionName + '/' + r.dokumentId +
+        ' · ' + (err.code || err.message || 'ukjent'));
+    }
+  };
 
   // ---------- Forhåndsvisning: start, stopp og stripe ----------
   window.startForhandsvisning = function(rolleNavn){
@@ -12545,6 +12807,10 @@
       forsokt += (r.forsokt || 0);
       alleFeil.push(...(r.feilet || []));
     }
+    if(endret > 0){
+      await loggSamlet('Beløp rettet mot prisreglene', endret,
+        'regnOmAlleFamilier · students · endret=' + endret);
+    }
     renderOkonomiHub();
     if(alleFeil.length === 0 && forsokt > 0){
       showToast(endret + ' elever fikk rettet beløp.');
@@ -12717,6 +12983,10 @@
         cache.students = [...(cache.students || []), { id: nyElevRef.id, ...studentRecord }];
       }
       const res1 = await oppdaterSoskenpriser(guardianId);
+      if(res1.endret > 0){
+        await loggSamlet('Søskenpriser regnet om etter godkjenning', res1.endret,
+          'approveRegistration · students · endret=' + res1.endret);
+      }
       const res2 = guardianId2 && guardianId2 !== guardianId
         ? await oppdaterSoskenpriser(guardianId2) : { endret: 0, hoppetOver: [], feilet: [] };
       const hoppet = [...res1.hoppetOver, ...res2.hoppetOver];
