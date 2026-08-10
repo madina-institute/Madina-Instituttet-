@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 22:20:57 -->
+<!-- SIST-ENDRET: 2026-08-10 23:59:17 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1424,7 +1424,6 @@
   <div class="tab" data-tab="ledelse" data-side="personale">Ledelse</div>
   <div class="tab" data-tab="paalogget" data-side="personale">Pålogget nå</div>
   <div class="tab" data-tab="roller" data-side="personale">Roller og tilganger</div>
-  <div class="tab" data-tab="eiere" data-side="personale">Eiere</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="registrations" data-side="admin">Søknader</div>
@@ -1896,6 +1895,14 @@
         Dette sto tidligere i koden, og hver endring krevde at filen ble
         skrevet om og publisert. Nå er det avkrysninger.
       </p>
+      <div class="innst-effekt" style="border-left-color:#8a6d1d; background:#fdf8ec; margin-bottom:14px;">
+        Rollen <b>«Eier»</b> er erstattet av <b>«Øverste leder»</b>. Skolen selv
+        er eieren; de som styrer den er ledere.<br>
+        Har noen fortsatt den gamle rollen, flytter denne knappen dem —
+        samme nivå og samme rettigheter, nytt navn.
+        <button class="btn btn-ghost" style="width:auto; margin-top:10px;"
+                onclick="flyttEierrolle()">Flytt «Eier» → «Øverste leder»</button>
+      </div>
       <div class="hint" style="margin-bottom:16px;">
         <b>Nivået</b> avgjør hvem som kan utnevne hvem: du kan bare gi noen
         et nivå <b>lavere</b> enn ditt eget. Eier er nivå 1 og kan ikke endres
@@ -2783,64 +2790,14 @@
   </div>
 
   <!-- EIERE -->
-  <!-- Eierskapet ligger i settings/eierskap. Det er dokumentet REGLENE
-       leser — ikke rollen «Eier» i personkortet. De to kan komme ut av
-       takt, og da viser panelet knapper som reglene avviser. Derfor
-       vises begge her, side om side. -->
-  <div class="panel" id="panel-eiere">
-
-    <div class="report-card">
-      <h3>👑 Eiere</h3>
-      <div class="sub">
-        En eier har full tilgang uansett hva som står i rolletabellen, og er
-        den eneste som kan endre roller, tilganger og denne listen.
-      </div>
-      <div id="eiereListe" style="margin-top:16px;"></div>
-
-      <div class="field" style="margin-top:18px;">
-        <label>Legg til eier — e-postadresse</label>
-        <input type="email" id="nyEierInput" placeholder="navn@eksempel.no" autocomplete="off">
-        <div class="hint">
-          Må være <b>nøyaktig</b> den samme adressen personen logger inn med.
-          Reglene sammenligner tegn for tegn, og en adresse som nesten stemmer
-          gir ingen tilgang i det hele tatt.
-        </div>
-      </div>
-      <button class="btn btn-primary" style="width:auto;" onclick="leggTilEier()">Legg til eier</button>
-    </div>
-
-    <div class="report-card" style="margin-top:16px;">
-      <h3>Stemmer listen med rollene?</h3>
-      <div class="sub">
-        Rollen «Eier» styrer hva panelet <b>viser</b>. Listen over styrer hva
-        reglene <b>tillater</b>. Er de ulike, får noen knapper som ikke virker
-        — eller full tilgang uten å se den.
-      </div>
-      <div id="eierAvvik" style="margin-top:14px;"></div>
-    </div>
-
-    <div class="report-card" style="margin-top:16px;">
-      <h3>Hvis alle blir låst ute</h3>
-      <div class="sub">
-        Skulle listen bli tom, feilskrevet, eller en eier fjerne de andre,
-        finnes det ingen innlogging igjen som kan rette det opp. Veien tilbake
-        går gjennom Firebase Console, som ikke er bundet av reglene:
-      </div>
-      <ol style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.9; margin:12px 0 0 18px; padding:0;">
-        <li>Åpne Firestore → <code>settings</code> → <code>eierskap</code></li>
-        <li>Legg til <code>gjenopprettingEpost</code> = adressen som skal slippes inn</li>
-        <li>Legg til <code>gjenopprettingUtloper</code> (timestamp) = når det slutter å gjelde</li>
-        <li>Logg inn med den adressen, rett opp listen over</li>
-        <li><b>Slett de to feltene igjen</b></li>
-      </ol>
-      <div class="hint" style="margin-top:10px;">
-        Fristen er ikke pynt: et glemt felt uten utløp er en permanent bakdør
-        ingen husker står der. Feltene kan ikke settes herfra — kun i Console.
-      </div>
-      <div id="eierGjenoppretting" style="margin-top:12px;"></div>
-    </div>
-
-  </div>
+  <!-- Fanen «Eiere» er fjernet.
+       Den redigerte settings/eierskap — dokumentet som avgjorde hvem som
+       var eier. Den modellen kostet et oppslag i hvert eneste
+       rettighetssjekk, og da dokumentet ble skrevet om, sluttet alt som
+       krevde eier å virke uten at noe pekte på hvorfor.
+       Nå følger myndigheten NIVÅET i rolletabellen, og skolens egen
+       adresse er veien tilbake. Det finnes ikke lenger noen eier å
+       administrere. -->
 
   <!-- ENDRINGSLOGG -->
   <div class="panel" id="panel-endringslogg">
@@ -3320,7 +3277,21 @@
   // gate "kun Eier"-handlinger (sletting av ansatte, Kasserer for
   // Ledelse/Eier) uten å måtte spørre databasen på nytt hver gang.
   let currentUserRoles = [];
-  function isCurrentUserEier(){ return currentUserRoles.includes('Eier'); }
+  // Nødkontoen — skolens egen adresse. Står også i sikkerhetsreglene, og
+  // er nivå 1 der uansett hva 'tilgang' måtte inneholde.
+  const NODKONTO = 'post@madinaskole.no';
+
+  // Øverste myndighet er et NIVÅ, ikke en rolle ved navn.
+  //
+  // Før het den «Eier» og ble sjekket med currentUserRoles.includes('Eier').
+  // Da kunne panelet mene én ting og reglene noe annet: fikk noen rollen
+  // uten å stå i eierlisten, viste panelet knappene og reglene avviste
+  // dem. Nivået er det samme tallet begge sider leser.
+  function erOversteLeder(){
+    if((currentUserEmail || '').trim().toLowerCase() === NODKONTO) return true;
+    const t = minTilgang();
+    return !!t && t.niva <= 1;
+  }
 
   // ═══════════════════════════════════════════════════════════════════
   // HVEM KAN OPPRETTE HVA
@@ -3340,7 +3311,7 @@
   // Hvem som kan opprette hva står nå i rolletabellen, ikke her.
   // Eieren krysser av per rolle under «Roller og tilganger».
   function kanOpprette(type){
-    if(isCurrentUserEier()) return true;
+    if(erOversteLeder()) return true;
     return minTilgang().opprett.includes(type);
   }
 
@@ -3382,7 +3353,7 @@
   // Eier har alltid tilgang, slik at skolen aldri blir låst ute av eget
   // opptak om den eneste opptaksansvarlige er utilgjengelig.
   function isOpptaksansvarlig(){
-    return currentUserRoles.includes('Eier') || currentUserRoles.includes('Opptaksansvarlig');
+    return erOversteLeder() || currentUserRoles.includes('Opptaksansvarlig');
   }
 
   // Felles sperre for alle opptaksbeslutninger.
@@ -3658,7 +3629,7 @@
 
   // Nivåene. Navnene er beskrivende — det er TALLET som avgjør.
   const NIVA_NAVN = {
-    1: 'Eier',
+    1: 'Øverste leder',
     2: 'Øverste ledelse',
     3: 'Mellomledelse',
     4: 'Lærer',
@@ -3669,7 +3640,9 @@
   // koden før — så første kjøring endrer ingenting for noen. Deretter er
   // det eieren som bestemmer.
   const ROLLER_UTGANGSPUNKT = {
-    'Eier':                       { niva:1, panel:true,  ledelse:true,  opptak:true,  helse:true,  opprett:['programs','schoolCalendar','classes','hours'] },
+    // Skolen selv er «eieren». De som styrer den er ledere, ikke eiere —
+    // og myndigheten deres kommer fra nivået, ikke fra et eierskap.
+    'Øverste leder':              { niva:1, panel:true,  ledelse:true,  opptak:true,  helse:true,  opprett:['programs','schoolCalendar','classes','hours'] },
     'Skoleleder':                 { niva:2, panel:true,  ledelse:true,  opptak:false, helse:true, opprett:[] },
     'Daglig leder':               { niva:2, panel:true,  ledelse:true,  opptak:false, helse:false, opprett:[] },
     'Faglig / pedagogisk leder':  { niva:3, panel:true,  ledelse:true,  opptak:false, helse:false, opprett:['classes','hours'] },
@@ -3728,7 +3701,7 @@
 
   function minTilgang(){ return samletTilgang(currentUserRoles); }
   function nivaForRoller(roller){ return samletTilgang(roller).niva; }
-  function mittNiva(){ return isCurrentUserEier() ? 1 : minTilgang().niva; }
+  function mittNiva(){ return erOversteLeder() ? 1 : minTilgang().niva; }
 
   // Du kan bare utnevne noen med STRENGT lavere myndighet enn deg selv.
   // Eieren er unntaket — han kan utnevne en annen eier.
@@ -4152,7 +4125,7 @@
         {key:'telefon', label:'Telefon', type:'text', essential:true},
         {key:'epost', label:'E-post', type:'text', essential:true},
         {key:'roller', label:'Roller', type:'role-checklist', options:[
-          'Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator','Opptaksansvarlig',
+          'Øverste leder','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator','Opptaksansvarlig',
           'Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer','Assistent','Frivillig','Annet'
         ]},
         {key:'lonnStatus', label:'Lønnsstatus', type:'select', essential:true, options:['Frivillig (ulønnet)','Lønnet']},
@@ -4650,7 +4623,7 @@
         {key:'tema', label:'Møtetema', type:'text'},
         {key:'referent', label:'Referent (skrevet av)', type:'dynamic-select', source:'teachers'},
         {key:'tilstedeRoller', label:'Til stede (roller)', type:'role-checklist', options:[
-          'Eier','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærere','Assistenter','Andre'
+          'Øverste leder','Skoleleder','Daglig leder','Pedagogisk og faglig leder','Fagkoordinator','Lærere','Assistenter','Andre'
         ]},
         {key:'tilstedeNavn', label:'Til stede (navn)', type:'text'},
         {key:'andreHvem', label:'Andre — hvem?', type:'text'},
@@ -4828,7 +4801,7 @@
   }
 
   window.lagTestsoknader = async function(){
-    if(!isCurrentUserEier()){ showToast('Kun eier kan lage testdata.'); return; }
+    if(!erOversteLeder()){ showToast('Kun eier kan lage testdata.'); return; }
     const antall = parseInt((document.getElementById('testFamilierInput') || {}).value, 10);
     if(isNaN(antall) || antall < 1 || antall > 40){
       showToast('Velg mellom 1 og 40 familier.');
@@ -4978,7 +4951,7 @@
   //      kan handle på; det var derfor eneste utvei ble å slette for
   //      hånd i Firebase Console.
   window.slettTestdata = async function(){
-    if(!isCurrentUserEier()){ showToast('Kun eier kan slette testdata.'); return; }
+    if(!erOversteLeder()){ showToast('Kun eier kan slette testdata.'); return; }
 
     const samlinger = ['registrations', 'students', 'guardians', 'teachers', 'classes'];
     const funnet = {};
@@ -5244,19 +5217,6 @@
       renderOkonomiHub();
     }, (err) => console.error('settings/priser', err));
 
-    onSnapshot(doc(db, 'settings', 'eierskap'), (snap) => {
-      const d = snap.exists() ? (snap.data() || {}) : {};
-      eierskapData = {
-        finnes: snap.exists(),
-        eiere: Array.isArray(d.eiere) ? d.eiere : [],
-        gjenopprettingEpost: d.gjenopprettingEpost || '',
-        gjenopprettingUtloper: d.gjenopprettingUtloper || null
-      };
-      renderEiere();
-      renderEierAvvik();
-      renderEierGjenoppretting();
-    }, (err) => console.error('settings/eierskap', err));
-
     onSnapshot(doc(db, 'settings', 'faktura'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
       // Reserven er tom streng, ikke et gammelt nummer. Svarer ikke basen,
@@ -5440,7 +5400,7 @@
         'krevEier · ' + hva + ' · forhåndsvisning aktiv');
       return false;
     }
-    if(!isCurrentUserEier()){
+    if(!erOversteLeder()){
       melding(kode, '🔒 Kun eier',
         hva + ' kan bare gjøres av en eier.\n\nDu er registrert som: ' +
         (currentUserRoles.join(', ') || 'ingen rolle') + '.',
@@ -6133,7 +6093,7 @@
     return sek ? sek.keys : [];
   }
   function erHelsefelt(key){ return helsefelter().includes(key); }
-  function kanSeHelse(){ return isCurrentUserEier() || minTilgang().helse === true; }
+  function kanSeHelse(){ return erOversteLeder() || minTilgang().helse === true; }
 
   const PD_SEKSJONER = {
     students: [
@@ -6778,7 +6738,7 @@
 
   // ===================================================================
   // KASSERER (LEDELSE) — samme elevliste-tilnærming som vanlig Kasserer,
-  // men kun tilgjengelig for Eier (se isCurrentUserEier()/deleteEntry-
+  // men kun tilgjengelig for Eier (se erOversteLeder()/deleteEntry-
   // gating og fanens display:none over). I tillegg til vanlig
   // betalingsregistrering kan Eier her: refundere en Vipps-betaling,
   // avbryte et utestående (ikke betalt) Vipps-krav, sette et nytt
@@ -8490,7 +8450,7 @@
   function faneLast(tab){
     const krav = FANE_KREVER[tab];
     if(!krav) return null;
-    const harRett = krav.hvem === 'eier' ? isCurrentUserEier() : currentUserHasSeniorRole();
+    const harRett = krav.hvem === 'eier' ? erOversteLeder() : currentUserHasSeniorRole();
     if(harRett) return null;
     const mine = currentUserRoles.length ? currentUserRoles.join(', ') : 'ingen rolle';
     return 'Denne fanen er for ' + krav.tekst + '.\n\nDu er registrert som: ' +
@@ -9635,9 +9595,9 @@
       // Rollen «Opptaksansvarlig» kan kun tildeles av en eier. Uten dette
       // kunne enhver med administrativ tilgang gi seg selv rollen, og
       // sperren under ville vært en formalitet.
-      if(f.type === 'role-checklist' && !isCurrentUserEier()){
+      if(f.type === 'role-checklist' && !erOversteLeder()){
         input.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          if(cb.value === 'Opptaksansvarlig' || cb.value === 'Eier'){
+          if(cb.value === 'Opptaksansvarlig' || cb.value === 'Øverste leder'){
             cb.disabled = true;
             cb.title = 'Kun en eier kan endre denne rollen.';
             if(cb.parentElement) cb.parentElement.style.opacity = '0.55';
@@ -10014,7 +9974,7 @@
 
   let foreldreIndeksSkrevet = '';
   async function skrivForeldreIndeks(){
-    if(!isCurrentUserEier() && !currentUserHasSeniorRole()) return;
+    if(!erOversteLeder() && !currentUserHasSeniorRole()) return;
     if(!(cache.guardians || []).length || !(cache.students || []).length) return;
 
     const kart = byggForeldreIndeks();
@@ -10323,162 +10283,18 @@
   // systemet, og et system som deler den ut på egen hånd er farligere
   // enn et som sier fra at noe ikke stemmer.
   // ═══════════════════════════════════════════════════════════════════
-  let eierskapData = { eiere: [], finnes: false };
 
-  function renderEiere(){
-    const el = document.getElementById('eiereListe');
-    if(!el) return;
-    const liste = Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [];
 
-    if(!eierskapData.finnes){
-      el.innerHTML = '<div class="ok-rolig" style="color:#a83c3c;">' +
-        '🔴 <b>Dokumentet settings/eierskap finnes ikke.</b> Ingen er eier, og ' +
-        'det kan ikke opprettes herfra — se seksjonen nederst.</div>';
-      return;
-    }
-    if(liste.length === 0){
-      el.innerHTML = '<div class="ok-rolig" style="color:#a83c3c;">🔴 Listen er tom.</div>';
-      return;
-    }
-
-    const meg = (currentUserEmail || '').toLowerCase();
-    el.innerHTML = liste.map(e => {
-      const erMeg = String(e).toLowerCase() === meg;
-      // Den siste eieren kan ikke fjernes. Reglene avviser det uansett,
-      // men en knapp som alltid feiler er verre enn ingen knapp.
-      const kanFjerne = liste.length > 1;
-      return `
-      <div class="ok-handling">
-        <span class="ok-alvor" style="background:var(--gold);"></span>
-        <div class="ok-handling-tekst">${escapeHtml(e)}${erMeg ? ' <b>(deg)</b>' : ''}
-          <small>${erMeg ? 'Fjerner du deg selv, mister du tilgangen med én gang.'
-                         : 'Full tilgang uansett rolletabell.'}</small></div>
-        ${kanFjerne
-          ? `<button onclick="fjernEier('${escapeHtml(e)}')">Fjern</button>`
-          : '<button disabled title="Den siste eieren kan ikke fjernes">Fjern</button>'}
-      </div>`;
-    }).join('');
-  }
 
   // Panelet og reglene kan si ulike ting. Denne seksjonen finnes fordi
   // akkurat den forskjellen har skjedd: en person hadde rollen «Eier»,
   // panelet kjørte tilgangsjobben for ham, og reglene avviste hver
   // eneste skriving. Feilen viste seg som «Missing permissions» i
   // feilloggen, ikke som noe man kunne se i grensesnittet.
-  function renderEierAvvik(){
-    const el = document.getElementById('eierAvvik');
-    if(!el) return;
-    const liste = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
-      .map(x => String(x).toLowerCase());
-    const medRolle = (adminUsersCache || [])
-      .filter(u => String(u.roller || '').split(',').map(x => x.trim()).includes('Eier'))
-      .map(u => ({ epost: (u.epost || '').trim().toLowerCase(), navn: u.navn || '' }))
-      .filter(u => u.epost);
-
-    const rader = [];
-    medRolle.forEach(u => {
-      if(!liste.includes(u.epost)){
-        rader.push(['stopp', (u.navn || u.epost) + ' har rollen «Eier», men står ikke i listen',
-          'Panelet viser eierknappene. Reglene avviser dem.']);
-      }
-    });
-    const rolleEposter = medRolle.map(u => u.epost);
-    liste.forEach(e => {
-      if(!rolleEposter.includes(e)){
-        rader.push(['folg', e + ' er eier, men har ikke rollen «Eier»',
-          'Full tilgang i reglene, men panelet skjuler knappene.']);
-      }
-    });
-
-    if(rader.length === 0){
-      el.innerHTML = '<div class="ok-rolig">✓ Listen og rollene stemmer overens.</div>';
-      return;
-    }
-    el.innerHTML = rader.map(([alvor, tekst, detalj]) => `
-      <div class="ok-handling">
-        <span class="ok-alvor ${alvor}"></span>
-        <div class="ok-handling-tekst">${escapeHtml(tekst)}<small>${escapeHtml(detalj)}</small></div>
-        <button onclick="goToTask('system','overview')">Ansatte</button>
-      </div>`).join('');
-  }
 
   // En aktiv gjenopprettingsnøkkel skal ikke kunne stå ubemerket.
-  function renderEierGjenoppretting(){
-    const el = document.getElementById('eierGjenoppretting');
-    if(!el) return;
-    const e = eierskapData.gjenopprettingEpost || '';
-    if(!e){ el.innerHTML = ''; return; }
-    const til = eierskapData.gjenopprettingUtloper;
-    let nar = '';
-    try{
-      const d = til && til.toDate ? til.toDate() : (til ? new Date(til) : null);
-      if(d && !isNaN(d)) nar = d.toLocaleDateString('no-NO') + ' kl. ' +
-        d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
-    } catch(err){ /* ukjent format vises som manglende frist */ }
-    const utlopt = nar && new Date(nar) < new Date();
-    el.innerHTML = '<div class="innst-effekt" style="border-left-color:#a83c3c; background:#fbf0f0;">' +
-      '🔑 <b>En gjenopprettingsnøkkel står åpen</b> for ' + escapeHtml(e) +
-      (nar ? ' · gjelder til ' + escapeHtml(nar) : ' · <b>uten utløpstidspunkt</b>') +
-      '.<br>Er den ikke i bruk akkurat nå, bør feltene slettes i Console.' +
-      '</div>';
-  }
 
-  window.leggTilEier = async function(){
-    const inp = document.getElementById('nyEierInput');
-    const ny = (inp.value || '').trim().toLowerCase();
-    if(!ny || ny.indexOf('@') < 1){
-      showToast('Skriv en gyldig e-postadresse.');
-      return;
-    }
-    const liste = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
-      .map(x => String(x).toLowerCase());
-    if(liste.includes(ny)){ showToast(ny + ' er allerede eier.'); return; }
-    if(!confirm(
-      'Gjøre ' + ny + ' til eier?\n\n' +
-      'En eier har full tilgang til alt, kan endre roller og tilganger, ' +
-      'og kan legge til og fjerne andre eiere — inkludert deg.\n\n' +
-      'Adressen må være nøyaktig den personen logger inn med.'
-    )) return;
-    try{
-      await setDoc(doc(db, 'settings', 'eierskap'), { eiere: [...liste, ny] }, { merge: true });
-      inp.value = '';
-      showToast(ny + ' er lagt til som eier.');
-    } catch(err){
-      console.error('leggTilEier', err);
-      showToast('Kunne ikke lagre. Kun en eier kan endre denne listen.');
-    }
-  };
 
-  window.fjernEier = async function(epost){
-    const liste = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
-      .map(x => String(x).toLowerCase());
-    const igjen = liste.filter(x => x !== String(epost).toLowerCase());
-    // Reglene avviser en tom liste. Meldingen her forklarer hvorfor,
-    // i stedet for å la Firestore svare «Missing permissions».
-    if(igjen.length === 0){
-      melding('ADM-EIE-01', '🔒 Siste eier',
-            'Den siste eieren kan ikke fjernes.\n\n' +
-            'Uten en eier finnes ingen innlogging som kan endre roller, ' +
-            'tilganger eller denne listen — og eneste vei tilbake går ' +
-            'gjennom Firebase Console.',
-            'fjernEier · settings/eierskap · eiere=1');
-      return;
-    }
-    const megSelv = String(epost).toLowerCase() === (currentUserEmail || '').toLowerCase();
-    if(!confirm(
-      'Fjerne ' + epost + ' som eier?\n\n' +
-      (megSelv ? '⚠️ Dette er DEG. Du mister eiertilgangen med én gang, og ' +
-                 'kan ikke legge deg til igjen selv.\n\n' : '') +
-      'Rollen i personkortet endres ikke — den må rettes separat.'
-    )) return;
-    try{
-      await setDoc(doc(db, 'settings', 'eierskap'), { eiere: igjen }, { merge: true });
-      showToast(epost + ' er ikke lenger eier.');
-    } catch(err){
-      console.error('fjernEier', err);
-      showToast('Kunne ikke lagre. Kun en eier kan endre denne listen.');
-    }
-  };
 
   // ═══════════════════════════════════════════════════════════════════
   // ØKONOMI — OVERSIKT
@@ -10848,6 +10664,74 @@
     } catch(err){ console.error('loggSamlet', err); }
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // FLYTTING: rollen «Eier» → «Øverste leder»
+  //
+  // Navnet står tre steder: som dokument-id i 'roller', som tekst i hver
+  // persons rolleliste, og i 'ledelse'. Endres bare koden, vil de som
+  // har den gamle rollen stå uten myndighet — panelet ville ikke kjent
+  // igjen navnet, og ingenting ville sagt fra.
+  //
+  // Kjøres én gang. Er det ingenting å flytte, sier den det.
+  window.flyttEierrolle = async function(){
+    if(!erOversteLeder()){
+      melding('ADM-MIG-01', '🔒 Kun øverste nivå',
+        'Denne flyttingen endrer hvem som har myndighet i systemet.',
+        'flyttEierrolle · roller/adminUsers');
+      return;
+    }
+    const GML = 'Eier', NY = 'Øverste leder';
+    const harGammel = (u) => String(u.roller || '')
+      .split(',').map(x => x.trim()).includes(GML);
+    const berort = (adminUsersCache || []).filter(harGammel);
+    const rolleFinnes = !!rolleTabell[GML];
+
+    if(!berort.length && !rolleFinnes){
+      melding('ADM-MIG-02', '✓ Ingenting å flytte',
+        'Ingen har rollen «Eier», og den finnes ikke i rolletabellen.',
+        'flyttEierrolle · treff=0');
+      return;
+    }
+    if(!confirm('Flytte ' + berort.length + ' personer fra «' + GML + '» til «' + NY + '»?\n\n' +
+      berort.map(u => '• ' + (u.navn || u.epost)).join('\n') +
+      (rolleFinnes ? '\n\nRolledefinisjonen «Eier» fjernes også.' : '') +
+      '\n\nNivået og rettighetene er de samme — bare navnet endres.')) return;
+
+    let ok = 0;
+    const feil = [];
+    for(const u of berort){
+      const nyeRoller = String(u.roller || '').split(',').map(x => x.trim())
+        .filter(Boolean).map(r => r === GML ? NY : r);
+      try{
+        await updateDoc(doc(db, 'adminUsers', u.id), { roller: [...new Set(nyeRoller)].join(', ') });
+        ok++;
+      } catch(err){
+        feil.push({ navn: u.navn || u.epost, kode: err.code || err.message || 'ukjent' });
+      }
+    }
+    // Rolledefinisjonen selv: den nye skrives fra den gamle, slik at
+    // rettighetene følger med i stedet for å falle tilbake på standard.
+    if(rolleFinnes){
+      try{
+        await setDoc(doc(db, 'roller', NY), { ...rolleTabell[GML], niva: 1 }, { merge: true });
+        await deleteDoc(doc(db, 'roller', GML));
+      } catch(err){
+        feil.push({ navn: 'rolledefinisjonen', kode: err.code || err.message || 'ukjent' });
+      }
+    }
+    if(feil.length === 0){
+      melding('ADM-MIG-03', '✓ Flyttingen er gjort',
+        ok + ' personer har nå rollen «' + NY + '».\n\n' +
+        'Last siden på nytt for å se det overalt.',
+        'flyttEierrolle · flyttet=' + ok);
+    } else {
+      melding('ADM-MIG-04', '⚠️ Delvis flyttet',
+        ok + ' av ' + berort.length + ' ble flyttet.',
+        'flyttEierrolle · feilet=' + feil.length + '\n' +
+        [...new Set(feil.map(f => f.kode))].join(', '));
+    }
+  };
+
   // ---------- Endringslogg: lesing, visning, angring ----------
   // Leses når fanen åpnes, ikke med en stående lytter. En logg ingen ser
   // på skal ikke koste lesninger døgnet rundt.
@@ -10984,7 +10868,7 @@
 
   // ---------- Forhåndsvisning: start, stopp og stripe ----------
   window.startForhandsvisning = function(rolleNavn){
-    if(!ekteRoller && !isCurrentUserEier()){
+    if(!ekteRoller && !erOversteLeder()){
       showToast('Kun eier kan bruke forhåndsvisning.', true);
       return;
     }
@@ -11311,7 +11195,7 @@
   function renderRoller(){
     const el = document.getElementById('rollerListe');
     if(!el) return;
-    if(!isCurrentUserEier()){
+    if(!erOversteLeder()){
       el.innerHTML = '<div class="report-empty">Kun eier kan endre roller og tilganger.</div>';
       return;
     }
@@ -11334,7 +11218,7 @@
     if(velg){
       const valgt = velg.value;
       velg.innerHTML = navn
-        .filter(n => n !== 'Eier')
+        .filter(n => n !== 'Øverste leder')
         .sort((a, b) => (rolleTabell[a].niva || 99) - (rolleTabell[b].niva || 99))
         .map(n => '<option value="' + escapeHtml(n) + '">' +
           escapeHtml(n) + ' — nivå ' + (rolleTabell[n].niva || '—') +
@@ -11425,7 +11309,7 @@
   // Skriver reserven ned i basen. Sier tydelig fra hva som gikk galt hvis
   // det feiler — den forrige utgaven feilet i stillhet.
   window.byggRolletabell = async function(){
-    if(!isCurrentUserEier()){ showToast('Kun eier kan opprette rolletabellen.', true); return; }
+    if(!erOversteLeder()){ showToast('Kun eier kan opprette rolletabellen.', true); return; }
     let antall = 0;
     try{
       for(const [navn, def] of Object.entries(ROLLER_UTGANGSPUNKT)){
@@ -11442,7 +11326,7 @@
   };
 
   window.lagreRolle = async function(rolle){
-    if(!isCurrentUserEier()){ showToast('Kun eier kan endre roller.', true); return; }
+    if(!erOversteLeder()){ showToast('Kun eier kan endre roller.', true); return; }
     const d = rolleTabell[rolle];
     if(!d) return;
     if(d.niva === 1){ showToast('Eierrollen kan ikke endres.', true); return; }
@@ -11660,7 +11544,7 @@
   }
 
   window.slettDublett = async function(kilde, id, navn){
-    if(!isCurrentUserEier()){ showToast('Kun eier kan slette her.', true); return; }
+    if(!erOversteLeder()){ showToast('Kun eier kan slette her.', true); return; }
     if(!confirm('Slette «' + navn + '» fra ' + kilde + '?\n\nEn kopi havner i sletteloggen og kan gjenopprettes i 30 dager.')) return;
     try{
       // Samme spor som all annen sletting — uten dette ville en
@@ -11719,20 +11603,25 @@
       return;
     }
 
-    // Siste eier. Samme grunn som i eierlisten: uten en eier finnes ingen
-    // innlogging igjen som kan endre roller og tilganger.
-    const eiere = (Array.isArray(eierskapData.eiere) ? eierskapData.eiere : [])
-      .map(x => normEpost(x));
-    if(eiere.includes(e) && eiere.length <= 1){
-      melding('ADM-TIL-02', '🔒 Siste eier',
-            'Dette er den siste eieren.\n\n' +
-            'Legg til en annen eier først, under Personale → Eiere.',
-            'fjernTilgangFor · settings/eierskap · eiere=1');
+    // Den siste på nivå 1. Fjernes den, finnes ingen innlogging igjen som
+    // kan endre roller og tilganger — bare nødkontoen, og den skal ikke
+    // være noe man må ty til fordi en knapp var lett å trykke på.
+    const paaNiva1 = (adminUsersCache || []).filter(u => {
+      const t = samletTilgang(String(u.roller || '').split(',').map(x => x.trim()));
+      return t && t.niva <= 1;
+    }).map(u => normEpost(u.epost));
+    if(paaNiva1.includes(e) && paaNiva1.length <= 1){
+      melding('ADM-TIL-02', '🔒 Siste på øverste nivå',
+            'Dette er den eneste med øverste myndighet.\n\n' +
+            'Gi en annen «Øverste leder» først, under Personale → Ansatte.\n\n' +
+            'Skolens egen konto kommer alltid inn, men den er en nødvei — ' +
+            'ikke en erstatning for at noen faktisk har ansvaret.',
+            'fjernTilgangFor · adminUsers · niva1=1');
       return;
     }
 
     const u = adminUsersCache.find(x => normEpost(x.epost) === e);
-    const iTilgang = eiere.includes(e);
+    const iTilgang = paaNiva1.includes(e);
     const deler = [];
     if(u) deler.push('• rollene i tilgangslisten' + (u.roller ? ' (' + u.roller + ')' : ''));
     deler.push('• oppslaget reglene bruker for å slippe kontoen inn');
@@ -13368,7 +13257,7 @@
     // Personer og familier. Å slette et menneske fra systemet river med seg
     // koblinger i flere samlinger — det er en eiers beslutning.
     if(['teachers','adminUsers','students','guardians','ledelse'].includes(type)
-       && !isCurrentUserEier()){
+       && !erOversteLeder()){
       melding('ADM-FAR-05', '🔒 Kun eier',
         'Å slette en person kan bare gjøres av en eier.\n\n' +
         'Du er registrert som: ' + (currentUserRoles.join(', ') || 'ingen rolle') + '.',
@@ -13758,7 +13647,7 @@
   // som bestemmer. Kjøres bare av eieren, og bare når tabellen er tom.
   let rolletabellSjekket = false;
   async function sikreRolletabell(){
-    if(rolletabellSjekket || !isCurrentUserEier()) return;
+    if(rolletabellSjekket || !erOversteLeder()) return;
     if(Object.keys(rolleTabell).length > 0){ rolletabellSjekket = true; return; }
     rolletabellSjekket = true;
     try{
@@ -13777,7 +13666,7 @@
 
   let tilgangSjekket = false;
   async function sikreTilgangsindeks(){
-    if(tilgangSjekket || !isCurrentUserEier()) return;
+    if(tilgangSjekket || !erOversteLeder()) return;
     tilgangSjekket = true;
     let noeFeilet = false;
     for(const u of adminUsersCache){
@@ -13811,7 +13700,6 @@
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
       const list = snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a,b) => (b.opprettetDato||'').localeCompare(a.opprettetDato||''));
       adminUsersCache = list;
-      renderEierAvvik();
       renderAllePersoner();
     sikreTilgangsindeks();
       // Ny ansatt = ny mulig mottaker. Uten dette måtte man laste siden på
