@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 10:01:38 -->
+<!-- SIST-ENDRET: 2026-08-10 10:07:03 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9632,8 +9632,11 @@
   let kortJegKomFra = null;
 
   window.editEntry = function(type, id){
-    const kortetErApent = document.getElementById('personDetailOverlay')
-      && document.getElementById('personDetailOverlay').classList.contains('show');
+    // Klassen heter 'open' — se .overlay.open i stilarket. Sto det 'show'
+    // her, ble svaret alltid nei, kortet ble aldri lukket, og skjemaet
+    // åpnet seg bak det som før.
+    const kortOverlay = document.getElementById('personDetailOverlay');
+    const kortetErApent = !!kortOverlay && kortOverlay.classList.contains('open');
     if(kortetErApent){
       kortJegKomFra = { type, id };
       closeCashierOverlay('personDetailOverlay');
