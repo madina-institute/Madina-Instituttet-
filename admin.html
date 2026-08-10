@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 22:13:44 -->
+<!-- SIST-ENDRET: 2026-08-10 22:20:57 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -10801,15 +10801,24 @@
 
   async function loggEndring(type, id, navn, gammel, ny){
     if(forhandsvisRoller) return;
+    // 🔴 Bare felt som lagringen FAKTISK skrev. Skjemaet sender bare
+    // feltene det har, og updateDoc rører ikke resten — men et felt som
+    // mangler i 'ny' leste seg som tomt, og loggen meldte «endret til
+    // ingenting» om verdier som sto helt urørt i basen.
+    //
+    // Det så ut som datatap. Det var loggen som løy.
     const felter = [];
+    const bleSkrevet = (k) => ny && Object.prototype.hasOwnProperty.call(ny, k);
     Object.keys(LOGG_FELT).forEach(k => {
+      if(!bleSkrevet(k)) return;
       const f = String(gammel && gammel[k] !== undefined ? gammel[k] : '');
-      const t = String(ny && ny[k] !== undefined ? ny[k] : '');
+      const t = String(ny[k] !== undefined && ny[k] !== null ? ny[k] : '');
       if(f !== t) felter.push({ felt: k, fra: f, til: t });
     });
     LOGG_SKJULT.forEach(k => {
+      if(!bleSkrevet(k)) return;
       const f = String(gammel && gammel[k] !== undefined ? gammel[k] : '');
-      const t = String(ny && ny[k] !== undefined ? ny[k] : '');
+      const t = String(ny[k] !== undefined && ny[k] !== null ? ny[k] : '');
       if(f !== t) felter.push({ felt: k, skjult: true });
     });
     if(felter.length === 0) return;
