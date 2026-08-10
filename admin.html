@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 11:22:04 -->
+<!-- SIST-ENDRET: 2026-08-10 11:32:41 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -10576,10 +10576,21 @@
   // ved navn — «Beløpet ble ikke endret for Musa Farah» — og en kopiert
   // melding sendes videre. Blokken tar bare koden og det tekniske.
   // ═══════════════════════════════════════════════════════════════════
-  function filStempel(){
-    const m = document.documentElement.innerHTML.match(/SIST-ENDRET:\s*([\d-]+ [\d:]+)/);
-    return m ? m[1] : 'ukjent';
-  }
+  // Stempelet står i en kommentar FØR <html>, og er derfor ikke en del av
+  // documentElement.innerHTML — der lette den første versjonen, og fikk
+  // alltid «ukjent». Filen hentes i stedet på nytt, én gang, akkurat som
+  // merket nederst på siden gjør.
+  let filStempelCache = null;
+  function filStempel(){ return filStempelCache || 'ikke lest ennå'; }
+  (function hentFilStempel(){
+    fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.text())
+      .then(txt => {
+        const m = txt.match(/SIST-ENDRET:\s*([\d-]+ [\d:]+)/);
+        filStempelCache = m ? m[1] : 'uten stempel';
+      })
+      .catch(() => { filStempelCache = 'kunne ikke leses'; });
+  })();
 
   window.melding = function(kode, tittel, tekst, teknisk){
     const gml = document.getElementById('meldingOverlay');
