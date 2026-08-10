@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-09 22:27:33 */
+/* SIST-ENDRET: 2026-08-10 22:03:03 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1031,7 +1031,7 @@ const BACKUP_COLLECTIONS = [
   // Tilgangsindeksene. Uten dem i kopien ville en gjenoppretting gitt
   // tilbake elevene, men ikke koblingen som lar foreldrene se dem —
   // og portalene ville stått tomme uten at noe så ødelagt ut.
-  "roller", "tilgang", "foreldreTilgang"
+  "roller", "tilgang", "foreldreTilgang", "endringslogg"
 ];
 
 const BACKUP_EMAIL = "post@madinaskole.no";
@@ -1115,6 +1115,33 @@ async function lagSikkerhetskopi() {
   return { totalDocs, sizeMb, filnavn };
 }
 
+/**
+ * Rydder endringsloggen. Rader eldre enn 14 dager slettes.
+ *
+ * Kjører sammen med den ukentlige sikkerhetskopien i stedet for hver dag:
+ * en daglig jobb ville gjort samme arbeid syv ganger for å slette de
+ * samme radene noen dager tidligere. Loggen leses uansett med et
+ * tidsfilter, så gamle rader vises ikke selv om de står noen dager over.
+ */
+const ENDRINGSLOGG_DAGER = 14;
+
+async function ryddEndringslogg() {
+  const cutoff = new Date(Date.now() - ENDRINGSLOGG_DAGER * 24 * 60 * 60 * 1000)
+    .toISOString();
+  try {
+    const snap = await db.collection("endringslogg")
+      .where("tid", "<", cutoff).limit(500).get();
+    if (snap.empty) return;
+    // Batch: 500 slettinger i én operasjon i stedet for 500 kall.
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    logger.info(`Endringslogg: slettet ${snap.size} rader eldre enn ${ENDRINGSLOGG_DAGER} dager`);
+  } catch (err) {
+    logger.error("Kunne ikke rydde endringsloggen", err);
+  }
+}
+
 exports.ukentligSikkerhetskopi = onSchedule(
   {
     schedule: "0 4 * * 0",
@@ -1124,6 +1151,7 @@ exports.ukentligSikkerhetskopi = onSchedule(
   },
   async () => {
     await lagSikkerhetskopi();
+    await ryddEndringslogg();
     // Puls: skriver ned at kjøringen faktisk skjedde. Uten dette finnes
     // det ingen måte å se at sikkerhetskopien har uteblitt — en jobb som
     // ikke kjører sier ingenting, den bare lar være.
