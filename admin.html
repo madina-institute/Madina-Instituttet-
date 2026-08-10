@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 11:44:14 -->
+<!-- SIST-ENDRET: 2026-08-10 11:54:38 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -5352,6 +5352,7 @@
   }
 
   window.clearCollection = async function(type){
+    if(!krevEier('ADM-FAR-02', 'Å slette en hel samling')) return;
     const count = cache[type].length;
     if(count === 0){
       showToast('Det er allerede tomt.');
@@ -5373,7 +5374,38 @@
     }
   };
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // VAKT FOR DE FARLIGE HANDLINGENE
+  //
+  // «Faresonen» hadde bare passordbekreftelse. Den beviser at du er DEG —
+  // ikke at du har lov. Enhver med paneltilgang kunne dermed slette hele
+  // skolens database med sitt eget passord.
+  //
+  // Sperren står her, før alt annet, og før man rekker å skrive «SLETT
+  // ALT». En sperre som slår inn ETTER at man har bekreftet, oppleves
+  // som en feil — ikke som en grense.
+  // ═══════════════════════════════════════════════════════════════════
+  function krevEier(kode, hva){
+    if(forhandsvisRoller){
+      melding(kode, '👁️ Forhåndsvisning',
+        'Du ser panelet som ' + forhandsvisRoller[0] + '. Ingenting kan ' +
+        'slettes eller lagres i denne modusen.\n\nAvslutt forhåndsvisningen først.',
+        'krevEier · ' + hva + ' · forhåndsvisning aktiv');
+      return false;
+    }
+    if(!isCurrentUserEier()){
+      melding(kode, '🔒 Kun eier',
+        hva + ' kan bare gjøres av en eier.\n\nDu er registrert som: ' +
+        (currentUserRoles.join(', ') || 'ingen rolle') + '.',
+        'krevEier · ' + hva + ' · roller=' + (currentUserRoles.join(', ') || 'ingen'));
+      return false;
+    }
+    return true;
+  }
+
   window.clearAllData = async function(){
+    if(!krevEier('ADM-FAR-01', 'Å nullstille hele databasen')) return;
     const totalCount = Object.keys(SCHEMAS).reduce((sum, t) => sum + cache[t].length, 0);
     if(totalCount === 0){
       showToast('Databasen er allerede tom.');
@@ -5400,6 +5432,7 @@
   };
 
   window.clearTestDataKeepRegistrations = async function(){
+    if(!krevEier('ADM-FAR-03', 'Å nullstille data')) return;
     const typesToClear = Object.keys(SCHEMAS).filter(t => t !== 'registrations');
     const totalCount = typesToClear.reduce((sum, t) => sum + cache[t].length, 0);
     if(totalCount === 0){
@@ -13038,8 +13071,20 @@
     // kollega. 'teachers' er stedet en ansatts rolle faktisk lever (Ledelse
     // er bare et filtrert view over den), og 'adminUsers' er tilgangslisten
     // for Administrativt panel — begge regnes som "ansatt"-poster her.
-    if((type === 'teachers' || type === 'adminUsers') && !isCurrentUserEier()){
-      showToast('Kun Eier kan slette et ansatt-/admin-medlem.');
+    if(forhandsvisRoller){
+      melding('ADM-FAR-04', '👁️ Forhåndsvisning',
+        'Du ser panelet som ' + forhandsvisRoller[0] + '. Ingenting kan slettes.',
+        'deleteEntry · ' + type + ' · forhåndsvisning aktiv');
+      return;
+    }
+    // Personer og familier. Å slette et menneske fra systemet river med seg
+    // koblinger i flere samlinger — det er en eiers beslutning.
+    if(['teachers','adminUsers','students','guardians','ledelse'].includes(type)
+       && !isCurrentUserEier()){
+      melding('ADM-FAR-05', '🔒 Kun eier',
+        'Å slette en person kan bare gjøres av en eier.\n\n' +
+        'Du er registrert som: ' + (currentUserRoles.join(', ') || 'ingen rolle') + '.',
+        'deleteEntry · ' + type + ' · roller=' + (currentUserRoles.join(', ') || 'ingen'));
       return;
     }
     if(!confirm('Er du sikker på at du vil slette denne oppføringen?')) return;
