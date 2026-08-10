@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 23:59:17 -->
+<!-- SIST-ENDRET: 2026-08-11 00:17:26 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -583,6 +583,26 @@
     background:#fff; color:var(--emerald-d); border:1px solid var(--line);
     border-radius:7px; padding:4px 11px; cursor:pointer; }
   .logg-felt button:hover{ border-color:var(--emerald-d); }
+
+  .modus-bryter{
+    display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+    background:#fff; border:1px solid var(--line); border-radius:999px;
+    padding:5px 14px; margin-inline-start:10px;
+    font-family:'Jost',sans-serif; font-size:12px; font-weight:600; color:#7b8a93;
+    box-shadow:0 1px 4px rgba(40,40,90,.06);
+  }
+  .modus-bryter .modus-prikk{
+    width:8px; height:8px; border-radius:50%; background:#b6c0c6; flex:0 0 auto;
+  }
+  .modus-bryter.paa{ background:#1f6b3f; border-color:#1f6b3f; color:#fff; }
+  .modus-bryter.paa .modus-prikk{ background:#8ee6ab; }
+
+  /* I lesemodus dempes det som skriver. Sperren ligger uansett rundt
+     skrivefunksjonene — dette er for at skjermen skal SE ut som den
+     oppfører seg, ikke for å hindre noe. */
+  body.lesemodus .btn-danger-solid,
+  body.lesemodus .btn-danger,
+  body.lesemodus .btn-primary{ opacity:.5; }
 
   /* ---- Alle personer ---- */
   .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
@@ -1252,6 +1272,11 @@
 
   <div class="hdr-midt">
     <span class="sync-badge offline" id="syncBadge"><span class="dot"></span><span id="syncText">Kobler til...</span></span>
+    <!-- Alltid synlig, for alle. Å skjule bryteren for noen ville gjort
+         lesemodus til en straff i stedet for et valg. -->
+    <button class="modus-bryter" id="modusBryter" onclick="veksleEndringsmodus()">
+      <span class="modus-prikk"></span><span id="modusTekst">Lesemodus</span>
+    </button>
   </div>
 
   <div class="hdr-konto who-logged-in">
@@ -3153,12 +3178,39 @@
   let forhandsvisRoller = null;      // null = av
   let ekteRoller = null;
 
+  // ═══════════════════════════════════════════════════════════════════
+  // ENDRINGSMODUS
+  //
+  // Panelet åpner i LESEMODUS. Alt vises — tall, kort, lister — men
+  // ingenting kan skrives før man slår på endringsmodus.
+  //
+  // Grunnen er ikke mistillit. Det er at en skjerm full av «Slett» og
+  // «Send krav» oppleves som et våpenlager man må gå forsiktig rundt.
+  // Med lesemodus kan man klikke seg fritt gjennom systemet for å forstå
+  // det, og de farlige knappene krever ett bevisst valg først.
+  //
+  // Modusen nullstilles ved hver innlasting. Ingen skal komme tilbake
+  // dagen etter til et panel som fortsatt står åpent fra i går.
+  //
+  // Sperren ligger rundt selve skrivefunksjonene — ikke i knappene. Det
+  // er 91 skrivekall i filen; en sperre per knapp ville vært 91 steder å
+  // glemme én.
+  // ═══════════════════════════════════════════════════════════════════
+  let endringsmodus = false;
+
   function sperrIForhandsvisning(){
-    if(!forhandsvisRoller) return;
-    showToast('Forhåndsvisning: ingenting lagres. Avslutt for å endre noe.', true);
-    const feil = new Error('Skriving er sperret under forhåndsvisning.');
-    feil.code = 'forhandsvisning';
-    throw feil;
+    if(forhandsvisRoller){
+      showToast('Forhåndsvisning: ingenting lagres. Avslutt for å endre noe.', true);
+      const feil = new Error('Skriving er sperret under forhåndsvisning.');
+      feil.code = 'forhandsvisning';
+      throw feil;
+    }
+    if(!endringsmodus){
+      showToast('Lesemodus — slå på «Endringsmodus» øverst for å endre noe.', true);
+      const feil = new Error('Skriving er sperret i lesemodus.');
+      feil.code = 'lesemodus';
+      throw feil;
+    }
   }
   const addDoc    = (...a) => { sperrIForhandsvisning(); return _addDoc(...a); };
   const updateDoc = (...a) => { sperrIForhandsvisning(); return _updateDoc(...a); };
@@ -10866,6 +10918,36 @@
     }
   };
 
+  window.veksleEndringsmodus = function(){
+    if(forhandsvisRoller){
+      melding('ADM-MOD-01', '👁️ Forhåndsvisning',
+        'Du ser panelet som ' + forhandsvisRoller[0] + '. Endringsmodus kan ' +
+        'ikke slås på mens forhåndsvisningen står — reglene ville uansett ' +
+        'skrevet med DIN tilgang, ikke rollens.',
+        'veksleEndringsmodus · forhåndsvisning aktiv');
+      return;
+    }
+    endringsmodus = !endringsmodus;
+    tegnModusBryter();
+    showToast(endringsmodus
+      ? 'Endringsmodus på — du kan lagre og slette.'
+      : 'Lesemodus — ingenting kan endres.');
+  };
+
+  function tegnModusBryter(){
+    const b = document.getElementById('modusBryter');
+    const t = document.getElementById('modusTekst');
+    if(!b || !t) return;
+    b.classList.toggle('paa', endringsmodus);
+    t.textContent = endringsmodus ? 'Endringsmodus' : 'Lesemodus';
+    b.title = endringsmodus
+      ? 'Endringer lagres. Trykk for å gå tilbake til lesemodus.'
+      : 'Alt vises, men ingenting kan endres. Trykk for å slå på endringsmodus.';
+    // Klassen på <body> lar knapper og felter dempes uten at hver enkelt
+    // av dem må vite noe om modusen.
+    document.body.classList.toggle('lesemodus', !endringsmodus);
+  }
+
   // ---------- Forhåndsvisning: start, stopp og stripe ----------
   window.startForhandsvisning = function(rolleNavn){
     if(!ekteRoller && !erOversteLeder()){
@@ -13831,6 +13913,10 @@
       window.addEventListener('scroll', () => { if(pop.classList.contains('open')) positionPopover(); }, true);
     })();
   }
+
+  // Tegn bryteren med én gang. Uten dette står den uten farge og tekst
+  // til første klikk, og lesemodus ville vært en tilstand ingen så.
+  tegnModusBryter();
 </script>
 <script>
   if ('serviceWorker' in navigator) {
