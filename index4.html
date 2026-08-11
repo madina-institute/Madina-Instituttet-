@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-10 01:27:29 -->
+<!-- SIST-ENDRET: 2026-08-11 12:17:20 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -999,7 +999,7 @@
       const deler = sporringer.map(() => []);
       sporringer.forEach((q, i) => {
         onSnapshot(q, (snap) => {
-          deler[i] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          deler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
           onData(deler.flat());
         }, onError || ((err) => console.error(collectionName, err)));
       });
@@ -1017,6 +1017,27 @@
   // Rader som PEKER på et av barna mine — oppmøte, notater.
   const sporrPerBarn = (samling, felt) => () => mineBarnIder.length === 0 ? []
     : delOpp(mineBarnIder, 30).map(del =>
+        query(collection(db, samling), where(felt, 'in', del)));
+
+  // ═════════════════════════════════════════════════════════════════
+  // KLASSENE BARNA MINE GÅR I
+  //
+  // Lekser, undervisningsplaner og klassemeldinger hører til en KLASSE,
+  // ikke til et barn. De ble derfor lastet i sin helhet: hver eneste
+  // lekse for hver eneste klasse på skolen, til hver eneste forelder.
+  //
+  // Innholdet er ikke hemmelig — men mengden er poenget: en forelder
+  // med ett barn i én klasse lastet ned alt syv klasser hadde gjort.
+  //
+  // 🔴 Klassene er ikke kjent ved innlogging. De står på elevkortene,
+  // som hentes ETTERPÅ. Lytterne må derfor startes på nytt når barna er
+  // lest inn — se startKlasselyttere().
+  // ═════════════════════════════════════════════════════════════════
+  let mineKlasser = [];
+  let klasselyttereStartet = false;
+
+  const sporrPerKlasse = (samling, felt) => () => mineKlasser.length === 0 ? []
+    : delOpp(mineKlasser, 30).map(del =>
         query(collection(db, samling), where(felt, 'in', del)));
 
   const MAX_FILE_MB = 10;
@@ -1424,32 +1445,16 @@
     registrations = rader.filter(r => sett.has(r.id) ? false : (sett.add(r.id), true));
     if(currentGuardian) renderChild();
   });
-  watch('homework', (snap) => {
-    homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentGuardian) renderChild();
-  });
   let lessonPlans = [];
-  watch('lessonPlans', (snap) => {
-    lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentGuardian) renderChild();
-  });
   let practiceVideos = [];
-  watch('practiceVideos', (snap) => {
-    practiceVideos = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-    if(currentGuardian) renderChild();
-  });
   let classPosts = [];
-  watch('classPosts', (snap) => {
-    classPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentGuardian) renderChild();
-  });
   let classPostComments = [];
   watch('classPostComments', (snap) => {
-    classPostComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    classPostComments = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
   watch('announcements', (snap) => {
-    announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    announcements = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
   // Lærernes notater om elevene. Den mest personlige samlingen i hele
@@ -1460,19 +1465,15 @@
     if(currentGuardian) renderChild();
   });
   watch('hours', (snap) => {
-    hours = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentGuardian) renderChild();
-  });
-  watch('teachers', (snap) => {
-    teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    hours = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
   watch('classes', (snap) => {
-    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    classes = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
   watch('messages', (snap) => {
-    messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    messages = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian){
       renderChild();
       if(document.getElementById('view-teacherMsg').style.display !== 'none'){
@@ -1483,7 +1484,7 @@
   });
   let messageThreads = [];
   watch('messageThreads', (snap) => {
-    messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    messageThreads = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian){
       updateBadges();
       if(document.getElementById('view-teacherMsg').style.display !== 'none' &&
@@ -1492,7 +1493,7 @@
   });
   let broadcastThreads = [], broadcastMessages = [];
   watch('broadcastThreads', (snap) => {
-    broadcastThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    broadcastThreads = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian){
       updateAdminMsgBadge();
       if(document.getElementById('view-adminMsg').style.display !== 'none' &&
@@ -1500,7 +1501,7 @@
     }
   });
   watch('broadcastMessages', (snap) => {
-    broadcastMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    broadcastMessages = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian){
       updateAdminMsgBadge();
       if(currentAdminMsgThreadId) renderGuardianAdminMsgHistory();
@@ -1508,12 +1509,12 @@
   });
   let classPollVotes = [];
   watch('classPollVotes', (snap) => {
-    classPollVotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    classPollVotes = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
   let eventRSVPs = [];
   watch('eventRSVPs', (snap) => {
-    eventRSVPs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    eventRSVPs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
   watchDoc('settings', 'betaling', (snap) => {
@@ -1553,7 +1554,7 @@
       // «epost == min epost».
       const snap = await getDocs(query(collection(db, 'guardians'),
         where('epost', '==', email)));
-      const treff = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       guardian = treff[0] || null;
       // Reserve for adresser som ble lagret med store bokstaver før
       // feltet ble normalisert. Uten den ville en gammel konto plutselig
@@ -1561,7 +1562,7 @@
       if(!guardian && email !== email.toLowerCase()){
         const snap2 = await getDocs(query(collection(db, 'guardians'),
           where('epost', '==', email.toLowerCase())));
-        guardian = snap2.docs.map(d => ({ id: d.id, ...d.data() }))[0] || null;
+        guardian = snap2.docs.map(d => ({ ...d.data(), id: d.id }))[0] || null;
       }
     } catch(err){
       console.error('guardians-oppslag', err);
@@ -1631,6 +1632,37 @@
     }
   };
 
+  // Startes når barna er lest inn — først da vet vi hvilke klasser de går
+  // i. Kjøres én gang: en ny lytter per gang elevlisten oppdateres ville
+  // stablet lyttere oppå hverandre for hver eneste endring.
+  function startKlasselyttere(){
+    if(klasselyttereStartet) return;
+    const klasser = [...new Set(myChildren.map(b => b.klasse).filter(Boolean))];
+    if(klasser.length === 0) return;   // uten klasse finnes det ingenting å hente
+    mineKlasser = klasser;
+    klasselyttereStartet = true;
+
+    const start = (samling, felt, sett) => {
+      const sporringer = sporrPerKlasse(samling, felt)();
+      const deler = sporringer.map(() => []);
+      sporringer.forEach((q, i) => {
+        onSnapshot(q, (snap) => {
+          deler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+          sett(deler.flat());
+          if(currentGuardian) renderChild();
+        }, (err) => console.error(samling, err));
+      });
+    };
+
+    start('homework',    'klasse', r => { homework = r; });
+    start('lessonPlans', 'klasse', r => { lessonPlans = r.sort((a,b) => (b.dato||'').localeCompare(a.dato||'')); });
+    start('classPosts',  'klasse', r => { classPosts = r; });
+    start('practiceVideos', 'klasse', r => { practiceVideos = r.sort((a,b) => (b.dato||'').localeCompare(a.dato||'')); });
+    // Lærerne som er tildelt barnas klasser. Lærerkortet har telefon,
+    // e-post og kontonummer — hele staben trengte aldri å ligge her.
+    start('teachers', 'tildeltKlasse', r => { teachers = r; });
+  }
+
   window.doParentLogout = function(){
     currentGuardian = null;
     document.getElementById('appView').style.display = 'none';
@@ -1645,6 +1677,7 @@
   function refreshMyChildren(){
     myChildren = students.filter(s => s.foresatt === currentGuardian.id || s.foresatt2 === currentGuardian.id);
     if(currentChildIndex >= myChildren.length) currentChildIndex = 0;
+    startKlasselyttere();
     renderSummary();
     renderChildTabs();
     renderChild();
