@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 15:27:25 -->
+<!-- SIST-ENDRET: 2026-08-11 16:27:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -603,6 +603,40 @@
   body.lesemodus .btn-danger-solid,
   body.lesemodus .btn-danger,
   body.lesemodus .btn-primary{ opacity:.5; }
+
+  .helse-topp{
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:700; color:#a03028;
+    background:rgba(160,48,40,.08); border-radius:8px; padding:9px 12px; margin-bottom:12px;
+  }
+  .helse-funn{ border-bottom:1px solid var(--line); padding:14px 2px; }
+  .helse-funn:last-child{ border-bottom:0; }
+  .helse-hode{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .helse-prikk{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
+  .helse-prikk.kritisk{ background:#a03028; }
+  .helse-prikk.viktig{ background:#b7924a; }
+  .helse-prikk.ryddig{ background:#8a9a90; }
+  .helse-tittel{ font-family:'Jost',sans-serif; font-size:14px; font-weight:700; color:var(--ink); flex:1 1 200px; }
+  .helse-kode{ font-family:ui-monospace,Menlo,monospace; font-size:10.5px; color:#8a9a90; }
+  /* «Hvorfor» står alltid der. En liste med feil uten grunn blir
+     irritasjonsmomenter man lærer seg å overse. */
+  .helse-hvorfor{ font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860;
+    line-height:1.6; margin-top:5px; }
+  .helse-hva{ font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald-d);
+    font-weight:600; margin-top:6px; }
+  /* Knappen står bare der handlingen finnes fra før og er prøvd. Den
+     viser hva den endrer før den gjør det — som «Rett opp». */
+  .helse-fiks{
+    font-family:'Jost',sans-serif; font-size:12px; font-weight:600;
+    background:#fff; color:var(--emerald-d); border:1px solid var(--emerald-d);
+    border-radius:8px; padding:6px 13px; margin-top:9px; cursor:pointer;
+  }
+  .helse-fiks:hover{ background:var(--emerald-d); color:#fff; }
+  .helse-detaljer{ margin-top:8px; }
+  .helse-detaljer summary{ font-family:'Jost',sans-serif; font-size:11.5px;
+    color:#7b8a93; cursor:pointer; }
+  .helse-detaljer ul{ margin:8px 0 0; padding-inline-start:18px; }
+  .helse-detaljer li{ font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;
+    line-height:1.7; }
 
   /* ---- Alle personer ---- */
   .pers-rad{ display:flex; align-items:flex-start; gap:12px; padding:14px 2px;
@@ -1479,6 +1513,7 @@
   <div class="tab" data-tab="reports" data-side="skoleoppsett">Rapporter</div>
   <div class="tab" data-tab="overview" data-side="system">Oversikt</div>
   <div class="tab" data-tab="endringslogg" data-side="system">Endringslogg</div>
+  <div class="tab" data-tab="helsesjekk" data-side="system">Helsesjekk</div>
   <div class="tab" data-tab="utvikler" data-side="system">Verktøy og sider</div>
   <div class="tab" data-tab="veiledning" data-side="system">Veiledning</div>
 </div>
@@ -2832,6 +2867,34 @@
        Nå følger myndigheten NIVÅET i rolletabellen, og skolens egen
        adresse er veien tilbake. Det finnes ikke lenger noen eier å
        administrere. -->
+
+  <!-- HELSESJEKK -->
+  <div class="panel" id="panel-helsesjekk">
+    <div class="report-card">
+      <div class="innst-topp">
+        <h3>🩺 Helsesjekk</h3>
+        <span class="innst-meta" id="helseMeta"></span>
+      </div>
+      <div class="sub">
+        Én plass som ser etter det som har gått galt før: beløp som ikke
+        stemmer, søsken uten rabatt, koblinger som peker på ingenting.
+      </div>
+      <div class="innst-effekt">
+        De fleste kontrollene leser bare det panelet allerede har lastet, og
+        koster ingenting. Tre av dem — tilgangsindeksen, foreldrekoblingene
+        og innbetalingene — må hentes, og kjører derfor ved et trykk, eller
+        <b>automatisk mandager og torsdager</b>.<br>
+        Finner den noe <b>kritisk som ikke sto der sist</b>, sendes en e-post
+        til øverste ledelse. Uendrede funn sender ingenting: et varsel som
+        gjentar seg blir sluttet å leses.
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;">
+        <button class="btn btn-primary" style="width:auto;" onclick="kjorHelsesjekk(true)">🩺 Full sjekk</button>
+        <button class="btn btn-ghost" style="width:auto;" onclick="kjorHelsesjekk(false)">⚡ Rask sjekk</button>
+      </div>
+      <div id="helseListe" style="margin-top:16px;"></div>
+    </div>
+  </div>
 
   <!-- ENDRINGSLOGG -->
   <div class="panel" id="panel-endringslogg">
@@ -8594,6 +8657,7 @@
     paalogget: 'Hvem som bruker systemet akkurat nå',
     allePersoner: 'Alle personer fra alle kilder — uten mapper og uten filter',
     endringslogg: 'Hvem endret hva, de siste 14 dagene',
+    helsesjekk: 'Hva er galt i basen akkurat nå — og hva du gjør med det',
     finances: 'Inntekter, utgifter og saldo',
     teachers: 'Registrer og administrer lærere',
     guardians: 'Oversikt over foresatte',
@@ -8624,7 +8688,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📔', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
-    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
+    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
@@ -8641,6 +8705,7 @@
     // HELE skolen. Det er en skoleleders beslutning — men ikke en
     // koordinators, og slett ikke en lærers.
     endringslogg:   { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
+    helsesjekk:     { hvem: 'ledelse', tekst: 'skoleleder eller øverste ledelse' },
     programs:       { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     schoolCalendar: { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     registrations:  { hvem: 'eier',    tekst: 'Opptaksansvarlig eller eier' },
@@ -8742,6 +8807,7 @@
     // ville kostet lesninger hos alle med panelet oppe, hele dagen.
     if(tabName === 'paalogget') startPaalogget(); else stoppPaalogget();
     if(tabName === 'endringslogg') lastEndringslogg();
+    if(tabName === 'helsesjekk') aapneHelsesjekk();
     pushAppView({ appView: 'tab', side: currentSideForBack, tab: tabName });
   };
 
@@ -10952,6 +11018,564 @@
         [...new Set(feil.map(f => f.kode))].join(', '));
     }
   };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // HELSESJEKK — én plass som ser etter det som har gått galt før
+  //
+  // Hver kontroll her finnes fordi noe faktisk brakk: et beløp som ikke
+  // stemte med prisreglene, en søskenplass som aldri ble regnet om, en
+  // kobling som pekte på et barn som var slettet. De ble oppdaget ved
+  // tilfeldighet — noen så på et kort og syntes tallet var rart.
+  //
+  // Kontrollene deles i to:
+  //   GRATIS  — leser bare det panelet allerede har i minnet
+  //   KOSTER  — må hente samlinger panelet ikke laster (tilgang,
+  //             foreldreTilgang, studentPayments)
+  //
+  // De gratis kjører når fanen åpnes. De andre krever et trykk, eller
+  // kjøres automatisk to ganger i uken. Å hente dem ved hvert eneste
+  // faneåpning ville kostet lesninger for et svar som sjelden endrer seg.
+  // ═══════════════════════════════════════════════════════════════════
+  let helseResultat = null;
+  let helseSisteKjoring = null;
+  let helseHenter = false;
+
+  const HELSE_ALVOR = { kritisk: 0, viktig: 1, ryddig: 2 };
+
+  // Funnet: hva er galt, hvorfor betyr det noe, og hva gjør man.
+  // Uten «hvorfor» blir listen en samling irritasjonsmomenter man
+  // lærer seg å overse.
+  function helseFunn(alvor, kode, tittel, hvorfor, hva, antall, detaljer, fiks){
+    return { alvor, kode, tittel, hvorfor, hva, antall, detaljer: detaljer || [], fiks: fiks || null };
+  }
+
+  // 🔴 Bare handlinger som ALLEREDE finnes, er brukt og viser hva de
+  // endrer før de gjør det, får en knapp her.
+  //
+  // Grunnen: en helsesjekk som også retter, retter mange ting på én
+  // gang. Er kontrollen selv feil — og det var den i dag, «markert 1 ·
+  // forsøkt 0» — blir skaden like bred som kontrollen. De øvrige funnene
+  // peker derfor på hvor man går, og lar mennesket ta avgjørelsen.
+  const HELSE_FIKS = {
+    'regnOm': {
+      etikett: 'Rett beløp og søskenplass',
+      kjor: () => regnOmAlleFamilier()
+    },
+    'byggIndeks': {
+      etikett: 'Bygg tilgangsindeksen på nytt',
+      kjor: () => byggTilgangsindeksPaaNytt()
+    },
+    'ryddBetalinger': {
+      etikett: 'Slett innbetalingene',
+      kjor: () => slettForeldreloseBetalinger()
+    }
+  };
+
+  window.kjorHelseFiks = async function(navn){
+    const f = HELSE_FIKS[navn];
+    if(!f) return;
+    await f.kjor();
+    // Sjekken kjøres på nytt etterpå — ellers står listen med funn som
+    // nettopp ble rettet, og man vet ikke om knappen virket.
+    setTimeout(() => kjorHelsesjekk(!!(helseResultat && helseResultat.komplett)), 600);
+  };
+
+  // Innbetalinger som peker på elever som ikke finnes. Egen handling
+  // fordi den ikke fantes fra før — og den viser hvert beløp før den
+  // sletter: en innbetaling er et regnskapsbilag, ikke en rad.
+  window.slettForeldreloseBetalinger = async function(){
+    if(!erOversteLeder()){
+      melding('ADM-HLS-01', '🔒 Kun øverste ledelse',
+        'Å slette innbetalinger endrer regnskapet.',
+        'slettForeldreloseBetalinger · roller=' + (currentUserRoles.join(', ') || 'ingen'));
+      return;
+    }
+    const elevIder = new Set((cache.students || []).map(e => e.id));
+    let foreldrelose = [];
+    try{
+      const snap = await getDocs(collection(db, 'studentPayments'));
+      foreldrelose = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+        .filter(b => b.studentId && !elevIder.has(b.studentId));
+    } catch(err){
+      melding('ADM-HLS-02', '⛔ Kunne ikke lese innbetalingene', 'Ingenting er slettet.',
+        'slettForeldreloseBetalinger · ' + (err.code || err.message));
+      return;
+    }
+    if(foreldrelose.length === 0){
+      melding('ADM-HLS-03', '✓ Ingenting å slette',
+        'Alle innbetalinger hører til en elev som finnes.',
+        'slettForeldreloseBetalinger · treff=0');
+      return;
+    }
+    const sum = foreldrelose.reduce((a, b) => a + cashierKr(b.belop), 0);
+    if(!confirm('Slette ' + foreldrelose.length + ' innbetalinger?\n\n' +
+      foreldrelose.slice(0, 10).map(b =>
+        '• ' + (b.elevNavn || b.studentId) + ': ' + kr0(cashierKr(b.belop)) + ' kr' +
+        (b.dato ? ' (' + b.dato + ')' : '')).join('\n') +
+      (foreldrelose.length > 10 ? '\n… og ' + (foreldrelose.length - 10) + ' til' : '') +
+      '\n\nTil sammen ' + kr0(sum) + ' kr.\n\n' +
+      'Elevene finnes ikke lenger. Beløpene teller likevel med i ' +
+      'regnskapet.')) return;
+
+    let slettet = 0; const feilet = [];
+    for(const b of foreldrelose){
+      try{ await deleteDoc(doc(db, 'studentPayments', b.id)); slettet++; }
+      catch(err){ feilet.push((b.elevNavn || b.id) + ' — ' + (err.code || err.message)); }
+    }
+    if(feilet.length === 0){
+      melding('ADM-HLS-04', '✓ Innbetalingene er slettet',
+        slettet + ' rader fjernet, til sammen ' + kr0(sum) + ' kr.',
+        'slettForeldreloseBetalinger · slettet=' + slettet);
+    } else {
+      melding('ADM-HLS-05', '⚠️ Delvis slettet',
+        slettet + ' av ' + foreldrelose.length + ' ble fjernet.',
+        'slettForeldreloseBetalinger · feilet=' + feilet.length + '\n' + feilet.slice(0,5).join('\n'));
+    }
+  };
+
+  // ---------- De gratis kontrollene ----------
+  function helseFraMinnet(){
+    const funn = [];
+    const elever = (cache.students || []).filter(s => s.navn && String(s.status||'') !== 'Sluttet');
+    const foresatte = cache.guardians || [];
+
+    // ── Søsken og rabatt ──
+    // Barn gruppert på foresatt. Rekkefølgen skal være 1,2,3 uten hull
+    // og uten gjentakelser: to barn med plass 1 betyr at ingen av dem
+    // fikk rabatten de har krav på.
+    const perFamilie = new Map();
+    elever.forEach(e => {
+      const g = e.foresatt || e.foresatt2;
+      if(!g) return;
+      if(!perFamilie.has(g)) perFamilie.set(g, []);
+      perFamilie.get(g).push(e);
+    });
+
+    const rabattFeil = [];
+    perFamilie.forEach((barn, g) => {
+      if(barn.length < 2) return;
+      const plasser = barn.map(b => parseInt(b.soskenrekkefolge, 10) || 0);
+      const navn = (foresatte.find(f => f.id === g) || {}).navn || g;
+      const duplikat = plasser.filter((p, i) => p > 0 && plasser.indexOf(p) !== i);
+      const mangler = plasser.filter(p => !p).length;
+      if(duplikat.length) rabattFeil.push(navn + ': ' + barn.length + ' barn, plass ' + duplikat[0] + ' brukt flere ganger');
+      else if(mangler) rabattFeil.push(navn + ': ' + mangler + ' av ' + barn.length + ' barn mangler søskenplass');
+      else {
+        const sortert = [...plasser].sort((a,b) => a-b);
+        const forventet = sortert.every((p, i) => p === i + 1);
+        if(!forventet) rabattFeil.push(navn + ': plassene er ' + sortert.join(',') + ' — skulle vært 1..' + barn.length);
+      }
+    });
+    if(rabattFeil.length){
+      funn.push(helseFunn('kritisk', 'HS-RAB',
+        rabattFeil.length + ' familier med feil søskenplass',
+        'Søskenplassen avgjør rabatten. Er den lik for to barn, eller ' +
+        'mangler den, betaler familien for mye — og oppdager det først ' +
+        'når fakturaen kommer.',
+        'Økonomi → Oversikt → «Rett opp»',
+        rabattFeil.length, rabattFeil, 'regnOm'));
+    }
+
+    // ── Beløp mot prisreglene ──
+    try{
+      const avvik = elevermedFeilBelop();
+      if(avvik.length){
+        funn.push(helseFunn('kritisk', 'HS-BEL',
+          avvik.length + ' elever med lagret beløp som ikke stemmer',
+          'Foreldreportalen og Vipps bruker det LAGREDE tallet. Panelet ' +
+          'regner om hver gang det tegner. Er de ulike, betaler familien ' +
+          'noe annet enn det som er riktig.',
+          'Økonomi → Oversikt → «Rett opp»',
+          avvik.length,
+          avvik.slice(0, 8).map(a => a.elev.navn + ': ' + kr0(a.lagret) + ' → ' + kr0(a.riktig)),
+          'regnOm'));
+      }
+    } catch(err){ console.error('helse/belop', err); }
+
+    // ── Dobbeltregistrering ──
+    // Samme navn på samme foresatt. Er det to ulike programmer, kan det
+    // være riktig; er det samme program, er det nesten alltid en dobbel.
+    const dobbel = [];
+    perFamilie.forEach((barn, g) => {
+      const sett = new Map();
+      barn.forEach(b => {
+        const n = (b.navn || '').trim().toLowerCase();
+        if(!n) return;
+        if(!sett.has(n)) sett.set(n, []);
+        sett.get(n).push(b);
+      });
+      sett.forEach((liste, n) => {
+        if(liste.length < 2) return;
+        const navn = (foresatte.find(f => f.id === g) || {}).navn || g;
+        const sammeProgram = new Set(liste.map(b => b.program || '')).size === 1;
+        dobbel.push(navn + ': ' + liste[0].navn + ' ×' + liste.length +
+          (sammeProgram ? ' — SAMME program' : ' — ulike programmer'));
+      });
+    });
+    if(dobbel.length){
+      funn.push(helseFunn('kritisk', 'HS-DUP',
+        dobbel.length + ' tilfeller av samme navn i samme familie',
+        'To søsken kan ikke hete det samme. Er programmet også likt, er ' +
+        'det nesten sikkert en dobbeltregistrering — og familien blir ' +
+        'fakturert to ganger for ett barn.',
+        'Elever og familier → Elever — sammenlign og slett den ene',
+        dobbel.length, dobbel));
+    }
+
+    // ── Elev uten foresatt ──
+    const utenForesatt = elever.filter(e => !e.foresatt && !e.foresatt2);
+    if(utenForesatt.length){
+      funn.push(helseFunn('kritisk', 'HS-UFO',
+        utenForesatt.length + ' elever uten foresatt',
+        'Ingen kan logge inn i foreldreportalen for disse barna, og ' +
+        'ingen får faktura eller beskjed om fravær.',
+        'Åpne elevkortet og velg foresatt',
+        utenForesatt.length, utenForesatt.slice(0, 8).map(e => e.navn)));
+    }
+
+    // ── Foresatt uten e-post ──
+    const utenEpost = foresatte.filter(g => !(g.epost || '').trim());
+    if(utenEpost.length){
+      funn.push(helseFunn('kritisk', 'HS-UEP',
+        utenEpost.length + ' foresatte uten e-post',
+        'E-posten er innloggingen til foreldreportalen. Uten den kommer ' +
+        'familien ikke inn, og får ingen fakturaer eller kunngjøringer.',
+        'Elever og familier → Foresatte',
+        utenEpost.length, utenEpost.slice(0, 8).map(g => g.navn || '(uten navn)')));
+    }
+
+    // ── Program uten pris ──
+    const utenPris = (cache.programs || []).filter(p =>
+      p.navn && String(p.aktiv||'') !== 'Nei' && !cashierKr(p.prisAar) && !cashierKr(p.prisMedlemMnd));
+    if(utenPris.length){
+      funn.push(helseFunn('kritisk', 'HS-PRI',
+        utenPris.length + ' aktive programmer uten pris',
+        'En elev som tas opp på et program uten pris får beløpet 0. Det ' +
+        'skjedde 10. august: en hel testfamilie sto med bare ' +
+        'materiellavgift.',
+        'Skole → Programmer',
+        utenPris.length, utenPris.map(p => p.navn)));
+    }
+
+    // ── Elev uten klasse ──
+    const utenKlasse = elever.filter(e => !e.klasse);
+    if(utenKlasse.length){
+      funn.push(helseFunn('viktig', 'HS-UKL',
+        utenKlasse.length + ' elever uten klasse',
+        'Timeplan, oppmøte og lekser virker ikke for disse elevene — ' +
+        'foreldreportalen viser tomme faner uten å si hvorfor. Klassen ' +
+        'settes med vilje for hånd; dette er påminnelsen.',
+        'Elever og familier → Elever',
+        utenKlasse.length, utenKlasse.slice(0, 10).map(e => e.navn)));
+    }
+
+    // ── Timer uten lærer ──
+    const timerUtenLarer = (cache.hours || []).filter(h => !h.larer);
+    if(timerUtenLarer.length){
+      funn.push(helseFunn('viktig', 'HS-UTL',
+        timerUtenLarer.length + ' timer uten lærer',
+        'Foreldreportalen viser hvem som underviser hvert fag. Uten ' +
+        'lærer står timen der uten navn, og foresatte vet ikke hvem de ' +
+        'skal kontakte.',
+        'Undervisning → Timeplan',
+        timerUtenLarer.length,
+        timerUtenLarer.slice(0, 8).map(h => (h.dag||'') + ' ' + (h.tid||'') + ' ' + (h.fag||''))));
+    }
+
+    // ── Klasse uten timer ──
+    const klasserMedElever = new Set(elever.map(e => e.klasse).filter(Boolean));
+    const klasserMedTimer = new Set((cache.hours || []).map(h => h.klasse).filter(Boolean));
+    const utenTimer = [...klasserMedElever].filter(k => !klasserMedTimer.has(k));
+    if(utenTimer.length){
+      funn.push(helseFunn('viktig', 'HS-KUT',
+        utenTimer.length + ' klasser med elever, men uten timeplan',
+        'Elevene er plassert, men det finnes ingen timer. Foreldre ser ' +
+        'en tom timeplan, og lærerportalen finner ingen fag for klassen.',
+        'Undervisning → Timeplan',
+        utenTimer.length, utenTimer.map(k => resolveClassName(k) || k)));
+    }
+
+    // ── Arvet id-felt ──
+    const arvetId = elever.filter(e => e.fraSoknadId && e.id === e.fraSoknadId);
+    if(arvetId.length){
+      funn.push(helseFunn('kritisk', 'HS-AID',
+        arvetId.length + ' elever med arvet id fra søknaden',
+        'Raden peker på søknaden i stedet for eleven. Enhver endring ' +
+        'eller sletting går da til en sti som ikke finnes — stille.',
+        'Økonomi → Oversikt → «Rett opp» rydder dette',
+        arvetId.length, arvetId.slice(0, 5).map(e => e.navn), 'regnOm'));
+    }
+
+    return funn;
+  }
+
+  // ---------- Kontrollene som må hente data ----------
+  // Tre samlinger panelet ikke laster: tilgangsindeksen, foreldre-
+  // koblingene og innbetalingene. De hentes bare når noen ber om det.
+  async function helseFraBasen(){
+    const funn = [];
+    const elever = (cache.students || []).filter(s => s.navn && String(s.status||'') !== 'Sluttet');
+    const elevIder = new Set(elever.map(e => e.id));
+
+    // ── Tilgangsindeksen ──
+    try{
+      const snap = await getDocs(collection(db, 'tilgang'));
+      const rader = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      const ufullstendige = rader.filter(r => typeof r.niva !== 'number' || r.panel === undefined);
+      if(ufullstendige.length){
+        funn.push(helseFunn('kritisk', 'HS-TIL',
+          ufullstendige.length + ' rader i tilgangsindeksen mangler felter',
+          'Indeksen ER tilgangskontrollen — både panelet og reglene leser ' +
+          'den. En rad med bare «niva» stengte den øverste ledelsen ute av ' +
+          'sitt eget panel 11. august.',
+          'Personale → Roller og tilganger → «Bygg tilgangsindeksen på nytt»',
+          ufullstendige.length, ufullstendige.slice(0, 8).map(r => r.id), 'byggIndeks'));
+      }
+      // Kort med paneltilgang, men uten rad
+      const iIndeks = new Set(rader.map(r => (r.id || '').toLowerCase()));
+      const utenRad = (adminUsersCache || []).filter(u => {
+        const e = (u.epost || '').trim().toLowerCase();
+        if(!e) return false;
+        const t = samletTilgang(String(u.roller || '').split(',').map(x => x.trim()).filter(Boolean));
+        return t.panel && !iIndeks.has(e);
+      });
+      if(utenRad.length){
+        funn.push(helseFunn('kritisk', 'HS-TUR',
+          utenRad.length + ' personer med paneltilgang, men uten rad i indeksen',
+          'Rollene deres sier at de skal inn. Reglene sier nei, fordi de ' +
+          'ikke står i indeksen. De ser knapper som ikke virker.',
+          'Personale → Roller og tilganger → «Bygg tilgangsindeksen på nytt»',
+          utenRad.length, utenRad.slice(0, 8).map(u => u.navn || u.epost), 'byggIndeks'));
+      }
+    } catch(err){
+      funn.push(helseFunn('viktig', 'HS-TFE', 'Kunne ikke lese tilgangsindeksen',
+        'Kontrollen av hvem som har tilgang kunne ikke gjennomføres.',
+        'Se feilkoden under', 1, [err.code || err.message || 'ukjent']));
+    }
+
+    // ── Foreldrekoblinger ──
+    try{
+      const snap = await getDocs(collection(db, 'foreldreTilgang'));
+      const brutte = [];
+      snap.docs.forEach(d => {
+        const barn = (d.data() || {}).barn;
+        if(!Array.isArray(barn)) return;
+        const borte = barn.filter(id => !elevIder.has(id));
+        if(borte.length) brutte.push(d.id + ': ' + borte.length + ' av ' + barn.length + ' barn finnes ikke');
+      });
+      if(brutte.length){
+        funn.push(helseFunn('kritisk', 'HS-FTB',
+          brutte.length + ' foreldrekoblinger peker på elever som ikke finnes',
+          'Foreldreportalen spør etter barna i denne listen. Peker den på ' +
+          'et slettet barn, får forelderen en tom eller ufullstendig side.',
+          'Slett raden i Firestore, eller lagre foresattkortet på nytt',
+          brutte.length, brutte.slice(0, 8)));
+      }
+      // Foresatte med barn, men uten kobling
+      const medBarn = new Set(elever.map(e => e.foresatt).filter(Boolean));
+      const koblet = new Set(snap.docs.map(d => d.id.toLowerCase()));
+      const manglerKobling = (cache.guardians || []).filter(g =>
+        medBarn.has(g.id) && (g.epost || '').trim() &&
+        !koblet.has(g.epost.trim().toLowerCase()));
+      if(manglerKobling.length){
+        funn.push(helseFunn('kritisk', 'HS-FTM',
+          manglerKobling.length + ' foresatte med barn, men uten foreldrekobling',
+          'Uten raden finner portalen ingen barn, og sier «vi finner ingen ' +
+          'kobling mellom kontoen din og barna dine» — selv om barna finnes.',
+          'Lagre foresattkortet på nytt; indeksen skrives da automatisk',
+          manglerKobling.length, manglerKobling.slice(0, 8).map(g => g.navn || g.epost)));
+      }
+    } catch(err){
+      funn.push(helseFunn('viktig', 'HS-FFE', 'Kunne ikke lese foreldrekoblingene',
+        'Kontrollen kunne ikke gjennomføres.', 'Se feilkoden under', 1,
+        [err.code || err.message || 'ukjent']));
+    }
+
+    // ── Innbetalinger uten elev ──
+    try{
+      const snap = await getDocs(collection(db, 'studentPayments'));
+      const foreldrelose = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+        .filter(b => b.studentId && !elevIder.has(b.studentId));
+      if(foreldrelose.length){
+        const sum = foreldrelose.reduce((a, b) => a + cashierKr(b.belop), 0);
+        funn.push(helseFunn('kritisk', 'HS-BUE',
+          foreldrelose.length + ' innbetalinger på elever som ikke finnes',
+          'Til sammen ' + kr0(sum) + ' kr som teller med i regnskapet, men ' +
+          'ikke hører til noen. Det skjedde etter en testrunde: elevene ble ' +
+          'slettet, betalingene sto igjen.',
+          'Økonomi → Betalingslogg — slett radene',
+          foreldrelose.length,
+          foreldrelose.slice(0, 8).map(b => (b.elevNavn || b.studentId) + ': ' + kr0(cashierKr(b.belop)) + ' kr'),
+          'ryddBetalinger'));
+      }
+    } catch(err){
+      funn.push(helseFunn('viktig', 'HS-BFE', 'Kunne ikke lese innbetalingene',
+        'Kontrollen kunne ikke gjennomføres.', 'Se feilkoden under', 1,
+        [err.code || err.message || 'ukjent']));
+    }
+
+    return funn;
+  }
+
+  // ---------- Kjøring og visning ----------
+  window.kjorHelsesjekk = async function(medHenting){
+    if(helseHenter) return;
+    const gratis = helseFraMinnet();
+    if(!medHenting){
+      helseResultat = { funn: gratis, komplett: false, tid: new Date().toISOString() };
+      tegnHelsesjekk();
+      return;
+    }
+    helseHenter = true;
+    tegnHelsesjekk();
+    const fraBasen = await helseFraBasen();
+    helseHenter = false;
+    helseResultat = {
+      funn: [...gratis, ...fraBasen].sort((a,b) => HELSE_ALVOR[a.alvor] - HELSE_ALVOR[b.alvor]),
+      komplett: true, tid: new Date().toISOString()
+    };
+    helseSisteKjoring = helseResultat.tid;
+    // Tidspunktet lagres slik at den automatiske kjøringen vet når den
+    // sist gikk. Uten det ville den kjørt ved hver eneste faneåpning.
+    try{
+      await setDoc(doc(db, 'settings', 'helsesjekk'),
+        { sisteKjoring: helseResultat.tid, sisteAntall: helseResultat.funn.length,
+          sisteAv: currentUserEmail || '' }, { merge: true });
+    } catch(err){ console.error('helsesjekk/lagre', err); }
+    await varsleOmKritiskeFunn(helseResultat.funn);
+    tegnHelsesjekk();
+  };
+
+  // E-post ved kritiske funn.
+  //
+  // 🔴 Bare når noe har ENDRET seg siden sist. En e-post som kommer hver
+  // uke med samme innhold blir lest én gang og deretter arkivert
+  // ulest — og da er varselet verdiløst den dagen det faktisk haster.
+  //
+  // Kun det kritiske sendes. «Elev uten klasse» er verdt å se i fanen,
+  // men ikke verdt en e-post: den ville drukne det som gjelder penger.
+  async function varsleOmKritiskeFunn(funn){
+    const kritiske = funn.filter(f => f.alvor === 'kritisk');
+    const fingeravtrykk = kritiske.map(f => f.kode + ':' + f.antall).sort().join('|');
+    if(!kritiske.length){
+      try{
+        await setDoc(doc(db, 'settings', 'helsesjekk'),
+          { sisteVarselAvtrykk: '' }, { merge: true });
+      } catch(e){}
+      return;
+    }
+    let forrige = '';
+    try{
+      const snap = await getDoc(doc(db, 'settings', 'helsesjekk'));
+      forrige = snap.exists() ? (snap.data().sisteVarselAvtrykk || '') : '';
+    } catch(e){}
+    if(fingeravtrykk === forrige) return;   // ingenting nytt
+
+    const mottakere = [...new Set((adminUsersCache || [])
+      .filter(u => {
+        const t = samletTilgang(String(u.roller || '').split(',').map(x => x.trim()).filter(Boolean));
+        return t && t.niva <= 1 && (u.epost || '').trim();
+      })
+      .map(u => u.epost.trim()))];
+    if(mottakere.length === 0) return;
+
+    const linjer = kritiske.map(f =>
+      '• ' + f.tittel + '\n  Hvorfor: ' + f.hvorfor + '\n  Hva gjør du: ' + f.hva +
+      (f.detaljer.length ? '\n  ' + f.detaljer.slice(0, 5).join('\n  ') : ''));
+
+    try{
+      await addDoc(collection(db, 'mail'), {
+        to: mottakere,
+        message: {
+          subject: 'Madina Skole — helsesjekk: ' + kritiske.length + ' ting krever handling',
+          text: 'Helsesjekken fant noe som bør rettes.\n\n' + linjer.join('\n\n') +
+                '\n\n---\nDenne e-posten sendes bare når funnene ENDRER seg, ikke ved ' +
+                'hver kjøring.\nÅpne panelet: System → Helsesjekk\n' +
+                'Kjørt av ' + (currentUserEmail || 'ukjent') + ' ' +
+                new Date().toLocaleString('no-NO')
+        }
+      });
+      await setDoc(doc(db, 'settings', 'helsesjekk'),
+        { sisteVarselAvtrykk: fingeravtrykk, sisteVarselTid: new Date().toISOString() },
+        { merge: true });
+    } catch(err){ console.error('helsesjekk/varsel', err); }
+  }
+
+  // Automatisk to ganger i uken: mandag og torsdag.
+  //
+  // Panelet kjører i en nettleser — det finnes ingen «hver torsdag
+  // kveld» uten at noen har siden åpen. Derfor: FØRSTE gang fanen åpnes
+  // etter at en mandag eller torsdag har passert, kjører den full sjekk
+  // av seg selv. Er ingen innom, utsettes den — men den forsvinner ikke.
+  async function skalKjoreAutomatisk(){
+    let sist = null;
+    try{
+      const snap = await getDoc(doc(db, 'settings', 'helsesjekk'));
+      sist = snap.exists() ? (snap.data().sisteKjoring || null) : null;
+    } catch(e){ return false; }
+    if(!sist) return true;
+    const sistDato = new Date(sist);
+    if(isNaN(sistDato)) return true;
+    const naa = new Date();
+    // Har det passert en mandag (1) eller torsdag (4) siden sist?
+    for(let d = new Date(sistDato); d <= naa; d.setDate(d.getDate() + 1)){
+      const dag = d.getDay();
+      if((dag === 1 || dag === 4) && d > sistDato) return true;
+    }
+    return false;
+  }
+
+  window.aapneHelsesjekk = async function(){
+    // De gratis kontrollene vises med én gang — de koster ingenting.
+    kjorHelsesjekk(false);
+    if(await skalKjoreAutomatisk()) kjorHelsesjekk(true);
+  };
+
+  function tegnHelsesjekk(){
+    const el = document.getElementById('helseListe');
+    if(!el) return;
+    const meta = document.getElementById('helseMeta');
+
+    if(helseHenter){
+      el.innerHTML = '<div class="ok-rolig">Henter tilgangsindeks, foreldrekoblinger og innbetalinger…</div>';
+      return;
+    }
+    if(!helseResultat){ el.innerHTML = ''; return; }
+
+    const { funn, komplett, tid } = helseResultat;
+    if(meta){
+      const d = new Date(tid);
+      meta.textContent = (komplett ? 'Full sjekk' : 'Rask sjekk') + ' · ' +
+        (isNaN(d) ? '' : d.toLocaleString('no-NO'));
+    }
+
+    if(funn.length === 0){
+      el.innerHTML = '<div class="ok-rolig">✓ Ingenting å utsette' +
+        (komplett ? '.' : ' i det panelet har lastet. Kjør full sjekk for resten.') + '</div>';
+      return;
+    }
+
+    const antKritisk = funn.filter(f => f.alvor === 'kritisk').length;
+    el.innerHTML =
+      (antKritisk ? `<div class="helse-topp">${antKritisk} ting krever handling</div>` : '') +
+      funn.map(f => `
+      <div class="helse-funn ${f.alvor}">
+        <div class="helse-hode">
+          <span class="helse-prikk ${f.alvor}"></span>
+          <span class="helse-tittel">${escapeHtml(f.tittel)}</span>
+          <span class="helse-kode">${escapeHtml(f.kode)}</span>
+        </div>
+        <div class="helse-hvorfor">${escapeHtml(f.hvorfor)}</div>
+        <div class="helse-hva">→ ${escapeHtml(f.hva)}</div>
+        ${f.fiks && HELSE_FIKS[f.fiks] ? `<button class="helse-fiks" onclick="kjorHelseFiks('${f.fiks}')">
+          🔧 ${escapeHtml(HELSE_FIKS[f.fiks].etikett)}
+        </button>` : ''}
+        ${f.detaljer.length ? `<details class="helse-detaljer">
+          <summary>Vis ${f.antall > f.detaljer.length ? f.detaljer.length + ' av ' + f.antall : f.antall}</summary>
+          <ul>${f.detaljer.map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul>
+        </details>` : ''}
+      </div>`).join('');
+  }
 
   // ---------- Endringslogg: lesing, visning, angring ----------
   // Leses når fanen åpnes, ikke med en stående lytter. En logg ingen ser
