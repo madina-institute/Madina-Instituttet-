@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 12:17:20 -->
+<!-- SIST-ENDRET: 2026-08-11 12:55:53 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -289,6 +289,9 @@
   html[dir="rtl"] .sched-block{font-family:'Tajawal',sans-serif;}
   .sched-block:last-child{border-bottom:none;}
   .sched-block .tm{color:var(--emerald); font-weight:700; min-width:92px;}
+  /* Læreren står ved siden av faget. Det er den opplysningen foresatte
+     leter etter når de åpner timeplanen — ikke klokkeslettet alene. */
+  .sched-larer{ color:#8a9a90; font-size:12px; }
 
   .note-item{background:var(--paper-2); border-radius:8px; padding:14px 16px; margin-bottom:10px;}
 
@@ -1035,6 +1038,7 @@
   // ═════════════════════════════════════════════════════════════════
   let mineKlasser = [];
   let klasselyttereStartet = false;
+  let hoursDeler = [];
 
   const sporrPerKlasse = (samling, felt) => () => mineKlasser.length === 0 ? []
     : delOpp(mineKlasser, 30).map(del =>
@@ -1464,10 +1468,6 @@
     studentNotes = rader;
     if(currentGuardian) renderChild();
   });
-  watch('hours', (snap) => {
-    hours = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    if(currentGuardian) renderChild();
-  });
   watch('classes', (snap) => {
     classes = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
@@ -1654,13 +1654,49 @@
       });
     };
 
+    // Timeplanen for barnas klasser — pluss fellestimene, som står med
+    // klassenavn i stedet for klasse-id.
+    const klasserOgFelles = [...klasser, 'Felles oppstart', 'Felles avslutning'];
+    delOpp(klasserOgFelles, 30).forEach((del, i) => {
+      onSnapshot(query(collection(db, 'hours'), where('klasse', 'in', del)), (snap) => {
+        const rader = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        hoursDeler[i] = rader;
+        hours = hoursDeler.flat();
+        startLarerlyttere();
+        if(currentGuardian) renderChild();
+      }, (err) => console.error('hours', err));
+    });
+
     start('homework',    'klasse', r => { homework = r; });
     start('lessonPlans', 'klasse', r => { lessonPlans = r.sort((a,b) => (b.dato||'').localeCompare(a.dato||'')); });
     start('classPosts',  'klasse', r => { classPosts = r; });
     start('practiceVideos', 'klasse', r => { practiceVideos = r.sort((a,b) => (b.dato||'').localeCompare(a.dato||'')); });
-    // Lærerne som er tildelt barnas klasser. Lærerkortet har telefon,
-    // e-post og kontonummer — hele staben trengte aldri å ligge her.
-    start('teachers', 'tildeltKlasse', r => { teachers = r; });
+  }
+
+  // 🔴 Lærerne hentes etter TIMEPLANEN, ikke etter tildeltKlasse.
+  //
+  // Første forsøk spurte om lærere med tildeltKlasse blant barnas
+  // klasser. Det er ikke det samme settet: en klasse har flere fag, og
+  // hvert fag har sin egen lærer i timeplanen. Resultatet var «Ingen
+  // lærerinfo tilgjengelig» for en klasse som hadde tre lærere.
+  //
+  // Kjeden er: barn → klasser → timer → lærer-id-er → lærerkort. Hvert
+  // ledd kommer etter det forrige, så denne startes når timene er lest.
+  let larerlyttereFor = '';
+  function startLarerlyttere(){
+    const ider = [...new Set(hours.map(h => h.larer).filter(Boolean))].sort();
+    if(ider.length === 0) return;
+    const nokkel = ider.join(',');
+    if(nokkel === larerlyttereFor) return;   // samme lærere som sist
+    larerlyttereFor = nokkel;
+    const deler = [];
+    delOpp(ider, 30).forEach((del, i) => {
+      onSnapshot(query(collection(db, 'teachers'), where(documentId(), 'in', del)), (snap) => {
+        deler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        teachers = deler.flat();
+        if(currentGuardian) renderChild();
+      }, (err) => console.error('teachers', err));
+    });
   }
 
   window.doParentLogout = function(){
@@ -1791,16 +1827,40 @@
     if(dayHours.length === 0){
       document.getElementById('scheduleList').innerHTML = `<div class="empty-msg">${t('noSchedule')}</div>`;
     } else {
-      document.getElementById('scheduleList').innerHTML = dayHours.map(h => `
-        <div class="sched-block"><span class="tm">${escapeHtml(h.tid)}</span><span>${escapeHtml(h.fag)}</span></div>
-      `).join('');
+      document.getElementById('scheduleList').innerHTML = dayHours.map(h => {
+        const tc = teachers.find(x => x.id === h.larer);
+        return `
+        <div class="sched-block">
+          <span class="tm">${escapeHtml(h.tid)}</span>
+          <span>${escapeHtml(h.fag)}${tc && tc.navn ? ' <span class="sched-larer">· ' + escapeHtml(tc.navn) + '</span>' : ''}</span>
+        </div>`;
+      }).join('');
     }
-    const dayTeachers = teachers.filter(tc => (tc.dager||'').includes(day));
-    if(dayTeachers.length === 0){
+    // 🔴 Lærerne hentes fra TIMEPLANEN, ikke fra hvilke dager læreren
+    // jobber.
+    //
+    // Før sto det: alle lærere som har denne dagen i «dager»-feltet sitt.
+    // Det er hele staben som er på jobb — ikke barnets lærere. En klasse
+    // har flere fag med hver sin lærer, og timeplanen vet nøyaktig hvem
+    // som har hva: hver time har både fag, lærer og klasse.
+    //
+    // Nå leses de derfra: bare lærerne som faktisk underviser dette
+    // barnets klasse denne dagen, og med faget de underviser i.
+    const larerIder = [...new Set(dayHours.map(h => h.larer).filter(Boolean))];
+    const dagensLarere = larerIder.map(id => {
+      const tc = teachers.find(x => x.id === id);
+      // Fagene læreren har for DENNE klassen denne dagen — ikke feltet
+      // «fag» på lærerkortet, som bare sier hovedfaget.
+      const fag = [...new Set(dayHours.filter(h => h.larer === id)
+        .map(h => h.fag).filter(Boolean))].join(', ');
+      return { navn: tc ? tc.navn : '', telefon: tc ? (tc.telefon || '') : '', fag };
+    }).filter(x => x.navn);
+
+    if(dagensLarere.length === 0){
       document.getElementById('teachersList').innerHTML = `<div class="empty-msg">${t('noTeachers')}</div>`;
     } else {
-      document.getElementById('teachersList').innerHTML = dayTeachers.map(tc => `
-        <div class="info-row"><span class="lbl">${escapeHtml(tc.navn)} (${escapeHtml(tc.fag||'')})</span><span>${escapeHtml(tc.telefon||'')}</span></div>
+      document.getElementById('teachersList').innerHTML = dagensLarere.map(tc => `
+        <div class="info-row"><span class="lbl">${escapeHtml(tc.navn)}${tc.fag ? ' (' + escapeHtml(tc.fag) + ')' : ''}</span><span>${escapeHtml(tc.telefon)}</span></div>
       `).join('');
     }
   };
