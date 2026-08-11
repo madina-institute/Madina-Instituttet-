@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 14:22:33 -->
+<!-- SIST-ENDRET: 2026-08-11 18:59:30 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1031,7 +1031,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc, deleteDoc, getDocs
+    getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc, deleteDoc, getDocs,
+    query, where
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
@@ -1137,6 +1138,14 @@
     );
     __pendingWatchers.push(start);
     if(__listenersStarted) start();
+  }
+  // 'in' tar maks 30 verdier. En lærer har sjelden så mange klasser, men
+  // grensen er absolutt: over den avvises spørringen i sin helhet, ikke
+  // delvis. Derfor deles listen uansett.
+  function delOpp(liste, storrelse){
+    const ut = [];
+    for(let i = 0; i < liste.length; i += storrelse) ut.push(liste.slice(i, i + storrelse));
+    return ut;
   }
   function startDataListeners(){
     if(__listenersStarted) return;
@@ -1519,7 +1528,10 @@
   // Kalles når læreren logger inn og hver gang timeplanen endres.
   function settValgFraTimeplan(){
     const klasser = mineKlasser();
-    if(klasser.length === 0){ valgtKlasse = ''; valgtFag = ''; tegnKlasseFagVelger(); return; }
+    // Også her: mister læreren klassene sine, skal lytterne kobles fra —
+    // ellers ville de blitt stående og hentet data for en klasse som
+    // ikke lenger er hennes.
+    if(klasser.length === 0){ valgtKlasse = ''; valgtFag = ''; tegnKlasseFagVelger(); startKlasselyttere(); return; }
     if(!valgtKlasse || !klasser.includes(valgtKlasse)){
       // Hjemmeklassen er foerstevalget: det er gruppen laereren hoerer
       // til til daglig. Finnes den ikke i timeplanen, tas den foerste.
@@ -1528,6 +1540,69 @@
     const fag = mineFagFor(valgtKlasse);
     if(!valgtFag || !fag.includes(valgtFag)) valgtFag = fag[0] || '';
     tegnKlasseFagVelger();
+    startKlasselyttere();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ELEVDATA HENTES PER KLASSE, IKKE HELE SAMLINGEN
+  //
+  // Før lastet portalen students, attendance og studentNotes i sin
+  // helhet og filtrerte i nettleseren. Hver lærer fikk dermed hele
+  // skolens elevliste ned i telefonen — med allergier, diagnoser og
+  // foresattes kontaktopplysninger — for å vise én klasse.
+  //
+  // Filtrering i nettleseren er visning, ikke sperre. Formen her er
+  // valgt slik at den samme spørringen fortsatt går gjennom når regelen
+  // strammes: Firestore avviser en spørring den ikke kan bevise ligger
+  // innenfor regelen, og portalen ville da blitt TOM, ikke filtrert.
+  //
+  // ⚠️ Klasselisten kan VOKSE etter innlogging: timeplanen kommer inn
+  // etter at kortet er lest. Lytterne bygges derfor på nytt når listen
+  // faktisk endrer seg — og de gamle kobles fra først. Uten frakoblingen
+  // ville en lytter blitt liggende igjen for hver eneste endring.
+  let klasselyttere = [];      // avmeldingsfunksjoner fra onSnapshot
+  let klasselytterNokkel = null;
+
+  function startKlasselyttere(){
+    if(!currentTeacher) return;
+    const klasser = mineKlasser();
+    // Sortert nøkkel: rekkefølgen fra timeplanen er tilfeldig, og uten
+    // sortering ville lytterne blitt bygget på nytt uten grunn.
+    const nokkel = klasser.slice().sort().join('|');
+    if(nokkel === klasselytterNokkel) return;
+
+    klasselyttere.forEach(avmeld => { try{ avmeld(); }catch(err){ console.error('avmeld klasselytter', err); } });
+    klasselyttere = [];
+    klasselytterNokkel = nokkel;
+    students = []; attendance = []; studentNotes = [];
+
+    // Ingen klasse betyr ingen elever å hente — ikke «hent alt».
+    if(klasser.length === 0){
+      renderStudentList();
+      renderStudentNotesList();
+      return;
+    }
+
+    const lyttPerKlasse = (samling, settInn, tegn) => {
+      const biter = delOpp(klasser, 30);
+      const deler = biter.map(() => []);
+      biter.forEach((bit, i) => {
+        const av = onSnapshot(
+          query(collection(db, samling), where('klasse', 'in', bit)),
+          (snap) => {
+            deler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+            settInn(deler.flat());
+            if(currentTeacher) tegn();
+          },
+          (err) => console.error(samling, err)
+        );
+        klasselyttere.push(av);
+      });
+    };
+
+    lyttPerKlasse('students',     (r) => { students = r; },     renderStudentList);
+    lyttPerKlasse('attendance',   (r) => { attendance = r; },   renderStudentList);
+    lyttPerKlasse('studentNotes', (r) => { studentNotes = r; }, renderStudentNotesList);
   }
 
   window.velgKlasse = function(k){
@@ -1789,15 +1864,8 @@
     if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') renderMessageThreads();
   });
 
-  watch('students', (snap) => {
-    students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher) renderStudentList();
-  });
-
-  watch('attendance', (snap) => {
-    attendance = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher) renderStudentList();
-  });
+  // students og attendance lastes ikke lenger som hele samlinger — se
+  // startKlasselyttere(). De fylles derfra, med lærerens egne klasser.
 
   let absenceRequests = [];
   watch('absenceRequests', (snap) => {
@@ -1805,11 +1873,8 @@
     if(currentTeacher) renderAbsenceReviewList();
   });
 
+  // studentNotes: samme — fylles av startKlasselyttere().
   let studentNotes = [];
-  watch('studentNotes', (snap) => {
-    studentNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher) renderStudentNotesList();
-  });
 
   let lessonPlans = [];
   watch('lessonPlans', (snap) => {
