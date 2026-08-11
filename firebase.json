@@ -50,6 +50,52 @@
           }
         ]
       }
+    ],
+    "rewrites": [
+      {
+        "source": "/påmelding",
+        "destination": "/index2.html"
+      },
+      {
+        "source": "/pamelding",
+        "destination": "/index2.html"
+      },
+      {
+        "source": "/lærer",
+        "destination": "/index1.html"
+      },
+      {
+        "source": "/laerer",
+        "destination": "/index1.html"
+      },
+      {
+        "source": "/foreldre",
+        "destination": "/index4.html"
+      },
+      {
+        "source": "/timeplan",
+        "destination": "/timeplan.html"
+      },
+      {
+        "source": "/kunngjøringer",
+        "destination": "/kunngjoring.html"
+      },
+      {
+        "source": "/kunngjoringer",
+        "destination": "/kunngjoring.html"
+      },
+      {
+        "source": "/personvern",
+        "destination": "/personvern.html"
+      },
+      {
+        "source": "/brosjyre",
+        "destination": "/madina-brosjyre.html"
+      },
+      {
+        "source": "/medlemskap",
+        "destination": "/medlemskap.html"
+      }
     ]
   }
 }
