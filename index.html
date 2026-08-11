@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-
+<!-- SIST-ENDRET: 2026-08-11 18:28:22 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -350,6 +350,10 @@
     </div>
     <div class="card-grid" id="prisCards"></div>
     <div class="pris-noter" id="prisNoter"></div>
+    <!-- Medlemskortet står UNDER prisene, ikke over. Familien ser først
+         hva de to prisene er, og deretter hvordan de får den laveste.
+         Sto det først, ville spørsmålet kommet før grunnen til å bry seg. -->
+    <div id="medlemsKort"></div>
   </section>
   <section id="who">
     <div class="section-head">
@@ -438,9 +442,9 @@
       prisEyebrow: 'Skolepenger', prisTitle: 'Priser',
       prisDesc: 'Beløpene under er full pris per semester. Bøker kommer i tillegg.',
       prisKort: [
-        { navn:'Madina Skole — Integrert program', dag:'Lørdag · 09:30–13:30', belop:'2 750 kr', per:'per semester',
+        { kode:'hoved', navn:'Madina Skole — Integrert program', dag:'Lørdag · 09:30–13:30',
           info:'Koran, islam og valgt språk (arabisk eller urdu) — samlet i ett program.' },
-        { navn:'Madinabarn', dag:'Søndag · 09:30–11:00 · 3–6 år', belop:'1 500 kr', per:'per semester',
+        { kode:'barn', navn:'Madinabarn', dag:'Søndag · 09:30–11:00 · 3–6 år',
           info:'Introduksjonsprogram for de yngste barna.' }
       ],
       prisNoter: [
@@ -521,9 +525,9 @@
       prisEyebrow: 'الرسوم الدراسية', prisTitle: 'الأسعار',
       prisDesc: 'المبالغ أدناه هي السعر الكامل لكل فصل دراسي. الكتب غير مشمولة.',
       prisKort: [
-        { navn:'مدرسة مدينة — البرنامج المتكامل', dag:'السبت · ٠٩:٣٠–١٣:٣٠', belop:'2 750 kr', per:'لكل فصل دراسي',
+        { kode:'hoved', navn:'مدرسة مدينة — البرنامج المتكامل', dag:'السبت · ٠٩:٣٠–١٣:٣٠',
           info:'القرآن والتربية الإسلامية واللغة المختارة (العربية أو الأردية) — في برنامج واحد.' },
-        { navn:'أطفال مدينة', dag:'الأحد · ٠٩:٣٠–١١:٠٠ · ٣–٦ سنوات', belop:'1 500 kr', per:'لكل فصل دراسي',
+        { kode:'barn', navn:'أطفال مدينة', dag:'الأحد · ٠٩:٣٠–١١:٠٠ · ٣–٦ سنوات',
           info:'برنامج تمهيدي لأصغر الأطفال.' }
       ],
       prisNoter: [
@@ -604,9 +608,9 @@
       prisEyebrow: 'اسکول فیس', prisTitle: 'قیمتیں',
       prisDesc: 'نیچے دی گئی رقم فی سمسٹر مکمل قیمت ہے۔ کتابیں شامل نہیں۔',
       prisKort: [
-        { navn:'مدینہ اسکول — مربوط پروگرام', dag:'ہفتہ · 09:30–13:30', belop:'2 750 kr', per:'فی سمسٹر',
+        { kode:'hoved', navn:'مدینہ اسکول — مربوط پروگرام', dag:'ہفتہ · 09:30–13:30',
           info:'قرآن، اسلام اور منتخب زبان (عربی یا اردو) — ایک ہی پروگرام میں۔' },
-        { navn:'مدینہ بچے', dag:'اتوار · 09:30–11:00 · 3–6 سال', belop:'1 500 kr', per:'فی سمسٹر',
+        { kode:'barn', navn:'مدینہ بچے', dag:'اتوار · 09:30–11:00 · 3–6 سال',
           info:'چھوٹے بچوں کے لیے تعارفی پروگرام۔' }
       ],
       prisNoter: [
@@ -671,7 +675,83 @@
     return `<a href="#register">${t.nav.register}</a><a href="#dates">${t.nav.dates}</a><a href="timeplan.html">${t.nav.timeplan}</a><a href="#program">${t.nav.program}</a><a href="#priser">${t.nav.priser}</a><a href="#who">${t.nav.who}</a><a href="#team">${t.nav.team}</a><a href="#portals">${t.nav.portals}</a>`;
   }
 
+
+  // Medlemskortet. Står under prisene fordi det svarer på spørsmålet
+  // prisene reiser: hvordan får vi den laveste?
+  //
+  // 🔴 Advarselen om ett medlemskap er ikke en detalj. Norsk lov gir
+  // tilskudd per medlem, og ingen kan telles i to trossamfunn. Melder
+  // familien seg inn her uten å melde seg ut der de sto, får det andre
+  // stedet tilskudd for et medlem det ikke har — og skolen har medvirket.
+  const MEDLEM_LENKER = {
+    familie: 'https://registrering.solidus.no/smartform/83DEE9B5-754D-4784-9B21-B7B2BF8177ED',
+    barn:    'https://registrering.solidus.no/smartform/06B56592-BC3B-483A-AFCB-E1F9B22FA908',
+    info:    'medlemskap.html',
+    moske:   'https://madina.no'
+  };
+
+  const MEDLEM_TEKST = {
+    no: {
+      tittel: '💳 Medlemskap i Madina Institute — gratis',
+      brod: 'Medlemsprisen er alltid den laveste, og medlemmer har fortrinnsrett ved opptak. Medlemskapet koster ingenting.',
+      rekkefolge: '<b>Rekkefølgen:</b> familien registreres først, deretter barnet.',
+      advarselTittel: '⚠️ Du kan bare være medlem ett sted',
+      advarsel: 'Norsk lov gir tilskudd per medlem, og ingen kan telles i to trossamfunn samtidig. Er dere medlemmer et annet sted, må dere melde dere ut der så snart som mulig etter å ha registrert dere her.',
+      knappFamilie: '👤 Medlemskap for familien',
+      knappBarn: '🧒 Medlemskap for barn',
+      knappInfo: 'Les mer om medlemskap',
+      moske: 'Mer om Madina Institute (Madina Grorud moské): '
+    },
+    ar: {
+      tittel: '💳 عضوية معهد المدينة — مجانية',
+      brod: 'سعر العضو دائمًا هو الأقل، وللأعضاء أولوية في القبول. العضوية بلا أي رسوم.',
+      rekkefolge: '<b>الترتيب:</b> تُسجَّل العائلة أولًا، ثم الطفل.',
+      advarselTittel: '⚠️ لا يجوز أن تكون عضوًا في أكثر من مكان',
+      advarsel: 'القانون النرويجي يمنح الدعم لكل عضو، ولا يُحتسب الشخص في جماعتين دينيتين في وقت واحد. إذا كنتم أعضاء في مكان آخر، يجب سحب العضوية من هناك في أقرب فرصة بعد التسجيل هنا.',
+      knappFamilie: '👤 عضوية العائلة',
+      knappBarn: '🧒 عضوية طفل',
+      knappInfo: 'اقرأ المزيد عن العضوية',
+      moske: 'لمزيد من المعلومات عن معهد المدينة (مسجد جرورود): '
+    },
+    ur: {
+      tittel: '💳 مدینہ انسٹی ٹیوٹ کی رکنیت — مفت',
+      brod: 'اراکین کے لیے قیمت ہمیشہ کم ہوتی ہے اور داخلے میں ترجیح ملتی ہے۔ رکنیت بالکل مفت ہے۔',
+      rekkefolge: '<b>ترتیب:</b> پہلے خاندان، پھر بچہ۔',
+      advarselTittel: '⚠️ آپ صرف ایک جگہ رکن ہو سکتے ہیں',
+      advarsel: 'ناروے کا قانون فی رکن امداد دیتا ہے، اور کوئی بھی بیک وقت دو مذہبی جماعتوں میں شمار نہیں ہو سکتا۔ اگر آپ کہیں اور رکن ہیں تو یہاں رجسٹر ہونے کے بعد جلد از جلد وہاں سے رکنیت ختم کریں۔',
+      knappFamilie: '👤 خاندان کی رکنیت',
+      knappBarn: '🧒 بچے کی رکنیت',
+      knappInfo: 'رکنیت کے بارے میں مزید',
+      moske: 'مدینہ انسٹی ٹیوٹ کے بارے میں مزید: '
+    }
+  };
+
+  function tegnMedlemskort(t){
+    const el = document.getElementById('medlemsKort');
+    if(!el) return;
+    const m = MEDLEM_TEKST[window.__sprak] || MEDLEM_TEKST.no;
+    el.innerHTML = `
+      <div class="medlem-kort">
+        <div class="medlem-tittel">${m.tittel}</div>
+        <p class="medlem-brod">${m.brod}</p>
+        <p class="medlem-brod">${m.rekkefolge}</p>
+        <div class="medlem-advarsel">
+          <b>${m.advarselTittel}</b><br>${m.advarsel}
+        </div>
+        <div class="medlem-knapper">
+          <a class="medlem-knapp primar" href="${MEDLEM_LENKER.familie}" target="_blank" rel="noopener">${m.knappFamilie}</a>
+          <a class="medlem-knapp primar" href="${MEDLEM_LENKER.barn}" target="_blank" rel="noopener">${m.knappBarn}</a>
+          <a class="medlem-knapp" href="${MEDLEM_LENKER.info}">${m.knappInfo}</a>
+        </div>
+        <div class="medlem-moske">${m.moske}<a href="${MEDLEM_LENKER.moske}" target="_blank" rel="noopener">madina.no</a></div>
+      </div>`;
+  }
+
   function switchLang(lang){
+    // Språket huskes, slik at priser og medlemskort kan tegnes på nytt
+    // når de ekte tallene kommer inn — uten å måtte gjette språket.
+    window.__sprak = lang;
+    window.__tegnAlt = () => switchLang(lang);
     const t = TEXT[lang];
     const isRtl = (lang === 'ar' || lang === 'ur');
     document.getElementById('htmlRoot').setAttribute('lang', lang);
@@ -719,16 +799,25 @@
     document.getElementById('prisEyebrow').textContent = t.prisEyebrow;
     document.getElementById('prisTitle').textContent = t.prisTitle;
     document.getElementById('prisDesc').textContent = t.prisDesc;
-    document.getElementById('prisCards').innerHTML = (t.prisKort || []).map(k => `
+    // Beløpene kommer fra basen, ikke fra teksten over. Sto de skrevet
+    // inn her, ville de blitt stående mens de ekte prisene endret seg —
+    // og det gjorde de: siden viste 2 750 og 1 500 mens skolen tok 5 500
+    // og 3 000. En familie som bestemte seg ut fra denne siden, møtte et
+    // annet tall i skjemaet.
+    document.getElementById('prisCards').innerHTML = (t.prisKort || []).map(k => {
+      const pris = levendePris(k.kode);
+      return `
       <div class="pris-kort">
         <div class="pris-navn">${k.navn}</div>
         <div class="pris-dag">${k.dag}</div>
-        <div class="pris-belop">${k.belop}</div>
-        <div class="pris-per">${k.per}</div>
+        <div class="pris-belop">${pris.belop}</div>
+        <div class="pris-per">${pris.per}</div>
         <div class="pris-info">${k.info}</div>
-      </div>`).join('');
-    document.getElementById('prisNoter').innerHTML = (t.prisNoter || [])
-      .map(n => `<div class="pris-note">${n}</div>`).join('');
+      </div>`;
+    }).join('');
+    document.getElementById('prisNoter').innerHTML =
+      levendeNoter(t).map(x => `<div class="pris-note">${x}</div>`).join('');
+    tegnMedlemskort(t);
     document.getElementById('whoEyebrow').textContent = t.whoEyebrow;
     document.getElementById('whoTitle').textContent = t.whoTitle;
     document.getElementById('whoDesc').textContent = t.whoDesc;
@@ -774,7 +863,194 @@
      skriver øverst i filen ved hver publisering. Er den ikke der, er
      filen publisert utenom verktøyet — og merket sier nettopp det.
      ════════════════════════════════════════════════════════════════ -->
+
+<script type="module">
+  // ═══════════════════════════════════════════════════════════════════
+  // LEVENDE PRISER PÅ FORSIDEN
+  //
+  // 🔴 Beløpene sto skrevet inn i teksten: 2 750 og 1 500. De ekte
+  // prisene er 5 500 og 3 000 — satt i panelet under Skole → Programmer.
+  // Forsiden viste altså under halve prisen, på tre språk, til alle som
+  // kom innom.
+  //
+  // Samme feil som i foreldreportalen (2 750/1 500 der også) og i
+  // påmeldingsskjemaet før 9. august: prisen fantes flere steder, og de
+  // stedene gled fra hverandre.
+  //
+  // Kildene her er de samme som panelet og Vipps regner med:
+  // 'programs' og 'settings/priser'. Begge er offentlig lesbare —
+  // skjemaet viser dem uansett til familier som ikke er logget inn.
+  //
+  // 🔴 Feiler lesingen, vises INGEN pris — ikke et gammelt tall. Et
+  // foreldet beløp på skolens forside er et løfte skolen ikke kan holde.
+  // ═══════════════════════════════════════════════════════════════════
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, getDoc }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  });
+  const db = getFirestore(app);
+
+  const PROGRAM_NAVN = {
+    hoved: 'Madina Islamske Skole — Integrert program (Lørdag)',
+    barn:  'Madinabarn (Søndag)'
+  };
+
+  window.__priser = null;
+
+  const kr = v => Math.round(v).toLocaleString('no-NO');
+
+  // Kalles fra tegnefunksjonen. Er prisene ikke lest ennå, sier den det
+  // — i stedet for å vise et tall som kanskje ikke stemmer.
+  window.levendePris = function(kode){
+    const P = window.__priser;
+    const tekst = (window.__sprak === 'ar')
+      ? { henter: 'جارٍ التحميل…', ukjent: 'يُحدَّد عند القبول', per: 'سنويًا', medlem: 'للأعضاء' }
+      : (window.__sprak === 'ur')
+      ? { henter: 'لوڈ ہو رہا ہے…', ukjent: 'داخلے پر بتائی جائے گی', per: 'سالانہ', medlem: 'اراکین کے لیے' }
+      : { henter: 'Henter…', ukjent: 'Oppgis ved opptak', per: 'per år', medlem: 'for medlemmer' };
+    if(!P) return { belop: tekst.henter, per: '' };
+    const p = P.programmer[PROGRAM_NAVN[kode]];
+    if(!p || (!p.aar && !p.mnd)) return { belop: tekst.ukjent, per: '' };
+    const medlemAar = p.mnd * p.maneder;
+    // Begge prisene vises. Familien skal se hva medlemskapet er verdt,
+    // ikke bare ett tall uten sammenligning.
+    return {
+      belop: kr(p.aar) + ' kr',
+      per: tekst.per + (medlemAar > 0 && medlemAar < p.aar
+        ? ' · ' + kr(medlemAar) + ' kr ' + tekst.medlem : '')
+    };
+  };
+
+  // Notene sa «satsene er ikke fastsatt ennå» — men de ER fastsatt, og
+  // materiellavgiften er ulik per program. Nå skrives de fra basen.
+  window.levendeNoter = function(t){
+    const P = window.__priser;
+    const orig = (t.prisNoter || []).filter(x =>
+      !/Rabatter|التخفيضات|رعایتیں|Bøker|الكتب|کتابیں|Depositum|العربون|ڈپازٹ/.test(x));
+    if(!P) return orig;
+    const ar = window.__sprak === 'ar', ur = window.__sprak === 'ur';
+    const ut = [];
+
+    if(P.rabatt2 || P.rabatt3){
+      ut.push(ar
+        ? `<b>التخفيضات:</b> خصم الإخوة ${P.rabatt2}% للطفل الثاني و${P.rabatt3}% للثالث فما بعده. سعر العضو والخصم لا يُجمعان.`
+        : ur
+        ? `<b>رعایتیں:</b> دوسرے بچے کے لیے ${P.rabatt2}% اور تیسرے سے ${P.rabatt3}%۔`
+        : `<b>Rabatter:</b> Søskenrabatt ${P.rabatt2} % for barn nummer to og ${P.rabatt3} % fra og med det tredje. Medlemspris og søskenrabatt kombineres ikke.`);
+    }
+
+    // Materiellavgiften kan være ulik per program — Madinabarn og det
+    // integrerte programmet bruker ikke de samme bøkene.
+    const mats = Object.entries(PROGRAM_NAVN).map(([k, navn]) => {
+      const p = P.programmer[navn];
+      const m = (p && p.materiell !== null && p.materiell !== undefined) ? p.materiell : P.materiell;
+      return { navn, m };
+    }).filter(x => x.m > 0);
+    const like = mats.length && mats.every(x => x.m === mats[0].m);
+    if(mats.length){
+      ut.push(ar
+        ? (like ? `<b>الكتب:</b> المواد الدراسية إضافية وتكلفتها ${kr(mats[0].m)} كرونة سنويًا.`
+                : `<b>الكتب:</b> ` + mats.map(x => `${x.navn}: ${kr(x.m)} كرونة`).join(' · '))
+        : ur
+        ? `<b>کتابیں:</b> ${kr(mats[0].m)} کرونر سالانہ۔`
+        : (like ? `<b>Bøker:</b> Skolemateriell kommer i tillegg og koster ${kr(mats[0].m)} kr per år.`
+                : `<b>Bøker:</b> ` + mats.map(x => `${x.navn}: ${kr(x.m)} kr`).join(' · ')));
+    }
+
+    if(P.depositum > 0){
+      ut.push(ar
+        ? `<b>العربون:</b> عند قبول الطالب يُدفع ${kr(P.depositum)} كرونة خلال ${P.depositumFrist || 5} أيام، ويُخصم من المبلغ الإجمالي.`
+        : ur
+        ? `<b>ڈپازٹ:</b> ${kr(P.depositum)} کرونر، ${P.depositumFrist || 5} دن کے اندر۔`
+        : `<b>Depositum:</b> Ved tilbud om plass betales ${kr(P.depositum)} kr innen ${P.depositumFrist || 5} dager. Beløpet trekkes fra totalen.`);
+    }
+    return [...ut, ...orig];
+  };
+
+  async function lastPriser(){
+    try{
+      const snap = await getDocs(collection(db, 'programs'));
+      const programmer = {};
+      const tall = v => { const x = parseFloat(v); return isNaN(x) ? 0 : x; };
+      snap.forEach(d => {
+        const p = d.data();
+        if(!p.navn || p.aktiv === 'Nei') return;
+        const eget = String(p.materiellAvgift === undefined || p.materiellAvgift === null ? '' : p.materiellAvgift).trim();
+        programmer[p.navn] = {
+          aar: tall(p.prisAar),
+          mnd: tall(p.prisMedlemMnd),
+          maneder: tall(p.antallManeder) || 9,
+          materiell: eget !== '' ? tall(eget) : null
+        };
+      });
+      let d = {};
+      try{
+        const sn = await getDoc(doc(db, 'settings', 'priser'));
+        if(sn.exists()) d = sn.data() || {};
+      } catch(e){ /* rabattene er en bonus i visningen, ikke et krav */ }
+      window.__priser = {
+        programmer,
+        rabatt2: tall(d.soskenRabatt2), rabatt3: tall(d.soskenRabatt3),
+        materiell: tall(d.materiellAvgift),
+        depositum: tall(d.depositum), depositumFrist: tall(d.depositumFrist)
+      };
+    } catch(err){
+      console.error('Kunne ikke hente priser', err);
+      window.__priser = null;   // ingen pris er bedre enn feil pris
+    }
+    // Tegn på nytt med de ekte tallene.
+    if(typeof window.__tegnAlt === 'function') window.__tegnAlt();
+  }
+  lastPriser();
+</script>
 <style>
+  /* ---- Medlemskort ---- */
+  .medlem-kort{
+    background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:24px 22px; margin-top:22px; box-shadow:var(--shadow);
+    max-width:760px; margin-inline:auto;
+  }
+  .medlem-tittel{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px;
+    color:var(--emerald-d); margin-bottom:10px;
+  }
+  html[dir="rtl"] .medlem-tittel{ font-family:'Tajawal','Cormorant Garamond',serif; font-size:20px; }
+  .medlem-brod{
+    font-family:'Jost',sans-serif; font-size:14px; line-height:1.7;
+    color:#4a5a52; margin:0 0 10px;
+  }
+  html[dir="rtl"] .medlem-brod{ font-family:'Tajawal',sans-serif; }
+  /* Advarselen skal ikke kunne overses. Den handler om noe skolen kan
+     bli medansvarlig for, ikke om en preferanse. */
+  .medlem-advarsel{
+    font-family:'Jost',sans-serif; font-size:13.5px; line-height:1.7; color:#7a5c12;
+    background:#fdf8ec; border-inline-start:4px solid #b7924a;
+    border-radius:10px; padding:14px 16px; margin:14px 0 16px;
+  }
+  html[dir="rtl"] .medlem-advarsel{ font-family:'Tajawal',sans-serif; }
+  .medlem-knapper{ display:flex; gap:10px; flex-wrap:wrap; }
+  .medlem-knapp{
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:600; text-decoration:none;
+    padding:12px 20px; border-radius:10px; border:1.5px solid var(--emerald);
+    color:var(--emerald-d); background:#fff; transition:background .15s, color .15s;
+  }
+  html[dir="rtl"] .medlem-knapp{ font-family:'Tajawal',sans-serif; }
+  .medlem-knapp.primar{ background:var(--emerald); border-color:var(--emerald); color:#fff; }
+  .medlem-knapp:hover{ background:var(--emerald); border-color:var(--emerald); color:#fff; }
+  .medlem-moske{
+    font-family:'Jost',sans-serif; font-size:13px; color:#6a7870; margin-top:16px;
+  }
+  html[dir="rtl"] .medlem-moske{ font-family:'Tajawal',sans-serif; }
+  .medlem-moske a{ color:var(--emerald-d); }
+
   #devEditBadge{
     display:none; position:fixed; bottom:calc(16px + env(safe-area-inset-bottom, 0px));
     inset-inline-end:10px; z-index:5000;
