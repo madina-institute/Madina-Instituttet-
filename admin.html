@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 22:56:12 -->
+<!-- SIST-ENDRET: 2026-08-11 23:03:34 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -237,10 +237,26 @@
 
   /* ---- Fagrekkefølge per klasse ---- */
   .ko-blokk{
-    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;
     background:#fff; border:1px solid var(--tabell-linje); border-radius:11px;
-    padding:13px 15px; margin-bottom:9px;
+    padding:11px 14px; margin-bottom:8px;
   }
+  /* Blokk uten time. Den skal se ut som en tom plass man KAN fylle —
+     ikke som en feil, og ikke som en vanlig rad. */
+  .ko-blokk.tom{ background:var(--paper); border-style:dashed; }
+  .ko-blokk.tom .ko-tid{ background:#fff; color:#8a9a90; }
+  /* Knappene legger seg på egen linje under feltene, så de aldri presser
+     nedtrekkslistene sammen på en smal skjerm. */
+  .ko-handlinger{
+    flex:1 1 100%; display:flex; gap:7px; flex-wrap:wrap; align-items:center;
+    margin-top:2px; padding-top:8px; border-top:1px solid var(--line);
+  }
+  .ko-handlinger button{
+    font-family:'Jost',sans-serif; font-size:11.5px; background:#fff;
+    color:var(--emerald-d); border:1px solid var(--line); border-radius:7px;
+    padding:5px 11px; cursor:pointer;
+  }
+  .ko-handlinger button:hover{ border-color:var(--emerald-d); }
   .ko-tid{
     font-family:'Jost',sans-serif; font-size:12.5px; font-weight:700;
     color:var(--emerald-d); background:var(--paper-2); border-radius:7px;
@@ -8755,13 +8771,17 @@
     return funn;
   }
 
+  // En blokk uten timer er ikke «ingenting å gjøre» — det er en time som
+  // mangler. Velger man fag der, skal den opprettes ved lagring. Uten
+  // dette kunne man bare redigere de timene som tilfeldigvis fantes fra
+  // før, og måtte tilbake til Timeplan for resten.
   function koEndringer(){
     if(!koTilstand) return [];
     return koTilstand.blokker
       .map((b, i) => ({ i, b }))
-      .filter(x => x.b.finnes && (
-        x.b.fag !== x.b.opphavFag ||
-        x.b.okter.some(o => o.larer !== o.opphavLarer)));
+      .filter(x => x.b.finnes
+        ? (x.b.fag !== x.b.opphavFag || x.b.okter.some(o => o.larer !== o.opphavLarer))
+        : !!x.b.fag);
   }
 
   function koTegn(){
@@ -8781,37 +8801,6 @@
 
     const kilder = koKilder(dag, klasse);
     const harTimer = blokker.some(b => b.finnes);
-
-    if(!harTimer){
-      el.innerHTML = `
-        <div class="report-card">
-          <h3>${escapeHtml(resolveDynName('classes', klasse))} har ingen timer ${escapeHtml(dag.toLowerCase())}</h3>
-          <div class="sub">
-            Kopier klokkeslettene og fagene fra en klasse som allerede har dem.
-            Da er de to alltid i takt på tid — og pausene faller på samme sted.
-          </div>
-          ${kilder.length ? `
-          <div class="innst-rad" style="margin-top:14px;">
-            <div class="field">
-              <label>Kopier fra</label>
-              <select id="koKilde">
-                ${kilder.map(k => `<option value="${escapeHtml(k.id)}">${escapeHtml(k.navn)} — ${k.antall} timer</option>`).join('')}
-              </select>
-            </div>
-          </div>
-          <div class="innst-effekt" style="border-left-color:#8a6d1d; background:#fdf8ec;">
-            ⚠️ <b>Læreren kopieres ikke.</b> Ville vi kopiert den, hadde samme lærer
-            stått i to klasser på samme klokkeslett i det sekundet du trykket.
-            Fagene følger med — lærerne velger du etterpå.
-          </div>
-          <button class="btn btn-primary" style="width:auto; margin-top:12px;" onclick="koByggFra()">
-            Opprett timeplanen
-          </button>`
-          : '<div class="report-empty" style="margin-top:12px;">Ingen andre klasser har timer denne dagen ennå.</div>'}
-        </div>`;
-      return;
-    }
-
     const fagListe = [...new Set([...koFagFor(klasse), ...blokker.map(b => b.fag).filter(Boolean)])];
     const larerListe = [...(cache.teachers || [])].filter(t => t.navn)
       .sort((a, b) => a.navn.localeCompare(b.navn));
@@ -8819,54 +8808,79 @@
     const endret = koEndringer();
 
     let html = '';
+
+    // Har klassen ingenting fra før, står tilbudet om å kopiere ØVERST —
+    // ikke i stedet for tabellen. Første utgave byttet ut hele skjermen
+    // med kopiknappen, og da kunne man ikke legge inn en enkelt time selv.
+    if(!harTimer && kilder.length){
+      html += `
+        <div class="ko-advarsel">
+          <b>${escapeHtml(resolveDynName('classes', klasse))} har ingen timer ${escapeHtml(dag.toLowerCase())}.</b>
+          Velg fag i blokkene under og lagre — eller kopier hele dagen fra en klasse
+          som allerede har den:
+          <span style="display:inline-flex; gap:7px; flex-wrap:wrap; margin-top:8px; align-items:center;">
+            <select id="koKilde" style="font-family:'Jost',sans-serif; font-size:12.5px; padding:6px 9px; border:1px solid var(--line); border-radius:7px;">
+              ${kilder.map(k => `<option value="${escapeHtml(k.id)}">${escapeHtml(k.navn)} — ${k.antall} timer</option>`).join('')}
+            </select>
+            <button class="btn btn-ghost" style="width:auto; padding:6px 13px; font-size:12px;" onclick="koByggFra()">Kopier dagen</button>
+          </span>
+          <br><span style="font-size:11.5px;">⚠️ Lærerne kopieres ikke — det ville satt samme lærer i to klasser samtidig.</span>
+        </div>`;
+    }
+
     konf.forEach(k => {
       html += `<div class="ko-advarsel${k.hard ? ' hard' : ''}">${k.hard ? '🔴' : '⚠️'} ${escapeHtml(k.tekst)}</div>`;
     });
 
     html += '<div class="report-card">';
     blokker.forEach((b, i) => {
-      if(!b.finnes){
-        html += `<div class="ko-felles">⬚ ${escapeHtml(b.start)}–${escapeHtml(b.slutt)} — ingen time for denne klassen</div>`;
-        return;
-      }
-      const harEndret = b.fag !== b.opphavFag || b.okter.some(o => o.larer !== o.opphavLarer);
+      const harEndret = b.finnes
+        ? (b.fag !== b.opphavFag || b.okter.some(o => o.larer !== o.opphavLarer))
+        : !!b.fag;
       const ulikeLarere = [...new Set(b.okter.map(o => o.larer))].length > 1;
 
+      // Fag og lærere på ÉN linje. Første utgave stablet dem loddrett, og
+      // en dag med fire blokker ble til en side man måtte rulle gjennom
+      // for å se rekkefølgen — som er hele grunnen til at fanen finnes.
       html += `
-        <div class="ko-blokk${harEndret ? ' endret' : ''}" style="align-items:flex-start;">
+        <div class="ko-blokk${harEndret ? ' endret' : ''}${b.finnes ? '' : ' tom'}">
           <div class="ko-tid">${escapeHtml(b.start)}–${escapeHtml(b.slutt)}
-            <small>${b.okter.length} økt${b.okter.length === 1 ? '' : 'er'}</small></div>
-          <div style="flex:1 1 260px; min-width:0;">
-            <div class="ko-felt" style="margin-bottom:8px;">
-              <label>Fag</label>
-              <select onchange="koSettFag(${i}, this.value)">
-                <option value="">— ingen —</option>
-                ${fagListe.map(f => `<option value="${escapeHtml(f)}" ${b.fag === f ? 'selected' : ''}>${escapeHtml(f)}</option>`).join('')}
-              </select>
-            </div>
-            ${b.okter.map((o, j) => `
-              <div class="ko-felt" style="margin-bottom:6px;">
-                <label>${escapeHtml(o.tid)} — lærer</label>
-                <select onchange="koSettLarer(${i}, ${j}, this.value)">
-                  <option value="">— ikke satt —</option>
-                  ${larerListe.map(t => `<option value="${escapeHtml(t.id)}" ${o.larer === t.id ? 'selected' : ''}>${escapeHtml(t.navn)}${t.fag ? ' · ' + escapeHtml(t.fag) : ''}</option>`).join('')}
-                </select>
-              </div>`).join('')}
-            <div style="display:flex; gap:7px; flex-wrap:wrap; margin-top:4px;">
-              ${b.okter.length > 1 && ulikeLarere
-                ? `<button class="btn btn-ghost" style="width:auto; padding:6px 12px; font-size:11px;" onclick="koSammeLarer(${i})">Samme lærer i begge øktene</button>` : ''}
-              ${b.okter.length === 1
-                ? `<button class="btn btn-ghost" style="width:auto; padding:6px 12px; font-size:11px;" onclick="koDelBlokk(${i})">✂️ Del i to økter (to lærere)</button>` : ''}
-              ${b.fag === 'Fellestime'
-                ? `<button class="btn btn-ghost" style="width:auto; padding:6px 12px; font-size:11px;" onclick="koFellestimeAlle(${i})">👥 Sett Fellestime for alle klasser</button>` : ''}
-            </div>
+            <small>${b.finnes ? b.okter.length + ' økt' + (b.okter.length === 1 ? '' : 'er') : 'ingen time'}</small></div>
+
+          <div class="ko-felt" style="flex:1 1 140px;">
+            <label>Fag</label>
+            <select onchange="koSettFag(${i}, this.value)">
+              <option value="">${b.finnes ? '— ingen —' : '— legg til —'}</option>
+              ${fagListe.map(f => `<option value="${escapeHtml(f)}" ${b.fag === f ? 'selected' : ''}>${escapeHtml(f)}</option>`).join('')}
+            </select>
           </div>
-          ${b.blandet ? '<span class="ko-merke">⚠️ øktene hadde ulikt fag</span>' : ''}
-          ${harEndret ? '<span class="ko-merke">endret</span>' : ''}
+
+          ${b.okter.map((o, j) => `
+            <div class="ko-felt" style="flex:1 1 150px;">
+              <label>${b.okter.length > 1 ? escapeHtml(o.tid) : 'Lærer'}</label>
+              <select onchange="koSettLarer(${i}, ${j}, this.value)">
+                <option value="">— ikke satt —</option>
+                ${larerListe.map(t => `<option value="${escapeHtml(t.id)}" ${o.larer === t.id ? 'selected' : ''}>${escapeHtml(t.navn)}${t.fag ? ' · ' + escapeHtml(t.fag) : ''}</option>`).join('')}
+              </select>
+            </div>`).join('')}
+
           <div class="ko-pil">
             <button onclick="koFlytt(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Flytt opp">▲</button>
             <button onclick="koFlytt(${i}, 1)" ${i === blokker.length - 1 ? 'disabled' : ''} title="Flytt ned">▼</button>
           </div>
+
+          ${(() => {
+            const knapper = [];
+            if(b.finnes && b.okter.length > 1 && ulikeLarere)
+              knapper.push(`<button onclick="koSammeLarer(${i})">Samme lærer i begge</button>`);
+            if(b.finnes && b.okter.length === 1)
+              knapper.push(`<button onclick="koDelBlokk(${i})">✂️ Del i to økter</button>`);
+            if(b.fag === 'Fellestime')
+              knapper.push(`<button onclick="koFellestimeAlle(${i})">👥 For alle klasser</button>`);
+            if(b.blandet) knapper.push(`<span class="ko-merke">⚠️ øktene hadde ulikt fag</span>`);
+            if(harEndret) knapper.push(`<span class="ko-merke">${b.finnes ? 'endret' : 'ny'}</span>`);
+            return knapper.length ? `<div class="ko-handlinger">${knapper.join('')}</div>` : '';
+          })()}
         </div>`;
       const neste = blokker[i + 1];
       if(neste && neste.start !== b.slutt){
@@ -9126,8 +9140,9 @@
     // Hver økt vises for seg. Med to lærere i samme blokk er «læreren
     // endret» ikke nok — man må se HVILKEN av dem.
     const linjer = endret.map(({ b }) => {
-      const rader = ['  ' + b.start + '–' + b.slutt + '   ' +
-        (b.opphavFag || '(ingen)') + ' → ' + (b.fag || '(ingen)')];
+      const rader = [b.finnes
+        ? '  ' + b.start + '–' + b.slutt + '   ' + (b.opphavFag || '(ingen)') + ' → ' + (b.fag || '(ingen)')
+        : '  ' + b.start + '–' + b.slutt + '   NY: ' + b.fag];
       b.okter.forEach(o => {
         if(o.larer === o.opphavLarer) return;
         rader.push('      ' + o.tid + '   ' +
@@ -9142,12 +9157,14 @@
       .map(({ b }) => b.start + '–' + b.slutt);
     const konfHard = koKonflikter().filter(k => k.hard);
 
-    const antallRader = endret.reduce((s, { b }) => s + b.okter.filter(o => o.rad).length, 0);
+    const nyeRader = endret.reduce((s, { b }) => s + (b.finnes ? 0 : b.okter.length), 0);
+    const antallRader = endret.reduce((s, { b }) => s + (b.finnes ? b.okter.filter(o => o.rad).length : 0), 0);
     if(!confirm(
       'Lagre ny rekkefølge for ' + resolveDynName('classes', koTilstand.klasse) +
       ' (' + koTilstand.dag.toLowerCase() + ')?\n\n' + linjer.join('\n') +
-      '\n\n' + antallRader + ' timer oppdateres. Klokkeslettene endres ikke, og ' +
-      'ingen timer opprettes eller slettes.' +
+      '\n\n' + (antallRader ? antallRader + ' timer oppdateres. ' : '') +
+      (nyeRader ? nyeRader + ' nye timer opprettes. ' : '') +
+      'Klokkeslettene endres ikke, og ingen timer slettes.' +
       (utenLarer.length ? '\n\n⚠️ Uten lærer: ' + utenLarer.join(', ') +
         '\nLæreren finner ikke klassen sin i Lærerportalen før noen er satt.' : '') +
       (konfHard.length ? '\n\n🔴 ' + konfHard.map(k => k.tekst).join('\n🔴 ') : '')
@@ -9157,22 +9174,33 @@
     const feilet = [];
     for(const { b } of endret){
       for(const o of b.okter){
-        if(!o.rad) continue;
         try{
-          await updateDoc(doc(db, 'hours', o.rad.id), {
-            fag: b.fag,
-            // 🔴 Tom lærer skrives ALDRI over en som finnes. Et tomt felt
-            // betyr «ikke rørt», ikke «fjern». Uten dette ville én lagring
-            // uten lærervalg tømt klassen ut av Lærerportalen — stille, og
-            // først synlig for læreren selv.
-            ...(o.larer ? { larer: o.larer } : {}),
-            sistEndretAv: currentUserEmail || 'ukjent',
-            sistEndretDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
-          });
+          if(o.rad){
+            await updateDoc(doc(db, 'hours', o.rad.id), {
+              fag: b.fag,
+              // 🔴 Tom lærer skrives ALDRI over en som finnes. Et tomt felt
+              // betyr «ikke rørt», ikke «fjern». Uten dette ville én lagring
+              // uten lærervalg tømt klassen ut av Lærerportalen — stille, og
+              // først synlig for læreren selv.
+              ...(o.larer ? { larer: o.larer } : {}),
+              sistEndretAv: currentUserEmail || 'ukjent',
+              sistEndretDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
+            });
+          } else {
+            // Blokken var tom. Velger man fag der, er det en time som skal
+            // OPPRETTES — ikke en rad å oppdatere.
+            if(!b.fag) continue;
+            await addDoc(collection(db, 'hours'), {
+              dag: koTilstand.dag, tid: o.tid, fag: b.fag,
+              larer: o.larer || '', klasse: koTilstand.klasse,
+              opprettetAv: currentUserEmail || 'ukjent',
+              opprettetDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
+            });
+          }
           ok++;
         } catch(err){
-          console.error('koLagre', o.rad.id, err);
-          feilet.push((o.tid || o.rad.id) + ' — ' + (err.code || err.message || 'ukjent'));
+          console.error('koLagre', o.tid, err);
+          feilet.push((o.tid || '') + ' — ' + (err.code || err.message || 'ukjent'));
         }
       }
     }
