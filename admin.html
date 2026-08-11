@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 00:44:51 -->
+<!-- SIST-ENDRET: 2026-08-12 00:58:44 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8829,6 +8829,14 @@
     return [start + '–' + koKlokke(midt), koKlokke(midt) + '–' + end];
   }
 
+  // Arabisk og urdu er de to sporene elevene deles i. De brukes av både
+  // klassekortet, utskriften og redigeringen — og må derfor stå FØR alle
+  // tre. Sto de lenger nede som const, var de i det dødsonen der navnet
+  // finnes men ikke kan leses: ReferenceError i det utskriften ble åpnet,
+  // og `node --check` fanger det ikke.
+  const KO_SPRAKFAG = ['Arabisk', 'Urdu'];
+  const koErSprak = f => KO_SPRAKFAG.includes(f);
+
   // ═══════════════════════════════════════════════════════════════════
   // KLASSEKORTET
   //
@@ -8905,12 +8913,18 @@
 
     const overlay = document.getElementById('klassekortOverlay');
     document.getElementById('kkTittel').textContent = k.navn || '(uten navn)';
+    // Samme avvik som utskriften. Sto de bare på arket, ville skjermen
+    // sagt at alt var i orden mens papiret sa noe annet — og da tror man
+    // på skjermen, fordi den er nærmest.
+    const avvik = klasseAvvik(klasseId);
     document.getElementById('kkInnhold').innerHTML = `
       <div class="kk-merker">
         <span class="record-pill">${escapeHtml(k.program || 'uten program')}</span>
         ${k.trinn ? `<span class="record-pill">Trinn ${escapeHtml(k.trinn)}</span>` : ''}
         <span class="record-pill">Skoleår ${SKOLEAR}</span>
       </div>
+
+      ${avvik.map(a => `<div class="ko-advarsel${a.hard ? ' hard' : ''}" style="margin-top:10px;">${a.hard ? '🔴' : '⚠️'} ${escapeHtml(a.tekst)}</div>`).join('')}
 
       <h4 class="kk-hode">🕐 Timeplan</h4>
       ${planHtml}
@@ -8977,6 +8991,59 @@
       '-' + SKOLEAR.replace('/', '-') + '.csv', '\ufeff' + csv, 'text/csv;charset=utf-8;');
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // HVA SOM IKKE HENGER SAMMEN I KLASSENS DAG
+  //
+  // Kortet viser det som ligger i basen, uredigert. Men et ark som skal
+  // gis til en vikar må si fra når planen ber om noe umulig — ellers
+  // står hun lørdag morgen med to fag på samme klokkeslett og ingen
+  // måte å vite hvilket som gjelder.
+  //
+  // 📌 Arabisk og urdu SKAL stå samtidig: elevene deles etter språkvalg.
+  // Alt annet på samme klokkeslett er en kollisjon.
+  // ═══════════════════════════════════════════════════════════════════
+  function klasseAvvik(klasseId){
+    const avvik = [];
+    const plan = klasseTimeplan(klasseId);
+    const aktive = (cache.students || [])
+      .filter(s => s.klasse === klasseId && s.elevStatus !== 'Sluttet/trukket');
+
+    plan.forEach(b => {
+      const fag = b.spor.map(s => s.fag);
+      const bareSprak = fag.length > 1 && fag.every(f => KO_SPRAKFAG.includes(f));
+      if(fag.length > 1 && !bareSprak){
+        avvik.push({ hard: true, tekst: b.start + '–' + b.slutt + ': ' + fag.length +
+          ' fag samtidig — ' + fag.join(' og ') + '. Bare arabisk og urdu kan gå parallelt.' });
+      }
+      // Et språkspor uten elever er en lærer satt av til et tomt rom.
+      b.spor.forEach(s => {
+        if(!KO_SPRAKFAG.includes(s.fag)) return;
+        const n = aktive.filter(e => e.sprakvalg === s.fag).length;
+        if(n === 0 && aktive.length > 0){
+          avvik.push({ hard: false, tekst: s.fag + ' står i timeplanen ' + b.start + '–' +
+            b.slutt + ', men ingen av elevene har valgt ' + s.fag.toLowerCase() + '.' });
+        }
+      });
+      b.spor.forEach(s => {
+        if(s.larere.length === 0){
+          avvik.push({ hard: true, tekst: b.start + '–' + b.slutt + ' ' + s.fag +
+            ': ingen lærer satt.' });
+        }
+      });
+    });
+
+    const utenSprak = aktive.filter(e => !KO_SPRAKFAG.includes(e.sprakvalg)).length;
+    const harSprakTime = plan.some(b => b.spor.some(s => KO_SPRAKFAG.includes(s.fag)));
+    if(utenSprak > 0 && harSprakTime){
+      avvik.push({ hard: false, tekst: utenSprak + ' elev' + (utenSprak === 1 ? '' : 'er') +
+        ' mangler språkvalg og vet ikke hvilket spor de skal til.' });
+    }
+    // Samme melding kan komme fra flere blokker. Gjentakelser gjør at man
+    // slutter å lese dem.
+    const sett = new Set();
+    return avvik.filter(a => { if(sett.has(a.tekst)) return false; sett.add(a.tekst); return true; });
+  }
+
   window.skrivUtKlasse = function(klasseId){
     const k = (cache.classes || []).find(c => c.id === klasseId);
     if(!k) return;
@@ -8988,42 +9055,149 @@
     // Elevlisten står med språkvalg, men UTEN helseopplysninger, telefon
     // eller foresatte. Et ark som henges på en dør eller gis til en vikar
     // skal kunne leses av hvem som helst.
+    const avvik = klasseAvvik(klasseId);
+    // Samme tall som kortet viser. Regnes de ut to steder, begynner de å
+    // avvike den dagen ett av stedene endres.
+    const sprakTall = { Arabisk: 0, Urdu: 0, '(ikke valgt)': 0 };
+    aktive.forEach(s => {
+      sprakTall[KO_SPRAKFAG.includes(s.sprakvalg) ? s.sprakvalg : '(ikke valgt)']++;
+    });
     const win = window.open('', '_blank');
     if(!win){ showToast('Nettleseren blokkerte utskriften. Tillat popup for denne siden.'); return; }
+    // ═══════════════════════════════════════════════════════════════
+    // SAMME UTTRYKK SOM BROSJYREN — men ikke samme oppgave.
+    //
+    // Brosjyren leses én gang, med tid, av en familie som ikke kjenner
+    // skolen. Dette arket leses i forbifarten av en vikar som skal inn
+    // i et rom om to minutter. Derfor er identiteten hentet — blått
+    // toppfelt, logo, Cormorant til overskrifter, Jost til resten — mens
+    // fargefyllte tabeller og luftige marger er utelatt: arket skrives ut
+    // i svart-hvitt hver uke, og skal kunne skummes på fem sekunder.
+    //
+    // 📌 Avvikene står ØVERST, ikke nederst. En vikar som bare rekker å
+    // lese én ting, skal lese den som gjør dagen umulig.
+    // ═══════════════════════════════════════════════════════════════
     win.document.write(`<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
       <title>${escapeHtml(k.navn || 'Klasse')} — Madina Skole</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
-        @page{ margin:14mm; }
-        body{font-family:Arial,Helvetica,sans-serif; color:#16283a; margin:24px;}
-        h1{font-size:21px; margin:0 0 2px;}
-        .meta{font-size:12px; color:#5a6b7d; margin-bottom:18px;}
-        h2{font-size:14px; margin:22px 0 7px; color:#1c5490;}
-        table{border-collapse:collapse; width:100%; font-size:12px;}
-        th,td{border:1px solid #bbb; padding:6px 8px; text-align:left; vertical-align:top;}
-        th{background:#eef4fa;}
-        .tom{color:#a33; font-style:italic;}
-        .kol{columns:3; font-size:12.5px; line-height:1.9;}
+        @page{ margin:0; }
+        *{ box-sizing:border-box; }
+        body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; }
+        .ark{ max-width:780px; margin:0 auto; }
+
+        /* Toppfeltet er brosjyrens — samme blå, samme logo, samme
+           skoleår over tittelen. Det er det som gjør at arket kjennes
+           igjen som skolens, uten at noe annet må ligne. */
+        .topp{
+          background:linear-gradient(135deg,#2f7cc9 0%, #1c5490 100%);
+          color:#fff; padding:22px 26px 20px; text-align:center;
+        }
+        .topp img{ height:38px; width:auto; margin-bottom:8px; }
+        .aar{
+          font-size:10px; letter-spacing:.24em; text-transform:uppercase;
+          color:#cfe3f6; margin-bottom:4px;
+        }
+        .topp h1{
+          font-family:'Cormorant Garamond',Georgia,serif; font-weight:700;
+          font-size:29px; margin:0 0 3px; letter-spacing:.01em;
+        }
+        .topp .under{ font-size:12px; color:#dceaf7; }
+
+        .kropp{ padding:20px 26px 26px; }
+        h2{
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:18px;
+          color:#1c5490; margin:20px 0 8px; padding-bottom:5px;
+          border-bottom:2px solid #e4edf6;
+        }
+        h2:first-child{ margin-top:0; }
+
+        table{ border-collapse:collapse; width:100%; font-size:12.5px; }
+        th{
+          background:#eef4fa; color:#1c5490; font-weight:600; font-size:10.5px;
+          letter-spacing:.06em; text-transform:uppercase;
+          padding:7px 9px; text-align:left; border-bottom:2px solid #cfe0ef;
+        }
+        td{ padding:8px 9px; border-bottom:1px solid #e4edf6; vertical-align:top; }
+        /* Blokkskillet er tykkere enn linjen mellom to spor i samme
+           blokk. Da ser man med én gang hvor en time slutter og den
+           neste begynner — også når to fag deler klokkeslett. */
+        tr.blokkstart td{ border-top:2px solid #cfe0ef; }
+        tr.blokkstart:first-child td{ border-top:0; }
+        .tid{ font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums; }
+        .fag{ font-weight:600; }
+        .sprak td:first-child, .sprak td:nth-child(2){ color:#8a9aa8; }
+        .tom{ color:#a83c3c; font-style:italic; }
+
+        /* Avvikene. Rød strek for det som stopper dagen, oransje for det
+           som bare bør ses på. */
+        .avvik{
+          border-inline-start:4px solid #b7924a; background:#fdf8ec;
+          border-radius:0 7px 7px 0; padding:10px 14px; margin-bottom:8px;
+          font-size:12.5px; line-height:1.55; color:#6b5312;
+        }
+        .avvik.hard{ border-inline-start-color:#a83c3c; background:#fbeded; color:#8f2f2f; }
+
+        .elever{ columns:3; column-gap:22px; font-size:12.5px; line-height:2; }
+        .elever span{ display:block; break-inside:avoid; }
+        .elever small{ color:#7b8a93; }
+        .tall{
+          display:flex; gap:22px; flex-wrap:wrap; font-size:12px;
+          color:#5a6b7d; margin-bottom:9px;
+        }
+        .tall b{ color:#1c5490; }
+
+        .bunn{
+          margin-top:24px; padding:11px 26px; background:#f3f7fb;
+          border-top:1px solid #e4edf6; font-size:10.5px; color:#7b8a93;
+          display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+        }
+        @media print{
+          body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          .elever{ columns:3; }
+        }
       </style></head><body>
-      <h1>${escapeHtml(k.navn || '')}</h1>
-      <div class="meta">${escapeHtml(k.program || '')}${k.trinn ? ' · Trinn ' + escapeHtml(k.trinn) : ''}
-        · Skoleår ${SKOLEAR} · skrevet ut ${new Date().toLocaleDateString('no-NO')}</div>
+      <div class="ark">
+        <div class="topp">
+          <img src="${LOGO_DATA_URI}" alt="Madina Skole">
+          <div class="aar">Skoleåret ${escapeHtml(SKOLEAR)}</div>
+          <h1>${escapeHtml(k.navn || '')}</h1>
+          <div class="under">${escapeHtml(k.program || '')}${k.trinn ? ' · Trinn ' + escapeHtml(k.trinn) : ''}</div>
+        </div>
 
-      <h2>Timeplan</h2>
-      ${plan.length === 0 ? '<p class="tom">Ingen timer lagt inn.</p>' : `
-      <table><thead><tr><th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th></tr></thead><tbody>
-        ${plan.flatMap(b => b.spor.map((s, i) => `<tr>
-          <td>${i === 0 ? escapeHtml(b.dag) : ''}</td>
-          <td>${i === 0 ? escapeHtml(b.start + '–' + b.slutt) : ''}</td>
-          <td>${escapeHtml(s.fag)}</td>
-          <td>${s.larere.length ? escapeHtml(s.larere.join(' · ')) : '<span class="tom">uten lærer</span>'}</td>
-        </tr>`)).join('')}
-      </tbody></table>`}
+        <div class="kropp">
+          ${avvik.map(a => `<div class="avvik${a.hard ? ' hard' : ''}">${a.hard ? '🔴' : '⚠️'} ${escapeHtml(a.tekst)}</div>`).join('')}
 
-      <h2>Elever — ${aktive.length}</h2>
-      ${aktive.length === 0 ? '<p class="tom">Ingen elever i klassen.</p>'
-        : `<div class="kol">${aktive.map(s =>
-            escapeHtml(s.navn || '—') + (s.sprakvalg ? ' <small>(' + escapeHtml(s.sprakvalg) + ')</small>' : '')
-          ).join('<br>')}</div>`}
+          <h2>Timeplan</h2>
+          ${plan.length === 0 ? '<p class="tom">Ingen timer lagt inn.</p>' : `
+          <table><thead><tr><th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th></tr></thead><tbody>
+            ${plan.flatMap(b => b.spor.map((s, i) => `
+              <tr class="${i === 0 ? 'blokkstart' : 'sprak'}">
+                <td>${i === 0 ? escapeHtml(b.dag) : ''}</td>
+                <td class="tid">${i === 0 ? escapeHtml(b.start + '–' + b.slutt) : ''}</td>
+                <td class="fag">${escapeHtml(s.fag)}</td>
+                <td>${s.larere.length ? escapeHtml(s.larere.join(' · ')) : '<span class="tom">uten lærer</span>'}</td>
+              </tr>`)).join('')}
+          </tbody></table>`}
+
+          <h2>Elever — ${aktive.length}</h2>
+          <div class="tall">
+            ${Object.entries(sprakTall).filter(([, n]) => n > 0)
+              .map(([n, v]) => `<span>${escapeHtml(n)}: <b>${v}</b></span>`).join('')}
+          </div>
+          ${aktive.length === 0 ? '<p class="tom">Ingen elever i klassen.</p>'
+            : `<div class="elever">${aktive.map(s =>
+                '<span>' + escapeHtml(s.navn || '—') +
+                (s.sprakvalg ? ' <small>(' + escapeHtml(s.sprakvalg) + ')</small>' : '') +
+                '</span>').join('')}</div>`}
+        </div>
+
+        <div class="bunn">
+          <span>Madina Skole · Hagelundveien 2b, 0963 Oslo</span>
+          <span>Skrevet ut ${new Date().toLocaleDateString('no-NO')}</span>
+        </div>
+      </div>
       </body></html>`);
     win.document.close();
     win.focus();
@@ -9045,8 +9219,6 @@
   // 📌 Oppmøtet påvirkes ikke. Det føres én gang per dag på eleven, ikke
   // per time — så en elev i arabisksporet telles fortsatt én gang.
   // ═══════════════════════════════════════════════════════════════════
-  const KO_SPRAKFAG = ['Arabisk', 'Urdu'];
-  const koErSprak = f => KO_SPRAKFAG.includes(f);
 
   function koTomtSpor(fag, tider){
     return { fag, okter: tider.map(tid => ({ tid, rad: null, larer: '' })) };
