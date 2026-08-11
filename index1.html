@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 13:27:54 -->
+<!-- SIST-ENDRET: 2026-08-11 13:38:18 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -557,7 +557,12 @@
     </div>
   </div>
 
-  <div id="appView">
+  <!-- Skjult til klasse og fag er valgt. Sto den synlig fra start, lå
+       hele panelet ferdig tegnet under velkomstskjermen — og gikk noe
+       galt før skjermen rakk å tegnes, sto man rett i panelet uten å ha
+       valgt noe. Sperren skal ikke avhenge av at et lag legger seg
+       oppå. -->
+  <div id="appView" style="display:none;">
   <div class="portal-body">
     <nav class="portal-sidebar" id="portalSidebar">
       <button data-sidebar="home" onclick="navTo('home', showHome)"><span class="ic">🏠</span><span class="lbl">Min side</span></button>
@@ -1582,6 +1587,8 @@
   window.velgVkFag = function(f){ vkFag = f; tegnVelkomst(); };
 
   window.startArbeid = function(){
+    // Uten klasse skjer ingenting. Panelet har bare denne ene inngangen,
+    // og den krever et valg.
     if(!vkKlasse) return;
     valgtKlasse = vkKlasse;
     valgtFag = vkFag || (mineFagFor(vkKlasse)[0] || '');
@@ -2142,6 +2149,10 @@
     history.pushState({ appView: name }, '', location.href);
   }
   window.addEventListener('popstate', function(e){
+    // Står velkomstskjermen åpen, skal tilbakeknappen ikke smette forbi
+    // den og inn i panelet.
+    const vk = document.getElementById('velkomstView');
+    if(vk && vk.style.display !== 'none') return;
     appNavigating = true;
     // If the session was lost (e.g. the phone silently reloaded the tab while
     // backgrounded), currentTeacher is null and the view-restoring functions
