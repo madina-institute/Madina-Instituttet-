@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 12:55:53 -->
+<!-- SIST-ENDRET: 2026-08-11 14:22:21 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -2100,17 +2100,36 @@
     archEl.innerHTML = archRows.map(rowHtml).join('');
   }
 
+  // Laererne som faktisk underviser denne klassen, med faget de har der.
+  //
+  // Sto tidligere som teachers.filter(tildeltKlasse === klasse). Det
+  // feltet sier hvilken gruppe laereren hoerer til til daglig, ikke hvem
+  // som underviser hvilket fag. En forelder fikk dermed enten ingen
+  // mottaker aa velge, eller feil laerer for faget spoersmaalet gjaldt.
+  function larereForKlasse(klasse){
+    const timer = hours.filter(h => h.klasse === klasse);
+    const ider = [...new Set(timer.map(h => h.larer).filter(Boolean))];
+    return ider.map(id => {
+      const tc = teachers.find(x => x.id === id);
+      if(!tc) return null;
+      const fag = [...new Set(timer.filter(h => h.larer === id)
+        .map(h => h.fag).filter(Boolean))].join(', ');
+      return { ...tc, fagIKlassen: fag };
+    }).filter(Boolean);
+  }
+
   window.openTeacherMsg = function(){
     if(myChildren.length === 0 || !currentGuardian) return;
     document.getElementById('teacherMsgListInner').style.display = 'block';
     document.getElementById('teacherMsgDetailInner').style.display = 'none';
     const child = myChildren[currentChildIndex];
-    const classTeachers = teachers.filter(x => x.tildeltKlasse === child.klasse);
+    const classTeachers = larereForKlasse(child.klasse);
     const wrap = document.getElementById('newMsgTeacherWrap');
     const sel = document.getElementById('guardianNewMsgTeacher');
     if(classTeachers.length > 1){
       wrap.style.display = 'block';
-      sel.innerHTML = classTeachers.map(x => `<option value="${x.id}">${escapeHtml(x.fag||'')} — ${escapeHtml(x.navn||'')}</option>`).join('');
+      sel.innerHTML = classTeachers.map(x =>
+        `<option value="${x.id}">${escapeHtml(x.fagIKlassen || x.fag || '')} — ${escapeHtml(x.navn||'')}</option>`).join('');
     } else {
       wrap.style.display = 'none';
     }
@@ -2126,7 +2145,7 @@
       return;
     }
     const child = myChildren[currentChildIndex];
-    const classTeachers = teachers.filter(x => x.tildeltKlasse === child.klasse);
+    const classTeachers = larereForKlasse(child.klasse);
     const teacherSelect = document.getElementById('guardianNewMsgTeacher');
     const teacher = classTeachers.length > 1
       ? classTeachers.find(x => x.id === teacherSelect.value)
