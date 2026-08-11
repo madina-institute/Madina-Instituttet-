@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 00:25:55 -->
+<!-- SIST-ENDRET: 2026-08-11 10:27:20 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -5006,6 +5006,13 @@
     if(!erOversteLeder()){ showToast('Kun eier kan slette testdata.'); return; }
 
     const samlinger = ['registrations', 'students', 'guardians', 'teachers', 'classes'];
+    // 🔴 To samlinger bærer ALDRI merket, og ble derfor stående igjen
+    // etter hver opprydding:
+    //   foreldreTilgang — skrives av indeksen, ikke av generatoren
+    //   studentPayments — registreres for hånd, uten merke
+    // Resultatet var innbetalinger til elever som ikke finnes, og
+    // foreldrekoblinger til barn som er borte. De ryddes etter elevene:
+    // det er elev-id-ene som avgjør hva som skal bort.
     const funnet = {};
     let total = 0;
     try{
@@ -5050,10 +5057,36 @@
       }
     }
 
+    // Rydd det som peker på de slettede elevene.
+    let ekstra = 0;
+    const slettedeElever = new Set(funnet['students'] || []);
+    if(slettedeElever.size){
+      try{
+        const bet = await getDocs(collection(db, 'studentPayments'));
+        for(const d of bet.docs){
+          if(!slettedeElever.has(d.data().studentId)) continue;
+          try{ await deleteDoc(doc(db, 'studentPayments', d.id)); ekstra++; }
+          catch(err){ console.error('studentPayments', err); }
+        }
+      } catch(err){ console.error('studentPayments/søk', err); }
+    }
+    // Foreldrekoblinger til testadresser. Domenet er markøren her —
+    // raden har ikke noe annet som skiller den ut.
+    try{
+      const fk = await getDocs(collection(db, 'foreldreTilgang'));
+      for(const d of fk.docs){
+        if(!d.id.includes(TEST_EPOST_DOMENE)) continue;
+        try{ await deleteDoc(doc(db, 'foreldreTilgang', d.id)); ekstra++; }
+        catch(err){ console.error('foreldreTilgang', err); }
+      }
+    } catch(err){ console.error('foreldreTilgang/søk', err); }
+
     visTestdataStatus();
     if(feilet.length === 0){
       melding('ADM-TST-06', '✓ Testdata slettet',
-            slettet + ' dokumenter slettet.\n\n' +
+            slettet + ' dokumenter slettet' +
+            (ekstra ? ', pluss ' + ekstra + ' betalinger og foreldrekoblinger som pekte på dem' : '') +
+            '.\n\n' +
             'Innloggingskontoene på ' + TEST_EPOST_DOMENE + ' ligger i ' +
             'Firebase Authentication og må fjernes der.',
             'slettTestdata · slettet=' + slettet);
@@ -12972,7 +13005,20 @@
       studentRecord.navn = reg.elev_navn || '';
       studentRecord.program = program;
       studentRecord.sprakvalg = mapRegistrationSprakvalg(reg);
-      studentRecord.klasse = '';
+      // Klasse: foreslås automatisk, men bare når svaret er entydig.
+      //
+      // Uten klasse virker verken timeplan, oppmøte eller lekser for
+      // eleven — foreldreportalen står da med tomme faner uten å si
+      // hvorfor. Samtidig er klassetildeling en pedagogisk beslutning,
+      // og en gjetning ville vært verre enn ingenting.
+      //
+      // Derfor: finnes det NØYAKTIG én aktiv klasse for programmet,
+      // settes den. Er det flere, står feltet tomt og eleven havner i
+      // «Uten klasse» — der noen tar avgjørelsen bevisst.
+      const passende = (cache.classes || []).filter(k =>
+        k.navn && String(k.aktiv || '') !== 'Nei' &&
+        String(k.program || '').trim() === String(program || '').trim());
+      studentRecord.klasse = passende.length === 1 ? passende[0].id : '';
       studentRecord.foresatt = guardianId;
       studentRecord.foresatt2 = guardianId2;
       studentRecord.betalt = 'Nei';
