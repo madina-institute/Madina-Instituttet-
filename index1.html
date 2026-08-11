@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 13:38:18 -->
+<!-- SIST-ENDRET: 2026-08-11 14:22:33 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1586,6 +1586,48 @@
   };
   window.velgVkFag = function(f){ vkFag = f; tegnVelkomst(); };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // HVOR HAVNER DETTE?
+  //
+  // Alt læreren skriver får klasse og fag fra valget øverst. Blir det
+  // valget stående feil — en gammel fane, et bytte i et annet vindu —
+  // havner leksen hos feil klasse uten at noe sier fra. Foreldrene får
+  // beskjed om en lekse barnet aldri fikk.
+  //
+  // To ting hindrer det:
+  //   1. Valget må henge sammen: faget må finnes i klassen.
+  //   2. Målet sies HØYT før noe sendes, ikke antas.
+  // ═══════════════════════════════════════════════════════════════════
+  function malErGyldig(){
+    if(!valgtKlasse) return 'Ingen klasse er valgt.';
+    const klasser = mineKlasser();
+    if(!klasser.includes(valgtKlasse)) return 'Du underviser ikke i denne klassen lenger.';
+    const fag = mineFagFor(valgtKlasse);
+    if(fag.length && valgtFag && !fag.includes(valgtFag)){
+      return 'Faget «' + valgtFag + '» hører ikke til denne klassen.';
+    }
+    return null;
+  }
+
+  // Spør før det sendes. Teksten sier klasse og fag med rene ord —
+  // det er den eneste sjansen til å oppdage at man står feil.
+  function bekreftMal(hva){
+    const feil = malErGyldig();
+    if(feil){
+      notify(feil + ' ' + (currentLang === 'ar'
+        ? 'اختر الصف والمادة من جديد.' : 'Velg klasse og fag på nytt.'));
+      visVelkomst();
+      return false;
+    }
+    const ar = currentLang === 'ar';
+    return confirm(
+      (ar ? 'هيتبعت لـ:' : 'Dette sendes til:') + '\n\n' +
+      '  🏫 ' + resolveClassName(valgtKlasse) +
+      (valgtFag ? '\n  📖 ' + valgtFag : '') + '\n\n' +
+      (ar ? 'المحتوى: ' : 'Innhold: ') + hva + '\n\n' +
+      (ar ? 'أكمل؟' : 'Fortsette?'));
+  }
+
   window.startArbeid = function(){
     // Uten klasse skjer ingenting. Panelet har bare denne ene inngangen,
     // og den krever et valg.
@@ -2936,6 +2978,10 @@
       notify(currentLang === 'ar' ? 'يرجى تعبئة العنوان والوصف.' : 'Fyll ut tittel og beskrivelse.');
       return;
     }
+    // 🔴 En ny lekse går ut til alle foresatte i klassen med én gang.
+    // Derfor sies målet høyt her — ikke ved en endring av noe som
+    // allerede ligger ute, som beholder klassen den ble laget i.
+    if(!editingHomeworkId && !bekreftMal(tittel)) return;
     try{
       if(editingHomeworkId){
         await updateDoc(doc(db, 'homework', editingHomeworkId), { tittel, beskrivelse, frist });
@@ -2944,6 +2990,10 @@
       } else {
         await addDoc(collection(db, 'homework'), {
           klasse: valgtKlasse,
+          // Faget lagres på leksen. Uten det måtte foreldreportalen
+          // gjette seg til det fra lærerkortets hovedfag — og en lærer
+          // med to fag fikk da alle leksene sine under samme fag.
+          fag: valgtFag || '',
           tittel, beskrivelse, frist,
           larer: currentTeacher.id,
           dato: todayISO()
@@ -3223,7 +3273,19 @@
     const mine = myClassMessages();
     const rows = [];
     // Real, titled threads for this class.
-    messageThreads.filter(th => th.klasse === valgtKlasse).forEach(th => {
+    // 🔴 Tråden hører til ÉN lærer, ikke til klassen.
+    //
+    // Filteret sto på klasse alene. Da leste alle lærerne i klassen alle
+    // samtalene: en forelder skriver til koranlæreren om noe personlig
+    // ved barnet, og arabisklæreren i samme klasse ser det.
+    //
+    // teacherId har ligget på tråden hele tiden — den ble bare ikke brukt.
+    //
+    // Tråder uten teacherId er fra før feltet ble tatt i bruk. De vises
+    // fortsatt, ellers ville gamle samtaler forsvunnet for alle; de er
+    // merket i listen så det er tydelig at mottakeren er ukjent.
+    messageThreads.filter(th => th.klasse === valgtKlasse
+        && (!th.teacherId || th.teacherId === currentTeacher.id)).forEach(th => {
       const threadMsgs = mine.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       const student = th.studentId ? students.find(s => s.id === th.studentId) : null;
       const lastMsg = threadMsgs[0];
@@ -3231,7 +3293,9 @@
       const guardianLabel = student ? student.navn : (th.guardianId ? resolveGuardianLabel(th.guardianId) : '');
       rows.push({
         key: th.id, isLegacy: false, status: th.status || 'open',
-        title: th.title || t('untitledThread'), guardianLabel,
+        title: (th.title || t('untitledThread')) +
+               (th.teacherId ? '' : (currentLang === 'ar' ? '  ⚠️ بدون مستلم' : '  ⚠️ uten mottaker')),
+        guardianLabel,
         lastActivityAt: th.lastActivityAt || th.createdAt || '',
         lastPreview: lastMsg ? (lastMsg.tekst || '') : '',
         lastReplierRelation,
@@ -3623,10 +3687,12 @@
       notify(currentLang === 'ar' ? 'الرجاء إدخال عنوان ورابط.' : 'Fyll ut tittel og lenke.');
       return;
     }
+    if(!bekreftMal(tittel)) return;
     try{
       await addDoc(collection(db, 'practiceVideos'), {
         larer: currentTeacher.id,
         klasse: valgtKlasse,
+        fag: valgtFag || '',
         tittel, url, beskrivelse,
         dato: new Date().toISOString()
       });
@@ -3717,6 +3783,9 @@
       extra.eventDate = eDate;
       extra.eventDesc = eDesc;
     }
+    // Går ut til alle foresatte i klassen. Fag er ikke relevant her —
+    // en klassemelding gjelder klassen, ikke et fag.
+    if(!bekreftMal(tekst.slice(0, 60))) return;
     try{
       await addDoc(collection(db, 'classPosts'), {
         klasse: valgtKlasse,
@@ -4444,6 +4513,9 @@ ${extraScript || ''}
   };
 
   window.finishLessonPlanSubmission = async function(fields){
+    // Planen sendes også på e-post til foresatte i klassen. Målet må
+    // stemme med det som er valgt — ikke med det som sto der i går.
+    if(!bekreftMal((fields && fields.emne) || 'undervisningsplan')) return;
     try{
       const { fag, dato, emne, mal, metode, materiell, oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser } = fields;
 
