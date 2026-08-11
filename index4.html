@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 14:47:27 -->
+<!-- SIST-ENDRET: 2026-08-11 15:27:44 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -225,7 +225,9 @@
     color:#fff; margin:0 0 8px; line-height:1.15;
   }
   html[dir="rtl"] .fv-navn{ font-family:'Tajawal',sans-serif; font-size:27px; }
-  .fv-under{ font-family:'Jost',sans-serif; font-size:13.5px; color:#cfe6fb; margin:0 0 22px; }
+  .fv-under{ font-family:'Jost',sans-serif; font-size:13.5px; color:#cfe6fb; margin:0 0 4px; }
+  .fv-hint{ font-family:'Jost',sans-serif; font-size:12px; color:#a9d2f2; margin:0 0 20px; }
+  html[dir="rtl"] .fv-hint{ font-family:'Tajawal',sans-serif; }
   html[dir="rtl"] .fv-under{ font-family:'Tajawal',sans-serif; }
   .fv-kort{
     background:#fff; border-radius:18px; padding:8px 0 18px;
@@ -264,6 +266,10 @@
     background:rgba(183,146,74,.16); color:#8a6d1d; border-radius:999px;
     padding:2px 8px; margin-inline-start:6px;
   }
+  /* Pilen sier at raden er en inngang. Uten den så kortet ut som en
+     kvittering man bare leser - og da leter man etter en knapp som ikke
+     finnes. */
+  .fv-pil{ display:block; font-size:15px; color:var(--emerald); font-weight:400; margin-top:2px; }
   .fv-sum{ padding:14px 18px 2px; }
   .fv-sum-rad{
     display:flex; justify-content:space-between; gap:10px; padding:7px 0;
@@ -528,6 +534,7 @@
       <div class="fv-hilsen" id="fvHilsen">Velkommen</div>
       <h1 class="fv-navn" id="fvNavn"></h1>
       <p class="fv-under" id="fvUnder"></p>
+      <p class="fv-hint" id="fvHint"></p>
       <div class="fv-kort" id="fvKort"></div>
       <button class="fv-logg-ut" onclick="doParentLogout()">Logg ut</button>
     </div>
@@ -1861,6 +1868,10 @@
               : (myChildren.length === 1 ? 'Du har ett barn på skolen' : 'Du har ' + myChildren.length + ' barn på skolen'));
     }
 
+    const hint = document.getElementById('fvHint');
+    if(hint) hint.textContent = myChildren.length === 0 ? ''
+      : (ar ? 'اضغط على اسم الابن لفتح صفحته' : 'Trykk på et barn for å åpne siden');
+
     if(myChildren.length === 0){
       el.innerHTML = `<div class="fv-tom">${ar
         ? 'لو ده مش صح، تواصل مع المدرسة — ممكن يكون الربط بين حسابك وأبنائك ناقص.'
@@ -1894,7 +1905,9 @@
               b.klasse ? '' : `<span class="fv-uten-klasse">${ar ? 'بدون صف' : 'uten klasse'}</span>`}</span>
             ${rabatt > 0 ? `<span class="fv-rabatt">${ar ? 'خصم إخوة' : 'søskenrabatt'} −${rabatt} %</span>` : ''}
           </span>
-          <span class="fv-barn-belop">${total.toLocaleString('no-NO')} kr</span>
+          <span class="fv-barn-belop">${total.toLocaleString('no-NO')} kr
+            <span class="fv-pil">${ar ? '←' : '→'}</span>
+          </span>
         </button>`;
     }).join('');
 
