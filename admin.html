@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 11:51:31 -->
+<!-- SIST-ENDRET: 2026-08-11 12:04:41 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3843,6 +3843,23 @@
     if(authHarSvart) return;
     const vente = document.getElementById('venteSkjerm');
     if(!vente || vente.style.display === 'none') return;
+
+    // 🔴 To helt ulike situasjoner så like ut fra utsiden.
+    //
+    // Er auth.currentUser satt, HAR Firebase svart — det er våre egne
+    // oppslag (roller, adminUsers) som drøyer. Å kaste brukeren ut til
+    // innloggingen da er feil: han er innlogget, og et nytt forsøk gir
+    // nøyaktig samme venting. Meldingen «sjekk nettforbindelsen» sendte
+    // folk på leting etter en nettfeil som ikke fantes.
+    //
+    // Er currentUser tom, har Firebase virkelig ikke svart, og
+    // innloggingsskjermen er riktig sted å havne.
+    const tekst = document.querySelector('#venteSkjerm .vente-tekst')
+               || document.querySelector('#venteSkjerm p');
+    if(auth.currentUser){
+      if(tekst) tekst.textContent = 'Henter tilgangen din — det tar lengre tid enn vanlig...';
+      return;
+    }
     vente.style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
     const err = document.getElementById('loginError');
@@ -3933,11 +3950,22 @@
         return;
       }
       currentUserEmail = user.email;
-      lyttPaaMinTilgang();
-      document.getElementById('loginScreen').style.display = 'none';
+      // 🔴 Venteflaten slippes FØR noe annet gjøres.
+      //
+      // lyttPaaMinTilgang() sto her, rett foran denne linjen. Kastet den,
+      // ble authHarSvart aldri satt — og etter åtte sekunder viste
+      // panelet «Fikk ikke bekreftet økten din», som om nettet var nede.
+      // Innloggingen virket, men kunne ikke fullføres.
+      //
+      // Ingenting som legges til senere skal kunne holde innloggingen
+      // igjen. Derfor: slipp skjermen først, gjør resten etterpå, og la
+      // resten feile for seg selv hvis den må.
       authHarSvart = true;
+      document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('venteSkjerm').style.display = 'none';
       document.getElementById('appRoot').style.display = 'block';
+      try{ lyttPaaMinTilgang(); }
+      catch(err){ console.error('lyttPaaMinTilgang', err); }
       const who = document.getElementById('loggedInAs');
       if(who) who.textContent = user.email;
       // Fanene skjules ikke lenger. En skjult fane ser ut som noe som
