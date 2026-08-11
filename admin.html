@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 00:58:44 -->
+<!-- SIST-ENDRET: 2026-08-12 01:10:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -7316,8 +7316,11 @@
     if(!row) return;
     const colDisplay = (c) => visFeltverdi(schema, row, c);
     const selectedKeys = [...document.querySelectorAll('.pd-print-check:checked')].map(cb => cb.value);
+    const skjulHelse = !kanSeHelse();
 
-    const essentialRows = schema.fields.filter(f => f.essential && f.key !== 'bilde').map(f => {
+    const essentialRows = schema.fields
+      .filter(f => f.essential && f.key !== 'bilde' && !(skjulHelse && erHelsefelt(f.key)))
+      .map(f => {
       let val = colDisplay(f.key);
       if(f.key === 'elev_fdato' && val){
         const age = personComputeAge(val);
@@ -7325,31 +7328,38 @@
       }
       return val ? `<tr><th>${escapeHtml(f.label)}</th><td>${escapeHtml(val)}</td></tr>` : '';
     }).join('');
-    const extraRows = selectedKeys.map(key => {
-      const f = schema.fields.find(ff => ff.key === key);
-      const val = colDisplay(key);
-      return (f && val) ? `<tr><th>${escapeHtml(f.label)}</th><td>${escapeHtml(val)}</td></tr>` : '';
-    }).join('');
+    // 🔴 HELSEFELTENE MASKERES OGSÅ PÅ PAPIR.
+    //
+    // Skjermen viste dem som ★★★★★ for den uten rettigheten — men
+    // utskriften leste den RÅ verdien fra samme rad. Feltet sto fortsatt
+    // i listen man kunne krysse av, så allergier og diagnoser gikk rett
+    // ut på et ark, for den som ikke har lov til å se dem på skjermen.
+    //
+    // Et ark forlater systemet. Det kan ikke trekkes tilbake, og ingen
+    // logg fanger at det ble skrevet ut.
+    const extraRows = selectedKeys
+      .filter(key => !(skjulHelse && erHelsefelt(key)))
+      .map(key => {
+        const f = schema.fields.find(ff => ff.key === key);
+        const val = colDisplay(key);
+        return (f && val) ? `<tr><th>${escapeHtml(f.label)}</th><td>${escapeHtml(val)}</td></tr>` : '';
+      }).join('');
 
-    const win = window.open('', '_blank');
-    win.document.write(`
-      <html><head><title>${escapeHtml(row.navn || 'Utskrift')} — Madina Skole</title>
-      <style>
-        body{font-family:Arial,sans-serif; padding:30px; color:#1c2b24;}
-        h1{font-size:22px; margin-bottom:2px;}
-        .sub{color:#666; font-size:13px; margin-bottom:20px;}
-        table{border-collapse:collapse; width:100%; max-width:640px;}
-        th,td{text-align:start; padding:8px 10px; border-bottom:1px solid #ddd; font-size:14px;}
-        th{width:220px; color:#444; font-weight:600;}
-      </style></head><body>
-        <h1>${escapeHtml(row.navn || '—')}</h1>
-        <div class="sub">Madina Skole — utskrevet ${new Date().toLocaleDateString('no-NO')}</div>
-        <table>${essentialRows}${extraRows}</table>
-      </body></html>
-    `);
-    win.document.close();
-    win.focus();
-    win.print();
+    // 🔴 Helseopplysninger tas ALDRI med for den som ikke har rettigheten.
+    // Skjermen maskerer dem som ★★★★★; et ark som ikke gjorde det samme,
+    // ville sendt dem ut av systemet i papirform — og papir kan man ikke
+    // trekke tilbake.
+    const helseTatt = selectedKeys.filter(k => erHelsefelt(k)).length;
+    const avvik = (helseTatt && skjulHelse)
+      ? [{ hard: true, tekst: 'Helseopplysninger er utelatt — du har ikke tilgang til dem.' }]
+      : [];
+
+    apneUtskrift(utskriftsmal({
+      tittel: row.navn || row.elev_navn || '—',
+      undertittel: (SCHEMAS[type] && SCHEMAS[type].label) ? SCHEMAS[type].label : '',
+      avvik,
+      innhold: `<table class="nv">${essentialRows}${extraRows}</table>`
+    }));
   };
 
   // ===================================================================
@@ -8829,6 +8839,148 @@
     return [start + '–' + koKlokke(midt), koKlokke(midt) + '–' + end];
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // FELLES UTSKRIFTSMAL
+  //
+  // Panelet hadde tre utskrifter, hver med sitt eget stilark skrevet for
+  // hånd: personkortet, timeforberedelsen og eksporten. De så ut som tre
+  // ulike skoler. Verre: rettet man noe i den ene — en marg, en skriftstørrelse,
+  // et sidetall — fulgte de to andre ikke med, og forskjellen ble først
+  // synlig på papir, når arket lå på bordet.
+  //
+  // Nå bygges alle fra samme mal. Identiteten er brosjyrens: blått
+  // toppfelt, logo, skoleår over tittelen, Cormorant til overskrifter og
+  // Jost til resten.
+  //
+  // 📌 Men ikke brosjyrens oppgave. Brosjyren leses én gang med tid; disse
+  // arkene leses i forbifarten og skrives ut i svart-hvitt. Derfor er
+  // fargefylte tabeller og luftige marger utelatt.
+  //
+  // ⚠️ Avvik står ØVERST. Den som bare rekker å lese én ting, skal lese
+  // den som gjør dagen umulig.
+  // ═══════════════════════════════════════════════════════════════════
+  function utskriftsmal({ tittel, undertittel, avvik, innhold, bunn }){
+    return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
+      <title>${escapeHtml(tittel || 'Madina Skole')} — Madina Skole</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        @page{ margin:0; }
+        *{ box-sizing:border-box; }
+        body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; }
+        .ark{ max-width:780px; margin:0 auto; }
+
+        .topp{
+          background:linear-gradient(135deg,#2f7cc9 0%, #1c5490 100%);
+          color:#fff; padding:22px 26px 20px; text-align:center;
+        }
+        .topp img{ height:38px; width:auto; margin-bottom:8px; }
+        .aar{
+          font-size:10px; letter-spacing:.24em; text-transform:uppercase;
+          color:#cfe3f6; margin-bottom:4px;
+        }
+        .topp h1{
+          font-family:'Cormorant Garamond',Georgia,serif; font-weight:700;
+          font-size:29px; margin:0 0 3px; letter-spacing:.01em;
+        }
+        .topp .under{ font-size:12px; color:#dceaf7; }
+
+        .kropp{ padding:20px 26px 26px; }
+        h2{
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:18px;
+          color:#1c5490; margin:20px 0 8px; padding-bottom:5px;
+          border-bottom:2px solid #e4edf6;
+        }
+        h2:first-child{ margin-top:0; }
+        p{ font-size:12.5px; line-height:1.65; margin:0 0 10px; }
+
+        table{ border-collapse:collapse; width:100%; font-size:12.5px; }
+        th{
+          background:#eef4fa; color:#1c5490; font-weight:600; font-size:10.5px;
+          letter-spacing:.06em; text-transform:uppercase;
+          padding:7px 9px; text-align:left; border-bottom:2px solid #cfe0ef;
+        }
+        td{ padding:8px 9px; border-bottom:1px solid #e4edf6; vertical-align:top; }
+        /* Nøkkel–verdi-tabeller (personkortet): etiketten står i en smal
+           venstrekolonne uten fylt bakgrunn, ellers blir hele arket blått. */
+        table.nv th{
+          background:transparent; width:210px; text-transform:none;
+          letter-spacing:0; font-size:12.5px; color:#5a6b7d; font-weight:500;
+          border-bottom:1px solid #e4edf6;
+        }
+        tr.blokkstart td{ border-top:2px solid #cfe0ef; }
+        tr.blokkstart:first-child td{ border-top:0; }
+        .tid{ font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums; }
+        .fag{ font-weight:600; }
+        .sprak td:first-child, .sprak td:nth-child(2){ color:#8a9aa8; }
+        .tom{ color:#a83c3c; font-style:italic; }
+
+        .avvik{
+          border-inline-start:4px solid #b7924a; background:#fdf8ec;
+          border-radius:0 7px 7px 0; padding:10px 14px; margin-bottom:8px;
+          font-size:12.5px; line-height:1.55; color:#6b5312;
+        }
+        .avvik.hard{ border-inline-start-color:#a83c3c; background:#fbeded; color:#8f2f2f; }
+
+        .kol{ columns:3; column-gap:22px; font-size:12.5px; line-height:2; }
+        .kol span{ display:block; break-inside:avoid; }
+        .kol small{ color:#7b8a93; }
+        .tall{
+          display:flex; gap:22px; flex-wrap:wrap; font-size:12px;
+          color:#5a6b7d; margin-bottom:9px;
+        }
+        .tall b{ color:#1c5490; }
+
+        .bunn{
+          margin-top:24px; padding:11px 26px; background:#f3f7fb;
+          border-top:1px solid #e4edf6; font-size:10.5px; color:#7b8a93;
+          display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+        }
+        /* Uten dette skriver nettleseren ut det blå toppfeltet som hvitt,
+           og arket mister det eneste som gjør det til skolens. */
+        @media print{
+          body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        }
+      </style></head><body>
+      <div class="ark">
+        <div class="topp">
+          <img src="${LOGO_DATA_URI}" alt="Madina Skole">
+          <div class="aar">Skoleåret ${escapeHtml(SKOLEAR)}</div>
+          <h1>${escapeHtml(tittel || '')}</h1>
+          ${undertittel ? `<div class="under">${escapeHtml(undertittel)}</div>` : ''}
+        </div>
+        <div class="kropp">
+          ${(avvik || []).map(a =>
+            `<div class="avvik${a.hard ? ' hard' : ''}">${a.hard ? '🔴' : '⚠️'} ${escapeHtml(a.tekst)}</div>`).join('')}
+          ${innhold}
+        </div>
+        <div class="bunn">
+          <span>${escapeHtml(bunn || 'Madina Skole · Hagelundveien 2b, 0963 Oslo')}</span>
+          <span>Skrevet ut ${new Date().toLocaleDateString('no-NO')}</span>
+        </div>
+      </div>
+      </body></html>`;
+  }
+
+  // Åpner arket. Blokkerer nettleseren vinduet, sier vi det — første
+  // utgave lot trykket dø uten et ord, og man trodde knappen var ødelagt.
+  function apneUtskrift(html){
+    const win = window.open('', '_blank');
+    if(!win){
+      melding('ADM-UTS-02', '⛔ Utskrift blokkert',
+        'Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for ' +
+        'denne siden og prøv igjen.',
+        'apneUtskrift · window.open returnerte null (popup-sperre)');
+      return false;
+    }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    // Skriftene må rekke å lastes, ellers skrives arket ut i systemfonten.
+    setTimeout(() => win.print(), 500);
+    return true;
+  }
+
   // Arabisk og urdu er de to sporene elevene deles i. De brukes av både
   // klassekortet, utskriften og redigeringen — og må derfor stå FØR alle
   // tre. Sto de lenger nede som const, var de i det dødsonen der navnet
@@ -9062,146 +9214,34 @@
     aktive.forEach(s => {
       sprakTall[KO_SPRAKFAG.includes(s.sprakvalg) ? s.sprakvalg : '(ikke valgt)']++;
     });
-    const win = window.open('', '_blank');
-    if(!win){ showToast('Nettleseren blokkerte utskriften. Tillat popup for denne siden.'); return; }
-    // ═══════════════════════════════════════════════════════════════
-    // SAMME UTTRYKK SOM BROSJYREN — men ikke samme oppgave.
-    //
-    // Brosjyren leses én gang, med tid, av en familie som ikke kjenner
-    // skolen. Dette arket leses i forbifarten av en vikar som skal inn
-    // i et rom om to minutter. Derfor er identiteten hentet — blått
-    // toppfelt, logo, Cormorant til overskrifter, Jost til resten — mens
-    // fargefyllte tabeller og luftige marger er utelatt: arket skrives ut
-    // i svart-hvitt hver uke, og skal kunne skummes på fem sekunder.
-    //
-    // 📌 Avvikene står ØVERST, ikke nederst. En vikar som bare rekker å
-    // lese én ting, skal lese den som gjør dagen umulig.
-    // ═══════════════════════════════════════════════════════════════
-    win.document.write(`<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
-      <title>${escapeHtml(k.navn || 'Klasse')} — Madina Skole</title>
-      <link rel="preconnect" href="https://fonts.googleapis.com">
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
-      <style>
-        @page{ margin:0; }
-        *{ box-sizing:border-box; }
-        body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; }
-        .ark{ max-width:780px; margin:0 auto; }
+    apneUtskrift(utskriftsmal({
+      tittel: k.navn || '',
+      undertittel: (k.program || '') + (k.trinn ? ' · Trinn ' + k.trinn : ''),
+      avvik,
+      innhold: `
+        <h2>Timeplan</h2>
+        ${plan.length === 0 ? '<p class="tom">Ingen timer lagt inn.</p>' : `
+        <table><thead><tr><th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th></tr></thead><tbody>
+          ${plan.flatMap(b => b.spor.map((s, i) => `
+            <tr class="${i === 0 ? 'blokkstart' : 'sprak'}">
+              <td>${i === 0 ? escapeHtml(b.dag) : ''}</td>
+              <td class="tid">${i === 0 ? escapeHtml(b.start + '–' + b.slutt) : ''}</td>
+              <td class="fag">${escapeHtml(s.fag)}</td>
+              <td>${s.larere.length ? escapeHtml(s.larere.join(' · ')) : '<span class="tom">uten lærer</span>'}</td>
+            </tr>`)).join('')}
+        </tbody></table>`}
 
-        /* Toppfeltet er brosjyrens — samme blå, samme logo, samme
-           skoleår over tittelen. Det er det som gjør at arket kjennes
-           igjen som skolens, uten at noe annet må ligne. */
-        .topp{
-          background:linear-gradient(135deg,#2f7cc9 0%, #1c5490 100%);
-          color:#fff; padding:22px 26px 20px; text-align:center;
-        }
-        .topp img{ height:38px; width:auto; margin-bottom:8px; }
-        .aar{
-          font-size:10px; letter-spacing:.24em; text-transform:uppercase;
-          color:#cfe3f6; margin-bottom:4px;
-        }
-        .topp h1{
-          font-family:'Cormorant Garamond',Georgia,serif; font-weight:700;
-          font-size:29px; margin:0 0 3px; letter-spacing:.01em;
-        }
-        .topp .under{ font-size:12px; color:#dceaf7; }
-
-        .kropp{ padding:20px 26px 26px; }
-        h2{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:18px;
-          color:#1c5490; margin:20px 0 8px; padding-bottom:5px;
-          border-bottom:2px solid #e4edf6;
-        }
-        h2:first-child{ margin-top:0; }
-
-        table{ border-collapse:collapse; width:100%; font-size:12.5px; }
-        th{
-          background:#eef4fa; color:#1c5490; font-weight:600; font-size:10.5px;
-          letter-spacing:.06em; text-transform:uppercase;
-          padding:7px 9px; text-align:left; border-bottom:2px solid #cfe0ef;
-        }
-        td{ padding:8px 9px; border-bottom:1px solid #e4edf6; vertical-align:top; }
-        /* Blokkskillet er tykkere enn linjen mellom to spor i samme
-           blokk. Da ser man med én gang hvor en time slutter og den
-           neste begynner — også når to fag deler klokkeslett. */
-        tr.blokkstart td{ border-top:2px solid #cfe0ef; }
-        tr.blokkstart:first-child td{ border-top:0; }
-        .tid{ font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums; }
-        .fag{ font-weight:600; }
-        .sprak td:first-child, .sprak td:nth-child(2){ color:#8a9aa8; }
-        .tom{ color:#a83c3c; font-style:italic; }
-
-        /* Avvikene. Rød strek for det som stopper dagen, oransje for det
-           som bare bør ses på. */
-        .avvik{
-          border-inline-start:4px solid #b7924a; background:#fdf8ec;
-          border-radius:0 7px 7px 0; padding:10px 14px; margin-bottom:8px;
-          font-size:12.5px; line-height:1.55; color:#6b5312;
-        }
-        .avvik.hard{ border-inline-start-color:#a83c3c; background:#fbeded; color:#8f2f2f; }
-
-        .elever{ columns:3; column-gap:22px; font-size:12.5px; line-height:2; }
-        .elever span{ display:block; break-inside:avoid; }
-        .elever small{ color:#7b8a93; }
-        .tall{
-          display:flex; gap:22px; flex-wrap:wrap; font-size:12px;
-          color:#5a6b7d; margin-bottom:9px;
-        }
-        .tall b{ color:#1c5490; }
-
-        .bunn{
-          margin-top:24px; padding:11px 26px; background:#f3f7fb;
-          border-top:1px solid #e4edf6; font-size:10.5px; color:#7b8a93;
-          display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
-        }
-        @media print{
-          body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-          .elever{ columns:3; }
-        }
-      </style></head><body>
-      <div class="ark">
-        <div class="topp">
-          <img src="${LOGO_DATA_URI}" alt="Madina Skole">
-          <div class="aar">Skoleåret ${escapeHtml(SKOLEAR)}</div>
-          <h1>${escapeHtml(k.navn || '')}</h1>
-          <div class="under">${escapeHtml(k.program || '')}${k.trinn ? ' · Trinn ' + escapeHtml(k.trinn) : ''}</div>
+        <h2>Elever — ${aktive.length}</h2>
+        <div class="tall">
+          ${Object.entries(sprakTall).filter(([, n]) => n > 0)
+            .map(([n, v]) => `<span>${escapeHtml(n)}: <b>${v}</b></span>`).join('')}
         </div>
-
-        <div class="kropp">
-          ${avvik.map(a => `<div class="avvik${a.hard ? ' hard' : ''}">${a.hard ? '🔴' : '⚠️'} ${escapeHtml(a.tekst)}</div>`).join('')}
-
-          <h2>Timeplan</h2>
-          ${plan.length === 0 ? '<p class="tom">Ingen timer lagt inn.</p>' : `
-          <table><thead><tr><th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th></tr></thead><tbody>
-            ${plan.flatMap(b => b.spor.map((s, i) => `
-              <tr class="${i === 0 ? 'blokkstart' : 'sprak'}">
-                <td>${i === 0 ? escapeHtml(b.dag) : ''}</td>
-                <td class="tid">${i === 0 ? escapeHtml(b.start + '–' + b.slutt) : ''}</td>
-                <td class="fag">${escapeHtml(s.fag)}</td>
-                <td>${s.larere.length ? escapeHtml(s.larere.join(' · ')) : '<span class="tom">uten lærer</span>'}</td>
-              </tr>`)).join('')}
-          </tbody></table>`}
-
-          <h2>Elever — ${aktive.length}</h2>
-          <div class="tall">
-            ${Object.entries(sprakTall).filter(([, n]) => n > 0)
-              .map(([n, v]) => `<span>${escapeHtml(n)}: <b>${v}</b></span>`).join('')}
-          </div>
-          ${aktive.length === 0 ? '<p class="tom">Ingen elever i klassen.</p>'
-            : `<div class="elever">${aktive.map(s =>
-                '<span>' + escapeHtml(s.navn || '—') +
-                (s.sprakvalg ? ' <small>(' + escapeHtml(s.sprakvalg) + ')</small>' : '') +
-                '</span>').join('')}</div>`}
-        </div>
-
-        <div class="bunn">
-          <span>Madina Skole · Hagelundveien 2b, 0963 Oslo</span>
-          <span>Skrevet ut ${new Date().toLocaleDateString('no-NO')}</span>
-        </div>
-      </div>
-      </body></html>`);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 400);
+        ${aktive.length === 0 ? '<p class="tom">Ingen elever i klassen.</p>'
+          : `<div class="kol">${aktive.map(s =>
+              '<span>' + escapeHtml(s.navn || '—') +
+              (s.sprakvalg ? ' <small>(' + escapeHtml(s.sprakvalg) + ')</small>' : '') +
+              '</span>').join('')}</div>`}`
+    }));
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -15714,100 +15754,32 @@
 
       const metaLine = (resolveDynName('teachers', plan.larer)||'—') + ' · ' + (resolveDynName('classes', plan.klasse)||'—') + ' · ' + (plan.fag||'—') + ' · ' + (plan.dato||'—');
 
-      const printDoc = `<!DOCTYPE html>
-<html lang="no"><head><meta charset="UTF-8">
-<title>Timeforberedelse</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  @page{ margin:14mm; }
-  *{box-sizing:border-box;}
-  body{ font-family:'Lora',Georgia,serif; color:#1c2c24; margin:0; padding:0; background:#fbf8f1; }
-  .page-frame{
-    position:relative; max-width:760px; margin:0 auto; padding:30px 40px 40px;
-    border:2px solid #1f4a3a; border-radius:6px; background:#fff;
-  }
-  .page-frame::before{
-    content:''; position:absolute; inset:7px; border:1px solid #b7924a; border-radius:3px; pointer-events:none;
-  }
-  .header-band{ text-align:center; padding-bottom:18px; margin-bottom:22px; border-bottom:2px solid #b7924a; }
-  .logo-frame{
-    width:76px; height:76px; margin:0 auto 12px; border-radius:50%; border:3px solid #b7924a; padding:5px;
-    display:flex; align-items:center; justify-content:center; background:#fff; box-shadow:0 3px 8px rgba(15,43,33,0.18);
-  }
-  .logo-frame img{ width:100%; height:100%; object-fit:contain; border-radius:50%; }
-  .school-name{ font-family:'Jost',sans-serif; font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#b7924a; margin-bottom:6px; }
-  h1{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:27px; color:#0f2b21; margin:0 0 10px; letter-spacing:0.01em; }
-  .meta-bar{
-    display:inline-flex; flex-wrap:wrap; justify-content:center; gap:6px 16px; font-size:12.5px; color:#3d4a42;
-    background:#f3ecdb; border:1px solid #e4d9bc; border-radius:20px; padding:8px 20px; font-family:'Jost',sans-serif;
-  }
-  .meta-bar b{ color:#1f4a3a; font-weight:700; }
-  .block{ margin-bottom:17px; page-break-inside:avoid; }
-  .block .lbl{
-    font-weight:700; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:#b7924a;
-    margin-bottom:5px; font-family:'Jost',sans-serif; border-bottom:1px dotted #ddd3be; padding-bottom:3px;
-  }
-  .block .val{ font-size:14.5px; white-space:pre-wrap; line-height:1.65; }
-  hr{ border:none; height:1px; margin:24px 0; background:linear-gradient(90deg, transparent, #b7924a 50%, transparent); }
-  .footer-note{
-    text-align:center; margin-top:26px; padding-top:14px; border-top:1px solid #e4d9bc;
-    font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:#8a9a90;
-  }
-  .top-actions{ max-width:760px; margin:0 auto 14px; padding:0 6px; }
-  .top-actions button{
-    background:#fff; border:1.5px solid #1f4a3a; color:#1f4a3a; font-family:'Jost',sans-serif; font-weight:700;
-    font-size:12.5px; padding:10px 18px; border-radius:6px; cursor:pointer;
-  }
-  @media print{ body{background:#fff;} .page-frame{border-width:1.5px;} .top-actions{display:none !important;} }
-</style>
-</head><body>
-<div class="top-actions">
-  <button type="button" onclick="closeAndReturn()">← Tilbake til Administrativ</button>
-</div>
-<div class="page-frame">
-  <div class="header-band">
-    <div class="logo-frame"><img src="${LOGO_DATA_URI}" alt="Madina Institute"></div>
-    <div class="school-name">Madina Skole</div>
-    <h1>Timeforberedelse</h1>
-    <div class="meta-bar">
-      <span><b>${escapeHtml(resolveDynName('teachers', plan.larer)||'—')}</b></span>
-      <span>${escapeHtml(resolveDynName('classes', plan.klasse)||'—')}</span>
-      <span>${escapeHtml(plan.fag||'—')}</span>
-      <span>${escapeHtml(plan.dato||'—')}</span>
-    </div>
-  </div>
-  ${bodyHtml}
-  <div class="footer-note">Madina Skole — Kunnskap · Barmhjertighet · Opplysning</div>
-</div>
-<script>
-  function closeAndReturn(){
-    try{ window.close(); }catch(e){}
-    setTimeout(function(){
-      melding('ADM-UTS-01', 'Vinduet må lukkes manuelt',
-        'Nettleseren tillot ikke at vinduet lukkes automatisk. Bruk ' +
-        'tilbake-knappen, eller lukk fanen selv.',
-        'utskrift · window.close blokkert av nettleseren');
-    }, 300);
-  }
-<\/script>
-</body></html>`;
+      // Feltene i timeforberedelsen står under hverandre som avsnitt, ikke
+      // i en tabell: de er fritekst av ulik lengde, og en tabellcelle med
+      // fem linjer i seg blir uleselig.
+      const rader = [
+        ['emne','mal','metode','materiell'],
+        ['oppstart','repetisjon','nyttStoff','oving','oppsummering'],
+        ['lekser']
+      ];
+      const innhold = rader.map((gruppe, gi) =>
+        gruppe.map(n => plan[n]
+          ? `<div style="margin-bottom:14px;">
+               <div style="font-family:'Jost',sans-serif; font-size:10px; font-weight:600;
+                           letter-spacing:.07em; text-transform:uppercase; color:#1c5490;
+                           margin-bottom:3px;">${escapeHtml(labelFor(n))}</div>
+               <div style="font-size:13px; line-height:1.65; white-space:pre-wrap;">${escapeHtml(plan[n])}</div>
+             </div>` : '').join('') +
+        (gi < rader.length - 1 ? '<hr style="border:0; border-top:1px solid #e4edf6; margin:18px 0;">' : '')
+      ).join('');
 
-      const win = window.open('', '_blank');
-      if(!win){
-        melding('ADM-UTS-02', '⛔ Utskrift blokkert',
-          'Nettleseren blokkerte utskriftsvinduet. Tillat popup-vinduer for ' +
-          'denne siden og prøv igjen.',
-          'utskrift · window.open returnerte null (popup-sperre)');
-        return;
-      }
-      win.document.open();
-      win.document.write(printDoc);
-      win.document.close();
-      win.onload = () => {
-        win.focus();
-        win.print();
-      };
+      apneUtskrift(utskriftsmal({
+        tittel: 'Timeforberedelse',
+        undertittel: [resolveDynName('teachers', plan.larer), resolveDynName('classes', plan.klasse),
+                      plan.fag, plan.dato].filter(Boolean).join(' · '),
+        innhold: innhold || '<p class="tom">Forberedelsen er tom.</p>'
+      }));
+
     } catch(err){
       console.error(err);
       melding('ADM-ALM-01', '⛔ En feil oppstod',
@@ -15980,33 +15952,19 @@
   // PDF-bibliotek på flere hundre kilobyte for noe nettleseren gjør selv.
   function byggUtskrift(){
     const { felter, rader, tittel } = hentEksportValg();
-    return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
-      <title>${escapeHtml(tittel)} — Madina Skole</title>
-      <style>
-        body{font-family:Arial,Helvetica,sans-serif; margin:26px; color:#1c2c24;}
-        h1{font-size:19px; margin:0 0 2px;}
-        .meta{font-size:11px; color:#666; margin-bottom:16px;}
-        table{border-collapse:collapse; width:100%; font-size:11.5px;}
-        th,td{border:1px solid #bbb; padding:6px 8px; text-align:start; vertical-align:top;}
-        th{background:#f0ede5;}
-        tr:nth-child(even) td{background:#fafafa;}
-        @media print{ @page{ margin:14mm; } }
-      </style></head><body>
-      <h1>${escapeHtml(tittel)} — Madina Skole</h1>
-      <div class="meta">${rader.length} rader · skrevet ut ${new Date().toLocaleString('no-NO')}</div>
-      <table><thead><tr>${felter.map(f => '<th>' + escapeHtml(f.label) + '</th>').join('')}</tr></thead>
-      <tbody>${rader.map(r => '<tr>' + felter.map(f =>
-        '<td>' + escapeHtml(String(eksportVerdi(SCHEMAS[eksportType], r, f.key) || '')) + '</td>').join('') + '</tr>').join('')}
-      </tbody></table></body></html>`;
+    return utskriftsmal({
+      tittel,
+      undertittel: rader.length + ' rader · ' + felter.length + ' kolonner',
+      innhold: `
+        <table><thead><tr>${felter.map(f => '<th>' + escapeHtml(f.label) + '</th>').join('')}</tr></thead>
+        <tbody>${rader.map(r => '<tr>' + felter.map(f =>
+          '<td>' + escapeHtml(String(eksportVerdi(SCHEMAS[eksportType], r, f.key) || '')) + '</td>').join('') + '</tr>').join('')}
+        </tbody></table>`
+    });
   }
 
   window.eksportSkrivUt = function(){
-    const v = window.open('', '_blank');
-    if(!v){ showToast('Nettleseren blokkerte vinduet. Tillat popup for denne siden.'); return; }
-    v.document.write(byggUtskrift());
-    v.document.close();
-    v.focus();
-    setTimeout(() => v.print(), 400);
+    apneUtskrift(byggUtskrift());
   };
 
   window.eksportEpost = function(){
