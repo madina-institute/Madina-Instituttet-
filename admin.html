@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 18:28:27 -->
+<!-- SIST-ENDRET: 2026-08-11 22:21:03 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -234,6 +234,65 @@
     background:var(--emerald-d); color:#fff; font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; padding:12px 8px;
   }
   .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
+
+  /* ---- Fagrekkefølge per klasse ---- */
+  .ko-blokk{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--tabell-linje); border-radius:11px;
+    padding:13px 15px; margin-bottom:9px;
+  }
+  .ko-tid{
+    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:700;
+    color:var(--emerald-d); background:var(--paper-2); border-radius:7px;
+    padding:7px 11px; white-space:nowrap; flex:0 0 auto;
+    font-variant-numeric:tabular-nums;
+  }
+  .ko-tid small{ display:block; font-weight:500; font-size:10.5px; color:#7b8a93; }
+  .ko-felt{ flex:1 1 150px; min-width:0; }
+  .ko-felt label{
+    display:block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600;
+    letter-spacing:.05em; text-transform:uppercase; color:#8a9a90; margin-bottom:4px;
+  }
+  .ko-felt select{
+    width:100%; font-family:'Jost',sans-serif; font-size:13px; padding:8px 10px;
+    border:1px solid var(--line); border-radius:7px; background:#fff;
+  }
+  .ko-pil{ display:flex; flex-direction:column; gap:3px; flex:0 0 auto; }
+  .ko-pil button{
+    background:#fff; border:1px solid var(--line); border-radius:6px;
+    width:32px; height:24px; cursor:pointer; font-size:11px; color:var(--emerald-d);
+    line-height:1;
+  }
+  .ko-pil button:disabled{ opacity:.3; cursor:default; }
+  .ko-pil button:hover:not(:disabled){ border-color:var(--emerald-d); }
+  /* Endret blokk merkes mens man holder på. Uten det er det umulig å se
+     hva man har rørt før man trykker lagre. */
+  .ko-blokk.endret{ border-color:var(--gold); background:#fffdf7; }
+  .ko-merke{
+    font-family:'Jost',sans-serif; font-size:10.5px; color:var(--gold);
+    font-weight:600; flex:0 0 auto;
+  }
+  .ko-felles{
+    background:var(--paper); border:1px dashed var(--line); border-radius:11px;
+    padding:11px 15px; margin-bottom:9px;
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#7b8a93;
+  }
+  .ko-pause{
+    font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:#8a9a90; text-align:center;
+    padding:5px 0 9px;
+  }
+  .ko-advarsel{
+    font-family:'Jost',sans-serif; font-size:12.5px; line-height:1.6;
+    background:#fdf8ec; border-inline-start:3px solid var(--gold);
+    border-radius:0 8px 8px 0; padding:11px 14px; margin-bottom:10px; color:#7a5c12;
+  }
+  .ko-advarsel.hard{ background:#fbeded; border-inline-start-color:var(--red); color:#8f2f2f; }
+  .ko-forhand{
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px;
+    line-height:1.75; background:var(--paper); border:1px solid var(--line);
+    border-radius:8px; padding:12px 14px; white-space:pre-wrap; color:#3f5162;
+  }
 
   .pd-skjult{ color:#a8b2ac; letter-spacing:2px; }
 
@@ -1497,6 +1556,7 @@
   <div class="tab" data-tab="betaling" data-side="okonomi">Innstillinger</div>
   <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
   <div class="tab" data-tab="hours" data-side="pedagogisk">Timeplan</div>
+  <div class="tab" data-tab="klasseoppsett" data-side="pedagogisk">Fagrekkefølge</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
@@ -2574,6 +2634,42 @@
     </div>
 
     <div class="records-hidden card-grid" id="tableHours"></div>
+  </div>
+
+  <!-- FAGREKKEFØLGE PER KLASSE -->
+  <!-- Timeplanen bygges time for time: 37 rader som skrives én og én,
+       enda det eneste som faktisk endrer seg er REKKEFØLGEN på tre fag
+       innenfor én klasse. Klokkeslettene er de samme hver uke.
+
+       Her flyttes faget i stedet — med læreren sin. Radene som allerede
+       finnes oppdateres; ingen slettes og ingen opprettes. Det er derfor
+       ingenting annet i systemet merker at noe er gjort herfra.
+
+       ⚠️ Pausene ligger IKKE i basen. De regnes ut av mellomrommet
+       mellom slutt og neste start (se renderTimeplanDay). Blokkene under
+       finnes derfor på samme måte: en blokk er de timene som henger
+       sammen uten hull. Legger noen inn et nytt klokkeslett, dukker
+       blokken opp her av seg selv. -->
+  <div class="panel" id="panel-klasseoppsett">
+    <div class="report-card">
+      <h3>🔀 Fagrekkefølge per klasse</h3>
+      <div class="sub">
+        Flytt et fag opp eller ned i klassens dag. Klokkeslettene og pausene
+        står stille — det er faget som bytter blokk, og læreren følger med.
+      </div>
+      <div class="innst-rad" style="margin-top:14px;">
+        <div class="field">
+          <label>Klasse</label>
+          <select id="koKlasse" onchange="koVelgKlasse()"><option value="">— Velg klasse —</option></select>
+        </div>
+        <div class="field">
+          <label>Dag</label>
+          <select id="koDag" onchange="koVelgKlasse()"></select>
+        </div>
+      </div>
+    </div>
+
+    <div id="koInnhold" style="margin-top:16px;"></div>
   </div>
 
   <!-- ATTENDANCE -->
@@ -5566,25 +5662,82 @@
    * Nå verifiseres passordet mot Firebase, det er personlig, og det lagres
    * ingen steder. Sletteloggen fører dermed også opp riktig person.
    */
-  async function checkAdminPassword(){
-    const bruker = auth.currentUser;
-    if(!bruker || !bruker.email){
+  // ═══════════════════════════════════════════════════════════════════
+  // MASSESLETTING KREVER EIERKONTOEN — IKKE BARE DIN EGEN
+  //
+  // Før holdt det at DU bekreftet ditt eget passord. Det beviser at du
+  // er deg, ikke at du har lov til å slette skolens database. Enhver med
+  // nivå 1 kunne dermed tømme basen fra en skjerm som sto åpen.
+  //
+  // Nå kreves passordet til skolens egen konto — den samme adressen som
+  // står i sikkerhetsreglene. Den brukes ikke til daglig, og nettopp
+  // derfor er den et ekte hinder: man må hente den bevisst.
+  //
+  // 🔴 Innloggingen skjer på en MIDLERTIDIG app-instans. Ville vi brukt
+  // hovedinstansen, ville din egen økt blitt byttet ut med eierkontoen —
+  // og du hadde stått igjen som en annen bruker etter en sletting.
+  // Samme grep som createPortalAccountIfNeeded bruker.
+  // ═══════════════════════════════════════════════════════════════════
+  function spørOmEierpassord(hva){
+    return new Promise(resolve => {
+      const bakgrunn = document.createElement('div');
+      bakgrunn.className = 'pw-overlay';
+      bakgrunn.innerHTML = `
+        <div class="pw-boks">
+          <h3>🔐 Bekreft med eierkontoen</h3>
+          <p>${escapeHtml(hva)} krever passordet til skolens egen konto —
+             ikke ditt eget. Den brukes ikke til daglig.</p>
+          <label>Konto</label>
+          <input type="text" value="${escapeHtml(NODKONTO)}" disabled
+                 style="background:#eef1f6; color:#5a6860; margin-bottom:14px;">
+          <label for="eierPwFelt">Passord for ${escapeHtml(NODKONTO)}</label>
+          <input type="password" id="eierPwFelt" autocomplete="off" autofocus>
+          <div class="pw-knapper">
+            <button type="button" class="btn btn-ghost" data-pw="avbryt">Avbryt</button>
+            <button type="button" class="btn" style="background:#a83c3c; color:#fff;" data-pw="ok">Bekreft</button>
+          </div>
+        </div>`;
+      document.body.appendChild(bakgrunn);
+      const felt = bakgrunn.querySelector('#eierPwFelt');
+      const lukk = (v) => { bakgrunn.remove(); resolve(v); };
+      bakgrunn.querySelector('[data-pw="avbryt"]').onclick = () => lukk(null);
+      bakgrunn.querySelector('[data-pw="ok"]').onclick = () => lukk(felt.value);
+      bakgrunn.addEventListener('click', e => { if(e.target === bakgrunn) lukk(null); });
+      felt.addEventListener('keydown', e => {
+        if(e.key === 'Enter') lukk(felt.value);
+        if(e.key === 'Escape') lukk(null);
+      });
+      setTimeout(() => felt.focus(), 50);
+    });
+  }
+
+  async function checkAdminPassword(hva){
+    if(!auth.currentUser){
       showToast('Du må være innlogget for å slette.', true);
       return false;
     }
-    const pw = await spørOmPassord('alle valgte oppføringer');
+    const pw = await spørOmEierpassord(hva || 'Denne slettingen');
     if(pw === null) return false;
     if(!pw){
       showToast('Passord kreves for å slette.', true);
       return false;
     }
+    const tempApp = initializeApp(firebaseConfig, 'EierBekreftelse_' + Date.now());
+    const tempAuth = getAuth(tempApp);
     try{
-      const cred = EmailAuthProvider.credential(bruker.email, pw);
-      await reauthenticateWithCredential(bruker, cred);
+      await signInWithEmailAndPassword(tempAuth, NODKONTO, pw);
+      await signOut(tempAuth);
+      await deleteApp(tempApp);
       return true;
     }catch(err){
-      console.error('Reautentisering feilet', err);
-      showToast('Feil passord. Sletting avbrutt.', true);
+      // Instansen rives ned uansett — ellers ville hvert mislykket forsøk
+      // etterlatt en app-instans som aldri blir ryddet bort.
+      try{ await signOut(tempAuth); }catch(e){}
+      try{ await deleteApp(tempApp); }catch(e){}
+      console.error('Eierbekreftelse feilet', err);
+      showToast(err.code === 'auth/too-many-requests'
+        ? 'For mange forsøk. Vent litt og prøv igjen.'
+        : 'Feil passord for eierkontoen. Sletting avbrutt.', true);
       return false;
     }
   }
@@ -5619,8 +5772,15 @@
       showToast('Det er allerede tomt.');
       return;
     }
-    if(!(await checkAdminPassword())) return;
+    if(!(await checkAdminPassword('Å slette alle ' + TYPE_LABELS[type].toLowerCase()))) return;
     const label = TYPE_LABELS[type].toLowerCase();
+    // Søknadene er den ene samlingen som er i bruk på ekte. Knappen ligger
+    // side om side med de trygge — så den må si det selv.
+    if(type === 'registrations'){
+      const ekte = (cache.registrations || []).filter(r => r.erTestdata !== true).length;
+      if(ekte && !confirm('🔴 ' + ekte + ' av disse søknadene er EKTE familier som ' +
+        'har søkt om skoleplass, og kan ikke gjenskapes.\n\nEr du sikker?')) return;
+    }
     const ok = confirm(`Dette sletter PERMANENT ${count} oppføring(er) fra ${label}. Dette kan ikke angres. Fortsett?`);
     if(!ok) return;
     try{
@@ -5672,9 +5832,33 @@
       showToast('Databasen er allerede tom.');
       return;
     }
-    if(!(await checkAdminPassword())) return;
-    const typed = prompt(`ADVARSEL: Dette sletter PERMANENT alle ${totalCount} oppføringer i hele databasen (lærere, foresatte, elever, klasser, timeplan, oppmøte).\n\nSkriv "SLETT ALT" (med store bokstaver) for å bekrefte:`);
-    if(typed !== 'SLETT ALT'){
+    // 🔴 SØKNADENE ER LIVE. Familier sender inn i dag, og de ligger i
+    // samme base som testdataene.
+    //
+    // Teksten her ramset opp «lærere, foresatte, elever, klasser,
+    // timeplan, oppmøte» — søknadene sto IKKE nevnt, enda løkken under
+    // går gjennom hele SCHEMAS og tar dem med. Den som leste advarselen
+    // og trykket ja, slettet noe han ikke ble advart om.
+    //
+    // Nå står tallet der, ekte søknader telles for seg, og setningen man
+    // må skrive nevner dem ved navn. «Slett testdata (behold søknader)»
+    // står rett under for den som egentlig mente det.
+    const soknader = (cache.registrations || []).length;
+    const ekteSoknader = (cache.registrations || []).filter(r => r.erTestdata !== true).length;
+    if(!(await checkAdminPassword('Å nullstille hele databasen'))) return;
+    const FRASE = 'SLETT ALT INKLUDERT SOKNADER';
+    const typed = prompt(
+      'ADVARSEL: Dette sletter PERMANENT alle ' + totalCount + ' oppføringer i hele ' +
+      'databasen — lærere, foresatte, elever, klasser, timeplan, oppmøte' +
+      (soknader ? ' OG ' + soknader + ' søknader' : '') + '.\n\n' +
+      (ekteSoknader
+        ? '🔴 ' + ekteSoknader + ' av søknadene er EKTE familier som har søkt om ' +
+          'skoleplass. De kan ikke gjenskapes.\n\n'
+        : '') +
+      'Skal søknadene beholdes, avbryt her og bruk «Slett testdata (behold ' +
+      'søknader)» i stedet.\n\n' +
+      'Skriv «' + FRASE + '» for å bekrefte:');
+    if(typed !== FRASE){
       showToast('Sletting avbrutt.');
       return;
     }
@@ -5700,7 +5884,7 @@
       showToast('Det er allerede ingenting å slette (utenom søknader).');
       return;
     }
-    if(!(await checkAdminPassword())) return;
+    if(!(await checkAdminPassword('Å nullstille alt unntatt søknadene'))) return;
     const typed = prompt(`ADVARSEL: Dette sletter PERMANENT alle ${totalCount} oppføringer i databasen UNNTATT søknader (Søknader/registrations beholdes urørt).\n\nSkriv "SLETT TESTDATA" (med store bokstaver) for å bekrefte:`);
     if(typed !== 'SLETT TESTDATA'){
       showToast('Sletting avbrutt.');
@@ -7346,6 +7530,7 @@
     const countEl = document.getElementById('count' + capitalize(type));
     if(countEl) countEl.innerHTML = data.length + ' ' + (countLabels[type] || 'oppføringer') + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
+    if(['hours','classes','teachers'].includes(type)) koOppdaterFraBasen();
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
     if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); renderGuardianFolders(); }
     if(type === 'students'){ renderCashierPanel(); renderCashierLedelsePanel(); }
@@ -8368,6 +8553,465 @@
     el.style.display = el.style.display === 'none' ? 'grid' : 'none';
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // FAGREKKEFØLGE PER KLASSE
+  //
+  // En BLOKK er de timene som henger sammen uten hull — nøyaktig samme
+  // regel som pausene i ukeplanen bruker. Ingen klokkeslett står skrevet
+  // i koden: legges det inn en ny time, dukker blokken opp av seg selv,
+  // og fjernes en, forsvinner den. Et hardkodet oppsett ville sluttet å
+  // stemme den dagen skolen flyttet en time med ti minutter.
+  // ═══════════════════════════════════════════════════════════════════
+  function koBlokker(dag){
+    const tider = [...new Set((cache.hours || [])
+      .filter(h => h.dag === dag && h.tid).map(h => h.tid))]
+      .map(t => ({ tid: t, ...tpParseTid(t) }))
+      .filter(t => t.start)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    const ut = [];
+    tider.forEach(t => {
+      const siste = ut[ut.length - 1];
+      if(siste && siste.slutt === t.start){ siste.tider.push(t.tid); siste.slutt = t.end; }
+      else ut.push({ tider: [t.tid], start: t.start, slutt: t.end });
+    });
+    return ut;
+  }
+
+  // Fellestimer hører til alle klassene samtidig og skal ikke kunne
+  // flyttes for én av dem. De kjennes på klassenavnet, samme sted som
+  // ukeplanen kjenner dem.
+  function koErFelles(klasseId){ return /felles/i.test(resolveDynName('classes', klasseId) || String(klasseId || '')); }
+
+  let koTilstand = null;   // { klasse, dag, blokker:[...] }
+
+  function koFyllVelgere(){
+    const kSel = document.getElementById('koKlasse');
+    const dSel = document.getElementById('koDag');
+    if(!kSel || !dSel) return;
+    const forrige = kSel.value;
+    const klasser = [...(cache.classes || [])].filter(c => c.navn && !/felles/i.test(c.navn))
+      .sort((a, b) => a.navn.localeCompare(b.navn));
+    kSel.innerHTML = '<option value="">— Velg klasse —</option>' +
+      klasser.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
+    if(klasser.some(c => c.id === forrige)) kSel.value = forrige;
+
+    // Dagene leses fra timeplanen, ikke fra en fast liste: skolen kan
+    // legge til en dag uten at denne fanen må skrives om.
+    const dager = [...new Set((cache.hours || []).map(h => h.dag).filter(Boolean))].sort();
+    const forrigeDag = dSel.value;
+    dSel.innerHTML = dager.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')
+      || '<option value="">— ingen timeplan ennå —</option>';
+    if(dager.includes(forrigeDag)) dSel.value = forrigeDag;
+  }
+
+  window.koVelgKlasse = function(){
+    const klasse = document.getElementById('koKlasse').value;
+    const dag = document.getElementById('koDag').value;
+    if(!klasse || !dag){ koTilstand = null; koTegn(); return; }
+
+    const blokker = koBlokker(dag).map(b => {
+      const rader = (cache.hours || []).filter(h =>
+        h.dag === dag && h.klasse === klasse && b.tider.includes(h.tid));
+      const fagSett = [...new Set(rader.map(r => r.fag).filter(Boolean))];
+      const larerSett = [...new Set(rader.map(r => r.larer).filter(Boolean))];
+      return {
+        ...b,
+        rader,
+        // Er blokkens to økter ulike, sier vi det i stedet for å velge
+        // én av dem: å skjule det ville skrevet over halve blokken uten
+        // at noen ba om det.
+        blandet: fagSett.length > 1 || larerSett.length > 1,
+        fag: fagSett[0] || '',
+        larer: larerSett[0] || '',
+        opphavFag: fagSett[0] || '',
+        opphavLarer: larerSett[0] || ''
+      };
+    });
+    koTilstand = { klasse, dag, blokker };
+    koTegn();
+  };
+
+  window.koFlytt = function(fra, retning){
+    if(!koTilstand) return;
+    const til = fra + retning;
+    const b = koTilstand.blokker;
+    if(til < 0 || til >= b.length) return;
+    // Bare faget og læreren bytter plass. Klokkeslettene og radene i
+    // basen står stille — det er hele poenget: ingenting flyttes i tid.
+    const bytt = (x, y) => {
+      const f = b[x].fag, l = b[x].larer;
+      b[x].fag = b[y].fag; b[x].larer = b[y].larer;
+      b[y].fag = f; b[y].larer = l;
+    };
+    bytt(fra, til);
+    koTegn();
+  };
+
+  window.koSettFelt = function(idx, felt, verdi){
+    if(!koTilstand) return;
+    koTilstand.blokker[idx][felt] = verdi;
+    koTegn();
+  };
+
+  // Hvem som er opptatt hvor. To klasser kan ikke ha samme lærer på
+  // samme klokkeslett — og det er nettopp det fri omrokering kan lage,
+  // uten at noe sier fra før lørdag morgen.
+  function koKonflikter(){
+    if(!koTilstand) return [];
+    const { klasse, dag, blokker } = koTilstand;
+    const funn = [];
+    blokker.forEach(b => {
+      if(!b.larer) return;
+      const kolliderer = (cache.hours || []).filter(h =>
+        h.dag === dag && b.tider.includes(h.tid) &&
+        h.klasse !== klasse && h.larer === b.larer && !koErFelles(h.klasse));
+      const klasser = [...new Set(kolliderer.map(h => resolveDynName('classes', h.klasse)))];
+      if(klasser.length){
+        funn.push({ hard: true, tekst: (resolveDynName('teachers', b.larer) || 'Læreren') +
+          ' står allerede oppført ' + b.start + '–' + b.slutt + ' i ' + klasser.join(', ') });
+      }
+    });
+
+    // Hvor mange klasser som har samme fag samtidig. Det avgjør hvor
+    // mange lærere faget trenger i det tidsrommet.
+    blokker.forEach(b => {
+      if(!b.fag) return;
+      const andre = (cache.hours || []).filter(h =>
+        h.dag === dag && b.tider.includes(h.tid) &&
+        h.klasse !== klasse && h.fag === b.fag && !koErFelles(h.klasse));
+      const klasser = [...new Set(andre.map(h => resolveDynName('classes', h.klasse)))];
+      const antall = klasser.length + 1;
+      const larere = (cache.teachers || []).filter(t => (t.fag || '') === b.fag).length;
+      if(antall > larere){
+        funn.push({ hard: false, tekst: antall + ' klasser har ' + b.fag + ' ' +
+          b.start + '–' + b.slutt + ' (' + [resolveDynName('classes', klasse), ...klasser].join(' · ') +
+          '), men det er registrert ' + larere + ' lærer' + (larere === 1 ? '' : 'e') + ' i faget' });
+      }
+    });
+    return funn;
+  }
+
+  function koEndringer(){
+    if(!koTilstand) return [];
+    return koTilstand.blokker
+      .map((b, i) => ({ i, b }))
+      .filter(x => x.b.fag !== x.b.opphavFag || x.b.larer !== x.b.opphavLarer);
+  }
+
+  function koTegn(){
+    const el = document.getElementById('koInnhold');
+    if(!el) return;
+    if(!koTilstand){
+      el.innerHTML = '<div class="report-empty">Velg en klasse for å se rekkefølgen.</div>';
+      return;
+    }
+    const { klasse, dag, blokker } = koTilstand;
+    if(blokker.length === 0){
+      el.innerHTML = '<div class="report-empty">Ingen timeplan lagt inn for ' +
+        escapeHtml(dag.toLowerCase()) + ' ennå — heller ikke for de andre klassene. ' +
+        'Legg inn den første dagen under Timeplan; deretter kan resten kopieres herfra.</div>';
+      return;
+    }
+
+    const kilder = koKilder(dag, klasse);
+    const harTimer = blokker.some(b => b.rader.length > 0);
+
+    // Klassen finnes, men har ingen timer denne dagen. Da er det ikke
+    // rekkefølge som mangler — det er hele dagen.
+    if(!harTimer){
+      el.innerHTML = `
+        <div class="report-card">
+          <h3>${escapeHtml(resolveDynName('classes', klasse))} har ingen timer ${escapeHtml(dag.toLowerCase())}</h3>
+          <div class="sub">
+            Kopier klokkeslettene og fagene fra en klasse som allerede har dem.
+            Da er de to alltid i takt på tid — og pausene faller på samme sted.
+          </div>
+          ${kilder.length ? `
+          <div class="innst-rad" style="margin-top:14px;">
+            <div class="field">
+              <label>Kopier fra</label>
+              <select id="koKilde">
+                ${kilder.map(k => `<option value="${escapeHtml(k.id)}">${escapeHtml(k.navn)} — ${k.antall} timer</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="innst-effekt" style="border-left-color:#8a6d1d; background:#fdf8ec;">
+            ⚠️ <b>Læreren kopieres ikke.</b> Ville vi kopiert den, hadde samme lærer
+            stått i to klasser på samme klokkeslett i det sekundet du trykket.
+            Fagene følger med — lærerne velger du etterpå.
+          </div>
+          <button class="btn btn-primary" style="width:auto; margin-top:12px;" onclick="koByggFra()">
+            Opprett timeplanen
+          </button>`
+          : '<div class="report-empty" style="margin-top:12px;">Ingen andre klasser har timer denne dagen ennå.</div>'}
+        </div>`;
+      return;
+    }
+
+    const fagListe = [...new Set([
+      ...(SCHEMAS.hours.fields.find(f => f.key === 'fag').options || []),
+      ...blokker.map(b => b.fag).filter(Boolean)
+    ])];
+    const larerListe = [...(cache.teachers || [])].filter(t => t.navn)
+      .sort((a, b) => a.navn.localeCompare(b.navn));
+
+    const konf = koKonflikter();
+    const endret = koEndringer();
+
+    let html = '';
+    konf.forEach(k => {
+      html += `<div class="ko-advarsel${k.hard ? ' hard' : ''}">${k.hard ? '🔴' : '⚠️'} ${escapeHtml(k.tekst)}</div>`;
+    });
+
+    html += '<div class="report-card">';
+    blokker.forEach((b, i) => {
+      const harEndret = b.fag !== b.opphavFag || b.larer !== b.opphavLarer;
+      html += `
+        <div class="ko-blokk${harEndret ? ' endret' : ''}">
+          <div class="ko-tid">${escapeHtml(b.start)}–${escapeHtml(b.slutt)}
+            <small>${b.tider.length} økt${b.tider.length === 1 ? '' : 'er'}</small></div>
+          <div class="ko-felt">
+            <label>Fag</label>
+            <select onchange="koSettFelt(${i}, 'fag', this.value)">
+              <option value="">— ingen —</option>
+              ${fagListe.map(f => `<option value="${escapeHtml(f)}" ${b.fag === f ? 'selected' : ''}>${escapeHtml(f)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="ko-felt">
+            <label>Lærer</label>
+            <select onchange="koSettFelt(${i}, 'larer', this.value)">
+              <option value="">— ikke satt —</option>
+              ${larerListe.map(t => `<option value="${escapeHtml(t.id)}" ${b.larer === t.id ? 'selected' : ''}>${escapeHtml(t.navn)}${t.fag ? ' · ' + escapeHtml(t.fag) : ''}</option>`).join('')}
+            </select>
+          </div>
+          ${b.blandet ? '<span class="ko-merke">⚠️ øktene var ulike</span>' : ''}
+          ${harEndret ? '<span class="ko-merke">endret</span>' : ''}
+          <div class="ko-pil">
+            <button onclick="koFlytt(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Flytt opp">▲</button>
+            <button onclick="koFlytt(${i}, 1)" ${i === blokker.length - 1 ? 'disabled' : ''} title="Flytt ned">▼</button>
+          </div>
+        </div>`;
+      const neste = blokker[i + 1];
+      if(neste && neste.start !== b.slutt){
+        html += `<div class="ko-pause">Pause · ${escapeHtml(b.slutt)}–${escapeHtml(neste.start)}</div>`;
+      }
+    });
+
+    // Fellestimer vises for sammenhengens skyld, men kan ikke røres her.
+    const felles = (cache.hours || []).filter(h => h.dag === dag && koErFelles(h.klasse));
+    felles.sort((a, b2) => tpParseTid(a.tid).start.localeCompare(tpParseTid(b2.tid).start));
+    felles.forEach(f => {
+      html += `<div class="ko-felles">🕌 ${escapeHtml(f.tid)} · ${escapeHtml(f.fag || '')} — ` +
+        `${escapeHtml(resolveDynName('classes', f.klasse))} (gjelder alle klasser, flyttes ikke herfra)</div>`;
+    });
+
+    const utenLarer = blokker.filter(b => b.rader.length && b.fag && !b.larer).length;
+    if(utenLarer){
+      html += `<div class="ko-advarsel">⚠️ ${utenLarer} blokk${utenLarer === 1 ? '' : 'er'} ` +
+        `uten lærer. Læreren finner ikke klassen sin i Lærerportalen før noen er satt.</div>`;
+    }
+
+    html += `<div style="display:flex; gap:9px; flex-wrap:wrap; margin-top:16px; align-items:center;">
+        <button class="btn btn-primary" style="width:auto;" onclick="koLagre()" ${endret.length ? '' : 'disabled'}>
+          Lagre rekkefølgen${endret.length ? ' (' + endret.length + ')' : ''}</button>
+        <button class="btn btn-ghost" style="width:auto;" onclick="koVelgKlasse()" ${endret.length ? '' : 'disabled'}>Angre</button>
+        <span class="hint" style="margin:0; flex:1 1 160px;">${endret.length
+          ? endret.length + ' blokk' + (endret.length === 1 ? '' : 'er') + ' endret — ingenting er lagret ennå.'
+          : 'Ingen endringer.'}</span>
+        <button class="btn btn-danger-solid" style="width:auto;" onclick="koFjernTimeplan()">🗑 Fjern klassens timeplan</button>
+      </div></div>`;
+
+    el.innerHTML = html;
+  }
+
+  // Kalles når timeplan, klasser eller lærere endrer seg.
+  //
+  // 🔴 Har noen ulagrede endringer stående, tegnes IKKE skjermen på nytt.
+  // En lytter som fyrer mens man holder på ville kastet arbeidet uten et
+  // ord — og man ville trodd man hadde trykket feil selv.
+  function koOppdaterFraBasen(){
+    const panel = document.getElementById('panel-klasseoppsett');
+    if(!panel || !panel.classList.contains('active')) return;
+    koFyllVelgere();
+    if(koEndringer().length > 0) return;
+    koVelgKlasse();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // BYGGE, KOPIERE OG FJERNE EN KLASSES TIMEPLAN
+  //
+  // 37 rader skrevet én og én var utgangspunktet. Her opprettes hele
+  // klassens dag i én operasjon, med klokkeslettene hentet fra en klasse
+  // som allerede har dem — så to klasser aldri kan komme i utakt med
+  // hverandre på tid.
+  //
+  // 🔴 LÆREREN KOPIERES IKKE. Kopierte vi den, ville den nye klassen fått
+  // samme lærer på samme klokkeslett som kilden — altså en dobbeltbooking
+  // i det sekundet knappen ble trykket. Fagene følger med, lærerne settes
+  // etterpå, og skjermen sier fra om hvilke som mangler.
+  // ═══════════════════════════════════════════════════════════════════
+  function koKilder(dag, utenom){
+    const per = new Map();
+    (cache.hours || []).forEach(h => {
+      if(h.dag !== dag || !h.klasse || h.klasse === utenom || koErFelles(h.klasse)) return;
+      per.set(h.klasse, (per.get(h.klasse) || 0) + 1);
+    });
+    return [...per.entries()].map(([id, antall]) => ({
+      id, navn: resolveDynName('classes', id), antall
+    })).sort((a, b) => a.navn.localeCompare(b.navn));
+  }
+
+  window.koByggFra = async function(){
+    if(!koTilstand) return;
+    const kilde = document.getElementById('koKilde').value;
+    if(!kilde){ showToast('Velg en klasse å kopiere timene fra.'); return; }
+    const { klasse, dag } = koTilstand;
+    const finnes = (cache.hours || []).filter(h => h.dag === dag && h.klasse === klasse);
+    if(finnes.length){
+      showToast('Klassen har allerede timer denne dagen — fjern dem først.');
+      return;
+    }
+    const rader = (cache.hours || []).filter(h => h.dag === dag && h.klasse === kilde)
+      .sort((a, b) => tpParseTid(a.tid).start.localeCompare(tpParseTid(b.tid).start));
+    if(rader.length === 0){ showToast('Kildeklassen har ingen timer denne dagen.'); return; }
+
+    if(!confirm(
+      'Opprette ' + rader.length + ' timer for ' + resolveDynName('classes', klasse) +
+      ' (' + dag.toLowerCase() + ')?\n\n' +
+      rader.map(r => '  ' + r.tid + '   ' + (r.fag || '(uten fag)')).join('\n') +
+      '\n\nKlokkeslett og fag kopieres fra ' + resolveDynName('classes', kilde) + '.\n' +
+      '⚠️ Lærer settes IKKE — det ville gitt samme lærer to steder samtidig. ' +
+      'Velg lærere etterpå, ellers finner de ikke klassen i Lærerportalen.'
+    )) return;
+
+    let laget = 0;
+    const feilet = [];
+    for(const r of rader){
+      try{
+        await addDoc(collection(db, 'hours'), {
+          dag, tid: r.tid, fag: r.fag || '', larer: '', klasse,
+          opprettetAv: currentUserEmail || 'ukjent',
+          opprettetDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
+        });
+        laget++;
+      } catch(err){
+        console.error('koByggFra', r.tid, err);
+        feilet.push(r.tid + ' — ' + (err.code || err.message || 'ukjent'));
+      }
+    }
+    if(laget) await loggSamlet('Timeplan opprettet for ' + resolveDynName('classes', klasse) +
+      ' (' + dag + ') — kopiert fra ' + resolveDynName('classes', kilde), laget,
+      'koByggFra · hours · laget=' + laget);
+    if(feilet.length === 0){
+      showToast('✓ ' + laget + ' timer opprettet — velg lærere nå.');
+    } else {
+      melding('ADM-TPL-02', '⚠️ Delvis opprettet',
+        laget + ' av ' + rader.length + ' timer ble laget.',
+        'koByggFra · hours\n' + feilet.slice(0, 6).join('\n'));
+    }
+    setTimeout(koVelgKlasse, 600);
+  };
+
+  window.koFjernTimeplan = async function(){
+    if(!koTilstand) return;
+    const { klasse, dag } = koTilstand;
+    const rader = (cache.hours || []).filter(h => h.dag === dag && h.klasse === klasse);
+    if(rader.length === 0){ showToast('Klassen har ingen timer denne dagen.'); return; }
+    if(!confirm(
+      'Fjerne alle ' + rader.length + ' timer for ' + resolveDynName('classes', klasse) +
+      ' (' + dag.toLowerCase() + ')?\n\n' +
+      'En kopi havner i sletteloggen og kan gjenopprettes i 30 dager.\n\n' +
+      '⚠️ Lærerne mister klassen i Lærerportalen med én gang.'
+    )) return;
+    let slettet = 0;
+    const feilet = [];
+    for(const r of rader){
+      try{
+        await logDeletion('hours', r);
+        await deleteDoc(doc(db, 'hours', r.id));
+        slettet++;
+      } catch(err){
+        console.error('koFjernTimeplan', r.id, err);
+        feilet.push(r.tid + ' — ' + (err.code || err.message || 'ukjent'));
+      }
+    }
+    if(slettet) await loggSamlet('Timeplan fjernet for ' + resolveDynName('classes', klasse) +
+      ' (' + dag + ')', slettet, 'koFjernTimeplan · hours · slettet=' + slettet);
+    if(feilet.length === 0) showToast('✓ ' + slettet + ' timer fjernet.');
+    else melding('ADM-TPL-03', '⚠️ Delvis fjernet',
+      slettet + ' av ' + rader.length + ' timer ble fjernet.',
+      'koFjernTimeplan · hours\n' + feilet.slice(0, 6).join('\n'));
+    setTimeout(koVelgKlasse, 600);
+  };
+
+  window.koLagre = async function(){
+    if(!koTilstand) return;
+    const endret = koEndringer();
+    if(endret.length === 0) return;
+
+    const linjer = endret.map(({ b }) =>
+      '  ' + b.start + '–' + b.slutt + '   ' +
+      (b.opphavFag || '(ingen)') + ' → ' + (b.fag || '(ingen)') +
+      (b.larer !== b.opphavLarer
+        ? '   [' + (resolveDynName('teachers', b.opphavLarer) || 'ikke satt') + ' → ' +
+          (resolveDynName('teachers', b.larer) || 'ikke satt') + ']' : ''));
+
+    const utenLarer = endret.filter(({ b }) => b.fag && !b.larer)
+      .map(({ b }) => b.start + '–' + b.slutt);
+    const konfHard = koKonflikter().filter(k => k.hard);
+
+    const antallRader = endret.reduce((s, { b }) => s + b.rader.length, 0);
+    if(!confirm(
+      'Lagre ny rekkefølge for ' + resolveDynName('classes', koTilstand.klasse) +
+      ' (' + koTilstand.dag.toLowerCase() + ')?\n\n' + linjer.join('\n') +
+      '\n\n' + antallRader + ' timer oppdateres. Klokkeslettene endres ikke, og ' +
+      'ingen timer opprettes eller slettes.' +
+      (utenLarer.length ? '\n\n⚠️ Uten lærer: ' + utenLarer.join(', ') +
+        '\nLæreren finner ikke klassen sin i Lærerportalen før noen er satt.' : '') +
+      (konfHard.length ? '\n\n🔴 ' + konfHard.map(k => k.tekst).join('\n🔴 ') : '')
+    )) return;
+
+    let ok = 0;
+    const feilet = [];
+    for(const { b } of endret){
+      for(const rad of b.rader){
+        try{
+          await updateDoc(doc(db, 'hours', rad.id), {
+            fag: b.fag,
+            // 🔴 Tom lærer skrives ALDRI over en som finnes. Et tomt felt
+            // betyr «ikke rørt», ikke «fjern». Uten dette ville én lagring
+            // uten lærervalg tømt klassen ut av Lærerportalen — stille, og
+            // først synlig for læreren selv.
+            ...(b.larer ? { larer: b.larer } : {}),
+            sistEndretAv: currentUserEmail || 'ukjent',
+            sistEndretDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
+          });
+          ok++;
+        } catch(err){
+          console.error('koLagre', rad.id, err);
+          feilet.push((rad.tid || rad.id) + ' — ' + (err.code || err.message || 'ukjent'));
+        }
+      }
+    }
+
+    if(ok > 0){
+      await loggSamlet('Fagrekkefølge endret — ' +
+        resolveDynName('classes', koTilstand.klasse) + ' (' + koTilstand.dag + ')', ok,
+        'koLagre · hours · oppdatert=' + ok);
+    }
+    if(feilet.length === 0){
+      showToast('✓ ' + ok + ' timer oppdatert.');
+    } else {
+      melding('ADM-TPL-01', '⚠️ Delvis lagret',
+        ok + ' timer ble oppdatert, ' + feilet.length + ' ble avvist.\n\n' +
+        'Rekkefølgen står nå halvveis — se listen under og prøv igjen.',
+        'koLagre · hours\n' + feilet.slice(0, 6).join('\n'));
+    }
+    // Leses inn på nytt fra basen, ikke fra minnet: står noe halvveis,
+    // skal skjermen vise det som FAKTISK ligger der.
+    setTimeout(koVelgKlasse, 500);
+  };
+
   // ---------- Attendance (Oppmøte) ----------
   const STATUS_OPTIONS = ['Til stede','Fraværende','Syk','Permisjon'];
 
@@ -8678,6 +9322,7 @@
     students: 'Elevregister, program og betaling',
     classes: 'Klasseinndeling og trinn',
     hours: 'Ukentlig timeplan',
+    klasseoppsett: 'Flytt fag mellom blokker i én klasse — klokkeslettene står stille',
     attendance: 'Registrer daglig oppmøte',
     absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
     lessonPlans: 'Lærernes pedagogiske forberedelser',
@@ -8698,7 +9343,7 @@
 
   const TAB_ICONS = {
     ledelse: '🏛️', meetings: '🗒️', finances: '🏦',
-    teachers: '🧑‍🏫', guardians: '👪', students: '🎒', classes: '🏫', hours: '🕐',
+    teachers: '🧑‍🏫', guardians: '👪', students: '🎒', classes: '🏫', hours: '🕐', klasseoppsett: '🔀',
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📔', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
@@ -14512,6 +15157,7 @@
     if(labelEl) labelEl.textContent = tab.textContent;
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     if(tab.dataset.tab === 'overview') renderOvFolders();
+    if(tab.dataset.tab === 'klasseoppsett'){ koFyllVelgere(); koVelgKlasse(); }
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
     if(tab.dataset.tab === 'roller') renderRoller();
