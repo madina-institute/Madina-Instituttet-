@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 16:27:40 -->
+<!-- SIST-ENDRET: 2026-08-11 18:28:27 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -5117,7 +5117,10 @@
             tidligere_skole_ar: '', tidligere_skole_land: '', tidligere_studert: '',
             sprak_hjemme: 'arabisk', sprak_hjemme_annet: '',
 
-            intro_moske_medlem: i % 3 === 0 ? 'ja' : 'nei',
+            // Alle tre svarene forekommer, også «usikker» — ellers ville
+            // det svaret aldri dukket opp i en prøverunde, og en feil i
+            // visningen av det stått uoppdaget til første ekte søknad.
+            intro_moske_medlem: ['ja','nei','usikker'][i % 3],
             intro_elev_status: 'ny',
 
             samtykke_personopplysninger: 'ja',
@@ -6610,18 +6613,34 @@
     deleteEntry(type, id);
   };
 
+  // Verdien slik den skal LESES, ikke slik den er lagret.
+  //
+  // Sto tidligere som to like kopier inne i to tegnefunksjoner: én for
+  // åpning av kortet, én for oppdatering av det. Rettet man den ene, kom
+  // den gamle tilbake ved neste opptegning — den typen forskjell tar
+  // timer å finne, fordi begge deler ser riktige ut hver for seg.
+  function visFeltverdi(schema, row, c){
+    const field = schema.fields.find(f => f.key === c);
+    if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
+    const v = row[c];
+    // Medlemsspørsmålet lagres som ja/nei/usikker. Rått ser «usikker» ut
+    // som en feil; skrevet ut er det en beskjed: familien vet det ikke
+    // selv, og noen bør slå det opp for dem.
+    if(c === 'intro_moske_medlem'){
+      return { ja: '✅ Ja — registrert medlem',
+               nei: '➖ Nei — ikke registrert ennå',
+               usikker: '❔ Vet ikke — må sjekkes' }[v] || (v || '');
+    }
+    return Array.isArray(v) ? v.join(', ') : (v || '');
+  }
+
   window.showPersonDetail = function(type, id){
     const schema = SCHEMAS[type];
     const row = cache[type].find(r => r.id === id);
     if(!row) return;
     pdCurrentType = type; pdCurrentId = id;
 
-    const colDisplay = (c) => {
-      const field = schema.fields.find(f=>f.key===c);
-      if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
-      const v = row[c];
-      return Array.isArray(v) ? v.join(', ') : (v || '');
-    };
+    const colDisplay = (c) => visFeltverdi(schema, row, c);
 
     document.getElementById('pdPhoto').src = personAvatarUrl(row);
     // Søknader har ikke feltet «navn» — eleven heter elev_navn her.
@@ -6945,12 +6964,7 @@
     const schema = SCHEMAS[type];
     const row = cache[type].find(r => r.id === pdCurrentId);
     if(!row) return;
-    const colDisplay = (c) => {
-      const field = schema.fields.find(f=>f.key===c);
-      if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
-      const v = row[c];
-      return Array.isArray(v) ? v.join(', ') : (v || '');
-    };
+    const colDisplay = (c) => visFeltverdi(schema, row, c);
     const selectedKeys = [...document.querySelectorAll('.pd-print-check:checked')].map(cb => cb.value);
 
     const essentialRows = schema.fields.filter(f => f.essential && f.key !== 'bilde').map(f => {
