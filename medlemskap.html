@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-11 18:28:57 -->
+<html lang="no" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medlemskap — Madina Institute</title>
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#1A9BEC">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0d2033;
+    --emerald:#1A9BEC; --emerald-d:#06195B; --emerald-l:#4fb3f2;
+    --gold:#FF771F;
+    --paper:#F0F7FE; --paper-2:#E1EFFB;
+    --line:rgba(6,25,91,0.12); --shadow:0 10px 26px rgba(6,25,91,0.10);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); line-height:1.75;}
+  html[dir="rtl"] body{font-family:'Tajawal','Lora',serif;}
+  html[lang="ur"] body{line-height:2.1;}
+
+  .lang-switch{ display:flex; justify-content:center; padding:16px 20px 0; }
+  .lang-switch-inner{ display:inline-flex; background:#fff; border:1px solid var(--line);
+    border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
+  .lang-switch button{ background:transparent; border:none; color:var(--ink); opacity:.55;
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; letter-spacing:.04em;
+    padding:8px 18px; cursor:pointer; }
+  .lang-switch button.active{ background:var(--emerald); color:#fff; opacity:1; }
+
+  header{ text-align:center; padding:22px 20px 8px; }
+  header img{ height:52px; width:auto; border-radius:5px; margin:0 auto 12px; display:block; }
+  h1{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:30px; margin:0 0 6px; color:var(--emerald-d); }
+  html[dir="rtl"] h1{ font-family:'Tajawal',sans-serif; font-size:26px; }
+  header p{ font-family:'Jost',sans-serif; font-size:12.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:#7b8a93; margin:0; }
+  html[dir="rtl"] header p{ font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; }
+
+  main{ max-width:760px; margin:0 auto; padding:20px 18px 60px; }
+  .kort{ background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:26px 24px; box-shadow:var(--shadow); margin-bottom:18px; }
+  .kort h2{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px;
+    color:var(--emerald-d); margin:0 0 12px; }
+  html[dir="rtl"] .kort h2{ font-family:'Tajawal',sans-serif; font-size:19px; }
+  .kort p{ font-family:'Jost',sans-serif; font-size:14.5px; line-height:1.8; color:#3f5162; margin:0 0 12px; }
+  html[dir="rtl"] .kort p{ font-family:'Tajawal',sans-serif; }
+  .kort p:last-child{ margin-bottom:0; }
+  .kort ol, .kort ul{ font-family:'Jost',sans-serif; font-size:14.5px; line-height:1.9;
+    color:#3f5162; padding-inline-start:22px; margin:0 0 12px; }
+  html[dir="rtl"] .kort ol, html[dir="rtl"] .kort ul{ font-family:'Tajawal',sans-serif; }
+
+  /* Advarselen om ett medlemskap får sitt eget kort, ikke en linje inne
+     i en annen tekst. Den handler om noe skolen kan bli medansvarlig
+     for — ikke om en preferanse. */
+  .advarsel{ background:#FFF6EC; border:1px solid #FFD9B0; border-inline-start:5px solid var(--gold); }
+  .advarsel h2{ color:#8a4b0a; }
+  .advarsel p{ color:#6b4310; }
+
+  .pris-rad{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding:11px 0; border-bottom:1px solid var(--line);
+    font-family:'Jost',sans-serif; font-size:14.5px; }
+  html[dir="rtl"] .pris-rad{ font-family:'Tajawal',sans-serif; }
+  .pris-rad:last-child{ border-bottom:0; }
+  .pris-rad .navn{ color:#3f5162; flex:1 1 180px; }
+  .pris-rad .tall{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .pris-rad .tall b{ color:var(--emerald-d); }
+  .pris-rad .spar{ color:var(--emerald); font-weight:600; }
+
+  .knapper{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .knapp{ font-family:'Jost',sans-serif; font-size:14.5px; font-weight:600; text-decoration:none;
+    padding:14px 22px; border-radius:10px; border:1.5px solid var(--emerald);
+    color:var(--emerald-d); background:#fff; flex:1 1 220px; text-align:center; }
+  html[dir="rtl"] .knapp{ font-family:'Tajawal',sans-serif; }
+  .knapp.primar{ background:var(--emerald); color:#fff; }
+  .knapp:hover{ background:var(--emerald); border-color:var(--emerald); color:#fff; }
+
+  .tilbake{ display:inline-block; font-family:'Jost',sans-serif; font-size:13px;
+    color:var(--emerald-d); text-decoration:underline; margin-bottom:14px; }
+  html[dir="rtl"] .tilbake{ font-family:'Tajawal',sans-serif; }
+  footer{ text-align:center; font-family:'Jost',sans-serif; font-size:12.5px;
+    color:#7b8a93; padding:0 20px 40px; }
+  html[dir="rtl"] footer{ font-family:'Tajawal',sans-serif; }
+  footer a{ color:var(--emerald-d); }
+</style>
+</head>
+<body>
+
+<div class="lang-switch">
+  <div class="lang-switch-inner">
+    <button id="bNo" class="active" onclick="bytt('no')">Norsk</button>
+    <button id="bAr" onclick="bytt('ar')">العربية</button>
+    <button id="bUr" onclick="bytt('ur')">اردو</button>
+  </div>
+</div>
+
+<header>
+  <img src="logo-bla.png" alt="Madina Institute">
+  <h1 id="hTittel"></h1>
+  <p id="hUnder"></p>
+</header>
+
+<main>
+  <a class="tilbake" href="index.html" id="lTilbake"></a>
+
+  <div class="kort">
+    <h2 id="hHva"></h2>
+    <div id="cHva"></div>
+  </div>
+
+  <!-- Prisene hentes fra basen, ikke skrevet inn her. Sto de i teksten,
+       ville denne siden blitt en fjerde kilde til samme tall — og
+       forsiden, skjemaet og foreldreportalen har alle vist feil pris før
+       nettopp fordi tallet fantes flere steder. -->
+  <div class="kort">
+    <h2 id="hPris"></h2>
+    <div id="cPris"></div>
+  </div>
+
+  <div class="kort advarsel">
+    <h2 id="hAdvarsel"></h2>
+    <div id="cAdvarsel"></div>
+  </div>
+
+  <div class="kort">
+    <h2 id="hSlik"></h2>
+    <div id="cSlik"></div>
+    <div class="knapper">
+      <a class="knapp primar" id="kFamilie" target="_blank" rel="noopener"></a>
+      <a class="knapp primar" id="kBarn" target="_blank" rel="noopener"></a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span id="fMoske"></span> <a href="https://madina.no" target="_blank" rel="noopener">madina.no</a>
+</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, getDoc }
+    from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  });
+  const db = getFirestore(app);
+
+  const LENKER = {
+    familie: 'https://registrering.solidus.no/smartform/83DEE9B5-754D-4784-9B21-B7B2BF8177ED',
+    barn:    'https://registrering.solidus.no/smartform/06B56592-BC3B-483A-AFCB-E1F9B22FA908'
+  };
+
+  const T = {
+    no: {
+      tittel: 'Medlemskap i Madina Institute',
+      under: 'Gratis · gir lavere pris og fortrinnsrett',
+      tilbake: '← Tilbake til forsiden',
+      hHva: 'Hva medlemskapet gir',
+      cHva: `<p>Medlemskap i Madina Institute (Madina Grorud moské) er <b>gratis</b>.
+        Det koster ingenting å registrere seg, og det finnes ingen årsavgift.</p>
+        <ul>
+          <li><b>Lavere pris på skolen.</b> Medlemsprisen er alltid den laveste.</li>
+          <li><b>Fortrinnsrett ved opptak.</b> Fylles et program opp, prioriteres medlemmer.</li>
+          <li><b>Mulighet for avdrag.</b> Beløpet kan deles opp — snakk med administrasjonen.</li>
+        </ul>
+        <p>Medlemskapet gjelder moskeen, ikke skolen. Skolen er en del av
+        Madina Institute, og prisen følger medlemskapet der.</p>`,
+      hPris: 'Hva du sparer',
+      hAdvarsel: '⚠️ Du kan bare være medlem ett sted',
+      cAdvarsel: `<p>Norsk lov gir trossamfunn tilskudd <b>per medlem</b>, og
+        ingen kan telles i to trossamfunn samtidig.</p>
+        <p>Er dere allerede medlemmer et annet sted, må dere <b>melde dere ut
+        der</b> så snart som mulig etter å ha registrert dere hos oss. Gjør dere
+        ikke det, mottar det andre stedet tilskudd for et medlem de ikke har —
+        og vi har medvirket til det.</p>
+        <p>Dette er ikke en formalitet. Det er en forutsetning for at
+        medlemskapet skal være gyldig.</p>`,
+      hSlik: 'Slik registrerer dere dere',
+      cSlik: `<ol>
+          <li><b>Familien først.</b> En voksen registrerer husstanden.</li>
+          <li><b>Deretter barnet.</b> Hvert barn registreres for seg.</li>
+        </ol>
+        <p>Registreringen skjer hos Solidus, som fører medlemsregisteret for
+        Madina Institute. Har dere spørsmål, ta kontakt med administrasjonen.</p>`,
+      kFamilie: '👤 Registrer familien',
+      kBarn: '🧒 Registrer barn',
+      moske: 'Mer om Madina Institute (Madina Grorud moské):',
+      prisHenter: 'Henter prisene …',
+      prisFeil: 'Prisene oppgis av administrasjonen ved opptak.',
+      medlem: 'Medlemspris', ikkeMedlem: 'Ordinær pris', sparer: 'Du sparer'
+    },
+    ar: {
+      tittel: 'عضوية معهد المدينة',
+      under: 'مجانية · سعر أقل وأولوية في القبول',
+      tilbake: '→ العودة للصفحة الرئيسية',
+      hHva: 'ماذا تمنحك العضوية',
+      cHva: `<p>العضوية في معهد المدينة (مسجد جرورود) <b>مجانية تمامًا</b>.
+        لا رسوم تسجيل ولا اشتراك سنوي.</p>
+        <ul>
+          <li><b>سعر أقل في المدرسة.</b> سعر العضو دائمًا هو الأقل.</li>
+          <li><b>أولوية في القبول.</b> عند امتلاء البرنامج، تُعطى الأولوية للأعضاء.</li>
+          <li><b>إمكانية التقسيط.</b> يمكن تقسيم المبلغ — تواصلوا مع الإدارة.</li>
+        </ul>
+        <p>العضوية تخص المسجد لا المدرسة. والمدرسة جزء من معهد المدينة،
+        والسعر يتبع العضوية هناك.</p>`,
+      hPris: 'كم توفّر',
+      hAdvarsel: '⚠️ لا يجوز أن تكون عضوًا في أكثر من مكان',
+      cAdvarsel: `<p>القانون النرويجي يمنح الجماعات الدينية دعمًا <b>لكل عضو</b>،
+        ولا يُحتسب الشخص في جماعتين في وقت واحد.</p>
+        <p>إذا كنتم أعضاء في مكان آخر، يجب <b>سحب العضوية من هناك</b> في أقرب
+        فرصة بعد التسجيل معنا. وإن لم تفعلوا، فإن المكان الآخر يتلقى دعمًا عن
+        عضو ليس لديه — ونكون قد شاركنا في ذلك.</p>
+        <p>هذه ليست مسألة شكلية، بل شرط لصحة العضوية.</p>`,
+      hSlik: 'كيفية التسجيل',
+      cSlik: `<ol>
+          <li><b>العائلة أولًا.</b> يسجّل أحد الوالدين الأسرة.</li>
+          <li><b>ثم الطفل.</b> كل طفل يُسجَّل على حدة.</li>
+        </ol>
+        <p>التسجيل يتم عبر Solidus، وهي الجهة التي تدير سجل العضوية لمعهد
+        المدينة. لأي استفسار، تواصلوا مع الإدارة.</p>`,
+      kFamilie: '👤 تسجيل العائلة',
+      kBarn: '🧒 تسجيل طفل',
+      moske: 'لمزيد من المعلومات عن معهد المدينة (مسجد جرورود):',
+      prisHenter: 'جارٍ تحميل الأسعار …',
+      prisFeil: 'تُحدَّد الأسعار من الإدارة عند القبول.',
+      medlem: 'سعر العضو', ikkeMedlem: 'السعر العادي', sparer: 'التوفير'
+    },
+    ur: {
+      tittel: 'مدینہ انسٹی ٹیوٹ کی رکنیت',
+      under: 'مفت · کم قیمت اور داخلے میں ترجیح',
+      tilbake: '→ مرکزی صفحے پر واپس',
+      hHva: 'رکنیت سے کیا ملتا ہے',
+      cHva: `<p>مدینہ انسٹی ٹیوٹ (مدینہ گروروڈ مسجد) کی رکنیت <b>بالکل مفت</b> ہے۔
+        نہ رجسٹریشن فیس، نہ سالانہ فیس۔</p>
+        <ul>
+          <li><b>اسکول میں کم قیمت۔</b> اراکین کی قیمت ہمیشہ سب سے کم ہوتی ہے۔</li>
+          <li><b>داخلے میں ترجیح۔</b> جگہ محدود ہو تو اراکین کو ترجیح دی جاتی ہے۔</li>
+          <li><b>اقساط کی سہولت۔</b> رقم تقسیم کی جا سکتی ہے۔</li>
+        </ul>`,
+      hPris: 'آپ کتنا بچاتے ہیں',
+      hAdvarsel: '⚠️ آپ صرف ایک جگہ رکن ہو سکتے ہیں',
+      cAdvarsel: `<p>ناروے کا قانون مذہبی جماعتوں کو <b>فی رکن</b> امداد دیتا ہے،
+        اور کوئی بھی بیک وقت دو جماعتوں میں شمار نہیں ہو سکتا۔</p>
+        <p>اگر آپ کہیں اور رکن ہیں تو یہاں رجسٹر ہونے کے بعد <b>جلد از جلد وہاں
+        سے رکنیت ختم کریں</b>۔ ورنہ دوسری جگہ کو ایک ایسے رکن کی امداد ملتی رہے
+        گی جو ان کے پاس نہیں ہے۔</p>`,
+      hSlik: 'رجسٹریشن کا طریقہ',
+      cSlik: `<ol>
+          <li><b>پہلے خاندان۔</b> ایک بالغ فرد گھرانے کو رجسٹر کرتا ہے۔</li>
+          <li><b>پھر بچہ۔</b> ہر بچہ الگ سے رجسٹر ہوتا ہے۔</li>
+        </ol>`,
+      kFamilie: '👤 خاندان رجسٹر کریں',
+      kBarn: '🧒 بچہ رجسٹر کریں',
+      moske: 'مدینہ انسٹی ٹیوٹ کے بارے میں مزید:',
+      prisHenter: 'قیمتیں لوڈ ہو رہی ہیں …',
+      prisFeil: 'قیمتیں داخلے کے وقت بتائی جائیں گی۔',
+      medlem: 'رکن کی قیمت', ikkeMedlem: 'عام قیمت', sparer: 'بچت'
+    }
+  };
+
+  let sprak = 'no';
+  let priser = null;
+  const kr = v => Math.round(v).toLocaleString('no-NO');
+
+  window.bytt = function(lang){
+    sprak = lang;
+    const rtl = (lang === 'ar' || lang === 'ur');
+    const root = document.getElementById('htmlRoot');
+    root.setAttribute('lang', lang);
+    root.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+    ['No','Ar','Ur'].forEach(k =>
+      document.getElementById('b' + k).classList.toggle('active',
+        lang === k.toLowerCase()));
+    tegn();
+  };
+
+  function tegn(){
+    const t = T[sprak];
+    const sett = (id, v) => { const e = document.getElementById(id); if(e) e.innerHTML = v; };
+    sett('hTittel', t.tittel);   sett('hUnder', t.under);
+    sett('lTilbake', t.tilbake);
+    sett('hHva', t.hHva);        sett('cHva', t.cHva);
+    sett('hPris', t.hPris);
+    sett('hAdvarsel', t.hAdvarsel); sett('cAdvarsel', t.cAdvarsel);
+    sett('hSlik', t.hSlik);      sett('cSlik', t.cSlik);
+    sett('fMoske', t.moske);
+
+    const kf = document.getElementById('kFamilie');
+    kf.textContent = t.kFamilie; kf.href = LENKER.familie;
+    const kb = document.getElementById('kBarn');
+    kb.textContent = t.kBarn; kb.href = LENKER.barn;
+
+    tegnPriser();
+  }
+
+  // 🔴 Ingen pris er bedre enn feil pris. Feiler lesingen, står det at
+  // administrasjonen oppgir den — ikke et tall fra i fjor.
+  function tegnPriser(){
+    const t = T[sprak];
+    const el = document.getElementById('cPris');
+    if(!el) return;
+    if(priser === 'feil'){ el.innerHTML = `<p>${t.prisFeil}</p>`; return; }
+    if(!priser){ el.innerHTML = `<p>${t.prisHenter}</p>`; return; }
+
+    const rader = priser.filter(p => p.aar > 0 || p.medlem > 0).map(p => {
+      const sparer = (p.aar > 0 && p.medlem > 0 && p.medlem < p.aar) ? p.aar - p.medlem : 0;
+      return `
+        <div class="pris-rad">
+          <span class="navn">${p.navn}</span>
+          <span class="tall">
+            ${t.ikkeMedlem}: ${kr(p.aar)} kr &nbsp;·&nbsp;
+            ${t.medlem}: <b>${kr(p.medlem || p.aar)} kr</b>
+            ${sparer ? `<br><span class="spar">${t.sparer} ${kr(sparer)} kr</span>` : ''}
+          </span>
+        </div>`;
+    });
+    el.innerHTML = rader.length ? rader.join('') : `<p>${t.prisFeil}</p>`;
+  }
+
+  async function lastPriser(){
+    try{
+      const snap = await getDocs(collection(db, 'programs'));
+      const tall = v => { const x = parseFloat(v); return isNaN(x) ? 0 : x; };
+      priser = snap.docs.map(d => d.data())
+        .filter(p => p.navn && p.aktiv !== 'Nei')
+        .map(p => ({
+          navn: p.navn,
+          aar: tall(p.prisAar),
+          medlem: tall(p.prisMedlemMnd) * (tall(p.antallManeder) || 9)
+        }));
+    } catch(err){
+      console.error('Kunne ikke hente priser', err);
+      priser = 'feil';
+    }
+    tegnPriser();
+  }
+
+  bytt('no');
+  lastPriser();
+</script>
+</body>
+</html>
