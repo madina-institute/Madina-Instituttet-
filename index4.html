@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 14:22:21 -->
+<!-- SIST-ENDRET: 2026-08-11 14:47:27 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -201,6 +201,94 @@
   .upload-status{font-family:'Jost',sans-serif; font-size:12px; color:var(--emerald); margin:-8px 0 14px;}
   html[dir="rtl"] .upload-status{font-family:'Tajawal',sans-serif;}
   .upload-status.err{color:var(--red);}
+
+  /* ---- Velkomstskjerm for foresatte ---- */
+  #fvelkomst{
+    position:fixed; inset:0; z-index:4000; overflow-y:auto;
+    background:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:34px 16px calc(34px + env(safe-area-inset-bottom, 0px));
+  }
+  #fvelkomst::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.055) 0 2px, transparent 2px 26px);
+  }
+  .fv-inner{ position:relative; width:100%; max-width:520px; text-align:center; }
+  .fv-logo{ width:min(180px, 54%); height:auto; margin-bottom:16px; border-radius:6px; }
+  .fv-hilsen{
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:.14em;
+    text-transform:uppercase; color:#dbeeff; margin-bottom:6px;
+  }
+  html[dir="rtl"] .fv-hilsen{ font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; }
+  .fv-navn{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:32px;
+    color:#fff; margin:0 0 8px; line-height:1.15;
+  }
+  html[dir="rtl"] .fv-navn{ font-family:'Tajawal',sans-serif; font-size:27px; }
+  .fv-under{ font-family:'Jost',sans-serif; font-size:13.5px; color:#cfe6fb; margin:0 0 22px; }
+  html[dir="rtl"] .fv-under{ font-family:'Tajawal',sans-serif; }
+  .fv-kort{
+    background:#fff; border-radius:18px; padding:8px 0 18px;
+    box-shadow:0 18px 44px rgba(0,0,0,.3); text-align:start; overflow:hidden;
+  }
+  /* Hvert barn er en rad man kan trykke paa. Raden ER inngangen - ikke en
+     liste man maa lese for saa aa finne en knapp et annet sted. */
+  .fv-barn{
+    display:flex; align-items:flex-start; gap:12px; width:100%;
+    background:none; border:none; border-bottom:1px solid var(--line);
+    padding:15px 18px; cursor:pointer; text-align:start;
+  }
+  .fv-barn:hover{ background:var(--paper-2); }
+  .fv-barn-tekst{ flex:1 1 auto; min-width:0; }
+  .fv-barn-navn{
+    font-family:'Jost',sans-serif; font-size:15.5px; font-weight:700; color:var(--ink);
+  }
+  html[dir="rtl"] .fv-barn-navn{ font-family:'Tajawal',sans-serif; }
+  .fv-barn-under{
+    font-family:'Jost',sans-serif; font-size:12px; color:#7b8a93; margin-top:3px; line-height:1.5;
+  }
+  html[dir="rtl"] .fv-barn-under{ font-family:'Tajawal',sans-serif; }
+  .fv-barn-belop{
+    font-family:'Jost',sans-serif; font-size:14.5px; font-weight:700;
+    color:var(--ink); white-space:nowrap; text-align:end; font-variant-numeric:tabular-nums;
+  }
+  /* Rabatten staar ved barnet den gjelder. Et samlet «spart»-tall nederst
+     sier ikke hvem som fikk hva - og det er nettopp det familien lurer paa. */
+  .fv-rabatt{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:700;
+    background:rgba(46,107,83,.12); color:var(--emerald); border-radius:999px;
+    padding:2px 8px; margin-top:4px;
+  }
+  .fv-uten-klasse{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:700;
+    background:rgba(183,146,74,.16); color:#8a6d1d; border-radius:999px;
+    padding:2px 8px; margin-inline-start:6px;
+  }
+  .fv-sum{ padding:14px 18px 2px; }
+  .fv-sum-rad{
+    display:flex; justify-content:space-between; gap:10px; padding:7px 0;
+    font-family:'Jost',sans-serif; font-size:13.5px; color:#5a6860;
+  }
+  html[dir="rtl"] .fv-sum-rad{ font-family:'Tajawal',sans-serif; }
+  .fv-sum-rad b{ color:var(--ink); font-variant-numeric:tabular-nums; }
+  .fv-sum-rad.spart b{ color:var(--emerald); }
+  .fv-sum-rad.rest{ border-top:1px solid var(--line); margin-top:6px; padding-top:12px; font-size:15px; }
+  .fv-sum-rad.rest b{ font-size:17px; }
+  .fv-tom{
+    font-family:'Jost',sans-serif; font-size:13.5px; color:#8a6d1d;
+    padding:18px; line-height:1.6;
+  }
+  html[dir="rtl"] .fv-tom{ font-family:'Tajawal',sans-serif; }
+  .fv-logg-ut{
+    background:none; border:none; color:#cfe6fb; cursor:pointer; margin-top:20px;
+    font-family:'Jost',sans-serif; font-size:12.5px; text-decoration:underline;
+  }
+  html[dir="rtl"] .fv-logg-ut{ font-family:'Tajawal',sans-serif; }
+  .fv-tilbake{
+    font-family:'Jost',sans-serif; font-size:12.5px; color:var(--emerald);
+    background:none; border:none; cursor:pointer; text-decoration:underline; padding:0;
+  }
+  html[dir="rtl"] .fv-tilbake{ font-family:'Tajawal',sans-serif; }
 
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -427,8 +515,26 @@
   </div>
 </div>
 
+  <!-- ══════════════════════════════════════════════════════════════
+       VELKOMSTSKJERM
+       Kommer FØR portalen. En forelder med flere barn skal se hele
+       familien samlet før han går inn i ett av dem: hvem går hvor, hva
+       koster det, og hva er igjen å betale. Uten dette måtte han bla
+       gjennom barna ett for ett og legge sammen selv.
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="fvelkomst" style="display:none;">
+    <div class="fv-inner">
+      <img class="fv-logo" src="logo-hvit.png" alt="Madina Skole">
+      <div class="fv-hilsen" id="fvHilsen">Velkommen</div>
+      <h1 class="fv-navn" id="fvNavn"></h1>
+      <p class="fv-under" id="fvUnder"></p>
+      <div class="fv-kort" id="fvKort"></div>
+      <button class="fv-logg-ut" onclick="doParentLogout()">Logg ut</button>
+    </div>
+  </div>
+
   <!-- APP -->
-  <div id="appView">
+  <div id="appView" style="display:none;">
   <div class="portal-body">
     <nav class="portal-sidebar" id="portalSidebar">
       <button data-sidebar="info" onclick="openSection('info')"><span class="ic">👤</span><span class="lbl" data-i18n="menuInfo">Elevinformasjon</span><span class="dot" id="dotInfo"></span></button>
@@ -449,7 +555,10 @@
     <div class="portal-content">
     <div class="who-bar">
       <span id="whoText"></span>
-      <button class="logout" onclick="doParentLogout()" data-i18n="logout">Logg ut</button>
+      <span>
+        <button class="fv-tilbake" onclick="visForeldreVelkomst()" id="tilFamilien">👨‍👩‍👧 Familien</button>
+        <button class="logout" style="margin-inline-start:12px;" onclick="doParentLogout()" data-i18n="logout">Logg ut</button>
+      </span>
     </div>
 
     <div class="child-select-wrap" id="childSelectWrap" style="display:none;">
@@ -1321,10 +1430,19 @@
     });
   }
 
-  const PROGRAM_PRICES = {
-    'Madina Islamske Skole — Integrert program (Lørdag)': '2750',
-    'Madinabarn (Søndag)': '1500'
-  };
+  // 🔴 Prisene sto skrevet inn her: 2750 og 1500. De ekte prisene er
+  // 5500 og 3000, satt i panelet under Skole → Programmer. Tallene her
+  // var altså foreldet — og de ble brukt til å regne ut «spart på
+  // søskenrabatt», som dermed viste et beløp familien aldri hadde spart.
+  //
+  // Samme feil som mellom panel og Vipps 8. august: to kilder til samme
+  // pris, og den ene glemmes.
+  //
+  // Nå leses programmene og rabattsatsene fra basen. Begge er offentlig
+  // lesbare — påmeldingsskjemaet viser dem uansett til familier som ikke
+  // er logget inn.
+  let programmer = [];
+  let prisOppsett = {};
 
   let guardians = [], students = [], attendance = [], registrations = [], homework = [];
   let announcements = [], studentNotes = [], hours = [], teachers = [], messages = [], classes = [];
@@ -1517,6 +1635,15 @@
     eventRSVPs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
+  watch('programs', (snap) => {
+    programmer = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if(currentGuardian){ renderSummary(); tegnVelkomstForelder(); }
+  });
+  watchDoc('settings', 'priser', (snap) => {
+    prisOppsett = snap.exists() ? (snap.data() || {}) : {};
+    if(currentGuardian){ renderSummary(); tegnVelkomstForelder(); }
+  }, (err) => console.error('settings/priser', err));
+
   watchDoc('settings', 'betaling', (snap) => {
     paymentLink = snap.exists() ? (snap.data().lenke || '') : '';
     if(currentGuardian) renderChild();
@@ -1600,7 +1727,8 @@
     updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
     document.getElementById('loginView').style.display = 'none';
-    document.getElementById('appView').style.display = 'block';
+    // Velkomstskjermen først — portalen åpnes når et barn er valgt.
+    visForeldreVelkomst();
     document.getElementById('whoText').textContent = guardian.navn;
     // Åpner seksjonen fra adresselinjen hvis den finnes — ellers står
     // startsiden som før.
@@ -1699,7 +1827,93 @@
     });
   }
 
+  // ---------- Velkomstskjerm for foresatte ----------
+  window.visForeldreVelkomst = function(){
+    document.getElementById('appView').style.display = 'none';
+    document.getElementById('fvelkomst').style.display = 'flex';
+    tegnVelkomstForelder();
+  };
+
+  window.aapneBarn = function(i){
+    currentChildIndex = i;
+    document.getElementById('fvelkomst').style.display = 'none';
+    document.getElementById('appView').style.display = 'block';
+    renderChildTabs();
+    renderChild();
+    closeSection();
+  };
+
+  function tegnVelkomstForelder(){
+    const el = document.getElementById('fvKort');
+    if(!el) return;
+    const ar = currentLang === 'ar';
+
+    const hilsen = document.getElementById('fvHilsen');
+    if(hilsen) hilsen.textContent = ar ? 'أهلاً وسهلاً' : 'Velkommen';
+    const navnEl = document.getElementById('fvNavn');
+    if(navnEl) navnEl.textContent = currentGuardian ? (currentGuardian.navn || '') : '';
+
+    const under = document.getElementById('fvUnder');
+    if(under){
+      under.textContent = myChildren.length === 0
+        ? (ar ? 'مفيش أبناء مسجّلين بعد.' : 'Ingen barn registrert ennå.')
+        : (ar ? ('عندك ' + myChildren.length + ' ' + (myChildren.length === 1 ? 'ابن' : 'أبناء') + ' في المدرسة')
+              : (myChildren.length === 1 ? 'Du har ett barn på skolen' : 'Du har ' + myChildren.length + ' barn på skolen'));
+    }
+
+    if(myChildren.length === 0){
+      el.innerHTML = `<div class="fv-tom">${ar
+        ? 'لو ده مش صح، تواصل مع المدرسة — ممكن يكون الربط بين حسابك وأبنائك ناقص.'
+        : 'Stemmer ikke dette, ta kontakt med skolen — koblingen mellom kontoen din og barna kan mangle.'}</div>`;
+      return;
+    }
+
+    // Rekkefølgen følger søskenplassen, ikke hva basen svarte i.
+    // Rekkefølgen ER forklaringen på rabatten: står barn 2 over barn 1,
+    // ser tallene tilfeldige ut.
+    const sortert = myChildren.map((b, i) => ({ b, i }))
+      .sort((x, y) => (parseInt(x.b.soskenrekkefolge,10) || 99) - (parseInt(y.b.soskenrekkefolge,10) || 99));
+
+    let sumFull = 0, sumTotal = 0, sumBetalt = 0;
+    const rader = sortert.map(({ b, i }) => {
+      const full = fullPrisFor(b);
+      const total = toNum(b.belop);
+      const betalt = toNum(b.belopBetalt);
+      const rabatt = rabattProsentFor(b);
+      sumFull += full || total; sumTotal += total; sumBetalt += betalt;
+
+      const detaljer = [b.program || '—'];
+      const klasseNavn = resolveClassName(b.klasse);
+      if(klasseNavn) detaljer.push(klasseNavn);
+
+      return `
+        <button class="fv-barn" onclick="aapneBarn(${i})">
+          <span class="fv-barn-tekst">
+            <span class="fv-barn-navn">${escapeHtml(b.navn || '')}</span>
+            <span class="fv-barn-under">${escapeHtml(detaljer.join(' · '))}${
+              b.klasse ? '' : `<span class="fv-uten-klasse">${ar ? 'بدون صف' : 'uten klasse'}</span>`}</span>
+            ${rabatt > 0 ? `<span class="fv-rabatt">${ar ? 'خصم إخوة' : 'søskenrabatt'} −${rabatt} %</span>` : ''}
+          </span>
+          <span class="fv-barn-belop">${total.toLocaleString('no-NO')} kr</span>
+        </button>`;
+    }).join('');
+
+    const spart = Math.max(0, sumFull - sumTotal);
+    const rest = sumTotal - sumBetalt;
+
+    el.innerHTML = rader + `
+      <div class="fv-sum">
+        ${spart > 0 ? `<div class="fv-sum-rad spart"><span>${
+          ar ? 'إجمالي خصم الإخوة' : 'Spart på søskenrabatt'}</span><b>−${spart.toLocaleString('no-NO')} kr</b></div>` : ''}
+        <div class="fv-sum-rad"><span>${ar ? 'الإجمالي' : 'Totalt'}</span><b>${sumTotal.toLocaleString('no-NO')} kr</b></div>
+        <div class="fv-sum-rad"><span>${ar ? 'المدفوع' : 'Betalt'}</span><b>${sumBetalt.toLocaleString('no-NO')} kr</b></div>
+        <div class="fv-sum-rad rest"><span>${ar ? 'الباقي' : 'Gjenstår'}</span><b>${rest.toLocaleString('no-NO')} kr</b></div>
+      </div>`;
+  }
+
   window.doParentLogout = function(){
+    const fv = document.getElementById('fvelkomst');
+    if(fv) fv.style.display = 'none';
     currentGuardian = null;
     document.getElementById('appView').style.display = 'none';
     document.getElementById('loginView').style.display = 'flex';
@@ -1714,6 +1928,11 @@
     myChildren = students.filter(s => s.foresatt === currentGuardian.id || s.foresatt2 === currentGuardian.id);
     if(currentChildIndex >= myChildren.length) currentChildIndex = 0;
     startKlasselyttere();
+    // Elevene kommer inn etter innlogging. Står velkomstskjermen åpen,
+    // må den fylles ut når de er lest — ellers står den tom for en
+    // familie som har barn.
+    const fv = document.getElementById('fvelkomst');
+    if(fv && fv.style.display !== 'none') tegnVelkomstForelder();
     renderSummary();
     renderChildTabs();
     renderChild();
@@ -1721,10 +1940,37 @@
 
   function toNum(v){ return parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0; }
 
+  // Full pris for et barn — det programmet koster uten søskenrabatt.
+  // Materiellavgiften ligger utenfor rabatten, akkurat som i panelet:
+  // bøker koster det samme uansett hvor mange søsken man har.
+  function fullPrisFor(barn){
+    const p = programmer.find(x => (x.navn || '') === (barn.program || ''));
+    if(!p) return 0;
+    const erMedlem = String(barn.erMedlem || '').toLowerCase() === 'ja';
+    const undervisning = erMedlem
+      ? (toNum(p.prisMedlemMnd) * (toNum(p.antallManeder) || 0))
+      : toNum(p.prisAar);
+    const materiell = p.materiellAvgift !== undefined && p.materiellAvgift !== ''
+      ? toNum(p.materiellAvgift)
+      : toNum(prisOppsett.materiellAvgift);
+    return undervisning + materiell;
+  }
+
+  // Rabatten i prosent for dette barnet, lest av søskenplassen som
+  // panelet satte da beløpet ble regnet ut. Vi regner den ikke ut på
+  // nytt her: to steder som regner det samme, blir før eller siden
+  // uenige — og da er det familien som ser to ulike tall.
+  function rabattProsentFor(barn){
+    const plass = parseInt(barn.soskenrekkefolge, 10);
+    if(!plass || plass <= 1) return 0;
+    if(plass === 2) return toNum(prisOppsett.soskenRabatt2);
+    return toNum(prisOppsett.soskenRabatt3);
+  }
+
   function renderSummary(){
     const total = myChildren.reduce((s,c) => s + toNum(c.belop), 0);
     const paid = myChildren.reduce((s,c) => s + toNum(c.belopBetalt), 0);
-    const totalBase = myChildren.reduce((s,c) => s + (parseFloat(PROGRAM_PRICES[c.program] || 0) || 0), 0);
+    const totalBase = myChildren.reduce((s,c) => s + fullPrisFor(c), 0);
     const savings = totalBase - total;
     document.getElementById('sumTotal').textContent = total.toLocaleString('no-NO') + ' kr';
     document.getElementById('sumPaid').textContent = paid.toLocaleString('no-NO') + ' kr';
