@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 11:06:13 -->
+<!-- SIST-ENDRET: 2026-08-11 11:51:31 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3350,6 +3350,9 @@
   // dem. Nivået er det samme tallet begge sider leser.
   function erOversteLeder(){
     if((currentUserEmail || '').trim().toLowerCase() === NODKONTO) return true;
+    // (Nødkontoen trenger ingen rad i 'tilgang'. Reglene gir den nivå 1
+    //  fra e-posten alene, og panelet må svare likt — ellers kommer den
+    //  gjennom reglene, men ikke gjennom skjermen.)
     // Rollene leses fra ALLE kortene personen står på, ikke bare fra
     // listen som ble satt ved innlogging.
     //
@@ -3784,18 +3787,32 @@
   // ═══════════════════════════════════════════════════════════════════
   let minTilgangRad = null;
 
+  // 🔴 Den SNILLESTE summen av de to kildene — ikke den ene eller den andre.
+  //
+  // Første forsøk lot raden overstyre alt når den hadde et nivå. Radene
+  // som allerede lå i basen var skrevet av den gamle koden og hadde bare
+  // niva, epost, navn og roller — ingen panel, ingen ledelse. Resultatet
+  // var panel:false for den øverste lederen, som dermed ble stengt ute av
+  // sitt eget panel med et gyldig nivå 1 i raden.
+  //
+  // En manglende opplysning skal ikke bety «nei». Den skal bety «vet
+  // ikke» — og da svarer den andre kilden.
   function minTilgang(){
-    if(minTilgangRad && typeof minTilgangRad.niva === 'number'){
-      return {
-        niva:    minTilgangRad.niva,
-        panel:   minTilgangRad.panel === true,
-        ledelse: minTilgangRad.ledelse === true,
-        opptak:  minTilgangRad.opptak === true,
-        helse:   minTilgangRad.helse === true,
-        opprett: Array.isArray(minTilgangRad.opprett) ? minTilgangRad.opprett : []
-      };
-    }
-    return samletTilgang(currentUserRoles);
+    const fraRoller = samletTilgang(currentUserRoles);
+    if(!minTilgangRad || typeof minTilgangRad.niva !== 'number') return fraRoller;
+    const r = minTilgangRad;
+    const eller = (felt) => r[felt] === true || fraRoller[felt] === true;
+    return {
+      niva:    Math.min(r.niva, fraRoller.niva),
+      panel:   eller('panel'),
+      ledelse: eller('ledelse'),
+      opptak:  eller('opptak'),
+      helse:   eller('helse'),
+      opprett: [...new Set([
+        ...(Array.isArray(r.opprett) ? r.opprett : []),
+        ...(fraRoller.opprett || [])
+      ])]
+    };
   }
   function nivaForRoller(roller){ return samletTilgang(roller).niva; }
   function mittNiva(){ return erOversteLeder() ? 1 : minTilgang().niva; }
