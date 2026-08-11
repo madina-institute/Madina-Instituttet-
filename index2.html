@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 18:41:06 -->
+<!-- SIST-ENDRET: 2026-08-11 18:28:04 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -206,6 +206,39 @@
   .kartlegging-block{background:var(--paper-2); border-radius:8px; padding:20px 22px; margin-bottom:16px;}
   .kartlegging-block h4{font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--gold); margin:0 0 12px;}
 
+  /* ---- Medlemsboks ---- */
+  .medlem-boks{
+    background:#fff; border:1px solid var(--emerald); border-radius:14px;
+    padding:20px 18px; margin-top:16px;
+  }
+  .medlem-tittel{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px;
+    color:var(--emerald-d, var(--emerald)); margin-bottom:9px;
+  }
+  .medlem-brod{
+    font-family:'Jost',sans-serif; font-size:13.5px; line-height:1.75;
+    color:#4a5a62; margin:0 0 9px;
+  }
+  /* Advarselen får egen ramme. Den handler om noe skolen kan bli
+     medansvarlig for, og skal ikke leses som en fotnote. */
+  .medlem-advarsel{
+    font-family:'Jost',sans-serif; font-size:13px; line-height:1.75; color:#7a5c12;
+    background:#fdf8ec; border-inline-start:4px solid #b7924a;
+    border-radius:9px; padding:12px 14px; margin:12px 0 14px;
+  }
+  .medlem-knapper{ display:flex; gap:9px; flex-wrap:wrap; }
+  .medlem-knapp{
+    font-family:'Jost',sans-serif; font-size:13.5px; font-weight:600; text-decoration:none;
+    padding:11px 18px; border-radius:9px; border:1.5px solid var(--emerald);
+    color:var(--emerald); background:#fff; flex:1 1 190px; text-align:center;
+  }
+  .medlem-knapp.primar{ background:var(--emerald); color:#fff; }
+  .medlem-knapp:hover{ background:var(--emerald); color:#fff; }
+  .medlem-moske{
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#7b8a93; margin-top:13px;
+  }
+  .medlem-moske a{ color:var(--emerald); }
+
   .note-box{
     margin-top:6px; padding:12px 16px; background:rgba(183,146,74,0.10); border-left:3px solid var(--gold);
     font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); line-height:1.6; border-radius:0 4px 4px 0;
@@ -339,10 +372,22 @@
   <!-- INTRO — obligatoriske innledende spørsmål -->
   <div class="card" id="introScreen">
     <div class="field">
-      <label>Er du medlem av Madina Institute (Madina Grorud moske)?</label>
+      <label>Er familien registrert som medlem i Madina Institute (Madina Grorud moské)?</label>
+      <!-- Tre svar, ikke to.
+           Spørsmålet kan ikke kontrolleres i det øyeblikket det stilles —
+           administrasjonen bekrefter medlemskapet etterpå. Med bare
+           «ja/nei» må den som er usikker gjette, og gjetningen blir
+           stående som et svar. «Vet ikke» er et ærlig svar, og det sier
+           administrasjonen noe de faktisk kan handle på. -->
       <div class="radio-row">
-        <label><input type="radio" name="intro_moske_medlem" value="ja" required> Ja</label>
-        <label><input type="radio" name="intro_moske_medlem" value="nei" required> Nei</label>
+        <label><input type="radio" name="intro_moske_medlem" value="ja" required> Ja, vi er registrert</label>
+        <label><input type="radio" name="intro_moske_medlem" value="nei" required> Nei, ikke ennå</label>
+        <label><input type="radio" name="intro_moske_medlem" value="usikker" required> Vet ikke</label>
+      </div>
+      <div class="hint" style="margin-top:6px;">
+        Medlemskap er gratis og gir lavere pris. Du kan registrere deg
+        senere i skjemaet — svaret her endrer ikke beløpet, og
+        administrasjonen bekrefter medlemskapet før første faktura.
       </div>
     </div>
     <div class="field">
@@ -540,12 +585,37 @@
       <div class="price-detalj" id="priceDetalj"></div>
     </div>
 
-    <div class="note-box" style="margin-top:14px; background:#fff; border-color:var(--emerald);">
-      <strong>Medlemskap i Madina Institute</strong><br>
-      Medlemsprisen er alltid den laveste, og medlemmer har fortrinnsrett ved
-      opptak. Er dere medlemmer — eller ønsker å bli det — skriv det i
-      merknadsfeltet nederst i skjemaet. Administrasjonen bekrefter medlemskapet
-      og justerer beløpet før første faktura.
+    <!-- Sto tidligere som en tekst: «skriv i merknadsfeltet at dere er
+         medlemmer». Det ba familien om å beskrive noe de kunne gjort på
+         stedet. Nå står lenkene her, rett under prisene som viser hva
+         medlemskapet er verdt.
+
+         🔴 Advarselen om ett medlemskap er ikke en detalj. Norsk lov gir
+         tilskudd per medlem, og ingen kan telles i to trossamfunn. Melder
+         familien seg inn her uten å melde seg ut der de sto, får det
+         andre stedet tilskudd for et medlem det ikke har. -->
+    <div class="medlem-boks">
+      <div class="medlem-tittel">💳 Medlemskap i Madina Institute — gratis</div>
+      <p class="medlem-brod">
+        Medlemsprisen er alltid den laveste, og medlemmer har fortrinnsrett ved
+        opptak. Medlemskapet koster ingenting, og gir også mulighet for avdrag.
+      </p>
+      <p class="medlem-brod"><b>Rekkefølgen:</b> familien registreres først, deretter barnet.</p>
+      <div class="medlem-advarsel">
+        <b>⚠️ Du kan bare være medlem ett sted.</b> Norsk lov gir tilskudd per
+        medlem, og ingen kan telles i to trossamfunn samtidig. Er dere medlemmer
+        et annet sted, må dere melde dere ut der så snart som mulig etter å ha
+        registrert dere her.
+      </div>
+      <div class="medlem-knapper">
+        <a class="medlem-knapp primar" href="https://registrering.solidus.no/smartform/83DEE9B5-754D-4784-9B21-B7B2BF8177ED" target="_blank" rel="noopener">👤 Medlemskap for familien</a>
+        <a class="medlem-knapp primar" href="https://registrering.solidus.no/smartform/06B56592-BC3B-483A-AFCB-E1F9B22FA908" target="_blank" rel="noopener">🧒 Medlemskap for barn</a>
+        <a class="medlem-knapp" href="medlemskap.html" target="_blank" rel="noopener">Les mer om medlemskap</a>
+      </div>
+      <div class="medlem-moske">
+        Mer om Madina Institute (Madina Grorud moské):
+        <a href="https://madina.no" target="_blank" rel="noopener">madina.no</a>
+      </div>
     </div>
 
     <!-- Beløpene her sto tidligere skrevet inn i teksten. Da fantes de
