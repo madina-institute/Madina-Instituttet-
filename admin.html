@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 23:50:00 -->
+<!-- SIST-ENDRET: 2026-08-12 00:17:56 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -234,6 +234,34 @@
     background:var(--emerald-d); color:#fff; font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; padding:12px 8px;
   }
   .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
+
+  /* ---- Klassekort ---- */
+  .kk-merker{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:6px; }
+  .kk-hode{
+    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:700;
+    color:var(--emerald-d); margin:20px 0 8px; padding-bottom:5px;
+    border-bottom:1px solid var(--line);
+  }
+  .kk-rad{
+    display:flex; gap:12px; align-items:flex-start;
+    padding:8px 0; border-bottom:1px solid var(--line);
+    font-family:'Jost',sans-serif; font-size:13px;
+  }
+  .kk-rad:last-child{ border-bottom:0; }
+  .kk-tid{
+    flex:0 0 96px; font-size:11.5px; font-weight:700; color:var(--emerald-d);
+    font-variant-numeric:tabular-nums; line-height:1.4;
+  }
+  .kk-fag{ flex:1; min-width:0; line-height:1.6; }
+  .kk-tall{
+    display:flex; gap:16px; flex-wrap:wrap; margin-bottom:9px;
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860;
+  }
+  /* Elevene i kolonner. En loddrett liste på tjue navn fyller skjermen
+     og gjør at lærerne under aldri blir sett. */
+  .kk-liste{ columns:2; font-family:'Jost',sans-serif; font-size:13px; line-height:1.95; }
+  .kk-liste > span{ display:block; break-inside:avoid; }
+  @media (max-width:560px){ .kk-liste{ columns:1; } }
 
   /* ---- Fagrekkefølge per klasse ----
      Faste kolonner: tid · fag · lærer(e) · piler. Alle blokkene bruker
@@ -2710,6 +2738,17 @@
         Flytt et fag opp eller ned i klassens dag. Klokkeslettene og pausene
         står stille — det er faget som bytter blokk, og læreren følger med.
       </div>
+      <!-- Skoleåret står her fordi timeplanen gjelder ETT år om gangen.
+           Alternativet var en fra- og til-dato på hver eneste time — og da
+           måtte alt som leser timeplanen filtrere på dato, ellers ville to
+           årganger vist seg samtidig og klassen sett ut til å ha to fag på
+           én gang. Ett årstall øverst sier det samme, og kan ikke gå i
+           utakt med seg selv. -->
+      <div class="innst-effekt" style="margin-top:12px;">
+        📅 Gjelder <b>skoleåret <span id="koSkolear"></span></b>.
+        Skal et nytt år settes opp, kopieres dagen til de nye klassene —
+        den gamle timeplanen står til den erstattes.
+      </div>
       <div class="innst-rad" style="margin-top:14px;">
         <div class="field">
           <label>Klasse</label>
@@ -3288,6 +3327,18 @@
   </div>
 </div>
 
+<!-- KLASSEKORT — timeplan, elever og lærere for én klasse -->
+<div class="overlay" id="klassekortOverlay">
+  <div class="modal" style="max-width:720px;">
+    <h3 id="kkTittel"></h3>
+    <div id="kkInnhold"></div>
+    <div class="modal-actions" style="margin-top:18px; flex-wrap:wrap;">
+      <div id="kkHandlinger" style="display:flex; gap:8px; flex-wrap:wrap; flex:1 1 100%;"></div>
+      <button class="btn btn-ghost" style="width:auto;" onclick="closeCashierOverlay('klassekortOverlay')">Lukk</button>
+    </div>
+  </div>
+</div>
+
 <!-- PERSON DETAIL — bred, horisontal visning (elever/lærere/foresatte) med
      bilde/standardavatar, viktigst info i en rad øverst, og resten av
      feltene skjult bak "Vis flere detaljer" i stedet for en smal,
@@ -3778,7 +3829,19 @@
     oktStart = new Date();
     sistePuls = Date.now();
     try{
-      const doc = await addDoc(collection(db, 'loginEvents'), {
+      // 🔴 _addDoc, ikke addDoc.
+      //
+      // Panelet åpner i LESEMODUS, og den innpakkede addDoc kaster da et
+      // unntak. Økten ble derfor aldri registrert — catch-blokken under
+      // fanget kastet, skrev til konsollen, og oktRef forble null.
+      //
+      // Følgen var at «Pålogget nå» alltid sto på null, og at hele
+      // bruksstatistikken i Ledelsesinnsyn har vært tom siden lesemodus
+      // ble innført. Ingen feilmelding noe sted.
+      //
+      // Et livstegn er et SPOR etter bruk, ikke en endring av data —
+      // samme kategori som feillogg. Lesemodus skal ikke stoppe det.
+      const doc = await _addDoc(collection(db, 'loginEvents'), {
         role: 'admin',
         epost: currentUserEmail || '',
         navn: (cache.teachers || []).find(t => (t.epost||'').toLowerCase() === (currentUserEmail||'').toLowerCase())?.navn || '',
@@ -3802,7 +3865,8 @@
     if(nå - sistePuls < PULS_INTERVALL_MS) return;   // høyst hvert 2. minutt
     sistePuls = nå;
     const minutter = Math.round((nå - oktStart.getTime()) / 60000);
-    updateDoc(oktRef, {
+    // Samme grunn som i startOkt: livstegnet er et spor, ikke en endring.
+    _updateDoc(oktRef, {
       sisteAktivitet: new Date(nå).toISOString(),
       varighetMin: minutter
     }).catch(err => console.error('Kunne ikke oppdatere økt', err));
@@ -3813,7 +3877,7 @@
   function avsluttOkt(){
     if(!oktRef) return;
     const minutter = Math.max(1, Math.round((Date.now() - oktStart.getTime()) / 60000));
-    updateDoc(oktRef, {
+    _updateDoc(oktRef, {
       sisteAktivitet: new Date().toISOString(),
       varighetMin: minutter,
       avsluttet: true
@@ -3837,6 +3901,14 @@
     document.addEventListener(evt, resetInactivityTimer, { passive: true });
     document.addEventListener(evt, oktPuls, { passive: true });
   });
+  // ⚠️ Livstegnet hang BARE på museklikk og tastetrykk. Sitter man og
+  // leser en lang liste uten å røre noe, sluttet økten å melde seg — og
+  // etter et kvarter forsvant man fra «Pålogget nå» enda man satt der.
+  //
+  // Timeren under er ikke en erstatning: den sjekker bare om det er på
+  // tide, og oktPuls avgjør selv. Er fanen låst eller ikke i bruk,
+  // skjer det fortsatt ingenting.
+  setInterval(() => { if(!document.hidden) oktPuls(); }, 60000);
   // Siste livstegn når fanen lukkes eller legges bort. Ikke garantert i
   // alle nettlesere — derfor er den jevnlige pulsen hovedmekanismen, og
   // dette bare en forbedring når den rekker å kjøre.
@@ -8262,6 +8334,12 @@
           ${type === 'teacherAttendance' && (row.godkjenningsstatus||'Venter godkjenning') === 'Venter godkjenning' ? `
             <button class="btn-edit" style="background:var(--emerald); color:#fff; border-color:var(--emerald);" onclick="approveTeacherAttendance('${row.id}')">✅ Godkjenn</button>
             <button class="btn-edit" onclick="openEditApproveAttendance('${row.id}')">✏️ Rediger og godkjenn</button>` : ''}
+          ${type === 'classes'
+            // Klassekortet samler timeplan, elever og lærere ett sted.
+            // «Rediger» og «Slett» blir stående: en klasse er en liten
+            // oppføring, og å gjemme redigeringen inne i kortet ville
+            // gjort en enkel navneendring til tre klikk.
+            ? `<button class="btn-edit" onclick="visKlassekort('${row.id}')">👁 Vis</button>` : ''}
           ${['students','teachers','guardians'].includes(type)
             // Personkort viser bare «Vis» utenpå. Rediger, Vipps-krav og
             // sletting ligger inne i kortet — det gjør listen rolig å bla i,
@@ -8654,6 +8732,8 @@
   let koTilstand = null;   // { klasse, dag, blokker:[...] }
 
   function koFyllVelgere(){
+    const el = document.getElementById('koSkolear');
+    if(el) el.textContent = SKOLEAR;
     const kSel = document.getElementById('koKlasse');
     const dSel = document.getElementById('koDag');
     if(!kSel || !dSel) return;
@@ -8702,6 +8782,207 @@
     const midt = a + Math.round((b - a) / 2);
     return [start + '–' + koKlokke(midt), koKlokke(midt) + '–' + end];
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // KLASSEKORTET
+  //
+  // For å vite hva som gjelder én klasse måtte man åpne tre faner:
+  // Timeplan for timene, Elever for elevene, Lærere for hvem som
+  // underviser. Ingen av dem viser klassen som helhet, og ingen av dem
+  // sier hvilke elever som går arabisk og hvilke som går urdu.
+  //
+  // Her står alt samlet — og det er det samme grunnlaget som skrives ut
+  // og eksporteres, så papiret aldri kan si noe annet enn skjermen.
+  // ═══════════════════════════════════════════════════════════════════
+  const SKOLEAR = '2026/2027';
+
+  function klasseDager(klasseId){
+    return [...new Set((cache.hours || [])
+      .filter(h => h.klasse === klasseId && h.dag).map(h => h.dag))].sort();
+  }
+
+  // Timene gruppert i blokker, med språksporene ved siden av hverandre —
+  // nøyaktig samme inndeling som Fagrekkefølge bruker, så de to aldri
+  // kan fortelle to ulike historier om samme dag.
+  function klasseTimeplan(klasseId){
+    const ut = [];
+    klasseDager(klasseId).forEach(dag => {
+      koBlokker(dag).forEach(b => {
+        const rader = (cache.hours || []).filter(h =>
+          h.dag === dag && h.klasse === klasseId && b.tider.includes(h.tid));
+        if(rader.length === 0) return;
+        const perFag = new Map();
+        rader.forEach(r => {
+          const f = r.fag || '(uten fag)';
+          if(!perFag.has(f)) perFag.set(f, []);
+          perFag.get(f).push(r);
+        });
+        ut.push({
+          dag, start: b.start, slutt: b.slutt,
+          spor: [...perFag.entries()].map(([fag, rs]) => ({
+            fag,
+            larere: [...new Set(rs.map(r => resolveDynName('teachers', r.larer))
+              .filter(Boolean))]
+          }))
+        });
+      });
+    });
+    return ut;
+  }
+
+  window.visKlassekort = function(klasseId){
+    const k = (cache.classes || []).find(c => c.id === klasseId);
+    if(!k) return;
+    const elever = (cache.students || []).filter(s => s.klasse === klasseId);
+    const aktive = elever.filter(s => s.elevStatus !== 'Sluttet/trukket');
+    const plan = klasseTimeplan(klasseId);
+    // Lærerne hentes fra timeplanen, ikke fra «tildeltKlasse» på
+    // lærerkortet: det feltet settes for hånd og blir stående igjen når
+    // timeplanen endres. Timeplanen er den som faktisk gjelder.
+    const larere = [...new Set(plan.flatMap(b => b.spor.flatMap(s => s.larere)))];
+    const sprak = { Arabisk: 0, Urdu: 0, '(ikke valgt)': 0 };
+    aktive.forEach(s => {
+      const v = s.sprakvalg === 'Arabisk' || s.sprakvalg === 'Urdu' ? s.sprakvalg : '(ikke valgt)';
+      sprak[v]++;
+    });
+
+    const planHtml = plan.length === 0
+      ? '<div class="report-empty">Ingen timer lagt inn for denne klassen.</div>'
+      : plan.map(b => `
+        <div class="kk-rad">
+          <span class="kk-tid">${escapeHtml(b.dag)}<br>${escapeHtml(b.start)}–${escapeHtml(b.slutt)}</span>
+          <span class="kk-fag">${b.spor.map(s =>
+            `<b>${escapeHtml(s.fag)}</b>${s.larere.length
+              ? ' — ' + escapeHtml(s.larere.join(' · '))
+              : ' — <i style="color:var(--red);">uten lærer</i>'}`).join('<br>')}</span>
+        </div>`).join('');
+
+    const overlay = document.getElementById('klassekortOverlay');
+    document.getElementById('kkTittel').textContent = k.navn || '(uten navn)';
+    document.getElementById('kkInnhold').innerHTML = `
+      <div class="kk-merker">
+        <span class="record-pill">${escapeHtml(k.program || 'uten program')}</span>
+        ${k.trinn ? `<span class="record-pill">Trinn ${escapeHtml(k.trinn)}</span>` : ''}
+        <span class="record-pill">Skoleår ${SKOLEAR}</span>
+      </div>
+
+      <h4 class="kk-hode">🕐 Timeplan</h4>
+      ${planHtml}
+
+      <h4 class="kk-hode">🎒 Elever — ${aktive.length}${elever.length !== aktive.length
+        ? ' <span style="font-weight:400; font-size:12px; color:#8a9a90;">(+ ' + (elever.length - aktive.length) + ' sluttet)</span>' : ''}</h4>
+      <div class="kk-tall">
+        ${Object.entries(sprak).filter(([, n]) => n > 0)
+          .map(([n, v]) => `<span>${escapeHtml(n)}: <b>${v}</b></span>`).join('')}
+      </div>
+      ${aktive.length === 0
+        ? '<div class="report-empty">Ingen elever i klassen ennå.</div>'
+        : `<div class="kk-liste">${aktive
+            .sort((a, b) => (a.navn || '').localeCompare(b.navn || ''))
+            .map(s => `<span class="record-link" onclick="showPersonDetail('students','${escapeHtml(s.id)}')">${escapeHtml(s.navn || '—')}</span>`)
+            .join('')}</div>`}
+
+      <h4 class="kk-hode">🧑‍🏫 Lærere — ${larere.length}</h4>
+      ${larere.length === 0
+        ? '<div class="report-empty">Ingen lærere satt på klassens timer.</div>'
+        : `<div class="kk-liste">${larere.map(n => `<span>${escapeHtml(n)}</span>`).join('')}</div>`}
+    `;
+    document.getElementById('kkHandlinger').innerHTML = `
+      <button class="btn btn-ghost" style="width:auto;" onclick="editEntry('classes','${escapeHtml(klasseId)}')">✏️ Rediger klassen</button>
+      <button class="btn btn-ghost" style="width:auto;" onclick="koApneKlasse('${escapeHtml(klasseId)}')">🔀 Endre fagrekkefølge</button>
+      <button class="btn btn-ghost" style="width:auto;" onclick="eksporterKlasse('${escapeHtml(klasseId)}')">⬇️ CSV</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="skrivUtKlasse('${escapeHtml(klasseId)}')">🖨️ Skriv ut</button>`;
+    overlay.classList.add('open');
+  };
+
+  // Hopper rett til redigeringen med klassen valgt. Uten dette måtte man
+  // lukke kortet, bytte fane og finne klassen igjen i en nedtrekksliste.
+  window.koApneKlasse = function(klasseId){
+    closeCashierOverlay('klassekortOverlay');
+    selectSide('pedagogisk');
+    selectSubTab('klasseoppsett');
+    setTimeout(() => {
+      const sel = document.getElementById('koKlasse');
+      if(sel){ sel.value = klasseId; koVelgKlasse(); }
+    }, 120);
+  };
+
+  // Samme rader som skjermen viser. En eksport som regnes ut på nytt et
+  // annet sted, begynner å avvike den dagen én av dem endres.
+  function klasseRader(klasseId){
+    const k = (cache.classes || []).find(c => c.id === klasseId) || {};
+    return klasseTimeplan(klasseId).flatMap(b =>
+      b.spor.map(s => ({
+        Klasse: k.navn || '', Program: k.program || '', Skoleår: SKOLEAR,
+        Dag: b.dag, Fra: b.start, Til: b.slutt,
+        Fag: s.fag, Lærer: s.larere.join(' · ')
+      })));
+  }
+
+  window.eksporterKlasse = function(klasseId){
+    const rader = klasseRader(klasseId);
+    if(rader.length === 0){ showToast('Ingen timer å eksportere.'); return; }
+    const k = (cache.classes || []).find(c => c.id === klasseId) || {};
+    const kol = Object.keys(rader[0]);
+    const csv = [kol.join(',')].concat(rader.map(r =>
+      kol.map(c => '"' + String(r[c] || '').replace(/"/g, '""') + '"').join(','))).join('\n');
+    // BOM foran, ellers viser Excel æ, ø og å som krøll.
+    lastNedFil('timeplan-' + (k.navn || 'klasse').replace(/[^\p{L}\p{N}]+/gu, '_') +
+      '-' + SKOLEAR.replace('/', '-') + '.csv', '\ufeff' + csv, 'text/csv;charset=utf-8;');
+  };
+
+  window.skrivUtKlasse = function(klasseId){
+    const k = (cache.classes || []).find(c => c.id === klasseId);
+    if(!k) return;
+    const plan = klasseTimeplan(klasseId);
+    const aktive = (cache.students || [])
+      .filter(s => s.klasse === klasseId && s.elevStatus !== 'Sluttet/trukket')
+      .sort((a, b) => (a.navn || '').localeCompare(b.navn || ''));
+
+    // Elevlisten står med språkvalg, men UTEN helseopplysninger, telefon
+    // eller foresatte. Et ark som henges på en dør eller gis til en vikar
+    // skal kunne leses av hvem som helst.
+    const win = window.open('', '_blank');
+    if(!win){ showToast('Nettleseren blokkerte utskriften. Tillat popup for denne siden.'); return; }
+    win.document.write(`<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
+      <title>${escapeHtml(k.navn || 'Klasse')} — Madina Skole</title>
+      <style>
+        @page{ margin:14mm; }
+        body{font-family:Arial,Helvetica,sans-serif; color:#16283a; margin:24px;}
+        h1{font-size:21px; margin:0 0 2px;}
+        .meta{font-size:12px; color:#5a6b7d; margin-bottom:18px;}
+        h2{font-size:14px; margin:22px 0 7px; color:#1c5490;}
+        table{border-collapse:collapse; width:100%; font-size:12px;}
+        th,td{border:1px solid #bbb; padding:6px 8px; text-align:left; vertical-align:top;}
+        th{background:#eef4fa;}
+        .tom{color:#a33; font-style:italic;}
+        .kol{columns:3; font-size:12.5px; line-height:1.9;}
+      </style></head><body>
+      <h1>${escapeHtml(k.navn || '')}</h1>
+      <div class="meta">${escapeHtml(k.program || '')}${k.trinn ? ' · Trinn ' + escapeHtml(k.trinn) : ''}
+        · Skoleår ${SKOLEAR} · skrevet ut ${new Date().toLocaleDateString('no-NO')}</div>
+
+      <h2>Timeplan</h2>
+      ${plan.length === 0 ? '<p class="tom">Ingen timer lagt inn.</p>' : `
+      <table><thead><tr><th>Dag</th><th>Tid</th><th>Fag</th><th>Lærer</th></tr></thead><tbody>
+        ${plan.flatMap(b => b.spor.map((s, i) => `<tr>
+          <td>${i === 0 ? escapeHtml(b.dag) : ''}</td>
+          <td>${i === 0 ? escapeHtml(b.start + '–' + b.slutt) : ''}</td>
+          <td>${escapeHtml(s.fag)}</td>
+          <td>${s.larere.length ? escapeHtml(s.larere.join(' · ')) : '<span class="tom">uten lærer</span>'}</td>
+        </tr>`)).join('')}
+      </tbody></table>`}
+
+      <h2>Elever — ${aktive.length}</h2>
+      ${aktive.length === 0 ? '<p class="tom">Ingen elever i klassen.</p>'
+        : `<div class="kol">${aktive.map(s =>
+            escapeHtml(s.navn || '—') + (s.sprakvalg ? ' <small>(' + escapeHtml(s.sprakvalg) + ')</small>' : '')
+          ).join('<br>')}</div>`}
+      </body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  };
 
   // ═══════════════════════════════════════════════════════════════════
   // SPRÅKDELING — arabisk og urdu går SAMTIDIG, ikke etter hverandre
@@ -9115,12 +9396,39 @@
     const klasser = (cache.classes || []).filter(c => c.navn && !/felles/i.test(c.navn));
     if(klasser.length === 0){ showToast('Ingen klasser registrert.'); return; }
 
+    // Hvem som skal stå på timen. Fellestimen samler hele skolen, men
+    // hver klasse trenger likevel en voksen — som regel den som hadde
+    // klassen i timen før, og det vet bare et menneske.
+    //
+    // 📌 Faggruppene er ikke en ny opplysning: de leses av lærerens eget
+    // fagfelt. Velges en gruppe, fordeles den etter klassenes rekkefølge,
+    // og går den tom, står resten uten lærer i stedet for å bli tildelt
+    // noen tilfeldig.
+    const fagFinnes = [...new Set((cache.teachers || []).map(t => (t.fag || '').trim()).filter(Boolean))].sort();
+    const valg = prompt(
+      'Hvem skal stå som lærer på fellestimen?\n\n' +
+      '  0 = ingen — settes for hånd per klasse (anbefalt)\n' +
+      '  1 = alle lærere, fordelt etter klasserekkefølge\n' +
+      fagFinnes.map((f, i) => '  ' + (i + 2) + ' = ' + f + '-lærere').join('\n') +
+      '\n\nSkriv et tall:', '0');
+    if(valg === null) return;
+    const n = parseInt(valg, 10);
+    if(isNaN(n) || n < 0 || n > fagFinnes.length + 1){ showToast('Ugyldig valg.'); return; }
+
+    let pool = [];
+    if(n === 1) pool = (cache.teachers || []).filter(t => t.navn);
+    else if(n >= 2) pool = (cache.teachers || []).filter(t => (t.fag || '').trim() === fagFinnes[n - 2]);
+    if(n > 0 && pool.length === 0){ showToast('Ingen lærere i den gruppen.'); return; }
+
     const plan = [];
-    klasser.forEach(k => {
+    klasser.forEach((k, ki) => {
+      // Læreren følger KLASSEN, ikke økten: samme voksen hele timen.
+      const larer = pool.length ? (pool[ki % pool.length] || {}).id || '' : '';
       b.tider.forEach(tid => {
         const rad = (cache.hours || []).find(h => h.dag === dag && h.klasse === k.id && h.tid === tid);
-        if(!rad) plan.push({ type: 'ny', klasse: k, tid });
-        else if(rad.fag !== 'Fellestime') plan.push({ type: 'endre', klasse: k, tid, rad });
+        if(!rad) plan.push({ type: 'ny', klasse: k, tid, larer });
+        else if(rad.fag !== 'Fellestime' || (larer && rad.larer !== larer))
+          plan.push({ type: 'endre', klasse: k, tid, rad, larer });
       });
     });
     if(plan.length === 0){ showToast('Alle klassene har allerede Fellestime her.'); return; }
@@ -9130,9 +9438,14 @@
     if(!confirm(
       'Sette Fellestime ' + b.start + '–' + b.slutt + ' for alle ' + klasser.length + ' klasser?\n\n' +
       (nye ? '  ' + nye + ' nye timer opprettes\n' : '') +
-      (endres.length ? '  ' + endres.length + ' timer endres:\n' +
-        [...new Set(endres.map(p => '    ' + p.klasse.navn + ': ' + (p.rad.fag || '(uten fag)')))].join('\n') + '\n' : '') +
-      '\nLærer settes ikke — velg den som skal ha hver klasse etterpå.'
+      (endres.length ? '  ' + endres.length + ' timer endres\n' : '') +
+      (pool.length
+        ? '\nLærere fordeles fra: ' + [...new Set(klasser.map((k, ki) =>
+            (pool[ki % pool.length] || {}).navn).filter(Boolean))].join(', ') +
+          (pool.length < klasser.length
+            ? '\n⚠️ ' + pool.length + ' lærere på ' + klasser.length +
+              ' klasser — noen står i to klasser samtidig. Rett opp etterpå.' : '')
+        : '\nLærer settes ikke — velg den som skal ha hver klasse etterpå.')
     )) return;
 
     let ok = 0; const feilet = [];
@@ -9140,13 +9453,16 @@
       try{
         if(p.type === 'ny'){
           await addDoc(collection(db, 'hours'), {
-            dag, tid: p.tid, fag: 'Fellestime', larer: '', klasse: p.klasse.id,
+            dag, tid: p.tid, fag: 'Fellestime', larer: p.larer || '', klasse: p.klasse.id,
             opprettetAv: currentUserEmail || 'ukjent',
             opprettetDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
           });
         } else {
           await updateDoc(doc(db, 'hours', p.rad.id), {
             fag: 'Fellestime',
+            // Tom lærer skriver ikke over en som finnes — samme regel som
+            // overalt ellers her.
+            ...(p.larer ? { larer: p.larer } : {}),
             sistEndretAv: currentUserEmail || 'ukjent',
             sistEndretDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
           });
