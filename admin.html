@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 10:27:20 -->
+<!-- SIST-ENDRET: 2026-08-11 11:06:13 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1920,6 +1920,15 @@
         Dette sto tidligere i koden, og hver endring krevde at filen ble
         skrevet om og publisert. Nå er det avkrysninger.
       </p>
+      <div class="innst-effekt" style="margin-bottom:14px;">
+        <b>Rettighetene leses fra tilgangsindeksen</b>, ikke fra rollenavnet.
+        Tabellen under bestemmer hva hver rolle <i>gir</i>; svaret regnes ut
+        én gang og lagres i <code>tilgang/{e-post}</code> — samme dokument
+        som sikkerhetsreglene leser.<br>
+        Ser noen ut til å mangle myndighet de skal ha, bygg indeksen på nytt:
+        <button class="btn btn-ghost" style="width:auto; margin-top:10px;"
+                onclick="byggTilgangsindeksPaaNytt()">🔄 Bygg tilgangsindeksen på nytt</button>
+      </div>
       <div class="innst-effekt" style="border-left-color:#8a6d1d; background:#fdf8ec; margin-bottom:14px;">
         Rollen <b>«Eier»</b> er erstattet av <b>«Øverste leder»</b>. Skolen selv
         er eieren; de som styrer den er ledere.<br>
@@ -3341,6 +3350,16 @@
   // dem. Nivået er det samme tallet begge sider leser.
   function erOversteLeder(){
     if((currentUserEmail || '').trim().toLowerCase() === NODKONTO) return true;
+    // Rollene leses fra ALLE kortene personen står på, ikke bare fra
+    // listen som ble satt ved innlogging.
+    //
+    // currentUserRoles kunne inneholde et rollenavn som ikke lenger
+    // finnes i tabellen — for eksempel «Eier» på et lærerkort som ikke
+    // ble flyttet. Ukjent rolle gir nivå 99, og da ble den øverste
+    // lederen nektet av sitt eget panel.
+    //
+    // Samme feil ble rettet i currentUserHasSeniorRole() først; at denne
+    // ble stående er nøyaktig samme forglemmelse en gang til.
     const t = minTilgang();
     return !!t && t.niva <= 1;
   }
@@ -3751,7 +3770,33 @@
     };
   }
 
-  function minTilgang(){ return samletTilgang(currentUserRoles); }
+  // ═══════════════════════════════════════════════════════════════════
+  // MIN EGEN TILGANG — leses fra indeksen, ikke regnes ut av rollenavn
+  //
+  // Dette er hele poenget: reglene leser tilgang/{min e-post}, og nå gjør
+  // panelet det samme. Ett dokument, ett svar, ingen oversettelse
+  // underveis som kan komme ut av takt.
+  //
+  // Utregningen fra rollenavn står igjen som RESERVE — for øyeblikket før
+  // indeksen er lest inn, og for den som har roller men ennå ingen rad.
+  // Den skal ikke være hovedveien: det var nettopp den som brakk tre
+  // ganger på én dag da et rollenavn ble endret.
+  // ═══════════════════════════════════════════════════════════════════
+  let minTilgangRad = null;
+
+  function minTilgang(){
+    if(minTilgangRad && typeof minTilgangRad.niva === 'number'){
+      return {
+        niva:    minTilgangRad.niva,
+        panel:   minTilgangRad.panel === true,
+        ledelse: minTilgangRad.ledelse === true,
+        opptak:  minTilgangRad.opptak === true,
+        helse:   minTilgangRad.helse === true,
+        opprett: Array.isArray(minTilgangRad.opprett) ? minTilgangRad.opprett : []
+      };
+    }
+    return samletTilgang(currentUserRoles);
+  }
   function nivaForRoller(roller){ return samletTilgang(roller).niva; }
   function mittNiva(){ return erOversteLeder() ? 1 : minTilgang().niva; }
 
@@ -3871,6 +3916,7 @@
         return;
       }
       currentUserEmail = user.email;
+      lyttPaaMinTilgang();
       document.getElementById('loginScreen').style.display = 'none';
       authHarSvart = true;
       document.getElementById('venteSkjerm').style.display = 'none';
@@ -4853,7 +4899,14 @@
   }
 
   window.lagTestsoknader = async function(){
-    if(!erOversteLeder()){ showToast('Kun eier kan lage testdata.'); return; }
+    if(!erOversteLeder()){
+      melding('ADM-TST-07', '🔒 Ingen tilgang',
+        'Testdata kan bare lages av øverste ledelse.\n\nDu er registrert som: ' +
+        (currentUserRoles.join(', ') || 'ingen rolle') + '.',
+        'lagTestsoknader · niva=' + (samletTilgang(currentUserRoles) || {}).niva +
+        ' · roller=' + (currentUserRoles.join(', ') || 'ingen'));
+      return;
+    }
     const antall = parseInt((document.getElementById('testFamilierInput') || {}).value, 10);
     if(isNaN(antall) || antall < 1 || antall > 40){
       showToast('Velg mellom 1 og 40 familier.');
@@ -5003,7 +5056,13 @@
   //      kan handle på; det var derfor eneste utvei ble å slette for
   //      hånd i Firebase Console.
   window.slettTestdata = async function(){
-    if(!erOversteLeder()){ showToast('Kun eier kan slette testdata.'); return; }
+    if(!erOversteLeder()){
+      melding('ADM-TST-08', '🔒 Ingen tilgang',
+        'Testdata kan bare slettes av øverste ledelse.\n\nDu er registrert som: ' +
+        (currentUserRoles.join(', ') || 'ingen rolle') + '.',
+        'slettTestdata · roller=' + (currentUserRoles.join(', ') || 'ingen'));
+      return;
+    }
 
     const samlinger = ['registrations', 'students', 'guardians', 'teachers', 'classes'];
     // 🔴 To samlinger bærer ALDRI merket, og ble derfor stående igjen
@@ -12831,6 +12890,31 @@
     return ryddet;
   };
 
+  // Bygger tilgangsindeksen på nytt fra personkortene.
+  //
+  // Indeksen ER tilgangskontrollen — både panelet og reglene leser den.
+  // Blir den utdatert (rollenavn endret, en skriving avvist, en person
+  // opprettet mens noe var nede), mister folk myndighet uten at noe sier
+  // fra. Denne knappen er veien tilbake, og den skal alltid finnes.
+  window.byggTilgangsindeksPaaNytt = async function(){
+    const erNodkonto = (currentUserEmail || '').trim().toLowerCase() === NODKONTO;
+    if(!erNodkonto && !erOversteLeder()){
+      melding('ADM-TIL-03', '🔒 Kun øverste ledelse',
+        'Tilgangsindeksen avgjør hvem som har lov til hva.',
+        'byggTilgangsindeksPaaNytt · roller=' + (currentUserRoles.join(', ') || 'ingen'));
+      return;
+    }
+    if(!confirm('Bygge tilgangsindeksen på nytt for alle med panelkort?\n\n' +
+      'Rettighetene regnes ut fra rollene som står på kortene nå, og ' +
+      'skrives inn i tilgang/{e-post}.\n\nIngen kort endres.')) return;
+    tilgangSjekket = false;
+    await sikreTilgangsindeks(true);
+    melding('ADM-TIL-04', '✓ Indeksen er bygget på nytt',
+      'Rettighetene er skrevet fra kortene. Last siden på nytt hvis noe ' +
+      'fortsatt ser feil ut.',
+      'byggTilgangsindeksPaaNytt · adminUsers=' + (adminUsersCache || []).length);
+  };
+
   window.regnOmAlleFamilier = async function(){
     const avvik = elevermedFeilBelop().filter(x => !x.betalt);
     if(avvik.length === 0){ showToast('Alle beløp stemmer med prisreglene.'); return; }
@@ -13874,19 +13958,38 @@
   }
 
   let tilgangSjekket = false;
-  async function sikreTilgangsindeks(){
-    if(tilgangSjekket || !erOversteLeder()) return;
+  // tvungen=true: kjør uansett. Uten den var indeksen avhengig av seg
+  // selv — er raden min feil, er jeg ikke «øverste leder», og da kjører
+  // ikke jobben som skulle rettet raden. Reparasjonsknappen omgår det.
+  async function sikreTilgangsindeks(tvungen){
+    if(!tvungen && (tilgangSjekket || !erOversteLeder())) return;
     tilgangSjekket = true;
     let noeFeilet = false;
     for(const u of adminUsersCache){
       const e = (u.epost || '').trim().toLowerCase();
       if(!e) continue;
-      const roller = (u.roller || '').split(',').map(s => s.trim());
+      const roller = (u.roller || '').split(',').map(s => s.trim()).filter(Boolean);
       if(!samletTilgang(roller).panel) continue;
       try{
+        // Hele tilgangen skrives inn — ikke bare nivået.
+        //
+        // Før regnet panelet rettighetene ut på nytt hver gang, fra
+        // rollenavnene i personkortet. Sto det et navn som ikke lenger
+        // fantes i tabellen — «Eier» etter navnebyttet — ble svaret nivå
+        // 99, altså ingen tilgang. Det traff tre forskjellige steder på
+        // én dag, og hver gang så det ut som en ny feil.
+        //
+        // Nå regnes det ut ÉN gang, her, og lagres. Alle oppslag leser
+        // det ferdige svaret. Reglene leser samme dokument.
+        const t = samletTilgang(roller);
         await setDoc(doc(db, 'tilgang', e), {
           epost: e, navn: u.navn || '', roller: u.roller || '',
-          niva: nivaForRoller(u.roller || ''),
+          niva: t.niva,
+          panel: t.panel === true,
+          ledelse: t.ledelse === true,
+          opptak: t.opptak === true,
+          helse: t.helse === true,
+          opprett: Array.isArray(t.opprett) ? t.opprett : [],
           sistOppdatert: new Date().toISOString()
         }, { merge: true });
       } catch(err){
@@ -13904,6 +14007,25 @@
       tilgangSjekket = false;
       console.warn('Tilgangsindeksen er ufullstendig — prøver igjen ved neste oppdatering.');
     }
+  }
+
+  // Min egen rad i tilgangsindeksen. Én lytter på ETT dokument — ikke på
+  // hele samlingen: ingen trenger å se hva kollegene har lov til.
+  //
+  // Endres rollene mine mens jeg er innlogget, oppdateres raden av
+  // sikreTilgangsindeks(), og lytteren her fanger det opp uten at jeg må
+  // logge inn på nytt.
+  function lyttPaaMinTilgang(){
+    const e = (currentUserEmail || '').trim().toLowerCase();
+    if(!e) return;
+    onSnapshot(doc(db, 'tilgang', e), (snap) => {
+      minTilgangRad = snap.exists() ? (snap.data() || null) : null;
+      // Menyen bygges på nivået. Kommer raden inn etter at den er tegnet,
+      // må den tegnes på nytt — ellers står man med færre faner enn man
+      // har lov til, helt til neste oppdatering.
+      try{ buildSidebar(); }catch(e2){}
+      try{ tegnModusBryter(); }catch(e2){}
+    }, (err) => console.error('tilgang/min rad', err));
   }
 
   onSnapshot(collection(db, 'adminUsers'), (snap) => {
