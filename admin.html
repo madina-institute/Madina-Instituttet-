@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 00:22:07 -->
+<!-- SIST-ENDRET: 2026-08-12 00:44:51 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3042,6 +3042,20 @@
         aldri sier fra når den lukkes, kan noen bli stående i inntil et
         kvarter etter at de gikk.
       </div>
+      <!-- Det sto ingenting om hvem listen dekker, og «0 personer inne»
+           ble derfor lest som at ingen var inne i det hele tatt — også
+           når lærere satt i portalen sin.
+
+           Portalene fører ikke økt: det ville kostet en skriving hvert
+           femte minutt per elevhjem, for et tall ingen trenger i
+           øyeblikket. Hvem som var inne og når står i Lærerinnsyn og
+           Foreldreinnsyn i stedet, som leser siste innlogging fra
+           personkortet — uten en eneste ekstra skriving. -->
+      <div class="innst-effekt">
+        📌 Dette gjelder <b>Administrativt panel</b>. Lærere og foresatte
+        fører ikke økt i portalene sine — se <b>Lærerinnsyn</b> og
+        <b>Foreldreinnsyn</b> under Verktøy for hvem som har vært inne og når.
+      </div>
       <div id="paaloggetListe" style="margin-top:14px;"></div>
     </div>
   </div>
@@ -3901,14 +3915,25 @@
     document.addEventListener(evt, resetInactivityTimer, { passive: true });
     document.addEventListener(evt, oktPuls, { passive: true });
   });
-  // ⚠️ Livstegnet hang BARE på museklikk og tastetrykk. Sitter man og
-  // leser en lang liste uten å røre noe, sluttet økten å melde seg — og
-  // etter et kvarter forsvant man fra «Pålogget nå» enda man satt der.
+  // Livstegnet hang BARE på museklikk og tastetrykk. Sitter man og leser
+  // en lang liste uten å røre noe, sluttet økten å melde seg — og etter
+  // et kvarter forsvant man fra oversikten enda man satt der.
   //
-  // Timeren under er ikke en erstatning: den sjekker bare om det er på
-  // tide, og oktPuls avgjør selv. Er fanen låst eller ikke i bruk,
-  // skjer det fortsatt ingenting.
-  setInterval(() => { if(!document.hidden) oktPuls(); }, 60000);
+  // 🔴 Men en ren timer ville vært verre: en fane som står glemt åpen
+  // ville pulset i timevis, og statistikken ville sagt «aktiv 480
+  // minutter» om noen som gikk hjem for lenge siden. Tallet ville vært
+  // feil, og skrivingene betalt for ingenting.
+  //
+  // Derfor: timeren pulser bare hvis det HAR vært aktivitet de siste ti
+  // minuttene. Den som leser er dekket; den som gikk, slutter å telle.
+  let sisteEkteAktivitet = Date.now();
+  ['mousedown','keydown','touchstart','scroll'].forEach(evt =>
+    document.addEventListener(evt, () => { sisteEkteAktivitet = Date.now(); }, { passive: true }));
+  setInterval(() => {
+    if(document.hidden) return;
+    if(Date.now() - sisteEkteAktivitet > 10 * 60 * 1000) return;
+    oktPuls();
+  }, 60000);
   // Siste livstegn når fanen lukkes eller legges bort. Ikke garantert i
   // alle nettlesere — derfor er den jevnlige pulsen hovedmekanismen, og
   // dette bare en forbedring når den rekker å kjøre.
