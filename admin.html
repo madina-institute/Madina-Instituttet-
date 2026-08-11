@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 12:17:34 -->
+<!-- SIST-ENDRET: 2026-08-11 15:27:25 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -12852,19 +12852,27 @@
   // 🔴 Barn som har betalt noe, røres ikke. Å endre et beløp noen alt har
   // betalt på er å endre en faktura i ettertid.
   async function oppdaterSoskenpriser(guardianId){
-    if(!guardianId) return { endret: 0, forsokt: 0, hoppetOver: [], feilet: [] };
+    if(!guardianId) return { endret: 0, forsokt: 0, hoppetOver: [], hoppetGrunn: [], feilet: [] };
     const priser = familiePriser(guardianId);
     const barn = (cache.students || []).filter(s =>
       s.foresatt === guardianId || s.foresatt2 === guardianId);
     let endret = 0, forsokt = 0;
     const hoppetOver = [];
+    const hoppetGrunn = [];
     const feilet = [];
     for(const elev of barn){
       const p = priser[elev.id];
-      if(!p || !p.pris) continue;
+      // 🔴 Hvert hopp begrunnes. Sto det bare «continue» her, endte man
+      // med «markert 1 · forsøkt 0» og ingen måte å se hvorfor de to
+      // gjennomgangene var uenige om samme elev.
+      if(!p){ hoppetGrunn.push((elev.navn || elev.id) + ': ikke i familieberegningen'); continue; }
+      if(!p.pris){ hoppetGrunn.push((elev.navn || elev.id) + ': ingen pris (program mangler pris?)'); continue; }
       const gammelt = cashierKr(elev.belop);
       const nytt = Math.round(p.pris);
-      if(gammelt === nytt && String(elev.soskenrekkefolge || '') === String(p.plass)) continue;
+      if(gammelt === nytt && String(elev.soskenrekkefolge || '') === String(p.plass)){
+        hoppetGrunn.push((elev.navn || elev.id) + ': allerede riktig');
+        continue;
+      }
       forsokt++;
       if(cashierKr(elev.belopBetalt) > 0){
         hoppetOver.push(elev.navn || elev.id);
@@ -12887,7 +12895,7 @@
         feilet.push({ navn: elev.navn || elev.id, kode: err.code || err.message || 'ukjent' });
       }
     }
-    return { endret, forsokt, hoppetOver, feilet };
+    return { endret, forsokt, hoppetOver, hoppetGrunn, feilet };
   }
 
   // Lagret beløp mot det prisreglene sier nå. De to kan gli fra hverandre
@@ -12984,11 +12992,13 @@
     const foresatte = [...new Set(avvik.map(x => x.elev.foresatt || x.elev.foresatt2))];
     let endret = 0, forsokt = 0;
     const alleFeil = [];
+    const alleGrunner = [];
     for(const g of foresatte){
       const r = await oppdaterSoskenpriser(g);
       endret += r.endret;
       forsokt += (r.forsokt || 0);
       alleFeil.push(...(r.feilet || []));
+      alleGrunner.push(...(r.hoppetGrunn || []));
     }
     if(endret > 0){
       await loggSamlet('Beløp rettet mot prisreglene', endret,
@@ -13005,12 +13015,13 @@
       // krever helt forskjellig leting.
       melding('ADM-PRI-02', '⚠️ Ingen skriving ble forsøkt',
         avvik.length + ' elever ble markert som avvikende, men ' +
-        'familieberegningen fant dem ikke igjen. Det peker på koblingen ' +
-        'mellom elev og foresatt — ikke på skrivingen.',
-        'regnOmAlleFamilier · students/guardians\n' +
+        'gjennomgangen hoppet over dem alle. Grunnen står under.',
+        'regnOmAlleFamilier · students\n' +
         'markert ' + avvik.length + ' · forsøkt 0\n' +
-        'første: foresatt=' + (avvik[0] ? (avvik[0].elev.foresatt || '—') : '—') +
-        ' foresatt2=' + (avvik[0] ? (avvik[0].elev.foresatt2 || '—') : '—'));
+        (alleGrunner.length ? alleGrunner.slice(0, 6).join('\n') : 'ingen grunn registrert') +
+        '\nforesatt=' + (avvik[0] ? (avvik[0].elev.foresatt || '—') : '—') +
+        ' foresatt2=' + (avvik[0] ? (avvik[0].elev.foresatt2 || '—') : '—') +
+        ' tellForesatt2=' + String(prisOppsett && prisOppsett.tellForesatt2));
       return;
     }
     // Sier hva som gikk galt, ikke bare at ingenting skjedde.
