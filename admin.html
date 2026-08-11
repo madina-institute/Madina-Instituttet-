@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 23:03:34 -->
+<!-- SIST-ENDRET: 2026-08-11 23:31:18 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -257,6 +257,28 @@
     padding:5px 11px; cursor:pointer;
   }
   .ko-handlinger button:hover{ border-color:var(--emerald-d); }
+  /* Sporene. Ett spor ser ut som en vanlig rad; to spor får en felles
+     venstrekant som binder dem sammen — og det nederste rykkes litt inn,
+     slik at man SER at de er to deler av samme time, ikke to timer. */
+  .ko-spor-boks{ flex:1 1 340px; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .ko-spor{ display:flex; gap:9px; flex-wrap:wrap; align-items:flex-end; }
+  .ko-spor.delt{
+    border-inline-start:3px solid var(--emerald-l); border-radius:0 8px 8px 0;
+    padding:6px 0 6px 10px; background:rgba(26,155,236,.045);
+  }
+  .ko-spor.delt + .ko-spor.delt{ margin-inline-start:14px; }
+  .ko-sporfag{
+    flex:0 0 auto; align-self:center; min-width:62px;
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700;
+    color:var(--emerald-d); letter-spacing:.02em;
+  }
+  .ko-liten{
+    align-self:flex-end; background:#fff; border:1px solid var(--line);
+    border-radius:7px; padding:7px 10px; cursor:pointer; font-size:12px;
+    color:var(--emerald-d); flex:0 0 auto;
+  }
+  .ko-liten:hover{ border-color:var(--emerald-d); }
+
   .ko-tid{
     font-family:'Jost',sans-serif; font-size:12.5px; font-weight:700;
     color:var(--emerald-d); background:var(--paper-2); border-radius:7px;
@@ -8666,65 +8688,125 @@
     return [start + '–' + koKlokke(midt), koKlokke(midt) + '–' + end];
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // SPRÅKDELING — arabisk og urdu går SAMTIDIG, ikke etter hverandre
+  //
+  // Første utgave la de to språklærerne i hver sin halvdel av timen.
+  // Det er feil: elevene i klassen deles i to spor etter språkvalget
+  // sitt, og begge sporene undervises i hele blokken — av hver sin
+  // lærer, i hvert sitt rom.
+  //
+  // Derfor er en blokk ikke lenger «ett fag med lærere», men ett eller
+  // to SPOR. Vanlige fag har ett spor. Arabisk og urdu har alltid to,
+  // og de følges alltid ad: velger man det ene, opprettes det andre.
+  //
+  // 📌 Oppmøtet påvirkes ikke. Det føres én gang per dag på eleven, ikke
+  // per time — så en elev i arabisksporet telles fortsatt én gang.
+  // ═══════════════════════════════════════════════════════════════════
+  const KO_SPRAKFAG = ['Arabisk', 'Urdu'];
+  const koErSprak = f => KO_SPRAKFAG.includes(f);
+
+  function koTomtSpor(fag, tider){
+    return { fag, okter: tider.map(tid => ({ tid, rad: null, larer: '' })) };
+  }
+
   window.koVelgKlasse = function(){
     const klasse = document.getElementById('koKlasse').value;
     const dag = document.getElementById('koDag').value;
     if(!klasse || !dag){ koTilstand = null; koTegn(); return; }
 
     const blokker = koBlokker(dag).map(b => {
-      // Én økt per klokkeslett i blokken. Læreren henger på ØKTEN, ikke
-      // på blokken: det er nettopp derfor arabisk og urdu kan ha to.
-      const okter = b.tider.map(tid => {
-        const rad = (cache.hours || []).find(h =>
-          h.dag === dag && h.klasse === klasse && h.tid === tid) || null;
-        return { tid, rad, larer: (rad && rad.larer) || '', opphavLarer: (rad && rad.larer) || '' };
-      });
-      const fagSett = [...new Set(okter.map(o => o.rad && o.rad.fag).filter(Boolean))];
+      const rader = (cache.hours || []).filter(h =>
+        h.dag === dag && h.klasse === klasse && b.tider.includes(h.tid));
+      const fagSett = [...new Set(rader.map(r => r.fag).filter(Boolean))];
+      const harSprak = fagSett.some(koErSprak);
+      // Språkblokk: begge sporene finnes alltid, også om bare det ene
+      // er lagt inn fra før. Ellers ville urdu-sporet vært usynlig helt
+      // til noen tilfeldigvis opprettet en urdu-time.
+      const sporFag = harSprak ? [...KO_SPRAKFAG] : [fagSett[0] || ''];
+
+      const spor = sporFag.map(fag => ({
+        fag,
+        okter: b.tider.map(tid => {
+          const rad = rader.find(r => r.tid === tid && (harSprak ? r.fag === fag : true)) || null;
+          return { tid, rad, larer: (rad && rad.larer) || '' };
+        })
+      }));
+
       return {
-        ...b, okter,
-        finnes: okter.some(o => o.rad),
-        blandet: fagSett.length > 1,
-        fag: fagSett[0] || '',
-        opphavFag: fagSett[0] || ''
+        ...b, spor, rader,
+        finnes: rader.length > 0,
+        erSprak: harSprak,
+        // Utgangspunktet fryses her, slik at «endret» betyr endret siden
+        // skjermen ble åpnet — ikke siden forrige tegning.
+        opphav: JSON.stringify(spor.map(s => ({ fag: s.fag, larere: s.okter.map(o => o.larer) })))
       };
     });
     koTilstand = { klasse, dag, blokker };
     koTegn();
   };
 
+  function koNaa(b){
+    return JSON.stringify(b.spor.map(s => ({ fag: s.fag, larere: s.okter.map(o => o.larer) })));
+  }
+
   window.koFlytt = function(fra, retning){
     if(!koTilstand) return;
     const til = fra + retning, b = koTilstand.blokker;
     if(til < 0 || til >= b.length) return;
-    // Faget og lærerne bytter plass sammen. Klokkeslettene og radene i
-    // basen står stille — det er hele poenget: ingenting flyttes i tid.
+    // Fagene og lærerne bytter plass. Klokkeslettene og radene i basen
+    // står stille — det er hele poenget: ingenting flyttes i tid.
     //
-    // Lærerne kopieres ØKT FOR ØKT. Har blokkene ulikt antall økter (en
-    // 60-minutters time som ikke er delt ennå), fylles det som mangler
-    // med tom lærer i stedet for å kaste den ene.
-    const fagA = b[fra].fag, larereA = b[fra].okter.map(o => o.larer);
-    const fagB = b[til].fag, larereB = b[til].okter.map(o => o.larer);
-    b[fra].fag = fagB; b[fra].okter.forEach((o, i) => { o.larer = larereB[i] || ''; });
-    b[til].fag = fagA; b[til].okter.forEach((o, i) => { o.larer = larereA[i] || ''; });
+    // Sporene kopieres uten radene: hvilken rad som skal oppdateres
+    // avgjøres først ved lagring, ut fra klokkeslettet den ligger på.
+    const kopi = (kilde, maalTider) => kilde.map(s => ({
+      fag: s.fag,
+      okter: maalTider.map((tid, i) => ({ tid, rad: null, larer: (s.okter[i] || {}).larer || '' }))
+    }));
+    const a = kopi(b[fra].spor, b[til].tider);
+    const c = kopi(b[til].spor, b[fra].tider);
+    b[fra].spor = c; b[fra].erSprak = koErSprak(c[0].fag);
+    b[til].spor = a; b[til].erSprak = koErSprak(a[0].fag);
+    // Radene beholdes på blokken, ikke på sporet — de hører til
+    // klokkeslettet og skal gjenbrukes uansett hvilket fag som havner der.
     koTegn();
   };
 
   window.koSettFag = function(idx, verdi){
     if(!koTilstand) return;
-    koTilstand.blokker[idx].fag = verdi;
-    koTegn();
-  };
-  window.koSettLarer = function(idx, oktIdx, verdi){
-    if(!koTilstand) return;
-    koTilstand.blokker[idx].okter[oktIdx].larer = verdi;
-    koTegn();
-  };
-  // Samme lærer i begge øktene — det vanlige for Koran og Islam.
-  window.koSammeLarer = function(idx){
-    if(!koTilstand) return;
     const b = koTilstand.blokker[idx];
-    const forste = b.okter[0].larer;
-    b.okter.forEach(o => { o.larer = forste; });
+    if(koErSprak(verdi)){
+      // Ett språk finnes ikke alene. Velger man arabisk, får urdu-sporet
+      // sin egen linje med én gang — ellers ville halve klassen stått
+      // uten time uten at noe sa fra.
+      const gamle = {};
+      b.spor.forEach(s => { gamle[s.fag] = s.okter.map(o => o.larer); });
+      b.spor = KO_SPRAKFAG.map(fag => ({
+        fag,
+        okter: b.tider.map((tid, i) => ({
+          tid, rad: null, larer: (gamle[fag] || [])[i] || ''
+        }))
+      }));
+      b.erSprak = true;
+    } else {
+      const beholdt = b.spor[0] ? b.spor[0].okter.map(o => o.larer) : [];
+      b.spor = [{ fag: verdi, okter: b.tider.map((tid, i) => ({ tid, rad: null, larer: beholdt[i] || '' })) }];
+      b.erSprak = false;
+    }
+    koTegn();
+  };
+
+  window.koSettLarer = function(idx, sporIdx, oktIdx, verdi){
+    if(!koTilstand) return;
+    koTilstand.blokker[idx].spor[sporIdx].okter[oktIdx].larer = verdi;
+    koTegn();
+  };
+  // Samme lærer i begge øktene — det vanlige når ett spor har én lærer.
+  window.koSammeLarer = function(idx, sporIdx){
+    if(!koTilstand) return;
+    const s = koTilstand.blokker[idx].spor[sporIdx];
+    const forste = s.okter[0].larer;
+    s.okter.forEach(o => { o.larer = forste; });
     koTegn();
   };
 
@@ -8732,58 +8814,77 @@
   // samme klokkeslett — og det er nettopp det fri omrokering kan lage,
   // uten at noe sier fra før lørdag morgen.
   //
-  // 🔴 Fellestime er unntaket: da er alle klassene samlet, og at flere
-  // klasser står på samme klokkeslett er selve poenget.
+  // 🔴 To unntak, og begge er tilsiktet:
+  //   Fellestime — da er hele skolen samlet
+  //   Språkspor  — arabisk og urdu går side om side i samme klasse
   function koKonflikter(){
     if(!koTilstand) return [];
     const { klasse, dag, blokker } = koTilstand;
     const funn = [];
     blokker.forEach(b => {
-      b.okter.forEach(o => {
-        if(!o.larer) return;
-        const kolliderer = (cache.hours || []).filter(h =>
-          h.dag === dag && h.tid === o.tid && h.klasse !== klasse &&
-          h.larer === o.larer && h.fag !== 'Fellestime' && !koErFelles(h.klasse));
-        const klasser = [...new Set(kolliderer.map(h => resolveDynName('classes', h.klasse)))];
-        if(klasser.length && b.fag !== 'Fellestime'){
-          funn.push({ hard: true, tekst: (resolveDynName('teachers', o.larer) || 'Læreren') +
-            ' står allerede oppført ' + o.tid + ' i ' + klasser.join(', ') });
+      b.spor.forEach(s => {
+        if(s.fag === 'Fellestime') return;
+        s.okter.forEach(o => {
+          if(!o.larer) return;
+          const kolliderer = (cache.hours || []).filter(h =>
+            h.dag === dag && h.tid === o.tid && h.klasse !== klasse &&
+            h.larer === o.larer && h.fag !== 'Fellestime' && !koErFelles(h.klasse));
+          const klasser = [...new Set(kolliderer.map(h => resolveDynName('classes', h.klasse)))];
+          if(klasser.length){
+            funn.push({ hard: true, tekst: (resolveDynName('teachers', o.larer) || 'Læreren') +
+              ' står allerede oppført ' + o.tid + ' i ' + klasser.join(', ') });
+          }
+        });
+        // Samme lærer i begge språksporene ville betydd at hun står i to
+        // rom samtidig — i SAMME klasse. Det fanges ikke av sjekken over,
+        // fordi den bare ser på andre klasser.
+        if(b.erSprak){
+          const andre = b.spor.filter(x => x !== s);
+          s.okter.forEach((o, i) => {
+            if(!o.larer) return;
+            andre.forEach(x => {
+              if((x.okter[i] || {}).larer === o.larer){
+                funn.push({ hard: true, tekst: (resolveDynName('teachers', o.larer) || 'Læreren') +
+                  ' står på både ' + s.fag + ' og ' + x.fag + ' ' + o.tid + ' — sporene går samtidig' });
+              }
+            });
+          });
+        }
+      });
+
+      // Hvor mange klasser som har samme fag samtidig. Det avgjør hvor
+      // mange lærere faget trenger i det tidsrommet.
+      b.spor.forEach(s => {
+        if(!s.fag || s.fag === 'Fellestime') return;
+        const andre = (cache.hours || []).filter(h =>
+          h.dag === dag && b.tider.includes(h.tid) &&
+          h.klasse !== klasse && h.fag === s.fag && !koErFelles(h.klasse));
+        const klasser = [...new Set(andre.map(h => resolveDynName('classes', h.klasse)))];
+        const antall = klasser.length + 1;
+        const larere = (cache.teachers || []).filter(t => (t.fag || '') === s.fag).length;
+        if(antall > larere){
+          funn.push({ hard: false, tekst: antall + ' klasser har ' + s.fag + ' ' +
+            b.start + '–' + b.slutt + ', men det er registrert ' + larere +
+            ' lærer' + (larere === 1 ? '' : 'e') + ' i faget' });
         }
       });
     });
-
-    // Hvor mange klasser som har samme fag samtidig. Det avgjør hvor
-    // mange lærere faget trenger i det tidsrommet.
-    blokker.forEach(b => {
-      if(!b.fag || b.fag === 'Fellestime') return;
-      const andre = (cache.hours || []).filter(h =>
-        h.dag === dag && b.tider.includes(h.tid) &&
-        h.klasse !== klasse && h.fag === b.fag && !koErFelles(h.klasse));
-      const klasser = [...new Set(andre.map(h => resolveDynName('classes', h.klasse)))];
-      const antall = klasser.length + 1;
-      const larere = (cache.teachers || []).filter(t => (t.fag || '') === b.fag).length;
-      if(antall > larere){
-        funn.push({ hard: false, tekst: antall + ' klasser har ' + b.fag + ' ' +
-          b.start + '–' + b.slutt + ', men det er registrert ' + larere +
-          ' lærer' + (larere === 1 ? '' : 'e') + ' i faget' });
-      }
-    });
-    return funn;
+    // Samme advarsel kan komme fra flere spor. Gjentakelser gjør at man
+    // slutter å lese dem.
+    const sett = new Set();
+    return funn.filter(f => { if(sett.has(f.tekst)) return false; sett.add(f.tekst); return true; });
   }
 
   // En blokk uten timer er ikke «ingenting å gjøre» — det er en time som
-  // mangler. Velger man fag der, skal den opprettes ved lagring. Uten
-  // dette kunne man bare redigere de timene som tilfeldigvis fantes fra
-  // før, og måtte tilbake til Timeplan for resten.
+  // mangler. Velger man fag der, skal den opprettes ved lagring.
   function koEndringer(){
     if(!koTilstand) return [];
     return koTilstand.blokker
       .map((b, i) => ({ i, b }))
       .filter(x => x.b.finnes
-        ? (x.b.fag !== x.b.opphavFag || x.b.okter.some(o => o.larer !== o.opphavLarer))
-        : !!x.b.fag);
+        ? koNaa(x.b) !== x.b.opphav
+        : x.b.spor.some(s => !!s.fag));
   }
-
   function koTegn(){
     const el = document.getElementById('koInnhold');
     if(!el) return;
@@ -8801,7 +8902,7 @@
 
     const kilder = koKilder(dag, klasse);
     const harTimer = blokker.some(b => b.finnes);
-    const fagListe = [...new Set([...koFagFor(klasse), ...blokker.map(b => b.fag).filter(Boolean)])];
+    const fagListe = [...new Set([...koFagFor(klasse), ...blokker.flatMap(b => b.spor.map(s => s.fag)).filter(Boolean)])];
     const larerListe = [...(cache.teachers || [])].filter(t => t.navn)
       .sort((a, b) => a.navn.localeCompare(b.navn));
     const konf = koKonflikter();
@@ -8834,35 +8935,41 @@
 
     html += '<div class="report-card">';
     blokker.forEach((b, i) => {
-      const harEndret = b.finnes
-        ? (b.fag !== b.opphavFag || b.okter.some(o => o.larer !== o.opphavLarer))
-        : !!b.fag;
-      const ulikeLarere = [...new Set(b.okter.map(o => o.larer))].length > 1;
+      const harEndret = b.finnes ? koNaa(b) !== b.opphav : b.spor.some(s => !!s.fag);
+      const hovedFag = b.spor[0] ? b.spor[0].fag : '';
 
-      // Fag og lærere på ÉN linje. Første utgave stablet dem loddrett, og
-      // en dag med fire blokker ble til en side man måtte rulle gjennom
-      // for å se rekkefølgen — som er hele grunnen til at fanen finnes.
-      html += `
-        <div class="ko-blokk${harEndret ? ' endret' : ''}${b.finnes ? '' : ' tom'}">
-          <div class="ko-tid">${escapeHtml(b.start)}–${escapeHtml(b.slutt)}
-            <small>${b.finnes ? b.okter.length + ' økt' + (b.okter.length === 1 ? '' : 'er') : 'ingen time'}</small></div>
-
-          <div class="ko-felt" style="flex:1 1 140px;">
-            <label>Fag</label>
-            <select onchange="koSettFag(${i}, this.value)">
-              <option value="">${b.finnes ? '— ingen —' : '— legg til —'}</option>
-              ${fagListe.map(f => `<option value="${escapeHtml(f)}" ${b.fag === f ? 'selected' : ''}>${escapeHtml(f)}</option>`).join('')}
-            </select>
-          </div>
-
-          ${b.okter.map((o, j) => `
-            <div class="ko-felt" style="flex:1 1 150px;">
-              <label>${b.okter.length > 1 ? escapeHtml(o.tid) : 'Lærer'}</label>
-              <select onchange="koSettLarer(${i}, ${j}, this.value)">
+      // Sporene ligger under hverandre inne i samme blokk, med en tydelig
+      // kant som binder dem sammen. Ett spor = én vanlig linje; to spor =
+      // språkdeling, og da skal det SES at de hører til samme time.
+      const sporHtml = b.spor.map((s, si) => `
+        <div class="ko-spor${b.erSprak ? ' delt' : ''}">
+          ${b.erSprak ? `<span class="ko-sporfag">${escapeHtml(s.fag)}</span>` : ''}
+          ${s.okter.map((o, j) => `
+            <div class="ko-felt" style="flex:1 1 145px;">
+              <label>${s.okter.length > 1 ? escapeHtml(o.tid) : 'Lærer'}</label>
+              <select onchange="koSettLarer(${i}, ${si}, ${j}, this.value)">
                 <option value="">— ikke satt —</option>
                 ${larerListe.map(t => `<option value="${escapeHtml(t.id)}" ${o.larer === t.id ? 'selected' : ''}>${escapeHtml(t.navn)}${t.fag ? ' · ' + escapeHtml(t.fag) : ''}</option>`).join('')}
               </select>
             </div>`).join('')}
+          ${s.okter.length > 1 && [...new Set(s.okter.map(o => o.larer))].length > 1
+            ? `<button class="ko-liten" onclick="koSammeLarer(${i}, ${si})" title="Samme lærer i begge øktene">⇊</button>` : ''}
+        </div>`).join('');
+
+      html += `
+        <div class="ko-blokk${harEndret ? ' endret' : ''}${b.finnes ? '' : ' tom'}">
+          <div class="ko-tid">${escapeHtml(b.start)}–${escapeHtml(b.slutt)}
+            <small>${b.finnes ? b.tider.length + ' økt' + (b.tider.length === 1 ? '' : 'er') : 'ingen time'}</small></div>
+
+          <div class="ko-felt" style="flex:0 1 150px;">
+            <label>Fag</label>
+            <select onchange="koSettFag(${i}, this.value)">
+              <option value="">${b.finnes ? '— ingen —' : '— legg til —'}</option>
+              ${fagListe.map(f => `<option value="${escapeHtml(f)}" ${hovedFag === f || (b.erSprak && koErSprak(f)) ? 'selected' : ''}>${escapeHtml(f)}${koErSprak(f) ? ' (+ språkdeling)' : ''}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="ko-spor-boks">${sporHtml}</div>
 
           <div class="ko-pil">
             <button onclick="koFlytt(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Flytt opp">▲</button>
@@ -8871,13 +8978,11 @@
 
           ${(() => {
             const knapper = [];
-            if(b.finnes && b.okter.length > 1 && ulikeLarere)
-              knapper.push(`<button onclick="koSammeLarer(${i})">Samme lærer i begge</button>`);
-            if(b.finnes && b.okter.length === 1)
+            if(b.erSprak) knapper.push(`<span class="ko-merke" style="color:var(--emerald-d);">Arabisk og urdu går samtidig — elevene deles etter språkvalg</span>`);
+            if(b.finnes && b.tider.length === 1)
               knapper.push(`<button onclick="koDelBlokk(${i})">✂️ Del i to økter</button>`);
-            if(b.fag === 'Fellestime')
+            if(hovedFag === 'Fellestime')
               knapper.push(`<button onclick="koFellestimeAlle(${i})">👥 For alle klasser</button>`);
-            if(b.blandet) knapper.push(`<span class="ko-merke">⚠️ øktene hadde ulikt fag</span>`);
             if(harEndret) knapper.push(`<span class="ko-merke">${b.finnes ? 'endret' : 'ny'}</span>`);
             return knapper.length ? `<div class="ko-handlinger">${knapper.join('')}</div>` : '';
           })()}
@@ -8888,13 +8993,8 @@
       }
     });
 
-    const udelte = blokker.filter(b => b.finnes && b.okter.length === 1).length;
-    if(udelte){
-      html += `<div class="ko-advarsel">✂️ ${udelte} blokk${udelte === 1 ? '' : 'er'} står som ` +
-        `én lang time. Arabisk og urdu har to lærere — de må deles i to økter før ` +
-        `begge kan settes opp.</div>`;
-    }
-    const utenLarer = blokker.filter(b => b.finnes && b.fag && b.okter.some(o => !o.larer)).length;
+    const utenLarer = blokker.filter(b =>
+      b.spor.some(s => s.fag && s.okter.some(o => !o.larer))).length;
     if(utenLarer){
       html += `<div class="ko-advarsel">⚠️ ${utenLarer} blokk${utenLarer === 1 ? '' : 'er'} ` +
         `mangler lærer. Læreren finner ikke klassen sin i Lærerportalen før noen er satt.</div>`;
@@ -8927,8 +9027,8 @@
   window.koDelBlokk = async function(idx){
     if(!koTilstand) return;
     const b = koTilstand.blokker[idx];
-    if(!b || b.okter.length !== 1) return;
-    const rad = b.okter[0].rad;
+    if(!b || b.tider.length !== 1) return;
+    const rad = (b.rader || [])[0];
     if(!rad){ showToast('Blokken har ingen time å dele.'); return; }
     const deler = koDelITo(rad.tid);
     if(!deler){ showToast('Klokkeslettet kan ikke deles: ' + rad.tid); return; }
@@ -9136,35 +9236,69 @@
     if(!koTilstand) return;
     const endret = koEndringer();
     if(endret.length === 0) return;
+    const { klasse, dag } = koTilstand;
 
-    // Hver økt vises for seg. Med to lærere i samme blokk er «læreren
-    // endret» ikke nok — man må se HVILKEN av dem.
-    const linjer = endret.map(({ b }) => {
+    // ═══════════════════════════════════════════════════════════════
+    // AVSTEMMING, IKKE BLIND SKRIVING
+    //
+    // Et spor kan bli til to (islam → arabisk+urdu) eller to til ett.
+    // Da stemmer ikke lenger antall rader med antall spor, og en enkel
+    // «oppdater det som finnes» ville enten latt gamle rader bli
+    // stående — klassen hadde hatt to fag samtidig uten å ha bedt om
+    // det — eller opprettet duplikater.
+    //
+    // Derfor settes ØNSKET tilstand opp først, og de radene som finnes
+    // gjenbrukes mot den. Det som blir til overs, fjernes til slutt.
+    // ═══════════════════════════════════════════════════════════════
+    const plan = endret.map(({ b }) => {
+      const onsket = [];
+      b.spor.forEach(s => {
+        if(!s.fag) return;
+        s.okter.forEach(o => onsket.push({ tid: o.tid, fag: s.fag, larer: o.larer || '' }));
+      });
+      const ledige = (cache.hours || []).filter(h =>
+        h.dag === dag && h.klasse === klasse && b.tider.includes(h.tid));
+      const par = [];
+      onsket.forEach(mal => {
+        // Samme klokkeslett OG samme fag først — da beholder en rad som
+        // bare bytter lærer sin egen id, og sletteloggen fylles ikke med
+        // rader som egentlig bare ble redigert.
+        let i = ledige.findIndex(r => r.tid === mal.tid && r.fag === mal.fag);
+        if(i < 0) i = ledige.findIndex(r => r.tid === mal.tid);
+        par.push({ mal, rad: i >= 0 ? ledige.splice(i, 1)[0] : null });
+      });
+      return { b, par, overflodig: ledige };
+    });
+
+    // Hver økt vises for seg. Med to spor i samme blokk er «faget
+    // endret» ikke nok — man må se HVILKET spor og hvilken lærer.
+    const linjer = plan.map(({ b }) => {
       const rader = [b.finnes
-        ? '  ' + b.start + '–' + b.slutt + '   ' + (b.opphavFag || '(ingen)') + ' → ' + (b.fag || '(ingen)')
-        : '  ' + b.start + '–' + b.slutt + '   NY: ' + b.fag];
-      b.okter.forEach(o => {
-        if(o.larer === o.opphavLarer) return;
-        rader.push('      ' + o.tid + '   ' +
-          (resolveDynName('teachers', o.opphavLarer) || 'ikke satt') + ' → ' +
-          (resolveDynName('teachers', o.larer) || 'ikke satt'));
+        ? '  ' + b.start + '–' + b.slutt
+        : '  ' + b.start + '–' + b.slutt + '   (ny time)'];
+      b.spor.forEach(s => {
+        if(!s.fag) return;
+        const larere = [...new Set(s.okter.map(o =>
+          resolveDynName('teachers', o.larer) || 'ikke satt'))];
+        rader.push('      ' + s.fag + ': ' + larere.join(' + '));
       });
       return rader.join('\n');
     });
 
-    const utenLarer = endret
-      .filter(({ b }) => b.fag && b.okter.some(o => !o.larer))
+    const nye = plan.reduce((s, p) => s + p.par.filter(x => !x.rad).length, 0);
+    const opp = plan.reduce((s, p) => s + p.par.filter(x => x.rad).length, 0);
+    const bort = plan.reduce((s, p) => s + p.overflodig.length, 0);
+    const utenLarer = plan.filter(({ b }) => b.spor.some(s => s.fag && s.okter.some(o => !o.larer)))
       .map(({ b }) => b.start + '–' + b.slutt);
     const konfHard = koKonflikter().filter(k => k.hard);
 
-    const nyeRader = endret.reduce((s, { b }) => s + (b.finnes ? 0 : b.okter.length), 0);
-    const antallRader = endret.reduce((s, { b }) => s + (b.finnes ? b.okter.filter(o => o.rad).length : 0), 0);
     if(!confirm(
-      'Lagre ny rekkefølge for ' + resolveDynName('classes', koTilstand.klasse) +
-      ' (' + koTilstand.dag.toLowerCase() + ')?\n\n' + linjer.join('\n') +
-      '\n\n' + (antallRader ? antallRader + ' timer oppdateres. ' : '') +
-      (nyeRader ? nyeRader + ' nye timer opprettes. ' : '') +
-      'Klokkeslettene endres ikke, og ingen timer slettes.' +
+      'Lagre for ' + resolveDynName('classes', klasse) + ' (' + dag.toLowerCase() + ')?\n\n' +
+      linjer.join('\n') + '\n\n' +
+      (opp ? opp + ' timer oppdateres. ' : '') +
+      (nye ? nye + ' nye timer opprettes. ' : '') +
+      (bort ? bort + ' timer fjernes (havner i sletteloggen). ' : '') +
+      '\nKlokkeslettene endres ikke.' +
       (utenLarer.length ? '\n\n⚠️ Uten lærer: ' + utenLarer.join(', ') +
         '\nLæreren finner ikke klassen sin i Lærerportalen før noen er satt.' : '') +
       (konfHard.length ? '\n\n🔴 ' + konfHard.map(k => k.tekst).join('\n🔴 ') : '')
@@ -9172,50 +9306,59 @@
 
     let ok = 0;
     const feilet = [];
-    for(const { b } of endret){
-      for(const o of b.okter){
+    for(const { par, overflodig } of plan){
+      for(const { mal, rad } of par){
         try{
-          if(o.rad){
-            await updateDoc(doc(db, 'hours', o.rad.id), {
-              fag: b.fag,
+          if(rad){
+            await updateDoc(doc(db, 'hours', rad.id), {
+              fag: mal.fag,
               // 🔴 Tom lærer skrives ALDRI over en som finnes. Et tomt felt
               // betyr «ikke rørt», ikke «fjern». Uten dette ville én lagring
               // uten lærervalg tømt klassen ut av Lærerportalen — stille, og
               // først synlig for læreren selv.
-              ...(o.larer ? { larer: o.larer } : {}),
+              ...(mal.larer ? { larer: mal.larer } : {}),
               sistEndretAv: currentUserEmail || 'ukjent',
               sistEndretDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
             });
           } else {
-            // Blokken var tom. Velger man fag der, er det en time som skal
-            // OPPRETTES — ikke en rad å oppdatere.
-            if(!b.fag) continue;
             await addDoc(collection(db, 'hours'), {
-              dag: koTilstand.dag, tid: o.tid, fag: b.fag,
-              larer: o.larer || '', klasse: koTilstand.klasse,
+              dag, tid: mal.tid, fag: mal.fag, larer: mal.larer || '', klasse,
               opprettetAv: currentUserEmail || 'ukjent',
               opprettetDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
             });
           }
           ok++;
         } catch(err){
-          console.error('koLagre', o.tid, err);
-          feilet.push((o.tid || '') + ' — ' + (err.code || err.message || 'ukjent'));
+          console.error('koLagre', mal.tid, err);
+          feilet.push(mal.tid + ' ' + mal.fag + ' — ' + (err.code || err.message || 'ukjent'));
+        }
+      }
+      // Til slutt, ikke først: feiler noe underveis, skal klassen stå
+      // igjen med for mye heller enn for lite. En time som finnes to
+      // ganger ser man; en som forsvant, gjør man ikke.
+      for(const r of overflodig){
+        try{
+          await logDeletion('hours', r);
+          await deleteDoc(doc(db, 'hours', r.id));
+          ok++;
+        } catch(err){
+          console.error('koLagre/fjern', r.id, err);
+          feilet.push(r.tid + ' ' + (r.fag || '') + ' (fjerning) — ' + (err.code || err.message || 'ukjent'));
         }
       }
     }
 
     if(ok > 0){
       await loggSamlet('Fagrekkefølge endret — ' +
-        resolveDynName('classes', koTilstand.klasse) + ' (' + koTilstand.dag + ')', ok,
-        'koLagre · hours · oppdatert=' + ok);
+        resolveDynName('classes', klasse) + ' (' + dag + ')', ok,
+        'koLagre · hours · oppdatert=' + opp + ' nye=' + nye + ' fjernet=' + bort);
     }
     if(feilet.length === 0){
-      showToast('✓ ' + ok + ' timer oppdatert.');
+      showToast('✓ Lagret — ' + ok + ' timer berørt.');
     } else {
       melding('ADM-TPL-01', '⚠️ Delvis lagret',
-        ok + ' timer ble oppdatert, ' + feilet.length + ' ble avvist.\n\n' +
-        'Rekkefølgen står nå halvveis — se listen under og prøv igjen.',
+        ok + ' timer ble skrevet, ' + feilet.length + ' ble avvist.\n\n' +
+        'Timeplanen står nå halvveis — se listen under og prøv igjen.',
         'koLagre · hours\n' + feilet.slice(0, 6).join('\n'));
     }
     // Leses inn på nytt fra basen, ikke fra minnet: står noe halvveis,
