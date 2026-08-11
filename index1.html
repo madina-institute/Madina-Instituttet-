@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 17:53:50 -->
+<!-- SIST-ENDRET: 2026-08-11 13:10:39 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -314,6 +314,17 @@
   }
   html[dir="rtl"] .back-link{font-family:'Tajawal',sans-serif;}
 
+
+  .kf-rad{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  .kf-velger{
+    font-family:'Jost',sans-serif; font-size:15px; padding:10px 14px; border-radius:10px;
+    border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;
+    box-shadow:var(--shadow); flex:1 1 160px; min-width:0;
+  }
+  .kf-fast{
+    font-family:'Jost',sans-serif; font-size:13.5px; padding:10px 14px; border-radius:10px;
+    border:1px solid var(--line); background:var(--paper-2); color:#5a6860;
+  }
   .toast{
     position:fixed; left:50%; transform:translateX(-50%) translateY(20px);
     bottom:calc(24px + env(safe-area-inset-bottom, 0px));
@@ -457,6 +468,10 @@
       <span id="whoText"></span>
       <button class="logout" onclick="doLogout()" data-i18n="logout">Logg ut</button>
     </div>
+
+    <!-- Klasse og fag. Står øverst, over alt annet: alt under gjelder
+         det som er valgt her, og da må valget være det første man ser. -->
+    <div class="kf-rad" id="klasseFagVelger"></div>
 
     <!-- CHOOSE MODE (superseded by the sidebar; kept only as an inert
          container so document.getElementById('chooseView') calls inside
@@ -1296,7 +1311,7 @@
     populateFagSelect();
     if(currentTeacher){
       document.getElementById('classSub').textContent =
-        (lang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+        (lang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
       renderStudentList();
     }
   };
@@ -1333,6 +1348,101 @@
   let hours = [];
   let guardians = [];
   let currentTeacher = null;
+
+  // ═══════════════════════════════════════════════════════════════════
+  // VALGT KLASSE OG FAG
+  //
+  // Portalen var bygget på ett felt: valgtKlasse. Det
+  // holdt så lenge en lærer hadde én klasse — men en lærer har flere
+  // klasser, og ulike fag i hver av dem. Alt som ble skrevet herfra
+  // (planer, lekser, notater, oppmøte) fikk da feil klasse så snart
+  // læreren jobbet med en annen gruppe enn den ene som sto på kortet.
+  //
+  // Sannheten står i timeplanen: hver time har lærer, klasse og fag.
+  // Herfra leses hvilke klasser jeg faktisk underviser, og hvilke fag
+  // jeg har i hver av dem.
+  //
+  // tildeltKlasse brukes fortsatt som FØRSTEVALG — den sier hvilken
+  // gruppe læreren hører til til daglig.
+  // ═══════════════════════════════════════════════════════════════════
+  let valgtKlasse = '';
+  let valgtFag = '';
+
+  function mineTimer(){
+    const id = currentTeacher ? currentTeacher.id : '';
+    if(!id) return [];
+    return hours.filter(h => h.larer === id);
+  }
+  function mineKlasser(){
+    const fraTimeplan = [...new Set(mineTimer().map(h => h.klasse).filter(Boolean))];
+    // Er timeplanen ikke satt opp ennå, faller vi tilbake på kortet —
+    // ellers ville portalen stått tom for en lærer som har en klasse,
+    // men ingen timer registrert.
+    if(fraTimeplan.length === 0 && currentTeacher && valgtKlasse){
+      return [valgtKlasse];
+    }
+    return fraTimeplan;
+  }
+  function mineFagFor(klasse){
+    const fag = [...new Set(mineTimer().filter(h => h.klasse === klasse)
+      .map(h => h.fag).filter(Boolean))];
+    if(fag.length === 0 && currentTeacher && valgtFag) return [valgtFag];
+    return fag;
+  }
+
+  // Kalles når læreren logger inn og hver gang timeplanen endres.
+  function settValgFraTimeplan(){
+    const klasser = mineKlasser();
+    if(klasser.length === 0){ valgtKlasse = ''; valgtFag = ''; tegnKlasseFagVelger(); return; }
+    if(!valgtKlasse || !klasser.includes(valgtKlasse)){
+      valgtKlasse = (currentTeacher && klasser.includes(valgtKlasse))
+        ? valgtKlasse : klasser[0];
+    }
+    const fag = mineFagFor(valgtKlasse);
+    if(!valgtFag || !fag.includes(valgtFag)) valgtFag = fag[0] || '';
+    tegnKlasseFagVelger();
+  }
+
+  window.velgKlasse = function(k){
+    valgtKlasse = k;
+    valgtFag = mineFagFor(k)[0] || '';
+    tegnKlasseFagVelger();
+    tegnAltPaaNytt();
+  };
+  window.velgFag = function(f){
+    valgtFag = f;
+    tegnKlasseFagVelger();
+    tegnAltPaaNytt();
+  };
+
+  // Én plass å tegne alt fra. Uten den måtte hvert eneste sted som viser
+  // klasse- eller fagavhengig innhold huskes hver gang valget endres —
+  // og det som ble glemt, ville stått igjen med forrige klasses data.
+  function tegnAltPaaNytt(){
+    const f = ['showStudentNotes','showHomework','showLessonPlans','showAttendance',
+               'showTimeplan','showClassPosts','showPracticeVideos','showMessages',
+               'renderStudentList','showForberedelser'];
+    f.forEach(navn => { try{ if(typeof window[navn] === 'function') window[navn](); }catch(e){} });
+  }
+
+  function tegnKlasseFagVelger(){
+    const el = document.getElementById('klasseFagVelger');
+    if(!el) return;
+    const klasser = mineKlasser();
+    if(klasser.length === 0){ el.innerHTML = ''; return; }
+    const fag = mineFagFor(valgtKlasse);
+    const klasseValg = klasser.length > 1
+      ? `<select class="kf-velger" onchange="velgKlasse(this.value)">` +
+        klasser.map(k => `<option value="${escapeHtml(k)}" ${k===valgtKlasse?'selected':''}>🏫 ${escapeHtml(resolveClassName(k))}</option>`).join('') +
+        `</select>`
+      : `<span class="kf-fast">🏫 ${escapeHtml(resolveClassName(klasser[0]))}</span>`;
+    const fagValg = fag.length > 1
+      ? `<select class="kf-velger" onchange="velgFag(this.value)">` +
+        fag.map(f => `<option value="${escapeHtml(f)}" ${f===valgtFag?'selected':''}>📖 ${escapeHtml(f)}</option>`).join('') +
+        `</select>`
+      : (fag.length === 1 ? `<span class="kf-fast">📖 ${escapeHtml(fag[0])}</span>` : '');
+    el.innerHTML = klasseValg + fagValg;
+  }
 
   function todayISO(){
     const d = new Date();
@@ -1374,7 +1484,11 @@
   }, (err) => console.error('programs', err));
 
   watch('hours', (snap) => {
-    hours = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    hours = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    // Klassene mine utledes herfra. Kommer timeplanen inn etter
+    // innlogging — som den som regel gjør — må valget settes på nytt,
+    // ellers står velgeren tom for en lærer som har timer.
+    if(currentTeacher) settValgFraTimeplan();
     renderHome();
   }, (err) => console.error('hours', err));
 
@@ -1671,12 +1785,10 @@
       errEl.style.display = 'block';
       return;
     }
-    if(!teacher.tildeltKlasse){
-      await signOut(auth).catch(()=>{});
-      errEl.textContent = t('noClassAssigned');
-      errEl.style.display = 'block';
-      return;
-    }
+    // Kortets «tildeltKlasse» er ikke lenger et krav for å komme inn.
+    // En lærer kan ha timer i flere klasser uten at feltet er satt — da
+    // er det timeplanen som gjelder. Har læreren verken kort-klasse
+    // eller timer, står velgeren tom og sier fra der.
     startDataListeners();
     currentTeacher = teacher;
     updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
@@ -1698,7 +1810,9 @@
   function fullforInnlogging(teacher){
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
-    document.getElementById('whoText').textContent = teacher.navn + ' · ' + resolveClassName(teacher.tildeltKlasse);
+    settValgFraTimeplan();
+    document.getElementById('whoText').textContent = teacher.navn +
+      (valgtKlasse ? ' · ' + resolveClassName(valgtKlasse) : '');
     const allowedDays = getAllowedWeekdays(teacher.tildeltKlasse);
     document.getElementById('attDate').value = allowedDays ? nearestValidDate(allowedDays) : todayISO();
     lastValidAttDate = document.getElementById('attDate').value;
@@ -1914,7 +2028,7 @@
     document.getElementById('attendanceView').style.display = 'block';
     document.getElementById('lessonView').style.display = 'none';
     document.getElementById('classSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
     renderStudentList();
     pushAppView('attendance');
   };
@@ -1990,7 +2104,7 @@
   window.applyDailyPlanTemplate = function(){
     if(!currentTeacher) return;
     const fag = document.getElementById('lpFag').value;
-    const tpl = dailyPlanTemplates.find(t => t.fag === fag && t.klasse === currentTeacher.tildeltKlasse);
+    const tpl = dailyPlanTemplates.find(t => t.fag === fag && t.klasse === valgtKlasse);
     if(!tpl){
       notify(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
       return;
@@ -2009,7 +2123,7 @@
 
   window.applyMonthlyPlanTemplate = function(){
     if(!currentTeacher) return;
-    const tpl = monthlyPlanTemplates.find(t => t.fag === currentTeacher.fag && t.klasse === currentTeacher.tildeltKlasse);
+    const tpl = monthlyPlanTemplates.find(t => t.fag === valgtFag && t.klasse === valgtKlasse);
     if(!tpl){
       notify(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
       return;
@@ -2025,7 +2139,7 @@
   window.submitMonthlyPlan = async function(){
     if(!currentTeacher) return;
     const record = {
-      larer: currentTeacher.id, klasse: currentTeacher.tildeltKlasse, fag: currentTeacher.fag,
+      larer: currentTeacher.id, klasse: valgtKlasse, fag: valgtFag,
       maaned: document.getElementById('mpMaaned').value.trim(),
       maal: document.getElementById('mpMaal').value.trim(),
       uke1_tema: document.getElementById('mpUke1Tema').value.trim(), uke1_maal: document.getElementById('mpUke1Maal').value.trim(),
@@ -2077,7 +2191,7 @@
 
   window.applySemesterPlanTemplate = function(){
     if(!currentTeacher) return;
-    const tpl = semesterPlanTemplates.find(t => t.fag === currentTeacher.fag && t.klasse === currentTeacher.tildeltKlasse);
+    const tpl = semesterPlanTemplates.find(t => t.fag === valgtFag && t.klasse === valgtKlasse);
     if(!tpl){
       notify(currentLang === 'ar' ? 'لا يوجد قالب لهذه المادة/الصف بعد.' : 'Ingen mal funnet for dette faget/klassen ennå.');
       return;
@@ -2092,7 +2206,7 @@
   window.submitSemesterPlan = async function(){
     if(!currentTeacher) return;
     const record = {
-      larer: currentTeacher.id, klasse: currentTeacher.tildeltKlasse, fag: currentTeacher.fag,
+      larer: currentTeacher.id, klasse: valgtKlasse, fag: valgtFag,
       semester: document.getElementById('spSemester').value,
       maal: document.getElementById('spMaal').value.trim(),
       mnd1: document.getElementById('spMnd1').value.trim(), mnd2: document.getElementById('spMnd2').value.trim(),
@@ -2140,7 +2254,7 @@
     document.getElementById('homeworkView').style.display = 'block';
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('homeworkClassSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
     editingHomeworkId = null;
     document.getElementById('homeworkFormTitle').textContent = currentLang === 'ar' ? 'انشر واجبًا' : 'Legg ut lekse';
     document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'نشر الواجب' : 'Legg ut lekse';
@@ -2194,7 +2308,7 @@
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'block';
     document.getElementById('homeworkClassSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
     document.getElementById('homeworkFormTitle').textContent = currentLang === 'ar' ? 'تعديل الواجب' : 'Rediger lekse';
     document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'حفظ التعديل' : 'Lagre endring';
     document.getElementById('hwTittel').value = hw.tittel || '';
@@ -2270,7 +2384,7 @@
   // Neste undervisningsdag for denne læreren, i dag medregnet.
   function nextTeachingDay(){
     if(!currentTeacher) return null;
-    const allowed = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    const allowed = getAllowedWeekdays(valgtKlasse);
     const d = new Date();
     for(let i = 0; i < 400; i++){
       const iso = isoOf(d);
@@ -2285,7 +2399,7 @@
   // til at gammel historikk ikke fyller listen.
   function unregisteredDays(){
     if(!currentTeacher) return [];
-    const allowed = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    const allowed = getAllowedWeekdays(valgtKlasse);
     const registered = new Set(myAttendanceCache
       .filter(a => a.larer === currentTeacher.id)
       .map(a => a.dato));
@@ -2350,7 +2464,7 @@
     }
 
     const pendingAbsence = (typeof absenceRequests !== 'undefined' ? absenceRequests : [])
-      .filter(a => resolveClassName(a.klasse) === resolveClassName(currentTeacher.tildeltKlasse))
+      .filter(a => resolveClassName(a.klasse) === resolveClassName(valgtKlasse))
       .filter(a => !a.status || a.status === 'Venter' || a.status === 'Ny');
     if(pendingAbsence.length){
       tasks.push({
@@ -2595,13 +2709,13 @@
         editingHomeworkId = null;
       } else {
         await addDoc(collection(db, 'homework'), {
-          klasse: currentTeacher.tildeltKlasse,
+          klasse: valgtKlasse,
           tittel, beskrivelse, frist,
           larer: currentTeacher.id,
           dato: todayISO()
         });
         showToast(currentLang === 'ar' ? 'تم إرسال الواجب.' : 'Leksen er lagt ut.');
-        notifyClassGuardians(currentTeacher.tildeltKlasse,
+        notifyClassGuardians(valgtKlasse,
           (currentLang === 'ar' ? 'واجب جديد: ' : 'Ny lekse: ') + tittel,
           beskrivelse + (frist ? '\n\n' + (currentLang === 'ar' ? 'الموعد النهائي: ' : 'Frist: ') + frist : ''));
       }
@@ -2619,7 +2733,7 @@
   function renderAbsenceReviewList(){
     const el = document.getElementById('absenceReviewList');
     if(!el || !currentTeacher) return;
-    const pending = absenceRequests.filter(r => r.status !== 'Behandlet' && r.klasse === currentTeacher.tildeltKlasse);
+    const pending = absenceRequests.filter(r => r.status !== 'Behandlet' && r.klasse === valgtKlasse);
     if(pending.length === 0){
       el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد طلبات غياب معلّقة.' : 'Ingen ubehandlede fraværsmeldinger.'}</div>`;
       return;
@@ -2661,9 +2775,9 @@
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('studentNotesView').style.display = 'block';
     document.getElementById('notesClassSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(currentTeacher.tildeltKlasse);
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
     const sel = document.getElementById('noteElevSelect');
-    const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse);
+    const myStudents = students.filter(s => s.klasse === valgtKlasse);
     sel.innerHTML = myStudents.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.navn)}</option>`).join('')
       || `<option value="">${currentLang === 'ar' ? 'لا يوجد طلاب في هذا الصف' : 'Ingen elever i denne klassen'}</option>`;
     renderStudentNotesList();
@@ -2679,7 +2793,11 @@
     }
     try{
       await addDoc(collection(db, 'studentNotes'), {
-        studentId, klasse: currentTeacher.tildeltKlasse, tekst,
+        studentId, klasse: valgtKlasse, tekst,
+        // Faget notatet gjelder. Uten det ble alle notater liggende i én
+        // haug hos foresatte: «læreren skriver at det går bedre» — men i
+        // hvilket fag? En klasse har flere fag og flere lærere.
+        fag: valgtFag || '',
         larer: currentTeacher.id, dato: todayISO()
       });
       showToast(currentLang === 'ar' ? 'تم إرسال الملاحظة.' : 'Notatet er sendt.');
@@ -2693,7 +2811,11 @@
   function renderStudentNotesList(){
     const el = document.getElementById('studentNotesList');
     if(!el || !currentTeacher) return;
-    const mine = studentNotes.filter(n => n.klasse === currentTeacher.tildeltKlasse)
+    // Notatene for valgt klasse OG valgt fag. Notater skrevet før faget
+    // ble et felt har det ikke — de vises uansett, slik at ingenting
+    // forsvinner fordi et felt ble innført etterpå.
+    const mine = studentNotes.filter(n =>
+        n.klasse === valgtKlasse && (!valgtFag || !n.fag || n.fag === valgtFag))
       .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(mine.length === 0){
       el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد ملاحظات بعد.' : 'Ingen notater ennå.'}</div>`;
@@ -2702,7 +2824,7 @@
     el.innerHTML = mine.slice(0,30).map(n => `
       <div class="student-row" style="flex-wrap:wrap; align-items:flex-start;">
         <span class="name">
-          <strong>${escapeHtml(resolveStudentName(n.studentId))}</strong> — ${escapeHtml(n.dato||'')}<br>
+          <strong>${escapeHtml(resolveStudentName(n.studentId))}</strong> — ${escapeHtml(n.dato||'')}${n.fag ? ' · ' + escapeHtml(n.fag) : ''}<br>
           <span style="font-size:12px; color:#5a6860;">${escapeHtml(n.tekst||'')}</span>
         </span>
       </div>`).join('');
@@ -2727,7 +2849,7 @@
 
   function myClassMessages(){
     if(!currentTeacher) return [];
-    return messages.filter(m => m.klasse === currentTeacher.tildeltKlasse);
+    return messages.filter(m => m.klasse === valgtKlasse);
   }
 
   function msgSeenKey(){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.id : ''); }
@@ -2827,7 +2949,7 @@
   function populateNewMessagePicker(){
     const sel = document.getElementById('newMsgGuardianSelect');
     if(!sel || !currentTeacher) return;
-    const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse && (s.foresatt || s.foresatt2));
+    const myStudents = students.filter(s => s.klasse === valgtKlasse && (s.foresatt || s.foresatt2));
     const options = myStudents.map(s => ({ studentId: s.id, label: s.navn })).sort((a,b) => a.label.localeCompare(b.label));
     sel.innerHTML = '<option value="">' + t('newMsgPick') + '</option>' +
       options.map(o => `<option value="${escapeHtml(o.studentId)}">${escapeHtml(o.label)}</option>`).join('');
@@ -2853,7 +2975,7 @@
     // same conversation. guardianId is kept as the primary guardian only
     // for backward-compatible display in older parts of the UI.
     const threadRef = await addDoc(collection(db, 'messageThreads'), {
-      klasse: currentTeacher.tildeltKlasse, teacherId: currentTeacher.id,
+      klasse: valgtKlasse, teacherId: currentTeacher.id,
       studentId, guardianId: student ? (student.foresatt || '') : '', title,
       status: 'open', createdAt: nowIso, lastActivityAt: nowIso
     });
@@ -2867,7 +2989,7 @@
     const mine = myClassMessages();
     const rows = [];
     // Real, titled threads for this class.
-    messageThreads.filter(th => th.klasse === currentTeacher.tildeltKlasse).forEach(th => {
+    messageThreads.filter(th => th.klasse === valgtKlasse).forEach(th => {
       const threadMsgs = mine.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       const student = th.studentId ? students.find(s => s.id === th.studentId) : null;
       const lastMsg = threadMsgs[0];
@@ -3079,7 +3201,7 @@
       withParts = [student.navn, guardianParts.length ? guardianParts.join(' · ') : ''].filter(Boolean).join(' — ');
     } else {
       const linkedKids = currentThreadGuardianId
-        ? students.filter(s => s.klasse === currentTeacher.tildeltKlasse && s.foresatt === currentThreadGuardianId).map(s => s.navn)
+        ? students.filter(s => s.klasse === valgtKlasse && s.foresatt === currentThreadGuardianId).map(s => s.navn)
         : [];
       withParts = [currentThreadGuardianName, linkedKids.length ? ((currentLang === 'ar' ? 'ولي أمر: ' : 'Foresatt for: ') + linkedKids.join(', ')) : '']
         .filter(Boolean).join(' · ');
@@ -3168,7 +3290,7 @@
         vedleggLenke = await uploadAttachment(file, 'message-attachments');
       }
       await addDoc(collection(db, 'messages'), {
-        klasse: currentTeacher.tildeltKlasse, guardianId: currentThreadGuardianId || '',
+        klasse: valgtKlasse, guardianId: currentThreadGuardianId || '',
         guardianNavn: resolveGuardianName(currentThreadGuardianId) || currentThreadGuardianName,
         threadId: currentThreadDoc ? currentThreadDoc.id : null,
         fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst, vedleggLenke,
@@ -3270,7 +3392,7 @@
     try{
       await addDoc(collection(db, 'practiceVideos'), {
         larer: currentTeacher.id,
-        klasse: currentTeacher.tildeltKlasse,
+        klasse: valgtKlasse,
         tittel, url, beskrivelse,
         dato: new Date().toISOString()
       });
@@ -3294,7 +3416,7 @@
 
   function renderVideos(){
     const el = document.getElementById('videosList');
-    const mine = practiceVideos.filter(v => v.klasse === currentTeacher.tildeltKlasse);
+    const mine = practiceVideos.filter(v => v.klasse === valgtKlasse);
     if(mine.length === 0){
       el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا يوجد فيديوهات بعد.' : 'Ingen videoer lagt til ennå.'}</div>`;
       return;
@@ -3363,7 +3485,7 @@
     }
     try{
       await addDoc(collection(db, 'classPosts'), {
-        klasse: currentTeacher.tildeltKlasse,
+        klasse: valgtKlasse,
         larer: currentTeacher.id,
         tekst,
         commentsEnabled,
@@ -3381,7 +3503,7 @@
       document.getElementById('classPostEventDesc').value = '';
       showToast(currentLang === 'ar' ? 'تم النشر للصف.' : 'Publisert til klassen.');
       if(notifyEmail){
-        notifyClassGuardians(currentTeacher.tildeltKlasse,
+        notifyClassGuardians(valgtKlasse,
           (currentLang === 'ar' ? 'رسالة جديدة من المعلم' : 'Ny klassemelding fra læreren'), tekst);
       }
     } catch(err){
@@ -3419,7 +3541,7 @@
   function renderClassPosts(){
     const el = document.getElementById('classPostsList');
     if(!el || !currentTeacher) return;
-    const mine = classPosts.filter(p => p.klasse === currentTeacher.tildeltKlasse)
+    const mine = classPosts.filter(p => p.klasse === valgtKlasse)
       .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(mine.length === 0){
       el.innerHTML = `<div class="empty-msg">${t('noClassPosts')}</div>`;
@@ -3570,8 +3692,8 @@
   // dag som ellers var åpen, ekstradager åpner en dag som ellers var stengt.
 
   function currentProgramId(){
-    const cls = classes.find(c => c.id === (currentTeacher && currentTeacher.tildeltKlasse)
-                               || c.navn === (currentTeacher && currentTeacher.tildeltKlasse));
+    const cls = classes.find(c => c.id === (currentTeacher && valgtKlasse)
+                               || c.navn === (currentTeacher && valgtKlasse));
     const navn = (cls && cls.program) || '';
     const prog = programs.find(pr => pr.navn === navn || pr.id === navn);
     return prog ? prog.id : '';
@@ -3619,7 +3741,7 @@
   const schoolCalendarInputs = [];
   function refreshSchoolCalendars(){
     if(!currentTeacher) return;
-    const allowed = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    const allowed = getAllowedWeekdays(valgtKlasse);
     schoolCalendarInputs.forEach(el => {
       if(!el || !el.value) return;
       if(!schoolDayInfo(el.value, allowed).ok) el.value = nearestValidDate(allowed);
@@ -3644,7 +3766,7 @@
   function enforceWeekdayOnDateInput(input, getLastValid, setLastValid, afterChange){
     input.addEventListener('change', function(){
       if(!currentTeacher){ if(afterChange) afterChange(); return; }
-      const allowedDays = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+      const allowedDays = getAllowedWeekdays(valgtKlasse);
       const info = schoolDayInfo(this.value, allowedDays);
       if(!info.ok){
         notify(currentLang === 'ar'
@@ -3665,7 +3787,7 @@
 
   document.getElementById('attDate').addEventListener('change', function(){
     if(!currentTeacher){ renderStudentList(); return; }
-    const allowedDays = getAllowedWeekdays(currentTeacher.tildeltKlasse);
+    const allowedDays = getAllowedWeekdays(valgtKlasse);
     if(allowedDays){
       const info = schoolDayInfo(this.value, allowedDays);
       if(!info.ok){
@@ -3776,7 +3898,7 @@
     window.addEventListener('scroll', () => { if(pop.classList.contains('open')) positionPopover(); }, true);
   }
 
-  const allowedNow = () => currentTeacher ? getAllowedWeekdays(currentTeacher.tildeltKlasse) : SCHOOL_WEEKDAYS;
+  const allowedNow = () => currentTeacher ? getAllowedWeekdays(valgtKlasse) : SCHOOL_WEEKDAYS;
   ['attDate', 'lpDato', 'myAttDato'].forEach(id => {
     const el = document.getElementById(id);
     if(!el) return;
@@ -3788,7 +3910,7 @@
     if(!currentTeacher) return;
     const listEl = document.getElementById('studentList');
     const date = document.getElementById('attDate').value;
-    const myStudents = students.filter(s => s.klasse === currentTeacher.tildeltKlasse);
+    const myStudents = students.filter(s => s.klasse === valgtKlasse);
 
     if(myStudents.length === 0){
       listEl.innerHTML = `<div class="empty-msg">${t('noStudentsInClass')}</div>`;
@@ -3824,7 +3946,7 @@
         const status = row.querySelector('.att-status').value;
         const safeId = date + '_' + studentId;
         await setDoc(doc(db, 'attendance', safeId), {
-          dato: date, studentId, klasse: currentTeacher.tildeltKlasse, status
+          dato: date, studentId, klasse: valgtKlasse, status
         });
         summaryLines.push(studentName + ': ' + status);
       }
@@ -3841,10 +3963,10 @@
       await addDoc(collection(db, 'mail'), {
         to: ['madina.institute.norway@gmail.com'],
         message: {
-          subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' – ' + resolveClassName(currentTeacher.tildeltKlasse) + ' – ' + date,
+          subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' – ' + resolveClassName(valgtKlasse) + ' – ' + date,
           text:
             'Lærer: ' + currentTeacher.navn + '\n' +
-            'Klasse: ' + resolveClassName(currentTeacher.tildeltKlasse) + '\n' +
+            'Klasse: ' + resolveClassName(valgtKlasse) + '\n' +
             'Dato: ' + date + '\n\n' +
             summaryLines.join('\n')
         }
@@ -4074,7 +4196,7 @@ ${extraScript || ''}
 
       const meta = {
         teacherName: currentTeacher.navn,
-        className: resolveClassName(currentTeacher.tildeltKlasse),
+        className: resolveClassName(valgtKlasse),
         subjectLabel: I18N[currentLang].fagLabels[fag],
         dato: dato
       };
@@ -4093,7 +4215,7 @@ ${extraScript || ''}
 
       const record = {
         larer: currentTeacher.id,
-        klasse: currentTeacher.tildeltKlasse,
+        klasse: valgtKlasse,
         fag, dato, emne, mal, metode, materiell,
         oppstart, repetisjon, nyttStoff, oving, oppsummering, lekser
       };
@@ -4106,7 +4228,7 @@ ${extraScript || ''}
           subject: 'Undervisningsforberedelse – ' + currentTeacher.navn + ' – ' + fag + ' – ' + dato,
           text:
             'Lærer: ' + currentTeacher.navn + '\n' +
-            'Klasse: ' + resolveClassName(currentTeacher.tildeltKlasse) + '\n' +
+            'Klasse: ' + resolveClassName(valgtKlasse) + '\n' +
             'Fag: ' + fag + '\n' +
             'Dato: ' + dato + '\n' +
             'Emne: ' + emne + '\n\n' +
@@ -4123,7 +4245,7 @@ ${extraScript || ''}
       });
 
       showToast(t('lessonSent'));
-      notifyClassGuardians(currentTeacher.tildeltKlasse,
+      notifyClassGuardians(valgtKlasse,
         (currentLang === 'ar' ? 'خطة درس جديدة: ' : 'Ny undervisningsplan: ') + fag + ' – ' + dato,
         (currentLang === 'ar' ? 'الموضوع: ' : 'Emne: ') + emne + '\n\n' +
         (currentLang === 'ar' ? 'أهداف التعلم:\n' : 'Læringsmål:\n') + mal);
