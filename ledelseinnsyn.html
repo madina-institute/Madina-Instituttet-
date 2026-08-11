@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-08 23:52:33 -->
+<!-- SIST-ENDRET: 2026-08-12 00:47:02 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -242,7 +242,17 @@
   watch('loginEvents', snap => { okter = snap.docs.map(d => ({ id:d.id, ...d.data() })); render(); });
   watch('deletionLog', snap => { slettelogg = snap.docs.map(d => ({ id:d.id, ...d.data() })); render(); });
 
-  const ADMIN_ROLLER = ['Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator','Opptaksansvarlig'];
+  // 🔴 «Øverste leder» manglet, og den som BARE hadde den rollen falt ut
+  // av oversikten uten et ord. Siden sto og så helt normal ut: fire i
+  // ledelsen, alle med tall — bare ikke alle som skulle vært der.
+  //
+  // Rollen het «Eier» til den ble byttet ut. Navnet lå tre steder, og
+  // denne siden er egen fil — så den ble ikke med da resten ble endret.
+  //
+  // Det gamle navnet står igjen med vilje: har noen fortsatt et kort som
+  // ikke er flyttet, skal de fortsatt telles her. Å fjerne det ville
+  // gjentatt nøyaktig samme feil, bare andre veien.
+  const ADMIN_ROLLER = ['Øverste leder','Eier','Skoleleder','Daglig leder','Faglig / pedagogisk leder','Fagkoordinator','Opptaksansvarlig'];
   const erLedelse = (p) => (p.roller || '').split(',').map(s=>s.trim()).some(r => ADMIN_ROLLER.includes(r));
 
   function iPerioden(iso, dager){
