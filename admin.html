@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 00:17:56 -->
+<!-- SIST-ENDRET: 2026-08-12 00:22:07 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8702,16 +8702,32 @@
 
   // ═══════════════════════════════════════════════════════════════════
   // FAGREKKEFØLGE PER KLASSE
-  //
+  // ═══════════════════════════════════════════════════════════════════
+  // Hvilke klasser som hører til samme program. Madinabarn går søndag
+  // 09:30–11:00; det integrerte programmet går lørdag med helt andre
+  // klokkeslett. Blandes de, får man blokker som overlapper hverandre —
+  // og pauser regnet BAKLENGS, fordi den ene blokken slutter etter at
+  // den neste har begynt.
+  function koProgramklasser(klasseId){
+    const prog = ((cache.classes || []).find(c => c.id === klasseId) || {}).program || '';
+    if(!prog) return null;   // ukjent program: ikke begrens, se koBlokker
+    return new Set((cache.classes || []).filter(c => (c.program || '') === prog).map(c => c.id));
+  }
+
   // En BLOKK er de timene som henger sammen uten hull — nøyaktig samme
   // regel som pausene i ukeplanen bruker. Ingen klokkeslett står skrevet
   // i koden: legges det inn en ny time, dukker blokken opp av seg selv,
   // og fjernes en, forsvinner den. Et hardkodet oppsett ville sluttet å
   // stemme den dagen skolen flyttet en time med ti minutter.
-  // ═══════════════════════════════════════════════════════════════════
-  function koBlokker(dag){
+  //
+  // 🔴 Tidene hentes bare fra klasser i SAMME program. Uten det arvet
+  // Madinabarn lørdagens timeplan, fordi én klasse tilfeldigvis hadde
+  // en søndagstime liggende.
+  function koBlokker(dag, klasseId){
+    const iProgram = klasseId ? koProgramklasser(klasseId) : null;
     const tider = [...new Set((cache.hours || [])
-      .filter(h => h.dag === dag && h.tid).map(h => h.tid))]
+      .filter(h => h.dag === dag && h.tid && (!iProgram || iProgram.has(h.klasse)))
+      .map(h => h.tid))]
       .map(t => ({ tid: t, ...tpParseTid(t) }))
       .filter(t => t.start)
       .sort((a, b) => a.start.localeCompare(b.start));
@@ -8744,9 +8760,14 @@
       klasser.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
     if(klasser.some(c => c.id === forrige)) kSel.value = forrige;
 
-    // Dagene leses fra timeplanen, ikke fra en fast liste: skolen kan
-    // legge til en dag uten at denne fanen må skrives om.
-    const dager = [...new Set((cache.hours || []).map(h => h.dag).filter(Boolean))].sort();
+    // Dagene leses fra timeplanen til KLASSENS EGET PROGRAM. Uten det
+    // fikk en Madinabarn-klasse tilbud om lørdag, og en lørdagsklasse
+    // tilbud om søndag — dager de aldri har undervisning på.
+    const valgtKlasse = kSel.value;
+    const iProgram = valgtKlasse ? koProgramklasser(valgtKlasse) : null;
+    const dager = [...new Set((cache.hours || [])
+      .filter(h => !iProgram || iProgram.has(h.klasse))
+      .map(h => h.dag).filter(Boolean))].sort();
     const forrigeDag = dSel.value;
     dSel.innerHTML = dager.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')
       || '<option value="">— ingen timeplan ennå —</option>';
@@ -8807,7 +8828,7 @@
   function klasseTimeplan(klasseId){
     const ut = [];
     klasseDager(klasseId).forEach(dag => {
-      koBlokker(dag).forEach(b => {
+      koBlokker(dag, klasseId).forEach(b => {
         const rader = (cache.hours || []).filter(h =>
           h.dag === dag && h.klasse === klasseId && b.tider.includes(h.tid));
         if(rader.length === 0) return;
@@ -9007,11 +9028,15 @@
   }
 
   window.koVelgKlasse = function(){
+    // Dagene avhenger av klassens program, så listen bygges på nytt hver
+    // gang klassen byttes. Uten dette sto søndag igjen i nedtrekket etter
+    // at man hadde gått fra Madinabarn til en lørdagsklasse.
+    koFyllVelgere();
     const klasse = document.getElementById('koKlasse').value;
     const dag = document.getElementById('koDag').value;
     if(!klasse || !dag){ koTilstand = null; koTegn(); return; }
 
-    const blokker = koBlokker(dag).map(b => {
+    const blokker = koBlokker(dag, klasse).map(b => {
       const rader = (cache.hours || []).filter(h =>
         h.dag === dag && h.klasse === klasse && b.tider.includes(h.tid));
       const fagSett = [...new Set(rader.map(r => r.fag).filter(Boolean))];
@@ -9299,7 +9324,17 @@
         </div>`;
       const neste = blokker[i + 1];
       if(neste && neste.start !== b.slutt){
-        html += `<div class="ko-pause">Pause · ${escapeHtml(b.slutt)}–${escapeHtml(neste.start)}</div>`;
+        // 🔴 Overlapp, ikke pause. Står to timer oppå hverandre, blir
+        // «pausen» negativ — «10:30–09:30» — og det ser ut som en feil i
+        // visningen. Det er det ikke: det er to timer som kolliderer i
+        // tid, og det må rettes i selve timeplanen.
+        if(neste.start < b.slutt){
+          html += `<div class="ko-advarsel hard">🔴 ${escapeHtml(b.start)}–${escapeHtml(b.slutt)} og ` +
+            `${escapeHtml(neste.start)}–${escapeHtml(neste.slutt)} overlapper hverandre. ` +
+            `Rett klokkeslettene under Timeplan — to timer kan ikke gå samtidig for samme klasse.</div>`;
+        } else {
+          html += `<div class="ko-pause">Pause · ${escapeHtml(b.slutt)}–${escapeHtml(neste.start)}</div>`;
+        }
       }
     });
 
@@ -9393,8 +9428,13 @@
     if(!koTilstand) return;
     const b = koTilstand.blokker[idx];
     const { dag } = koTilstand;
-    const klasser = (cache.classes || []).filter(c => c.navn && !/felles/i.test(c.navn));
-    if(klasser.length === 0){ showToast('Ingen klasser registrert.'); return; }
+    // 🔴 Bare klassene i SAMME program. Madinabarn går søndag og skolen
+    // lørdag — de kan ikke samles i samme fellestime, og en rad på en
+    // klasse som ikke er der den dagen ville stått som en time uten elever.
+    const iProgram = koProgramklasser(koTilstand.klasse);
+    const klasser = (cache.classes || []).filter(c =>
+      c.navn && !/felles/i.test(c.navn) && (!iProgram || iProgram.has(c.id)));
+    if(klasser.length === 0){ showToast('Ingen klasser i dette programmet.'); return; }
 
     // Hvem som skal stå på timen. Fellestimen samler hele skolen, men
     // hver klasse trenger likevel en voksen — som regel den som hadde
@@ -9484,9 +9524,13 @@
 
   // ═══════════════════════════════════════════════════════════════════
   function koKilder(dag, utenom){
+    // 🔴 Bare klasser i SAMME program. Å kopiere lørdagens seks timer
+    // inn i en Madinabarn-klasse ville gitt den et program den ikke går.
+    const iProgram = koProgramklasser(utenom);
     const per = new Map();
     (cache.hours || []).forEach(h => {
       if(h.dag !== dag || !h.klasse || h.klasse === utenom || koErFelles(h.klasse)) return;
+      if(iProgram && !iProgram.has(h.klasse)) return;
       per.set(h.klasse, (per.get(h.klasse) || 0) + 1);
     });
     return [...per.entries()].map(([id, antall]) => ({
