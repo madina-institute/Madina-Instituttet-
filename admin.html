@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 23:31:18 -->
+<!-- SIST-ENDRET: 2026-08-11 23:50:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -235,102 +235,117 @@
   }
   .tp-felles .tp-time{ background:var(--gold); color:var(--emerald-d); }
 
-  /* ---- Fagrekkefølge per klasse ---- */
+  /* ---- Fagrekkefølge per klasse ----
+     Faste kolonner: tid · fag · lærer(e) · piler. Alle blokkene bruker
+     de samme breddene, slik at kolonnene står under hverandre nedover
+     hele dagen — det er nettopp rekkefølgen man er her for å lese.
+
+     Språkdeling gir to LINJER i samme blokk, ikke en egen boks ved
+     siden av. Første utgave la sporene i en sidestilt boks, og da falt
+     tid og fag ned under dem så snart skjermen ble litt smal. */
   .ko-blokk{
-    display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;
-    background:#fff; border:1px solid var(--tabell-linje); border-radius:11px;
-    padding:11px 14px; margin-bottom:8px;
+    display:flex; flex-direction:column; gap:2px;
+    background:#fff; border:1px solid var(--tabell-linje); border-radius:10px;
+    padding:8px 12px; margin-bottom:7px;
   }
-  /* Blokk uten time. Den skal se ut som en tom plass man KAN fylle —
-     ikke som en feil, og ikke som en vanlig rad. */
   .ko-blokk.tom{ background:var(--paper); border-style:dashed; }
-  .ko-blokk.tom .ko-tid{ background:#fff; color:#8a9a90; }
-  /* Knappene legger seg på egen linje under feltene, så de aldri presser
-     nedtrekkslistene sammen på en smal skjerm. */
-  .ko-handlinger{
-    flex:1 1 100%; display:flex; gap:7px; flex-wrap:wrap; align-items:center;
-    margin-top:2px; padding-top:8px; border-top:1px solid var(--line);
-  }
-  .ko-handlinger button{
-    font-family:'Jost',sans-serif; font-size:11.5px; background:#fff;
-    color:var(--emerald-d); border:1px solid var(--line); border-radius:7px;
-    padding:5px 11px; cursor:pointer;
-  }
-  .ko-handlinger button:hover{ border-color:var(--emerald-d); }
-  /* Sporene. Ett spor ser ut som en vanlig rad; to spor får en felles
-     venstrekant som binder dem sammen — og det nederste rykkes litt inn,
-     slik at man SER at de er to deler av samme time, ikke to timer. */
-  .ko-spor-boks{ flex:1 1 340px; min-width:0; display:flex; flex-direction:column; gap:6px; }
-  .ko-spor{ display:flex; gap:9px; flex-wrap:wrap; align-items:flex-end; }
-  .ko-spor.delt{
-    border-inline-start:3px solid var(--emerald-l); border-radius:0 8px 8px 0;
-    padding:6px 0 6px 10px; background:rgba(26,155,236,.045);
-  }
-  .ko-spor.delt + .ko-spor.delt{ margin-inline-start:14px; }
-  .ko-sporfag{
-    flex:0 0 auto; align-self:center; min-width:62px;
-    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:700;
-    color:var(--emerald-d); letter-spacing:.02em;
-  }
-  .ko-liten{
-    align-self:flex-end; background:#fff; border:1px solid var(--line);
-    border-radius:7px; padding:7px 10px; cursor:pointer; font-size:12px;
-    color:var(--emerald-d); flex:0 0 auto;
-  }
-  .ko-liten:hover{ border-color:var(--emerald-d); }
+  .ko-blokk.endret{ border-color:var(--gold); background:#fffdf7; }
+
+  .ko-linje{ display:flex; align-items:flex-end; gap:8px; }
+  /* Den andre linjen står tett inntil den første og deler kolonnene
+     hennes — samme bredder, ingen innrykk. Blir den forskjøvet, ser de
+     to sporene ut som to ulike timer. */
+  .ko-linje.under{ margin-top:1px; }
+  .ko-celle{ min-width:0; }
+  .ko-tid-celle{ flex:0 0 92px; }
+  .ko-fag{ flex:0 0 132px; }
+  .ko-larer{ flex:1 1 130px; }
+  .ko-pil-celle{ flex:0 0 34px; }
 
   .ko-tid{
-    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:700;
-    color:var(--emerald-d); background:var(--paper-2); border-radius:7px;
-    padding:7px 11px; white-space:nowrap; flex:0 0 auto;
+    font-family:'Jost',sans-serif; font-size:12px; font-weight:700;
+    color:var(--emerald-d); background:var(--paper-2); border-radius:6px;
+    padding:6px 8px; white-space:nowrap; text-align:center;
     font-variant-numeric:tabular-nums;
   }
-  .ko-tid small{ display:block; font-weight:500; font-size:10.5px; color:#7b8a93; }
-  .ko-felt{ flex:1 1 150px; min-width:0; }
-  .ko-felt label{
-    display:block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600;
-    letter-spacing:.05em; text-transform:uppercase; color:#8a9a90; margin-bottom:4px;
+  .ko-blokk.tom .ko-tid{ background:#fff; color:#8a9a90; }
+  .ko-loddrett{
+    display:block; text-align:center; color:var(--emerald-l);
+    font-size:14px; line-height:30px;
   }
-  .ko-felt select{
-    width:100%; font-family:'Jost',sans-serif; font-size:13px; padding:8px 10px;
-    border:1px solid var(--line); border-radius:7px; background:#fff;
+  .ko-sporfag{
+    display:block; font-family:'Jost',sans-serif; font-size:12.5px;
+    font-weight:700; color:var(--emerald-d); padding:7px 2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .ko-pil{ display:flex; flex-direction:column; gap:3px; flex:0 0 auto; }
+  /* Språkblokken får én felles kant på venstre side, så de to linjene
+     leses som deler av samme time. */
+  .ko-blokk.sprak .ko-linje{
+    border-inline-start:3px solid var(--emerald-l);
+    padding-inline-start:7px; margin-inline-start:0;
+  }
+  .ko-blokk.sprak .ko-linje.under{ background:rgba(26,155,236,.05); border-radius:0 6px 6px 0; }
+
+  .ko-celle label{
+    display:block; font-family:'Jost',sans-serif; font-size:9.5px; font-weight:600;
+    letter-spacing:.04em; text-transform:uppercase; color:#8a9a90; margin-bottom:2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ko-celle select{
+    width:100%; font-family:'Jost',sans-serif; font-size:12.5px;
+    padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff;
+  }
+  .ko-liten{
+    flex:0 0 26px; align-self:flex-end; background:#fff; border:1px solid var(--line);
+    border-radius:6px; padding:6px 0; cursor:pointer; font-size:11px;
+    color:var(--emerald-d);
+  }
+  .ko-liten:hover{ border-color:var(--emerald-d); }
+  .ko-liten-plass{ flex:0 0 26px; }
+
+  .ko-pil{ display:flex; flex-direction:column; gap:2px; }
   .ko-pil button{
-    background:#fff; border:1px solid var(--line); border-radius:6px;
-    width:32px; height:24px; cursor:pointer; font-size:11px; color:var(--emerald-d);
-    line-height:1;
+    background:#fff; border:1px solid var(--line); border-radius:5px;
+    width:30px; height:15px; cursor:pointer; font-size:8px; color:var(--emerald-d);
+    line-height:1; padding:0;
   }
   .ko-pil button:disabled{ opacity:.3; cursor:default; }
   .ko-pil button:hover:not(:disabled){ border-color:var(--emerald-d); }
-  /* Endret blokk merkes mens man holder på. Uten det er det umulig å se
-     hva man har rørt før man trykker lagre. */
-  .ko-blokk.endret{ border-color:var(--gold); background:#fffdf7; }
-  .ko-merke{
-    font-family:'Jost',sans-serif; font-size:10.5px; color:var(--gold);
-    font-weight:600; flex:0 0 auto;
+
+  .ko-handlinger{
+    display:flex; gap:6px; flex-wrap:wrap; align-items:center;
+    margin-top:5px; padding-top:6px; border-top:1px solid var(--line);
   }
-  .ko-felles{
-    background:var(--paper); border:1px dashed var(--line); border-radius:11px;
-    padding:11px 15px; margin-bottom:9px;
-    font-family:'Jost',sans-serif; font-size:12.5px; color:#7b8a93;
+  .ko-handlinger button{
+    font-family:'Jost',sans-serif; font-size:11px; background:#fff;
+    color:var(--emerald-d); border:1px solid var(--line); border-radius:6px;
+    padding:4px 10px; cursor:pointer;
   }
+  .ko-handlinger button:hover{ border-color:var(--emerald-d); }
+  .ko-merke{ font-family:'Jost',sans-serif; font-size:10.5px; color:var(--gold); font-weight:600; }
+
   .ko-pause{
-    font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.08em;
-    text-transform:uppercase; color:#8a9a90; text-align:center;
-    padding:5px 0 9px;
+    font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.07em;
+    text-transform:uppercase; color:#8a9a90; text-align:center; padding:3px 0 6px;
   }
+
+  /* Under 720 px er det ikke plass til fire kolonner. Da brytes linjen,
+     og tidskolonnen tar full bredde som en overskrift — heller det enn
+     fire sammenklemte nedtrekkslister ingen kan treffe. */
+  @media (max-width:720px){
+    .ko-linje{ flex-wrap:wrap; }
+    .ko-tid-celle{ flex:1 1 100%; }
+    .ko-tid{ text-align:start; }
+    .ko-fag{ flex:1 1 130px; }
+    .ko-pil-celle{ flex:0 0 34px; }
+  }
+
   .ko-advarsel{
     font-family:'Jost',sans-serif; font-size:12.5px; line-height:1.6;
     background:#fdf8ec; border-inline-start:3px solid var(--gold);
     border-radius:0 8px 8px 0; padding:11px 14px; margin-bottom:10px; color:#7a5c12;
   }
   .ko-advarsel.hard{ background:#fbeded; border-inline-start-color:var(--red); color:#8f2f2f; }
-  .ko-forhand{
-    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px;
-    line-height:1.75; background:var(--paper); border:1px solid var(--line);
-    border-radius:8px; padding:12px 14px; white-space:pre-wrap; color:#3f5162;
-  }
 
   .pd-skjult{ color:#a8b2ac; letter-spacing:2px; }
 
@@ -8938,47 +8953,61 @@
       const harEndret = b.finnes ? koNaa(b) !== b.opphav : b.spor.some(s => !!s.fag);
       const hovedFag = b.spor[0] ? b.spor[0].fag : '';
 
-      // Sporene ligger under hverandre inne i samme blokk, med en tydelig
-      // kant som binder dem sammen. Ett spor = én vanlig linje; to spor =
-      // språkdeling, og da skal det SES at de hører til samme time.
-      const sporHtml = b.spor.map((s, si) => `
-        <div class="ko-spor${b.erSprak ? ' delt' : ''}">
-          ${b.erSprak ? `<span class="ko-sporfag">${escapeHtml(s.fag)}</span>` : ''}
-          ${s.okter.map((o, j) => `
-            <div class="ko-felt" style="flex:1 1 145px;">
-              <label>${s.okter.length > 1 ? escapeHtml(o.tid) : 'Lærer'}</label>
-              <select onchange="koSettLarer(${i}, ${si}, ${j}, this.value)">
-                <option value="">— ikke satt —</option>
-                ${larerListe.map(t => `<option value="${escapeHtml(t.id)}" ${o.larer === t.id ? 'selected' : ''}>${escapeHtml(t.navn)}${t.fag ? ' · ' + escapeHtml(t.fag) : ''}</option>`).join('')}
-              </select>
-            </div>`).join('')}
+      // ÉN linje per spor, med faste kolonner: tid · fag · lærer(e) · piler.
+      // Alle blokkene bruker samme kolonner, så øyet kan følge dem rett
+      // nedover — det er nettopp rekkefølgen fanen finnes for å vise.
+      //
+      // Språkdeling gir to linjer i SAMME blokk: den andre står rett under
+      // den første, uten eget klokkeslett, og med fagnavnet der faget
+      // ellers står. Første utgave la sporene i en egen boks ved siden av,
+      // og da falt tid og fag ned under dem på smale skjermer.
+      const larerVelger = (s, si, o, j, visTid) => `
+        <div class="ko-celle ko-larer">
+          ${visTid ? `<label>${escapeHtml(o.tid)}</label>` : ''}
+          <select onchange="koSettLarer(${i}, ${si}, ${j}, this.value)">
+            <option value="">— ikke satt —</option>
+            ${larerListe.map(t => `<option value="${escapeHtml(t.id)}" ${o.larer === t.id ? 'selected' : ''}>${escapeHtml(t.navn)}${t.fag ? ' · ' + escapeHtml(t.fag) : ''}</option>`).join('')}
+          </select>
+        </div>`;
+
+      const linjer = b.spor.map((s, si) => {
+        const forste = si === 0;
+        return `
+        <div class="ko-linje${forste ? '' : ' under'}">
+          <div class="ko-celle ko-tid-celle">
+            ${forste
+              ? `<div class="ko-tid">${escapeHtml(b.start)}–${escapeHtml(b.slutt)}</div>`
+              : '<span class="ko-loddrett">↳</span>'}
+          </div>
+          <div class="ko-celle ko-fag">
+            ${forste
+              ? `${b.erSprak ? '<label>Fag</label>' : '<label>Fag</label>'}
+                 <select onchange="koSettFag(${i}, this.value)">
+                   <option value="">${b.finnes ? '— ingen —' : '— legg til —'}</option>
+                   ${fagListe.map(f => `<option value="${escapeHtml(f)}" ${hovedFag === f || (b.erSprak && f === 'Arabisk') ? 'selected' : ''}>${escapeHtml(f)}${koErSprak(f) ? ' + språkdeling' : ''}</option>`).join('')}
+                 </select>`
+              : `<span class="ko-sporfag">${escapeHtml(s.fag)}</span>`}
+          </div>
+          ${s.okter.map((o, j) => larerVelger(s, si, o, j, forste && s.okter.length > 1)).join('')}
           ${s.okter.length > 1 && [...new Set(s.okter.map(o => o.larer))].length > 1
-            ? `<button class="ko-liten" onclick="koSammeLarer(${i}, ${si})" title="Samme lærer i begge øktene">⇊</button>` : ''}
-        </div>`).join('');
+            ? `<button class="ko-liten" onclick="koSammeLarer(${i}, ${si})" title="Samme lærer i begge øktene">⇊</button>`
+            : '<span class="ko-liten-plass"></span>'}
+          <div class="ko-celle ko-pil-celle">
+            ${forste ? `
+              <div class="ko-pil">
+                <button onclick="koFlytt(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Flytt opp">▲</button>
+                <button onclick="koFlytt(${i}, 1)" ${i === blokker.length - 1 ? 'disabled' : ''} title="Flytt ned">▼</button>
+              </div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
 
       html += `
-        <div class="ko-blokk${harEndret ? ' endret' : ''}${b.finnes ? '' : ' tom'}">
-          <div class="ko-tid">${escapeHtml(b.start)}–${escapeHtml(b.slutt)}
-            <small>${b.finnes ? b.tider.length + ' økt' + (b.tider.length === 1 ? '' : 'er') : 'ingen time'}</small></div>
-
-          <div class="ko-felt" style="flex:0 1 150px;">
-            <label>Fag</label>
-            <select onchange="koSettFag(${i}, this.value)">
-              <option value="">${b.finnes ? '— ingen —' : '— legg til —'}</option>
-              ${fagListe.map(f => `<option value="${escapeHtml(f)}" ${hovedFag === f || (b.erSprak && koErSprak(f)) ? 'selected' : ''}>${escapeHtml(f)}${koErSprak(f) ? ' (+ språkdeling)' : ''}</option>`).join('')}
-            </select>
-          </div>
-
-          <div class="ko-spor-boks">${sporHtml}</div>
-
-          <div class="ko-pil">
-            <button onclick="koFlytt(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Flytt opp">▲</button>
-            <button onclick="koFlytt(${i}, 1)" ${i === blokker.length - 1 ? 'disabled' : ''} title="Flytt ned">▼</button>
-          </div>
-
+        <div class="ko-blokk${harEndret ? ' endret' : ''}${b.finnes ? '' : ' tom'}${b.erSprak ? ' sprak' : ''}">
+          ${linjer}
           ${(() => {
             const knapper = [];
-            if(b.erSprak) knapper.push(`<span class="ko-merke" style="color:var(--emerald-d);">Arabisk og urdu går samtidig — elevene deles etter språkvalg</span>`);
+            if(b.erSprak) knapper.push(`<span class="ko-merke" style="color:var(--emerald-d);">Går samtidig — elevene deles etter språkvalg</span>`);
             if(b.finnes && b.tider.length === 1)
               knapper.push(`<button onclick="koDelBlokk(${i})">✂️ Del i to økter</button>`);
             if(hovedFag === 'Fellestime')
