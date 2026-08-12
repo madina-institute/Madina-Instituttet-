@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 19:12:04 */
+/* SIST-ENDRET: 2026-08-12 20:48:41 */
 // ═══════════════════════════════════════════════════════════════════
 // INNHOLD — all tekst og alle data, på tre språk, ETT sted.
 //
@@ -29,9 +29,8 @@ const TEXT = {
         { ic:'✅', h:'Velg program og fag', p:'Velg hovedprogrammet eller Madinabarn, og eventuelt språkspor (arabisk eller urdu).' },
         { ic:'💳', h:'Bekreft plassen din', p:'Ved tilbud om plass betaler du et depositum på 500 kr innen 5 dager for å bekrefte plassen.' }
       ],
-      tuitionTag: 'Skolepenger', tuitionAmt: '2 750 kr / semester', tuitionSub: 'Hovedprogrammet (Lørdag) — per semester. Madinabarn: 1 500 kr per semester.',
-      tuitionList: ['Depositum: 500 kr innen 5 dager etter tilbud (trekkes fra totalbeløpet)', 'Skolemateriell/bøker: 450 kr per år, kommer i tillegg'],
-      tuitionBtn: '📝 Meld på nå',
+      tuitionTag: 'Skolepenger', tuitionSub: 'Hovedprogrammet (Lørdag). Madinabarn har egen pris.',
+      tuitionBtn: '📝 Meld på nå', tuitionMer: 'Se alle priser og rabatter',
 
       datesEyebrow: 'Skoleår', datesTitle: 'Viktige datoer', datesDesc: 'Nøkkeldatoer for høstsemesteret 2026.', datesTimeplanBtn: 'Se hele ukentlige timeplanen →',
       dates: [
@@ -130,9 +129,8 @@ const TEXT = {
         { ic:'✅', h:'اختر البرنامج والمادة', p:'اختر البرنامج الأساسي أو مدينة بارن، ومسار اللغة إن وجد (عربي أو أردو).' },
         { ic:'💳', h:'أكّد مكانك', p:'عند قبول الطالب، يُدفع عربون 500 كرون خلال 5 أيام لتأكيد المكان.' }
       ],
-      tuitionTag: 'الرسوم الدراسية', tuitionAmt: '2750 كرون / الفصل الواحد', tuitionSub: 'البرنامج الأساسي (السبت) — لكل فصل. مدينة بارن: 1500 كرون للفصل الواحد.',
-      tuitionList: ['العربون: 500 كرون خلال 5 أيام من القبول (يُخصم من المبلغ الإجمالي)', 'المواد التعليمية/الكتب: 450 كرون سنويًا، إضافية'],
-      tuitionBtn: '📝 سجّل الآن',
+      tuitionTag: 'الرسوم الدراسية', tuitionSub: 'البرنامج الأساسي (السبت). مدينة بارن له سعره الخاص.',
+      tuitionBtn: '📝 سجّل الآن', tuitionMer: 'كل الأسعار والتخفيضات',
 
       datesEyebrow: 'العام الدراسي', datesTitle: 'المواعيد المهمة', datesDesc: 'المواعيد الرئيسية للفصل الأول 2026.', datesTimeplanBtn: 'مشاهدة الجدول الأسبوعي الكامل ←',
       dates: [
@@ -231,9 +229,8 @@ const TEXT = {
         { ic:'✅', h:'پروگرام اور مضمون منتخب کریں', p:'بنیادی پروگرام یا مدینہ بارن منتخب کریں، اور زبان کا انتخاب کریں (عربی یا اردو)۔' },
         { ic:'💳', h:'اپنی جگہ کی تصدیق کریں', p:'داخلے کی پیشکش پر، جگہ کی تصدیق کے لیے 5 دن کے اندر 500 کرون کا ڈپازٹ ادا کریں۔' }
       ],
-      tuitionTag: 'فیس', tuitionAmt: '2750 کرون / فی سمسٹر', tuitionSub: 'بنیادی پروگرام (ہفتہ) — فی سمسٹر۔ مدینہ بارن: 1500 کرون فی سمسٹر۔',
-      tuitionList: ['ڈپازٹ: قبولیت کے 5 دن کے اندر 500 کرون (کل رقم سے منہا)', 'تعلیمی مواد/کتابیں: 450 کرون سالانہ، اضافی'],
-      tuitionBtn: '📝 ابھی داخلہ لیں',
+      tuitionTag: 'فیس', tuitionSub: 'بنیادی پروگرام (ہفتہ)۔ مدینہ بارن کی الگ قیمت ہے۔',
+      tuitionBtn: '📝 ابھی داخلہ لیں', tuitionMer: 'تمام قیمتیں اور رعایتیں',
 
       datesEyebrow: 'تعلیمی سال', datesTitle: 'اہم تاریخیں', datesDesc: 'خزاں کے سمسٹر 2026 کی اہم تاریخیں۔', datesTimeplanBtn: 'مکمل ہفتہ وار ٹائم ٹیبل دیکھیں ←',
       dates: [
