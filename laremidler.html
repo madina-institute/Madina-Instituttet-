@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 11:10:22 -->
+<!-- SIST-ENDRET: 2026-08-12 11:17:23 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -118,8 +118,18 @@
   .ingen-bilde{
     flex:0 0 108px; aspect-ratio:3/4; border-radius:8px;
     border:1px dashed var(--line); background:var(--paper-2);
-    display:flex; align-items:center; justify-content:center;
-    font-size:26px; color:#b9c6d4;
+    position:relative; overflow:hidden;
+  }
+  /* En bok tegnet med to firkanter: rygg og forside. Rolig og tydelig —
+     og den kan ikke mangle slik en emoji kan. */
+  .ingen-bilde::before{
+    content:''; position:absolute; inset:26% 24% 22% 24%;
+    border:2px solid #cbd7e3; border-radius:2px 4px 4px 2px;
+    border-inline-start-width:6px;
+  }
+  .ingen-bilde::after{
+    content:''; position:absolute; inset:38% 34% 52% 40%;
+    border-top:2px solid #cbd7e3;
   }
 
   .fot{
@@ -301,7 +311,7 @@
                   <source srcset="${b.fil}.webp" type="image/webp">
                   <img src="${b.fil}.jpg" alt="${esc(b.tittel)}" loading="lazy" decoding="async">
                 </picture>`
-                : `<div class="ingen-bilde" aria-hidden="true">📕</div>`}
+                : `<div class="ingen-bilde" aria-hidden="true"></div>`}
               <div class="bok-tekst">
                 <h3>${esc(b.tittel)}</h3>
                 ${b.niva ? `<div class="niva">${esc(b.niva)}</div>` : ''}
