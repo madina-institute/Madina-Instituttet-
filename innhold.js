@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 14:37:40 */
+/* SIST-ENDRET: 2026-08-12 16:31:10 */
 // ═══════════════════════════════════════════════════════════════════
 // INNHOLD — all tekst og alle data, på tre språk, ETT sted.
 //
@@ -44,7 +44,7 @@ const TEXT = {
       ],
 
       prisEyebrow: 'Skolepenger', prisTitle: 'Priser',
-      prisDesc: 'Beløpene under er full pris per semester. Bøker kommer i tillegg.',
+      prisDesc: 'Beløpene under er full pris for hele skoleåret. Bøker kommer i tillegg.',
       prisKort: [
         { kode:'hoved', navn:'Madina Skole — Integrert program', dag:'Lørdag · 09:30–13:30',
           info:'Koran, islam og valgt språk (arabisk eller urdu) — samlet i ett program.' },
@@ -145,7 +145,7 @@ const TEXT = {
       ],
 
       prisEyebrow: 'الرسوم الدراسية', prisTitle: 'الأسعار',
-      prisDesc: 'المبالغ أدناه هي السعر الكامل لكل فصل دراسي. الكتب غير مشمولة.',
+      prisDesc: 'المبالغ أدناه هي السعر الكامل للعام الدراسي كامل. الكتب غير مشمولة.',
       prisKort: [
         { kode:'hoved', navn:'مدرسة مدينة — البرنامج المتكامل', dag:'السبت · ٠٩:٣٠–١٣:٣٠',
           info:'القرآن والتربية الإسلامية واللغة المختارة (العربية أو الأردية) — في برنامج واحد.' },
@@ -246,7 +246,7 @@ const TEXT = {
       ],
 
       prisEyebrow: 'اسکول فیس', prisTitle: 'قیمتیں',
-      prisDesc: 'نیچے دی گئی رقم فی سمسٹر مکمل قیمت ہے۔ کتابیں شامل نہیں۔',
+      prisDesc: 'نیچے دی گئی رقم پورے تعلیمی سال کی مکمل قیمت ہے۔ کتابیں شامل نہیں۔',
       prisKort: [
         { kode:'hoved', navn:'مدینہ اسکول — مربوط پروگرام', dag:'ہفتہ · 09:30–13:30',
           info:'قرآن، اسلام اور منتخب زبان (عربی یا اردو) — ایک ہی پروگرام میں۔' },
