@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 11:43:44 -->
+<!-- SIST-ENDRET: 2026-08-12 12:34:53 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -41,25 +41,44 @@
   html[dir="rtl"] .topp h1{font-family:'Tajawal',sans-serif; font-weight:700;}
   .topp p{font-size:14px; color:#eaf6ff; margin:0 auto; max-width:520px;}
 
-  /* ---- Språkvalg + tilbake ---- */
-  .verktoy{
-    background:var(--paper-2); border-bottom:1px solid var(--line);
-    padding:12px 16px; display:flex; gap:10px; justify-content:center;
-    flex-wrap:wrap; align-items:center;
+  /* ---- Toppbar (samme som forsiden) ---- */
+  /* Baren er sticky også her. Seksjonene på denne siden har ingen
+     ankere ennå, men avstanden settes nå — kommer det ankere senere,
+     skal ikke overskriften havne bak baren slik den gjorde på forsiden. */
+  :root{ --topbar-h:200px; }
+  section[id]{ scroll-margin-top:var(--topbar-h); }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
+  nav.topbar{
+    position:sticky; top:0; z-index:50; background:var(--paper-2);
+    border-bottom:1px solid var(--line); padding:12px 16px;
   }
-  .sprak{display:flex; background:#fff; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
-  .sprak button{
-    background:transparent; border:none; cursor:pointer; color:var(--emerald-d);
+  .topbar-inner{
+    max-width:1080px; margin:0 auto; display:flex; flex-direction:column;
+    align-items:center; gap:10px;
+  }
+  .topbar-links{display:flex; flex-direction:column; gap:6px; width:100%; max-width:640px; min-width:0;}
+  .nav-rad{display:flex; background:#fff; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+  .topbar-links a{
+    flex:1 1 0; min-width:0; text-align:center;
+    color:var(--emerald-d); text-decoration:none;
     font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
-    padding:9px 16px; border-inline-end:1px solid #e6edf4;
+    padding:9px 4px; border-inline-end:1px solid #e6edf4;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .nav-rad a:last-child{border-inline-end:0;}
+  html[dir="rtl"] .topbar-links a{font-family:'Tajawal',sans-serif;}
+  .topbar-links a:hover{background:var(--paper-2);}
+  .topbar-links a.her{background:var(--emerald-d); color:#fff;}
+  @media (max-width:400px){ .topbar-links a{font-size:10.5px; padding:8px 2px;} }
+  .sprak{display:flex; background:#fff; border:1px solid var(--line); border-radius:9px; overflow:hidden; width:100%; max-width:340px;}
+  .sprak button{
+    flex:1 1 0; background:transparent; border:none; cursor:pointer; color:var(--emerald-d);
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    padding:9px 4px; border-inline-end:1px solid #e6edf4;
   }
   .sprak button:last-child{border-inline-end:0;}
   .sprak button.aktiv{background:var(--emerald-d); color:#fff;}
-  .tilbake{
-    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
-    color:var(--emerald-d); text-decoration:none; background:#fff;
-    border:1px solid var(--line); border-radius:9px; padding:9px 16px;
-  }
 
   /* ---- Innhold ---- */
   main{max-width:880px; margin:0 auto; padding:26px 16px 60px;}
@@ -147,14 +166,21 @@
   <p id="tLead"></p>
 </div>
 
-<div class="verktoy">
-  <a class="tilbake" href="/" id="tTilbake">← Forsiden</a>
-  <div class="sprak">
-    <button class="aktiv" data-l="no" onclick="settSprak('no')">Norsk</button>
-    <button data-l="ar" onclick="settSprak('ar')">العربية</button>
-    <button data-l="ur" onclick="settSprak('ur')">اردو</button>
+<!-- Samme toppbar som forsiden. Uten den var dette en blindvei: den som
+     kom hit fra en delt lenke kunne bare gå «tilbake», ikke videre til
+     priser eller påmelding.
+     Lenkene peker til forsidens ankere (/#priser), ikke til ankere her —
+     avsnittene ligger der, ikke på denne siden. -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-links" id="navLenker"></div>
+    <div class="sprak">
+      <button class="aktiv" data-l="no" onclick="settSprak('no')">Norsk</button>
+      <button data-l="ar" onclick="settSprak('ar')">العربية</button>
+      <button data-l="ur" onclick="settSprak('ur')">اردو</button>
+    </div>
   </div>
-</div>
+</nav>
 
 <main id="innhold"></main>
 
@@ -202,6 +228,7 @@
 
   const T = {
     no:{
+      nav:{ register:'Påmelding', dates:'Datoer', timeplan:'Timeplan', program:'Program', priser:'Priser', who:'Om oss', team:'Team', laremidler:'Læremidler' },
       aar:'Skoleåret 2026/2027', tittel:'Læremidler', tilbake:'← Forsiden',
       cta:'Meld på nå', fot:'Madina Skole · Hagelundveien 2b, 0963 Oslo',
       lead:'Hvilke bøker barnet ditt faktisk åpner — fag for fag.',
@@ -226,6 +253,7 @@
       video:'▶️ Se introduksjonsvideo om Al-Mutammim'
     },
     ar:{
+      nav:{ register:'التسجيل', dates:'المواعيد', timeplan:'الجدول الدراسي', program:'البرنامج', priser:'الأسعار', who:'من نحن', team:'الفريق', laremidler:'المناهج' },
       aar:'العام الدراسي 2026/2027', tittel:'المناهج الدراسية', tilbake:'← الصفحة الرئيسية',
       cta:'سجّل الآن', fot:'مدرسة مدينة · Hagelundveien 2b, 0963 Oslo',
       lead:'الكتب التي سيفتحها طفلك فعلًا — مادة بمادة.',
@@ -250,6 +278,7 @@
       video:'▶️ شاهد الفيديو التعريفي عن منهج المتمم'
     },
     ur:{
+      nav:{ register:'رجسٹریشن', dates:'تاریخیں', timeplan:'ٹائم ٹیبل', program:'پروگرام', priser:'قیمتیں', who:'ہمارے بارے', team:'ٹیم', laremidler:'نصاب' },
       aar:'تعلیمی سال 2026/2027', tittel:'نصاب', tilbake:'← مرکزی صفحہ',
       cta:'ابھی رجسٹر کریں', fot:'مدینہ اسکول · Hagelundveien 2b, 0963 Oslo',
       lead:'آپ کا بچہ اصل میں کون سی کتابیں کھولے گا — مضمون بہ مضمون۔',
@@ -285,10 +314,19 @@
     document.querySelectorAll('.sprak button').forEach(b =>
       b.classList.toggle('aktiv', b.dataset.l === l));
 
+    // «Læremidler» markeres som gjeldende side. Uten det ville man ikke
+    // se hvor i menyen man befinner seg.
+    const rad = (l) => '<div class="nav-rad">' +
+      l.map(([h, tk, her]) => `<a href="${h}"${her ? ' class="her"' : ''}>${esc(tk)}</a>`).join('') + '</div>';
+    document.getElementById('navLenker').innerHTML =
+      rad([['/#register', t.nav.register], ['/#dates', t.nav.dates],
+           ['/timeplan', t.nav.timeplan], ['/#program', t.nav.program]]) +
+      rad([['/#priser', t.nav.priser], ['/#who', t.nav.who],
+           ['/#team', t.nav.team], ['/laremidler', t.nav.laremidler, true]]);
+
     document.getElementById('tAar').textContent = t.aar;
     document.getElementById('tTittel').textContent = t.tittel;
     document.getElementById('tLead').textContent = t.lead;
-    document.getElementById('tTilbake').textContent = t.tilbake;
     document.getElementById('tCta').textContent = t.cta;
     document.getElementById('tFot').textContent = t.fot;
     document.title = t.tittel + ' — Madina Skole';
