@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 02:43:56 -->
+<!-- SIST-ENDRET: 2026-08-12 02:56:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -53,9 +53,17 @@
      ramme. Første forsøk satte begge til portalenes lyse blå, og da
      forsvant dybden: kortet ble usynlig mot flaten det lå på.
      Fargene er instituttets egne, bare i hver sin ende av skalaen. */
+  /* 🔴 BAKGRUNNEN ER DEN GAMLE. Bare kortene er skiftet til portalenes
+     blå.
+     Første forsøk gjorde begge lagene blå, og da forsvant dybden: kortet
+     lå ikke lenger OPPÅ noe. Den mørke, nesten grønne flaten er det som
+     får det lyse kortet til å løfte seg — og det var nettopp det som var
+     verdt å beholde. */
   body{
-    margin:0; background:#0d5f96;
-    background-image:linear-gradient(168deg, #12689f 0%, #0d5f96 55%, #08456f 100%);
+    margin:0; background:var(--emerald-d);
+    background-image:
+      radial-gradient(1000px 500px at 50% -10%, rgba(183,146,74,0.10), transparent 60%),
+      linear-gradient(180deg,var(--emerald-d),#0b2018 60%,#091a13);
     background-attachment:fixed;
     font-family:'Lora',serif; color:var(--ink);
     padding:50px 16px 80px;
