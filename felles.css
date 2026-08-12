@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 19:11:13 */
+/* SIST-ENDRET: 2026-08-12 20:48:05 */
 
   /* Instituttets offisielle palett, hentet fra Madina Institute sitt eget
      materiell. Blå er hovedfargen, men den står ikke alene: marineblå
@@ -431,3 +431,75 @@
     padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
     pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
   }
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     PRISKORT — hentet ORDRETT fra påmeldingsskjemaet.
+
+     🔴 Skjemaet er fasit. Det er der familien faktisk betaler, og det
+     er tallene derfra de husker. Sto forsiden med sin egen utforming
+     og sine egne ord, ville de to før eller siden fortalt ulike ting
+     om samme pris — akkurat som 2 750 og 5 500 gjorde.
+
+     Derfor: samme to priser side om side, samme etiketter, samme
+     rekkefølge. Medlemsprisen får mest vekt fordi den er tilbudet,
+     og den er lavest.
+     ═══════════════════════════════════════════════════════════════ */
+  .pk-priser{display:flex;}
+  .pk-pris{flex:1; padding:18px 16px; text-align:center;}
+  .pk-pris + .pk-pris{border-inline-start:1px solid var(--line);}
+  .pk-pris.medlem{background:rgba(26,155,236,0.06);}
+  .pk-etikett{
+    font-family:'Jost',sans-serif; font-size:10px; font-weight:600;
+    letter-spacing:.12em; text-transform:uppercase; color:#8a9aa8; margin-bottom:6px;
+  }
+  html[dir="rtl"] .pk-etikett{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
+  .pk-pris.medlem .pk-etikett{color:var(--emerald);}
+  .pk-tall{
+    font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:34px; line-height:1; color:var(--ink);
+  }
+  html[dir="rtl"] .pk-tall{font-family:'Tajawal',sans-serif; font-size:30px;}
+  .pk-pris.medlem .pk-tall{color:var(--emerald-d); font-size:38px;}
+  html[dir="rtl"] .pk-pris.medlem .pk-tall{font-size:33px;}
+  .pk-enhet{font-family:'Jost',sans-serif; font-size:11px; color:#8a9aa8; margin-top:5px;}
+  html[dir="rtl"] .pk-enhet{font-family:'Tajawal',sans-serif; font-size:12px;}
+  .pk-spar{
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:600;
+    color:var(--emerald); margin-top:7px;
+  }
+  html[dir="rtl"] .pk-spar{font-family:'Tajawal',sans-serif; font-size:12px;}
+  .pk-fot{
+    padding:11px 18px; font-family:'Jost',sans-serif; font-size:11.5px;
+    color:#6b7d8f; border-top:1px solid var(--line); line-height:1.55;
+  }
+  html[dir="rtl"] .pk-fot{font-family:'Tajawal',sans-serif; font-size:12.5px;}
+
+  /* Søskenrabatt — også ordrett fra skjemaet. */
+  .sosken{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:22px; margin-top:16px; box-shadow:var(--shadow); text-align:start;
+  }
+  .sosken h3{
+    font-family:'Cormorant Garamond',serif; font-size:19px; margin:0 0 3px; color:var(--emerald-d);
+  }
+  html[dir="rtl"] .sosken h3{font-family:'Tajawal',sans-serif; font-size:18px;}
+  .s-sub{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9aa8; margin-bottom:14px;}
+  html[dir="rtl"] .s-sub{font-family:'Tajawal',sans-serif; font-size:12.5px;}
+  .s-rad{display:flex; gap:10px;}
+  .s-boks{flex:1; text-align:center; padding:14px 8px; background:var(--paper-2); border-radius:8px;}
+  .s-barn{
+    font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:#8a9aa8;
+  }
+  html[dir="rtl"] .s-barn{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; font-size:12px;}
+  .s-pst{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:30px;
+    line-height:1.1; color:var(--emerald-d); margin-top:4px;
+  }
+  .s-full{color:#b3bfc9; font-size:19px;}
+  .s-note{
+    font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7d8f;
+    margin-top:13px; line-height:1.6; padding-top:12px; border-top:1px solid var(--line);
+  }
+  html[dir="rtl"] .s-note{font-family:'Tajawal',sans-serif; font-size:12.5px;}
