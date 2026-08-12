@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 12:44:56 -->
+<!-- SIST-ENDRET: 2026-08-12 13:12:15 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -870,6 +870,20 @@
            loading="lazy" decoding="async" width="1200" height="800">
     </picture>`;
   }
+  // 🔴 escapeHtml fantes ikke i denne filen. Den ble brukt fem steder i
+  // bokListeHtml — hentet fra den frittstående siden, der den het esc().
+  //
+  // Følgen var en ReferenceError midt i opptegningen: alt FØR feilen ble
+  // tegnet, alt ETTER forsvant. Team, Portaler og bunnen var borte, og
+  // det eneste sporet var en linje i en konsoll ingen har åpen.
+  //
+  // Nøyaktig samme feil som currentLang tok i går. Sjekken sjekk-udefinert.py
+  // finner denne typen — den må kjøres FØR levering, ikke etter.
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
   // Bøkene tegnes under fagkortene, i samme seksjon. Emojiene fra FAG
   // brukes ikke her — kortene over har dem allerede, og to sett ikoner
   // om det samme leses som to ulike lister.
