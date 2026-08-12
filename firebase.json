@@ -20,7 +20,8 @@
       "**/.*",
       "**/node_modules/**",
       "functions/**",
-      "*.md"
+      "*.md",
+      "sjekk-sider.mjs"
     ],
     "headers": [
       {
@@ -52,6 +53,10 @@
       }
     ],
     "rewrites": [
+      {
+        "source": "/priser",
+        "destination": "/priser.html"
+      },
       {
         "source": "/påmelding",
         "destination": "/index2.html"
