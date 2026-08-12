@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 20:48:41 */
+/* SIST-ENDRET: 2026-08-12 21:42:10 */
 // ═══════════════════════════════════════════════════════════════════
 // INNHOLD — all tekst og alle data, på tre språk, ETT sted.
 //
@@ -50,11 +50,7 @@ const TEXT = {
         { kode:'barn', navn:'Madinabarn', dag:'Søndag · 09:30–11:00 · 3–6 år',
           info:'Introduksjonsprogram for de yngste barna.' }
       ],
-      prisNoter: [
-        '<b>Rabatter:</b> Vi gir søskenrabatt og rabatt for medlemmer av Madina Institute. Satsene er ikke fastsatt ennå — beløpene over er full pris, og et eventuelt fradrag regnes ut av administrasjonen før første faktura.',
-        '<b>Bøker:</b> Skolemateriell kommer i tillegg og koster 450 kr per år.',
-        '<b>Depositum:</b> Ved tilbud om plass betales 500 kr innen 5 dager. Beløpet trekkes fra totalen.'
-      ],
+      prisNoter: [],
       programEyebrow: 'Fagtilbud', programTitle: 'Vårt program', programDesc: 'Tre kjernefag, undervist med omsorg tilpasset elevens nivå.',
       bokFag:{
         koran:{ h:'Koran og tajwid', p:'Fra bokstavene til flytende lesing.' },
@@ -109,6 +105,103 @@ const TEXT = {
       footerBrand: 'Madina Skole — Madina Institute Norway', footerAddr: '📍 Hagelundveien 2B, 0963 Oslo', footerContact: '✉️ info@madinaskole.no',
       footerOrgNr: 'Org. nummer: 919674431', footerPrivacy: 'Personvernerklæring', footerCopy: '© Madina Skole — Alle rettigheter forbeholdt'
     },
+    en: {
+      pageTitle: 'Madina Skole', brand: 'Madina Skole',
+      bannerText: '⚠️ You opened this page inside an app (e.g. WhatsApp or Instagram) — signing in may fail. Tap ⋯ or the share icon and choose «Open in Safari».', bannerClose: 'Hide',
+      nav: { hjem:'Home', register:'Admission', dates:'Dates', program:'Programme', priser:'Fees', who:'About us', team:'Team', portals:'Portals', timeplan:'Timetable' },
+
+      heroBadge: '📝 Admission is open', heroTitle: 'Quran, Arabic and Urdu for our children', heroYear: 'School year 2026/2027',
+      heroLead: 'Children learn to read and memorise the Quran, are taught Arabic and Urdu, and receive an Islamic upbringing to grow with. We are based at Madina Grorud mosque and are part of Madina Institute Norway.',
+      quickFacts: [
+        { l:'First day of school', v:'Saturday 5 September' },
+        { l:'Teaching', v:'Saturdays 09:30–13:30' },
+        { l:'Madinabarn (ages 3–6)', v:'Sundays 09:30–11:00' }
+      ],
+      heroBtnPrimary: '📝 Apply now', heroBtnOutline: 'See the programme',
+
+      regEyebrow: 'Admission', regTitle: 'How to apply', regDesc: 'Three steps from application to a confirmed place.',
+      steps: [
+        { ic:'📝', h:'Fill in the application form', p:'Open the admission page and enter details about the child, the guardians and the programme you want. Please note that the form itself is in Norwegian.' },
+        { ic:'✅', h:'Choose programme and subjects', p:'Choose the main programme or Madinabarn, and a language track (Arabic or Urdu) if relevant.' },
+        { ic:'💳', h:'Confirm your place', p:'When a place is offered, you pay a deposit within the given deadline to confirm it.' }
+      ],
+      tuitionTag: 'Tuition', tuitionSub: 'The main programme (Saturday). Madinabarn has its own price.',
+      tuitionBtn: '📝 Apply now', tuitionMer: 'See all fees and discounts',
+
+      datesEyebrow: 'School year', datesTitle: 'Key dates', datesDesc: 'Key dates for the autumn term 2026.', datesTimeplanBtn: 'See the full weekly timetable →',
+      dates: [
+        { h:'5 September 2026', p:'First day — the autumn term begins.' },
+        { h:'3 October 2026', p:'No school — autumn break.' },
+        { h:'19 December 2026', p:'Last day of the autumn term.' },
+        { h:'26 December 2026', p:'No school — Christmas break.' },
+        { h:'2 January 2027', p:'No school — New Year break.' },
+        { h:'Spring term', p:'Runs from January to the end of May 2027 (exact dates to follow).' }
+      ],
+
+      prisEyebrow: 'Tuition', prisTitle: 'Fees',
+      prisDesc: 'The amounts below are the full price for the whole school year. Books come in addition.',
+      prisKort: [
+        { kode:'hoved', navn:'Madina Skole — Integrated programme', dag:'Saturday · 09:30–13:30',
+          info:'Quran, Islam and a chosen language (Arabic or Urdu) — combined in one programme.' },
+        { kode:'barn', navn:'Madinabarn', dag:'Sunday · 09:30–11:00 · ages 3–6',
+          info:'Introductory programme for the youngest children.' }
+      ],
+      prisNoter: [],
+      programEyebrow: 'Subjects', programTitle: 'Our programme', programDesc: 'Three core subjects, taught with care and matched to the pupil\u2019s level.',
+      bokFag:{
+        koran:{ h:'Quran and tajwid', p:'From the letters to fluent reading.' },
+        islam:{ h:'Islam', p:'Belief, practice and history — taught in Norwegian.' },
+        urdu:{ h:'Urdu', p:'Reading, writing and vocabulary.' },
+        arabisk:{ h:'Arabic', p:'Reading, writing and speaking.' }
+      },
+      bokTekst:{
+        koranQaidah:'Takes the pupil from the alphabet and the points of articulation (makharij) to connected reading, level by level. Each level ends with exercises.',
+        koranTajweed:'The rules for how the Quran is recited — lengths, merging and stopping — explained with examples from the text.',
+        islamHoved:'Six books on belief, practice and Islamic history. Each book builds on the previous one, with topics matched to the age group.',
+        islamDua:'The supplications a child uses day to day, with audio via a QR code in the book.',
+        islamHadith:'Twenty hadith with tasks that ask: how do I apply this in my own life?',
+        urduHoved:'The alphabet, words and simple sentences — with pictures, poems and exercises.',
+        urduSkriv:'A writing book in five levels. The pupil traces the letters, colours them in and writes them independently.',
+        arabiskRawda:'A first encounter with Arabic, for the youngest. Play, colours and sounds — before the letters.',
+        arabiskHarf:'Reading, writing and simple conversation, in two parts. Corresponds to A1 (CEFR) and Novice Mid (ACTFL).<br><br>Al-Mutammim was developed by Dr Muhammad Mutlaq over more than 30 years, is used by over 150 educational institutions across Europe and North America, and is aligned with CEFR and ACTFL. That means the level your child reaches can be compared with any other language education — not only with our own.'
+      },
+      bokVideo:'▶️ Watch the introduction video about Al-Mutammim',
+      programCards: [
+        { bilde:'koran', ic:'📖', h:'Quran studies', p:'Quran reading, memorisation and the rules of tajwīd. We use «Jeg lærer Qaidah» from Misbah — which takes the pupil from the letters and points of articulation to fluent reading, level by level. The programme is structured so that every pupil, whatever their starting point, develops the ability to read and understand the Quran.' },
+        { bilde:'sprak', ic:'✏️', h:'Arabic and Urdu', p:'Structured teaching in reading, writing and speaking. Arabic follows the Al-Mutammim curriculum — an established method developed over more than 30 years, used by over 150 educational institutions in Europe and North America, and aligned with the international CEFR and ACTFL frameworks. Urdu follows the Misbah book series, developed in Norway and graded from the very first letter.', video:'▶️ Watch the introduction video about Al-Mutammim' },
+        { ic:'🕌', h:'Islamic studies', p:'The fundamental pillars of Islam, along with the ethical values that build a secure and confident Muslim identity. Teaching follows the Misbah book series — developed together with specialists in Norway, in Norwegian, and organised by theme and age group.' }
+      ],
+
+      whoEyebrow: 'About us', whoTitle: 'Rooted in faith, built on community', whoDesc: 'Madina Skole is part of Madina Institute Norway (Madina Grorud mosque) — an international Islamic educational institution.',
+      mvp: [
+        { eyebrow:'Mission', h:'Our purpose', p:'To give children and young people knowledge of the Quran, Arabic and Urdu, along with an Islamic upbringing built on love and respect, as part of Madina Institute Norway.' },
+        { eyebrow:'Vision', h:'Where we are going', p:'The institute promotes an understanding of Islam based on love, tolerance and respect for all people, as part of a global network founded by Shaykh Muhammad bin Yahya al-Ninowy.' },
+        { eyebrow:'Philosophy', h:'How we work', p:'We believe in a safe and supportive learning environment where every child is met with care, and where close cooperation between teachers and guardians is central.' }
+      ],
+
+      teamEyebrow: 'Leadership', teamTitle: 'Our team', teamDesc: 'The people who lead Madina Skole.',
+      team: [
+        { n:'Mohamed Ameer Ali', r:'Owner / Chair of the board' },
+        { n:'Usman', r:'Head of school' },
+        { n:'Mariam Hamdan', r:'Managing director' },
+        { n:'Yasser Sharaf', r:'Head of academics and pedagogy' },
+        { n:'Tulin Hamdan', r:'Subject coordinator' }
+      ],
+
+      portalsEyebrow: 'Portals', portalsTitle: 'Entrances to the portals', portalsDesc: 'Each group has its own portal for follow-up and communication. Please note that the portals are in Norwegian.',
+      portals: [
+        { ic:'🛡️', h:'Administration', p:'For the school administration', href:'/kontor' },
+        { ic:'📖', h:'Teacher portal', p:'For teachers only', href:'/lærer' },
+        { ic:'👨‍👩‍👧', h:'Guardian portal', p:'Follow-up and payment', href:'/foreldre' },
+        { ic:'📝', h:'Admission', p:'Apply for your child', href:'/påmelding' }
+      ],
+
+      ctaTitle: 'Ready to join us?', ctaDesc: 'Places fill up — apply for your child today.', ctaBtn: '📝 Apply now',
+
+      footerBrand: 'Madina Skole — Madina Institute Norway', footerAddr: '📍 Hagelundveien 2B, 0963 Oslo', footerContact: '✉️ info@madinaskole.no',
+      footerOrgNr: 'Org. number: 919674431', footerPrivacy: 'Privacy policy', footerCopy: '© Madina Skole — All rights reserved'
+    },
+
     ar: {
       pageTitle: 'مدرسة مدينة', brand: 'مدرسة مدينة',
       bannerText: '⚠️ فتحت الصفحة من داخل تطبيق (مثل واتساب أو انستجرام) — تسجيل الدخول قد لا يعمل بشكل صحيح. اضغط ⋯ أو أيقونة المشاركة واختر «فتح في المتصفح».', bannerClose: 'إخفاء',
@@ -150,11 +243,7 @@ const TEXT = {
         { kode:'barn', navn:'أطفال مدينة', dag:'الأحد · ٠٩:٣٠–١١:٠٠ · ٣–٦ سنوات',
           info:'برنامج تمهيدي لأصغر الأطفال.' }
       ],
-      prisNoter: [
-        '<b>التخفيضات:</b> يوجد تخفيض للإخوة وتخفيض لأعضاء معهد مدينة. النسب لم تُحدَّد بعد — المبالغ أعلاه هي السعر الكامل، ويُحتسب أي خصم من قِبل الإدارة قبل أول فاتورة.',
-        '<b>الكتب:</b> المواد الدراسية إضافية وتكلفتها ٤٥٠ كرونة سنويًا.',
-        '<b>العربون:</b> عند قبول الطالب يُدفع ٥٠٠ كرونة خلال ٥ أيام، ويُخصم من المبلغ الإجمالي.'
-      ],
+      prisNoter: [],
       programEyebrow: 'البرامج الدراسية', programTitle: 'برنامجنا', programDesc: 'ثلاث مواد أساسية، تُدرَّس بعناية تناسب مستوى كل طالب.',
       bokFag:{
         koran:{ h:'القرآن والتجويد', p:'من الحروف إلى القراءة المتّصلة.' },
@@ -250,11 +339,7 @@ const TEXT = {
         { kode:'barn', navn:'مدینہ بچے', dag:'اتوار · 09:30–11:00 · 3–6 سال',
           info:'چھوٹے بچوں کے لیے تعارفی پروگرام۔' }
       ],
-      prisNoter: [
-        '<b>رعایتیں:</b> بہن بھائیوں کے لیے رعایت اور مدینہ انسٹیٹیوٹ کے اراکین کے لیے رعایت دستیاب ہے۔ شرحیں ابھی طے نہیں ہوئیں — اوپر دی گئی رقم مکمل قیمت ہے، اور کوئی بھی کٹوتی پہلے بل سے پہلے انتظامیہ طے کرے گی۔',
-        '<b>کتابیں:</b> تعلیمی مواد الگ سے ہے اور سالانہ 450 کرونر ہے۔',
-        '<b>ڈپازٹ:</b> داخلے کی پیشکش پر 5 دن کے اندر 500 کرونر ادا کیے جاتے ہیں، جو کل رقم سے منہا ہوں گے۔'
-      ],
+      prisNoter: [],
       programEyebrow: 'تعلیمی پروگرام', programTitle: 'ہمارا پروگرام', programDesc: 'تین بنیادی مضامین، ہر طالب علم کی سطح کے مطابق نگہداشت کے ساتھ پڑھائے جاتے ہیں۔',
       bokFag:{
         koran:{ h:'قرآن اور تجوید', p:'حروف سے روانی سے پڑھنے تک۔' },
@@ -382,6 +467,17 @@ const TEXT = {
       knappBarn: '🧒 Medlemskap for barn',
       knappInfo: 'Les mer om medlemskap',
       moske: 'Mer om Madina Institute (Madina Grorud moské): '
+    },
+    en: {
+      tittel: '💳 Membership of Madina Institute — free',
+      brod: 'The member price is always the lowest, and members have priority at admission. Membership costs nothing.',
+      rekkefolge: '<b>The order:</b> the family registers first, then the child.',
+      advarselTittel: '⚠️ You can only be a member in one place',
+      advarsel: 'Norwegian law grants public funding per member, and no one can be counted in two religious communities at the same time. If you are members elsewhere, you must withdraw there as soon as possible after registering here.',
+      knappFamilie: '👤 Membership for the family',
+      knappBarn: '🧒 Membership for a child',
+      knappInfo: 'Read more about membership',
+      moske: 'More about Madina Institute (Madina Grorud mosque): '
     },
     ar: {
       tittel: '💳 عضوية معهد المدينة — مجانية',
