@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 13:12:15 -->
+<!-- SIST-ENDRET: 2026-08-12 13:43:27 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -424,6 +424,10 @@
       <p id="programDesc"></p>
     </div>
     <div class="card-grid" id="programCards"></div>
+    <!-- Bøkene tegnes under fagkortene, i samme seksjon. Denne beholderen
+         manglet, og switchLang() stoppet på getElementById('bokListe') —
+         alt etter Program-seksjonen ble stående tomt. -->
+    <div id="bokListe"></div>
   </section>
 
   <section id="priser">
