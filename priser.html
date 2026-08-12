@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-12 14:38:11 -->
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  HUL SIDE — /priser
+
+  Denne filen har INGEN tekst, INGEN stil og INGEN prisberegning. Alt
+  det ligger i innhold.js, felles.css og priser.js, som forsiden bruker
+  også. Endres en pris-note ett sted, endres den begge steder.
+
+  Det eneste som står her og ingen andre steder, er de fire
+  og-linjene i hodet. De må stå i den RÅ HTML-en: WhatsApp og Facebook
+  kjører ikke JavaScript, og leser bare det første svaret fra serveren.
+  Settes de av felles.js, ser deleforhåndsvisningen ingenting.
+
+  ⚠️ og:-teksten er derfor den ene tingen som KAN gli fra innhold.js.
+  Den er kort med vilje: navnet på avsnittet og hva det handler om —
+  ikke tall. Tallene endrer seg i basen; står de her, blir de
+  stående feil.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<html lang="no" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Priser og medlemskap — Madina Skole</title>
+<meta name="description" content="Skolepenger for lørdagsprogrammet og Madinabarn, søskenrabatt, materiell og depositum. Medlemskap i Madina Institute er gratis og gir alltid laveste pris.">
+
+<meta property="og:type"        content="website">
+<meta property="og:site_name"   content="Madina Skole">
+<meta property="og:url"         content="https://madinaskole.no/priser">
+<meta property="og:title"       content="Priser og medlemskap — Madina Skole">
+<meta property="og:description" content="Skolepenger, søskenrabatt og depositum — og hvordan medlemskapet gir laveste pris.">
+<meta property="og:image"       content="https://madinaskole.no/og-priser.jpg">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt"   content="Madina Skole — priser og medlemskap">
+<meta property="og:locale"      content="nb_NO">
+
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles.css?v=20260812-01">
+</head>
+<body>
+
+<div id="inAppBrowserBanner">
+  <span id="bannerText"></span>
+  <button class="close-banner" id="bannerClose" onclick="document.getElementById('inAppBrowserBanner').style.display='none'"></button>
+</div>
+
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img src="logo-bla.png" alt="Madina Skole">
+      <span class="brand-text" id="brandText">Madina Skole</span>
+    </div>
+    <div class="topbar-links" id="topbarLinks"></div>
+    <div class="lang-switch-inner">
+      <button id="btnLangNo" class="active" onclick="switchLang('no')">Norsk</button>
+      <button id="btnLangAr" onclick="switchLang('ar')">العربية</button>
+      <button id="btnLangUr" onclick="switchLang('ur')">اردو</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- Nøyaktig de samme id-ene som forsiden bruker. Det er dét som gjør
+       at felles.js kan tegne begge uten å vite hvilken side den står på. -->
+  <section id="priser">
+    <div class="section-head">
+      <div class="eyebrow" id="prisEyebrow"></div>
+      <h2 id="prisTitle"></h2>
+      <p id="prisDesc"></p>
+    </div>
+    <div class="card-grid" id="prisCards"></div>
+    <div class="pris-noter" id="prisNoter"></div>
+    <div id="medlemsKort"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <h4 id="footerBrand"></h4>
+    <p id="footerAddr"></p>
+    <p id="footerContact"></p>
+    <p id="footerOrgNr" style="font-size:11px;"></p>
+    <p><a class="plink" href="/personvern" id="footerPrivacy"></a></p>
+    <p id="footerCopy"></p>
+  </div>
+</footer>
+
+<script src="/innhold.js?v=20260812-01"></script>
+<script src="/felles.js?v=20260812-01"></script>
+<script>startSide();</script>
+<script type="module" src="/priser.js?v=20260812-01"></script>
+
+</body>
+</html>
