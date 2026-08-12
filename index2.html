@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 02:37:37 -->
+<!-- SIST-ENDRET: 2026-08-12 02:43:56 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -47,9 +47,15 @@
      flater av samme skole som ikke så ut som samme skole.
      Verdiene er hentet ordrett fra .mlogin i index1.html, ikke gjettet:
      et blått som «ligner» blir feil igjen ved neste endring. */
+  /* 🔴 TO LAG, IKKE ETT.
+     Bakgrunnen er MØRK og forsiden LYS. Det er forskjellen mellom dem
+     som gjør at kortet ser ut til å ligge oppå noe — en ramme inni en
+     ramme. Første forsøk satte begge til portalenes lyse blå, og da
+     forsvant dybden: kortet ble usynlig mot flaten det lå på.
+     Fargene er instituttets egne, bare i hver sin ende av skalaen. */
   body{
-    margin:0; background:#1A9BEC;
-    background-image:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
+    margin:0; background:#0d5f96;
+    background-image:linear-gradient(168deg, #12689f 0%, #0d5f96 55%, #08456f 100%);
     background-attachment:fixed;
     font-family:'Lora',serif; color:var(--ink);
     padding:50px 16px 80px;
