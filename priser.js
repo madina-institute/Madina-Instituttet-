@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 20:50:20 */
+/* SIST-ENDRET: 2026-08-12 21:43:46 */
 // ═══════════════════════════════════════════════════════════════════
 // LEVENDE PRISER — leses fra basen, ikke fra teksten.
 //
