@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 18:49:03 */
+/* SIST-ENDRET: 2026-08-12 19:12:15 */
 // ═══════════════════════════════════════════════════════════════════
 // FELLES — toppbar, bunn, språkbytte og alle tegnefunksjoner.
 //
@@ -121,15 +121,27 @@ function settHtml(id, html){
   function navHtml(t){
     const rad = (lenker) => '<div class="nav-rad">' +
       lenker.map(([href, tekst]) => `<a href="${href}">${tekst}</a>`).join('') + '</div>';
+    // 🔴 Ni felt, tre rader à tre — ikke to rader à fire pluss ett.
+    //
+    // Hjem manglet helt. Så lenge alt lå på forsiden fantes det ingen
+    // annen side å komme hjem FRA. Med undersider er det den knappen man
+    // leter etter først, og logoen alene er ikke nok: den leses som en
+    // logo, ikke som en knapp.
+    //
+    // Tre per rad er bredere enn fire, og det trengs: 'الجدول الدراسي'
+    // og 'الرئيسية' er lengre enn de norske ordene. Baren blir én rad
+    // høyere — se --topbar-h i felles.css, som følger med.
     return rad([
-      ['/#register', t.nav.register],
-      ['/#dates',    t.nav.dates],
-      ['/timeplan',  t.nav.timeplan],
-      ['/#program',  t.nav.program]
+      ['/',          t.nav.hjem],
+      ['/påmelding', t.nav.register],
+      ['/datoer',    t.nav.dates]
     ]) + rad([
-      ['/priser',    t.nav.priser],
-      ['/#who',      t.nav.who],
-      ['/#team',     t.nav.team],
+      ['/timeplan',  t.nav.timeplan],
+      ['/program',   t.nav.program],
+      ['/priser',    t.nav.priser]
+    ]) + rad([
+      ['/om-oss',    t.nav.who],
+      ['/team',      t.nav.team],
       ['/#portals',  t.nav.portals]
     ]);
   }
