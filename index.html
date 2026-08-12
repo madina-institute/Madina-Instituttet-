@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 18:28:22 -->
+<!-- SIST-ENDRET: 2026-08-12 03:23:05 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -52,10 +52,31 @@
   .brand img{height:36px; width:auto; border-radius:8px;}
   .brand-text{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d);}
   html[dir="rtl"] .brand-text{font-family:'Tajawal',sans-serif;}
-  .topbar-links{display:flex; gap:16px; flex-wrap:wrap; align-items:center;}
-  .topbar-links a{color:var(--ink); text-decoration:none; font-family:'Jost',sans-serif; font-size:12px; font-weight:600; opacity:0.75;}
+  /* Lenkene i to rammer med skillelinjer mellom feltene, i stedet for
+     frittstående ord som brøt over to linjer uten at det så tilsiktet ut. */
+  .topbar-links{display:flex; flex-direction:column; gap:6px; flex:1 1 300px; min-width:0;}
+  .nav-rad{
+    display:flex; background:#fff; border:1px solid var(--line);
+    border-radius:9px; overflow:hidden;
+  }
+  .topbar-links a{
+    flex:1 1 0; min-width:0; text-align:center;
+    color:var(--emerald-d); text-decoration:none;
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    padding:9px 4px; border-inline-end:1px solid #e6edf4;
+    /* Ordene er ulike lange på de tre språkene. Uten dette ville et langt
+       arabisk ord presset naboene sine sammen til de ikke var lesbare. */
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .nav-rad a:last-child{border-inline-end:0;}
   html[dir="rtl"] .topbar-links a{font-family:'Tajawal',sans-serif;}
-  .topbar-links a:hover{opacity:1; color:var(--emerald-d);}
+  .topbar-links a:hover{background:var(--paper-2);}
+  .topbar-links a:focus-visible{outline:2px solid var(--emerald); outline-offset:-2px;}
+  /* På de smaleste skjermene er fire felt fortsatt trangt. Da faller
+     skriften ned et hakk heller enn at ordene kuttes. */
+  @media (max-width:400px){
+    .topbar-links a{font-size:10.5px; padding:8px 2px;}
+  }
   .lang-switch-inner{ display:inline-flex; background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
   .lang-switch-inner button{
     background:transparent; border:none; color:var(--ink); opacity:0.55; font-family:'Jost',sans-serif;
@@ -297,13 +318,13 @@
 
 <header class="hero">
   <div class="hero-inner">
-  <a class="hero-badge" href="kunngjoring.html" id="heroBadge" style="text-decoration:none;"></a>
+  <a class="hero-badge" href="/kunngjøringer" id="heroBadge" style="text-decoration:none;"></a>
   <h1 id="heroTitle"></h1>
   <div class="school-year" id="heroYear"></div>
   <p class="lead" id="heroLead"></p>
   <div class="quick-facts" id="quickFacts"></div>
   <div class="hero-actions">
-    <a class="btn btn-primary" href="index2.html" id="heroBtnPrimary"></a>
+    <a class="btn btn-primary" href="/påmelding" id="heroBtnPrimary"></a>
     <a class="btn btn-outline" href="#program" id="heroBtnOutline"></a>
   </div>
   </div>
@@ -329,7 +350,7 @@
     </div>
     <div class="dates-row" id="datesRow"></div>
     <div style="text-align:center; margin-top:22px;">
-      <a class="btn btn-onlight" href="timeplan.html" id="datesTimeplanBtn"></a>
+      <a class="btn btn-onlight" href="/timeplan" id="datesTimeplanBtn"></a>
     </div>
   </section>
 
@@ -386,7 +407,7 @@
     <div class="final-cta">
       <h2 id="ctaTitle"></h2>
       <p id="ctaDesc"></p>
-      <a class="btn btn-primary" href="index2.html" id="ctaBtn"></a>
+      <a class="btn btn-primary" href="/påmelding" id="ctaBtn"></a>
     </div>
   </section>
 
@@ -398,7 +419,7 @@
     <p id="footerAddr"></p>
     <p id="footerContact"></p>
     <p id="footerOrgNr" style="font-size:11px;"></p>
-    <p><a class="plink" href="personvern.html" id="footerPrivacy"></a></p>
+    <p><a class="plink" href="/personvern" id="footerPrivacy"></a></p>
     <p id="footerCopy"></p>
   </div>
 </footer>
@@ -478,9 +499,9 @@
       portalsEyebrow: 'Portaler', portalsTitle: 'Innganger til portalene', portalsDesc: 'Hver gruppe har sin egen portal for oppfølging og kommunikasjon.',
       portals: [
         { ic:'🛡️', h:'Administrativ', p:'For skolens administrasjon', href:'admin.html' },
-        { ic:'📖', h:'Lærerportal', p:'Kun for lærere', href:'index1.html' },
-        { ic:'👨‍👩‍👧', h:'Foreldreportal', p:'Oppfølging og betaling', href:'index4.html' },
-        { ic:'📝', h:'Påmelding', p:'Meld på barnet ditt', href:'index2.html' }
+        { ic:'📖', h:'Lærerportal', p:'Kun for lærere', href:'/lærer' },
+        { ic:'👨‍👩‍👧', h:'Foreldreportal', p:'Oppfølging og betaling', href:'/foreldre' },
+        { ic:'📝', h:'Påmelding', p:'Meld på barnet ditt', href:'/påmelding' }
       ],
 
       ctaTitle: 'Klar til å bli med oss?', ctaDesc: 'Plassene fylles opp — meld på barnet ditt i dag.', ctaBtn: '📝 Meld på nå',
@@ -561,9 +582,9 @@
       portalsEyebrow: 'البوابات الإلكترونية', portalsTitle: 'بوابات الدخول', portalsDesc: 'لكل فئة بوابتها الخاصة للمتابعة والتواصل.',
       portals: [
         { ic:'🛡️', h:'الإدارة', p:'لإدارة المدرسة', href:'admin.html' },
-        { ic:'📖', h:'بوابة المعلم', p:'للمعلمين فقط', href:'index1.html' },
-        { ic:'👨‍👩‍👧', h:'بوابة أولياء الأمور', p:'المتابعة والدفع', href:'index4.html' },
-        { ic:'📝', h:'التسجيل', p:'سجّل طفلك الآن', href:'index2.html' }
+        { ic:'📖', h:'بوابة المعلم', p:'للمعلمين فقط', href:'/lærer' },
+        { ic:'👨‍👩‍👧', h:'بوابة أولياء الأمور', p:'المتابعة والدفع', href:'/foreldre' },
+        { ic:'📝', h:'التسجيل', p:'سجّل طفلك الآن', href:'/påmelding' }
       ],
 
       ctaTitle: 'جاهز تنضم لينا؟', ctaDesc: 'الأماكن محدودة — سجّل طفلك اليوم.', ctaBtn: '📝 سجّل الآن',
@@ -644,9 +665,9 @@
       portalsEyebrow: 'الیکٹرانک پورٹلز', portalsTitle: 'پورٹلز تک رسائی', portalsDesc: 'ہر گروپ کے لیے اپنا مخصوص پورٹل موجود ہے۔',
       portals: [
         { ic:'🛡️', h:'انتظامیہ', p:'اسکول کے انتظامی امور کے لیے', href:'admin.html' },
-        { ic:'📖', h:'اساتذہ کا پورٹل', p:'صرف اساتذہ کے لیے', href:'index1.html' },
-        { ic:'👨‍👩‍👧', h:'والدین کا پورٹل', p:'نگرانی اور ادائیگی', href:'index4.html' },
-        { ic:'📝', h:'داخلہ', p:'ابھی اپنے بچے کا داخلہ کروائیں', href:'index2.html' }
+        { ic:'📖', h:'اساتذہ کا پورٹل', p:'صرف اساتذہ کے لیے', href:'/lærer' },
+        { ic:'👨‍👩‍👧', h:'والدین کا پورٹل', p:'نگرانی اور ادائیگی', href:'/foreldre' },
+        { ic:'📝', h:'داخلہ', p:'ابھی اپنے بچے کا داخلہ کروائیں', href:'/påmelding' }
       ],
 
       ctaTitle: 'ہمارے ساتھ شامل ہونے کے لیے تیار ہیں؟', ctaDesc: 'جگہیں محدود ہیں — آج ہی اپنے بچے کا داخلہ کروائیں۔', ctaBtn: '📝 ابھی داخلہ لیں',
@@ -671,8 +692,30 @@
   }
   function portalsHtml(list){ return list.map(p => `<a class="portal-card" href="${p.href}"><div class="ic">${p.ic}</div><div class="title">${p.h}</div><div class="desc">${p.p}</div></a>`).join(''); }
   function quickFactsHtml(list){ return list.map(f => `<span class="quick-fact">${f.l}<b>${f.v}</b></span>`).join(''); }
+  // To rader à fire felt, ikke åtte i én.
+  //
+  // Åtte felt på en telefonskjerm gir under 45 piksler hver — smalere enn
+  // ordene som skal stå der. Og de arabiske og urdu-ordene er lengre enn
+  // de norske, så en bredde som så vidt holder på norsk, kutter teksten
+  // på de to andre språkene.
+  //
+  // Rekkefølgen er ikke tilfeldig: øverste rad er det en familie som ikke
+  // kjenner skolen leter etter — meld på, når, hvilke timer, hva slags
+  // program. Nederste rad er det man ser på etterpå.
   function navHtml(t){
-    return `<a href="#register">${t.nav.register}</a><a href="#dates">${t.nav.dates}</a><a href="timeplan.html">${t.nav.timeplan}</a><a href="#program">${t.nav.program}</a><a href="#priser">${t.nav.priser}</a><a href="#who">${t.nav.who}</a><a href="#team">${t.nav.team}</a><a href="#portals">${t.nav.portals}</a>`;
+    const rad = (lenker) => '<div class="nav-rad">' +
+      lenker.map(([href, tekst]) => `<a href="${href}">${tekst}</a>`).join('') + '</div>';
+    return rad([
+      ['#register', t.nav.register],
+      ['#dates',    t.nav.dates],
+      ['/timeplan', t.nav.timeplan],
+      ['#program',  t.nav.program]
+    ]) + rad([
+      ['#priser',   t.nav.priser],
+      ['#who',      t.nav.who],
+      ['#team',     t.nav.team],
+      ['#portals',  t.nav.portals]
+    ]);
   }
 
 
@@ -686,7 +729,7 @@
   const MEDLEM_LENKER = {
     familie: 'https://registrering.solidus.no/smartform/83DEE9B5-754D-4784-9B21-B7B2BF8177ED',
     barn:    'https://registrering.solidus.no/smartform/06B56592-BC3B-483A-AFCB-E1F9B22FA908',
-    info:    'medlemskap.html',
+    info:    '/medlemskap',
     moske:   'https://madina.no'
   };
 
@@ -783,7 +826,7 @@
       <div class="amt">${t.tuitionAmt}</div>
       <div class="sub">${t.tuitionSub}</div>
       <ul>${t.tuitionList.map(i => '<li>' + i + '</li>').join('')}</ul>
-      <a class="btn btn-primary" href="index2.html">${t.tuitionBtn}</a>`;
+      <a class="btn btn-primary" href="/påmelding">${t.tuitionBtn}</a>`;
 
     document.getElementById('datesEyebrow').textContent = t.datesEyebrow;
     document.getElementById('datesTitle').textContent = t.datesTitle;
