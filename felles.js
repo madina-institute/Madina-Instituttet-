@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 16:30:41 */
+/* SIST-ENDRET: 2026-08-12 18:49:03 */
 // ═══════════════════════════════════════════════════════════════════
 // FELLES — toppbar, bunn, språkbytte og alle tegnefunksjoner.
 //
@@ -164,6 +164,10 @@ function settHtml(id, html){
       </div>`;
   }
 
+  function quickFactsHtml(list){
+    return (list || []).map(f => `<span class="quick-fact">${f.l}<b>${f.v}</b></span>`).join('');
+  }
+
 // ═══════════════════════════════════════════════════════════════════
 // SPRÅKBYTTE — ett nøkkelord, ikke to.
 //
@@ -209,6 +213,24 @@ function switchLang(lang){
   sett('footerOrgNr', t.footerOrgNr);
   sett('footerPrivacy', t.footerPrivacy);
   sett('footerCopy', t.footerCopy);
+
+  // ---- forside: hero og avgiftsboks ----
+  // Sidetittelen står i innhold.js, ikke i <title>. En underside setter
+  // sin egen i HTML-en og har ingen 'pageTitle' — da hopper sett() over.
+  sett('pageTitle', t.pageTitle);
+  sett('heroBadge', t.heroBadge);
+  sett('heroTitle', t.heroTitle);
+  sett('heroYear', t.heroYear);
+  sett('heroLead', t.heroLead);
+  settHtml('quickFacts', quickFactsHtml(t.quickFacts));
+  sett('heroBtnPrimary', t.heroBtnPrimary);
+  sett('heroBtnOutline', t.heroBtnOutline);
+  settHtml('tuitionBox', t.tuitionTag ? `
+      <div class="tag">${t.tuitionTag}</div>
+      <div class="amt">${t.tuitionAmt}</div>
+      <div class="sub">${t.tuitionSub}</div>
+      <ul>${(t.tuitionList || []).map(i => '<li>' + i + '</li>').join('')}</ul>
+      <a class="btn btn-primary" href="/påmelding">${t.tuitionBtn}</a>` : '');
 
   // ---- avsnitt: tegnes bare der de finnes ----
   sett('regEyebrow', t.regEyebrow); sett('regTitle', t.regTitle); sett('regDesc', t.regDesc);
