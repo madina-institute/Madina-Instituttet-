@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 03:56:50 -->
+<!-- SIST-ENDRET: 2026-08-12 04:35:50 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -225,11 +225,31 @@
   /* Program cards (3 subjects) */
   .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;}
   .card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 20px; box-shadow:var(--shadow); text-align:center;}
+  /* Kort MED bilde: bildet går helt ut i kanten, teksten får sin egen
+     luft. Padding på kortet ville lagt en hvit ramme rundt fotoet og
+     fått det til å se ut som et vedlegg i stedet for en del av kortet. */
+  .card.med-bilde{padding:0; overflow:hidden; display:flex; flex-direction:column;}
+  .card.med-bilde .kort-tekst{padding:18px 20px 22px;}
+  .kort-bilde{
+    display:block; width:100%; height:190px; object-fit:cover;
+    /* Bordet og bøkene ligger i nedre halvdel av bildene. Uten dette
+       ville beskjæringen tatt midten og vist mest bordplate. */
+    object-position:center 42%;
+    background:var(--paper-2);
+  }
+  @media (min-width:760px){ .kort-bilde{height:210px;} }
   .card .ic{font-size:30px; margin-bottom:10px;}
   .card h3{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; margin:0 0 8px; color:var(--emerald-d);}
   html[dir="rtl"] .card h3{font-family:'Tajawal',sans-serif; font-size:16px;}
   .card p{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6b7d; margin:0; line-height:1.7;}
   html[dir="rtl"] .card p{font-family:'Tajawal',sans-serif; font-size:13px;}
+
+  .sted-bilde{
+    display:block; width:100%; height:auto; max-height:340px; object-fit:cover;
+    object-position:center 62%;   /* døra og skiltet, ikke himmelen */
+    border-radius:14px; border:1px solid var(--line);
+    box-shadow:var(--shadow); margin-bottom:20px; background:var(--paper-2);
+  }
 
   /* Mission/Vision/Philosophy */
   .mvp-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px;}
@@ -416,6 +436,15 @@
       <h2 id="whoTitle"></h2>
       <p id="whoDesc"></p>
     </div>
+    <!-- Bygget står her og ikke øverst: teksten sier hvem vi er, bildet
+         viser HVOR. En familie som skal komme lørdag morgen kjenner igjen
+         døra fra dette bildet — det er hele jobben det gjør. -->
+    <picture>
+      <source srcset="bilder/moske.webp" type="image/webp">
+      <img class="sted-bilde" src="bilder/moske.jpg" id="stedBilde"
+           alt="Inngangen til Madina Institute og Senter Oslo i Hagelundveien 2b"
+           loading="lazy" decoding="async" width="1320" height="802">
+    </picture>
     <div class="mvp-row" id="mvpRow"></div>
   </section>
 
@@ -509,8 +538,8 @@
       ],
       programEyebrow: 'Fagtilbud', programTitle: 'Vårt program', programDesc: 'Tre kjernefag, undervist med omsorg tilpasset elevens nivå.',
       programCards: [
-        { ic:'📖', h:'Koranstudier', p:'Koranlesing, memorering og tajwīd-regler. Programmet er strukturert slik at hver elev — uansett utgangspunkt — utvikler sin evne til å lese og forstå Koranen.' },
-        { ic:'✏️', h:'Arabisk og urdu', p:'Strukturert opplæring i lesing, skriving og muntlig kommunikasjon. Arabisk følger læreverket Al-Mutammim — en anerkjent metodikk utviklet etter over 30 års erfaring, brukt av over 150 utdanningsinstitusjoner i Europa og Nord-Amerika, og i tråd med de internasjonale rammeverkene CEFR og ACTFL.', video:'▶️ Se introduksjonsvideo om Al-Mutammim' },
+        { bilde:'koran', ic:'📖', h:'Koranstudier', p:'Koranlesing, memorering og tajwīd-regler. Programmet er strukturert slik at hver elev — uansett utgangspunkt — utvikler sin evne til å lese og forstå Koranen.' },
+        { bilde:'sprak', ic:'✏️', h:'Arabisk og urdu', p:'Strukturert opplæring i lesing, skriving og muntlig kommunikasjon. Arabisk følger læreverket Al-Mutammim — en anerkjent metodikk utviklet etter over 30 års erfaring, brukt av over 150 utdanningsinstitusjoner i Europa og Nord-Amerika, og i tråd med de internasjonale rammeverkene CEFR og ACTFL.', video:'▶️ Se introduksjonsvideo om Al-Mutammim' },
         { ic:'🕌', h:'Islam undervisning', p:'De grunnleggende søylene i islam, samt etiske verdier som bygger en trygg og selvsikker muslimsk identitet.' }
       ],
 
@@ -592,8 +621,8 @@
       ],
       programEyebrow: 'البرامج الدراسية', programTitle: 'برنامجنا', programDesc: 'ثلاث مواد أساسية، تُدرَّس بعناية تناسب مستوى كل طالب.',
       programCards: [
-        { ic:'📖', h:'الدراسات القرآنية', p:'تلاوة القرآن، الحفظ، وأحكام التجويد. البرنامج مصمم بحيث ينمو كل طالب — مهما كانت نقطة بدايته — في قدرته على قراءة القرآن وفهمه.' },
-        { ic:'✏️', h:'العربية والأردية', p:'تعليم منظم في القراءة والكتابة والمحادثة. العربية وفق منهج المتمم — منهج معتمد ثمرة أكثر من 30 عامًا من الخبرة، تعتمده أكثر من 150 مؤسسة تعليمية في أوروبا وأمريكا الشمالية، ومتوافق مع المعايير الدولية CEFR وACTFL.', video:'▶️ شاهد الفيديو التعريفي عن منهج المتمم' },
+        { bilde:'koran', ic:'📖', h:'الدراسات القرآنية', p:'تلاوة القرآن، الحفظ، وأحكام التجويد. البرنامج مصمم بحيث ينمو كل طالب — مهما كانت نقطة بدايته — في قدرته على قراءة القرآن وفهمه.' },
+        { bilde:'sprak', ic:'✏️', h:'العربية والأردية', p:'تعليم منظم في القراءة والكتابة والمحادثة. العربية وفق منهج المتمم — منهج معتمد ثمرة أكثر من 30 عامًا من الخبرة، تعتمده أكثر من 150 مؤسسة تعليمية في أوروبا وأمريكا الشمالية، ومتوافق مع المعايير الدولية CEFR وACTFL.', video:'▶️ شاهد الفيديو التعريفي عن منهج المتمم' },
         { ic:'🕌', h:'التربية الإسلامية', p:'أركان الإسلام الأساسية، إلى جانب القيم الأخلاقية التي تبني هوية إسلامية واثقة وآمنة.' }
       ],
 
@@ -675,8 +704,8 @@
       ],
       programEyebrow: 'تعلیمی پروگرام', programTitle: 'ہمارا پروگرام', programDesc: 'تین بنیادی مضامین، ہر طالب علم کی سطح کے مطابق نگہداشت کے ساتھ پڑھائے جاتے ہیں۔',
       programCards: [
-        { ic:'📖', h:'قرآنی علوم', p:'قرآن کی تلاوت، حفظ، اور تجوید کے اصول۔ پروگرام اس طرح ترتیب دیا گیا ہے کہ ہر طالب علم — چاہے اس کی ابتدائی سطح کچھ بھی ہو — قرآن پڑھنے اور سمجھنے کی صلاحیت میں ترقی کرے۔' },
-        { ic:'✏️', h:'عربی اور اردو', p:'پڑھنے، لکھنے اور بول چال میں منظم تعلیم۔ عربی المتمم نصاب کے مطابق پڑھائی جاتی ہے — ایک تسلیم شدہ طریقہ کار جو 30 سال سے زیادہ تجربے کے بعد تیار ہوا، یورپ اور شمالی امریکہ کے 150 سے زائد تعلیمی اداروں میں رائج ہے، اور بین الاقوامی معیارات CEFR اور ACTFL کے مطابق ہے۔', video:'▶️ المتمم کے تعارفی ویڈیو دیکھیں' },
+        { bilde:'koran', ic:'📖', h:'قرآنی علوم', p:'قرآن کی تلاوت، حفظ، اور تجوید کے اصول۔ پروگرام اس طرح ترتیب دیا گیا ہے کہ ہر طالب علم — چاہے اس کی ابتدائی سطح کچھ بھی ہو — قرآن پڑھنے اور سمجھنے کی صلاحیت میں ترقی کرے۔' },
+        { bilde:'sprak', ic:'✏️', h:'عربی اور اردو', p:'پڑھنے، لکھنے اور بول چال میں منظم تعلیم۔ عربی المتمم نصاب کے مطابق پڑھائی جاتی ہے — ایک تسلیم شدہ طریقہ کار جو 30 سال سے زیادہ تجربے کے بعد تیار ہوا، یورپ اور شمالی امریکہ کے 150 سے زائد تعلیمی اداروں میں رائج ہے، اور بین الاقوامی معیارات CEFR اور ACTFL کے مطابق ہے۔', video:'▶️ المتمم کے تعارفی ویڈیو دیکھیں' },
         { ic:'🕌', h:'اسلامی تربیت', p:'اسلام کے بنیادی ارکان، ساتھ ہی اخلاقی اقدار جو ایک پراعتماد اور محفوظ اسلامی شناخت بناتی ہیں۔' }
       ],
 
@@ -712,8 +741,42 @@
   };
 
   const MUTAMMIM_VIDEO_URL = 'https://youtu.be/AwgsxvVi5Mw';
+  // Bildene ligger på KORTET, ikke i språktabellene: motivet er det
+  // samme uansett hvilket språk siden vises på, og en fil som står tre
+  // steder blir før eller siden tre ulike filer.
+  //
+  // 📌 Ingen ansikter. Bildene er beskåret slik at ansiktene faller
+  // utenfor rammen — ikke slørt. En slørt flekk trekker blikket til seg
+  // og får siden til å se ut som noe skjules; her ser man arbeidet på
+  // bordet, som er det bildet faktisk handler om.
+  const KORTBILDER = {
+    'koran':   { fil:'koranstudier', alt:{ no:'Åpen mushaf, Qaida Baghdadia og lærebok i arabisk lesing på et bord',
+                                           ar:'مصحف مفتوح والقاعدة البغدادية وكتاب تعليم القراءة العربية على طاولة',
+                                           ur:'میز پر کھلا قرآن، قاعدہ بغدادیہ اور عربی پڑھائی کی کتاب' } },
+    'sprak':   { fil:'arabisk',      alt:{ no:'Åpen arabisk lærebok med skriveøvelser og en penn',
+                                           ar:'كتاب عربي مفتوح فيه تمارين كتابة وقلم',
+                                           ur:'کھلی عربی درسی کتاب، تحریری مشقیں اور قلم' } },
+    'skriving':{ fil:'skriving',     alt:{ no:'Et barn skriver arabiske bokstaver i en arbeidsbok med rød blyant',
+                                           ar:'طفل يكتب حروفًا عربية في كراسة بقلم أحمر',
+                                           ur:'ایک بچہ سرخ پنسل سے کاپی میں عربی حروف لکھ رہا ہے' } }
+  };
+  function bildeHtml(nokkel){
+    const b = KORTBILDER[nokkel];
+    if(!b) return '';
+    const alt = (b.alt[currentLang] || b.alt.no).replace(/"/g, '&quot;');
+    // <picture> gir webp der nettleseren støtter det og jpg ellers.
+    // loading=lazy: bildene ligger langt nede på siden, og skal ikke
+    // stjele båndbredde fra det familien leser først.
+    return `<picture>
+      <source srcset="bilder/${b.fil}.webp" type="image/webp">
+      <img class="kort-bilde" src="bilder/${b.fil}.jpg" alt="${alt}"
+           loading="lazy" decoding="async" width="1200" height="800">
+    </picture>`;
+  }
   function cardsHtml(list){
-    return list.map(c => `<div class="card"><div class="ic">${c.ic}</div><h3>${c.h}</h3><p>${c.p}</p>${c.video ? `<p style="margin-top:10px;"><a href="${MUTAMMIM_VIDEO_URL}" target="_blank" rel="noopener" style="color:var(--emerald-d); text-decoration:none; font-weight:700;">${c.video}</a></p>` : ''}</div>`).join('');
+    return list.map(c => `<div class="card${c.bilde ? ' med-bilde' : ''}">${
+      c.bilde ? bildeHtml(c.bilde) : `<div class="ic">${c.ic}</div>`
+    }<div class="kort-tekst"><h3>${c.h}</h3><p>${c.p}</p>${c.video ? `<p style="margin-top:10px;"><a href="${MUTAMMIM_VIDEO_URL}" target="_blank" rel="noopener" style="color:var(--emerald-d); text-decoration:none; font-weight:700;">${c.video}</a></p>` : ''}</div></div>`).join('');
   }
   function stepsHtml(list){ return list.map((s,i) => `<div class="step-card"><div class="step-num">${i+1}</div><h3>${s.h}</h3><p>${s.p}</p></div>`).join(''); }
   function datesHtml(list){ return list.map((d,i) => `<div class="date-card tone-${(i%3)+1}"><span class="when">${d.h}</span><h3>${d.h}</h3><p>${d.p}</p></div>`).join(''); }
@@ -872,6 +935,14 @@
     document.getElementById('programTitle').textContent = t.programTitle;
     document.getElementById('programDesc').textContent = t.programDesc;
     document.getElementById('programCards').innerHTML = cardsHtml(t.programCards);
+    // Alt-teksten på bygget følger språket. En skjermleser på arabisk
+    // skal ikke lese en norsk setning.
+    const sted = document.getElementById('stedBilde');
+    if(sted) sted.alt = ({
+      no:'Inngangen til Madina Institute og Senter Oslo i Hagelundveien 2b',
+      ar:'مدخل معهد ومركز مدينة أوسلو في هاغلوندفايين 2b',
+      ur:'ہیگلنڈوائن 2b میں مدینہ انسٹی ٹیوٹ اور سینٹر اوسلو کا داخلی دروازہ'
+    })[currentLang] || 'Madina Institute og Senter Oslo';
 
     document.getElementById('prisEyebrow').textContent = t.prisEyebrow;
     document.getElementById('prisTitle').textContent = t.prisTitle;
