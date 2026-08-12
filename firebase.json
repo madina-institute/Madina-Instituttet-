@@ -97,6 +97,14 @@
         "destination": "/medlemskap.html"
       },
       {
+        "source": "/laremidler",
+        "destination": "/laremidler.html"
+      },
+      {
+        "source": "/læremidler",
+        "destination": "/laremidler.html"
+      },
+      {
         "source": "/kontor",
         "destination": "/admin.html"
       },
