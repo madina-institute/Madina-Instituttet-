@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 14:37:49 */
+/* SIST-ENDRET: 2026-08-12 16:31:31 */
 // ═══════════════════════════════════════════════════════════════════
 // LEVENDE PRISER — leses fra basen, ikke fra teksten.
 //
@@ -64,10 +64,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 
     if(P.rabatt2 || P.rabatt3){
       ut.push(ar
-        ? `<b>التخفيضات:</b> خصم الإخوة ${P.rabatt2}% للطفل الثاني و${P.rabatt3}% للثالث فما بعده. سعر العضو والخصم لا يُجمعان.`
+        ? `<b>التخفيضات:</b> خصم الإخوة ${P.rabatt2}% للطفل الثاني و${P.rabatt3}% للثالث فما بعده — لغير الأعضاء. يُطبَّق الخصم على البرنامج الأعلى سعرًا. سعر العضو والخصم لا يُجمعان.`
         : ur
-        ? `<b>رعایتیں:</b> دوسرے بچے کے لیے ${P.rabatt2}% اور تیسرے سے ${P.rabatt3}%۔`
-        : `<b>Rabatter:</b> Søskenrabatt ${P.rabatt2} % for barn nummer to og ${P.rabatt3} % fra og med det tredje. Medlemspris og søskenrabatt kombineres ikke.`);
+        ? `<b>رعایتیں:</b> دوسرے بچے کے لیے ${P.rabatt2}% اور تیسرے سے ${P.rabatt3}% — غیر اراکین کے لیے۔ رعایت مہنگے پروگرام پر لاگو ہوتی ہے۔`
+        : `<b>Rabatter:</b> Søskenrabatt ${P.rabatt2} % for barn nummer to og ${P.rabatt3} % fra og med det tredje — for familier som ikke er medlemmer. Rabatten legges på det dyreste programmet. Medlemspris og søskenrabatt kombineres ikke.`);
     }
 
     // Materiellavgiften kan være ulik per program — Madinabarn og det
@@ -86,6 +86,22 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
         ? `<b>کتابیں:</b> ${kr(mats[0].m)} کرونر سالانہ۔`
         : (like ? `<b>Bøker:</b> Skolemateriell kommer i tillegg og koster ${kr(mats[0].m)} kr per år.`
                 : `<b>Bøker:</b> ` + mats.map(x => `${x.navn}: ${kr(x.m)} kr`).join(' · ')));
+    }
+
+    // Betalingen deles i terminer. Sto det ikke her, ville tallet i
+    // skjemaet sett ut som en annen pris i stedet for samme pris delt.
+    if(P.terminer > 1){
+      const perTermin = Object.values(PROGRAM_NAVN)
+        .map(n => P.programmer[n]).filter(p => p && p.aar);
+      const eks = perTermin.length
+        ? ' ' + perTermin.map(p => kr(Math.round(p.aar / P.terminer)) + ' kr').join(' / ') +
+          (ar ? ' لكل قسط.' : ur ? ' فی قسط۔' : ' per termin.')
+        : '';
+      ut.push(ar
+        ? `<b>الدفع:</b> المبلغ يُقسَّم على ${P.terminer} أقساط —${eks}`
+        : ur
+        ? `<b>ادائیگی:</b> رقم ${P.terminer} اقساط میں تقسیم ہوتی ہے —${eks}`
+        : `<b>Betaling:</b> Beløpet deles i ${P.terminer} terminer —${eks}`);
     }
 
     if(P.depositum > 0){
@@ -119,11 +135,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
         const sn = await getDoc(doc(db, 'settings', 'priser'));
         if(sn.exists()) d = sn.data() || {};
       } catch(e){ /* rabattene er en bonus i visningen, ikke et krav */ }
+      // 🔴 'terminer' MÅ leses her. Skjemaet deler årsprisen på den og
+      // viser 2 750 kr per termin. Forsiden viste 5 500 og sa «per
+      // semester» — to ulike tall for det samme, og feil ord på det ene.
+      // Familien møtte 5 500 her og 2 750 der, uten noe som forklarte det.
+      const ter = tall(d.terminer);
       window.__priser = {
         programmer,
         rabatt2: tall(d.soskenRabatt2), rabatt3: tall(d.soskenRabatt3),
         materiell: tall(d.materiellAvgift),
-        depositum: tall(d.depositum), depositumFrist: tall(d.depositumFrist)
+        depositum: tall(d.depositum), depositumFrist: tall(d.depositumFrist),
+        terminer: ter >= 1 ? ter : 2
       };
     } catch(err){
       console.error('Kunne ikke hente priser', err);
