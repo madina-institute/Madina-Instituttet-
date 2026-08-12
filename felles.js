@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 20:49:15 */
+/* SIST-ENDRET: 2026-08-12 21:42:48 */
 // ═══════════════════════════════════════════════════════════════════
 // FELLES — toppbar, bunn, språkbytte og alle tegnefunksjoner.
 //
@@ -181,7 +181,7 @@ function settHtml(id, html){
   }
 
 // ═══════════════════════════════════════════════════════════════════
-// SPRÅKBYTTE — ett nøkkelord, ikke to.
+// SPRÅKBYTTE — fire språk, ett nøkkelord.
 //
 // 🔴 Forsiden skrev til BÅDE 'madina_lang' og 'madinaHomeLang', og leste
 // bare den siste. Så lenge alt sto på én side, merket ingen det.
@@ -195,7 +195,7 @@ const SPRAAK_NOKKEL = 'madina_lang';
 function lesSpraak(){
   try{
     const s = localStorage.getItem(SPRAAK_NOKKEL);
-    return (s === 'ar' || s === 'ur' || s === 'no') ? s : 'no';
+    return ['no','en','ar','ur'].includes(s) ? s : 'no';
   }catch(e){ return 'no'; }   // privat modus
 }
 
@@ -208,7 +208,7 @@ function switchLang(lang){
 
   const rot = document.getElementById('htmlRoot');
   if(rot){ rot.setAttribute('lang', lang); rot.setAttribute('dir', isRtl ? 'rtl' : 'ltr'); }
-  ['no','ar','ur'].forEach(k => {
+  ['no','en','ar','ur'].forEach(k => {
     const b = document.getElementById('btnLang' + k.charAt(0).toUpperCase() + k.slice(1));
     if(b) b.classList.toggle('active', lang === k);
   });
@@ -275,6 +275,7 @@ function switchLang(lang){
   const sted = document.getElementById('stedBilde');
   if(sted) sted.alt = ({
     no:'Inngangen til Madina Institute og Senter Oslo i Hagelundveien 2b',
+    en:'The entrance to Madina Institute and Centre Oslo at Hagelundveien 2b',
     ar:'مدخل معهد ومركز مدينة أوسلو في هاغلوندفايين 2b',
     ur:'ہیگلنڈوائن 2b میں مدینہ انسٹی ٹیوٹ اور سینٹر اوسلو کا داخلی دروازہ'
   })[lang] || 'Madina Institute og Senter Oslo';
