@@ -5,6 +5,39 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# ═══════════════════════════════════════════════════════════════════
+# 🔴 12.08.2026 — EN FIL BLE PUBLISERT OG FORSVANT LIKEVEL.
+#
+# Verktøyet la ut seks filer, én commit hver, med halvannet sekund
+# mellom. GitHub svarte 200 på alle seks, og verktøyet sa «✓ Publisert»
+# seks ganger. Filene LÅ i repoet.
+#
+# Men hver commit startet sin egen kjøring av denne filen, og seks
+# kjøringer gikk samtidig. Hver av dem sjekker ut treet slik det så ut
+# da DEN startet, og laster det opp. Den som blir ferdig sist, vinner —
+# og det er ikke nødvendigvis den nyeste.
+#
+# Resultatet: felles.css lå i den siste commiten, men den kjøringen ble
+# innhentet av en eldre. Filen var i GitHub og ga 404 på nettet.
+# En grønn hake på noe som ikke var der.
+#
+# `concurrency` gjør at bare ÉN kjøring lever av gangen: starter en ny,
+# avbrytes den forrige. Den siste commiten er da alltid den som legges
+# ut, og de mellomliggende kjøringene kaster ikke bort tid heller.
+#
+# ⚠️ Dette fjerner ikke behovet for å SE etter at filen er der. En
+# kjøring kan fortsatt feile. Åpne filen på madinaskole.no etter en
+# publisering med flere filer — GitHub er ikke nettet.
+#
+# ⚠️ Denne filen kan IKKE publiseres med publiseringsverktøyet.
+# GitHub svarer 403: en personlig token må ha egen `workflow`-rett for
+# å røre .github/workflows/, og den retten skal den ikke ha — en token
+# som kan endre en workflow, kan kjøre hva som helst. Rediger her.
+# ═══════════════════════════════════════════════════════════════════
+concurrency:
+  group: firebase-hosting
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
