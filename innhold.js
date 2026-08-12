@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 16:31:10 */
+/* SIST-ENDRET: 2026-08-12 19:12:04 */
 // ═══════════════════════════════════════════════════════════════════
 // INNHOLD — all tekst og alle data, på tre språk, ETT sted.
 //
@@ -12,7 +12,7 @@ const TEXT = {
     no: {
       pageTitle: 'Madina Skole', brand: 'Madina Skole',
       bannerText: '⚠️ Du åpnet denne siden inne i en app (f.eks. WhatsApp eller Instagram) — innlogging kan da feile. Trykk ⋯ eller del-ikonet og velg «Åpne i Safari».', bannerClose: 'Skjul',
-      nav: { register:'Påmelding', dates:'Datoer', program:'Program', priser:'Priser', who:'Om oss', team:'Team', portals:'Portaler', timeplan:'Timeplan' },
+      nav: { hjem:'Hjem', register:'Påmelding', dates:'Datoer', program:'Program', priser:'Priser', who:'Om oss', team:'Team', portals:'Portaler', timeplan:'Timeplan' },
 
       heroBadge: '📝 Påmelding er åpen', heroTitle: 'Koranundervisning, arabisk og urdu for barna våre', heroYear: 'Skoleåret 2026/2027',
       heroLead: 'Barna lærer å lese og memorere Koranen, får undervisning i arabisk og urdu, og en islamsk oppdragelse å vokse med. Vi holder til i Madina Grorud moske og er en del av Madina Institute Norway.',
@@ -113,7 +113,7 @@ const TEXT = {
     ar: {
       pageTitle: 'مدرسة مدينة', brand: 'مدرسة مدينة',
       bannerText: '⚠️ فتحت الصفحة من داخل تطبيق (مثل واتساب أو انستجرام) — تسجيل الدخول قد لا يعمل بشكل صحيح. اضغط ⋯ أو أيقونة المشاركة واختر «فتح في المتصفح».', bannerClose: 'إخفاء',
-      nav: { register:'التسجيل', dates:'المواعيد', program:'البرنامج', priser:'الأسعار', who:'من نحن', team:'الفريق', portals:'البوابات', timeplan:'الجدول الدراسي' },
+      nav: { hjem:'الرئيسية', register:'التسجيل', dates:'المواعيد', program:'البرنامج', priser:'الأسعار', who:'من نحن', team:'الفريق', portals:'البوابات', timeplan:'الجدول الدراسي' },
 
       heroBadge: '📝 التسجيل مفتوح الآن', heroTitle: 'تعليم القرآن الكريم واللغة العربية والأردية لأبنائنا', heroYear: 'العام الدراسي 2026/2027',
       heroLead: 'يتعلّم الأطفال قراءة القرآن وحفظه، ويدرسون العربية والأردية، وينشأون على تربية إسلامية. مقرّنا في مسجد مدينة غرود، ونحن جزء من معهد مدينة النرويج.',
@@ -214,7 +214,7 @@ const TEXT = {
     ur: {
       pageTitle: 'مدینہ اسکول', brand: 'مدینہ اسکول',
       bannerText: '⚠️ آپ نے یہ صفحہ کسی ایپ کے اندر کھولا ہے — لاگ اِن کام نہیں کر سکتا۔ ⋯ یا شیئر آئیکن پر ٹیپ کریں اور «Safari میں کھولیں» منتخب کریں۔', bannerClose: 'چھپائیں',
-      nav: { register:'داخلہ', dates:'تاریخیں', program:'پروگرام', priser:'قیمتیں', who:'ہمارے بارے میں', team:'ٹیم', portals:'پورٹلز', timeplan:'ٹائم ٹیبل' },
+      nav: { hjem:'ہوم', register:'داخلہ', dates:'تاریخیں', program:'پروگرام', priser:'قیمتیں', who:'ہمارے بارے میں', team:'ٹیم', portals:'پورٹلز', timeplan:'ٹائم ٹیبل' },
 
       heroBadge: '📝 داخلہ کھلا ہے', heroTitle: 'ہمارے بچوں کے لیے قرآن کریم، عربی اور اردو کی تعلیم', heroYear: 'تعلیمی سال 2026/2027',
       heroLead: 'بچے قرآن پڑھنا اور حفظ کرنا سیکھتے ہیں، عربی اور اردو کی تعلیم پاتے ہیں، اور اسلامی تربیت کے ساتھ پروان چڑھتے ہیں۔ ہم مدینہ گرورود مسجد میں ہیں اور مدینہ انسٹی ٹیوٹ ناروے کا حصہ ہیں۔',
