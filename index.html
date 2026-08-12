@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 03:23:05 -->
+<!-- SIST-ENDRET: 2026-08-12 03:31:38 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -47,14 +47,36 @@
     position:sticky; top:0; z-index:200; background:rgba(240,247,254,0.94); backdrop-filter:blur(6px);
     border-bottom:1px solid var(--line); padding:12px 20px;
   }
-  .topbar-inner{max-width:1080px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
-  .brand{display:flex; align-items:center; gap:10px;}
+  /* 🔴 Toppbaren er sticky. Uten dette stanset hvert avsnitt AKKURAT
+     under den, og overskriften — «Program», «Priser» — lå skjult bak
+     baren. Man trykket på en lenke, siden hoppet, og man landet midt i
+     en tekst uten å vite hvor man var.
+     Verdien er baren pluss litt luft. Den settes i én variabel fordi
+     baren har ulik høyde på telefon og skjerm, og to tall som skal være
+     like ender alltid med å bli ulike. */
+  /* Baren er nå en søyle — logo, to lenkerader, språkvalg — og da blir
+     den høy: rundt 190 piksler. To tall som skal være like ender alltid
+     med å bli ulike, så høyden står ett sted og brukes derfra.
+     ⚠️ På telefon spiser en fast bar på 190 px omtrent en fjerdedel av
+     skjermen hele tiden. Se notatet nederst i denne filen. */
+  :root{ --topbar-h:200px; }
+  section[id], header[id]{ scroll-margin-top:var(--topbar-h); }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
+
+  .topbar-inner{
+    max-width:1080px; margin:0 auto; display:flex; flex-direction:column;
+    align-items:center; gap:10px;
+  }
+  /* Logo og navn står øverst og midtstilt, som på et brevhode. Da er
+     det første man ser hvem dette er — ikke en rad med lenker. */
+  .brand{display:flex; align-items:center; justify-content:center; gap:10px;}
   .brand img{height:36px; width:auto; border-radius:8px;}
   .brand-text{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d);}
   html[dir="rtl"] .brand-text{font-family:'Tajawal',sans-serif;}
   /* Lenkene i to rammer med skillelinjer mellom feltene, i stedet for
      frittstående ord som brøt over to linjer uten at det så tilsiktet ut. */
-  .topbar-links{display:flex; flex-direction:column; gap:6px; flex:1 1 300px; min-width:0;}
+  .topbar-links{display:flex; flex-direction:column; gap:6px; width:100%; max-width:640px; min-width:0;}
   .nav-rad{
     display:flex; background:#fff; border:1px solid var(--line);
     border-radius:9px; overflow:hidden;
@@ -77,12 +99,23 @@
   @media (max-width:400px){
     .topbar-links a{font-size:10.5px; padding:8px 2px;}
   }
-  .lang-switch-inner{ display:inline-flex; background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
-  .lang-switch-inner button{
-    background:transparent; border:none; color:var(--ink); opacity:0.55; font-family:'Jost',sans-serif;
-    font-size:10.5px; font-weight:600; letter-spacing:0.04em; padding:6px 12px; cursor:pointer;
+  /* Språkvelgeren har samme form som fanene over: samme ramme, samme
+     hjørner, samme skillelinjer. To ulike former rett over hverandre
+     leses som to ulike systemer — det er én rad til, ikke noe annet. */
+  .lang-switch-inner{
+    display:flex; background:#fff; border:1px solid var(--line);
+    border-radius:9px; overflow:hidden; width:100%; max-width:340px;
   }
-  .lang-switch-inner button.active{background:var(--emerald); color:#fff; opacity:1;}
+  .lang-switch-inner button{
+    flex:1 1 0; background:transparent; border:none; cursor:pointer;
+    color:var(--emerald-d); font-family:'Jost',sans-serif;
+    font-size:11.5px; font-weight:600; letter-spacing:0.02em;
+    padding:9px 4px; border-inline-end:1px solid #e6edf4;
+  }
+  .lang-switch-inner button:last-child{border-inline-end:0;}
+  .lang-switch-inner button:hover{background:var(--paper-2);}
+  .lang-switch-inner button.active{background:var(--emerald-d); color:#fff;}
+  .lang-switch-inner button:focus-visible{outline:2px solid var(--emerald); outline-offset:-2px;}
 
   /* ===== Hero (تصميم مطابق لهيكل SALAM، بألوان مدرسة مدينة) ===== */
   header.hero{
