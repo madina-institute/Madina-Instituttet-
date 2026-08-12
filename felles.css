@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 15:19:34 */
+/* SIST-ENDRET: 2026-08-12 19:11:13 */
 
   /* Instituttets offisielle palett, hentet fra Madina Institute sitt eget
      materiell. Blå er hovedfargen, men den står ikke alene: marineblå
@@ -50,7 +50,13 @@
      med å bli ulike, så høyden står ett sted og brukes derfra.
      ⚠️ På telefon spiser en fast bar på 190 px omtrent en fjerdedel av
      skjermen hele tiden. Se notatet nederst i denne filen. */
-  :root{ --topbar-h:236px; }
+  /* 🔴 Baren har nå TRE lenkerader (Hjem kom til, og ni felt deles 3+3+3).
+     Verdien måtte opp tilsvarende. Står den for lavt, havner overskriften
+     i avsnittet man hoppet til bak baren — det var nettopp dette tallet
+     ble innført for.
+     ⚠️ Baren tar nå en god del av en telefonskjerm. Neste steg der er å
+     la den krympe når man ruller nedover, ikke å kutte i lenkene. */
+  :root{ --topbar-h:280px; }
   section[id], header[id]{ scroll-margin-top:var(--topbar-h); }
   html{ scroll-behavior:smooth; }
   @media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
