@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 14:37:46 */
+/* SIST-ENDRET: 2026-08-12 16:30:41 */
 // ═══════════════════════════════════════════════════════════════════
 // FELLES — toppbar, bunn, språkbytte og alle tegnefunksjoner.
 //
@@ -105,21 +105,35 @@ function settHtml(id, html){
   // Rekkefølgen er ikke tilfeldig: øverste rad er det en familie som ikke
   // kjenner skolen leter etter — meld på, når, hvilke timer, hva slags
   // program. Nederste rad er det man ser på etterpå.
+  // ═══════════════════════════════════════════════════════════════
+  // 🔴 ANKRE VIRKER BARE PÅ FORSIDEN.
+  //
+  // Lenkene het '#priser', '#program', '#team'. På forsiden ruller de
+  // dit. På /priser peker de på avsnitt som ikke finnes der — sju av
+  // åtte knapper gjorde ingenting, og det fantes ingen vei tilbake til
+  // forsiden i det hele tatt.
+  //
+  // '/#priser' virker begge steder: på forsiden ruller nettleseren som
+  // før, uten ny lasting; fra en underside går den til forsiden og
+  // ruller. Når /priser og /program finnes som egne sider, byttes
+  // '/#priser' ut med '/priser' — én linje per side.
+  // ═══════════════════════════════════════════════════════════════
   function navHtml(t){
     const rad = (lenker) => '<div class="nav-rad">' +
       lenker.map(([href, tekst]) => `<a href="${href}">${tekst}</a>`).join('') + '</div>';
     return rad([
-      ['#register', t.nav.register],
-      ['#dates',    t.nav.dates],
-      ['/timeplan', t.nav.timeplan],
-      ['#program',  t.nav.program]
+      ['/#register', t.nav.register],
+      ['/#dates',    t.nav.dates],
+      ['/timeplan',  t.nav.timeplan],
+      ['/#program',  t.nav.program]
     ]) + rad([
-      ['#priser',   t.nav.priser],
-      ['#who',      t.nav.who],
-      ['#team',     t.nav.team],
-      ['#portals',  t.nav.portals]
+      ['/priser',    t.nav.priser],
+      ['/#who',      t.nav.who],
+      ['/#team',     t.nav.team],
+      ['/#portals',  t.nav.portals]
     ]);
   }
+
 
 
   // Medlemskortet. Står under prisene fordi det svarer på spørsmålet
@@ -262,7 +276,11 @@ function prisNoterHtml(t){
 // In-app-nettlesere (WhatsApp, Instagram) — samme varsel som forsiden.
 function sjekkInAppBrowser(){
   const ua = navigator.userAgent || '';
-  if(/FBAN|FBAV|Instagram|Line|WhatsApp/i.test(ua)){
+    // 🔴 Uttrykket ble forkortet under flyttingen fra forsiden: Twitter,
+  // LinkedInApp og Snapchat forsvant, og skråstreken i «Line/» også.
+  // Uten skråstreken treffer «Line» hvilket som helst ord som
+  // inneholder det — den sto der med vilje.
+  if(/FBAN|FBAV|Instagram|WhatsApp|Line\/|Twitter|LinkedInApp|Snapchat/i.test(ua)){
     const b = document.getElementById('inAppBrowserBanner');
     if(b) b.style.display = 'block';
   }
