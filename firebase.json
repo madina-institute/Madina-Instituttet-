@@ -74,6 +74,10 @@
         "destination": "/team.html"
       },
       {
+        "source": "/portaler",
+        "destination": "/portaler.html"
+      },
+      {
         "source": "/påmelding",
         "destination": "/index2.html"
       },
