@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 03:31:38 -->
+<!-- SIST-ENDRET: 2026-08-12 03:43:28 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -55,11 +55,12 @@
      baren har ulik høyde på telefon og skjerm, og to tall som skal være
      like ender alltid med å bli ulike. */
   /* Baren er nå en søyle — logo, to lenkerader, språkvalg — og da blir
-     den høy: rundt 190 piksler. To tall som skal være like ender alltid
+     den høy: rundt 200 piksler, og verdien her er satt litt over
+     så overskriften får luft under baren i stedet for å klistre seg til den. To tall som skal være like ender alltid
      med å bli ulike, så høyden står ett sted og brukes derfra.
      ⚠️ På telefon spiser en fast bar på 190 px omtrent en fjerdedel av
      skjermen hele tiden. Se notatet nederst i denne filen. */
-  :root{ --topbar-h:200px; }
+  :root{ --topbar-h:236px; }
   section[id], header[id]{ scroll-margin-top:var(--topbar-h); }
   html{ scroll-behavior:smooth; }
   @media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
