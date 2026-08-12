@@ -95,6 +95,42 @@
       {
         "source": "/medlemskap",
         "destination": "/medlemskap.html"
+      },
+      {
+        "source": "/kontor",
+        "destination": "/admin.html"
+      },
+      {
+        "source": "/ledelse",
+        "destination": "/ledelseinnsyn.html"
+      },
+      {
+        "source": "/larerinnsyn",
+        "destination": "/larerinnsyn.html"
+      },
+      {
+        "source": "/lærerinnsyn",
+        "destination": "/larerinnsyn.html"
+      },
+      {
+        "source": "/foreldreinnsyn",
+        "destination": "/foreldreinnsyn.html"
+      },
+      {
+        "source": "/slettelogg",
+        "destination": "/slettelogg.html"
+      },
+      {
+        "source": "/statistikk",
+        "destination": "/statistikk.html"
+      },
+      {
+        "source": "/helsesjekk",
+        "destination": "/helsesjekk.html"
+      },
+      {
+        "source": "/publiser",
+        "destination": "/publish-tool.html"
       }
     ]
   }
