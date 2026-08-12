@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 05:00:27 -->
+<!-- SIST-ENDRET: 2026-08-12 05:03:16 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -245,10 +245,19 @@
   html[dir="rtl"] .card p{font-family:'Tajawal',sans-serif; font-size:13px;}
 
   .sted-bilde{
-    display:block; width:100%; height:auto; max-height:340px; object-fit:cover;
-    object-position:center 62%;   /* døra og skiltet, ikke himmelen */
-    border-radius:14px; border:1px solid var(--line);
+    display:block; width:100%; border-radius:14px; border:1px solid var(--line);
     box-shadow:var(--shadow); margin-bottom:20px; background:var(--paper-2);
+    /* Fast høydeforhold, ikke fast pikselhøyde: da beskjæres bildet likt
+       på alle skjermbredder i stedet for å bli en stripe på de smale. */
+    aspect-ratio:16/9; height:auto; object-fit:cover;
+    /* 🔴 Sto på 62% og dro utsnittet NED mot asfalten — halve bildet ble
+       vei, mens døra og skiltet lå klemt i overkanten. Motivet er
+       inngangen: den ligger i øvre halvdel, så utsnittet må dit. */
+    object-position:center 34%;
+  }
+  @media (max-width:520px){
+    /* På telefon er 16:9 for lav til at døra og skiltet leses. */
+    .sted-bilde{ aspect-ratio:4/3; }
   }
 
   /* Mission/Vision/Philosophy */
