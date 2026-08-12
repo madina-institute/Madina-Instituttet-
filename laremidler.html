@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-12 11:10:22 -->
+<html lang="no" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Læremidler — Madina Skole</title>
+<meta name="description" content="Læreverkene Madina Skole bruker i koran, tajwid, arabisk, urdu og islam — Misbah bokserien og Al-Mutammim.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16283a; --emerald:#2f7cc9; --emerald-d:#1c5490; --emerald-l:#1A9BEC;
+    --gold:#b7924a; --gold-l:#d9bd7c;
+    --paper:#fbf8f1; --paper-2:#eef4fa;
+    --line:rgba(22,40,58,0.16); --shadow:0 16px 36px rgba(28,84,144,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper-2); color:var(--ink);
+    font-family:'Jost',sans-serif; line-height:1.6;
+  }
+  html[dir="rtl"] body{font-family:'Tajawal',sans-serif;}
+
+  /* ---- Topp ---- */
+  .topp{
+    background:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
+    color:#fff; padding:34px 20px 30px; text-align:center; position:relative;
+  }
+  .topp::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 26px);
+  }
+  .topp > *{position:relative;}
+  .topp img{width:min(180px,52%); height:auto; margin-bottom:12px;}
+  .aar{font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:#cfe3f6; margin-bottom:5px;}
+  .topp h1{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:clamp(26px,7vw,38px);
+    margin:0 0 8px;
+  }
+  html[dir="rtl"] .topp h1{font-family:'Tajawal',sans-serif; font-weight:700;}
+  .topp p{font-size:14px; color:#eaf6ff; margin:0 auto; max-width:520px;}
+
+  /* ---- Språkvalg + tilbake ---- */
+  .verktoy{
+    background:var(--paper-2); border-bottom:1px solid var(--line);
+    padding:12px 16px; display:flex; gap:10px; justify-content:center;
+    flex-wrap:wrap; align-items:center;
+  }
+  .sprak{display:flex; background:#fff; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+  .sprak button{
+    background:transparent; border:none; cursor:pointer; color:var(--emerald-d);
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    padding:9px 16px; border-inline-end:1px solid #e6edf4;
+  }
+  .sprak button:last-child{border-inline-end:0;}
+  .sprak button.aktiv{background:var(--emerald-d); color:#fff;}
+  .tilbake{
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    color:var(--emerald-d); text-decoration:none; background:#fff;
+    border:1px solid var(--line); border-radius:9px; padding:9px 16px;
+  }
+
+  /* ---- Innhold ---- */
+  main{max-width:880px; margin:0 auto; padding:26px 16px 60px;}
+  .intro{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:20px 22px; box-shadow:var(--shadow); margin-bottom:26px;
+    font-size:14px; line-height:1.75;
+  }
+  .intro b{color:var(--emerald-d);}
+
+  .fag{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); margin-bottom:20px; overflow:hidden;
+  }
+  .fag-hode{
+    padding:18px 22px 14px; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#fff,var(--paper-2));
+  }
+  .fag-hode h2{
+    font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700;
+    color:var(--emerald-d); margin:0 0 4px;
+  }
+  html[dir="rtl"] .fag-hode h2{font-family:'Tajawal',sans-serif; font-size:20px;}
+  .fag-hode p{margin:0; font-size:13px; color:#5a6b7d;}
+
+  .bok{
+    display:flex; gap:18px; padding:18px 22px; align-items:flex-start;
+    border-bottom:1px solid var(--line);
+  }
+  .bok:last-child{border-bottom:0;}
+  /* Omslaget står til venstre i fast bredde. Uten fast bredde ville
+     bøker med ulike bildeformater fått hver sin kolonnebredde, og
+     listen ville sett tilfeldig ut nedover. */
+  .bok picture{flex:0 0 108px;}
+  .bok img{
+    display:block; width:100%; height:auto; border-radius:8px;
+    border:1px solid var(--line); background:var(--paper-2);
+  }
+  .bok-tekst{flex:1; min-width:0;}
+  .bok-tekst h3{
+    font-family:'Jost',sans-serif; font-size:15px; font-weight:700;
+    color:var(--ink); margin:0 0 3px;
+  }
+  html[dir="rtl"] .bok-tekst h3{font-family:'Tajawal',sans-serif;}
+  .niva{
+    display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.04em;
+    background:var(--paper-2); color:var(--emerald-d); border-radius:999px;
+    padding:3px 10px; margin-bottom:7px;
+  }
+  .bok-tekst p{margin:0; font-size:13px; color:#5a6b7d; line-height:1.7;}
+  .bok-tekst a{color:var(--emerald-d); font-weight:700; text-decoration:none;}
+  .bok-tekst a:hover{text-decoration:underline;}
+
+  /* Bøker uten omslagsbilde ennå. De skal ikke etterlate et tomt hull —
+     en tydelig plassholder er ærligere enn en usynlig mangel. */
+  .ingen-bilde{
+    flex:0 0 108px; aspect-ratio:3/4; border-radius:8px;
+    border:1px dashed var(--line); background:var(--paper-2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; color:#b9c6d4;
+  }
+
+  .fot{
+    text-align:center; padding:22px 16px 40px; font-size:12px; color:#7b8a93;
+  }
+  .fot a{color:var(--emerald-d); font-weight:600; text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="topp">
+  <img src="logo-hvit.png" alt="Madina Skole">
+  <div class="aar" id="tAar">Skoleåret 2026/2027</div>
+  <h1 id="tTittel">Læremidler</h1>
+  <p id="tLead"></p>
+</div>
+
+<div class="verktoy">
+  <a class="tilbake" href="/" id="tTilbake">← Forsiden</a>
+  <div class="sprak">
+    <button class="aktiv" data-l="no" onclick="settSprak('no')">Norsk</button>
+    <button data-l="ar" onclick="settSprak('ar')">العربية</button>
+    <button data-l="ur" onclick="settSprak('ur')">اردو</button>
+  </div>
+</div>
+
+<main id="innhold"></main>
+
+<div class="fot">
+  <span id="tFot"></span> · <a href="/påmelding" id="tCta">Meld på nå</a>
+</div>
+
+<script>
+  const VIDEO = 'https://youtu.be/AwgsxvVi5Mw';
+
+  // Bøkene står ETT sted, med bildefil og nivå. Teksten oversettes; selve
+  // boklisten gjør det ikke — en bok heter det samme på alle tre språk,
+  // og tre kopier av samme liste ville før eller siden blitt tre ulike.
+  const FAG = [
+    {
+      id:'koran', ikon:'📖',
+      boker:[
+        { fil:'bok-qaidah', tittel:'Jeg lærer Qaidah', niva:'Nivå 1–4', n:'koranQaidah' },
+        { fil:'bok-tajweed', tittel:'Jeg lærer Tajweed', niva:null, n:'koranTajweed' }
+      ]
+    },
+    {
+      id:'islam', ikon:'🕌',
+      boker:[
+        { fil:'bok-islam', tittel:'Innføring i islamsk tro og praksis', niva:'Nivå 1–6', n:'islamHoved' },
+        { fil:'bok-dua', tittel:'Dua bok', niva:'Nivå 1–6', n:'islamDua' },
+        { fil:'bok-hadith', tittel:'20 Hadith for barn og ungdom', niva:null, n:'islamHadith' }
+      ]
+    },
+    {
+      id:'urdu', ikon:'✍️',
+      boker:[
+        { fil:'bok-urdu', tittel:'Jeg lærer urdu', niva:'Nivå 1', n:'urduHoved' },
+        { fil:'bok-skriv', tittel:'Lær å skrive urdu', niva:'Nivå 1–5', n:'urduSkriv' }
+      ]
+    },
+    {
+      id:'arabisk', ikon:'🗣️',
+      boker:[
+        { fil:'bok-arabisk', tittel:'Rawdat Al-Mutammim — روضة المتمم', niva:'Nivå 0 · barnehage', n:'arabiskRawda' },
+        { fil:null, tittel:'Kitab At-Tamhid — كتاب التمهيد', niva:'Nivå 1 · A1-Pre · Novice Low', n:'arabiskTamhid' },
+        { fil:null, tittel:'Kitab Al-Harf — كتاب الحرف', niva:'Nivå 2 · A1 · Novice Mid', n:'arabiskHarf', video:true }
+      ]
+    }
+  ];
+
+  const T = {
+    no:{
+      aar:'Skoleåret 2026/2027', tittel:'Læremidler', tilbake:'← Forsiden',
+      cta:'Meld på nå', fot:'Madina Skole · Hagelundveien 2b, 0963 Oslo',
+      lead:'Hvilke bøker barnet ditt faktisk åpner — fag for fag.',
+      intro:'Undervisningen i <b>islam</b>, <b>urdu</b>, <b>koranlesing</b> og <b>tajwid</b> følger <b>Misbah bokserien</b>. Den er utviklet i samarbeid med fagpersoner i Norge, skrevet på norsk, og delt inn etter tema og alderstrinn. <b>Arabisk</b> følger læreverket <b>Al-Mutammim</b>.<br><br>Bøkene er nivådelte. En elev som begynner uten forkunnskaper starter på nivå 1 — uansett hvor gammel hun er.',
+      fag:{
+        koran:{ h:'Koran og tajwid', p:'Fra bokstavene til flytende lesing.' },
+        islam:{ h:'Islam', p:'Tro, praksis og historie — på norsk.' },
+        urdu:{ h:'Urdu', p:'Lesing, skriving og ordforråd.' },
+        arabisk:{ h:'Arabisk', p:'Lesing, skriving og muntlig kommunikasjon.' }
+      },
+      bok:{
+        koranQaidah:'Tar eleven fra alfabetet og artikulasjonspunktene (makharij) til sammenhengende lesing, nivå for nivå. Hvert nivå avsluttes med øvelser.',
+        koranTajweed:'Reglene for hvordan Koranen leses — lengder, sammensmelting og stopp — forklart på norsk med eksempler fra teksten.',
+        islamHoved:'Seks bøker om tro, praksis og islamsk historie. Hver bok bygger på den forrige, med tema tilpasset alderstrinnet.',
+        islamDua:'Bønnene barnet bruker i hverdagen, med lyd via QR-kode i boka.',
+        islamHadith:'Tjue hadith med oppgaver som spør: hvordan bruker jeg dette i mitt eget liv?',
+        urduHoved:'Alfabetet, ord og enkle setninger — med bilder, dikt og oppgaver.',
+        urduSkriv:'Skrivebok i fem nivåer. Eleven trekker bokstavene, fargelegger og skriver selv.',
+        arabiskRawda:'Første møte med arabisk, for de yngste. Lek, farger og lyder — før bokstavene.',
+        arabiskTamhid:'Bokstavene og de første ordene, i to deler. Tilsvarer A1-Pre i det europeiske rammeverket (CEFR) og Novice Low hos ACTFL.',
+        arabiskHarf:'Lesing, skriving og enkle samtaler, i to deler. Tilsvarer A1 (CEFR) og Novice Mid (ACTFL).<br><br>Al-Mutammim er utviklet av dr. Muhammad Mutlaq etter over 30 års erfaring, brukes av over 150 utdanningsinstitusjoner i Europa og Nord-Amerika, og er koblet til CEFR og ACTFL. Det betyr at nivået barnet ditt står på kan sammenlignes med enhver annen språkopplæring — ikke bare med vår egen.'
+      },
+      video:'▶️ Se introduksjonsvideo om Al-Mutammim'
+    },
+    ar:{
+      aar:'العام الدراسي 2026/2027', tittel:'المناهج الدراسية', tilbake:'← الصفحة الرئيسية',
+      cta:'سجّل الآن', fot:'مدرسة مدينة · Hagelundveien 2b, 0963 Oslo',
+      lead:'الكتب التي سيفتحها طفلك فعلًا — مادة بمادة.',
+      intro:'تدريس <b>الإسلام</b> و<b>الأردية</b> و<b>القراءة القرآنية</b> و<b>التجويد</b> يتبع <b>سلسلة المصباح</b>، المطوَّرة بالتعاون مع مختصين في النرويج، والمكتوبة باللغة النرويجية، والمقسَّمة حسب الموضوع والمرحلة العمرية. و<b>العربية</b> تتبع منهج <b>المتمم</b>.<br><br>الكتب مقسَّمة بالمستويات. الطالب الذي يبدأ بلا معرفة سابقة يبدأ من المستوى الأول — مهما كان عمره.',
+      fag:{
+        koran:{ h:'القرآن والتجويد', p:'من الحروف إلى القراءة المتّصلة.' },
+        islam:{ h:'التربية الإسلامية', p:'العقيدة والعبادة والتاريخ — بالنرويجية.' },
+        urdu:{ h:'اللغة الأردية', p:'القراءة والكتابة والمفردات.' },
+        arabisk:{ h:'اللغة العربية', p:'القراءة والكتابة والمحادثة.' }
+      },
+      bok:{
+        koranQaidah:'تأخذ الطالب من الحروف ومخارجها إلى القراءة المتّصلة، مستوى بعد مستوى. وكل مستوى يُختم بتمارين.',
+        koranTajweed:'أحكام تلاوة القرآن — المدود والإدغام والوقف — مشروحة بالنرويجية بأمثلة من النص.',
+        islamHoved:'ستة كتب في العقيدة والعبادة والتاريخ الإسلامي. كل كتاب يبني على سابقه، بموضوعات تناسب المرحلة العمرية.',
+        islamDua:'الأدعية التي يستخدمها الطفل في يومه، مع تسجيل صوتي عبر رمز QR في الكتاب.',
+        islamHadith:'عشرون حديثًا مع تمارين تسأل: كيف أطبّق هذا في حياتي؟',
+        urduHoved:'الحروف والكلمات والجمل البسيطة — بالصور والأناشيد والتمارين.',
+        urduSkriv:'كرّاسة كتابة في خمسة مستويات. الطالب يتتبّع الحروف ويلوّن ويكتب بنفسه.',
+        arabiskRawda:'أول لقاء مع العربية، للأصغر سنًا. لعب وألوان وأصوات — قبل الحروف.',
+        arabiskTamhid:'الحروف والكلمات الأولى، في جزأين. يعادل A1-Pre في الإطار الأوروبي المرجعي (CEFR) وNovice Low لدى ACTFL.',
+        arabiskHarf:'القراءة والكتابة والمحادثات البسيطة، في جزأين. يعادل A1 (CEFR) وNovice Mid (ACTFL).<br><br>منهج المتمم من تأليف د. محمد مطلق، ثمرة أكثر من 30 عامًا من الخبرة، تعتمده أكثر من 150 مؤسسة تعليمية في أوروبا وأمريكا الشمالية، ومربوط بمعياري CEFR وACTFL. أي أن المستوى الذي يقف عنده طفلك يمكن مقارنته بأي تعليم لغوي آخر — لا بمقياسنا وحده.'
+      },
+      video:'▶️ شاهد الفيديو التعريفي عن منهج المتمم'
+    },
+    ur:{
+      aar:'تعلیمی سال 2026/2027', tittel:'نصاب', tilbake:'← مرکزی صفحہ',
+      cta:'ابھی رجسٹر کریں', fot:'مدینہ اسکول · Hagelundveien 2b, 0963 Oslo',
+      lead:'آپ کا بچہ اصل میں کون سی کتابیں کھولے گا — مضمون بہ مضمون۔',
+      intro:'<b>اسلام</b>، <b>اردو</b>، <b>قرآن کی تلاوت</b> اور <b>تجوید</b> کی تدریس <b>مصباح سیریز</b> کے مطابق ہے، جو ناروے میں ماہرین کے تعاون سے تیار ہوئی، نارویجن زبان میں لکھی گئی، اور موضوع اور عمر کے لحاظ سے مرتب کی گئی ہے۔ <b>عربی</b> <b>المتمم</b> نصاب کے مطابق ہے۔<br><br>کتابیں سطحوں میں تقسیم ہیں۔ جو طالب علم بغیر پیشگی معلومات کے شروع کرتا ہے وہ پہلی سطح سے شروع کرے گا — چاہے اس کی عمر کچھ بھی ہو۔',
+      fag:{
+        koran:{ h:'قرآن اور تجوید', p:'حروف سے روانی سے پڑھنے تک۔' },
+        islam:{ h:'اسلامی تعلیم', p:'عقیدہ، عبادت اور تاریخ — نارویجن زبان میں۔' },
+        urdu:{ h:'اردو', p:'پڑھنا، لکھنا اور الفاظ۔' },
+        arabisk:{ h:'عربی', p:'پڑھنا، لکھنا اور بول چال۔' }
+      },
+      bok:{
+        koranQaidah:'طالب علم کو حروف اور مخارج سے مسلسل پڑھنے تک، سطح بہ سطح لے جاتی ہے۔ ہر سطح مشقوں پر ختم ہوتی ہے۔',
+        koranTajweed:'قرآن پڑھنے کے اصول — مدات، ادغام اور وقف — نارویجن میں متن سے مثالوں کے ساتھ سمجھائے گئے۔',
+        islamHoved:'عقیدہ، عبادت اور اسلامی تاریخ پر چھ کتابیں۔ ہر کتاب پچھلی پر بنتی ہے، عمر کے مطابق موضوعات کے ساتھ۔',
+        islamDua:'وہ دعائیں جو بچہ روزمرہ استعمال کرتا ہے، کتاب میں QR کوڈ کے ذریعے آواز کے ساتھ۔',
+        islamHadith:'بیس احادیث، مشقوں کے ساتھ جو پوچھتی ہیں: میں اسے اپنی زندگی میں کیسے استعمال کروں؟',
+        urduHoved:'حروف، الفاظ اور آسان جملے — تصاویر، نظموں اور مشقوں کے ساتھ۔',
+        urduSkriv:'پانچ سطحوں میں لکھائی کی کتاب۔ طالب علم حروف پر لکیر کھینچتا، رنگ بھرتا اور خود لکھتا ہے۔',
+        arabiskRawda:'سب سے چھوٹے بچوں کے لیے عربی سے پہلا تعارف۔ کھیل، رنگ اور آوازیں — حروف سے پہلے۔',
+        arabiskTamhid:'حروف اور پہلے الفاظ، دو حصوں میں۔ یورپی معیار (CEFR) میں A1-Pre اور ACTFL میں Novice Low کے برابر۔',
+        arabiskHarf:'پڑھنا، لکھنا اور آسان گفتگو، دو حصوں میں۔ A1 (CEFR) اور Novice Mid (ACTFL) کے برابر۔<br><br>المتمم ڈاکٹر محمد مطلق کا تیار کردہ ہے، 30 سال سے زیادہ تجربے کا نتیجہ، یورپ اور شمالی امریکہ کے 150 سے زائد اداروں میں رائج، اور CEFR اور ACTFL سے منسلک۔ یعنی آپ کے بچے کی سطح کا موازنہ کسی بھی دوسری زبان کی تعلیم سے کیا جا سکتا ہے۔'
+      },
+      video:'▶️ المتمم کے تعارفی ویڈیو دیکھیں'
+    }
+  };
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  function settSprak(l){
+    const t = T[l] || T.no;
+    const rtl = (l === 'ar' || l === 'ur');
+    document.getElementById('htmlRoot').setAttribute('dir', rtl ? 'rtl' : 'ltr');
+    document.getElementById('htmlRoot').setAttribute('lang', l);
+    document.querySelectorAll('.sprak button').forEach(b =>
+      b.classList.toggle('aktiv', b.dataset.l === l));
+
+    document.getElementById('tAar').textContent = t.aar;
+    document.getElementById('tTittel').textContent = t.tittel;
+    document.getElementById('tLead').textContent = t.lead;
+    document.getElementById('tTilbake').textContent = t.tilbake;
+    document.getElementById('tCta').textContent = t.cta;
+    document.getElementById('tFot').textContent = t.fot;
+    document.title = t.tittel + ' — Madina Skole';
+
+    document.getElementById('innhold').innerHTML =
+      `<div class="intro">${t.intro}</div>` +
+      FAG.map(f => `
+        <section class="fag">
+          <div class="fag-hode">
+            <h2>${f.ikon} ${esc(t.fag[f.id].h)}</h2>
+            <p>${esc(t.fag[f.id].p)}</p>
+          </div>
+          ${f.boker.map(b => `
+            <div class="bok">
+              ${b.fil ? `<picture>
+                  <source srcset="${b.fil}.webp" type="image/webp">
+                  <img src="${b.fil}.jpg" alt="${esc(b.tittel)}" loading="lazy" decoding="async">
+                </picture>`
+                : `<div class="ingen-bilde" aria-hidden="true">📕</div>`}
+              <div class="bok-tekst">
+                <h3>${esc(b.tittel)}</h3>
+                ${b.niva ? `<div class="niva">${esc(b.niva)}</div>` : ''}
+                <p>${t.bok[b.n]}</p>
+                ${b.video ? `<p style="margin-top:9px;"><a href="${VIDEO}" target="_blank" rel="noopener">${esc(t.video)}</a></p>` : ''}
+              </div>
+            </div>`).join('')}
+        </section>`).join('');
+  }
+
+  // Språket huskes fra forsiden. En familie som byttet til arabisk der,
+  // skal ikke måtte bytte om igjen her.
+  let start = 'no';
+  try{
+    const lagret = localStorage.getItem('madina_lang');
+    if(lagret === 'ar' || lagret === 'ur') start = lagret;
+  }catch(e){ /* privat modus — vi faller tilbake til norsk */ }
+  settSprak(start);
+</script>
+</body>
+</html>
