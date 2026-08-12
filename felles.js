@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 19:12:15 */
+/* SIST-ENDRET: 2026-08-12 19:25:42 */
 // ═══════════════════════════════════════════════════════════════════
 // FELLES — toppbar, bunn, språkbytte og alle tegnefunksjoner.
 //
@@ -142,7 +142,7 @@ function settHtml(id, html){
     ]) + rad([
       ['/om-oss',    t.nav.who],
       ['/team',      t.nav.team],
-      ['/#portals',  t.nav.portals]
+      ['/portaler',  t.nav.portals]
     ]);
   }
 
