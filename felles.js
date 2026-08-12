@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 19:25:42 */
+/* SIST-ENDRET: 2026-08-12 20:49:15 */
 // ═══════════════════════════════════════════════════════════════════
 // FELLES — toppbar, bunn, språkbytte og alle tegnefunksjoner.
 //
@@ -237,12 +237,18 @@ function switchLang(lang){
   settHtml('quickFacts', quickFactsHtml(t.quickFacts));
   sett('heroBtnPrimary', t.heroBtnPrimary);
   sett('heroBtnOutline', t.heroBtnOutline);
+  // 🔴 Beløpene her sto skrevet inn i innhold.js: «2 750 kr / semester»,
+  // «1 500 kr per semester», «450 kr per år», «500 kr». De var riktige
+  // den dagen de ble skrevet. Endrer administrasjonen en pris i panelet,
+  // blir de stående — og ingen ting sier fra. Nøyaktig samme mekanisme
+  // som tok prisene sist. Nå leses de fra basen, som alt annet.
   settHtml('tuitionBox', t.tuitionTag ? `
       <div class="tag">${t.tuitionTag}</div>
-      <div class="amt">${t.tuitionAmt}</div>
+      <div class="amt">${(typeof window.levendeAvgift === 'function')
+        ? window.levendeAvgift() : '…'}</div>
       <div class="sub">${t.tuitionSub}</div>
-      <ul>${(t.tuitionList || []).map(i => '<li>' + i + '</li>').join('')}</ul>
-      <a class="btn btn-primary" href="/påmelding">${t.tuitionBtn}</a>` : '');
+      <a class="btn btn-primary" href="/påmelding">${t.tuitionBtn}</a>
+      <div style="margin-top:14px;"><a class="btn btn-outline" href="/priser">${t.tuitionMer}</a></div>` : '');
 
   // ---- avsnitt: tegnes bare der de finnes ----
   sett('regEyebrow', t.regEyebrow); sett('regTitle', t.regTitle); sett('regDesc', t.regDesc);
@@ -260,6 +266,8 @@ function switchLang(lang){
   sett('prisEyebrow', t.prisEyebrow); sett('prisTitle', t.prisTitle); sett('prisDesc', t.prisDesc);
   settHtml('prisCards', prisKortHtml(t));
   settHtml('prisNoter', prisNoterHtml(t));
+  settHtml('soskenKort', (typeof window.levendeSosken === 'function')
+    ? window.levendeSosken() : '');
   tegnMedlemskort(t);
 
   sett('whoEyebrow', t.whoEyebrow); sett('whoTitle', t.whoTitle); sett('whoDesc', t.whoDesc);
@@ -288,16 +296,16 @@ function switchLang(lang){
 // selv når de ekte tallene er inne.
 function prisKortHtml(t){
   return (t.prisKort || []).map(k => {
-    const pris = (typeof window.levendePris === 'function')
-      ? window.levendePris(k.kode)
-      : { belop: '…', per: '' };
+    const innmat = (typeof window.levendePris === 'function')
+      ? window.levendePris(k.kode) : '';
     return `
-      <div class="pris-kort">
-        <div class="pris-navn">${k.navn}</div>
-        <div class="pris-dag">${k.dag}</div>
-        <div class="pris-belop">${pris.belop}</div>
-        <div class="pris-per">${pris.per}</div>
-        <div class="pris-info">${k.info}</div>
+      <div class="pris-kort" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 22px 4px;">
+          <div class="pris-navn">${k.navn}</div>
+          <div class="pris-dag">${k.dag}</div>
+        </div>
+        ${innmat}
+        <div class="pris-info" style="margin:0; padding:14px 22px 20px;">${k.info}</div>
       </div>`;
   }).join('');
 }
