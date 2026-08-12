@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 16:31:31 */
+/* SIST-ENDRET: 2026-08-12 20:50:20 */
 // ═══════════════════════════════════════════════════════════════════
 // LEVENDE PRISER — leses fra basen, ikke fra teksten.
 //
@@ -30,89 +30,136 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 
   const kr = v => Math.round(v).toLocaleString('no-NO');
 
+  // Etikettene for alle fire språk ett sted. Sto de som en kjede av
+  // ternærer, måtte hvert nytt språk flettes inn tre steder i denne
+  // filen — og det fjerde ville før eller siden blitt glemt ett av dem.
+  // Ordene er skjemaets egne. Familien møter dem to steder og skal
+  // kjenne igjen de samme uttrykkene begge steder.
+  const ETIKETT = {
+    no: { henter:'Henter…', ukjent:'Prisen oppgis ved opptak.',
+          ordinar:'Ordinær pris', medlem:'★ Medlemspris',
+          perTermin:'kr per termin', terminer:'terminer',
+          perMnd:'kr per måned', maneder:'måneder',
+          sparer:(b)=>`Du sparer ${b} kr i året`,
+          boker:(b)=>`Bøker og materiell: <strong>${b} kr per år</strong> i tillegg.`,
+          bokerUkjent:'Bøker og materiell kommer i tillegg.',
+          sosken:'Søskenrabatt', soskenSub:'For familier som ikke er medlemmer',
+          barn1:'1. barn', barn2:'2. barn', barn3:'3. barn +', fullpris:'Full pris',
+          soskenNote:'Rabatten legges på det dyreste programmet, slik at familien sparer mest.<br><br><strong>Søskenrabatt og medlemspris kombineres ikke.</strong> Medlemsprisen er allerede den laveste — uansett hvor mange barn familien har, og uansett hvilket program.',
+          depositum:(b,d)=>`<b>Depositum:</b> Ved tilbud om plass betales ${b} kr innen ${d} dager. Beløpet trekkes fra totalen.` },
+    ar: { henter:'جارٍ التحميل…', ukjent:'يُحدَّد السعر عند القبول.',
+          ordinar:'السعر العادي', medlem:'★ سعر العضو',
+          perTermin:'kr لكل قسط', terminer:'قسطين',
+          perMnd:'kr شهريًا', maneder:'شهرًا',
+          sparer:(b)=>`توفّر ${b} kr في السنة`,
+          boker:(b)=>`الكتب والمواد: <strong>${b} kr سنويًا</strong> إضافة إلى ما سبق.`,
+          bokerUkjent:'الكتب والمواد غير مشمولة.',
+          sosken:'خصم الإخوة', soskenSub:'للعائلات غير الأعضاء',
+          barn1:'الطفل الأول', barn2:'الطفل الثاني', barn3:'الثالث فما بعده', fullpris:'السعر الكامل',
+          soskenNote:'يُطبَّق الخصم على البرنامج الأعلى سعرًا، لتوفّر العائلة أكبر قدر.<br><br><strong>خصم الإخوة وسعر العضو لا يُجمعان.</strong> سعر العضو هو الأقل أصلًا — مهما كان عدد الأطفال ومهما كان البرنامج.',
+          depositum:(b,d)=>`<b>العربون:</b> عند عرض المقعد يُدفع ${b} kr خلال ${d} أيام، ويُخصم من الإجمالي.` },
+    ur: { henter:'لوڈ ہو رہا ہے…', ukjent:'قیمت داخلے پر بتائی جائے گی۔',
+          ordinar:'عام قیمت', medlem:'★ رکن قیمت',
+          perTermin:'kr فی قسط', terminer:'اقساط',
+          perMnd:'kr ماہانہ', maneder:'ماہ',
+          sparer:(b)=>`آپ سال میں ${b} kr بچاتے ہیں`,
+          boker:(b)=>`کتابیں اور مواد: <strong>${b} kr سالانہ</strong> اضافی۔`,
+          bokerUkjent:'کتابیں اور مواد شامل نہیں۔',
+          sosken:'بہن بھائی رعایت', soskenSub:'غیر رکن خاندانوں کے لیے',
+          barn1:'پہلا بچہ', barn2:'دوسرا بچہ', barn3:'تیسرا اور آگے', fullpris:'پوری قیمت',
+          soskenNote:'رعایت مہنگے پروگرام پر لاگو ہوتی ہے تاکہ خاندان زیادہ سے زیادہ بچائے۔<br><br><strong>بہن بھائی رعایت اور رکن قیمت اکٹھی نہیں ہوتیں۔</strong> رکن قیمت پہلے ہی سب سے کم ہے۔',
+          depositum:(b,d)=>`<b>ڈپازٹ:</b> جگہ کی پیشکش پر ${d} دن کے اندر ${b} kr ادا کیے جاتے ہیں، جو کل رقم سے منہا ہوتے ہیں۔` }
+  };
+
   // Kalles fra tegnefunksjonen. Er prisene ikke lest ennå, sier den det
   // — i stedet for å vise et tall som kanskje ikke stemmer.
   window.levendePris = function(kode){
     const P = window.__priser;
-    const tekst = (window.__sprak === 'ar')
-      ? { henter: 'جارٍ التحميل…', ukjent: 'يُحدَّد عند القبول', per: 'سنويًا', medlem: 'للأعضاء' }
-      : (window.__sprak === 'ur')
-      ? { henter: 'لوڈ ہو رہا ہے…', ukjent: 'داخلے پر بتائی جائے گی', per: 'سالانہ', medlem: 'اراکین کے لیے' }
-      : { henter: 'Henter…', ukjent: 'Oppgis ved opptak', per: 'per år', medlem: 'for medlemmer' };
-    if(!P) return { belop: tekst.henter, per: '' };
+    const E = ETIKETT[window.__sprak] || ETIKETT.no;
+    if(!P) return `<div class="pk-fot" style="border:0;">${E.henter}</div>`;
+
     const p = P.programmer[PROGRAM_NAVN[kode]];
-    if(!p || (!p.aar && !p.mnd)) return { belop: tekst.ukjent, per: '' };
+    if(!p || (!p.aar && !p.mnd))
+      return `<div class="pk-fot" style="border:0;">${E.ukjent}</div>`;
+
+    // Nøyaktig samme regnestykke som i skjemaet: årsprisen delt på
+    // antall terminer. Ikke et annet tall — det SAMME tallet.
+    const perTermin = P.terminer > 1 ? Math.round(p.aar / P.terminer) : p.aar;
     const medlemAar = p.mnd * p.maneder;
-    // Begge prisene vises. Familien skal se hva medlemskapet er verdt,
-    // ikke bare ett tall uten sammenligning.
-    return {
-      belop: kr(p.aar) + ' kr',
-      per: tekst.per + (medlemAar > 0 && medlemAar < p.aar
-        ? ' · ' + kr(medlemAar) + ' kr ' + tekst.medlem : '')
-    };
+    const sparer = p.aar - medlemAar;
+    const mat = (p.materiell === null || p.materiell === undefined)
+      ? (P.materiell || 0) : p.materiell;
+
+    return `
+      <div class="pk-priser">
+        <div class="pk-pris">
+          <div class="pk-etikett">${E.ordinar}</div>
+          <div class="pk-tall">${kr(perTermin)}</div>
+          <div class="pk-enhet">${E.perTermin}${P.terminer > 1 ? ' · ' + P.terminer + ' ' + E.terminer : ''}</div>
+        </div>
+        ${p.mnd ? `
+        <div class="pk-pris medlem">
+          <div class="pk-etikett">${E.medlem}</div>
+          <div class="pk-tall">${kr(p.mnd)}</div>
+          <div class="pk-enhet">${E.perMnd} · ${p.maneder} ${E.maneder}</div>
+          ${sparer > 0 ? `<div class="pk-spar">${E.sparer(kr(sparer))}</div>` : ''}
+        </div>` : ''}
+      </div>
+      <div class="pk-fot">${mat > 0 ? E.boker(kr(mat)) : E.bokerUkjent}</div>`;
   };
 
-  // Notene sa «satsene er ikke fastsatt ennå» — men de ER fastsatt, og
-  // materiellavgiften er ulik per program. Nå skrives de fra basen.
+  // Avgiftsboksen på forsiden. Viser terminprisen for hovedprogrammet —
+  // det samme tallet skjemaet viser, hentet fra samme sted.
+  window.levendeAvgift = function(){
+    const P = window.__priser;
+    const E = ETIKETT[window.__sprak] || ETIKETT.no;
+    if(!P) return E.henter;
+    const p = P.programmer[PROGRAM_NAVN.hoved];
+    if(!p || !p.aar) return E.ukjent;
+    const perTermin = P.terminer > 1 ? Math.round(p.aar / P.terminer) : p.aar;
+    return kr(perTermin) + ' ' + E.perTermin.replace(/^kr\s*/, 'kr ');
+  };
+
+  // Søskenrabatten er et eget kort i skjemaet, ikke en setning blant
+  // andre. Den gjelder på tvers av programmene og fortjener samme plass.
+  window.levendeSosken = function(){
+    const P = window.__priser;
+    const E = ETIKETT[window.__sprak] || ETIKETT.no;
+    if(!P || (!P.rabatt2 && !P.rabatt3)) return '';
+    return `
+      <div class="sosken">
+        <h3>${E.sosken}</h3>
+        <div class="s-sub">${E.soskenSub}</div>
+        <div class="s-rad">
+          <div class="s-boks"><div class="s-barn">${E.barn1}</div><div class="s-pst s-full">${E.fullpris}</div></div>
+          <div class="s-boks"><div class="s-barn">${E.barn2}</div><div class="s-pst">−${P.rabatt2} %</div></div>
+          <div class="s-boks"><div class="s-barn">${E.barn3}</div><div class="s-pst">−${P.rabatt3} %</div></div>
+        </div>
+        <div class="s-note">${E.soskenNote}</div>
+      </div>`;
+  };
+
   window.levendeNoter = function(t){
     const P = window.__priser;
+    const E = ETIKETT[window.__sprak] || ETIKETT.no;
+    // De innskrevne notene i innhold.js fjernes: rabatt, bøker, termin
+    // og depositum kommer alle fra basen nå. Blir de stående, står de
+    // samme opplysningen to steder — og det ene stedet er alltid det
+    // som blir glemt.
     const orig = (t.prisNoter || []).filter(x =>
-      !/Rabatter|التخفيضات|رعایتیں|Bøker|الكتب|کتابیں|Depositum|العربون|ڈپازٹ/.test(x));
+      !/Rabatter|التخفيضات|رعایتیں|Bøker|الكتب|کتابیں|Depositum|العربون|ڈپازٹ|Betaling|الدفع|ادائیگی/.test(x));
     if(!P) return orig;
-    const ar = window.__sprak === 'ar', ur = window.__sprak === 'ur';
+
     const ut = [];
+    // Rabatt og bøker står nå i selve priskortet og i søskenkortet,
+    // der de hører hjemme. Her blir bare depositumet igjen — det er
+    // en frist, ikke en pris, og hører ikke inne i kortet.
+    if(P.depositum > 0)
+      ut.push(E.depositum(kr(P.depositum), P.depositumFrist || 5));
 
-    if(P.rabatt2 || P.rabatt3){
-      ut.push(ar
-        ? `<b>التخفيضات:</b> خصم الإخوة ${P.rabatt2}% للطفل الثاني و${P.rabatt3}% للثالث فما بعده — لغير الأعضاء. يُطبَّق الخصم على البرنامج الأعلى سعرًا. سعر العضو والخصم لا يُجمعان.`
-        : ur
-        ? `<b>رعایتیں:</b> دوسرے بچے کے لیے ${P.rabatt2}% اور تیسرے سے ${P.rabatt3}% — غیر اراکین کے لیے۔ رعایت مہنگے پروگرام پر لاگو ہوتی ہے۔`
-        : `<b>Rabatter:</b> Søskenrabatt ${P.rabatt2} % for barn nummer to og ${P.rabatt3} % fra og med det tredje — for familier som ikke er medlemmer. Rabatten legges på det dyreste programmet. Medlemspris og søskenrabatt kombineres ikke.`);
-    }
-
-    // Materiellavgiften kan være ulik per program — Madinabarn og det
-    // integrerte programmet bruker ikke de samme bøkene.
-    const mats = Object.entries(PROGRAM_NAVN).map(([k, navn]) => {
-      const p = P.programmer[navn];
-      const m = (p && p.materiell !== null && p.materiell !== undefined) ? p.materiell : P.materiell;
-      return { navn, m };
-    }).filter(x => x.m > 0);
-    const like = mats.length && mats.every(x => x.m === mats[0].m);
-    if(mats.length){
-      ut.push(ar
-        ? (like ? `<b>الكتب:</b> المواد الدراسية إضافية وتكلفتها ${kr(mats[0].m)} كرونة سنويًا.`
-                : `<b>الكتب:</b> ` + mats.map(x => `${x.navn}: ${kr(x.m)} كرونة`).join(' · '))
-        : ur
-        ? `<b>کتابیں:</b> ${kr(mats[0].m)} کرونر سالانہ۔`
-        : (like ? `<b>Bøker:</b> Skolemateriell kommer i tillegg og koster ${kr(mats[0].m)} kr per år.`
-                : `<b>Bøker:</b> ` + mats.map(x => `${x.navn}: ${kr(x.m)} kr`).join(' · ')));
-    }
-
-    // Betalingen deles i terminer. Sto det ikke her, ville tallet i
-    // skjemaet sett ut som en annen pris i stedet for samme pris delt.
-    if(P.terminer > 1){
-      const perTermin = Object.values(PROGRAM_NAVN)
-        .map(n => P.programmer[n]).filter(p => p && p.aar);
-      const eks = perTermin.length
-        ? ' ' + perTermin.map(p => kr(Math.round(p.aar / P.terminer)) + ' kr').join(' / ') +
-          (ar ? ' لكل قسط.' : ur ? ' فی قسط۔' : ' per termin.')
-        : '';
-      ut.push(ar
-        ? `<b>الدفع:</b> المبلغ يُقسَّم على ${P.terminer} أقساط —${eks}`
-        : ur
-        ? `<b>ادائیگی:</b> رقم ${P.terminer} اقساط میں تقسیم ہوتی ہے —${eks}`
-        : `<b>Betaling:</b> Beløpet deles i ${P.terminer} terminer —${eks}`);
-    }
-
-    if(P.depositum > 0){
-      ut.push(ar
-        ? `<b>العربون:</b> عند قبول الطالب يُدفع ${kr(P.depositum)} كرونة خلال ${P.depositumFrist || 5} أيام، ويُخصم من المبلغ الإجمالي.`
-        : ur
-        ? `<b>ڈپازٹ:</b> ${kr(P.depositum)} کرونر، ${P.depositumFrist || 5} دن کے اندر۔`
-        : `<b>Depositum:</b> Ved tilbud om plass betales ${kr(P.depositum)} kr innen ${P.depositumFrist || 5} dager. Beløpet trekkes fra totalen.`);
-    }
     return [...ut, ...orig];
   };
+
 
   async function lastPriser(){
     try{
