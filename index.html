@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 05:13:09 -->
+<!-- SIST-ENDRET: 2026-08-12 05:18:14 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -769,10 +769,10 @@
                                            ar:'طفل يكتب حروفًا عربية في كراسة بقلم أحمر',
                                            ur:'ایک بچہ سرخ پنسل سے کاپی میں عربی حروف لکھ رہا ہے' } }
   };
-  function bildeHtml(nokkel){
+  function bildeHtml(nokkel, lang){
     const b = KORTBILDER[nokkel];
     if(!b) return '';
-    const alt = (b.alt[currentLang] || b.alt.no).replace(/"/g, '&quot;');
+    const alt = (b.alt[lang] || b.alt.no).replace(/"/g, '&quot;');
     // <picture> gir webp der nettleseren støtter det og jpg ellers.
     // loading=lazy: bildene ligger langt nede på siden, og skal ikke
     // stjele båndbredde fra det familien leser først.
@@ -782,9 +782,9 @@
            loading="lazy" decoding="async" width="1200" height="800">
     </picture>`;
   }
-  function cardsHtml(list){
+  function cardsHtml(list, lang){
     return list.map(c => `<div class="card${c.bilde ? ' med-bilde' : ''}">${
-      c.bilde ? bildeHtml(c.bilde) : `<div class="ic">${c.ic}</div>`
+      c.bilde ? bildeHtml(c.bilde, lang) : `<div class="ic">${c.ic}</div>`
     }<div class="kort-tekst"><h3>${c.h}</h3><p>${c.p}</p>${c.video ? `<p style="margin-top:10px;"><a href="${MUTAMMIM_VIDEO_URL}" target="_blank" rel="noopener" style="color:var(--emerald-d); text-decoration:none; font-weight:700;">${c.video}</a></p>` : ''}</div></div>`).join('');
   }
   function stepsHtml(list){ return list.map((s,i) => `<div class="step-card"><div class="step-num">${i+1}</div><h3>${s.h}</h3><p>${s.p}</p></div>`).join(''); }
@@ -943,7 +943,7 @@
     document.getElementById('programEyebrow').textContent = t.programEyebrow;
     document.getElementById('programTitle').textContent = t.programTitle;
     document.getElementById('programDesc').textContent = t.programDesc;
-    document.getElementById('programCards').innerHTML = cardsHtml(t.programCards);
+    document.getElementById('programCards').innerHTML = cardsHtml(t.programCards, lang);
     // Alt-teksten på bygget følger språket. En skjermleser på arabisk
     // skal ikke lese en norsk setning.
     const sted = document.getElementById('stedBilde');
@@ -951,7 +951,7 @@
       no:'Inngangen til Madina Institute og Senter Oslo i Hagelundveien 2b',
       ar:'مدخل معهد ومركز مدينة أوسلو في هاغلوندفايين 2b',
       ur:'ہیگلنڈوائن 2b میں مدینہ انسٹی ٹیوٹ اور سینٹر اوسلو کا داخلی دروازہ'
-    })[currentLang] || 'Madina Institute og Senter Oslo';
+    })[lang] || 'Madina Institute og Senter Oslo';
 
     document.getElementById('prisEyebrow').textContent = t.prisEyebrow;
     document.getElementById('prisTitle').textContent = t.prisTitle;
