@@ -54,8 +54,24 @@
     ],
     "rewrites": [
       {
+        "source": "/datoer",
+        "destination": "/datoer.html"
+      },
+      {
+        "source": "/program",
+        "destination": "/program.html"
+      },
+      {
         "source": "/priser",
         "destination": "/priser.html"
+      },
+      {
+        "source": "/om-oss",
+        "destination": "/om-oss.html"
+      },
+      {
+        "source": "/team",
+        "destination": "/team.html"
       },
       {
         "source": "/påmelding",
