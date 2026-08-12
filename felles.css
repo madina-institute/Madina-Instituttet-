@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 20:48:05 */
+/* SIST-ENDRET: 2026-08-12 21:41:26 */
 
   /* Instituttets offisielle palett, hentet fra Madina Institute sitt eget
      materiell. Blå er hovedfargen, men den står ikke alene: marineblå
@@ -101,7 +101,13 @@
      leses som to ulike systemer — det er én rad til, ikke noe annet. */
   .lang-switch-inner{
     display:flex; background:#fff; border:1px solid var(--line);
-    border-radius:9px; overflow:hidden; width:100%; max-width:340px;
+    border-radius:9px; overflow:hidden; width:100%; max-width:400px;
+  }
+  /* Fire språk, ikke tre. På de smaleste telefonene blir «English» og
+     «العربية» trange ved siden av hverandre — da faller skriften ett
+     hakk heller enn at ordene kuttes midt i. */
+  @media (max-width:400px){
+    .lang-switch-inner button{ font-size:10px; padding:8px 2px; }
   }
   .lang-switch-inner button{
     flex:1 1 0; background:transparent; border:none; cursor:pointer;
