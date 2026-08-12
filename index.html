@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 04:35:50 -->
+<!-- SIST-ENDRET: 2026-08-12 05:00:27 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -440,8 +440,8 @@
          viser HVOR. En familie som skal komme lørdag morgen kjenner igjen
          døra fra dette bildet — det er hele jobben det gjør. -->
     <picture>
-      <source srcset="bilder/moske.webp" type="image/webp">
-      <img class="sted-bilde" src="bilder/moske.jpg" id="stedBilde"
+      <source srcset="moske.webp" type="image/webp">
+      <img class="sted-bilde" src="moske.jpg" id="stedBilde"
            alt="Inngangen til Madina Institute og Senter Oslo i Hagelundveien 2b"
            loading="lazy" decoding="async" width="1320" height="802">
     </picture>
@@ -768,8 +768,8 @@
     // loading=lazy: bildene ligger langt nede på siden, og skal ikke
     // stjele båndbredde fra det familien leser først.
     return `<picture>
-      <source srcset="bilder/${b.fil}.webp" type="image/webp">
-      <img class="kort-bilde" src="bilder/${b.fil}.jpg" alt="${alt}"
+      <source srcset="${b.fil}.webp" type="image/webp">
+      <img class="kort-bilde" src="${b.fil}${b.fil === 'koranstudier' ? '.jpeg' : '.jpg'}" alt="${alt}"
            loading="lazy" decoding="async" width="1200" height="800">
     </picture>`;
   }
