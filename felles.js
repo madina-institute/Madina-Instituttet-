@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 21:42:48 */
+/* SIST-ENDRET: 2026-08-13 14:18:06 */
 // ═══════════════════════════════════════════════════════════════════
 // FELLES — toppbar, bunn, språkbytte og alle tegnefunksjoner.
 //
@@ -230,9 +230,15 @@ function switchLang(lang){
   // Sidetittelen står i innhold.js, ikke i <title>. En underside setter
   // sin egen i HTML-en og har ingen 'pageTitle' — da hopper sett() over.
   sett('pageTitle', t.pageTitle);
-  sett('heroBadge', t.heroBadge);
+  // Panelet kan overstyre disse to. Er feltet ikke satt, gjelder filen —
+  // derfor `??` og ikke `||`: en tom streng fra panelet er et VALG om at
+  // det skal stå tomt, mens «ikke satt» skal falle tilbake til filen.
+  const N = window.__nettsted || {};
+  sett('heroBadge', (N.badge && N.badge[lang]) ?? t.heroBadge);
+  const badge = document.getElementById('heroBadge');
+  if(badge) badge.style.display = (N.visBadge === false) ? 'none' : '';
   sett('heroTitle', t.heroTitle);
-  sett('heroYear', t.heroYear);
+  sett('heroYear', N.skolear ? String(N.skolear) : t.heroYear);
   sett('heroLead', t.heroLead);
   settHtml('quickFacts', quickFactsHtml(t.quickFacts));
   sett('heroBtnPrimary', t.heroBtnPrimary);
