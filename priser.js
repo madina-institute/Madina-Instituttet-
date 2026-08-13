@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-12 21:43:46 */
+/* SIST-ENDRET: 2026-08-13 14:18:50 */
 // ═══════════════════════════════════════════════════════════════════
 // LEVENDE PRISER — leses fra basen, ikke fra teksten.
 //
@@ -197,6 +197,30 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
     } catch(err){
       console.error('Kunne ikke hente priser', err);
       window.__priser = null;   // ingen pris er bedre enn feil pris
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // REDIGERBAR TEKST — settings/nettsted
+    //
+    // Ett dokument med de få setningene som faktisk endrer seg i løpet
+    // av et år. De redigeres i Firebase Console og slår gjennom uten at
+    // noe publiseres.
+    //
+    // 🔴 Bare de foranderlige. Resten av teksten blir i innhold.js, for
+    // om ALT lå i basen ville én mislykket lesing gitt et nettsted uten
+    // ord. Her er det motsatt: feiler lesingen, står teksten fra filen —
+    // som er riktig helt til noen endrer den i panelet.
+    //
+    // Felt (alle valgfrie — utelatt felt betyr «bruk filen»):
+    //   skolear   : "2027/2028"        — én streng, alle språk
+    //   badge     : { no, en, ar, ur } — pillen øverst
+    //   visBadge  : false               — skjuler pillen helt
+    // ═══════════════════════════════════════════════════════════════
+    try{
+      const sn = await getDoc(doc(db, 'settings', 'nettsted'));
+      window.__nettsted = sn.exists() ? (sn.data() || {}) : {};
+    } catch(e){
+      window.__nettsted = {};   // finnes ikke ennå, eller ikke lesbar
     }
     // Tegn på nytt med de ekte tallene.
     if(typeof window.__tegnAlt === 'function') window.__tegnAlt();
