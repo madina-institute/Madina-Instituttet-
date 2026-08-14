@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-09 00:10:45 -->
+<!-- SIST-ENDRET: 2026-08-15 00:23:43 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -88,6 +88,25 @@
     margin-top:9px; min-height:14px;
   }
   #seksjonTopp{ margin-bottom:12px; }
+
+  .tid-liste{ margin-top:14px; border-top:1px solid var(--line); }
+  .tid-rad{
+    display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+    padding:10px 2px; border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  .tid-fil{
+    font-family:ui-monospace,Menlo,monospace; font-size:12.5px; color:var(--ink);
+    flex:1 1 150px; word-break:break-all;
+  }
+  .tid-nar{
+    font-size:12.5px; color:#4a5a62; text-align:end; white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  /* Eldre enn en uke merkes — ikke som feil, men fordi det er de filene
+     man lettest tror man har den nyeste utgaven av. */
+  .tid-nar.gammel{ color:#8a6d1d; }
+  .tid-alder{ display:block; font-size:11px; color:#8a9a90; margin-top:2px; }
+  .tid-ukjent{ font-size:12px; color:#a03028; }
 
   .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:10px 12px; border-radius:6px; display:none;}
   .status.show{display:block;}
@@ -238,6 +257,34 @@
       <div class="sub">Pakker alle tekstfilene i repoet, sammen med sammendraget, i ett arkiv — klart til å legges ved i en ny samtale med Claude.</div>
       <button class="btn btn-primary" id="altBtn" onclick="lastNedAlt()">📦 Last ned hele prosjektet</button>
       <div class="status" id="altStatus" style="white-space:pre-wrap;"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         SISTE OPPDATERINGER
+
+         Svarer på ett spørsmål: når ble hver fil sist publisert?
+
+         Uten dette begynner hver samtale med gjetting — er filen jeg
+         sitter med nyere enn den som ligger ute, eller eldre? 13. august
+         gikk en halvtime med til nettopp det, og en fil ble nesten
+         skrevet over med en to dager gammel utgave.
+
+         Tidspunktene hentes fra commit-historikken, ikke fra
+         SIST-ENDRET-stempelet i filen: stempelet sier når innholdet ble
+         laget, historikken sier når det faktisk ble lagt ut. Det er som
+         regel det samme, men når det ikke er det, er det historikken som
+         gjelder.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="card" data-seksjon="arkiv">
+      <h2>🕒 Siste oppdateringer</h2>
+      <div class="sub">
+        Når hver fil sist ble publisert. Kopier listen inn i en ny samtale
+        med Claude, så vet han med én gang hvilke filer han har en eldre
+        utgave av — og hvilke han ikke skal røre.
+      </div>
+      <button class="btn btn-primary" id="tidBtn" onclick="visSisteOppdateringer()">🕒 Hent tidspunktene</button>
+      <div class="status" id="tidStatus" style="white-space:pre-wrap;"></div>
+      <div id="tidListe"></div>
     </div>
 
     <div class="card" data-seksjon="en">
@@ -1504,6 +1551,155 @@
     for (const d of deler) { ut.set(d, p); p += d.length; }
     return ut;
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SISTE OPPDATERINGER
+  //
+  // Én linje per fil: når ble den sist publisert, og av hvem.
+  //
+  // Tidspunktet hentes fra commit-historikken (/commits?path=...), ikke
+  // fra SIST-ENDRET-stempelet inne i filen. Stempelet sier når innholdet
+  // ble laget; historikken sier når det ble lagt ut. Som regel det
+  // samme — men når de spriker, er det historikken som forteller hva som
+  // faktisk ligger ute.
+  //
+  // Én forespørsel per fil er nødvendig: GitHubs tre-API gir ingen
+  // datoer. Med rundt ti tekstfiler er det ti kall, og de kjøres bare
+  // når noen trykker på knappen.
+  // ═══════════════════════════════════════════════════════════════════
+  // Filnavn og navnet paa den som publiserte kommer fra GitHub. Et navn
+  // med < eller & ville ellers brutt oppsettet, eller sneket inn markup.
+  function escTekst(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  window.visSisteOppdateringer = async function(){
+    const cfg = loadConfig();
+    const boks = document.getElementById('tidStatus');
+    const liste = document.getElementById('tidListe');
+    const btn = document.getElementById('tidBtn');
+    const vis = (cls, tekst) => { boks.className = 'status show ' + cls; boks.textContent = tekst; };
+
+    if(!cfg.token){ vis('err', 'Mangler token — fyll ut innstillingene først.'); return; }
+
+    btn.disabled = true;
+    liste.innerHTML = '';
+    vis('busy', 'Henter fillisten…');
+
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' };
+
+    try{
+      const treRes = await fetch(base + '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1',
+        { headers, cache: 'no-store' });
+      if(!treRes.ok) throw new Error('filliste: HTTP ' + treRes.status);
+      const tre = await treRes.json();
+
+      const stier = (tre.tree || [])
+        .filter(n => n.type === 'blob' && erTekstfil(n.path))
+        .map(n => n.path).sort();
+      if(stier.length === 0) throw new Error('fant ingen tekstfiler');
+
+      const rader = [];
+      for(let i = 0; i < stier.length; i++){
+        const sti = stier[i];
+        vis('busy', 'Henter ' + (i + 1) + ' av ' + stier.length + '\n' + sti);
+        try{
+          const r = await fetch(base + '/commits?path=' + encodeURIComponent(sti) +
+            '&sha=' + encodeURIComponent(cfg.branch) + '&per_page=1',
+            { headers, cache: 'no-store' });
+          if(!r.ok) throw new Error('HTTP ' + r.status);
+          const c = await r.json();
+          if(!c.length){ rader.push({ sti, dato: null }); continue; }
+          const co = c[0];
+          rader.push({
+            sti,
+            dato: new Date(co.commit.author.date),
+            hvem: (co.commit.author.name || '').split(' ')[0],
+            melding: (co.commit.message || '').split('\n')[0]
+          });
+        } catch(err){
+          rader.push({ sti, dato: null, feil: err.message });
+        }
+      }
+
+      // Nyeste først: det man lurer på er som regel hva som skjedde sist.
+      rader.sort((a, b) => (b.dato ? b.dato.getTime() : 0) - (a.dato ? a.dato.getTime() : 0));
+      tegnTidsliste(rader);
+      vis('ok', stier.length + ' filer. Trykk «Kopier listen» for å ta den med til Claude.');
+    } catch(err){
+      vis('err', 'Kunne ikke hente tidspunktene:\n' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  function alderTekst(dato){
+    if(!dato) return '';
+    const timer = (Date.now() - dato.getTime()) / 36e5;
+    if(timer < 1) return 'nå nettopp';
+    if(timer < 24) return Math.round(timer) + ' t siden';
+    const dager = Math.round(timer / 24);
+    if(dager === 1) return 'i går';
+    if(dager < 30) return dager + ' dager siden';
+    const mnd = Math.round(dager / 30);
+    return mnd + (mnd === 1 ? ' måned siden' : ' måneder siden');
+  }
+
+  function tegnTidsliste(rader){
+    const el = document.getElementById('tidListe');
+    const fmt = (d) => d.toLocaleString('no-NO',
+      { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    // Filer som ikke er rørt på en uke merkes. Ikke som en feil — mange
+    // filer ligger ferdige i månedsvis — men fordi det er nettopp de man
+    // lettest tror man har den nyeste utgaven av.
+    const uke = 7 * 24 * 36e5;
+
+    el.innerHTML = '<div class="tid-liste">' + rader.map(r => {
+      if(!r.dato){
+        return `<div class="tid-rad">
+          <span class="tid-fil">${escTekst(r.sti)}</span>
+          <span class="tid-ukjent">${r.feil ? 'kunne ikke hentes' : 'ingen historikk'}</span>
+        </div>`;
+      }
+      const gammel = (Date.now() - r.dato.getTime()) > uke;
+      return `<div class="tid-rad">
+        <span class="tid-fil">${escTekst(r.sti)}</span>
+        <span class="tid-nar${gammel ? ' gammel' : ''}">
+          ${fmt(r.dato)}
+          <span class="tid-alder">${alderTekst(r.dato)}${r.hvem ? ' · ' + escTekst(r.hvem) : ''}</span>
+        </span>
+      </div>`;
+    }).join('') + '</div>' +
+    '<button class="btn btn-ghost" style="margin-top:12px;" onclick="kopierTidsliste()">📋 Kopier listen</button>';
+
+    // Teksten legges klar med én gang, i et format som er lett å lime inn
+    // i en samtale: fast bredde, nyeste først, ingen pynt.
+    window.__tidstekst = 'PUBLISERT PÅ ' + loadConfig().repo + ' (' +
+      new Date().toLocaleString('no-NO') + ')\n\n' +
+      rader.map(r => {
+        const navn = r.sti.padEnd(26);
+        if(!r.dato) return navn + (r.feil ? 'kunne ikke hentes' : 'ingen historikk');
+        return navn + fmt(r.dato) + '   ' + alderTekst(r.dato);
+      }).join('\n');
+  }
+
+  window.kopierTidsliste = async function(){
+    const boks = document.getElementById('tidStatus');
+    try{
+      await navigator.clipboard.writeText(window.__tidstekst || '');
+      boks.className = 'status show ok';
+      boks.textContent = '✓ Listen er kopiert. Lim den inn i første melding til Claude.';
+    } catch(err){
+      // Utklippstavlen er sperret i noen nettlesere. Vis teksten i stedet
+      // for å si «kopiering feilet» og la brukeren stå uten listen.
+      boks.className = 'status show';
+      boks.textContent = window.__tidstekst || '';
+    }
+  };
 
   window.lastNedAlt = async function(){
     const cfg = loadConfig();
