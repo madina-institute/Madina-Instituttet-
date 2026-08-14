@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-10 22:03:03 */
+/* SIST-ENDRET: 2026-08-15 01:19:05 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1517,8 +1517,37 @@ async function kjorHelsesjekk() {
   // 4) Feil fanget i portalene
   // Uten dette ville feilloggen bare vært et arkiv man måtte huske å
   // åpne. En logg ingen leser er like stille som ingen logg.
+  //
+  // ═══════════════════════════════════════════════════════════════════
+  // 🔴 VINDUET GÅR FRA SISTE VARSEL — IKKE EN FAST UKE TILBAKE.
+  //
+  // Slik det sto, spurte punktet «finnes det feil i loggen den siste
+  // uken?». Svaret var ja hver eneste dag, for feilene ble liggende.
+  // Én feil ga sju varsler. En feil som ble RETTET ga også sju: «Cannot
+  // access 'lov'» ble rettet 12. august og sto fortsatt i varselet 14.
+  //
+  // Og det er ikke bryet som er skaden. E-posten lover: «sendes kun når
+  // noe faktisk er galt — får du den ikke, er alt i orden». Kom den hver
+  // dag, ble den setningen usann, og varselet sluttet å bety noe. Da er
+  // det dagen sikkerhetskopien FAKTISK feiler man overser.
+  //
+  // De tre punktene over sier «noe er ødelagt NÅ». Dette sa «arkivet har
+  // rader» — en normaltilstand, ikke en hendelse. Et varsel skal utløses
+  // av en ENDRING.
+  //
+  // Nå: bare feil som har kommet etter forrige utsendte varsel telles.
+  // Hver feil varsles nøyaktig én gang. Og fordi sisteHelseVarsel bare
+  // settes NÅR en e-post faktisk går ut, blir en feil som aldri ble
+  // varslet om liggende i køen til den blir det — ingenting faller ut.
+  //
+  // Uken beholdes som ytre grense: har det gått måneder uten varsel,
+  // skal ikke det første som sendes inneholde alt som noen gang har
+  // skjedd.
+  // ═══════════════════════════════════════════════════════════════════
+  const forrigeVarsel = tidspunkt(helse.sisteHelseVarsel);
   try {
-    const grense = new Date(nå - HELSE_MAIL_VINDU_MS).toISOString();
+    const gulv = Math.max(nå - HELSE_MAIL_VINDU_MS, forrigeVarsel);
+    const grense = new Date(gulv).toISOString();
     const feil = await db.collection("feillogg")
       .where("tidspunkt", ">", grense).limit(50).get();
     if (!feil.empty) {
@@ -1529,7 +1558,9 @@ async function kjorHelsesjekk() {
         grupper.set(m, (grupper.get(m) || 0) + 1);
       });
       const topp = [...grupper.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
-      funn.push(`${feil.size} feil er fanget i portalene den siste uken. ` +
+      const periode = forrigeVarsel > nå - HELSE_MAIL_VINDU_MS
+        ? "siden forrige varsel" : "den siste uken";
+      funn.push(`${feil.size} nye feil er fanget i portalene ${periode}. ` +
         "Vanligste: " + topp.map(([m, n]) => `«${m}» (${n})`).join(", "));
     }
   } catch (err) {
@@ -1539,7 +1570,10 @@ async function kjorHelsesjekk() {
   await helseRef.set({ sisteSjekk: new Date().toISOString() }, { merge: true });
   if (funn.length === 0) return;
 
-  const sisteVarsel = tidspunkt(helse.sisteHelseVarsel);
+  // Samme verdi som vinduet over ble regnet ut fra. Leses den to ganger
+  // fra samme objekt, er de like — men da må den som endrer den ene
+  // huske den andre.
+  const sisteVarsel = forrigeVarsel;
   if (nå - sisteVarsel < HELSE_VARSEL_PAUSE_MS) {
     logger.info(`Helsesjekk fant ${funn.length} forhold, men varsel er sendt nylig.`);
     return;
