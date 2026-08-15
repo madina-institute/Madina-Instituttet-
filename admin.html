@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 20:23:46 -->
+<!-- SIST-ENDRET: 2026-08-15 23:56:19 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2818,6 +2818,35 @@
     </div>
 
     <div id="koInnhold" style="margin-top:16px;"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         OVERGANG — les timeplanen som finnes, og se om den passer i den
+         nye formen FØR noe skrives.
+
+         Timene ligger i dag som løse rader i 'hours': én rad per klasse,
+         dag og klokkeslett. Klokkeslettene gjentas for hver eneste klasse
+         i programmet, og skal en pause flyttes, må hver rad rettes.
+
+         Den nye formen skiller det som deles fra det som ikke gjør det:
+         klokkeslettene hører til PROGRAMMET, fagene og lærerne til
+         KLASSEN. Men om den formen faktisk passer, kan ikke avgjøres ved
+         å tegne den — bare ved å kjøre den mot timeplanen som står der.
+         Derfor leser knappen under, regner ut, og VISER. Den skriver
+         ingenting.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="report-card" style="margin-top:22px;">
+      <h3>🔄 Prøv den nye formen mot timeplanen som finnes</h3>
+      <div class="sub">
+        Leser <b>hours</b>, <b>classes</b> og <b>programs</b> og regner ut hvordan
+        timeplanen ville sett ut med klokkeslettene på programmet og fagene på
+        klassen. <b>Ingenting lagres</b> — du får se resultatet og hva som
+        eventuelt ikke passer først.
+      </div>
+      <button class="btn btn-ghost" style="margin-top:12px;" onclick="fgAnalyser()">
+        Analyser timeplanen
+      </button>
+      <div id="fgAnalyseBoks" style="display:none; margin-top:14px;"></div>
+    </div>
   </div>
 
   <!-- ATTENDANCE -->
@@ -8267,6 +8296,218 @@
     currentPlanmalerType = null;
     document.getElementById('planmalerChooseView').style.display = 'block';
     document.getElementById('planmalerListView').style.display = 'none';
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // OVERGANG TIL FAGREKKEFØLGE
+  //
+  // Regner om 'hours' til den nye formen, uten å røre noe:
+  //   programs/{id}.blokker      = klokkeslettene, delt av klassene
+  //   classes/{id}.fagrekkefolge = fag og lærer, per dag, per blokk
+  //
+  // 🔴 Blokkene får id fra klokkeslettet ('b1000' for 10:00), ikke fra
+  // plassen i listen. Med løpenummer ville en ny blokk øverst flyttet
+  // hvert fag i hver klasse ett hakk ned — og ingen ville sett det skje.
+  // Utledet av tiden er id-en dessuten den samme hver gang analysen
+  // kjøres, så to kjøringer gir samme svar.
+  //
+  // Parallelle spor er skolens ordning for arabisk og urdu: to fag i
+  // samme blokk. Alt ANNET som havner to ganger i samme blokk er noe
+  // annet enn ordningen, og skal sies fra om — ikke pakkes inn som om
+  // det var det samme.
+  // ═══════════════════════════════════════════════════════════════════
+  let fgResultat = null;
+
+  function fgBlokkId(tid){
+    const { start } = tpParseTid(tid);
+    return 'b' + start.replace(/[^0-9]/g, '');
+  }
+  const FG_SPRAAK = ['Arabisk', 'Urdu'];
+
+  window.fgAnalyser = function(){
+    const boks = document.getElementById('fgAnalyseBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+
+    const timer = cache.hours || [];
+    if(timer.length === 0){
+      boks.innerHTML = '<div class="report-empty">Det finnes ingen timer å regne om.</div>';
+      fgResultat = null;
+      return;
+    }
+
+    const klasser = cache.classes || [];
+    const programmer = cache.programs || [];
+    const merknader = [];   // ting som ikke passer — vises alltid
+    const blokkerPerProg = new Map();
+    const rekkefolgePerKlasse = new Map();
+
+    // Rader som ikke hører til en klasse i basen. «Felles oppstart» og
+    // «Felles avslutning» er skrevet som klassenavn i klasse-feltet —
+    // de er programmets egne blokker, ikke en klasses.
+    const uteKlasse = timer.filter(h => !klasser.some(k => k.id === h.klasse));
+    const felles = [...new Set(uteKlasse.map(h => h.klasse))];
+
+    for(const prog of programmer){
+      const progKlasser = klasser.filter(k => k.program === prog.navn || k.program === prog.id);
+      if(progKlasser.length === 0) continue;
+      const progTimer = timer.filter(h => progKlasser.some(k => k.id === h.klasse));
+      if(progTimer.length === 0) continue;
+
+      // Blokkene: hvert distinkte klokkeslett i programmet, sortert.
+      const tider = new Map();
+      for(const h of progTimer){
+        const { start, end } = tpParseTid(h.tid);
+        if(!start){ merknader.push({ alvor:'feil', tekst:
+          'Klokkeslettet «' + (h.tid || '(tomt)') + '» i ' + tpClassName(h) + ' kan ikke leses.' }); continue; }
+        const id = fgBlokkId(h.tid);
+        if(!tider.has(id)) tider.set(id, { id, start, slutt: end, tid: h.tid, klasser: new Set() });
+        tider.get(id).klasser.add(h.klasse);
+      }
+      const blokker = [...tider.values()].sort((a, b) => a.start.localeCompare(b.start));
+
+      // En blokk som bare én klasse bruker er ikke felles for programmet.
+      // Da er enten klokkeslettet skrevet ulikt, eller klassen går sin
+      // egen vei — og det må sees på før klokkeslettene flyttes opp.
+      for(const b of blokker){
+        if(b.klasser.size < progKlasser.length){
+          const mangler = progKlasser.filter(k => !b.klasser.has(k.id)).map(k => k.navn);
+          merknader.push({ alvor: b.klasser.size === 1 ? 'advar' : 'info', tekst:
+            prog.navn + ' · blokk ' + b.tid + ' brukes ikke av: ' + mangler.join(', ') });
+        }
+      }
+      blokkerPerProg.set(prog.id, { prog, blokker });
+
+      // Fagrekkefølgen per klasse
+      for(const k of progKlasser){
+        const dager = {};
+        const kTimer = timer.filter(h => h.klasse === k.id);
+        for(const dag of [...new Set(kTimer.map(h => h.dag))]){
+          const iDag = kTimer.filter(h => h.dag === dag);
+          const perBlokk = new Map();
+          for(const h of iDag){
+            const id = fgBlokkId(h.tid);
+            if(!perBlokk.has(id)) perBlokk.set(id, []);
+            perBlokk.get(id).push(h);
+          }
+          const liste = [];
+          for(const b of blokker){
+            const rader = perBlokk.get(b.id);
+            if(!rader) continue;
+            if(rader.length === 1){
+              liste.push({ blokk: b.id, fag: rader[0].fag || '', larer: rader[0].larer || '' });
+            } else {
+              const fagene = rader.map(r => r.fag || '');
+              const erSpraak = fagene.length === 2 &&
+                fagene.every(f => FG_SPRAAK.some(s => s.toLowerCase() === f.toLowerCase()));
+              if(!erSpraak){
+                merknader.push({ alvor:'feil', tekst:
+                  k.navn + ' · ' + dag + ' ' + b.tid + ' har ' + rader.length +
+                  ' fag samtidig (' + fagene.join(' + ') + '). Parallelle spor gjelder bare arabisk og urdu.' });
+              }
+              liste.push({ blokk: b.id, deles: true,
+                spor: rader.map(r => ({ fag: r.fag || '', larer: r.larer || '' })) });
+            }
+          }
+          if(liste.length) dager[dag] = liste;
+        }
+        rekkefolgePerKlasse.set(k.id, { klasse: k, dager });
+      }
+    }
+
+    // Klasser uten program kommer aldri med i en blokkliste.
+    for(const k of klasser){
+      if(!rekkefolgePerKlasse.has(k.id) && timer.some(h => h.klasse === k.id)){
+        merknader.push({ alvor:'feil', tekst:
+          k.navn + ' har timer, men hører ikke til et program som ble funnet.' });
+      }
+    }
+
+    // Timer uten lærer — de 33 helsesjekken teller. Nevnes her fordi de
+    // følger med inn i den nye formen som tomme felter.
+    const utenLarer = timer.filter(h => !h.larer).length;
+    const utenFag = timer.filter(h => !h.fag).length;
+
+    fgResultat = { blokkerPerProg, rekkefolgePerKlasse };
+
+    const feil = merknader.filter(m => m.alvor === 'feil');
+    const tell = (a) => merknader.filter(m => m.alvor === a).length;
+
+    boks.innerHTML =
+      '<div class="ut-tittel">' + timer.length + ' timer regnet om</div>' +
+      [...blokkerPerProg.values()].map(({ prog, blokker }) =>
+        '<div class="innst-effekt" style="margin-top:10px;">' +
+          '<b>' + escapeHtml(prog.navn) + '</b> — ' + blokker.length + ' blokk(er): ' +
+          blokker.map(b => escapeHtml(b.tid)).join(' · ') +
+        '</div>').join('') +
+      '<div class="innst-effekt" style="margin-top:10px;">' +
+        [...rekkefolgePerKlasse.values()].map(({ klasse, dager }) =>
+          escapeHtml(klasse.navn) + ': ' +
+          Object.entries(dager).map(([d, l]) => d + ' (' + l.length + ')').join(', ')
+        ).join('<br>') +
+      '</div>' +
+      (felles.length ? '<div class="innst-effekt" style="margin-top:10px;">' +
+        'Felles blokker uten klasse: ' + felles.map(escapeHtml).join(', ') +
+        ' — disse hører til programmet, og tas i et eget steg.</div>' : '') +
+      (utenLarer || utenFag ? '<div class="innst-effekt" style="margin-top:10px;">⚠️ ' +
+        utenLarer + ' time(r) uten lærer' + (utenFag ? ' og ' + utenFag + ' uten fag' : '') +
+        ' — de blir med, men med tomt felt.</div>' : '') +
+      (merknader.length
+        ? '<div class="ut-tittel" style="margin-top:14px;">' +
+            (feil.length ? '🔴 ' + feil.length + ' som ikke passer' : '⚠️ ' + tell('advar') + ' å se på') +
+          '</div><pre class="ut-logg">' +
+          escapeHtml(merknader.map(m =>
+            (m.alvor === 'feil' ? '🔴 ' : m.alvor === 'advar' ? '⚠️ ' : '· ') + m.tekst).join('\n')) +
+          '</pre>'
+        : '<div class="innst-effekt" style="margin-top:12px;">✓ Alt passet i den nye formen.</div>') +
+      (feil.length
+        ? '<div class="innst-effekt" style="margin-top:12px;">Rett det røde først. ' +
+          'Å lagre nå ville skrevet inn en timeplan som ikke stemmer.</div>'
+        : '<button class="btn btn-primary" style="margin-top:14px;" onclick="fgLagre()">' +
+          'Lagre den nye formen</button>' +
+          '<div class="hint" style="margin-top:6px;">Legger til <b>blokker</b> på programmene og ' +
+          '<b>fagrekkefolge</b> på klassene. <b>hours røres ikke</b> — den gamle timeplanen ' +
+          'blir stående til alt er prøvd.</div>');
+  };
+
+  window.fgLagre = async function(){
+    if(!fgResultat){ showToast('Kjør analysen først.'); return; }
+    const { blokkerPerProg, rekkefolgePerKlasse } = fgResultat;
+    if(!confirm('Legge til blokker på ' + blokkerPerProg.size + ' program og fagrekkefølge på ' +
+                rekkefolgePerKlasse.size + ' klasse(r)?\n\nhours røres ikke.')) return;
+
+    let skrevet = 0;
+    const feilet = [];
+    try{
+      // 🔴 updateDoc med ETT felt — ikke setDoc. Programdokumentet bærer
+      // prisene som påmeldingsskjemaet leser uten innlogging; en setDoc
+      // her ville tømt dem, og skjemaet ville stått uten pris.
+      for(const { prog, blokker } of blokkerPerProg.values()){
+        try{
+          await updateDoc(doc(db, 'programs', prog.id), {
+            blokker: blokker.map(b => ({ id: b.id, start: b.start, slutt: b.slutt, tid: b.tid }))
+          });
+          skrevet++;
+        }catch(err){ feilet.push('program ' + prog.navn + ' — ' + (err.code || err.message)); }
+      }
+      for(const { klasse, dager } of rekkefolgePerKlasse.values()){
+        try{
+          await updateDoc(doc(db, 'classes', klasse.id), { fagrekkefolge: dager });
+          skrevet++;
+        }catch(err){ feilet.push('klasse ' + klasse.navn + ' — ' + (err.code || err.message)); }
+      }
+      await loggSamlet('Fagrekkefølge og blokker utledet fra timeplanen', skrevet,
+        'fgLagre · programs+classes · skrevet=' + skrevet);
+      if(feilet.length === 0){
+        showToast('✓ ' + skrevet + ' dokument(er) oppdatert. hours står urørt.');
+      } else {
+        melding('ADM-FG-01', '⚠️ Delvis lagret',
+          skrevet + ' gikk gjennom. Disse feilet:\n' + feilet.join('\n'));
+      }
+    }catch(err){
+      console.error('fgLagre', err);
+      showToast('Noe gikk galt: ' + (err.message || err), true);
+    }
   };
 
   function renderPlanmalerList(){
