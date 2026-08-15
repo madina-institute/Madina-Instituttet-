@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 13:39:44 -->
+<!-- SIST-ENDRET: 2026-08-15 13:53:51 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -250,6 +250,15 @@
       <input type="file" id="multiFileUpload" multiple onchange="handleMultiFileUpload(event)">
 
       <div id="multiFileList"></div>
+
+      <label class="hint" for="multiNotat" style="display:block; margin-top:12px;">
+        Kort beskrivelse av endringen (valgfritt)
+      </label>
+      <input type="text" id="multiNotat" placeholder="f.eks. dagskort i begge portalene">
+      <div class="hint" style="margin-top:4px;">
+        Gjelder alle filene i leveransen — de ble endret av samme grunn.
+        Vises i historikken på GitHub og i rapporten.
+      </div>
 
       <label class="overstyr-linje">
         <input type="checkbox" id="multiOverstyr">
@@ -1774,7 +1783,7 @@
       .catch(() => showStatus('Kunne ikke kopiere — merk teksten manuelt.', 'err'));
   };
 
-  async function publishFileToGitHub(path, content){
+  async function publishFileToGitHub(path, content, notat){
     const cfg = loadConfig();
     const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
     const headers = {
@@ -1793,10 +1802,17 @@
       }
       const putBody = {
         message: (function(){
-          const note = (document.getElementById('commitNote') || {}).value;
+          // Notatet kan komme med som argument (flerfil-publisering, der
+          // ett notat gjelder hele leveransen) eller fra feltet over
+          // (enkeltfil). Uten det første fikk hver fil i en leveranse
+          // meldingen «via publiseringsverktøy» — og rapporten senere
+          // hadde ingen beskrivelse å vise for noen av dem.
+          const note = notat !== undefined && notat !== null
+            ? notat
+            : (document.getElementById('commitNote') || {}).value;
           const base = 'Oppdater ' + path;
-          return note && note.trim()
-            ? base + ' — ' + note.trim()
+          return note && String(note).trim()
+            ? base + ' — ' + String(note).trim()
             : base + ' via publiseringsverktøy';
         })(),
         content: toBase64(stemplFil(path, content)),
@@ -2683,10 +2699,17 @@
     const btn = document.getElementById('multiPublishBtn');
     btn.disabled = true;
     const statusBox = document.getElementById('multiStatusBox');
+    const startetKl = Date.now();
     statusBox.className = 'status show busy';
     statusBox.textContent = 'Publiserer ' + multiFiles.length + ' filer, én etter én...';
 
     let okCount = 0, errCount = 0, hoppetOver = 0;
+    // Ett notat for hele leveransen. Filene ble endret av samme grunn —
+    // det er nettopp derfor de publiseres sammen.
+    const fellesNotat = ((document.getElementById('multiNotat') || {}).value || '').trim();
+    // Hvilke utlegginger som faktisk må vente på. En leveranse kan røre
+    // både nettstedet og reglene, og de legges ut av hver sin kjøring.
+    const berørte = new Set();
     // Published one at a time, with a short pause between each — publishing
     // several files back-to-back too fast is what caused files to silently
     // "supersede" each other and never actually go live (seen before with
@@ -2726,18 +2749,30 @@
           hoppetOver++;
           if(statusEl){
             statusEl.className = 'fstatus err';
-            statusEl.textContent =
-              r.status === 'identisk' ? '⛔ Identisk — hoppet over' :
-              r.status === 'historisk' ? '🛑 Gammel kopi (' + visTid(r.treff.dato) + ') — hoppet over' :
-              '🛑 Eldre (' + visTid(r.lokalTid) + ') — hoppet over';
+            // Enkeltfil-kontrollen forklarer HVORFOR den stoppet — med
+            // stempel, dato og hva boken vet. Her sto bare «hoppet over»,
+            // og man måtte gjøre kontrollen om igjen i enkeltfil for å få
+            // vite grunnen. Samme svar hører hjemme begge steder.
+            statusEl.innerHTML =
+              (r.status === 'identisk'
+                ? '⛔ Identisk med det som ligger ute'
+                : r.status === 'historisk'
+                ? '🛑 Gammel kopi — dette innholdet ble publisert ' + visTid(r.treff.dato)
+                : '🛑 Eldre enn den publiserte (din: ' + visTid(r.lokalTid) + ')') +
+              '<br><span class="mf-grunn">Ingenting ble skrevet over. ' +
+              (r.status === 'identisk'
+                ? 'Filen er allerede oppdatert.'
+                : 'Hent den publiserte versjonen først hvis du vil bygge videre på den.') +
+              '</span>';
           }
           continue;
         }
       }
 
-      const result = await publishFileToGitHub(målsti, f.content);
+      const result = await publishFileToGitHub(målsti, f.content, fellesNotat);
       if(result.ok){
         okCount++;
+        berørte.add(workflowFor(målsti));
         if(statusEl){ statusEl.className = 'fstatus ok'; statusEl.textContent = '✓ Publisert'; }
       } else {
         errCount++;
@@ -2749,10 +2784,48 @@
     const deler = [okCount + ' publisert'];
     if(hoppetOver) deler.push(hoppetOver + ' hoppet over (identisk eller eldre)');
     if(errCount)   deler.push(errCount + ' feilet');
-    statusBox.className = 'status show ' + (errCount === 0 ? (hoppetOver ? 'warn' : 'ok') : 'err');
-    statusBox.textContent = (errCount === 0 && hoppetOver === 0)
-      ? '✓ Alle ' + okCount + ' filer publisert!'
-      : 'Av ' + multiFiles.length + ' filer: ' + deler.join(' · ') + '. Se status per fil ovenfor.';
+    const oppsummering = (errCount === 0 && hoppetOver === 0)
+      ? 'Alle ' + okCount + ' filer lagret i GitHub'
+      : 'Av ' + multiFiles.length + ' filer: ' + deler.join(' · ');
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🔴 «PUBLISERT» MÅ BETY «UTE» — OGSÅ HER.
+    //
+    // Enkeltfil-publiseringen venter på kjøringen og sier fra hvis den
+    // feiler. Flerfil gjorde det ikke: den sa «Alle filer publisert!» i
+    // samme sekund GitHub tok imot den siste. Nøyaktig den setningen sto
+    // på skjermen 15. august mens utleggingen hadde stoppet i en halv
+    // time — og det er i en LEVERANSE dette gjør mest skade, fordi det
+    // er da flest filer blir liggende igjen.
+    // ═══════════════════════════════════════════════════════════════
+    if(okCount === 0 || berørte.size === 0){
+      statusBox.className = 'status show ' + (errCount ? 'err' : 'warn');
+      statusBox.textContent = oppsummering + '. Se status per fil ovenfor.';
+      btn.disabled = false;
+      return;
+    }
+
+    statusBox.className = 'status show busy';
+    statusBox.textContent = '✓ ' + oppsummering + '. Venter på utleggingen…';
+
+    const feilet = [];
+    for(const wf of berørte){
+      const r = await ventPaUtlegging(startetKl, m =>
+        statusBox.textContent = '✓ ' + oppsummering + '. ' + m, wf);
+      if(r.status === 'feilet') feilet.push({ wf, run: r.run });
+    }
+
+    if(feilet.length){
+      statusBox.className = 'status show err';
+      statusBox.textContent = '🛑 Filene ligger i GitHub, men utleggingen av ' +
+        feilet.map(x => workflowNavn(x.wf)).join(' og ') +
+        ' FEILET. De er ikke ute på nettstedet.';
+      await visUtleggingsfeil(feilet[0].run);
+    } else {
+      statusBox.className = 'status show ' + (errCount === 0 && hoppetOver === 0 ? 'ok' : 'warn');
+      statusBox.textContent = '✓ ' + oppsummering + ' — og lagt ut. ' +
+        (hoppetOver || errCount ? 'Se status per fil ovenfor.' : 'Alt er live nå.');
+    }
     btn.disabled = false;
   };
 
@@ -2917,6 +2990,14 @@
     font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:#3d4a42;
   }
   .mf-sti.ukjent{ border-color:#c98a2e; background:#fdf6e8; }
+  .mf-grunn{
+    display:block; margin-top:3px; font-size:10.5px; color:#8a9a90; font-weight:400;
+  }
+  #multiNotat{
+    width:100%; padding:11px 12px; border-radius:9px;
+    border:1px solid rgba(0,0,0,0.15); background:#fff;
+    font-family:'Jost',sans-serif; font-size:14px; color:#2b3a32;
+  }
   .mf-advarsel{
     display:block; margin-top:3px; font-size:10.5px; color:#a9741f;
   }
