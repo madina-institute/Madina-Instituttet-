@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 14:47:51 -->
+<!-- SIST-ENDRET: 2026-08-15 14:52:47 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -76,7 +76,15 @@
     text-transform:uppercase; margin-top:5px; white-space:normal;
   }
   /* Fargene er panelets egne — mettede gradienter med hvit tekst, ikke
-     pastell. Pastellkortene mine leste som «informasjon»; disse leser som
+     pastell.
+
+     🔴 GRØNT ER RESERVERT FOR STATUSKORTET.
+     Fire kort i samme blå leser som fire like ting, og det var det de
+     var. Men to grønne kort ved siden av hverandre er verre: da betyr
+     grønt «alt er ute» på det ene og ingenting på det andre, og fargen
+     slutter å svare på noe. Bare det første kortet bytter farge —
+     grønt, gult eller rødt. De tre andre står fast.
+ Pastellkortene mine leste som «informasjon»; disse leser som
      status, og det er forskjellen på et tall og et svar. */
   .stat-card.stat-blue  { background:linear-gradient(135deg,#1A9BEC,#1372b3); border-color:transparent; }
   .stat-card.stat-green { background:linear-gradient(135deg,#62C038,#4a9a29); border-color:transparent; }
@@ -349,7 +357,7 @@
         <div class="n" id="statUtleggN">…</div>
         <div class="l" id="statUtleggL">Utlegging</div>
       </div>
-      <div class="stat-card stat-blue" id="statAntall">
+      <div class="stat-card stat-yellow" id="statAntall">
         <span class="stat-ikon">📤</span>
         <div class="n" id="statAntallN">…</div>
         <div class="l">Publisert (7 døgn)</div>
@@ -359,7 +367,7 @@
         <div class="n" id="statSistN">…</div>
         <div class="l" id="statSistL">Siste publisering</div>
       </div>
-      <div class="stat-card stat-blue" id="statRegler" onclick="velgFane('regler')" style="cursor:pointer;">
+      <div class="stat-card stat-morke" id="statRegler" onclick="velgFane('regler')" style="cursor:pointer;">
         <span class="stat-ikon">🔐</span>
         <div class="n" id="statReglerN">…</div>
         <div class="l">Reglene</div>
