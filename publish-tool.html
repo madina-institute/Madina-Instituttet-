@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 18:51:49 -->
+<!-- SIST-ENDRET: 2026-08-15 19:33:52 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3346,6 +3346,131 @@
     'PROJECT-SUMMARY-AR.md', 'index.html', 'sw.js'
   ];
 
+  // ═══════════════════════════════════════════════════════════════════
+  // SLIPP FILER PÅ SIDEN.
+  //
+  // 🔴 «Kopier mappen og lim den inn» kan ikke virke — verken på telefon
+  // eller PC. Utklippstavlen bærer en HENVISNING til filen, ikke innholdet,
+  // og en nettside får ikke lese den (bortsett fra bilder).
+  //
+  // Slipp gjør det derimot: da får siden filene med navn OG relativ sti.
+  // Slipper man en hel mappe, kommer functions/index.js inn som nettopp
+  // det — akkurat som fra et arkiv.
+  //
+  // Hele siden er sonen, ikke bare den stiplede boksen: å treffe et lite
+  // felt med musen er unødvendig irritasjon. Boksen lyser opp likevel,
+  // så man ser hvor det havner.
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Rekursiv lesing av en sluppet mappe. Uten dette ville en mappe blitt
+  // stille ignorert — den ser ut som én oppføring, men er ikke en fil.
+  async function lesSlippMappe(entry, prefiks, ut){
+    if(entry.isFile){
+      const fil = await new Promise(r => entry.file(r, () => r(null)));
+      if(fil) ut.push({ fil, sti: prefiks + fil.name });
+      return;
+    }
+    if(entry.isDirectory){
+      const leser = entry.createReader();
+      const barn = await new Promise(r => leser.readEntries(r, () => r([])));
+      for(const b of barn) await lesSlippMappe(b, prefiks + entry.name + '/', ut);
+    }
+  }
+
+  async function filerFraSlipp(dt){
+    const ut = [];
+    const items = dt.items ? [...dt.items] : [];
+    const entries = items.map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+    if(entries.length){
+      for(const e of entries) await lesSlippMappe(e, '', ut);
+      // 🔴 Slipper man mappen «madina/», kommer filene inn som
+      // «madina/index4.html» — og da ville de blitt publisert til en mappe
+      // som ikke finnes i repoet. Ytterste ledd er navnet på mappen man
+      // slapp, ikke en del av stien.
+      //
+      // Fjernes bare når ALT ligger under samme ytterste mappe. Slipper man
+      // to mapper samtidig, betyr navnene noe, og da røres de ikke.
+      const rot = ut.length && ut[0].sti.indexOf('/') > 0 ? ut[0].sti.split('/')[0] : null;
+      if(rot && ut.every(x => x.sti.indexOf(rot + '/') === 0)){
+        ut.forEach(x => { x.sti = x.sti.slice(rot.length + 1); });
+      }
+    } else {
+      [...(dt.files || [])].forEach(f => ut.push({ fil: f, sti: f.name }));
+    }
+    return ut;
+  }
+
+  function settOppSlipp(){
+    const kort = () => document.querySelector('#publishView .card[data-fane]:not([style*="none"])');
+    let teller = 0;
+
+    ['dragenter','dragover'].forEach(navn =>
+      document.addEventListener(navn, e => {
+        if(!e.dataTransfer || [...e.dataTransfer.types].indexOf('Files') === -1) return;
+        e.preventDefault();
+        if(navn === 'dragenter') teller++;
+        document.body.classList.add('slipp-aktiv');
+      }));
+
+    ['dragleave','drop'].forEach(navn =>
+      document.addEventListener(navn, e => {
+        if(navn === 'dragleave'){ teller--; if(teller > 0) return; }
+        teller = 0;
+        document.body.classList.remove('slipp-aktiv');
+      }));
+
+    document.addEventListener('drop', async e => {
+      if(!e.dataTransfer || [...e.dataTransfer.types].indexOf('Files') === -1) return;
+      e.preventDefault();
+      const funnet = await filerFraSlipp(e.dataTransfer);
+      if(funnet.length === 0) return;
+
+      // Hvilken fane som er åpen avgjør hva som skjer — ikke hvor på
+      // siden man slapp. Slipper man i Regler-fanen, er det reglene man
+      // mener, uansett hvor pekeren var.
+      if(aktivFane === 'regler'){
+        const regel = funnet.find(f => f.fil.name === REGELSTI) ||
+                      (funnet.length === 1 ? funnet[0] : null);
+        if(!regel){ reglerStatus('Fant ingen ' + REGELSTI + ' blant de slupne filene.', 'err'); return; }
+        document.getElementById('reglerInnhold').value = await regel.fil.text();
+        const hint = document.getElementById('reglerHint');
+        hint.className = 'file-loaded-hint show';
+        hint.textContent = '✓ Slapp inn ' + regel.fil.name + ' (' + Math.round(regel.fil.size/1024) + ' kB)';
+        return;
+      }
+
+      const flere = funnet.length > 1 || aktivUnder['publiser'] === 'flere';
+      if(flere){
+        velgFane('publiser'); velgUnder('publiser', 'flere');
+        multiFiles = [];
+        let hoppetRegler = false;
+        for(const f of funnet){
+          if(/\.zip$/i.test(f.fil.name)){
+            const alle = await lesZip(await f.fil.arrayBuffer());
+            alle.filter(x => x.navn !== REGELSTI).forEach(x => multiFiles.push({
+              name: x.navn, content: x.innhold,
+              sti: x.sti.indexOf('/') > 0 ? x.sti : finnFullSti(x.navn) }));
+            if(alle.length !== alle.filter(x => x.navn !== REGELSTI).length) hoppetRegler = true;
+            continue;
+          }
+          if(f.fil.name === REGELSTI){ hoppetRegler = true; continue; }
+          multiFiles.push({ name: f.fil.name, content: await f.fil.text(),
+            // Slapp mappe gir relativ sti — den er mer å stole på enn
+            // et oppslag på navnet alene.
+            sti: f.sti.indexOf('/') > 0 ? f.sti : finnFullSti(f.fil.name) });
+        }
+        multiKlar(hoppetRegler);
+      } else {
+        velgFane('publiser'); velgUnder('publiser', 'en');
+        const dt = new DataTransfer();
+        dt.items.add(funnet[0].fil);
+        const inp = document.getElementById('fileUpload');
+        inp.files = dt.files;
+        handleFileUpload({ target: inp });
+      }
+    });
+  }
+
   window.finnForeldrelose = async function(){
     const boks = document.getElementById('foreldreloseBoks');
     if(!boks) return;
@@ -4056,6 +4181,7 @@
   velgFane('publiser');
   tegnStatuskort();
   overvåkStatusbokser();
+  settOppSlipp();
 </script>
 <style>
   #lastDeployBadge{
@@ -4092,6 +4218,21 @@
   /* Forskjellen skal kunne leses på en telefon: monospace, små linjer,
      og aldri mer enn fire av hver — er den større, er det ikke linjene
      man trenger, men beskjeden om at den ER større. */
+  /* Hele siden tar imot slippet, men det er den stiplede boksen som
+     lyser — ellers vet man ikke hvor filene havner. */
+  body.slipp-aktiv .btn-file-label{
+    border-color:var(--emerald); background:#DCEFFB; color:var(--emerald-d);
+    transform:scale(1.015);
+  }
+  body.slipp-aktiv::after{
+    content:'📂 Slipp filene — eller en hel mappe';
+    position:fixed; inset-inline:0; bottom:0; z-index:9000;
+    background:var(--emerald); color:#fff; text-align:center;
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:600;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    pointer-events:none;
+  }
+
   #gjenopprettBoks, #foreldreloseBoks{
     margin-top:12px; padding:12px 14px; border-radius:12px;
     background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
