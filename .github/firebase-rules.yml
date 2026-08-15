@@ -1,0 +1,80 @@
+name: Deploy Firestore rules
+
+# ═══════════════════════════════════════════════════════════════════
+# 🔴 REGLENE BLE SKREVET INN FOR HÅND — TO STEDER, OG DE GLED FRA HVERANDRE.
+#
+# firestore.rules lå i repoet, mens de reglene som FAKTISK gjaldt ble
+# limt inn i Firebase Console. Repo-kopien var elleve dager bak, og
+# ingenting sa fra: begge så riktige ut hver for seg.
+#
+# Verre var innlimingen selv. 15. august ble innholdet i firestore.rules
+# publisert under navnet firebase.json, og en gang forsvant den første
+# `{` under kopieringen. Begge ganger stoppet hele utleggingen — og
+# feilen lå i en logg ingen hadde åpen.
+#
+# Nå: reglene publiseres som enhver annen fil, og denne legger dem ut.
+# Firebase kompilerer dem først; er de ugyldige, feiler kjøringen og
+# de gamle reglene blir stående. Det er riktig rekkefølge — en base
+# uten regler er verre enn en base med gamle.
+#
+# ⚠️ HVA DETTE FLYTTER PÅ:
+# Console-steget var også en pause. Man limte inn, leste igjennom, og
+# trykket Publish. Nå går reglene ut i det du publiserer filen.
+# Sikkerhetsnettet er at Firebase nekter ugyldige regler — ikke at noen
+# leser dem. En regel som er gyldig OG for åpen, går rett ut.
+#
+# Derfor kjører denne KUN når firestore.rules er endret, aldri på andre
+# filer, og aldri sammen med hosting.
+# ═══════════════════════════════════════════════════════════════════
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+  workflow_dispatch:
+
+concurrency:
+  group: firestore-rules
+  cancel-in-progress: true
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # Kompilerer reglene uten å legge dem ut. Feiler dette, stopper vi
+      # her — og de gamle reglene står urørt i basen.
+      - name: Kontroller reglene
+        run: |
+          node -e "
+            const s = require('fs').readFileSync('firestore.rules','utf8');
+            if(!/^\s*rules_version\s*=/m.test(s)){
+              console.error('firestore.rules ser ikke ut som regler — mangler rules_version.');
+              process.exit(1);
+            }
+            if(!/service\s+cloud\.firestore/.test(s)){
+              console.error('firestore.rules mangler «service cloud.firestore».');
+              process.exit(1);
+            }
+            const apen = /match\s*\/\{document=\*\*\}[\s\S]{0,120}allow\s+read,\s*write:\s*if\s+true/;
+            if(apen.test(s)){
+              console.error('🔴 STOPP: reglene åpner HELE basen for alle. Publisering avbrutt.');
+              process.exit(1);
+            }
+            console.log('Reglene ser strukturelt riktige ut.');
+          "
+
+      - name: Deploy
+        run: firebase deploy --only firestore:rules --project madina-instituttet --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
