@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 10:13:52 -->
+<!-- SIST-ENDRET: 2026-08-15 10:23:35 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -2157,6 +2157,7 @@
     document.getElementById('appView').style.display = 'none';
     document.getElementById('fvelkomst').style.display = 'flex';
     tegnVelkomstForelder();
+    plasserStempler();
   };
 
   window.aapneBarn = function(i){
@@ -2166,6 +2167,7 @@
     renderChildTabs();
     renderChild();
     closeSection();
+    plasserStempler();
     // 🔴 Uten dette var det ingen vei tilbake til familieskjermen med
     // telefonens egen tilbake-knapp. Skjermbytte skjer i JavaScript, så
     // nettleseren vet ikke at man «gikk» noe sted — tilbake tok deg ut
@@ -2191,6 +2193,21 @@
   // Denne tegner den skjermen som er oppe. Lytterne kaller den i stedet
   // for å velge selv — da kan ikke én av dem bli glemt neste gang.
   // ═══════════════════════════════════════════════════════════════════
+  // Beholderen finnes én gang i dokumentet, men skal stå nederst på den
+  // skjermen som er oppe. Den flyttes derfor dit — to kopier ville betydd
+  // to steder å oppdatere, og den ene ville før eller siden vist noe
+  // annet enn den andre.
+  function plasserStempler(){
+    const st = document.getElementById('devStempler');
+    if(!st) return;
+    const fv = document.getElementById('fvelkomst');
+    const paaFv = fv && fv.style.display !== 'none';
+    const mal = paaFv
+      ? fv.querySelector('.fv-inner')
+      : document.querySelector('#appView .portal-content');
+    if(mal && st.parentNode !== mal) mal.appendChild(st);
+  }
+
   function tegnAktivSkjerm(){
     if(!currentGuardian) return;
     const fv = document.getElementById('fvelkomst');
@@ -3785,27 +3802,32 @@
   }
 </script>
 <style>
-  #lastDeployBadge{
-    /* iOS Safari's bottom toolbar overlaps position:fixed elements sitting
-       right at the true bottom edge of the viewport, so this is lifted well
-       clear of it (and of the home-indicator safe area on notched iPhones)
-       instead of sitting flush at bottom:8px. */
-    position:fixed; bottom:calc(64px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px; z-index:5000;
-    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
-    background:rgba(255,255,255,0.92); backdrop-filter:blur(3px);
-    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
-    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
-  }
-  @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
+  /* ═══════════════════════════════════════════════════════════════
+     STEMPLENE STÅR NÅ I FLYTEN, IKKE OPPÅ SIDEN.
 
-  #lastEditBadge{
-    position:fixed; bottom:calc(92px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px; z-index:5000;
-    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
-    background:rgba(255,255,255,0.92); backdrop-filter:blur(3px);
-    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
-    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
+     De lå fast i nederste hjørne, over innholdet. På en telefon la de
+     seg oppå knappen «Åpne siden» og over de siste linjene i
+     timeplanen — og de fulgte med når man rullet, så det fantes ingen
+     posisjon der de ikke dekket noe.
+
+     De hører hjemme sist: de sier når filen ble endret og publisert,
+     og det er en fotnote, ikke et varsel. Nå ligger de nederst på den
+     skjermen man ser, sentrert, og ruller med resten.
+     ═══════════════════════════════════════════════════════════════ */
+  #devStempler{
+    display:block; margin:18px auto 6px; text-align:center;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px));
   }
-  @media (max-width:480px){ #lastEditBadge{ font-size:9.5px; padding:3px 8px; } }
+  #lastDeployBadge, #lastEditBadge{
+    position:static; display:inline-block; margin:3px 4px;
+    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
+    background:rgba(255,255,255,0.92);
+    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
+    pointer-events:none; letter-spacing:.01em;
+  }
+  @media (max-width:480px){
+    #lastDeployBadge, #lastEditBadge{ font-size:9.5px; padding:3px 8px; }
+  }
 
   /* ══ INNLOGGING ══════════════════════════════════════════════════
      Innloggingssiden er det første både lærere og foresatte ser. Før
@@ -3885,8 +3907,10 @@
     .mlogin-logo{ width:56%; }
   }
 </style>
-<div id="lastEditBadge">…</div>
-<div id="lastDeployBadge">Sjekker siste publisering…</div>
+<div id="devStempler">
+  <div id="lastEditBadge">…</div>
+  <div id="lastDeployBadge">Sjekker siste publisering…</div>
+</div>
 <script>
   // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet.
   // Nettstedet ligger nå på Firebase Hosting (ikke GitHub Pages), og
