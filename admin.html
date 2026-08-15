@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 00:39:19 -->
+<!-- SIST-ENDRET: 2026-08-16 00:53:38 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2462,6 +2462,44 @@
       <span class="hint" data-opprett-merknad="programs" style="display:none; align-self:center;"></span>
     </div>
     <div class="records-hidden card-grid" id="tablePrograms"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         DAGSPLANEN — programmet bestemmer timene, klassen fyller dem.
+
+         Fram til nå fantes ikke undervisningsdagen som en ting. Den ble
+         REGNET UT: klokkeslettene lå på hver enkelt time i hver enkelt
+         klasse, og «blokkene» var de timene som tilfeldigvis lå inntil
+         hverandre. Pausen fantes ikke i det hele tatt — den var hullet
+         mellom to timer.
+
+         Det betydde tre ting. Skulle en pause flyttes ti minutter, måtte
+         hver klasse rettes for seg. En klasse med en feilført time laget
+         en blokk ingen andre hadde. Og et nytt program måtte bygges ved
+         å kopiere timene fra et annet.
+
+         Her settes dagen ÉN gang for hele programmet: timer og pauser i
+         rekkefølge, med klokkeslett. Klassen arver den, og velger bare
+         hvilket fag som ligger hvor, og hvem som underviser.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="report-card" style="margin-top:22px;">
+      <h3>🕐 Undervisningsdagen — timer og pauser</h3>
+      <div class="sub">
+        Sett opp dagen for hele programmet: hvor mange timer den har, når de
+        begynner og slutter, og hvor pausene ligger. Klassene arver dette —
+        der velger du bare hvilket fag som ligger i hver time, og hvilken lærer.
+      </div>
+      <div class="innst-rad" style="margin-top:14px;">
+        <div class="field">
+          <label>Program</label>
+          <select id="pdProgram" onchange="pdVelg()"><option value="">— Velg program —</option></select>
+        </div>
+        <div class="field">
+          <label>Dag</label>
+          <select id="pdDag" onchange="pdVelg()"></select>
+        </div>
+      </div>
+      <div id="pdInnhold" style="margin-top:14px;"></div>
+    </div>
   </div>
 
   <!-- SKOLEKALENDER — fridager og ekstra undervisningsdager -->
@@ -4739,6 +4777,17 @@
          placeholder:'f.eks. Madinabarn (Søndag)'},
         {key:'dager', label:'Undervisningsdager', type:'role-checklist', essential:true,
          options:['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']},
+        // 🔴 Fagene programmet består av. Sto før fast i koden, i
+        // KO_FAG_PROGRAM, der «Madinabarn» var oppført som et FAG — men
+        // Madinabarn er navnet på programmet, ikke på noe som undervises.
+        // Barna der har innslag: koranstund, fortelling, lek. «Fellestime»
+        // gjaldt aldri for dem.
+        //
+        // En liste i koden kan bare endres ved å publisere en ny fil.
+        // Her setter skolen den selv, og hvert program får sin egen.
+        {key:'innslag', label:'Fag/innslag i dette programmet (skill med komma)',
+         type:'text', essential:true,
+         placeholder:'f.eks. Koranstund, Fortelling, Lek og læring'},
         // To prismodeller, to felter. Medlemsprisen er PER MÅNED, prisen
         // for ikke-medlemmer er PER ÅR — slik skolen faktisk oppgir dem.
         // Ingen av tallene står i koden; de settes her.
@@ -9446,6 +9495,188 @@
   // 📌 Oppmøtet påvirkes ikke. Det føres én gang per dag på eleven, ikke
   // per time — så en elev i arabisksporet telles fortsatt én gang.
   // ═══════════════════════════════════════════════════════════════════
+
+
+  // ═══════════════════════════════════════════════════════════════════
+  // DAGSPLAN PER PROGRAM — timer og pauser, satt ett sted
+  //
+  // 🔴 Pausen har aldri eksistert i systemet. Den var hullet mellom to
+  // timer, og koBlokker leste den ut av mellomrommet. Da kunne den heller
+  // ikke flyttes: man måtte endre sluttiden på timen før og starttiden på
+  // timen etter, i hver eneste klasse, og håpe at alle traff likt.
+  //
+  // Her er pausen en rad som alle andre, med sin egen tid. Den har verken
+  // fag eller lærer, og klassene kan ikke legge noe i den.
+  //
+  // Radene får id fra klokkeslettet ('t0930'), ikke fra plassen i listen.
+  // Med løpenummer ville en ny time øverst flyttet hvert fag i hver klasse
+  // ett hakk ned, uten at noen så det skje.
+  // ═══════════════════════════════════════════════════════════════════
+  let pdTilstand = null;   // { progId, dag, rader:[...] }
+
+  function pdRadId(start){ return 't' + String(start).replace(/[^0-9]/g, ''); }
+  function pdProgramById(id){ return (cache.programs || []).find(p => p.id === id) || null; }
+  function pdDagerFor(p){
+    if(!p) return [];
+    const d = Array.isArray(p.dager) ? p.dager
+            : String(p.dager || '').split(',').map(x => x.trim()).filter(Boolean);
+    return d;
+  }
+  function pdPlanFor(p, dag){
+    const plan = (p && p.dagsplan) || {};
+    return Array.isArray(plan[dag]) ? plan[dag].map(r => ({ ...r })) : [];
+  }
+
+  function pdFyllVelgere(){
+    const pSel = document.getElementById('pdProgram');
+    const dSel = document.getElementById('pdDag');
+    if(!pSel || !dSel) return;
+    const forrige = pSel.value;
+    const progs = [...(cache.programs || [])].filter(p => p.navn)
+      .sort((a, b) => a.navn.localeCompare(b.navn));
+    pSel.innerHTML = '<option value="">— Velg program —</option>' +
+      progs.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.navn)}</option>`).join('');
+    if(progs.some(p => p.id === forrige)) pSel.value = forrige;
+
+    const p = pdProgramById(pSel.value);
+    const dager = pdDagerFor(p);
+    const forrigeDag = dSel.value;
+    dSel.innerHTML = dager.length
+      ? dager.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')
+      : '<option value="">— ingen undervisningsdager satt —</option>';
+    if(dager.includes(forrigeDag)) dSel.value = forrigeDag;
+  }
+
+  window.pdVelg = function(){
+    pdFyllVelgere();
+    const progId = (document.getElementById('pdProgram') || {}).value || '';
+    const dag = (document.getElementById('pdDag') || {}).value || '';
+    if(!progId || !dag){ pdTilstand = null; pdTegn(); return; }
+    pdTilstand = { progId, dag, rader: pdPlanFor(pdProgramById(progId), dag) };
+    pdTegn();
+  };
+
+  // Ny rad begynner der forrige sluttet. Skrives klokkeslettene inn helt
+  // fra bunnen hver gang, kommer det før eller siden et hull ingen ser.
+  window.pdLeggTil = function(type){
+    if(!pdTilstand) return;
+    const siste = pdTilstand.rader[pdTilstand.rader.length - 1];
+    const start = siste ? siste.slutt : '09:30';
+    const lengde = type === 'pause' ? 10 : 30;
+    const slutt = koKlokke(koMin(start) + lengde);
+    pdTilstand.rader.push({ id: pdRadId(start), start, slutt, type });
+    pdTegn();
+  };
+
+  window.pdSett = function(i, felt, verdi){
+    if(!pdTilstand) return;
+    const r = pdTilstand.rader[i];
+    if(!r) return;
+    r[felt] = verdi;
+    if(felt === 'start') r.id = pdRadId(verdi);
+    pdTegn();
+  };
+
+  window.pdFjern = function(i){
+    if(!pdTilstand) return;
+    pdTilstand.rader.splice(i, 1);
+    pdTegn();
+  };
+
+  // Feil som gjør planen ubrukelig, sagt før den lagres — ikke etterpå.
+  function pdFeil(){
+    if(!pdTilstand) return [];
+    const funn = [];
+    const r = pdTilstand.rader;
+    r.forEach((x, i) => {
+      const a = koMin(x.start), b = koMin(x.slutt);
+      if(!x.start || !x.slutt) funn.push('Rad ' + (i + 1) + ' mangler klokkeslett.');
+      else if(!(b > a)) funn.push('Rad ' + (i + 1) + ' (' + x.start + '–' + x.slutt + ') slutter før den begynner.');
+      if(i > 0){
+        const forrige = r[i - 1];
+        if(koMin(x.start) < koMin(forrige.slutt))
+          funn.push('Rad ' + (i + 1) + ' begynner ' + x.start + ', før rad ' + i + ' er ferdig ' + forrige.slutt + '.');
+        else if(koMin(x.start) > koMin(forrige.slutt))
+          funn.push('Hull mellom ' + forrige.slutt + ' og ' + x.start + ' — legg inn en pause hvis det er meningen.');
+      }
+    });
+    const ider = r.map(x => x.id);
+    if(new Set(ider).size !== ider.length) funn.push('To rader begynner på samme klokkeslett.');
+    return funn;
+  }
+
+  function pdTegn(){
+    const el = document.getElementById('pdInnhold');
+    if(!el) return;
+    if(!pdTilstand){
+      el.innerHTML = '<div class="report-empty">Velg et program og en dag.</div>';
+      return;
+    }
+    const { rader } = pdTilstand;
+    const p = pdProgramById(pdTilstand.progId);
+    const innslag = String((p && p.innslag) || '').split(',').map(t => t.trim()).filter(Boolean);
+    const feil = pdFeil();
+    const timer = rader.filter(x => x.type !== 'pause').length;
+
+    el.innerHTML =
+      (rader.length === 0
+        ? '<div class="report-empty">Dagen er ikke satt opp ennå.</div>'
+        : '<div style="display:flex; flex-direction:column; gap:6px;">' +
+          rader.map((x, i) => `
+            <div class="innst-rad" style="align-items:center; gap:8px; ${x.type === 'pause' ? 'opacity:.75;' : ''}">
+              <span style="min-width:74px; font-family:'Jost',sans-serif; font-size:12px; font-weight:700; color:${x.type === 'pause' ? '#8a9a90' : 'var(--emerald-d)'};">
+                ${x.type === 'pause' ? '☕ Pause' : '📖 Time ' + (rader.slice(0, i + 1).filter(y => y.type !== 'pause').length)}
+              </span>
+              <input type="text" value="${escapeHtml(x.start)}" style="max-width:82px;"
+                     onchange="pdSett(${i}, 'start', this.value.trim())">
+              <span style="color:#8a9a90;">–</span>
+              <input type="text" value="${escapeHtml(x.slutt)}" style="max-width:82px;"
+                     onchange="pdSett(${i}, 'slutt', this.value.trim())">
+              <button class="btn btn-ghost" style="padding:4px 10px;" onclick="pdFjern(${i})">Fjern</button>
+            </div>`).join('') +
+          '</div>') +
+      `<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+         <button class="btn btn-ghost" onclick="pdLeggTil('time')">+ Time</button>
+         <button class="btn btn-ghost" onclick="pdLeggTil('pause')">+ Pause</button>
+       </div>` +
+      (rader.length
+        ? '<div class="innst-effekt" style="margin-top:12px;">' + timer + ' undervisningstime(r) · ' +
+          (rader.length - timer) + ' pause(r) · ' +
+          escapeHtml(rader[0].start) + '–' + escapeHtml(rader[rader.length - 1].slutt) + '</div>'
+        : '') +
+      (innslag.length === 0
+        ? '<div class="innst-effekt" style="margin-top:10px;">⚠️ Programmet har ingen fag satt ennå. Sett feltet «Fag/innslag» på programmet — uten det har klassen ingenting å legge i timene.</div>'
+        : '<div class="innst-effekt" style="margin-top:10px;">Fag i dette programmet: ' +
+          innslag.map(escapeHtml).join(' · ') + '</div>') +
+      (feil.length
+        ? '<div class="ut-tittel" style="margin-top:14px;">🔴 ' + feil.length + ' å rette</div>' +
+          '<pre class="ut-logg">' + escapeHtml(feil.join('\n')) + '</pre>'
+        : '<button class="btn btn-primary" style="margin-top:14px;" onclick="pdLagre()">Lagre dagen</button>' +
+          '<div class="hint" style="margin-top:6px;">Lagrer bare feltet <b>dagsplan</b> på programmet. ' +
+          'Timeplanen som ligger i basen i dag røres ikke.</div>');
+  }
+
+  window.pdLagre = async function(){
+    if(!pdTilstand) return;
+    const p = pdProgramById(pdTilstand.progId);
+    if(!p) return;
+    const plan = { ...(p.dagsplan || {}) };
+    plan[pdTilstand.dag] = pdTilstand.rader.map(r => ({
+      id: r.id, start: r.start, slutt: r.slutt, type: r.type === 'pause' ? 'pause' : 'time'
+    }));
+    try{
+      // 🔴 updateDoc med ETT felt — aldri setDoc. Programdokumentet bærer
+      // prisene som påmeldingsskjemaet leser uten innlogging; en setDoc
+      // her ville tømt dem, og skjemaet stått uten pris.
+      await updateDoc(doc(db, 'programs', p.id), { dagsplan: plan });
+      await loggSamlet('Dagsplan satt for ' + p.navn + ' (' + pdTilstand.dag + ')',
+        pdTilstand.rader.length, 'pdLagre · programs · rader=' + pdTilstand.rader.length);
+      showToast('✓ Dagen er lagret for ' + p.navn + '.');
+    }catch(err){
+      console.error('pdLagre', err);
+      showToast('Noe gikk galt: ' + (err.message || err), true);
+    }
+  };
 
   function koTomtSpor(fag, tider){
     return { fag, okter: tider.map(tid => ({ tid, rad: null, larer: '' })) };
@@ -16341,6 +16572,7 @@
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     if(tab.dataset.tab === 'overview') renderOvFolders();
     if(tab.dataset.tab === 'klasseoppsett'){ koFyllVelgere(); koVelgKlasse(); }
+    if(tab.dataset.tab === 'programs'){ pdFyllVelgere(); pdVelg(); }
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
     if(tab.dataset.tab === 'roller') renderRoller();
