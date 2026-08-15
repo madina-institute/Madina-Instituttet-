@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 15:27:45 -->
+<!-- SIST-ENDRET: 2026-08-15 18:04:35 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -264,6 +264,26 @@
   .status.err{background:rgba(168,60,60,0.10); color:var(--red);}
   .status.busy{background:var(--paper-2); color:#5a6860;}
   .status.warn{background:rgba(183,146,74,0.14); color:#7a5f20;}
+  /* ═══════════════════════════════════════════════════════════════
+     ENHVER STATUSMELDING SKAL KUNNE KOPIERES.
+
+     🔴 Meldingene her er det man sender videre når noe er galt — og
+     15. august ble flere av dem skrevet av for hånd eller fotografert,
+     fordi de ikke kunne merkes. En feilmelding som må skrives av,
+     blir skrevet av feil.
+
+     Kopiknappen legges på av kopierbarStatus() for ALLE bokser, også
+     de som lages senere — ellers ville neste melding falle utenfor
+     igjen, akkurat som disse gjorde.
+     ═══════════════════════════════════════════════════════════════ */
+  .status{ position:relative; padding-inline-end:44px; user-select:text; -webkit-user-select:text; }
+  .kopier-status{
+    position:absolute; top:6px; inset-inline-end:6px;
+    background:rgba(255,255,255,.75); border:1px solid var(--line);
+    border-radius:7px; padding:3px 7px; cursor:pointer;
+    font-size:13px; line-height:1.1; color:inherit;
+  }
+  .kopier-status:active{ background:#fff; }
   .btn-danger{
     background:transparent; border:1px solid var(--red); color:var(--red);
     margin-top:8px;
@@ -2717,6 +2737,56 @@
     showAltStatus('ok', 'Kryss av det du vil ha med, og trykk igjen.');
   };
 
+  // Legger en kopiknapp på hver statusboks som har tekst, og fjerner den
+  // igjen når boksen tømmes. Kalles fra en observatør, så den treffer
+  // også meldinger som skrives etter at siden er lastet.
+  function kopierbarStatus(boks){
+    if(!boks) return;
+    const harTekst = (boks.textContent || '').replace(/\s+/g,'').length > 0;
+    const finnes = boks.querySelector(':scope > .kopier-status');
+    if(!harTekst){ if(finnes) finnes.remove(); return; }
+    if(finnes) return;
+    const knapp = document.createElement('button');
+    knapp.className = 'kopier-status';
+    knapp.type = 'button';
+    knapp.title = 'Kopier meldingen';
+    knapp.textContent = '📋';
+    knapp.onclick = (e) => {
+      e.stopPropagation();
+      // 🔴 Knappens eget tegn skal ikke bli med i det som kopieres.
+      //
+      // Første forsøk klonet boksen og fjernet knappen med querySelector
+      // på klonen. Det tok med «📋» likevel — og en feilmelding som
+      // slutter på et ikon er akkurat den typen detalj som gjør at den
+      // som leser den, leter etter noe som ikke finnes.
+      //
+      // Nå fjernes knappen fra dokumentet, teksten leses, og knappen
+      // settes tilbake. Ingen kloning, ingenting å ta feil av.
+      boks.removeChild(knapp);
+      const tekst = (boks.innerText || boks.textContent || '').trim();
+      boks.appendChild(knapp);
+      navigator.clipboard.writeText(tekst)
+        .then(() => { knapp.textContent = '✓'; setTimeout(() => knapp.textContent = '📋', 1400); })
+        .catch(() => { knapp.textContent = '✗'; setTimeout(() => knapp.textContent = '📋', 1400); });
+    };
+    boks.appendChild(knapp);
+  }
+
+  function overvåkStatusbokser(){
+    const bokser = [...document.querySelectorAll('.status')];
+    bokser.forEach(kopierbarStatus);
+    // Meldingene skrives med innerHTML/textContent fra mange steder.
+    // En observatør fanger dem alle uten at hvert kallsted må endres —
+    // og uten at neste melding som legges til, blir glemt.
+    const obs = new MutationObserver(muts => {
+      muts.forEach(m => {
+        const boks = m.target.closest ? m.target.closest('.status') : null;
+        if(boks) kopierbarStatus(boks);
+      });
+    });
+    bokser.forEach(b => obs.observe(b, { childList:true, characterData:true, subtree:true }));
+  }
+
   function showAltStatus(cls, tekst){
     const boks = document.getElementById('altStatus');
     if(boks){ boks.className = 'status show ' + cls; boks.textContent = tekst; }
@@ -3027,6 +3097,17 @@
         ? '<br>🔐 <b>' + REGELSTI + ' ble ikke tatt med</b> — reglene publiseres fra Regler-fanen.'
         : '');
     tegnMultiListe();
+
+    // 🔴 Kontrollen kjøres med én gang, som ved enkeltfil.
+    //
+    // Enkeltfil-opplastingen har gjort dette hele tiden: du ser at kopien
+    // er gammel FØR du bestemmer deg. I en leveranse måtte man derimot
+    // huske å trykke «Sjekk alle filene» — og det ene trykket man må
+    // huske, er det som ikke blir gjort når det haster.
+    //
+    // Og i en leveranse betyr det mer, ikke mindre: her er det ti filer
+    // som kan være gamle, ikke én.
+    if(multiFiles.length) sjekkAlle(true);
   }
 
   window.handleMultiFileUpload = async function(event){
@@ -3085,13 +3166,15 @@
   // Det er feil rekkefølge for det som betyr noe. Med ti filer vil man
   // vite hva som kommer til å skje før noe skjer.
   // ═══════════════════════════════════════════════════════════════════
-  window.sjekkAlle = async function(){
+  window.sjekkAlle = async function(automatisk){
     if(multiFiles.length === 0) return;
     const btn = document.getElementById('multiSjekkBtn');
     const statusBox = document.getElementById('multiStatusBox');
     if(btn) btn.disabled = true;
+    const start = statusBox.innerHTML;
     statusBox.className = 'status show busy';
-    statusBox.textContent = 'Kontrollerer ' + multiFiles.length + ' filer…';
+    statusBox.innerHTML = (automatisk ? start + '<br>' : '') +
+      'Kontrollerer ' + multiFiles.length + ' filer…';
 
     let nye = 0, sperret = 0, feilType = 0;
     for(let idx = 0; idx < multiFiles.length; idx++){
@@ -3139,7 +3222,10 @@
     if(sperret)  deler.push(sperret + ' blir hoppet over');
     if(feilType) deler.push(feilType + ' med feil innholdstype');
     statusBox.className = 'status show ' + (feilType ? 'err' : (sperret ? 'warn' : 'ok'));
-    statusBox.textContent = deler.join(' · ') + '. Ingenting er publisert ennå.';
+    // Ved automatisk kontroll beholdes åpningslinjen — den sier blant annet
+    // at reglene ble holdt utenfor, og det svaret skal ikke forsvinne.
+    statusBox.innerHTML = (automatisk ? start + '<br>' : '') +
+      deler.join(' · ') + '. Ingenting er publisert ennå.';
     if(btn) btn.disabled = false;
   };
 
@@ -3662,6 +3748,7 @@
   utstyrStatusboksene();
   velgFane('publiser');
   tegnStatuskort();
+  overvåkStatusbokser();
 </script>
 <style>
   #lastDeployBadge{
@@ -3784,7 +3871,20 @@
     fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(txt){
-        var m = txt.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+        // 🔴 Bare stempelet ØVERST teller — ikke det første treffet.
+        //
+        // Verktøyet publiserer seg selv, og kildekoden inneholder
+        // teksten «SIST-ENDRET:» flere steder: i stemplingsfunksjonen,
+        // i regexene som fjerner gamle stempler, og i kommentarer.
+        // Et fritt søk fant et av dem, og merket viste et tidspunkt som
+        // aldri hadde vært et stempel i det hele tatt.
+        //
+        // Det ekte stempelet står som HTML-kommentar helt i starten,
+        // rett etter <!DOCTYPE html>. Bare de første 400 tegnene leses,
+        // og bare i kommentarform — da kan ingen tekst lenger nede
+        // forveksles med den.
+        var m = txt.slice(0, 400)
+          .match(/<!--\s*SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})\s*-->/);
         // Merket forsvant tidligere uten et ord når stempelet manglet. Da
         // var det umulig å se forskjell på «filen har ikke stempel» og
         // «merket virker ikke» — to helt ulike problemer. Nå sier det ifra.
