@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 14:30:32 -->
+<!-- SIST-ENDRET: 2026-08-15 14:36:38 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -33,12 +33,24 @@
   *{box-sizing:border-box;}
   html, body{overflow-x:hidden; max-width:100%;}
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
-  header{
-    background:linear-gradient(165deg,var(--emerald) 0%, var(--emerald-d) 100%);
-    color:var(--paper); padding:22px 20px; text-align:center; box-shadow:var(--shadow);
+  /* Toppfeltet er panelets: hvit stripe med logoen til venstre, ikke en
+     farget gradient. Den grønne gradienten var det første man så, og den
+     sa «annet system» før man rakk å lese noe. */
+  .hdr-bakgrunn{
+    background:#fff; border-bottom:1px solid var(--line);
+    box-shadow:0 1px 3px rgba(6,25,91,.06); position:sticky; top:0; z-index:400;
   }
-  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; margin:0 0 4px;}
-  header p{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold-l); margin:0;}
+  header{
+    background:#fff; color:var(--ink);
+    display:flex; align-items:center; gap:14px;
+    max-width:560px; margin:0 auto; width:100%; padding:14px 16px; text-align:start;
+  }
+  header img{ height:38px; width:auto; }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:23px; margin:0; color:var(--emerald-d);}
+  header p{
+    font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--gold); margin:2px 0 0;
+  }
   main{max-width:560px; margin:0 auto; padding:20px 16px 60px;}
 
   /* ---- Statuskort, samme form som panelets ---- */
@@ -57,29 +69,43 @@
     font-size:16px; opacity:.42; pointer-events:none;
   }
   .stat-card .n{
-    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:24px; line-height:1.1;
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:30px; line-height:1;
   }
   .stat-card .l{
-    font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.03em; margin-top:3px; opacity:.85;
+    font-family:'Jost',sans-serif; font-size:9.5px; letter-spacing:.05em;
+    text-transform:uppercase; margin-top:5px; white-space:normal;
   }
-  .stat-green{ background:var(--stat-green-bg); }  .stat-green .n{ color:var(--stat-green-fg); }
-  .stat-yellow{ background:var(--stat-yellow-bg); } .stat-yellow .n{ color:var(--stat-yellow-fg); }
-  .stat-blue{ background:var(--stat-blue-bg); }    .stat-blue .n{ color:var(--stat-blue-fg); }
-  .stat-red{ background:var(--stat-red-bg); }      .stat-red .n{ color:var(--stat-red-fg); }
+  /* Fargene er panelets egne — mettede gradienter med hvit tekst, ikke
+     pastell. Pastellkortene mine leste som «informasjon»; disse leser som
+     status, og det er forskjellen på et tall og et svar. */
+  .stat-card.stat-blue  { background:linear-gradient(135deg,#1A9BEC,#1372b3); border-color:transparent; }
+  .stat-card.stat-green { background:linear-gradient(135deg,#62C038,#4a9a29); border-color:transparent; }
+  .stat-card.stat-yellow{ background:linear-gradient(135deg,#FF771F,#e05f0d); border-color:transparent; }
+  .stat-card.stat-red   { background:linear-gradient(135deg,#c0392b,#8e2620); border-color:transparent; }
+  .stat-card.stat-morke { background:linear-gradient(135deg,#2b3f8f,#06195B); border-color:transparent; }
+  .stat-card .n, .stat-card .l{ color:#fff; }
+  .stat-card .stat-ikon{ opacity:.55; }
 
   /* ---- Fanerad, samme form som panelets ---- */
+  /* Fanene er panelets app-sidebar: et hvitt kort med ikon over etikett,
+     og den valgte fylt i hovedfargen. Den tynne tekstraden jeg hadde
+     først lignet ingenting i systemet ellers. */
   .verktoy-faner{
-    display:flex; gap:0; background:var(--paper-2);
-    border-bottom:1px solid var(--line); overflow-x:auto;
-    margin:0 -16px 18px; padding:0 16px;
+    display:flex; flex-direction:row; align-items:stretch; gap:4px;
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:8px; margin-bottom:16px; box-shadow:var(--shadow);
+    overflow-x:auto; overflow-y:hidden; scrollbar-width:none;
   }
+  .verktoy-faner::-webkit-scrollbar{ display:none; }
   .verktoy-fane{
-    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; letter-spacing:.03em;
-    padding:14px 14px; cursor:pointer; color:#5a6860;
-    border-bottom:3px solid transparent; white-space:nowrap; user-select:none;
-    background:none; border-top:0; border-inline:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; flex:0 0 auto; min-width:76px; gap:4px;
+    background:transparent; border:0; border-radius:10px; padding:9px 8px;
+    cursor:pointer; color:#5a6860;
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; letter-spacing:.02em;
   }
-  .verktoy-fane.active{ color:var(--emerald-d); border-bottom-color:var(--gold); }
+  .verktoy-fane .ic{ font-size:19px; line-height:1; }
+  .verktoy-fane.active{ background:var(--emerald); color:#fff; }
 
   /* ---- Lenkeruter ---- */
   .lenke-rutenett{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
@@ -305,11 +331,11 @@
     <!-- Fanene erstatter «velg oppgave»-skjermen. Samme form som
          panelets faner, slik at det er ett sted å lære, ikke to. -->
     <div class="verktoy-faner" id="verktoyFaner">
-      <button class="verktoy-fane active" data-fane="publiser" onclick="velgFane('publiser')">📤 Publiser</button>
-      <button class="verktoy-fane" data-fane="regler"   onclick="velgFane('regler')">🔐 Regler</button>
-      <button class="verktoy-fane" data-fane="status"   onclick="velgFane('status')">🚦 Status</button>
-      <button class="verktoy-fane" data-fane="lenker"   onclick="velgFane('lenker')">🔗 Lenker</button>
-      <button class="verktoy-fane" data-fane="arkiv"    onclick="velgFane('arkiv')">📦 Arkiv</button>
+      <button class="verktoy-fane active" data-fane="publiser" onclick="velgFane('publiser')"><span class="ic">📤</span>Publiser</button>
+      <button class="verktoy-fane" data-fane="regler" onclick="velgFane('regler')"><span class="ic">🔐</span>Regler</button>
+      <button class="verktoy-fane" data-fane="status" onclick="velgFane('status')"><span class="ic">🚦</span>Status</button>
+      <button class="verktoy-fane" data-fane="lenker" onclick="velgFane('lenker')"><span class="ic">🔗</span>Lenker</button>
+      <button class="verktoy-fane" data-fane="arkiv" onclick="velgFane('arkiv')"><span class="ic">📦</span>Arkiv</button>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -3148,11 +3174,11 @@
 
     if(k.feil){
       sett('statUtlegg', '—', 'Kunne ikke lese');
-      farge('statUtlegg', 'stat-yellow');
+      farge('statUtlegg', 'stat-morke');
     } else {
       const siste = k.liste[0];
-      if(!siste){ sett('statUtlegg', '—', 'Ingen kjøringer'); farge('statUtlegg','stat-yellow'); }
-      else if(siste.status !== 'completed'){ sett('statUtlegg','⏳','Pågår nå'); farge('statUtlegg','stat-yellow'); }
+      if(!siste){ sett('statUtlegg', '—', 'Ingen kjøringer'); farge('statUtlegg','stat-morke'); }
+      else if(siste.status !== 'completed'){ sett('statUtlegg','⏳','Legges ut nå'); farge('statUtlegg','stat-yellow'); }
       else if(siste.conclusion === 'success'){ sett('statUtlegg','Ute','Alt er lagt ut'); farge('statUtlegg','stat-green'); }
       else { sett('statUtlegg','🛑','IKKE ute — se Status'); farge('statUtlegg','stat-red'); }
     }
