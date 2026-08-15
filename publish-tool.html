@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 18:44:43 -->
+<!-- SIST-ENDRET: 2026-08-15 18:51:49 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3431,14 +3431,21 @@
   };
 
   window.slettFil = async function(sti){
-    // Navnet må skrives for hånd. En bekreftelsesdialog trykkes bort på
-    // refleks; å skrive navnet krever at man har lest hva som slettes.
-    const svar = prompt('Slette «' + sti + '» fra repoet?\n\n' +
-      'Filen forsvinner fra nettstedet ved neste utlegging. Historikken i GitHub beholder den,\n' +
-      'så den kan hentes tilbake — men det må gjøres på github.com.\n\n' +
-      'Skriv filnavnet nøyaktig for å bekrefte:');
-    if(svar === null) return;
-    if(svar.trim() !== sti){ alert('Navnet stemte ikke. Ingenting er slettet.'); return; }
+    // To spørsmål, ikke ett — og de spør om FORSKJELLIGE ting.
+    //
+    // Første forsøk krevde at filnavnet ble skrevet inn. Det ble forkastet
+    // som for tungt, og med god grunn: listen inneholder nå bare filer et
+    // tekstsøk faktisk kan avgjøre, bildene er ute, og GitHub beholder
+    // historikken uansett.
+    //
+    // Men ETT trykk er for lite. Den første dialogen kan treffes ved uhell
+    // mens man ruller. Den andre kommer da uventet, med filnavnet i klartekst
+    // — og et uventet spørsmål blir lest.
+    if(!confirm('Slette «' + sti + '» fra repoet?\n\n' +
+      'Filen forsvinner fra nettstedet ved neste utlegging.')) return;
+    if(!confirm('Sikker?\n\n' + sti + ' slettes nå.\n\n' +
+      'GitHub beholder historikken, så den kan hentes tilbake — men det må ' +
+      'gjøres på github.com, ikke herfra.')) return;
     const cfg = loadConfig();
     const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
     const headers = { 'Authorization':'Bearer ' + cfg.token, 'Accept':'application/vnd.github+json' };
