@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 10:47:18 -->
+<!-- SIST-ENDRET: 2026-08-15 20:23:53 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -986,10 +986,8 @@
         <label>Svar</label>
         <textarea id="adminMsgsReplyText" rows="3"></textarea>
       </div>
-      <div class="field" style="display:flex; gap:16px; align-items:center;">
-        <label style="display:flex; align-items:center; gap:5px; font-weight:400; margin:0;"><input type="radio" name="adminMsgVisibility" value="private" checked> Svar privat til administrasjonen</label>
-        <label style="display:flex; align-items:center; gap:5px; font-weight:400; margin:0;"><input type="radio" name="adminMsgVisibility" value="all"> Svar til alle mottakere</label>
-      </div>
+      <!-- «Svar til alle mottakere» er fjernet: samtalen har bare to parter. -->
+      <div class="field" style="font-size:12px; color:#8a9a90;">🔒 Svaret går bare til administrasjonen.</div>
       <button class="btn btn-primary" onclick="sendAdminMsgReply()">Send svar</button>
     </div>
 
@@ -1196,11 +1194,36 @@
     for(let i = 0; i < liste.length; i += storrelse) ut.push(liste.slice(i, i + storrelse));
     return ut;
   }
+  // Som watch(), men med spørringer i stedet for hele samlingen. Samme
+  // form som i index4.html. byggSporringer kan returnere en tom liste når
+  // det ikke finnes noe å spørre om — da settes ingen lytter.
+  function watchQuery(samling, byggSporringer, onData, onError){
+    const start = () => {
+      const sporringer = byggSporringer() || [];
+      if(sporringer.length === 0){ onData([]); return; }
+      const deler = sporringer.map(() => []);
+      sporringer.forEach((q, i) => {
+        onSnapshot(q, (snap) => {
+          deler[i] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          onData(deler.flat());
+        }, onError || ((err) => console.error(samling, err)));
+      });
+    };
+    __pendingWatchers.push(start);
+    if(__listenersStarted) start();
+  }
   function startDataListeners(){
     if(__listenersStarted) return;
     __listenersStarted = true;
     __pendingWatchers.forEach(fn => fn());
   }
+
+  // Den innloggede e-posten, normalisert — samme verdi som regelen ser
+  // (request.auth.token.email.lower()). 🔴 Må settes FØR
+  // startDataListeners(), ellers bygges meldingsspørringen på tom streng
+  // og innboksen står tom uten å si hvorfor.
+  let minEpost = '';
+
   const storage = getStorage(app);
 
   const MAX_FILE_MB = 10;
@@ -2116,16 +2139,30 @@
   });
 
   let dailyPlanTemplates = [], monthlyPlanTemplates = [], semesterPlanTemplates = [];
+  // ═══════════════════════════════════════════════════════════════
+  // MELDINGER FRA ADMINISTRASJONEN
+  //
+  // 🔴 Begge lastet HELE samlingen og filtrerte på skjermen. Enhver
+  // innlogget lærer hadde dermed alle familiers og alle kollegers
+  // meldinger i minnet — også de private svarene. Skjermfilteret er en
+  // visning, ikke en sperre.
+  //
+  // Nå spør portalen om sine egne. Hver tråd har én adressat i
+  // 'mottakerEpost', og spørringen har nøyaktig formen regelen krever.
+  // ═══════════════════════════════════════════════════════════════
   let broadcastThreads = [], broadcastMessages = [];
-  watch('broadcastThreads', (snap) => {
-    broadcastThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const sporrMineBroadcast = (samling) => () => !minEpost ? []
+    : [query(collection(db, samling), where('mottakerEpost', '==', minEpost))];
+
+  watchQuery('broadcastThreads', sporrMineBroadcast('broadcastThreads'), (rader) => {
+    broadcastThreads = rader;
     if(currentTeacher){
       updateAdminMsgDot();
       if(document.getElementById('adminMsgsListView').style.display !== 'none') renderAdminMsgsList();
     }
   });
-  watch('broadcastMessages', (snap) => {
-    broadcastMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  watchQuery('broadcastMessages', sporrMineBroadcast('broadcastMessages'), (rader) => {
+    broadcastMessages = rader;
     if(currentTeacher){
       updateAdminMsgDot();
       if(currentAdminMsgThreadId) renderAdminMsgsThreadHistory();
@@ -2350,6 +2387,7 @@
     // En lærer kan ha timer i flere klasser uten at feltet er satt — da
     // er det timeplanen som gjelder. Har læreren verken kort-klasse
     // eller timer, står velgeren tom og sier fra der.
+    minEpost = String(auth.currentUser?.email || teacher.epost || '').trim().toLowerCase();
     startDataListeners();
     currentTeacher = teacher;
     updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
@@ -3633,7 +3671,8 @@
 
   function myAdminMsgThreads(){
     if(!currentTeacher) return [];
-    return broadcastThreads.filter(th => (th.recipients||[]).some(r => r.type === 'teacher' && r.id === currentTeacher.id));
+    // Alt som er lastet ned ER mitt — spørringen ba bare om mine.
+    return broadcastThreads.slice();
   }
 
   function updateAdminMsgDot(){
@@ -3656,9 +3695,8 @@
     const el = document.getElementById('adminMsgsList');
     if(!el || !currentTeacher) return;
     const rows = myAdminMsgThreads().map(th => {
-      const msgs = broadcastMessages.filter(m => m.threadId === th.id &&
-        (m.fra === 'Administrasjon' || m.visibility === 'all' || m.avsenderId === currentTeacher.id)
-      ).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const msgs = broadcastMessages.filter(m => m.threadId === th.id)
+        .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
       const last = msgs[msgs.length - 1];
       const seen = localStorage.getItem('adminmsg_seen_' + th.id);
       const unread = last && last.fra === 'Administrasjon' && (!seen || (last.dato||'') > seen);
@@ -3697,21 +3735,18 @@
   function renderAdminMsgsThreadHistory(){
     const el = document.getElementById('adminMsgsThreadHistory');
     if(!el || !currentAdminMsgThreadId) return;
-    // Everyone in the group sees admin's message and any "reply to all"
-    // replies — but a "private" reply is only ever visible to the person
-    // who sent it (and admin, in the admin panel's own archive view).
-    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId &&
-      (m.fra === 'Administrasjon' || m.visibility === 'all' || m.avsenderId === currentTeacher.id)
-    ).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+    // Samtalen går mellom meg og administrasjonen alene. 'visibility'
+    // er borte: det finnes ingen gruppe å svare "til alle" i.
+    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId)
+      .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     el.innerHTML = msgs.map(m => {
       const isMe = m.fra !== 'Administrasjon';
       const senderName = isMe ? m.avsenderNavn : 'Administrasjonen';
-      const privateTag = m.visibility === 'private' ? ' <span style="font-size:10px; font-weight:700; color:var(--gold);">🔒 privat</span>' : '';
       return `
       <div class="chat-row ${isMe ? 'me' : ''}">
         <div class="chat-avatar">${escapeHtml(initialsFor(senderName))}</div>
         <div class="chat-bubble">
-          <span class="chat-sender">${escapeHtml(senderName)}${privateTag}</span>
+          <span class="chat-sender">${escapeHtml(senderName)}</span>
           ${escapeHtml(m.tekst||'')}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
         </div>
@@ -3723,15 +3758,17 @@
   window.sendAdminMsgReply = async function(){
     if(!currentTeacher || !currentAdminMsgThreadId) return;
     const tekst = document.getElementById('adminMsgsReplyText').value.trim();
-    const visibility = document.querySelector('input[name="adminMsgVisibility"]:checked')?.value || 'private';
     if(!tekst){
       notify(currentLang === 'ar' ? 'اكتب نص الرسالة.' : 'Skriv en melding.');
       return;
     }
     try{
       await addDoc(collection(db, 'broadcastMessages'), {
-        threadId: currentAdminMsgThreadId, fra: 'Lærer', avsenderNavn: currentTeacher.navn, avsenderId: currentTeacher.id,
-        visibility, tekst, dato: new Date().toISOString()
+        // 🔴 Uten mottakerEpost treffer svaret ingen spørring: det ville
+        // blitt lagret, kvittert for, og aldri vist igjen.
+        threadId: currentAdminMsgThreadId, mottakerEpost: minEpost,
+        fra: 'Lærer', avsenderNavn: currentTeacher.navn, avsenderId: currentTeacher.id,
+        tekst, dato: new Date().toISOString()
       });
       await updateDoc(doc(db, 'broadcastThreads', currentAdminMsgThreadId), { lastActivityAt: new Date().toISOString() });
       document.getElementById('adminMsgsReplyText').value = '';
