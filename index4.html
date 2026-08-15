@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 08:55:05 -->
+<!-- SIST-ENDRET: 2026-08-15 09:17:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -2122,7 +2122,7 @@
     const sortert = myChildren.map((b, i) => ({ b, i }))
       .sort((x, y) => (parseInt(x.b.soskenrekkefolge,10) || 99) - (parseInt(y.b.soskenrekkefolge,10) || 99));
 
-    const rader = sortert.map(({ b, i }) => kortForBarn(b, i, lang)).join('');
+    const rader = sortert.map(({ b, i }) => kortForBarn(b, i, currentLang)).join('');
     el.innerHTML = rader;
   }
 
@@ -2194,11 +2194,25 @@
       const periode = ferie.tilDato && ferie.tilDato !== ferie.fraDato
         ? datoNorsk(ferie.fraDato, lang) + ' – ' + datoNorsk(ferie.tilDato, lang)
         : datoNorsk(ferie.fraDato, lang);
+      // 🔴 Nedtellingen hører hjemme HER, ikke i en egen tilstand.
+      //
+      // Første utgave lot ferien vinne og viste bare «vi ses 5.
+      // september». Men sommerferien ER perioden hvor nedtellingen betyr
+      // noe — resten av året er neste undervisningsdag uansett få dager
+      // unna. Skilt fra hverandre ville det store tallet aldri blitt
+      // vist på den eneste tiden det gjør inntrykk.
+      const nedTilStart = (skolear.startDato && iso(new Date()) < skolear.startDato)
+        ? dagerTil(skolear.startDato) : 0;
       return `
         <span class="fv-fri">
           <span class="fv-fri-navn">${escapeHtml(ferie.beskrivelse || (ar ? 'إجازة' : 'Fri'))}</span>
           <span class="fv-fri-periode">${periode}</span>
-          ${tilbake}
+          ${nedTilStart > 0 ? `
+            <span class="fv-ned-tall">${nedTilStart}</span>
+            <span class="fv-ned-tekst">${ar ? 'يوم على بداية الدراسة'
+              : (nedTilStart === 1 ? 'dag til skolestart' : 'dager til skolestart')}</span>
+            <span class="fv-tilbake-dato">${datoNorsk(skolear.startDato, lang)}</span>`
+          : tilbake}
         </span>`;
     }
 
