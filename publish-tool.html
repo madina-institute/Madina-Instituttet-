@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 19:33:52 -->
+<!-- SIST-ENDRET: 2026-08-15 19:41:27 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2922,14 +2922,24 @@
   }
 
   function overvåkStatusbokser(){
-    const bokser = [...document.querySelectorAll('.status')];
+    // 🔴 «.status» dekket bare de fire statusfeltene. Utleggingssvaret,
+    // rapporten, historikken og kandidatlisten står i egne bokser — og
+    // det er nettopp DE man sender videre. «Alt er ute»-svaret måtte
+    // skrives av for hånd, samme kveld som knappen ble laget.
+    //
+    // Listen står her fordi den er kort og fast. Kommer en ny boks til,
+    // skal den inn her — ellers faller neste melding utenfor igjen.
+    const bokser = [...document.querySelectorAll(
+      '.status, #utleggingBoks, #rapportBoks, #gjenopprettBoks, #foreldreloseBoks')];
     bokser.forEach(kopierbarStatus);
     // Meldingene skrives med innerHTML/textContent fra mange steder.
     // En observatør fanger dem alle uten at hvert kallsted må endres —
     // og uten at neste melding som legges til, blir glemt.
     const obs = new MutationObserver(muts => {
       muts.forEach(m => {
-        const boks = m.target.closest ? m.target.closest('.status') : null;
+        const boks = m.target.closest
+          ? m.target.closest('.status, #utleggingBoks, #rapportBoks, #gjenopprettBoks, #foreldreloseBoks')
+          : null;
         if(boks) kopierbarStatus(boks);
       });
     });
@@ -4233,6 +4243,9 @@
     pointer-events:none;
   }
 
+  #utleggingBoks, #rapportBoks, #gjenopprettBoks, #foreldreloseBoks{
+    position:relative; padding-inline-end:44px;
+  }
   #gjenopprettBoks, #foreldreloseBoks{
     margin-top:12px; padding:12px 14px; border-radius:12px;
     background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
