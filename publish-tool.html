@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 11:18:54 -->
+<!-- SIST-ENDRET: 2026-08-15 11:59:10 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1280,7 +1280,7 @@
     const frist = Date.now() + 150000;      // to og et halvt minutt
     let sett = null;
     while(Date.now() < frist){
-      const kj = await hentKjoringer(5);
+      const kj = (await hentKjoringer(5)).liste;
       sett = kj.find(r => new Date(r.created_at).getTime() >= startetFra - 5000);
       if(sett && sett.status === 'completed') break;
       if(meld) meld(sett ? 'Legger ut på nettstedet…' : 'Venter på at utleggingen starter…');
@@ -1295,29 +1295,51 @@
     return { status:'feilet', run:sett };
   }
 
+  // 🔴 Første utgave returnerte null på ALT som gikk galt — 401, 403,
+  // 404, nettverksbrudd. Ringte den ut, sto skjermen på «Leser
+  // kjøringene…» uten at noe kom, og årsaken fantes ingen steder.
+  //
+  // Det er nøyaktig feilen dette verktøyet ble utvidet for å fange, skrevet
+  // inn i utvidelsen selv. Nå følger statusen med tilbake, og den som
+  // spør får vite HVA som stoppet.
   async function ghGet(sti){
     const cfg = loadConfig();
-    if(!cfg || !cfg.owner || !cfg.repo) return null;
+    if(!cfg || !cfg.owner || !cfg.repo){
+      return { ok:false, grunn:'Oppsettet mangler — lagre eier, repo og token først.' };
+    }
     const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + sti;
     const headers = { 'Accept': 'application/vnd.github+json' };
     if(cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
     try{
       const r = await fetch(url, { headers, cache: 'no-store' });
-      if(!r.ok) return null;
-      return await r.json();
-    }catch(e){ return null; }
+      if(r.ok) return { ok:true, data: await r.json() };
+      const kropp = await r.json().catch(() => ({}));
+      const forklaring =
+        (r.status === 401 || r.status === 403)
+          ? 'Tokenet mangler lesetilgang til Actions. Et fintkornet token trenger «Actions: Read» på dette repoet.'
+        : (r.status === 404)
+          ? 'Fant ikke ' + DEPLOY_WORKFLOW + ' — heter arbeidsflyten noe annet, eller mangler tokenet tilgang til repoet?'
+        : (kropp.message || '');
+      return { ok:false, status:r.status, grunn:'GitHub svarte ' + r.status + '. ' + forklaring };
+    }catch(e){
+      return { ok:false, grunn:'Fikk ikke kontakt med GitHub: ' + (e.message || e) };
+    }
   }
 
-  // Kjøringene for utleggingen, nyeste først.
+  // Kjøringene for utleggingen, nyeste først. Returnerer også grunnen når
+  // listen ikke kunne hentes — «tom» og «kunne ikke spørre» er to helt
+  // ulike svar, og å vise dem likt er nettopp det som skjulte feilen.
   async function hentKjoringer(antall){
-    const d = await ghGet('/actions/workflows/' + DEPLOY_WORKFLOW + '/runs?per_page=' + (antall || 10));
-    return (d && d.workflow_runs) ? d.workflow_runs : [];
+    const r = await ghGet('/actions/workflows/' + DEPLOY_WORKFLOW + '/runs?per_page=' + (antall || 10));
+    if(!r.ok) return { feil: r.grunn, liste: [] };
+    return { feil: null, liste: (r.data && r.data.workflow_runs) ? r.data.workflow_runs : [] };
   }
 
   // Feilteksten fra selve deploy-steget. Trekker ut linjene rundt «Error:»
   // — hele loggen er hundrevis av linjer, og det er de fire som betyr noe.
   async function hentFeiltekst(runId){
-    const jobber = await ghGet('/actions/runs/' + runId + '/jobs');
+    const svar = await ghGet('/actions/runs/' + runId + '/jobs');
+    const jobber = svar && svar.ok ? svar.data : null;
     const jobb = jobber && jobber.jobs && jobber.jobs[0];
     if(!jobb) return '';
     // Loggen krever token med repo-lesing. Har vi den ikke, sier vi det
@@ -1394,11 +1416,17 @@
     boks.style.display = 'block';
     boks.innerHTML = '<div class="ut-sub">Leser kjøringene…</div>';
 
-    const kj = await hentKjoringer(15);
+    const svar = await hentKjoringer(15);
+    if(svar.feil){
+      boks.innerHTML = '<div class="ut-tittel">Kunne ikke lese kjøringene</div>' +
+        '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(svar.feil) + '</pre>' +
+        '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier meldingen</button>';
+      return;
+    }
+    const kj = svar.liste;
     if(kj.length === 0){
-      boks.innerHTML = '<div class="ut-tittel">Fant ingen kjøringer</div>' +
-        '<div class="ut-sub">Enten er oppsettet ikke lagret ennå, eller så heter arbeidsflyten noe annet enn ' +
-        DEPLOY_WORKFLOW + '.</div>';
+      boks.innerHTML = '<div class="ut-tittel">Ingen kjøringer funnet</div>' +
+        '<div class="ut-sub">Arbeidsflyten ' + DEPLOY_WORKFLOW + ' finnes, men har ikke kjørt ennå.</div>';
       return;
     }
 
