@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 15:27:44 -->
+<!-- SIST-ENDRET: 2026-08-15 08:55:05 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -235,12 +235,123 @@
   }
   /* Hvert barn er en rad man kan trykke paa. Raden ER inngangen - ikke en
      liste man maa lese for saa aa finne en knapp et annet sted. */
+  /* ═══════════════════════════════════════════════════════════════
+     BARNEKORTET
+
+     Kortet er nå en dag, ikke en faktura. Navnet står øverst, og under
+     det står det som faktisk skjer neste undervisningsdag.
+
+     Grunnen til at det ser ut som et kort og ikke en rad: en rad leses
+     som en liste man skal velge fra. Et kort leses som noe som gjelder
+     akkurat dette barnet — og det er nettopp forskjellen vi vil ha.
+     ═══════════════════════════════════════════════════════════════ */
   .fv-barn{
-    display:flex; align-items:flex-start; gap:12px; width:100%;
-    background:none; border:none; border-bottom:1px solid var(--line);
-    padding:15px 18px; cursor:pointer; text-align:start;
+    display:block; width:100%; text-align:start; cursor:pointer;
+    background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:0; margin-bottom:14px; overflow:hidden;
+    box-shadow:0 2px 10px rgba(6,25,91,0.06);
+    transition:transform .15s, box-shadow .15s, border-color .15s;
   }
-  .fv-barn:hover{ background:var(--paper-2); }
+  .fv-barn:hover{
+    transform:translateY(-2px); border-color:var(--emerald-l);
+    box-shadow:0 10px 24px rgba(6,25,91,0.12);
+  }
+  .fv-barn-topp{
+    display:flex; align-items:flex-start; gap:12px;
+    padding:16px 18px 14px;
+  }
+  .fv-pil{ align-self:center; color:#b9c6cf; font-size:18px; }
+
+  /* Prikken erstatter beløpet. Den sier AT noe utestår, ikke hvor mye —
+     tallet står under Betaling, der man selv velger å se det. */
+  .fv-prikk{
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--red); margin-inline-start:7px; vertical-align:middle;
+  }
+
+  /* ---- Dagen ---- */
+  .fv-dag{ display:block; border-top:1px solid var(--line); padding:12px 18px 15px; }
+  .fv-dag-tittel{
+    display:block; font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--emerald);
+    margin-bottom:9px;
+  }
+  html[dir="rtl"] .fv-dag-tittel{ font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; font-size:12.5px; }
+  .fv-time{ display:flex; align-items:baseline; gap:10px; padding:4px 0; }
+  .fv-time-tid{
+    flex:0 0 46px; font-family:'Jost',sans-serif; font-size:12.5px;
+    font-weight:700; color:var(--emerald-d); font-variant-numeric:tabular-nums;
+  }
+  .fv-time-fag{ flex:1 1 auto; font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); }
+  html[dir="rtl"] .fv-time-fag{ font-family:'Tajawal',sans-serif; font-size:13.5px; }
+  .fv-time-larer{ flex:0 0 auto; font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9aa3; }
+  html[dir="rtl"] .fv-time-larer{ font-family:'Tajawal',sans-serif; }
+  .fv-pause{
+    display:block; font-family:'Jost',sans-serif; font-size:11px; color:#9aa8b0;
+    padding:3px 0 3px 56px; font-style:italic;
+  }
+  html[dir="rtl"] .fv-pause{ font-family:'Tajawal',sans-serif; font-style:normal; padding:3px 56px 3px 0; }
+  .fv-dag-tom{ font-family:'Jost',sans-serif; font-size:12.5px; color:#9aa8b0; }
+
+  /* ---- Nedtelling ---- */
+  .fv-nedtelling{
+    display:block; border-top:1px solid var(--line); padding:18px; text-align:center;
+    background:linear-gradient(160deg, rgba(26,155,236,0.07), rgba(6,25,91,0.05));
+  }
+  .fv-ned-tall{
+    display:block; font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:52px; line-height:1; color:var(--emerald-d);
+  }
+  .fv-ned-tekst{
+    display:block; font-family:'Jost',sans-serif; font-size:12.5px;
+    color:#6b7d8f; margin-top:4px;
+  }
+  html[dir="rtl"] .fv-ned-tekst{ font-family:'Tajawal',sans-serif; font-size:13.5px; }
+
+  /* ---- Vanlig fri ---- */
+  .fv-fri{
+    display:block; border-top:1px solid var(--line); padding:18px; text-align:center;
+    background:var(--paper-2);
+  }
+  .fv-fri-navn{
+    display:block; font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:22px; color:var(--emerald-d);
+  }
+  html[dir="rtl"] .fv-fri-navn{ font-family:'Tajawal',sans-serif; font-size:20px; }
+  .fv-fri-periode{
+    display:block; font-family:'Jost',sans-serif; font-size:12px; color:#7b8a93; margin-top:4px;
+  }
+  html[dir="rtl"] .fv-fri-periode{ font-family:'Tajawal',sans-serif; font-size:13px; }
+  .fv-tilbake-dato{
+    display:block; font-family:'Jost',sans-serif; font-size:12px;
+    color:var(--emerald); font-weight:600; margin-top:10px;
+  }
+  html[dir="rtl"] .fv-tilbake-dato{ font-family:'Tajawal',sans-serif; font-size:13px; }
+
+  /* ---- Feiring ----
+     Denne skal merkes. Den er skolens egen stemme til familien, og den
+     eneste flaten i portalen som har lov til å være stor. */
+  .fv-feiring{
+    display:block; border-top:1px solid var(--line); padding:26px 18px 22px;
+    text-align:center; position:relative;
+    background:linear-gradient(160deg, #06195B 0%, #0a2a7a 55%, #06195B 100%);
+  }
+  .fv-feiring-stjerner{
+    display:block; color:var(--gold-l); font-size:13px; letter-spacing:.5em;
+    opacity:.85;
+  }
+  .fv-feiring-tekst{
+    display:block; font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:34px; line-height:1.25; color:#fff; margin:10px 0;
+    text-shadow:0 2px 18px rgba(255,183,77,0.45);
+  }
+  html[dir="rtl"] .fv-feiring-tekst{ font-family:'Tajawal',sans-serif; font-size:30px; }
+  .fv-feiring .fv-tilbake-dato{ color:var(--gold-l); }
+  /* Et rolig pust, ikke en animasjon som stjeler oppmerksomhet fra
+     ordene. Slås av for den som har bedt om mindre bevegelse. */
+  @keyframes fvGlod{ 0%,100%{ opacity:.85; } 50%{ opacity:1; } }
+  .fv-feiring-stjerner{ animation:fvGlod 3.5s ease-in-out infinite; }
+  @media (prefers-reduced-motion:reduce){ .fv-feiring-stjerner{ animation:none; } }
   .fv-barn-tekst{ flex:1 1 auto; min-width:0; }
   .fv-barn-navn{
     font-family:'Jost',sans-serif; font-size:15.5px; font-weight:700; color:var(--ink);
@@ -1451,6 +1562,11 @@
   let programmer = [];
   let prisOppsett = {};
 
+  // Skoleåret og unntakene fra det. Tomme er en gyldig tilstand og
+  // betyr «ikke bestemt» — kortet viser da timeplanen uten nedtelling.
+  let skolekalender = [];
+  let skolear = { startDato: '', termin1Slutt: '', sluttDato: '' };
+
   let guardians = [], students = [], attendance = [], registrations = [], homework = [];
   let announcements = [], studentNotes = [], hours = [], teachers = [], messages = [], classes = [];
   let paymentLink = '';
@@ -1642,6 +1758,32 @@
     eventRSVPs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian) renderChild();
   });
+  // ═══════════════════════════════════════════════════════════════
+  // SKOLEÅRET OG KALENDEREN
+  //
+  // Uten disse to visste portalen ikke om det var ferie, om skolen
+  // hadde begynt, eller når neste undervisningsdag var. Datoene sto
+  // skrevet inn på nettstedet og ingen steder som data — så portalen
+  // kunne ikke vite det, og panelet kunne ikke endre det.
+  //
+  // Begge er tomme til de er fylt ut i panelet. Da viser kortet
+  // timeplanen uten nedtelling — ikke en gjettet dato.
+  // ═══════════════════════════════════════════════════════════════
+  watch('schoolCalendar', (snap) => {
+    skolekalender = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if(currentGuardian) tegnVelkomstForelder();
+  });
+
+  onSnapshot(doc(db, 'settings', 'skolear'), (snap) => {
+    const d = snap.exists() ? (snap.data() || {}) : {};
+    skolear = {
+      startDato: d.startDato || '',
+      termin1Slutt: d.termin1Slutt || '',
+      sluttDato: d.sluttDato || ''
+    };
+    if(currentGuardian) tegnVelkomstForelder();
+  }, (err) => console.error('settings/skolear', err));
+
   watch('programs', (snap) => {
     programmer = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     if(currentGuardian){ renderSummary(); tegnVelkomstForelder(); }
@@ -1834,6 +1976,103 @@
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // NESTE UNDERVISNINGSDAG, FERIE OG BLOKKER
+  //
+  // 🔴 Regnestykkene er HENTET FRA PANELET, ikke skrevet på nytt.
+  // tpParseTid og koBlokker står der og bestemmer hva som er en time og
+  // hva som er en pause. Skrev vi vår egen versjon her, ville de to
+  // svart ulikt den dagen én av dem ble rettet — og ingen ville sett
+  // hvilken som var riktig.
+  // ═══════════════════════════════════════════════════════════════════
+
+  const UKEDAGER = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+
+  function tpParseTid(tid){
+    if(!tid) return { start:'', end:'' };
+    const parts = String(tid).split(/[–-]/).map(x => x.trim());
+    return { start: parts[0] || '', end: parts[1] || parts[0] || '' };
+  }
+
+  // Timene som ligger inntil hverandre er ÉN blokk. Hullet mellom to
+  // blokker er en ekte pause — regnet fram, ikke oppfunnet. Mangler
+  // sluttidspunktet i 'tid', kan pausen ikke regnes, og da vises den
+  // ikke: et oppdiktet kvarter er verre enn ingen pause.
+  function blokkerFor(dag, klasseIder){
+    const tider = [...new Set(hours
+      .filter(h => h.dag === dag && h.tid && klasseIder.includes(h.klasse))
+      .map(h => h.tid))]
+      .map(t => ({ tid: t, ...tpParseTid(t) }))
+      .filter(t => t.start)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    const ut = [];
+    tider.forEach(t => {
+      const siste = ut[ut.length - 1];
+      if(siste && siste.slutt === t.start){ siste.tider.push(t.tid); siste.slutt = t.end; }
+      else ut.push({ tider: [t.tid], start: t.start, slutt: t.end });
+    });
+    return ut;
+  }
+
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function datoNorsk(d, lang){
+    const t = (d instanceof Date) ? d : new Date(d + 'T00:00:00');
+    if(isNaN(t)) return '';
+    const loc = lang === 'ar' ? 'ar-EG' : lang === 'ur' ? 'ur-PK' : lang === 'en' ? 'en-GB' : 'no-NO';
+    return t.toLocaleDateString(loc, { weekday:'long', day:'numeric', month:'long' });
+  }
+
+  // Fri-perioden som dekker en dato for dette programmet. Står 'program'
+  // tomt på raden, gjelder den alle — det er slik panelet beskriver den.
+  function ferieFor(datoIso, programNavn){
+    return skolekalender.find(k => {
+      if((k.type || '') !== 'Fri (ingen undervisning)') return false;
+      const fra = k.fraDato || '';
+      const til = k.tilDato || fra;
+      if(!fra || datoIso < fra || datoIso > til) return false;
+      const p = (k.program || '').trim();
+      if(!p) return true;
+      return p === programNavn || resolveDynProgram(p) === programNavn;
+    }) || null;
+  }
+  function resolveDynProgram(idEllerNavn){
+    const p = programmer.find(x => x.id === idEllerNavn);
+    return p ? (p.navn || '') : idEllerNavn;
+  }
+
+  // Ukedagene programmet underviser på — fra programkortet, ikke fra kode.
+  function undervisningsdagerFor(programNavn){
+    const p = programmer.find(x => (x.navn || '') === (programNavn || ''));
+    const d = p && p.dager;
+    if(Array.isArray(d)) return d;
+    if(typeof d === 'string' && d.trim()) return d.split(/[,;]/).map(x => x.trim()).filter(Boolean);
+    return [];
+  }
+
+  // Første undervisningsdag fra og med i dag som ikke er ferie.
+  // Leter maks 120 dager fram: er det lenger, er det ikke «neste time»,
+  // det er en ny sesong — og da er nedtellingen svaret i stedet.
+  function nesteUndervisningsdag(programNavn){
+    const dager = undervisningsdagerFor(programNavn);
+    if(dager.length === 0) return null;
+    const start = new Date(iso(new Date()) + 'T00:00:00');
+    for(let i = 0; i < 120; i++){
+      const d = new Date(start.getTime() + i * 86400000);
+      const navn = UKEDAGER[d.getDay()];
+      if(!dager.includes(navn)) continue;
+      const dIso = iso(d);
+      if(skolear.startDato && dIso < skolear.startDato) continue;
+      if(skolear.sluttDato && dIso > skolear.sluttDato) return null;
+      if(ferieFor(dIso, programNavn)) continue;
+      return { dato: dIso, dag: navn };
+    }
+    return null;
+  }
+
+  function dagerTil(datoIso){
+    return Math.ceil((new Date(datoIso + 'T00:00:00') - new Date(iso(new Date()) + 'T00:00:00')) / 86400000);
+  }
+
   // ---------- Velkomstskjerm for foresatte ----------
   window.visForeldreVelkomst = function(){
     document.getElementById('appView').style.display = 'none';
@@ -1880,48 +2119,159 @@
     }
 
     // Rekkefølgen følger søskenplassen, ikke hva basen svarte i.
-    // Rekkefølgen ER forklaringen på rabatten: står barn 2 over barn 1,
-    // ser tallene tilfeldige ut.
     const sortert = myChildren.map((b, i) => ({ b, i }))
       .sort((x, y) => (parseInt(x.b.soskenrekkefolge,10) || 99) - (parseInt(y.b.soskenrekkefolge,10) || 99));
 
-    let sumFull = 0, sumTotal = 0, sumBetalt = 0;
-    const rader = sortert.map(({ b, i }) => {
-      const full = fullPrisFor(b);
-      const total = toNum(b.belop);
-      const betalt = toNum(b.belopBetalt);
-      const rabatt = rabattProsentFor(b);
-      sumFull += full || total; sumTotal += total; sumBetalt += betalt;
+    const rader = sortert.map(({ b, i }) => kortForBarn(b, i, lang)).join('');
+    el.innerHTML = rader;
+  }
 
-      const detaljer = [b.program || '—'];
-      const klasseNavn = resolveClassName(b.klasse);
-      if(klasseNavn) detaljer.push(klasseNavn);
+  // ═══════════════════════════════════════════════════════════════════
+  // KORTET FOR ETT BARN
+  //
+  // 🔴 Beløpet sto tidligere INNE i knappen, ved siden av navnet.
+  //
+  // Tallet var full pris — ikke restbeløp. En familie som hadde betalt
+  // alt, så fortsatt «2 750 kr» limt til barnets navn. Og med flere barn
+  // sto to ulike tall ved siden av hverandre; forklaringen er
+  // søskenrabatt, men det man ser er to priser på to barn.
+  //
+  // Skjermen er også veien inn: man MÅ trykke på navnet. Beløpet var
+  // dermed umulig å gå forbi — også når noen står ved siden av deg, og
+  // også når du bare skal lese en beskjed fra læreren.
+  //
+  // Nå: navn, program, klasse — og hva som skjer neste undervisningsdag.
+  // Skylder familien noe, står det en rød prikk. Tallet finnes under
+  // Betaling, der det hører hjemme og der man selv velger å se det.
+  // ═══════════════════════════════════════════════════════════════════
+  function kortForBarn(b, i, lang){
+    const ar = lang === 'ar';
+    const rest = toNum(b.belop) - toNum(b.belopBetalt);
+    const klasseNavn = resolveClassName(b.klasse);
+    const detaljer = [b.program || '—'];
+    if(klasseNavn) detaljer.push(klasseNavn);
 
-      return `
-        <button class="fv-barn" onclick="aapneBarn(${i})">
+    return `
+      <button class="fv-barn" onclick="aapneBarn(${i})">
+        <span class="fv-barn-topp">
           <span class="fv-barn-tekst">
-            <span class="fv-barn-navn">${escapeHtml(b.navn || '')}</span>
+            <span class="fv-barn-navn">${escapeHtml(b.navn || '')}${
+              rest > 0 ? `<span class="fv-prikk" title="${
+                ar ? 'يوجد مبلغ مستحق' : 'Utestående beløp'}"></span>` : ''}</span>
             <span class="fv-barn-under">${escapeHtml(detaljer.join(' · '))}${
               b.klasse ? '' : `<span class="fv-uten-klasse">${ar ? 'بدون صف' : 'uten klasse'}</span>`}</span>
-            ${rabatt > 0 ? `<span class="fv-rabatt">${ar ? 'خصم إخوة' : 'søskenrabatt'} −${rabatt} %</span>` : ''}
           </span>
-          <span class="fv-barn-belop">${total.toLocaleString('no-NO')} kr
-            <span class="fv-pil">${ar ? '←' : '→'}</span>
-          </span>
-        </button>`;
-    }).join('');
+          <span class="fv-pil">${ar ? '←' : '→'}</span>
+        </span>
+        ${dagsInnhold(b, lang)}
+      </button>`;
+  }
 
-    const spart = Math.max(0, sumFull - sumTotal);
-    const rest = sumTotal - sumBetalt;
+  // De fire tilstandene. Rekkefølgen er ikke tilfeldig: en pågående
+  // feiring skal vises selv om skolestart også ligger fram i tid.
+  function dagsInnhold(b, lang){
+    const ar = lang === 'ar';
+    const iDag = iso(new Date());
+    const program = b.program || '';
 
-    el.innerHTML = rader + `
-      <div class="fv-sum">
-        ${spart > 0 ? `<div class="fv-sum-rad spart"><span>${
-          ar ? 'إجمالي خصم الإخوة' : 'Spart på søskenrabatt'}</span><b>−${spart.toLocaleString('no-NO')} kr</b></div>` : ''}
-        <div class="fv-sum-rad"><span>${ar ? 'الإجمالي' : 'Totalt'}</span><b>${sumTotal.toLocaleString('no-NO')} kr</b></div>
-        <div class="fv-sum-rad"><span>${ar ? 'المدفوع' : 'Betalt'}</span><b>${sumBetalt.toLocaleString('no-NO')} kr</b></div>
-        <div class="fv-sum-rad rest"><span>${ar ? 'الباقي' : 'Gjenstår'}</span><b>${rest.toLocaleString('no-NO')} kr</b></div>
-      </div>`;
+    // 1) Ferie som gjelder I DAG
+    const ferie = ferieFor(iDag, program);
+    if(ferie){
+      const neste = nesteUndervisningsdag(program);
+      const tilbake = neste
+        ? `<span class="fv-tilbake-dato">${ar ? 'نلتقي' : 'Vi ses'} ${datoNorsk(neste.dato, lang)}</span>`
+        : '';
+      if((ferie.feiring || '') === 'Ja'){
+        const h = hilsenFor(ferie, lang);
+        return `
+          <span class="fv-feiring">
+            <span class="fv-feiring-stjerner">✦ ✦ ✦</span>
+            <span class="fv-feiring-tekst">${escapeHtml(h)}</span>
+            <span class="fv-feiring-stjerner">✦ ✦ ✦</span>
+            ${tilbake}
+          </span>`;
+      }
+      const periode = ferie.tilDato && ferie.tilDato !== ferie.fraDato
+        ? datoNorsk(ferie.fraDato, lang) + ' – ' + datoNorsk(ferie.tilDato, lang)
+        : datoNorsk(ferie.fraDato, lang);
+      return `
+        <span class="fv-fri">
+          <span class="fv-fri-navn">${escapeHtml(ferie.beskrivelse || (ar ? 'إجازة' : 'Fri'))}</span>
+          <span class="fv-fri-periode">${periode}</span>
+          ${tilbake}
+        </span>`;
+    }
+
+    // 2) Før skolestart — nedtellingen. Bare når datoen faktisk er satt.
+    if(skolear.startDato && iDag < skolear.startDato){
+      const d = dagerTil(skolear.startDato);
+      return `
+        <span class="fv-nedtelling">
+          <span class="fv-ned-tall">${d}</span>
+          <span class="fv-ned-tekst">${ar
+            ? (d === 1 ? 'يوم على بداية الدراسة' : 'يوم على بداية الدراسة')
+            : (d === 1 ? 'dag til skolestart' : 'dager til skolestart')}</span>
+          <span class="fv-tilbake-dato">${datoNorsk(skolear.startDato, lang)}</span>
+        </span>`;
+    }
+
+    // 3) Neste undervisningsdag med timeplan
+    const neste = nesteUndervisningsdag(program);
+    if(!neste) return '';
+
+    const klasseIder = [b.klasse, 'Felles oppstart', 'Felles avslutning'].filter(Boolean);
+    const blokker = blokkerFor(neste.dag, klasseIder);
+    if(blokker.length === 0){
+      return `<span class="fv-dag"><span class="fv-dag-tittel">${datoNorsk(neste.dato, lang)}</span>
+        <span class="fv-dag-tom">${ar ? 'الجدول لسه ما اتحطش' : 'Timeplanen er ikke lagt inn ennå'}</span></span>`;
+    }
+
+    let forrigeSlutt = '';
+    const linjer = [];
+    blokker.forEach(blk => {
+      // Hullet mellom to blokker ER pausen. Uten denne linjen ville
+      // foreldre lurt på hva som skjer i det tomrommet.
+      if(forrigeSlutt && blk.start > forrigeSlutt){
+        const min = minutterMellom(forrigeSlutt, blk.start);
+        linjer.push(`<span class="fv-pause">☕ ${ar ? 'استراحة' : 'Pause'}${
+          min ? ' ' + min + (ar ? ' د' : ' min') : ''}</span>`);
+      }
+      const rader = hours.filter(h => h.dag === neste.dag && klasseIder.includes(h.klasse)
+        && blk.tider.includes(h.tid));
+      const fag = [...new Set(rader.map(r => r.fag).filter(Boolean))];
+      const larere = [...new Set(rader.map(r => navnPaLarer(r.larer)).filter(Boolean))];
+      linjer.push(`
+        <span class="fv-time">
+          <span class="fv-time-tid">${escapeHtml(blk.start)}</span>
+          <span class="fv-time-fag">${escapeHtml(fag.join(' · ') || '—')}</span>
+          <span class="fv-time-larer">${escapeHtml(larere.join(', '))}</span>
+        </span>`);
+      forrigeSlutt = blk.slutt;
+    });
+
+    return `<span class="fv-dag">
+      <span class="fv-dag-tittel">${datoNorsk(neste.dato, lang)}</span>
+      ${linjer.join('')}
+    </span>`;
+  }
+
+  function minutterMellom(a, b){
+    const t = x => { const [h,m] = String(x).split(':').map(Number);
+      return (isNaN(h) || isNaN(m)) ? null : h*60 + m; };
+    const x = t(a), y = t(b);
+    return (x === null || y === null || y <= x) ? 0 : (y - x);
+  }
+
+  function navnPaLarer(id){
+    const t = teachers.find(x => x.id === id);
+    return t ? (t.navn || '') : '';
+  }
+
+  // Hilsenen skrives i panelet, ett felt per språk. Er språket tomt,
+  // brukes den norske — en tom feiring ville sett ut som en glemt boks.
+  function hilsenFor(ferie, lang){
+    const felt = { en:'hilsenEn', ar:'hilsenAr', ur:'hilsenUr' }[lang];
+    return (felt && ferie[felt]) || ferie.hilsen || ferie.beskrivelse || '';
   }
 
   window.doParentLogout = function(){
@@ -1973,6 +2323,10 @@
   // panelet satte da beløpet ble regnet ut. Vi regner den ikke ut på
   // nytt her: to steder som regner det samme, blir før eller siden
   // uenige — og da er det familien som ser to ulike tall.
+  // ⚠️ Ingen kaller denne nå. Rabattprosenten sto på velkomstkortet, ved
+  // siden av beløpet — begge deler er flyttet til Betaling. Funksjonen
+  // står igjen fordi den er riktig og hører til prisregningen, ikke til
+  // kortet. Trengs den ikke ved neste gjennomgang, kan den fjernes.
   function rabattProsentFor(barn){
     const plass = parseInt(barn.soskenrekkefolge, 10);
     if(!plass || plass <= 1) return 0;
