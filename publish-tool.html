@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 14:05:01 -->
+<!-- SIST-ENDRET: 2026-08-15 14:30:32 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8,10 +8,27 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* ═══════════════════════════════════════════════════════════════
+     SAMME PALETT SOM PANELET.
+
+     Verktøyet hadde sine egne farger — mørkegrønt på kremhvitt — mens
+     panelet er blått på blågrått. Samme variabelnavn, helt ulike verdier.
+     Det så ut som et annet system, og det er nettopp det et verktøy i
+     samme system ikke skal.
+
+     Verdiene under er hentet ordrett fra admin.html. Endres paletten der,
+     skal denne følge etter — to palettar som skal være like, ender alltid
+     med å bli ulike.
+     ═══════════════════════════════════════════════════════════════ */
   :root{
-    --ink:#1c2c24; --emerald:#1f4a3a; --emerald-d:#0f2b21; --emerald-l:#2e6b53;
-    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#fbf8f1; --paper-2:#f3ecdb;
-    --line:rgba(20,38,31,0.14); --shadow:0 10px 26px rgba(15,43,33,0.10); --red:#a83c3c;
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
+    --red:#a83c3c;
+    --stat-green-bg:#DCF3E4; --stat-green-fg:#2C6B45;
+    --stat-yellow-bg:#FDF3C7; --stat-yellow-fg:#8A6D1D;
+    --stat-blue-bg:#DCEFFB;  --stat-blue-fg:#1E6E8C;
+    --stat-red-bg:#FBE3E3;   --stat-red-fg:#9B3131;
   }
   *{box-sizing:border-box;}
   html, body{overflow-x:hidden; max-width:100%;}
@@ -23,6 +40,58 @@
   header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; margin:0 0 4px;}
   header p{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold-l); margin:0;}
   main{max-width:560px; margin:0 auto; padding:20px 16px 60px;}
+
+  /* ---- Statuskort, samme form som panelets ---- */
+  .stat-rad{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin-bottom:18px;
+  }
+  @media (min-width:520px){ .stat-rad{ grid-template-columns:repeat(4, 1fr); } }
+  .stat-card{
+    background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:14px 15px; box-shadow:var(--shadow); position:relative;
+    display:flex; flex-direction:column; justify-content:center;
+    min-height:88px; overflow:hidden;
+  }
+  .stat-card .stat-ikon{
+    position:absolute; top:11px; inset-inline-end:12px;
+    font-size:16px; opacity:.42; pointer-events:none;
+  }
+  .stat-card .n{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:24px; line-height:1.1;
+  }
+  .stat-card .l{
+    font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.03em; margin-top:3px; opacity:.85;
+  }
+  .stat-green{ background:var(--stat-green-bg); }  .stat-green .n{ color:var(--stat-green-fg); }
+  .stat-yellow{ background:var(--stat-yellow-bg); } .stat-yellow .n{ color:var(--stat-yellow-fg); }
+  .stat-blue{ background:var(--stat-blue-bg); }    .stat-blue .n{ color:var(--stat-blue-fg); }
+  .stat-red{ background:var(--stat-red-bg); }      .stat-red .n{ color:var(--stat-red-fg); }
+
+  /* ---- Fanerad, samme form som panelets ---- */
+  .verktoy-faner{
+    display:flex; gap:0; background:var(--paper-2);
+    border-bottom:1px solid var(--line); overflow-x:auto;
+    margin:0 -16px 18px; padding:0 16px;
+  }
+  .verktoy-fane{
+    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; letter-spacing:.03em;
+    padding:14px 14px; cursor:pointer; color:#5a6860;
+    border-bottom:3px solid transparent; white-space:nowrap; user-select:none;
+    background:none; border-top:0; border-inline:0;
+  }
+  .verktoy-fane.active{ color:var(--emerald-d); border-bottom-color:var(--gold); }
+
+  /* ---- Lenkeruter ---- */
+  .lenke-rutenett{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  a.lenke-rute{
+    display:flex; align-items:center; gap:10px; text-decoration:none;
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:13px 14px; color:var(--ink); box-shadow:var(--shadow);
+  }
+  a.lenke-rute:hover{ border-color:var(--emerald-l); }
+  a.lenke-rute .ic{ font-size:19px; }
+  a.lenke-rute .t{ font-family:'Jost',sans-serif; font-size:13px; font-weight:600; }
+  a.lenke-rute .d{ font-family:'Jost',sans-serif; font-size:10.5px; color:#7b8a93; }
   .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:22px 20px; box-shadow:var(--shadow); margin-bottom:16px;}
   .card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d); margin:0 0 6px;}
   .card .sub{font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin-bottom:16px; line-height:1.5;}
@@ -87,7 +156,6 @@
     font-family:'Jost',sans-serif; font-size:11px; color:var(--gold);
     margin-top:9px; min-height:14px;
   }
-  #seksjonTopp{ margin-bottom:12px; }
 
   .tid-liste{ margin-top:14px; border-top:1px solid var(--line); }
   .tid-rad{
@@ -203,38 +271,94 @@
       <button onclick="resetSetup()">Endre oppsett</button>
     </div>
 
-    <!-- Verktøyet var én lang rulling der tre ulike oppgaver lå etter
-         hverandre. Man måtte bla forbi det man ikke skulle gjøre for å
-         nå det man skulle. Nå velges oppgave først — samme mønster som
-         panelet, slik at det er ett sted å lære, ikke to. -->
-    <div id="velgOppgave">
-      <div class="side-grid">
-        <div class="side-card" onclick="velgSeksjon('en')">
-          <div class="ic">📤</div>
-          <h2>Publiser én fil</h2>
-          <p>Legg ut én endring. Kontroll mot publisert versjon, nedlasting, kopiering og endringslogg.</p>
-          <div class="side-kontekst" id="ktxEn"></div>
-        </div>
-        <div class="side-card" onclick="velgSeksjon('flere')">
-          <div class="ic">📚</div>
-          <h2>Flere filer samtidig</h2>
-          <p>Velg flere filer på én gang. Hver havner på sin egen sti automatisk.</p>
-          <div class="side-kontekst" id="ktxFlere"></div>
-        </div>
-        <div class="side-card" onclick="velgSeksjon('arkiv')">
-          <div class="ic">📦</div>
-          <h2>Hele prosjektet</h2>
-          <p>Alle tekstfilene og sammendraget i ett arkiv — til en ny samtale.</p>
-          <div class="side-kontekst" id="ktxArkiv"></div>
-        </div>
+    <!-- ══════════════════════════════════════════════════════════════
+         STATUSEN FØRST — før man må trykke på noe.
+
+         🔴 Spørsmålet «nådde filene mine ut?» krevde et trykk og en
+         venting. Det er det spørsmålet man har når man åpner verktøyet,
+         og 15. august gikk en halv time før noen tenkte på å stille det.
+         Nå står svaret øverst, farget, uten at man ber om det.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="stat-rad">
+      <div class="stat-card stat-blue" id="statUtlegg" onclick="velgFane('status')" style="cursor:pointer;">
+        <span class="stat-ikon">🚦</span>
+        <div class="n" id="statUtleggN">…</div>
+        <div class="l" id="statUtleggL">Utlegging</div>
+      </div>
+      <div class="stat-card stat-blue" id="statAntall">
+        <span class="stat-ikon">📤</span>
+        <div class="n" id="statAntallN">…</div>
+        <div class="l">Publisert (7 døgn)</div>
+      </div>
+      <div class="stat-card stat-blue" id="statSist">
+        <span class="stat-ikon">⏱️</span>
+        <div class="n" id="statSistN">…</div>
+        <div class="l" id="statSistL">Siste publisering</div>
+      </div>
+      <div class="stat-card stat-blue" id="statRegler" onclick="velgFane('regler')" style="cursor:pointer;">
+        <span class="stat-ikon">🔐</span>
+        <div class="n" id="statReglerN">…</div>
+        <div class="l">Reglene</div>
       </div>
     </div>
 
-    <div id="seksjonTopp" style="display:none;">
-      <button class="btn btn-ghost" style="width:auto;" onclick="velgSeksjon(null)">← Alle oppgaver</button>
+    <!-- Fanene erstatter «velg oppgave»-skjermen. Samme form som
+         panelets faner, slik at det er ett sted å lære, ikke to. -->
+    <div class="verktoy-faner" id="verktoyFaner">
+      <button class="verktoy-fane active" data-fane="publiser" onclick="velgFane('publiser')">📤 Publiser</button>
+      <button class="verktoy-fane" data-fane="regler"   onclick="velgFane('regler')">🔐 Regler</button>
+      <button class="verktoy-fane" data-fane="status"   onclick="velgFane('status')">🚦 Status</button>
+      <button class="verktoy-fane" data-fane="lenker"   onclick="velgFane('lenker')">🔗 Lenker</button>
+      <button class="verktoy-fane" data-fane="arkiv"    onclick="velgFane('arkiv')">📦 Arkiv</button>
     </div>
 
-    <div class="card" data-seksjon="flere">
+    <!-- ══════════════════════════════════════════════════════════════
+         LENKER — verktøyet er uansett det man åpner først på telefonen.
+         ⚠️ Alt åpnes i ny fane. Google, Outlook, Zoho og Brevo nekter å
+         vises inne i en ramme (X-Frame-Options) — en innebygd innboks er
+         ikke vanskelig, den er umulig, og en tom hvit rute her ville sett
+         ut som en feil i verktøyet.
+         ══════════════════════════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════════
+         REGLENE — egen fane, fordi de endrer BASEN, ikke nettstedet.
+         Slipp samme arkiv inn her og i Publiser: denne plukker ut
+         firestore.rules og lar resten ligge, den andre gjør motsatt.
+         Da kan ingen publisere reglene ved et uhell midt i en leveranse.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="card" data-fane="regler" style="display:none;">
+      <h2>🔐 Sikkerhetsreglene</h2>
+      <div class="sub">
+        Dette er reglene som gjelder i basen. Publiserer du her, virker de
+        få sekunder etterpå — Console viser den samme filen.
+        <br><br>
+        <b>Slipp gjerne hele leveransen inn:</b> bare <code>firestore.rules</code>
+        plukkes ut, resten ignoreres.
+        <br><br>
+        ⚠️ Firebase stopper ugyldige regler, men <b>ikke gyldige regler som er
+        for åpne</b>. Les gjennom endringen før du publiserer.
+      </div>
+
+      <label class="btn-file-label" for="reglerUpload">📁 Velg firestore.rules eller et arkiv...</label>
+      <input type="file" id="reglerUpload" onchange="handleReglerUpload(event)">
+      <div class="file-loaded-hint" id="reglerHint"></div>
+
+      <label class="hint" for="reglerNotat" style="display:block; margin-top:12px;">Hva ble endret? (valgfritt)</label>
+      <input type="text" id="reglerNotat" placeholder="f.eks. strammet meldinger">
+
+      <textarea id="reglerInnhold" placeholder="Velg en fil over, eller lim inn reglene her..." style="margin-top:12px;"></textarea>
+
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="sjekkRegler()">🔍 Sjekk mot publisert versjon</button>
+      <button class="btn btn-primary" id="reglerPubliserBtn" style="margin-top:10px;" onclick="publiserRegler()">Publiser reglene</button>
+      <div class="status" id="reglerStatus"></div>
+    </div>
+
+    <div class="card" data-fane="lenker" style="display:none;">
+      <h2>🔗 Lenker</h2>
+      <div class="sub">Alt åpnes i en ny fane.</div>
+      <div class="lenke-rutenett" id="lenkeRutenett"></div>
+    </div>
+
+    <div class="card" data-fane="publiser">
       <h2>Publiser flere filer samtidig</h2>
       <div class="sub">
         Velg flere filer — eller <b>ett ZIP-arkiv</b>, så pakkes det ut her og
@@ -276,7 +400,7 @@
     <!-- Gjelder hele repoet, ikke én fil — derfor synlig i begge
          seksjonene. Sto tidligere inne i enkeltfil-kortet, og fra en
          leveranse måtte man ut og inn igjen for å nå dem. -->
-    <div class="card" data-seksjon="en flere">
+    <div class="card" data-fane="publiser status regler">
       <h2>Status og rapport</h2>
       <div class="sub">Gjelder hele repoet — uavhengig av hvilken fil du holder på med.</div>
       <!-- 🔴 Svaret på spørsmålet ingen kunne svare på 15.08: ligger det
@@ -316,7 +440,7 @@
 
     </div>
 
-    <div class="card" data-seksjon="arkiv">
+    <div class="card" data-fane="arkiv">
       <h2>📦 Hele prosjektet</h2>
       <div class="sub">Pakker alle tekstfilene i repoet, sammen med sammendraget, i ett arkiv — klart til å legges ved i en ny samtale med Claude.</div>
       <button class="btn btn-primary" id="altBtn" onclick="lastNedAlt()">📦 Last ned hele prosjektet</button>
@@ -339,7 +463,7 @@
          regel det samme, men når det ikke er det, er det historikken som
          gjelder.
          ══════════════════════════════════════════════════════════════ -->
-    <div class="card" data-seksjon="arkiv">
+    <div class="card" data-fane="arkiv">
       <h2>🕒 Siste oppdateringer</h2>
       <div class="sub">
         Når hver fil sist ble publisert. Kopier listen inn i en ny samtale
@@ -351,7 +475,7 @@
       <div id="tidListe"></div>
     </div>
 
-    <div class="card" data-seksjon="en">
+    <div class="card" data-fane="publiser">
       <h2>Publiser én fil</h2>
       <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
 
@@ -1538,8 +1662,12 @@
       (url ? '<div class="ut-sub"><a href="' + url + '" target="_blank" rel="noopener">Åpne kjøringen på GitHub →</a></div>' : '');
   }
 
-  window.kopierUtlegging = function(){
-    const el = document.getElementById('utLogg');
+  // 🔴 Id-en må sendes med. To bokser kan stå på skjermen samtidig —
+  // utleggingsstatus og rapport — og begge skrev sin logg med id
+  // «utLogg». getElementById gir da den FØRSTE i dokumentet, så
+  // kopiknappen i den nederste boksen kopierte den øverstes tekst.
+  window.kopierUtlegging = function(id){
+    const el = document.getElementById(id || 'utLogg');
     if(!el) return;
     navigator.clipboard.writeText(el.textContent)
       .then(() => showStatus('Årsaken er kopiert.', 'ok'))
@@ -1728,8 +1856,8 @@
     const [c, k] = await Promise.all([hentCommits(80), hentKjoringer(20, HOSTING_WORKFLOW)]);
     if(c.feil){
       boks.innerHTML = '<div class="ut-tittel">Kunne ikke lage rapporten</div>' +
-        '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(c.feil) + '</pre>' +
-        '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier meldingen</button>';
+        '<pre class="ut-logg" id="rapportFeilLogg">' + escapeHtmlPT(c.feil) + '</pre>' +
+        '<button class="btn btn-ghost" onclick="kopierUtlegging(\'rapportFeilLogg\')">📋 Kopier meldingen</button>';
       return;
     }
 
@@ -2661,15 +2789,18 @@
     if(multiFiles[i]) multiFiles[i].sti = String(verdi).trim();
   };
 
-  function multiKlar(){
+  function multiKlar(hoppetRegler){
     const vis = multiFiles.length ? 'block' : 'none';
     document.getElementById('multiPublishBtn').style.display = vis;
     document.getElementById('multiSjekkBtn').style.display = vis;
     document.getElementById('multiSjekkHint').style.display = vis;
     const boks = document.getElementById('multiStatusBox');
     boks.className = 'status show ok';
-    boks.textContent = multiFiles.length + ' fil' + (multiFiles.length === 1 ? '' : 'er') +
-      ' klare. Kontroller filstiene før du publiserer.';
+    boks.innerHTML = multiFiles.length + ' fil' + (multiFiles.length === 1 ? '' : 'er') +
+      ' klare. Kontroller filstiene før du publiserer.' +
+      (hoppetRegler
+        ? '<br>🔐 <b>' + REGELSTI + ' ble ikke tatt med</b> — reglene publiseres fra Regler-fanen.'
+        : '');
     tegnMultiListe();
   }
 
@@ -2677,6 +2808,7 @@
     const fileList = [...(event.target.files || [])];
     if(fileList.length === 0) return;
     multiFiles = [];
+    let hoppetRegler = false;
     const listEl = document.getElementById('multiFileList');
     const boks = document.getElementById('multiStatusBox');
     listEl.innerHTML = '';
@@ -2687,8 +2819,14 @@
         boks.className = 'status show busy';
         boks.textContent = 'Pakker ut ' + file.name + '…';
         try{
-          const filer = await lesZip(await file.arrayBuffer());
-          if(filer.length === 0) throw new Error('Arkivet inneholdt ingen filer.');
+          const alle = await lesZip(await file.arrayBuffer());
+          if(alle.length === 0) throw new Error('Arkivet inneholdt ingen filer.');
+          // 🔴 Reglene tas IKKE med her. De endrer basen, ikke nettstedet,
+          // og skal ikke kunne gå ut som én av tretti i en leveranse.
+          // At de ble utelatt sies høyt under — et stille utvalg er
+          // nettopp det som lager problemer.
+          const filer = alle.filter(f => f.navn !== REGELSTI);
+          if(alle.length !== filer.length) hoppetRegler = true;
           filer.forEach(f => {
             // Stien fra arkivet brukes når den peker inn i en mappe
             // («functions/index.js»). Ligger filen løst i arkivet, slås
@@ -2701,12 +2839,14 @@
           boks.textContent = 'Kunne ikke lese ' + file.name + ': ' + (err.message || err);
           return;
         }
+      } else if(file.name === REGELSTI){
+        hoppetRegler = true;
       } else {
         const tekst = await file.text();
         multiFiles.push({ name: file.name, content: tekst, sti: finnFullSti(file.name) });
       }
     }
-    multiKlar();
+    multiKlar(hoppetRegler);
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -2940,23 +3080,217 @@
   // som bare sier hva det gjør, sier ingenting om tilstanden; den linjen
   // gjør valget opplyst i stedet for blindt.
   // ===================================================================
-  let aktivSeksjon = null;
 
-  window.velgSeksjon = function(seksjon){
-    aktivSeksjon = seksjon;
-    document.getElementById('velgOppgave').style.display = seksjon ? 'none' : 'block';
-    document.getElementById('seksjonTopp').style.display = seksjon ? 'block' : 'none';
-    // Et kort kan høre til FLERE seksjoner: «en flere». Utleggingsstatus
-    // og rapport gjelder hele repoet, ikke én fil — de var likevel låst
-    // inne i enkeltfil-kortet, og fra en leveranse fantes det ingen vei
-    // til dem uten å gå ut og inn igjen.
-    document.querySelectorAll('#publishView [data-seksjon]').forEach(kort => {
-      const hører = String(kort.dataset.seksjon || '').split(/\s+/);
-      kort.style.display = (seksjon && hører.indexOf(seksjon) !== -1) ? '' : 'none';
+  // ═══════════════════════════════════════════════════════════════════
+  // FANER I STEDET FOR EN VELG-OPPGAVE-SKJERM.
+  //
+  // Den gamle skjermen krevde ett trykk før man så noe som helst, og ett
+  // til for å komme tilbake. Fanene viser alltid hvor man er og hva som
+  // finnes — samme form som panelet, så det er ett mønster å lære.
+  //
+  // Et kort kan høre til flere faner: «publiser status regler». Status og
+  // rapport gjelder hele repoet, ikke én fil, og skal nås uansett hvor
+  // man står.
+  // ═══════════════════════════════════════════════════════════════════
+  let aktivFane = 'publiser';
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LENKENE — verktøyet er uansett det første man åpner på telefonen.
+  // Listen står i koden fordi den nesten aldri endres, og fordi et
+  // verktøy man åpner når noe er galt, ikke skal måtte hente noe først.
+  // ═══════════════════════════════════════════════════════════════════
+  const LENKER = [
+    ['🤖','Claude','claude.ai','https://claude.ai/'],
+    ['🔥','Firebase','Firestore · regler','https://console.firebase.google.com/project/madina-instituttet/firestore/rules'],
+    ['🐙','GitHub','Repo','__REPO__'],
+    ['⚙️','Actions','Utleggingene','__REPO__/actions'],
+    ['☁️','Google Cloud','Functions · logger','https://console.cloud.google.com/functions/list?project=madina-instituttet'],
+    ['📧','Gmail','E-post','https://mail.google.com/'],
+    ['📨','Outlook','E-post','https://outlook.office.com/mail/'],
+    ['📩','Zoho','E-post','https://mail.zoho.eu/'],
+    ['✉️','Brevo','Utsending','https://app.brevo.com/'],
+    ['🏫','Nettstedet','madinaskole.no','https://madinaskole.no/'],
+    ['🛡️','Panelet','Kontor','https://madinaskole.no/kontor'],
+    ['📖','Lærerportal','Lærer','https://madinaskole.no/lærer'],
+    ['👨‍👩‍👧','Foreldreportal','Foreldre','https://madinaskole.no/foreldre']
+  ];
+
+  function tegnLenker(){
+    const el = document.getElementById('lenkeRutenett');
+    if(!el || el.dataset.tegnet) return;
+    const cfg = loadConfig();
+    const repo = (cfg && cfg.owner && cfg.repo)
+      ? 'https://github.com/' + cfg.owner + '/' + cfg.repo : 'https://github.com/';
+    el.innerHTML = LENKER.map(([ic, t, d, url]) =>
+      '<a class="lenke-rute" target="_blank" rel="noopener" href="' +
+      url.replace(/__REPO__/g, repo) + '">' +
+      '<span class="ic">' + ic + '</span><span><span class="t">' + t +
+      '</span><br><span class="d">' + d + '</span></span></a>').join('');
+    el.dataset.tegnet = '1';
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // STATUSKORTENE — svaret før spørsmålet.
+  // Feiler oppslaget, sier kortene «—», ikke «alt ok». Et grønt kort
+  // bygget på et mislykket oppslag er verre enn et blankt.
+  // ═══════════════════════════════════════════════════════════════════
+  async function tegnStatuskort(){
+    const sett = (id, verdi, etikett) => {
+      const n = document.getElementById(id + 'N'); if(n) n.textContent = verdi;
+      if(etikett){ const l = document.getElementById(id + 'L'); if(l) l.textContent = etikett; }
+    };
+    const farge = (id, klasse) => {
+      const k = document.getElementById(id);
+      if(k) k.className = 'stat-card ' + klasse;
+    };
+
+    const [k, c] = await Promise.all([hentKjoringer(20, HOSTING_WORKFLOW), hentCommits(80)]);
+
+    if(k.feil){
+      sett('statUtlegg', '—', 'Kunne ikke lese');
+      farge('statUtlegg', 'stat-yellow');
+    } else {
+      const siste = k.liste[0];
+      if(!siste){ sett('statUtlegg', '—', 'Ingen kjøringer'); farge('statUtlegg','stat-yellow'); }
+      else if(siste.status !== 'completed'){ sett('statUtlegg','⏳','Pågår nå'); farge('statUtlegg','stat-yellow'); }
+      else if(siste.conclusion === 'success'){ sett('statUtlegg','Ute','Alt er lagt ut'); farge('statUtlegg','stat-green'); }
+      else { sett('statUtlegg','🛑','IKKE ute — se Status'); farge('statUtlegg','stat-red'); }
+    }
+
+    if(c.feil){
+      sett('statAntall','—'); sett('statSist','—','Kunne ikke lese');
+    } else {
+      const grense = Date.now() - 7*86400000;
+      const nylige = c.liste.filter(x => new Date(x.dato).getTime() >= grense);
+      const filer = new Set(nylige.map(x => tolkCommit(x.melding).fil).filter(Boolean));
+      sett('statAntall', String(filer.size));
+      const sisteC = c.liste[0];
+      sett('statSist', sisteC ? new Date(sisteC.dato).toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'}) : '—',
+        sisteC ? (tolkCommit(sisteC.melding).fil || 'Siste publisering') : 'Siste publisering');
+      const regel = c.liste.find(x => tolkCommit(x.melding).fil === 'firestore.rules');
+      sett('statRegler', regel ? new Date(regel.dato).toLocaleDateString('no-NO',{day:'numeric',month:'short'}) : '—',
+        'Reglene');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // REGLENE — egen flyt, med arkivfilter begge veier.
+  //
+  // Slipper man leveransen inn her, plukkes firestore.rules ut. Slipper
+  // man den inn under Publiser, gjøres det motsatte. Én fil kan da ikke
+  // gå ut ved et uhell i en bunke med tretti andre — og man slipper å
+  // pakke ut arkivet for hånd bare for å hente ut den ene filen.
+  //
+  // ⚠️ Det som IKKE ble tatt med, sies høyt. Stille utvalg er nettopp
+  // det som lager problemene.
+  // ═══════════════════════════════════════════════════════════════════
+  const REGELSTI = 'firestore.rules';
+
+  window.handleReglerUpload = async function(event){
+    const file = event.target.files && event.target.files[0];
+    if(!file) return;
+    const hint = document.getElementById('reglerHint');
+    const felt = document.getElementById('reglerInnhold');
+    const vis = (tekst, klasse) => {
+      hint.className = 'file-loaded-hint show' + (klasse ? ' ' + klasse : '');
+      hint.innerHTML = tekst;
+    };
+
+    if(/\.zip$/i.test(file.name) || file.type === 'application/zip'){
+      vis('Pakker ut ' + escapeHtmlPT(file.name) + '…');
+      try{
+        const filer = await lesZip(await file.arrayBuffer());
+        const regel = filer.find(f => f.navn === REGELSTI);
+        const andre = filer.filter(f => f.navn !== REGELSTI);
+        if(!regel){
+          felt.value = '';
+          vis('🛑 Fant ingen <b>' + REGELSTI + '</b> i arkivet' +
+              (filer.length ? ' — det inneholdt ' + filer.length + ' andre filer.' : '.'));
+          return;
+        }
+        felt.value = regel.innhold;
+        vis('✓ Hentet <b>' + REGELSTI + '</b> ut av arkivet (' +
+            Math.round(regel.innhold.length/1024) + ' kB).' +
+            (andre.length ? '<br>🔕 ' + andre.length + ' andre filer ble ignorert her — de hører til Publiser-fanen.' : ''));
+      }catch(err){
+        vis('🛑 Kunne ikke lese arkivet: ' + escapeHtmlPT(err.message || err));
+      }
+      return;
+    }
+
+    const tekst = await file.text();
+    felt.value = tekst;
+    vis('✓ Lastet inn: ' + escapeHtmlPT(file.name) + ' (' + Math.round(file.size/1024) + ' kB)' +
+        (file.name !== REGELSTI ? '<br>⚠️ Filen heter ikke ' + REGELSTI + ' — den publiseres uansett dit.' : ''));
+  };
+
+  function reglerStatus(melding, klasse){
+    const el = document.getElementById('reglerStatus');
+    if(!el) return;
+    el.className = 'status show ' + (klasse || '');
+    el.innerHTML = melding;
+    if(klasse !== 'busy'){ try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){} }
+  }
+
+  window.sjekkRegler = async function(){
+    const innhold = document.getElementById('reglerInnhold').value;
+    if(!innhold.trim()){ reglerStatus('Velg en fil eller lim inn reglene først.', 'err'); return; }
+    const fare = reglerSerFarligeUt(innhold);
+    if(fare){ reglerStatus('🛑 ' + escapeHtmlPT(fare), 'err'); return; }
+    reglerStatus('Sjekker mot publisert versjon…', 'busy');
+    let r = await sammenlignMedPublisert(REGELSTI, innhold);
+    if(r.status === 'ukjent') r = await utdypUkjent(REGELSTI, innhold, r);
+    if(SPERRENDE.includes(r.status)){
+      reglerStatus(r.status === 'identisk'
+        ? '⛔ Identisk med reglene som allerede gjelder. Ingenting ville endret seg.'
+        : '🛑 Denne utgaven er eldre enn den som gjelder. Publiseres den, går basen tilbake.', 'err');
+    } else {
+      reglerStatus('✓ Nye regler — trygt å publisere.', 'ok');
+    }
+  };
+
+  window.publiserRegler = async function(){
+    const innhold = document.getElementById('reglerInnhold').value;
+    const notat = (document.getElementById('reglerNotat').value || '').trim();
+    if(!innhold.trim()){ reglerStatus('Velg en fil eller lim inn reglene først.', 'err'); return; }
+    const fare = reglerSerFarligeUt(innhold);
+    if(fare && !confirm('🔴 STOPP\n\n' + fare + '\n\nReglene gjelder hele basen få sekunder etter publisering.\n\nPubliser likevel?')) return;
+
+    const btn = document.getElementById('reglerPubliserBtn');
+    btn.disabled = true;
+    reglerStatus('Publiserer reglene…', 'busy');
+    const res = await publishFileToGitHub(REGELSTI, innhold, notat);
+    if(!res.ok){ reglerStatus('✗ ' + escapeHtmlPT(res.message), 'err'); btn.disabled = false; return; }
+
+    reglerStatus('✓ Lagret i GitHub. Venter på at reglene legges ut…', 'busy');
+    const r = await ventPaUtlegging(Date.now(), m => reglerStatus('✓ Lagret. ' + m, 'busy'), REGLER_WORKFLOW);
+    if(r.status === 'ok'){
+      reglerStatus('✓ Publisert. Reglene gjelder i basen nå — Console viser den samme filen.', 'ok');
+      tegnStatuskort();
+    } else if(r.status === 'avbrutt'){
+      reglerStatus('✓ Lagret. Kjøringen ble avbrutt av en nyere — sjekk Status-fanen.', 'ok');
+    } else if(r.status === 'feilet'){
+      reglerStatus('🛑 Utleggingen FEILET. De gamle reglene gjelder fortsatt i basen.', 'err');
+      await visUtleggingsfeil(r.run);
+    } else {
+      reglerStatus('✓ Lagret — men jeg fikk ikke bekreftet utleggingen. Se Status-fanen.', 'err');
+    }
+    btn.disabled = false;
+  };
+
+  window.velgFane = function(fane){
+    aktivFane = fane;
+    document.querySelectorAll('.verktoy-fane').forEach(b => {
+      b.classList.toggle('active', b.dataset.fane === fane);
     });
-    if(!seksjon) oppdaterKortkontekst();
+    document.querySelectorAll('#publishView [data-fane]').forEach(kort => {
+      const hører = String(kort.dataset.fane || '').split(/\s+/);
+      kort.style.display = hører.indexOf(fane) !== -1 ? '' : 'none';
+    });
+    if(fane === 'lenker') tegnLenker();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
 
   function oppdaterKortkontekst(){
     // Sist publiserte fil — hentes fra den lokale publiseringsboken, som
@@ -3045,7 +3379,8 @@
   init();
   sjekkEgenVersjon();
   utstyrStatusboksene();
-  velgSeksjon(null);
+  velgFane('publiser');
+  tegnStatuskort();
 </script>
 <style>
   #lastDeployBadge{
