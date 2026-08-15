@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 09:42:59 -->
+<!-- SIST-ENDRET: 2026-08-15 09:54:24 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -214,19 +214,30 @@
     background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.055) 0 2px, transparent 2px 26px);
   }
   .fv-inner{ position:relative; width:100%; max-width:520px; text-align:center; }
-  .fv-logo{ width:min(180px, 54%); height:auto; margin-bottom:16px; border-radius:6px; }
+  /* ═══════════════════════════════════════════════════════════════
+     PLASSEN GÅR TIL DET SOM ENDRER SEG.
+
+     Toppen — logo, «Velkommen», foresattnavn — tok en tredjedel av
+     skjermen og sier det samme hver dag. Timeplanen under er ti linjer
+     og endrer seg hver uke, og lå under skjermkanten.
+
+     Derfor er toppen krympet til én linje. Den er ikke fjernet: en
+     familie som logger inn skal se hvor de har havnet. Men den skal
+     ikke koste dem en rulling for å komme til dagen. */
+  .fv-logo{ width:min(112px, 34%); height:auto; margin-bottom:8px; border-radius:6px; }
+  /* «VELKOMMEN» sto på egen linje over navnet. To linjer for én hilsen. */
   .fv-hilsen{
-    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:.14em;
-    text-transform:uppercase; color:#dbeeff; margin-bottom:6px;
+    font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:#dbeeff; margin-bottom:2px;
   }
   html[dir="rtl"] .fv-hilsen{ font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; }
   .fv-navn{
-    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:32px;
-    color:#fff; margin:0 0 8px; line-height:1.15;
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px;
+    color:#fff; margin:0 0 3px; line-height:1.15;
   }
-  html[dir="rtl"] .fv-navn{ font-family:'Tajawal',sans-serif; font-size:27px; }
-  .fv-under{ font-family:'Jost',sans-serif; font-size:13.5px; color:#cfe6fb; margin:0 0 4px; }
-  .fv-hint{ font-family:'Jost',sans-serif; font-size:12px; color:#a9d2f2; margin:0 0 20px; }
+  html[dir="rtl"] .fv-navn{ font-family:'Tajawal',sans-serif; font-size:19px; }
+  .fv-under{ font-family:'Jost',sans-serif; font-size:12px; color:#cfe6fb; margin:0 0 2px; }
+  .fv-hint{ font-family:'Jost',sans-serif; font-size:11.5px; color:#a9d2f2; margin:0 0 12px; }
   html[dir="rtl"] .fv-hint{ font-family:'Tajawal',sans-serif; }
   html[dir="rtl"] .fv-under{ font-family:'Tajawal',sans-serif; }
   /* 🔴 Var et hvitt kort med barna som rader inni. Nå ER hvert barn et
@@ -250,14 +261,14 @@
      kort. Fargene under er laget for hvit bakgrunn: marineblå tall på
      blått ble til et tall man så vidt kunne skimte. Her settes de om
      til hvitt og gull, som resten av den blå skjermen. */
-  .fv-felles{ margin-bottom:16px; }
+  .fv-felles{ margin-bottom:12px; }
   .fv-felles .fv-fri, .fv-felles .fv-nedtelling{
-    display:block; border-top:0; border-radius:18px; padding:22px 18px;
+    display:block; border-top:0; border-radius:18px; padding:13px 16px;
     background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22);
     backdrop-filter:blur(4px); text-align:center;
   }
   .fv-felles .fv-feiring{ border-top:0; border-radius:18px; overflow:hidden; }
-  .fv-felles .fv-ned-tall{ color:#fff; font-size:64px; text-shadow:0 4px 20px rgba(0,0,0,.25); }
+  .fv-felles .fv-ned-tall{ color:#fff; font-size:40px; text-shadow:0 4px 20px rgba(0,0,0,.25); }
   .fv-felles .fv-ned-tekst{ color:rgba(255,255,255,.92); font-size:13.5px; }
   .fv-felles .fv-fri-navn{ color:#fff; }
   .fv-felles .fv-fri-periode{ color:rgba(255,255,255,.8); }
@@ -276,8 +287,12 @@
   /* Knappen inn i portalen. Kortet er også klikkbart, men en familie
      som nettopp har lest timeplanen skal ikke måtte gjette at kortet
      er en knapp — den veien videre skal stå skrevet. */
+  /* Knappen skal alltid være innen rekkevidde. Lå den etter timeplanen,
+     måtte man rulle forbi ti linjer for å komme videre — og veien inn i
+     portalen er det man kom for. */
   .fv-apne{
-    width:100%; margin-top:14px; cursor:pointer;
+    position:sticky; bottom:10px; z-index:5;
+    width:100%; margin-top:12px; cursor:pointer;
     font-family:'Jost',sans-serif; font-size:15px; font-weight:700; color:#fff;
     background:var(--gold); border:none; border-radius:12px; padding:15px 18px;
     box-shadow:0 8px 20px rgba(255,119,31,0.32);
@@ -298,7 +313,7 @@
   }
   .fv-barn-topp{
     display:flex; align-items:flex-start; gap:12px;
-    padding:16px 18px 14px;
+    padding:12px 16px 10px;
   }
   .fv-pil{ align-self:center; color:#b9c6cf; font-size:18px; }
 
@@ -310,14 +325,14 @@
   }
 
   /* ---- Dagen ---- */
-  .fv-dag{ display:block; border-top:1px solid var(--line); padding:12px 18px 15px; }
+  .fv-dag{ display:block; border-top:1px solid var(--line); padding:9px 16px 12px; }
   .fv-dag-tittel{
     display:block; font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
     letter-spacing:.1em; text-transform:uppercase; color:var(--emerald);
     margin-bottom:9px;
   }
   html[dir="rtl"] .fv-dag-tittel{ font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; font-size:12.5px; }
-  .fv-time{ display:flex; align-items:baseline; gap:10px; padding:4px 0; }
+  .fv-time{ display:flex; align-items:baseline; gap:9px; padding:2px 0; }
   .fv-time-tid{
     flex:0 0 46px; font-family:'Jost',sans-serif; font-size:12.5px;
     font-weight:700; color:var(--emerald-d); font-variant-numeric:tabular-nums;
@@ -327,8 +342,8 @@
   .fv-time-larer{ flex:0 0 auto; font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9aa3; }
   html[dir="rtl"] .fv-time-larer{ font-family:'Tajawal',sans-serif; }
   .fv-pause{
-    display:block; font-family:'Jost',sans-serif; font-size:11px; color:#9aa8b0;
-    padding:3px 0 3px 56px; font-style:italic;
+    display:block; font-family:'Jost',sans-serif; font-size:10.5px; color:#9aa8b0;
+    padding:1px 0 1px 55px; font-style:italic;
   }
   html[dir="rtl"] .fv-pause{ font-family:'Tajawal',sans-serif; font-style:normal; padding:3px 56px 3px 0; }
   .fv-dag-tom{ font-family:'Jost',sans-serif; font-size:12.5px; color:#9aa8b0; }
@@ -2238,9 +2253,10 @@
     const apne = document.getElementById('fvApne');
     if(apne){
       apne.style.display = '';
-      apne.textContent = ar
-        ? ('افتح صفحة ' + (valgt.b.navn || '') + ' ←')
-        : ('Åpne siden til ' + (valgt.b.navn || '') + ' →');
+      // Navnet sto i velgeren, i kortet OG i knappen — tre ganger på én
+      // skjerm. Knappen står rett under kortet som bærer navnet, så den
+      // trenger det ikke selv.
+      apne.textContent = ar ? 'افتح الصفحة ←' : 'Åpne siden →';
       apne.onclick = () => aapneBarn(valgt.i);
     }
   }
@@ -2364,11 +2380,25 @@
     const neste = nesteUndervisningsdag(program);
     if(!neste) return '';
 
+    // 🔴 «Første dag» bare når det FAKTISK er første dag.
+    //
+    // Sto tidligere på hver dato så lenge skolen ikke hadde begynt. Da
+    // fikk fredag 11. september overskriften «Første dag», enda
+    // skolestart er lørdag 5. — og datoen under motsa nedtellingen rett
+    // over. En overskrift som ikke stemmer med tallet ved siden av,
+    // gjør at man slutter å tro på begge.
+    //
+    // Er dagen vi fant ikke skolestarten, står datoen alene. Og er den
+    // senere enn skolestart mens vi venter, sier kortet hvorfor: da er
+    // startdagen dekket av en ferie, og det er verdt å vite.
     const iDag = iso(new Date());
-    const forStart = (skolear.startDato && iDag < skolear.startDato)
-      || !!ferieFor(iDag, program);
-    const tittel = (forStart ? (ar ? 'أول يوم · ' : 'Første dag · ') : '')
-      + datoNorsk(neste.dato, lang);
+    const venter = !!(skolear.startDato && iDag < skolear.startDato);
+    const erStarten = skolear.startDato && neste.dato === skolear.startDato;
+    let tittel = datoNorsk(neste.dato, lang);
+    if(erStarten) tittel = (ar ? 'أول يوم · ' : 'Første dag · ') + tittel;
+    else if(venter && skolear.startDato && neste.dato > skolear.startDato){
+      tittel = (ar ? 'أول يوم دراسي · ' : 'Første undervisningsdag · ') + tittel;
+    }
 
     const klasseIder = [b.klasse, 'Felles oppstart', 'Felles avslutning'].filter(Boolean);
     const blokker = blokkerFor(neste.dag, klasseIder);
@@ -2407,7 +2437,11 @@
       const rader = hours.filter(h => h.dag === neste.dag
         && klasseIder.includes(h.klasse) && h.tid === t.tid);
       const fag = [...new Set(rader.map(r => r.fag).filter(Boolean))];
-      const larere = [...new Set(rader.map(r => navnPaLarer(r.larer)).filter(Boolean))];
+      // Fornavn her. «Eslam Mohamed Solaiman» tok halve linjen og presset
+      // faget sammen; spørsmålet foreldre stiller på denne skjermen er
+      // «hvem har barnet mitt nå», og fornavnet svarer på det. Hele
+      // navnet står i Timeplan-seksjonen inne i portalen.
+      const larere = [...new Set(rader.map(r => fornavn(navnPaLarer(r.larer))).filter(Boolean))];
       linjer.push(`
         <span class="fv-time">
           <span class="fv-time-tid">${escapeHtml(t.start)}</span>
@@ -2429,6 +2463,8 @@
     const x = t(a), y = t(b);
     return (x === null || y === null || y <= x) ? 0 : (y - x);
   }
+
+  function fornavn(n){ return String(n || '').trim().split(/\s+/)[0] || ''; }
 
   function navnPaLarer(id){
     const t = teachers.find(x => x.id === id);
