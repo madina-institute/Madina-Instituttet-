@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 10:01:27 -->
+<!-- SIST-ENDRET: 2026-08-15 10:13:52 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1601,7 +1601,7 @@
     document.getElementById('btnLangAr').classList.toggle('active', lang === 'ar');
     document.getElementById('btnLangUr').classList.toggle('active', lang === 'ur');
     applyStaticTranslations();
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   };
 
   function applyStaticTranslations(){
@@ -1736,7 +1736,7 @@
   });
   watchQuery('attendance', sporrPerBarn('attendance', 'studentId'), (rader) => {
     attendance = rader;
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   // Søknadene inneholder alt familien skrev inn ved påmelding. Hentes nå
   // på e-postadressen som står PÅ søknaden — den som faktisk sendte den.
@@ -1752,7 +1752,7 @@
     // har samme adresse.
     const sett = new Set();
     registrations = rader.filter(r => sett.has(r.id) ? false : (sett.add(r.id), true));
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   let lessonPlans = [];
   let practiceVideos = [];
@@ -1760,22 +1760,22 @@
   let classPostComments = [];
   watch('classPostComments', (snap) => {
     classPostComments = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   watch('announcements', (snap) => {
     announcements = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   // Lærernes notater om elevene. Den mest personlige samlingen i hele
   // systemet, og den som lå åpnest: hele listen ble lastet ned til hver
   // eneste forelder.
   watchQuery('studentNotes', sporrPerBarn('studentNotes', 'studentId'), (rader) => {
     studentNotes = rader;
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   watch('classes', (snap) => {
     classes = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   watch('messages', (snap) => {
     messages = snap.docs.map(d => ({ ...d.data(), id: d.id }));
@@ -1815,12 +1815,12 @@
   let classPollVotes = [];
   watch('classPollVotes', (snap) => {
     classPollVotes = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   let eventRSVPs = [];
   watch('eventRSVPs', (snap) => {
     eventRSVPs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   });
   // ═══════════════════════════════════════════════════════════════
   // SKOLEÅRET OG KALENDEREN
@@ -1835,7 +1835,7 @@
   // ═══════════════════════════════════════════════════════════════
   watch('schoolCalendar', (snap) => {
     skolekalender = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    if(currentGuardian) tegnVelkomstForelder();
+    tegnAktivSkjerm();
   });
 
   onSnapshot(doc(db, 'settings', 'skolear'), (snap) => {
@@ -1845,7 +1845,7 @@
       termin1Slutt: d.termin1Slutt || '',
       sluttDato: d.sluttDato || ''
     };
-    if(currentGuardian) tegnVelkomstForelder();
+    tegnAktivSkjerm();
   }, (err) => console.error('settings/skolear', err));
 
   watch('programs', (snap) => {
@@ -1859,7 +1859,7 @@
 
   watchDoc('settings', 'betaling', (snap) => {
     paymentLink = snap.exists() ? (snap.data().lenke || '') : '';
-    if(currentGuardian) renderChild();
+    tegnAktivSkjerm();
   }, (err) => console.error('settings/betaling', err));
 
 
@@ -1990,7 +1990,7 @@
         onSnapshot(q, (snap) => {
           deler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
           sett(deler.flat());
-          if(currentGuardian) renderChild();
+          tegnAktivSkjerm();
         }, (err) => console.error(samling, err));
       });
     };
@@ -2004,7 +2004,7 @@
         hoursDeler[i] = rader;
         hours = hoursDeler.flat();
         startLarerlyttere();
-        if(currentGuardian) renderChild();
+        tegnAktivSkjerm();
       }, (err) => console.error('hours', err));
     });
 
@@ -2035,7 +2035,7 @@
       onSnapshot(query(collection(db, 'teachers'), where(documentId(), 'in', del)), (snap) => {
         deler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
         teachers = deler.flat();
-        if(currentGuardian) renderChild();
+        tegnAktivSkjerm();
       }, (err) => console.error('teachers', err));
     });
   }
@@ -2176,6 +2176,27 @@
   };
 
   window.aapneValgtBarn = function(){ aapneBarn(fvValgt); };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 🔴 DATA SOM KOMMER ETTERPÅ MÅ TEGNE OM DEN SKJERMEN MAN FAKTISK SER.
+  //
+  // Alle lytterne kalte renderChild() — skjermen INNE i portalen. Da
+  // familieskjermen fikk en timeplan, var det ingen som sa fra til den:
+  // kortet var allerede tegnet, med tomme timer, og ble stående slik.
+  //
+  // Symptomet var forvirrende: timeplanen «kom» først etter at man gikk
+  // inn i portalen og tilbake igjen — fordi visForeldreVelkomst() tegner
+  // på nytt. Dataene hadde ligget der hele tiden.
+  //
+  // Denne tegner den skjermen som er oppe. Lytterne kaller den i stedet
+  // for å velge selv — da kan ikke én av dem bli glemt neste gang.
+  // ═══════════════════════════════════════════════════════════════════
+  function tegnAktivSkjerm(){
+    if(!currentGuardian) return;
+    const fv = document.getElementById('fvelkomst');
+    if(fv && fv.style.display !== 'none'){ tegnVelkomstForelder(); return; }
+    renderChild();
+  }
 
   // Hvilket barn familieskjermen viser. Ikke det samme som
   // currentChildIndex, som gjelder inne i portalen.
