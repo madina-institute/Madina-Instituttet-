@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 13:53:51 -->
+<!-- SIST-ENDRET: 2026-08-15 14:05:01 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -265,8 +265,55 @@
         <span>Publiser likevel — hopp over kontrollen mot GitHub</span>
       </label>
 
+      <button class="btn btn-ghost" id="multiSjekkBtn" style="display:none; margin-top:10px;" onclick="sjekkAlle()">🔍 Sjekk alle filene</button>
+      <div class="hint" id="multiSjekkHint" style="display:none; margin-top:4px;">
+        Kontrollerer hver fil mot den publiserte versjonen — uten å publisere noe.
+      </div>
       <button class="btn btn-primary" id="multiPublishBtn" style="display:none; margin-top:10px;" onclick="publishAll()">Publiser alle filene</button>
       <div class="status" id="multiStatusBox"></div>
+    </div>
+
+    <!-- Gjelder hele repoet, ikke én fil — derfor synlig i begge
+         seksjonene. Sto tidligere inne i enkeltfil-kortet, og fra en
+         leveranse måtte man ut og inn igjen for å nå dem. -->
+    <div class="card" data-seksjon="en flere">
+      <h2>Status og rapport</h2>
+      <div class="sub">Gjelder hele repoet — uavhengig av hvilken fil du holder på med.</div>
+      <!-- 🔴 Svaret på spørsmålet ingen kunne svare på 15.08: ligger det
+           noe i GitHub som aldri kom ut på nettstedet? -->
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="sjekkUtlegging()">
+        🚦 Sjekk utleggingen
+      </button>
+      <div class="hint" style="margin-top:6px;">
+        Sier om siste utlegging lyktes — og hvilke filer som eventuelt ligger
+        i GitHub uten å være ute på nettstedet.
+      </div>
+      <div id="utleggingBoks" style="display:none;"></div>
+
+      <!-- 🔴 Bakgrunnen måtte fortelles på nytt i hver eneste nye samtale,
+           og det som ble husket feil, ble bygget videre på. Dette er den
+           delen verktøyet VET: hva som er publisert, når, og om det nådde
+           nettstedet. -->
+      <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.08);">
+        <label class="hint" for="rapportDager">Rapport for siste</label>
+        <div class="field-row-2" style="margin-top:6px;">
+          <select id="rapportDager">
+            <option value="1">1 døgn</option>
+            <option value="3">3 døgn</option>
+            <option value="7" selected>7 døgn</option>
+            <option value="14">14 døgn</option>
+            <option value="30">30 døgn</option>
+          </select>
+          <button class="btn btn-ghost" onclick="lagRapport()">📋 Lag rapport</button>
+        </div>
+        <div class="hint" style="margin-top:6px;">
+          Én linje per fil som er endret, med tidspunkt og din egen beskrivelse.
+          Ment å limes inn først i en ny samtale — den sier <b>hva</b> som er
+          gjort, ikke hvorfor.
+        </div>
+        <div id="rapportBoks" style="display:none;"></div>
+      </div>
+
     </div>
 
     <div class="card" data-seksjon="arkiv">
@@ -378,41 +425,6 @@
 
       <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
       <div class="status" id="statusBox"></div>
-
-      <!-- 🔴 Svaret på spørsmålet ingen kunne svare på 15.08: ligger det
-           noe i GitHub som aldri kom ut på nettstedet? -->
-      <button class="btn btn-ghost" style="margin-top:10px;" onclick="sjekkUtlegging()">
-        🚦 Sjekk utleggingen
-      </button>
-      <div class="hint" style="margin-top:6px;">
-        Sier om siste utlegging lyktes — og hvilke filer som eventuelt ligger
-        i GitHub uten å være ute på nettstedet.
-      </div>
-      <div id="utleggingBoks" style="display:none;"></div>
-
-      <!-- 🔴 Bakgrunnen måtte fortelles på nytt i hver eneste nye samtale,
-           og det som ble husket feil, ble bygget videre på. Dette er den
-           delen verktøyet VET: hva som er publisert, når, og om det nådde
-           nettstedet. -->
-      <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.08);">
-        <label class="hint" for="rapportDager">Rapport for siste</label>
-        <div class="field-row-2" style="margin-top:6px;">
-          <select id="rapportDager">
-            <option value="1">1 døgn</option>
-            <option value="3">3 døgn</option>
-            <option value="7" selected>7 døgn</option>
-            <option value="14">14 døgn</option>
-            <option value="30">30 døgn</option>
-          </select>
-          <button class="btn btn-ghost" onclick="lagRapport()">📋 Lag rapport</button>
-        </div>
-        <div class="hint" style="margin-top:6px;">
-          Én linje per fil som er endret, med tidspunkt og din egen beskrivelse.
-          Ment å limes inn først i en ny samtale — den sier <b>hva</b> som er
-          gjort, ikke hvorfor.
-        </div>
-        <div id="rapportBoks" style="display:none;"></div>
-      </div>
 
       <div class="logg-skille">
         <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
@@ -2650,7 +2662,10 @@
   };
 
   function multiKlar(){
-    document.getElementById('multiPublishBtn').style.display = multiFiles.length ? 'block' : 'none';
+    const vis = multiFiles.length ? 'block' : 'none';
+    document.getElementById('multiPublishBtn').style.display = vis;
+    document.getElementById('multiSjekkBtn').style.display = vis;
+    document.getElementById('multiSjekkHint').style.display = vis;
     const boks = document.getElementById('multiStatusBox');
     boks.className = 'status show ok';
     boks.textContent = multiFiles.length + ' fil' + (multiFiles.length === 1 ? '' : 'er') +
@@ -2692,6 +2707,75 @@
       }
     }
     multiKlar();
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SJEKK ALLE — uten å publisere.
+  //
+  // 🔴 I enkeltfil kan man kontrollere FØRST og bestemme etterpå. I en
+  // leveranse fantes ikke det valget: kontrollen kjørte inne i
+  // publiseringen, så eneste måte å få vite om en fil var gammel, var å
+  // trykke publiser og se hva som ble hoppet over.
+  //
+  // Det er feil rekkefølge for det som betyr noe. Med ti filer vil man
+  // vite hva som kommer til å skje før noe skjer.
+  // ═══════════════════════════════════════════════════════════════════
+  window.sjekkAlle = async function(){
+    if(multiFiles.length === 0) return;
+    const btn = document.getElementById('multiSjekkBtn');
+    const statusBox = document.getElementById('multiStatusBox');
+    if(btn) btn.disabled = true;
+    statusBox.className = 'status show busy';
+    statusBox.textContent = 'Kontrollerer ' + multiFiles.length + ' filer…';
+
+    let nye = 0, sperret = 0, feilType = 0;
+    for(let idx = 0; idx < multiFiles.length; idx++){
+      const f = multiFiles[idx];
+      const statusEl = document.getElementById('mfstatus-' + idx);
+      const målsti = f.sti || finnFullSti(f.name);
+      if(statusEl){ statusEl.className = 'fstatus busy'; statusEl.textContent = 'Sjekker…'; }
+
+      // Innholdstypen først: en fil under feil navn er en verre feil enn
+      // en gammel kopi, og den skal ses uten at man må lete.
+      const forventet = typeAvSti(målsti), funnet = gjettFiltype(f.content);
+      if(forventet && funnet && forventet !== funnet && forventet !== 'kode' && funnet !== 'kode'){
+        feilType++;
+        if(statusEl){
+          statusEl.className = 'fstatus err';
+          statusEl.innerHTML = '⚠️ Innholdet ser ut som ' + (TYPENAVN[funnet] || funnet) +
+            '<br><span class="mf-grunn">Filstien venter ' + (TYPENAVN[forventet] || forventet) + '.</span>';
+        }
+        continue;
+      }
+
+      let r = await sammenlignMedPublisert(målsti, f.content);
+      if(r.status === 'ukjent') r = await utdypUkjent(målsti, f.content, r);
+      if(statusEl){
+        if(SPERRENDE.includes(r.status)){
+          sperret++;
+          statusEl.className = 'fstatus err';
+          statusEl.innerHTML =
+            (r.status === 'identisk'
+              ? '⛔ Identisk med det som ligger ute'
+              : r.status === 'historisk'
+              ? '🛑 Gammel kopi — publisert ' + visTid(r.treff.dato)
+              : '🛑 Eldre enn den publiserte (din: ' + visTid(r.lokalTid) + ')') +
+            '<br><span class="mf-grunn">Blir hoppet over ved publisering.</span>';
+        } else {
+          nye++;
+          statusEl.className = 'fstatus ok';
+          statusEl.textContent = '✓ Ny — klar til publisering';
+        }
+      }
+    }
+
+    const deler = [];
+    if(nye)      deler.push(nye + ' klare');
+    if(sperret)  deler.push(sperret + ' blir hoppet over');
+    if(feilType) deler.push(feilType + ' med feil innholdstype');
+    statusBox.className = 'status show ' + (feilType ? 'err' : (sperret ? 'warn' : 'ok'));
+    statusBox.textContent = deler.join(' · ') + '. Ingenting er publisert ennå.';
+    if(btn) btn.disabled = false;
   };
 
   window.publishAll = async function(){
@@ -2862,8 +2946,13 @@
     aktivSeksjon = seksjon;
     document.getElementById('velgOppgave').style.display = seksjon ? 'none' : 'block';
     document.getElementById('seksjonTopp').style.display = seksjon ? 'block' : 'none';
+    // Et kort kan høre til FLERE seksjoner: «en flere». Utleggingsstatus
+    // og rapport gjelder hele repoet, ikke én fil — de var likevel låst
+    // inne i enkeltfil-kortet, og fra en leveranse fantes det ingen vei
+    // til dem uten å gå ut og inn igjen.
     document.querySelectorAll('#publishView [data-seksjon]').forEach(kort => {
-      kort.style.display = (seksjon && kort.dataset.seksjon === seksjon) ? '' : 'none';
+      const hører = String(kort.dataset.seksjon || '').split(/\s+/);
+      kort.style.display = (seksjon && hører.indexOf(seksjon) !== -1) ? '' : 'none';
     });
     if(!seksjon) oppdaterKortkontekst();
     window.scrollTo({ top: 0, behavior: 'smooth' });
