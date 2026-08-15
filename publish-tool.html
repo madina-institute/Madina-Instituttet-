@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 14:52:47 -->
+<!-- SIST-ENDRET: 2026-08-15 15:11:37 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -154,6 +154,16 @@
   .under-fane.active{ background:#DCEFFB; color:#1E6E8C; font-weight:600; }
 
   /* ---- Lenkeruter ---- */
+  #altVelgBoks{
+    max-height:280px; overflow-y:auto; margin:10px 0;
+    border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:#fff;
+  }
+  .velg-fil{
+    display:flex; align-items:center; gap:9px; padding:5px 0;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:#3d4a42;
+  }
+  .velg-fil input{ flex:none; width:16px; height:16px; }
+
   .lenke-rutenett{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
   a.lenke-rute{
     display:flex; align-items:center; gap:10px; text-decoration:none;
@@ -521,9 +531,25 @@
     </div>
 
     <div class="card" data-fane="arkiv">
-      <h2>📦 Hele prosjektet</h2>
-      <div class="sub">Pakker alle tekstfilene i repoet, sammen med sammendraget, i ett arkiv — klart til å legges ved i en ny samtale med Claude.</div>
-      <button class="btn btn-primary" id="altBtn" onclick="lastNedAlt()">📦 Last ned hele prosjektet</button>
+      <h2>📦 Last ned fra repoet</h2>
+      <div class="sub">
+        Alt hentes fra GitHub i det du trykker — ikke fra kopier på telefonen.
+        <br><br>
+        <b>Til en ny samtale</b> trengs sjelden alt: sammendraget, reglene og
+        <code>firebase.json</code> bærer sammenhengen. De store sidefilene
+        endrer seg oftest, og et arkiv fra i går inneholder dem i feil versjon —
+        be heller om den ene filen når den trengs, så er den fersk.
+      </div>
+
+      <button class="btn btn-primary" id="samtaleBtn" onclick="lastNedSamtale()">🚀 Til en ny samtale</button>
+      <div class="hint" style="margin:6px 0 14px;">
+        Sammendraget · reglene · firebase.json — og statusrapporten som eget notat.
+      </div>
+
+      <button class="btn btn-ghost" onclick="lastNedUtvalg()">☑️ Velg filer selv</button>
+      <div id="altVelgBoks" style="display:none;"></div>
+
+      <button class="btn btn-ghost" id="altBtn" style="margin-top:10px;" onclick="lastNedAlt()">📦 Hele repoet</button>
       <div class="status" id="altStatus" style="white-space:pre-wrap;"></div>
     </div>
 
@@ -2587,7 +2613,111 @@
     }
   };
 
-  window.lastNedAlt = async function(){
+  // ═══════════════════════════════════════════════════════════════════
+  // NEDLASTING — alt, eller det du krysser av.
+  //
+  // 🔴 Hele repoet er over én megabyte, og det meste av det er filer som
+  // uansett blir bedt om på nytt når de trengs. Verre: de store filene er
+  // de som endrer seg oftest — index4.html ble publisert seks ganger 15.
+  // august. Et arkiv fra i går inneholder da en fil som er feil fra
+  // første minutt.
+  //
+  // «Ny samtale» tar med de tre som faktisk bærer sammenhengen:
+  // sammendraget (hvorfor), reglene (hvem får se hva) og firebase.json
+  // (ruter og mellomlagring). Resten hentes når den trengs — og da er den
+  // fersk.
+  // ═══════════════════════════════════════════════════════════════════
+  const SAMTALE_FILER = ['PROJECT-SUMMARY-AR.md', 'firestore.rules', 'firebase.json'];
+
+  // Rapporten legges INNE i arkivet, som eget notat. Da sier arkivet selv
+  // hvor sammendraget slutter og virkeligheten fortsetter — uten at man
+  // må huske å kopiere noe ved siden av.
+  window.lastNedSamtale = async function(){
+    const btn = document.getElementById('samtaleBtn');
+    if(btn) btn.disabled = true;
+    showAltStatus('busy', 'Setter sammen rapporten…');
+    let notat = '';
+    try{
+      const [c, k] = await Promise.all([hentCommits(80), hentKjoringer(20, HOSTING_WORKFLOW)]);
+      const linjer = ['# Status ved start av samtalen', '',
+        'Laget ' + visTid(new Date()) + '.', ''];
+      if(k.feil || !k.liste[0]) linjer.push('Utlegging: ukjent — kunne ikke leses.');
+      else {
+        const siste = k.liste[0];
+        linjer.push('Utlegging: ' + (siste.status !== 'completed' ? 'pågår nå'
+          : siste.conclusion === 'success' ? '✓ alt er ute (' + visTidStr(siste.created_at) + ')'
+          : '🛑 SISTE UTLEGGING FEILET ' + visTidStr(siste.created_at) +
+            ' — filer publisert etter dette ligger i GitHub, men er IKKE på nettstedet'));
+      }
+      linjer.push('', '## Filer endret siste 7 døgn', '');
+      if(c.feil){ linjer.push('(kunne ikke leses: ' + c.feil + ')'); }
+      else {
+        const grense = Date.now() - 7*86400000;
+        const per = new Map();
+        c.liste.forEach(x => {
+          const t = new Date(x.dato).getTime();
+          if(!t || t < grense) return;
+          const { fil, notat } = tolkCommit(x.melding);
+          if(!fil) return;
+          const f = per.get(fil) || { sist:0, antall:0, notater:[] };
+          f.antall++; if(t > f.sist) f.sist = t;
+          if(notat && f.notater.indexOf(notat) === -1) f.notater.push(notat);
+          per.set(fil, f);
+        });
+        if(per.size === 0) linjer.push('(ingen)');
+        [...per.entries()].sort((a,b) => b[1].sist - a[1].sist).forEach(([fil, f]) => {
+          linjer.push('- **' + fil + '** — ' + visTidStr(new Date(f.sist).toISOString()) +
+            (f.antall > 1 ? ' (' + f.antall + ' publiseringer)' : '') +
+            (f.notater.length ? ' · ' + f.notater.join('; ') : ''));
+        });
+      }
+      linjer.push('', '---', '',
+        '⚠️ Disse filene er IKKE med i arkivet. Er en av dem endret etter',
+        'sammendragets siste seksjon, be om den ferske kopien før du endrer den.');
+      notat = linjer.join('\n');
+    }catch(err){
+      notat = '# Status\n\nKunne ikke settes sammen: ' + (err.message || err);
+    }
+    if(btn) btn.disabled = false;
+    return lastNedAlt(SAMTALE_FILER, notat);
+  };
+
+  window.lastNedUtvalg = async function(){
+    const boks = document.getElementById('altVelgBoks');
+    if(!boks) return;
+    if(boks.style.display !== 'none' && boks.dataset.fylt){
+      const valgte = [...boks.querySelectorAll('input:checked')].map(i => i.value);
+      if(valgte.length === 0){ showAltStatus('err', 'Kryss av minst én fil.'); return; }
+      return lastNedAlt(valgte);
+    }
+    // Første trykk: hent listen og vis avkrysningen.
+    showAltStatus('busy', 'Henter fillisten…');
+    const cfg = loadConfig();
+    const r = await fetch('https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo +
+      '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1',
+      { headers:{ 'Authorization':'Bearer ' + cfg.token, 'Accept':'application/vnd.github+json' }, cache:'no-store' });
+    if(!r.ok){ showAltStatus('err', 'Kunne ikke hente fillisten (HTTP ' + r.status + ').'); return; }
+    const tre = await r.json();
+    const stier = (tre.tree || []).filter(n => n.type === 'blob' && erTekstfil(n.path))
+      .map(n => n.path).sort();
+    boks.style.display = 'block';
+    boks.dataset.fylt = '1';
+    boks.innerHTML =
+      '<div class="hint" style="margin-bottom:8px;">' + stier.length +
+      ' filer. De tre forhåndsvalgte er de som bærer sammenhengen i en ny samtale.</div>' +
+      stier.map(sti =>
+        '<label class="velg-fil"><input type="checkbox" value="' + escapeHtmlPT(sti) + '"' +
+        (SAMTALE_FILER.indexOf(sti) !== -1 ? ' checked' : '') + '><span>' +
+        escapeHtmlPT(sti) + '</span></label>').join('');
+    showAltStatus('ok', 'Kryss av det du vil ha med, og trykk igjen.');
+  };
+
+  function showAltStatus(cls, tekst){
+    const boks = document.getElementById('altStatus');
+    if(boks){ boks.className = 'status show ' + cls; boks.textContent = tekst; }
+  }
+
+  window.lastNedAlt = async function(valgte, notat){
     const cfg = loadConfig();
     const boks = document.getElementById('altStatus');
     const btn = document.getElementById('altBtn');
@@ -2609,8 +2739,11 @@
       const stier = (tre.tree || [])
         .filter(n => n.type === 'blob' && erTekstfil(n.path))
         .map(n => n.path)
+        .filter(p => !valgte || valgte.indexOf(p) !== -1)
         .sort();
-      if(stier.length === 0) throw new Error('fant ingen tekstfiler');
+      if(stier.length === 0) throw new Error(valgte
+        ? 'fant ingen av de valgte filene i repoet'
+        : 'fant ingen tekstfiler');
 
       const filer = [];
       const hoppet = [];
@@ -2626,11 +2759,18 @@
         }
       }
 
+      if(notat) filer.push({ navn: 'STATUS-VED-START.md', bytes: enc.encode(notat) });
       vis('busy', 'Pakker ' + filer.length + ' filer...');
       const bytes = lagZip(filer);
       const d = new Date();
       const to = n => String(n).padStart(2, '0');
-      const navn = 'madina-' + d.getFullYear() + '-' + to(d.getMonth()+1) + '-' + to(d.getDate()) + '.zip';
+      // 🔴 Klokkeslett med i navnet. Datoen alene ga tre filer med samme
+      // navn på én dag — «madina-2026-08-15.zip» tre ganger — og
+      // nettleseren la til (1) og (2) uten å si hvilken som var nyest.
+      // Å velge feil arkiv i en ny samtale betyr å bygge på gammelt.
+      const navn = 'madina-' + (valgte ? 'utvalg-' : '') +
+        d.getFullYear() + '-' + to(d.getMonth()+1) + '-' + to(d.getDate()) +
+        '-' + to(d.getHours()) + to(d.getMinutes()) + '.zip';
 
       const blob = new Blob([bytes], { type: 'application/zip' });
       const url = URL.createObjectURL(blob);
