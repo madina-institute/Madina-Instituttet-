@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 00:10:02 -->
+<!-- SIST-ENDRET: 2026-08-16 00:24:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4768,6 +4768,18 @@
          placeholder:'f.eks. Madinabarn (Søndag)'},
         {key:'dager', label:'Undervisningsdager', type:'role-checklist', essential:true,
          options:['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']},
+        // 🔴 Undervisningsdagens ytterpunkter. Før lå klokkeslettene bare
+        // på hver enkelt time, og programmet visste ingenting om når det
+        // begynte eller sluttet. Da fantes det heller ingenting å måle en
+        // enkelt time mot: en islam-time søndag 12:25 i et program som er
+        // ferdig 11:00 så ut som en helt vanlig rad.
+        //
+        // Står de tomme, hoppes kontrollen over — den sier ikke fra om
+        // noe den ikke har grunnlag for å bedømme.
+        {key:'starttid', label:'Undervisningen begynner', type:'text',
+         placeholder:'f.eks. 09:30'},
+        {key:'sluttid', label:'Undervisningen slutter', type:'text',
+         placeholder:'f.eks. 11:00'},
         // To prismodeller, to felter. Medlemsprisen er PER MÅNED, prisen
         // for ikke-medlemmer er PER ÅR — slik skolen faktisk oppgir dem.
         // Ingen av tallene står i koden; de settes her.
@@ -8376,17 +8388,41 @@
           ', men ' + kl.join(', ') + ' har en time ' + d.toLowerCase() + ' ' + t + '.' });
       }
 
+      // Ytterpunktene programmet selv oppgir. Uten dem måles ingenting.
+      const pStart = String(prog.starttid || '').trim();
+      const pSlutt = String(prog.sluttid || '').trim();
+      const utenfor = new Map();
+
       const tider = new Map();
       for(const h of progTimer){
         if(progDager.length && !progDager.includes(h.dag)) continue;
         const { start, end } = tpParseTid(h.tid);
         if(!start){ merknader.push({ alvor:'feil', tekst:
           'Klokkeslettet «' + (h.tid || '(tomt)') + '» i ' + tpClassName(h) + ' kan ikke leses.' }); continue; }
+        // Utenfor programmets tid: tas IKKE inn som blokk. Ble den med,
+        // ville den blitt en del av rammen alle andre klasser måles mot.
+        if((pStart && start < pStart) || (pSlutt && (end || start) > pSlutt)){
+          const n = h.dag + '|' + h.tid;
+          if(!utenfor.has(n)) utenfor.set(n, []);
+          utenfor.get(n).push(tpClassName(h));
+          continue;
+        }
         const id = fgBlokkId(h.tid);
         const nokkel = h.dag + '|' + id;
         if(!tider.has(nokkel)) tider.set(nokkel, { id, dag: h.dag, start, slutt: end, tid: h.tid, klasser: new Set() });
         tider.get(nokkel).klasser.add(h.klasse);
       }
+      for(const [n, kl] of utenfor){
+        const [d, t] = n.split('|');
+        merknader.push({ alvor:'feil', tekst:
+          prog.navn + ' varer ' + (pStart || '?') + '–' + (pSlutt || '?') +
+          ', men ' + kl.join(', ') + ' har en time ' + d.toLowerCase() + ' ' + t + '.' });
+      }
+      if(!pStart && !pSlutt){
+        merknader.push({ alvor:'advar', tekst:
+          prog.navn + ' mangler start- og sluttid. Timer utenfor programmets tid kan ikke oppdages.' });
+      }
+
       const perDag = {};
       for(const b of [...tider.values()].sort((x, y) => x.start.localeCompare(y.start))){
         (perDag[b.dag] = perDag[b.dag] || []).push(b);
@@ -9286,6 +9322,43 @@
     // programvalg på klassekortet.
     return nokkel ? KO_FAG_PROGRAM[nokkel]
       : [...new Set(Object.values(KO_FAG_PROGRAM).flat())];
+  }
+
+  // Dagene programmet faktisk går. Tom liste betyr «vet ikke» — og da
+  // vises alle dagene heller enn ingen. Et tomt nedtrekk ser ut som en
+  // feil i systemet, ikke som et program uten dager satt.
+  function koDagerFor(klasseId){
+    const prog = ((cache.classes || []).find(c => c.id === klasseId) || {}).program || '';
+    const p = (cache.programs || []).find(x => x.navn === prog || x.id === prog);
+    const dager = p && p.dager
+      ? (Array.isArray(p.dager) ? p.dager : String(p.dager).split(',').map(s => s.trim()).filter(Boolean))
+      : [];
+    return dager.length ? dager : ['Lørdag', 'Søndag'];
+  }
+
+  // Setter fag- og dag-listen i timeskjemaet etter klassen som er valgt.
+  //
+  // ⚠️ En verdi som allerede står i raden beholdes ALLTID, selv om den
+  // ikke er lov for programmet. Ble den kastet ut, ville nettopp de
+  // radene som er feil mistet innholdet sitt i det man åpnet dem — og
+  // feilen blitt usynlig i stedet for rettet. Den merkes i stedet.
+  function timeSkjemaFolgKlasse(klasseId){
+    const sett = (id, lovlige) => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      const naa = el.value;
+      el.innerHTML = lovlige.map(v =>
+        '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join('');
+      if(naa && !lovlige.includes(naa)){
+        const o = document.createElement('option');
+        o.value = naa;
+        o.textContent = naa + ' — hører ikke til dette programmet';
+        el.appendChild(o);
+      }
+      if(naa) el.value = naa;
+    };
+    sett('field_fag', klasseId ? koFagFor(klasseId) : [...new Set(Object.values(KO_FAG_PROGRAM).flat())]);
+    sett('field_dag', klasseId ? koDagerFor(klasseId) : ['Lørdag', 'Søndag']);
   }
 
   // To lærere i samme time krever to økter. Derfor deles blokken alltid
@@ -11931,6 +12004,21 @@
         if(type === 'students' && f.key === 'foresatt'){
           input.addEventListener('change', () => applyStudentDiscountPricing());
         }
+        // 🔴 Timeplanskjemaet visste ingenting om programmet. Fag-listen sto
+        // fast med alle seks fagene for hver eneste klasse, og dag-listen
+        // med både lørdag og søndag — så en Madinabarn-klasse kunne få
+        // «Koran» en lørdag uten at noe sa fra.
+        //
+        // Sperren fantes allerede, men bare i Fagrekkefølge-skjermen
+        // (koFagFor). Den gjaldt ikke her, og det er HER radene ble skrevet
+        // inn for hånd. En regel som bare finnes ett av to steder er ingen
+        // regel — den er en vane.
+        //
+        // Nå følger begge listene klassen som er valgt, og oppdateres i
+        // samme øyeblikk klassen byttes.
+        if(type === 'hours' && f.key === 'klasse'){
+          input.addEventListener('change', () => timeSkjemaFolgKlasse(input.value));
+        }
       } else if(f.type === 'date'){
         input = document.createElement('input');
         input.type = 'date';
@@ -12003,6 +12091,10 @@
     });
 
     container.appendChild(boksEssensiell);
+    // Kjøres også når skjemaet åpnes, ikke bare ved bytte av klasse: en
+    // rad som redigeres har allerede en klasse, og listene må stemme med
+    // den fra første blikk.
+    if(type === 'hours') timeSkjemaFolgKlasse(existing.klasse || '');
     if(harEssensielle && boksResten.children.length){
       const bryter = document.createElement('button');
       bryter.type = 'button';
