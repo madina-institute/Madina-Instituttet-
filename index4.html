@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 09:17:00 -->
+<!-- SIST-ENDRET: 2026-08-15 09:30:19 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -245,6 +245,35 @@
      som en liste man skal velge fra. Et kort leses som noe som gjelder
      akkurat dette barnet — og det er nettopp forskjellen vi vil ha.
      ═══════════════════════════════════════════════════════════════ */
+  /* Fellesboksen: gjelder hele familien, står over velgeren. */
+  .fv-felles{ margin-bottom:14px; }
+  .fv-felles .fv-fri, .fv-felles .fv-nedtelling, .fv-felles .fv-feiring{
+    border-top:0; border-radius:16px; overflow:hidden;
+    box-shadow:0 2px 10px rgba(6,25,91,0.06);
+  }
+
+  /* Velgeren. Vises bare med mer enn ett barn. */
+  .fv-velg-rad{ margin-bottom:12px; }
+  .fv-velg{
+    width:100%; appearance:none; -webkit-appearance:none;
+    font-family:'Jost',sans-serif; font-size:15px; font-weight:600; color:var(--ink);
+    background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' stroke='%237b8a93' stroke-width='2' fill='none'/></svg>") no-repeat right 16px center;
+    border:1px solid var(--line); border-radius:12px; padding:13px 44px 13px 16px;
+  }
+  html[dir="rtl"] .fv-velg{ font-family:'Tajawal',sans-serif; background-position:left 16px center; padding:13px 16px 13px 44px; }
+
+  /* Knappen inn i portalen. Kortet er også klikkbart, men en familie
+     som nettopp har lest timeplanen skal ikke måtte gjette at kortet
+     er en knapp — den veien videre skal stå skrevet. */
+  .fv-apne{
+    width:100%; margin-top:14px; cursor:pointer;
+    font-family:'Jost',sans-serif; font-size:15px; font-weight:700; color:#fff;
+    background:var(--gold); border:none; border-radius:12px; padding:15px 18px;
+    box-shadow:0 8px 20px rgba(255,119,31,0.32);
+  }
+  html[dir="rtl"] .fv-apne{ font-family:'Tajawal',sans-serif; }
+  .fv-apne:hover{ filter:brightness(1.06); }
+
   .fv-barn{
     display:block; width:100%; text-align:start; cursor:pointer;
     background:#fff; border:1px solid var(--line); border-radius:16px;
@@ -646,7 +675,16 @@
       <h1 class="fv-navn" id="fvNavn"></h1>
       <p class="fv-under" id="fvUnder"></p>
       <p class="fv-hint" id="fvHint"></p>
+      <!-- Det som er LIKT for alle barna står her, én gang. Nedtellingen
+           til skolestart var den samme for hvert barn, og ble gjentatt
+           like mange ganger som familien har barn — samme tall under
+           hvert navn, som om det betydde noe forskjellig. -->
+      <div class="fv-felles" id="fvFelles"></div>
+      <div class="fv-velg-rad" id="fvVelgRad" style="display:none;">
+        <select class="fv-velg" id="fvVelg" onchange="velgVelkomstBarn(this.value)"></select>
+      </div>
       <div class="fv-kort" id="fvKort"></div>
+      <button class="fv-apne" id="fvApne" style="display:none;" onclick="aapneValgtBarn()"></button>
       <button class="fv-logg-ut" onclick="doParentLogout()">Logg ut</button>
     </div>
   </div>
@@ -2087,7 +2125,33 @@
     renderChildTabs();
     renderChild();
     closeSection();
+    // 🔴 Uten dette var det ingen vei tilbake til familieskjermen med
+    // telefonens egen tilbake-knapp. Skjermbytte skjer i JavaScript, så
+    // nettleseren vet ikke at man «gikk» noe sted — tilbake tok deg ut
+    // av portalen i stedet, og innloggingen måtte gjøres på nytt.
+    //
+    // Én oppføring legges inn ved åpning; popstate under fanger den.
+    try{ history.pushState({ fvBarn: i }, ''); }catch(e){}
   };
+
+  window.aapneValgtBarn = function(){ aapneBarn(fvValgt); };
+
+  // Hvilket barn familieskjermen viser. Ikke det samme som
+  // currentChildIndex, som gjelder inne i portalen.
+  let fvValgt = 0;
+  window.velgVelkomstBarn = function(i){
+    fvValgt = parseInt(i, 10) || 0;
+    tegnVelkomstForelder();
+  };
+
+  // Tilbake fra portalen → familieskjermen. Er vi allerede der, lar vi
+  // nettleseren gjøre det den ellers ville gjort.
+  window.addEventListener('popstate', () => {
+    const app = document.getElementById('appView');
+    if(app && app.style.display !== 'none' && currentGuardian){
+      visForeldreVelkomst();
+    }
+  });
 
   function tegnVelkomstForelder(){
     const el = document.getElementById('fvKort');
@@ -2122,8 +2186,48 @@
     const sortert = myChildren.map((b, i) => ({ b, i }))
       .sort((x, y) => (parseInt(x.b.soskenrekkefolge,10) || 99) - (parseInt(y.b.soskenrekkefolge,10) || 99));
 
-    const rader = sortert.map(({ b, i }) => kortForBarn(b, i, currentLang)).join('');
-    el.innerHTML = rader;
+    if(fvValgt >= sortert.length) fvValgt = 0;
+    const valgt = sortert[fvValgt];
+
+    // ── Det som gjelder hele familien, én gang ──────────────────────
+    // Ferie og nedtelling er de samme for alle barn som går på samme
+    // program. Sto de inne i hvert kort, ble samme tall gjentatt under
+    // hvert navn. Er barna på ULIKE programmer, kan tilstanden være
+    // forskjellig — da står den i kortet i stedet, der den hører til.
+    const felles = document.getElementById('fvFelles');
+    const programmerIBruk = [...new Set(sortert.map(({b}) => b.program || ''))];
+    const fellesTilstand = programmerIBruk.length === 1
+      ? dagsTilstand(programmerIBruk[0]) : null;
+    if(felles){
+      felles.innerHTML = (fellesTilstand && fellesTilstand.type !== 'dag')
+        ? fellesTilstand.html : '';
+    }
+
+    // ── Velgeren ────────────────────────────────────────────────────
+    // Vises bare med mer enn ett barn. Med ett barn ville den vært en
+    // meny med ett valg — en knapp som ikke gjør noe.
+    const velgRad = document.getElementById('fvVelgRad');
+    const velg = document.getElementById('fvVelg');
+    if(velgRad && velg){
+      velgRad.style.display = sortert.length > 1 ? '' : 'none';
+      if(sortert.length > 1){
+        velg.innerHTML = sortert.map(({ b }, k) =>
+          `<option value="${k}"${k === fvValgt ? ' selected' : ''}>${escapeHtml(b.navn || '')}</option>`).join('');
+      }
+    }
+
+    // ── Kortet for det valgte barnet ────────────────────────────────
+    el.innerHTML = kortForBarn(valgt.b, valgt.i, currentLang,
+      fellesTilstand && fellesTilstand.type !== 'dag');
+
+    const apne = document.getElementById('fvApne');
+    if(apne){
+      apne.style.display = '';
+      apne.textContent = ar
+        ? ('افتح صفحة ' + (valgt.b.navn || '') + ' ←')
+        : ('Åpne siden til ' + (valgt.b.navn || '') + ' →');
+      apne.onclick = () => aapneBarn(valgt.i);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -2144,7 +2248,7 @@
   // Skylder familien noe, står det en rød prikk. Tallet finnes under
   // Betaling, der det hører hjemme og der man selv velger å se det.
   // ═══════════════════════════════════════════════════════════════════
-  function kortForBarn(b, i, lang){
+  function kortForBarn(b, i, lang, dagStaarOver){
     const ar = lang === 'ar';
     const rest = toNum(b.belop) - toNum(b.belopBetalt);
     const klasseNavn = resolveClassName(b.klasse);
@@ -2163,8 +2267,65 @@
           </span>
           <span class="fv-pil">${ar ? '←' : '→'}</span>
         </span>
-        ${dagsInnhold(b, lang)}
+        ${dagStaarOver ? '' : dagsInnhold(b, lang)}
       </button>`;
+  }
+
+  // Tilstanden for ET PROGRAM, uten barnet. Skilt ut fordi ferie og
+  // nedtelling gjelder hele familien når barna går på samme program —
+  // da tegnes den én gang over velgeren i stedet for i hvert kort.
+  // Timeplanen er det eneste som skiller barna, og den blir igjen i
+  // kortet der klassen er kjent.
+  function dagsTilstand(program){
+    const lang = currentLang;
+    const ar = lang === 'ar';
+    const iDag = iso(new Date());
+
+    const ferie = ferieFor(iDag, program);
+    if(ferie){
+      const neste = nesteUndervisningsdag(program);
+      const tilbake = neste
+        ? `<span class="fv-tilbake-dato">${ar ? 'نلتقي' : 'Vi ses'} ${datoNorsk(neste.dato, lang)}</span>`
+        : '';
+      if((ferie.feiring || '') === 'Ja'){
+        return { type:'feiring', html: `
+          <span class="fv-feiring">
+            <span class="fv-feiring-stjerner">✦ ✦ ✦</span>
+            <span class="fv-feiring-tekst">${escapeHtml(hilsenFor(ferie, lang))}</span>
+            <span class="fv-feiring-stjerner">✦ ✦ ✦</span>
+            ${tilbake}
+          </span>` };
+      }
+      const periode = ferie.tilDato && ferie.tilDato !== ferie.fraDato
+        ? datoNorsk(ferie.fraDato, lang) + ' – ' + datoNorsk(ferie.tilDato, lang)
+        : datoNorsk(ferie.fraDato, lang);
+      const nedTilStart = (skolear.startDato && iDag < skolear.startDato)
+        ? dagerTil(skolear.startDato) : 0;
+      return { type:'fri', html: `
+        <span class="fv-fri">
+          <span class="fv-fri-navn">${escapeHtml(ferie.beskrivelse || (ar ? 'إجازة' : 'Fri'))}</span>
+          <span class="fv-fri-periode">${periode}</span>
+          ${nedTilStart > 0 ? `
+            <span class="fv-ned-tall">${nedTilStart}</span>
+            <span class="fv-ned-tekst">${ar ? 'يوم على بداية الدراسة'
+              : (nedTilStart === 1 ? 'dag til skolestart' : 'dager til skolestart')}</span>
+            <span class="fv-tilbake-dato">${datoNorsk(skolear.startDato, lang)}</span>`
+          : tilbake}
+        </span>` };
+    }
+
+    if(skolear.startDato && iDag < skolear.startDato){
+      const d = dagerTil(skolear.startDato);
+      return { type:'nedtelling', html: `
+        <span class="fv-nedtelling">
+          <span class="fv-ned-tall">${d}</span>
+          <span class="fv-ned-tekst">${ar ? 'يوم على بداية الدراسة'
+            : (d === 1 ? 'dag til skolestart' : 'dager til skolestart')}</span>
+          <span class="fv-tilbake-dato">${datoNorsk(skolear.startDato, lang)}</span>
+        </span>` };
+    }
+
+    return { type:'dag', html:'' };
   }
 
   // De fire tilstandene. Rekkefølgen er ikke tilfeldig: en pågående
