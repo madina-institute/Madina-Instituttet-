@@ -1,217 +1,211 @@
-<!doctype html>
-<!-- SIST-ENDRET: 2026-08-15 18:00:19 -->
-<html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-15 22:52:35 -->
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  FORSIDEN — tegnes nå fra de felles filene, ikke fra seg selv.
+
+  All tekst ligger i innhold.js. Alle tegnefunksjoner i felles.js. All
+  stil i felles.css. Denne filen er bare stillaset: tomme bokser med
+  id-er, i den rekkefølgen de skal stå.
+
+  🔴 Grunnen: prisene sto skrevet inn tre steder — her, i skjemaet og i
+  foreldreportalen — og de gled fra hverandre. Forsiden viste 2 750 da
+  den ekte prisen var 5 500. Da /priser ble en egen side, ville teksten
+  ligget to steder til. Nå finnes hver setning ÉN gang, og forsiden og
+  undersiden leser den samme.
+
+  ⚠️ Legger du til et avsnitt her, må felles.js også vite hvordan det
+  fylles — ellers står boksen tom. `node sjekk-sider.mjs` sier fra.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<html lang="no" dir="ltr" id="htmlRoot">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DASiN</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/src/style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Madina Skole</title>
+<meta id="pageDesc" name="description" content="Madina Skole — koranundervisning, arabisk og urdu for barn, tilknyttet Madina Grorud moske, Oslo.">
+
+<meta property="og:type"        content="website">
+<meta property="og:site_name"   content="Madina Skole">
+<meta property="og:url"         content="https://madinaskole.no/">
+<meta property="og:title"       content="Madina Skole — koranundervisning, arabisk og urdu">
+<meta property="og:description" content="Lørdagsskole for barn i Oslo. Koran, islam og valgt språk — arabisk eller urdu — samlet i ett program. Påmelding for skoleåret 2026/2027 er åpen.">
+<meta property="og:image"       content="https://madinaskole.no/og-forside.jpg">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale"      content="nb_NO">
+
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles.css?v=20260812-08">
 </head>
 <body>
-  <div class="corner-deco"></div>
-  <div id="app">
-    <header>
-      <button id="langToggleBtn" data-i18n-toggle class="small-btn lang-btn"></button>
-      <div id="statusBadge" class="badge badge-loading" data-i18n="statusConnecting"></div>
-      <h1 style="margin-inline-start:auto">DASiN</h1>
-    </header>
 
-    <section id="loginView">
-      <h2 data-i18n="loginTitle"></h2>
-      <input id="email" type="email" data-i18n-placeholder="emailPlaceholder" />
-      <input id="password" type="password" data-i18n-placeholder="passwordPlaceholder" />
-      <button id="loginBtn" data-i18n="loginBtn"></button>
-      <p id="loginError" class="error"></p>
-    </section>
+<div id="inAppBrowserBanner">
+  <span id="bannerText"></span>
+  <button class="close-banner" id="bannerClose" onclick="document.getElementById('inAppBrowserBanner').style.display='none'"></button>
+</div>
 
-    <section id="dashboardView" hidden>
-      <div class="card-row">
-        <h2><span data-i18n="dashboardPrefix"></span> <span id="schoolName"></span></h2>
-        <button id="logoutBtn" class="small-btn" data-i18n="logoutBtn"></button>
-      </div>
 
-      <nav class="category-tabs">
-        <button data-category="personale">الموظفين</button>
-        <button data-category="admin" class="active">الإدارة</button>
-        <button data-category="okonomi">المالية</button>
-        <button data-category="pedagogisk">الأكاديمي</button>
-        <button data-category="kommunikasjon">التواصل</button>
-        <button data-category="skoleoppsett">إعداد المدرسة</button>
-        <button data-category="system">النظام</button>
-      </nav>
-
-      <!-- الموظفين — زي مدينة: Alle personer/Lærere/Ledelse/Pålogget nå/
-           Roller og tilganger/Eiere. لسه معملناش UI لأي واحد منهم. -->
-      <nav class="tabs" data-category-group="personale" hidden>
-        <p class="muted">قريبًا: المعلمين، الأدوار والصلاحيات، الملاك، متصل الآن</p>
-      </nav>
-
-      <!-- الإدارة — زي مدينة: Elever/Foresatte/Søknader/Kontaktendringer -->
-      <nav class="tabs" data-category-group="admin">
-        <button data-tab="students" class="active" data-i18n="tabStudents"></button>
-        <button data-tab="registrations" data-i18n="tabRegistrations"></button>
-        <button data-tab="guardians">أولياء الأمور</button>
-      </nav>
-
-      <!-- المالية — زي مدينة: Oversikt/Elevbetalinger/Betalingsforespørsler/
-           Kasse/Betalingslogg/Lønn/Innstillinger -->
-      <nav class="tabs" data-category-group="okonomi" hidden>
-        <button data-tab="finances" class="active">المالية العامة (Kasse)</button>
-        <button data-tab="pricing">الإعدادات (خصم الإخوة)</button>
-      </nav>
-
-      <!-- الأكاديمي — زي مدينة: Klasser/Timeplan/Oppmøte/Fraværsmeldinger/
-           Forberedelser/Planmaler/Planarkiv/Lekser/Elevnotater -->
-      <nav class="tabs" data-category-group="pedagogisk" hidden>
-        <button data-tab="attendance" class="active" data-i18n="tabAttendance"></button>
-        <button data-tab="homework" data-i18n="tabHomework"></button>
-        <button data-tab="notes">ملاحظات الطلاب</button>
-      </nav>
-
-      <!-- التواصل — زي مدينة: Meldinger/Meldingssenter/Kunngjøringer -->
-      <nav class="tabs" data-category-group="kommunikasjon" hidden>
-        <button data-tab="announcements" class="active">الإعلانات</button>
-      </nav>
-
-      <!-- إعداد المدرسة — زي مدينة: Programmer/Skolekalender/
-           Møtereferater/Rapporter -->
-      <nav class="tabs" data-category-group="skoleoppsett" hidden>
-        <button data-tab="programs" class="active" data-i18n="tabPrograms"></button>
-        <button data-tab="calendar">التقويم</button>
-        <button data-tab="meetings">الاجتماعات</button>
-      </nav>
-
-      <!-- النظام — زي مدينة: Oversikt/Verktøy/Veiledning، وهنا كمان
-           سجل الحذف والنشاط (معادل Slettelogg/Lærerinnsyn) -->
-      <nav class="tabs" data-category-group="system" hidden>
-        <button data-tab="deletions" class="active" data-i18n="tabDeletions"></button>
-        <button data-tab="activity" data-i18n="tabActivity"></button>
-      </nav>
-
-      <div id="tabStudents" class="tabPanel">
-        <div id="studentsList"></div>
-      </div>
-
-      <div id="tabRegistrations" class="tabPanel" hidden>
-        <div id="registrationsList"></div>
-      </div>
-
-      <div id="tabAttendance" class="tabPanel" hidden>
-        <select id="attClassSelect"></select>
-        <input id="attDate" type="date" />
-        <div id="attStudentsList"></div>
-        <p id="attMessage"></p>
-      </div>
-
-      <div id="tabHomework" class="tabPanel" hidden>
-        <select id="hwClassSelect"></select>
-        <input id="hwTitle" type="text" data-i18n-placeholder="hwTitlePlaceholder" />
-        <input id="hwDueDate" type="date" />
-        <button id="hwAddBtn" data-i18n="hwAddBtn"></button>
-        <div id="homeworkList"></div>
-      </div>
-
-      <div id="tabPrograms" class="tabPanel" hidden>
-        <div id="programsList"></div>
-        <h3 data-i18n="addProgramHeading"></h3>
-        <input id="progName" type="text" data-i18n-placeholder="progNamePlaceholder" />
-        <select id="progModel">
-          <option value="member" data-i18n="progModelMember"></option>
-          <option value="non_member" data-i18n="progModelNonMember"></option>
-        </select>
-        <input id="progPrice" type="number" data-i18n-placeholder="progPricePlaceholder" />
-        <button id="progAddBtn" data-i18n="progAddBtn"></button>
-      </div>
-
-      <div id="tabPricing" class="tabPanel" hidden>
-        <h3>إعدادات خصم الإخوة</h3>
-        <label>خصم الطفل التاني (%)</label>
-        <input id="discount2Input" type="number" max="18" />
-        <label>خصم الطفل التالت فما فوق (%)</label>
-        <input id="discount3Input" type="number" max="18" />
-        <button id="saveSettingsBtn">حفظ الإعدادات</button>
-        <p id="settingsMsg" class="muted"></p>
-
-        <h3>فحص العائلات</h3>
-        <button id="checkMismatchBtn" class="small-btn">فحص كل العائلات</button>
-        <div id="mismatchList"></div>
-      </div>
-
-      <div id="tabGuardians" class="tabPanel" hidden>
-        <div id="guardiansList"></div>
-        <h3>إضافة ولي أمر</h3>
-        <input id="gName" type="text" placeholder="الاسم الكامل" />
-        <input id="gPhone" type="tel" placeholder="التليفون" />
-        <input id="gEmail" type="email" placeholder="الإيميل" />
-        <button id="gAddBtn">إضافة</button>
-      </div>
-
-      <div id="tabCalendar" class="tabPanel" hidden>
-        <div id="calendarList"></div>
-        <h3>إضافة حدث</h3>
-        <input id="calDesc" type="text" placeholder="وصف الحدث" />
-        <input id="calFrom" type="date" />
-        <input id="calTo" type="date" />
-        <button id="calAddBtn">إضافة</button>
-      </div>
-
-      <div id="tabAnnouncements" class="tabPanel" hidden>
-        <div id="announcementsList"></div>
-        <h3>إعلان جديد</h3>
-        <input id="annTitle" type="text" placeholder="العنوان" />
-        <textarea id="annBody" placeholder="النص" style="min-height:80px"></textarea>
-        <button id="annAddBtn">نشر الإعلان</button>
-      </div>
-
-      <div id="tabMeetings" class="tabPanel" hidden>
-        <div id="meetingsList"></div>
-        <h3>محضر اجتماع جديد</h3>
-        <input id="meetTitle" type="text" placeholder="عنوان الاجتماع" />
-        <input id="meetDate" type="date" />
-        <textarea id="meetMinutes" placeholder="المحضر" style="min-height:80px"></textarea>
-        <button id="meetAddBtn">حفظ</button>
-      </div>
-
-      <div id="tabFinances" class="tabPanel" hidden>
-        <div id="financesList"></div>
-        <h3>قيد مالي جديد</h3>
-        <input id="finDate" type="date" />
-        <select id="finType">
-          <option value="expense">مصروف</option>
-          <option value="income">إيراد</option>
-        </select>
-        <input id="finAmount" type="number" placeholder="المبلغ" />
-        <input id="finDesc" type="text" placeholder="الوصف" />
-        <button id="finAddBtn">حفظ</button>
-      </div>
-
-      <div id="tabNotes" class="tabPanel" hidden>
-        <select id="noteStudentSelect"></select>
-        <textarea id="noteText" placeholder="الملاحظة" style="min-height:60px"></textarea>
-        <button id="noteAddBtn">إضافة ملاحظة</button>
-        <div id="notesListForStudent"></div>
-      </div>
-
-      <div id="tabDeletions" class="tabPanel" hidden>
-        <div id="deletionsList"></div>
-      </div>
-
-      <div id="tabActivity" class="tabPanel" hidden>
-        <div id="activityList"></div>
-      </div>
-    </section>
-
-    <section id="parentView" hidden>
-      <div class="card-row">
-        <h2><span data-i18n="parentPortalPrefix"></span> <span id="parentSchoolName"></span></h2>
-        <button id="parentLogoutBtn" class="small-btn" data-i18n="logoutBtn"></button>
-      </div>
-      <div id="childrenList"></div>
-    </section>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/" style="text-decoration:none;">
+      <!-- Toppbaren har lys bakgrunn, så her brukes den blå logoutgaven.
+           Den hvite forsvinner nesten helt mot lyse flater. -->
+        <img src="logo-bla.png" alt="Madina Skole">
+      <span class="brand-text" id="brandText">Madina Skole</span>
+    </a>
+    <div class="topbar-links" id="topbarLinks"></div>
+    <div class="lang-switch-inner">
+      <button id="btnLangNo" class="active" onclick="switchLang('no')">Norsk</button>
+      <button id="btnLangEn" onclick="switchLang('en')">English</button>
+      <button id="btnLangAr" onclick="switchLang('ar')">العربية</button>
+      <button id="btnLangUr" onclick="switchLang('ur')">اردو</button>
+    </div>
   </div>
+</nav>
 
-  <script type="module" src="/src/main.js"></script>
+<header class="hero">
+  <div class="hero-inner">
+  <a class="hero-badge" href="/kunngjøringer" id="heroBadge" style="text-decoration:none;"></a>
+  <h1 id="heroTitle"></h1>
+  <div class="school-year" id="heroYear"></div>
+  <p class="lead" id="heroLead"></p>
+  <div class="quick-facts" id="quickFacts"></div>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="/påmelding" id="heroBtnPrimary"></a>
+    <a class="btn btn-outline" href="#program" id="heroBtnOutline"></a>
+  </div>
+  </div>
+</header>
+
+<main>
+
+  <section id="register">
+    <div class="section-head">
+      <div class="eyebrow" id="regEyebrow"></div>
+      <h2 id="regTitle"></h2>
+      <p id="regDesc"></p>
+    </div>
+    <div class="steps-row" id="stepsRow"></div>
+    <div class="tuition-box" id="tuitionBox"></div>
+  </section>
+
+  <section id="dates">
+    <div class="section-head">
+      <div class="eyebrow" id="datesEyebrow"></div>
+      <h2 id="datesTitle"></h2>
+      <p id="datesDesc"></p>
+    </div>
+    <div class="dates-row" id="datesRow"></div>
+    <div style="text-align:center; margin-top:22px;">
+      <a class="btn btn-onlight" href="/timeplan" id="datesTimeplanBtn"></a>
+    </div>
+  </section>
+
+  <section id="program">
+    <div class="section-head">
+      <div class="eyebrow" id="programEyebrow"></div>
+      <h2 id="programTitle"></h2>
+      <p id="programDesc"></p>
+    </div>
+    <div class="card-grid" id="programCards"></div>
+    <div id="bokListe"></div>
+  </section>
+
+  <section id="priser">
+    <div class="section-head">
+      <div class="eyebrow" id="prisEyebrow"></div>
+      <h2 id="prisTitle"></h2>
+      <p id="prisDesc"></p>
+    </div>
+    <div class="card-grid" id="prisCards"></div>
+    <div class="pris-noter" id="prisNoter"></div>
+    <div id="soskenKort"></div>
+    <!-- Medlemskortet står UNDER prisene, ikke over. Familien ser først
+         hva de to prisene er, og deretter hvordan de får den laveste.
+         Sto det først, ville spørsmålet kommet før grunnen til å bry seg. -->
+    <div id="medlemsKort"></div>
+  </section>
+  <section id="who">
+    <div class="section-head">
+      <div class="eyebrow" id="whoEyebrow"></div>
+      <h2 id="whoTitle"></h2>
+      <p id="whoDesc"></p>
+    </div>
+    <!-- Bygget står her og ikke øverst: teksten sier hvem vi er, bildet
+         viser HVOR. En familie som skal komme lørdag morgen kjenner igjen
+         døra fra dette bildet — det er hele jobben det gjør. -->
+    <picture>
+      <source srcset="moske.webp" type="image/webp">
+      <img class="sted-bilde" src="moske.jpg" id="stedBilde"
+           alt="Inngangen til Madina Institute og Senter Oslo i Hagelundveien 2b"
+           loading="lazy" decoding="async" width="1320" height="802">
+    </picture>
+    <div class="mvp-row" id="mvpRow"></div>
+  </section>
+
+  <section id="team">
+    <div class="section-head">
+      <div class="eyebrow" id="teamEyebrow"></div>
+      <h2 id="teamTitle"></h2>
+      <p id="teamDesc"></p>
+    </div>
+    <div class="team-row" id="teamRow"></div>
+  </section>
+
+  <section id="portals">
+    <div class="section-head">
+      <div class="eyebrow" id="portalsEyebrow"></div>
+      <h2 id="portalsTitle"></h2>
+      <p id="portalsDesc"></p>
+    </div>
+    <div class="card-grid" id="portalCards"></div>
+  </section>
+
+  <section id="cta">
+    <div class="final-cta">
+      <h2 id="ctaTitle"></h2>
+      <p id="ctaDesc"></p>
+      <a class="btn btn-primary" href="/påmelding" id="ctaBtn"></a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <h4 id="footerBrand"></h4>
+    <p id="footerAddr"></p>
+    <p id="footerContact"></p>
+    <p id="footerOrgNr" style="font-size:11px;"></p>
+    <p><a class="plink" href="/personvern" id="footerPrivacy"></a></p>
+    <p id="footerCopy"></p>
+  </div>
+</footer>
+
+
+
+<!-- ══ TIDSSTEMPEL (kun for utvikling) ═══════════════════════════════
+     Denne siden er det første foresatte ser. Et lite merke med dato og
+     klokkeslett i hjørnet ville sett ut som en glemt detalj fra et
+     nettsted under arbeid — derfor vises det bare når man selv legger
+     til «?dev» i adressen. Besøkende ser ingenting.
+
+     Tidspunktet leses fra linjen «SIST-ENDRET» som publiseringsverktøyet
+     skriver øverst i filen ved hver publisering. Er den ikke der, er
+     filen publisert utenom verktøyet — og merket sier nettopp det.
+     ════════════════════════════════════════════════════════════════ -->
+
+
+
+<div id="devEditBadge">…</div>
+
+<script src="/innhold.js?v=20260812-08"></script>
+<script src="/felles.js?v=20260812-08"></script>
+<script>startSide();</script>
+<script type="module" src="/priser.js?v=20260812-08"></script>
+
 </body>
 </html>
