@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 00:23:43 -->
+<!-- SIST-ENDRET: 2026-08-15 11:18:54 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -354,6 +354,17 @@
 
       <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
       <div class="status" id="statusBox"></div>
+
+      <!-- 🔴 Svaret på spørsmålet ingen kunne svare på 15.08: ligger det
+           noe i GitHub som aldri kom ut på nettstedet? -->
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="sjekkUtlegging()">
+        🚦 Sjekk utleggingen
+      </button>
+      <div class="hint" style="margin-top:6px;">
+        Sier om siste utlegging lyktes — og hvilke filer som eventuelt ligger
+        i GitHub uten å være ute på nettstedet.
+      </div>
+      <div id="utleggingBoks" style="display:none;"></div>
 
       <div class="logg-skille">
         <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
@@ -1192,6 +1203,250 @@
   // Returns {ok:true} on success or {ok:false, message} on failure — never
   // throws, so callers (especially the multi-file loop) can keep going to
   // the next file even if one fails.
+  // ═══════════════════════════════════════════════════════════════════
+  // NÅDDE FILEN NETTET? — ikke bare GitHub.
+  //
+  // 🔴 15.08: publiseringen sto i en halv time uten at noen visste det.
+  // Verktøyet sa «✓ Publisert» hver gang, og det VAR sant: filene lå i
+  // GitHub. Men firebase.json manglet sin første `{`, så `firebase
+  // deploy` stanset før den lastet opp noe som helst — og alt som ble
+  // publisert i mellomtiden ble liggende i repoet uten å nå nettstedet.
+  //
+  // Skjermen viste gammel side, verktøyet viste grønn hake, og begge
+  // fortalte sannheten om hver sin halvdel.
+  //
+  // Herfra leses resultatet av GitHub Action-en som gjør selve
+  // utleggingen. «Publisert» betyr fra nå av at filen er ute.
+  // ═══════════════════════════════════════════════════════════════════
+
+  const DEPLOY_WORKFLOW = 'firebase-hosting.yml';
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PASSER INNHOLDET TIL NAVNET?
+  //
+  // 🔴 15.08: innholdet i firestore.rules ble publisert som
+  // firebase.json. Verktøyet tok imot det uten et ord — GitHub gjør ikke
+  // forskjell på filtyper. Først en halvtime senere, i en loggfil hos
+  // GitHub Actions, kom svaret: «Parse Error … firebase.json».
+  //
+  // Kontrollen er bevisst grov. Den ser bare på de første tegnene og
+  // kjenner igjen fire former som ikke kan forveksles. Den SPØR — den
+  // nekter ikke: det finnes lovlige unntak jeg ikke har tenkt på, og et
+  // verktøy som sier nei til noe riktig er verre enn ett som spør.
+  // ═══════════════════════════════════════════════════════════════════
+  function gjettFiltype(innhold){
+    const t = String(innhold || '').replace(/^\uFEFF/, '').trim();
+    if(!t) return null;
+    if(/^rules_version\s*=|^service\s+cloud\.firestore/m.test(t))       return 'rules';
+    if(/^<!DOCTYPE\s+html|^<html[\s>]/i.test(t))                          return 'html';
+    if(t[0] === '{' || t[0] === '[')                                       return 'json';
+    if(/^name:\s/.test(t) && /^on:\s*$/m.test(t) && /^jobs:\s*$/m.test(t)) return 'yml';
+    return null;
+  }
+  function typeAvSti(sti){
+    const l = String(sti || '').toLowerCase();
+    if(l.endsWith('.rules')) return 'rules';
+    if(l.endsWith('.json'))  return 'json';
+    if(l.endsWith('.html'))  return 'html';
+    if(l.endsWith('.yml') || l.endsWith('.yaml')) return 'yml';
+    if(l.endsWith('.js') || l.endsWith('.mjs') || l.endsWith('.css')) return 'kode';
+    return null;
+  }
+  const TYPENAVN = { rules:'Firestore-regler', json:'JSON', html:'HTML-side', yml:'GitHub-arbeidsflyt', kode:'kode' };
+
+  // true = fortsett. false = brukeren avbrøt.
+  function innholdPasserTilNavn(sti, innhold){
+    const forventet = typeAvSti(sti);
+    const funnet = gjettFiltype(innhold);
+    if(!forventet || !funnet || forventet === funnet) return true;
+    // HTML-filer inneholder ofte JSON-lignende blokker, og en .js kan
+    // starte med { . Bare de tydelige sammenblandingene fanges.
+    if(forventet === 'kode' || funnet === 'kode') return true;
+    return confirm(
+      '⚠️ Innholdet ser ikke ut som ' + (TYPENAVN[forventet] || forventet) + '.\n\n' +
+      'Filsti:    ' + sti + '\n' +
+      'Forventet: ' + (TYPENAVN[forventet] || forventet) + '\n' +
+      'Ser ut som: ' + (TYPENAVN[funnet] || funnet) + '\n\n' +
+      'Publiserer du feil innhold under dette navnet, kan hele utleggingen ' +
+      'stoppe — og det vises ikke her, bare i loggen hos GitHub.\n\n' +
+      'Vil du publisere likevel?'
+    );
+  }
+
+  // Venter på at utleggingen skal bli ferdig etter en publisering.
+  // Kjøringen starter noen sekunder etter commiten, så vi ser etter en
+  // kjøring som er NYERE enn tidspunktet vi publiserte.
+  async function ventPaUtlegging(startetFra, meld){
+    const frist = Date.now() + 150000;      // to og et halvt minutt
+    let sett = null;
+    while(Date.now() < frist){
+      const kj = await hentKjoringer(5);
+      sett = kj.find(r => new Date(r.created_at).getTime() >= startetFra - 5000);
+      if(sett && sett.status === 'completed') break;
+      if(meld) meld(sett ? 'Legger ut på nettstedet…' : 'Venter på at utleggingen starter…');
+      await new Promise(r => setTimeout(r, 6000));
+    }
+    if(!sett) return { status:'ukjent' };
+    if(sett.status !== 'completed') return { status:'venter', run:sett };
+    // «cancelled» er normalt: publiserer du flere filer, avbryter den
+    // nyeste kjøringen de forrige. Det er sperren i workflowen som virker.
+    if(sett.conclusion === 'success') return { status:'ok', run:sett };
+    if(sett.conclusion === 'cancelled') return { status:'avbrutt', run:sett };
+    return { status:'feilet', run:sett };
+  }
+
+  async function ghGet(sti){
+    const cfg = loadConfig();
+    if(!cfg || !cfg.owner || !cfg.repo) return null;
+    const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + sti;
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    if(cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+    try{
+      const r = await fetch(url, { headers, cache: 'no-store' });
+      if(!r.ok) return null;
+      return await r.json();
+    }catch(e){ return null; }
+  }
+
+  // Kjøringene for utleggingen, nyeste først.
+  async function hentKjoringer(antall){
+    const d = await ghGet('/actions/workflows/' + DEPLOY_WORKFLOW + '/runs?per_page=' + (antall || 10));
+    return (d && d.workflow_runs) ? d.workflow_runs : [];
+  }
+
+  // Feilteksten fra selve deploy-steget. Trekker ut linjene rundt «Error:»
+  // — hele loggen er hundrevis av linjer, og det er de fire som betyr noe.
+  async function hentFeiltekst(runId){
+    const jobber = await ghGet('/actions/runs/' + runId + '/jobs');
+    const jobb = jobber && jobber.jobs && jobber.jobs[0];
+    if(!jobb) return '';
+    // Loggen krever token med repo-lesing. Har vi den ikke, sier vi det
+    // heller enn å finne på en årsak.
+    const cfg = loadConfig();
+    if(!cfg.token) return '';
+    try{
+      const r = await fetch('https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo +
+        '/actions/jobs/' + jobb.id + '/logs', {
+        headers: { 'Authorization': 'Bearer ' + cfg.token }, cache: 'no-store' });
+      if(!r.ok) return '';
+      const tekst = await r.text();
+      const linjer = tekst.split('\n');
+      const ut = [];
+      linjer.forEach((l, i) => {
+        if(/error|Parse Error|exit code/i.test(l)){
+          for(let k = Math.max(0, i - 2); k <= Math.min(linjer.length - 1, i + 4); k++){
+            const ren = linjer[k].replace(/^\S+\s/, '').trimEnd();
+            if(ren && ut.indexOf(ren) === -1) ut.push(ren);
+          }
+        }
+      });
+      return ut.slice(0, 20).join('\n');
+    }catch(e){ return ''; }
+  }
+
+  // Feilen fra en mislykket utlegging, i klartekst og til å kopiere.
+  async function visUtleggingsfeil(run){
+    showStatus('🛑 Utleggingen FEILET. Filen ligger i GitHub, men er IKKE på nettstedet.', 'err');
+    const boks = document.getElementById('utleggingBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+    boks.innerHTML = '<div class="ut-tittel">🛑 Siste utlegging feilet</div>' +
+      '<div class="ut-sub">' + escapeHtmlPT(run.display_title || run.name || '') +
+      ' · ' + visTid(run.created_at) + '</div>' +
+      '<div class="ut-sub">Henter årsaken…</div>';
+    const tekst = await hentFeiltekst(run.id);
+    const url = run.html_url || '';
+    boks.innerHTML =
+      '<div class="ut-tittel">🛑 Siste utlegging feilet</div>' +
+      '<div class="ut-sub">' + escapeHtmlPT(run.display_title || run.name || '') +
+      ' · ' + visTid(run.created_at) + '</div>' +
+      (tekst
+        ? '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(tekst) + '</pre>' +
+          '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier årsaken</button>'
+        : '<div class="ut-sub">Årsaken ligger i kjøringsloggen. Den krever et token med lesetilgang til repoet — ' +
+          'åpne kjøringen for å se den.</div>') +
+      (url ? '<div class="ut-sub"><a href="' + url + '" target="_blank" rel="noopener">Åpne kjøringen på GitHub →</a></div>' : '');
+  }
+
+  window.kopierUtlegging = function(){
+    const el = document.getElementById('utLogg');
+    if(!el) return;
+    navigator.clipboard.writeText(el.textContent)
+      .then(() => showStatus('Årsaken er kopiert.', 'ok'))
+      .catch(() => showStatus('Kunne ikke kopiere — merk teksten manuelt.', 'err'));
+  };
+
+  function escapeHtmlPT(x){
+    return String(x == null ? '' : x).replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // «SJEKK UTLEGGINGEN» — hva ligger i GitHub uten å være på nettet?
+  //
+  // Det var dette spørsmålet ingen kunne svare på i en halv time.
+  // Kjøringene leses nyeste først: alt som er publisert ETTER siste
+  // vellykkede utlegging, ligger i repoet og ingen andre steder.
+  // ═══════════════════════════════════════════════════════════════════
+  window.sjekkUtlegging = async function(){
+    const boks = document.getElementById('utleggingBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+    boks.innerHTML = '<div class="ut-sub">Leser kjøringene…</div>';
+
+    const kj = await hentKjoringer(15);
+    if(kj.length === 0){
+      boks.innerHTML = '<div class="ut-tittel">Fant ingen kjøringer</div>' +
+        '<div class="ut-sub">Enten er oppsettet ikke lagret ennå, eller så heter arbeidsflyten noe annet enn ' +
+        DEPLOY_WORKFLOW + '.</div>';
+      return;
+    }
+
+    const sisteOk = kj.find(r => r.status === 'completed' && r.conclusion === 'success');
+    const siste = kj[0];
+
+    // Alt som ble publisert etter siste vellykkede utlegging.
+    const grense = sisteOk ? new Date(sisteOk.created_at).getTime() : 0;
+    const etterpa = kj.filter(r => new Date(r.created_at).getTime() > grense);
+
+    let html = '';
+    if(siste.status !== 'completed'){
+      html += '<div class="ut-tittel">⏳ En utlegging pågår</div>' +
+        '<div class="ut-sub">' + escapeHtmlPT(siste.display_title || '') + '</div>';
+    } else if(siste.conclusion === 'success'){
+      html += '<div class="ut-tittel ok">✓ Alt er ute</div>' +
+        '<div class="ut-sub">Siste utlegging lyktes ' + visTid(siste.created_at) + '.</div>';
+    } else {
+      html += '<div class="ut-tittel">🛑 Siste utlegging ' +
+        (siste.conclusion === 'cancelled' ? 'ble avbrutt' : 'feilet') + '</div>';
+      // 🔴 Denne listen er hele poenget: filene som ligger i GitHub uten
+      // å være på nettstedet. Uten den ser man bare at «noe feilet», og
+      // ikke hva som mangler ute.
+      const strandet = etterpa.filter(r => r.conclusion !== 'success');
+      if(strandet.length){
+        html += '<div class="ut-sub">Publisert, men <b>ikke ute</b>:</div><ul class="ut-liste">' +
+          strandet.map(r => '<li>' + escapeHtmlPT(r.display_title || r.name || '') +
+            ' <span class="ut-tid">' + visTid(r.created_at) + '</span></li>').join('') +
+          '</ul>';
+      }
+      html += '<div class="ut-sub">Retter du årsaken og publiserer på nytt, går <b>alt</b> ut samtidig — ' +
+        'utleggingen laster opp hele treet, ikke bare den siste filen.</div>';
+    }
+    boks.innerHTML = html;
+
+    if(siste.status === 'completed' && siste.conclusion !== 'success' && siste.conclusion !== 'cancelled'){
+      const tekst = await hentFeiltekst(siste.id);
+      boks.innerHTML += tekst
+        ? '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(tekst) + '</pre>' +
+          '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier årsaken</button>'
+        : '<div class="ut-sub">Åpne kjøringen for å se årsaken — loggen krever token med repo-lesing.</div>';
+      if(siste.html_url){
+        boks.innerHTML += '<div class="ut-sub"><a href="' + siste.html_url +
+          '" target="_blank" rel="noopener">Åpne kjøringen på GitHub →</a></div>';
+      }
+    }
+  };
+
   async function publishFileToGitHub(path, content){
     const cfg = loadConfig();
     const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
@@ -1879,6 +2134,10 @@
       showStatus('Velg en fil eller lim inn filinnholdet først.', 'err');
       return;
     }
+    if(!innholdPasserTilNavn(path, content)){
+      showStatus('Publisering avbrutt — sjekk at innholdet hører til denne filstien.', 'err');
+      return;
+    }
     const btn = document.getElementById('publishBtn');
     btn.disabled = true;
 
@@ -1898,10 +2157,23 @@
     showStatus('Publiserer...', 'busy');
     const result = await publishFileToGitHub(path, content);
     if(result.ok){
-      showStatus('✓ Publisert! Endringen er live om noen sekunder.', 'ok');
       localStorage.setItem(LS_LAST_FILE, document.getElementById('filePreset').value);
       updateLastPublishedHint();
       window.nullstillSperre();
+      // 🔴 Her sa det før: «✓ Publisert! Endringen er live om noen
+      // sekunder.» Den setningen var et løfte verktøyet ikke kunne holde
+      // — det visste bare at GitHub hadde tatt imot filen.
+      showStatus('✓ Lagret i GitHub. Venter på utleggingen…', 'busy');
+      const r = await ventPaUtlegging(Date.now(), m => showStatus('✓ Lagret. ' + m, 'busy'));
+      if(r.status === 'ok'){
+        showStatus('✓ Publisert og lagt ut. Filen er live nå.', 'ok');
+      } else if(r.status === 'avbrutt'){
+        showStatus('✓ Lagret. Utleggingen ble avbrutt av en nyere publisering — det er normalt når du publiserer flere filer.', 'ok');
+      } else if(r.status === 'feilet'){
+        await visUtleggingsfeil(r.run);
+      } else {
+        showStatus('✓ Lagret i GitHub — men jeg fikk ikke bekreftet utleggingen. Trykk «Sjekk utleggingen» under.', 'err');
+      }
     } else {
       showStatus('✗ ' + result.message, 'err');
     }
@@ -1977,6 +2249,11 @@
       // "✓ Publisert". Vi slår derfor filnavnet opp mot de ekte stiene i
       // repoet først, akkurat som enkeltfil-opplastingen gjør.
       const målsti = finnFullSti(f.name);
+      if(!innholdPasserTilNavn(målsti, f.content)){
+        hoppetOver++;
+        if(statusEl){ statusEl.className = 'fstatus err'; statusEl.textContent = '⚠️ Feil innholdstype — hoppet over'; }
+        continue;
+      }
       if(målsti !== f.name && statusEl){
         statusEl.textContent = 'Publiserer til ' + målsti + '...';
       }
@@ -2176,6 +2453,25 @@
     pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
   }
   @media (max-width:480px){ #lastEditBadge{ font-size:9.5px; padding:3px 8px; } }
+
+  /* ---- Utleggingsstatus ---- */
+  #utleggingBoks{
+    margin-top:14px; padding:14px 16px; border-radius:12px;
+    background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
+  }
+  .ut-tittel{ font-weight:700; font-size:14.5px; margin-bottom:4px; }
+  .ut-tittel.ok{ color:#2f6b34; }
+  .ut-sub{ font-size:12.5px; color:#5f6b62; margin-top:6px; line-height:1.55; }
+  .ut-liste{ margin:6px 0 0; padding-inline-start:20px; font-size:12.5px; color:#5f6b62; }
+  .ut-liste li{ margin-bottom:3px; }
+  .ut-tid{ color:#96a29a; }
+  /* Loggen skal kunne merkes og kopieres — den er poenget med boksen. */
+  .ut-logg{
+    margin:10px 0; padding:10px 12px; border-radius:8px;
+    background:#1d2b22; color:#e8f0e9; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:11px; line-height:1.5; white-space:pre-wrap; word-break:break-word;
+    max-height:260px; overflow:auto; user-select:text; -webkit-user-select:text;
+  }
 </style>
 <div id="lastEditBadge">…</div>
 <div id="lastDeployBadge">Sjekker siste publisering…</div>
