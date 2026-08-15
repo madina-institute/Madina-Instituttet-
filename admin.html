@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 01:10:40 -->
+<!-- SIST-ENDRET: 2026-08-15 08:43:34 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1278,6 +1278,10 @@
 
   .field-row-2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media (max-width:600px){.field-row-2{grid-template-columns:1fr;}}
+  /* Tre datoer på rad: de hører sammen og leses som én tidslinje.
+     Under hverandre ser de ut som tre uavhengige valg. */
+  .field-row-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:820px){.field-row-3{grid-template-columns:1fr;}}
   #customFieldsCheckboxes label{
     font-family:'Jost',sans-serif; font-size:12.5px; display:inline-flex; align-items:center; gap:6px;
     background:var(--paper-2); padding:6px 12px; border-radius:16px; border:1px solid var(--line); cursor:pointer;
@@ -2462,6 +2466,58 @@
 
   <!-- SKOLEKALENDER — fridager og ekstra undervisningsdager -->
   <div class="panel" id="panel-schoolCalendar">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         SKOLEÅRET — tre datoer, ett sted.
+
+         🔴 Systemet visste ikke når skoleåret begynte. «Lørdag 5.
+         september» sto skrevet inn på nettstedet — i datolisten og i
+         nøkkeltallene øverst — og ingen steder som data. Panelet kunne
+         ikke endre det, og portalene kunne ikke vite det.
+
+         Det er samme feil som prisene: et tall skrevet inn flere
+         steder, som til slutt ikke stemmer med seg selv.
+
+         Ett dokument for BEGGE programmene: de starter og slutter
+         samme dag. To kopier ville før eller siden sagt ulike ting.
+
+         Herfra utleder kalenderen selv: skolestart, terminskifte og
+         skoleslutt. De legges IKKE inn som rader — da ville samme dato
+         stått to steder igjen.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="report-card">
+      <h3>📅 Skoleåret</h3>
+      <div class="sub">
+        Når året begynner, når første termin slutter, og når året er over.
+        <br><br>
+        Portalene bruker disse tre til å vise nedtelling før skolestart,
+        hvilken termin man er i, og når timeplanen igjen gjelder.
+        <b>Står de tomme, viser portalene ingen nedtelling</b> — de gjetter ikke.
+        <br><br>
+        Andre termin trenger ingen dato: den begynner der første slutter,
+        og ender med skoleåret.
+      </div>
+      <div class="field-row-3">
+        <div class="field">
+          <label>Skolestart</label>
+          <input type="date" id="skolearStartInput" onchange="merkUlagret('skolear'); visSkolearStatus();">
+        </div>
+        <div class="field">
+          <label>Første termin slutter</label>
+          <input type="date" id="skolearTermin1Input" onchange="merkUlagret('skolear'); visSkolearStatus();">
+        </div>
+        <div class="field">
+          <label>Skoleslutt</label>
+          <input type="date" id="skolearSluttInput" onchange="merkUlagret('skolear'); visSkolearStatus();">
+        </div>
+      </div>
+      <div class="hint" id="skolearStatus" style="margin-top:10px;"></div>
+      <div class="toolbar" style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="saveSkolear()">Lagre skoleåret</button>
+        <span class="hint" id="skolearMeta" style="align-self:center;"></span>
+      </div>
+    </div>
+
     <div class="report-card">
       <h3>🗓️ Skolekalender — fridager og ekstra dager</h3>
       <div class="sub">
@@ -4717,9 +4773,36 @@
         {key:'fraDato', label:'Fra dato', type:'date', essential:true},
         {key:'tilDato', label:'Til dato (tom = kun én dag)', type:'date', essential:true},
         {key:'program', label:'Gjelder program (tom = alle)', type:'dynamic-select', source:'programs'},
+        // ═══════════════════════════════════════════════════════════
+        // FEIRING — skolen bestemmer, ikke koden.
+        //
+        // Beskrivelsen er fri tekst. Koden kan derfor ikke se på ordet
+        // «eid» eller «jul» og gjette hva slags dag det er — «Eid-
+        // utstilling» ville blitt regnet som høytid, og en høytid stavet
+        // annerledes ville ikke blitt det.
+        //
+        // Derfor et eget felt. Står det Ja, viser foreldreportalen en
+        // stor, pyntet hilsen i stedet for den vanlige fri-boksen.
+        //
+        // Hilsenen SKRIVES her, aldri i koden. Det er skolen som avgjør
+        // hva den gratulerer med og med hvilke ord — og en ny anledning
+        // skal kunne legges til uten at noe publiseres.
+        // ═══════════════════════════════════════════════════════════
+        {key:'feiring', label:'Feires? (stor hilsen i foreldreportalen)', type:'select',
+         options:['Nei','Ja']},
+        {key:'anledning', label:'Anledning (foreslår hilsen)', type:'select',
+         options:['', 'Eid al-Fitr', 'Eid al-Adha', 'Ramadan', 'Mawlid', 'Nytt skoleår', 'Annet']},
+        // Fire felter, ikke ett. Panelet oversetter ingenting: det som
+        // skrives her vises ordrett. Står et språk tomt, brukes det
+        // norske — en tom hilsen ville sett ut som en glemt boks.
+        {key:'hilsen', label:'Hilsen — norsk', type:'text',
+         placeholder:'f.eks. Eid mubarak'},
+        {key:'hilsenEn', label:'Hilsen — engelsk', type:'text'},
+        {key:'hilsenAr', label:'Hilsen — arabisk', type:'text'},
+        {key:'hilsenUr', label:'Hilsen — urdu', type:'text'},
         {key:'merknad', label:'Merknad', type:'text'}
       ],
-      cols: ['beskrivelse','type','fraDato','tilDato','program']
+      cols: ['beskrivelse','type','fraDato','tilDato','feiring','program']
     },
     classes: {
       label: 'klasse', collectionName: 'classes',
@@ -5733,6 +5816,17 @@
       fyllPrisinnstillinger();
       renderOkonomiHub();
     }, (err) => console.error('settings/priser', err));
+
+    // Skoleåret. Samme sted som prisene: leses etter bekreftet innlogging,
+    // fordi reglene krever innlogging for å lese 'settings'.
+    onSnapshot(doc(db, 'settings', 'skolear'), (snap) => {
+      const d = snap.exists() ? (snap.data() || {}) : {};
+      skolearOppsett.startDato   = d.startDato || '';
+      skolearOppsett.termin1Slutt = d.termin1Slutt || '';
+      skolearOppsett.sluttDato   = d.sluttDato || '';
+      innstMeta('skolearMeta', d);
+      fyllSkolear();
+    }, (err) => console.error('settings/skolear', err));
 
     onSnapshot(doc(db, 'settings', 'faktura'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
@@ -11055,6 +11149,12 @@
   // bli synlig FEIL — ikke se riktig ut. 20/30 var en tidligere ordning,
   // og et tall som ser plausibelt ut blir fakturert uten at noen ser etter.
   const RABATT_RESERVE = { barn2: 0, barn3: 0 };
+
+  // Skoleåret. Tomt betyr «ikke bestemt» — ikke «bruk fjorårets».
+  // Portalene viser da ingen nedtelling i det hele tatt, framfor å telle
+  // ned til en dato ingen har vedtatt.
+  const skolearOppsett = { startDato: '', termin1Slutt: '', sluttDato: '' };
+
   const prisOppsett = {
     rabatt2: RABATT_RESERVE.barn2,
     rabatt3: RABATT_RESERVE.barn3,
@@ -13559,6 +13659,98 @@
     visFakturaEffekt();
     visRabattForhandsvisning();
   }
+
+  // ---------- Skoleåret ----------
+  function fyllSkolear(){
+    const par = [['skolearStartInput','startDato'],
+                 ['skolearTermin1Input','termin1Slutt'],
+                 ['skolearSluttInput','sluttDato']];
+    par.forEach(([id, nokkel]) => {
+      const el = document.getElementById(id);
+      if(el && document.activeElement !== el) el.value = skolearOppsett[nokkel] || '';
+    });
+    visSkolearStatus();
+  }
+
+  // Sier hva de tre datoene BETYR akkurat nå — ikke bare at de er lagret.
+  // En dato man ikke ser konsekvensen av, er en dato ingen oppdager er feil.
+  window.visSkolearStatus = function(){
+    const el = document.getElementById('skolearStatus');
+    if(!el) return;
+    const les = id => (document.getElementById(id) || {}).value || '';
+    const start = les('skolearStartInput');
+    const t1    = les('skolearTermin1Input');
+    const slutt = les('skolearSluttInput');
+
+    if(!start && !t1 && !slutt){
+      el.innerHTML = '🔴 <b>Ikke satt.</b> Portalene viser ingen nedtelling og ' +
+        'ingen termin før dette er fylt ut.';
+      return;
+    }
+    // Rekkefølgen må stemme. Gjør den ikke det, blir «hvilken termin er
+    // vi i?» umulig å svare på — og portalen ville svart noe likevel.
+    if(start && t1 && t1 <= start){
+      el.innerHTML = '🔴 Første termin kan ikke slutte før skolen har begynt.';
+      return;
+    }
+    if(t1 && slutt && slutt <= t1){
+      el.innerHTML = '🔴 Skoleåret kan ikke slutte før første termin er over.';
+      return;
+    }
+    const norsk = d => {
+      const t = new Date(d + 'T00:00:00');
+      return isNaN(t) ? d : t.toLocaleDateString('no-NO',
+        { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    };
+    const iDag = new Date().toISOString().slice(0,10);
+    let hvor = '';
+    if(start && iDag < start){
+      const dager = Math.ceil((new Date(start) - new Date(iDag)) / 86400000);
+      hvor = 'Skolestart om <b>' + dager + ' dag' + (dager === 1 ? '' : 'er') + '</b>.';
+    } else if(slutt && iDag > slutt){
+      hvor = 'Skoleåret er over.';
+    } else if(t1 && iDag <= t1){
+      hvor = 'Vi er i <b>første termin</b>.';
+    } else if(start){
+      hvor = 'Vi er i <b>andre termin</b>.';
+    }
+    el.innerHTML = [
+      start ? 'Starter ' + norsk(start) : '',
+      t1    ? 'Første termin til ' + norsk(t1) : '',
+      slutt ? 'Slutter ' + norsk(slutt) : ''
+    ].filter(Boolean).join(' · ') + (hvor ? '<br><br>' + hvor : '');
+  };
+
+  window.saveSkolear = async function(){
+    const les = id => (document.getElementById(id) || {}).value || '';
+    const start = les('skolearStartInput');
+    const t1    = les('skolearTermin1Input');
+    const slutt = les('skolearSluttInput');
+
+    if(start && t1 && t1 <= start){
+      showToast('Første termin kan ikke slutte før skolestart.'); return;
+    }
+    if(t1 && slutt && slutt <= t1){
+      showToast('Skoleslutt kan ikke være før første termin er over.'); return;
+    }
+    if(start && slutt && slutt <= start){
+      showToast('Skoleslutt kan ikke være før skolestart.'); return;
+    }
+    try{
+      await setDoc(doc(db, 'settings', 'skolear'), {
+        startDato: start,
+        termin1Slutt: t1,
+        sluttDato: slutt,
+        sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
+        sistEndretDato: new Date().toISOString()
+      }, { merge: true });
+      ryddUlagret('skolear');
+      showToast('Skoleåret er lagret.');
+    } catch(err){
+      console.error(err);
+      showToast('Noe gikk galt under lagring.');
+    }
+  };
 
   function fyllLonnsinnstillinger(){
     const par = [['satsLarerInput','larer'], ['satsAssistentInput','assistent']];
