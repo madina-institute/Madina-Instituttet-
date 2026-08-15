@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 12:18:53 -->
+<!-- SIST-ENDRET: 2026-08-15 12:24:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1385,14 +1385,14 @@
     boks.style.display = 'block';
     boks.innerHTML = '<div class="ut-tittel">🛑 Siste utlegging feilet</div>' +
       '<div class="ut-sub">' + escapeHtmlPT(run.display_title || run.name || '') +
-      ' · ' + visTid(run.created_at) + '</div>' +
+      ' · ' + visTidStr(run.created_at) + '</div>' +
       '<div class="ut-sub">Henter årsaken…</div>';
     const tekst = await hentFeiltekst(run.id);
     const url = run.html_url || '';
     boks.innerHTML =
       '<div class="ut-tittel">🛑 Siste utlegging feilet</div>' +
       '<div class="ut-sub">' + escapeHtmlPT(run.display_title || run.name || '') +
-      ' · ' + visTid(run.created_at) + '</div>' +
+      ' · ' + visTidStr(run.created_at) + '</div>' +
       (tekst
         ? '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(tekst) + '</pre>' +
           '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier årsaken</button>'
@@ -1421,7 +1421,31 @@
   // Kjøringene leses nyeste først: alt som er publisert ETTER siste
   // vellykkede utlegging, ligger i repoet og ingen andre steder.
   // ═══════════════════════════════════════════════════════════════════
+  // 🔴 visTid() tar et Date-OBJEKT. GitHub svarer med ISO-tekst, og
+  // teksten har ingen toLocaleDateString — kallet kastet, midt i
+  // opptegningen. Boksen ble stående på det jeg hadde skrevet først, og
+  // svaret kom «umiddelbart» fordi det aldri kom noe svar i det hele tatt.
+  function visTidStr(iso){
+    const d = new Date(iso);
+    return isNaN(d) ? String(iso || '') : visTid(d);
+  }
+
   window.sjekkUtlegging = async function(){
+    try{ await sjekkUtleggingInternt(); }
+    catch(e){
+      // Uten denne forsvant enhver feil i opptegningen sporløst — og
+      // det er nettopp den tilstanden knappen finnes for å avskaffe.
+      const b = document.getElementById('utleggingBoks');
+      if(b){
+        b.style.display = 'block';
+        b.innerHTML = '<div class="ut-tittel">Noe gikk galt i visningen</div>' +
+          '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(e && e.message ? e.message : e) + '</pre>' +
+          '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier meldingen</button>';
+      }
+    }
+  };
+
+  async function sjekkUtleggingInternt(){
     const boks = document.getElementById('utleggingBoks');
     if(!boks) return;
     boks.style.display = 'block';
@@ -1478,7 +1502,7 @@
         '<div class="ut-sub">' + escapeHtmlPT(siste.display_title || '') + '</div>';
     } else if(siste.conclusion === 'success'){
       html += '<div class="ut-tittel ok">✓ Alt er ute</div>' +
-        '<div class="ut-sub">Siste utlegging lyktes ' + visTid(siste.created_at) + '.</div>';
+        '<div class="ut-sub">Siste utlegging lyktes ' + visTidStr(siste.created_at) + '.</div>';
     } else {
       html += '<div class="ut-tittel">🛑 Siste utlegging ' +
         (siste.conclusion === 'cancelled' ? 'ble avbrutt' : 'feilet') + '</div>';
@@ -1489,7 +1513,7 @@
       if(strandet.length){
         html += '<div class="ut-sub">Publisert, men <b>ikke ute</b>:</div><ul class="ut-liste">' +
           strandet.map(r => '<li>' + escapeHtmlPT(r.display_title || r.name || '') +
-            ' <span class="ut-tid">' + visTid(r.created_at) + '</span></li>').join('') +
+            ' <span class="ut-tid">' + visTidStr(r.created_at) + '</span></li>').join('') +
           '</ul>';
       }
       html += '<div class="ut-sub">Retter du årsaken og publiserer på nytt, går <b>alt</b> ut samtidig — ' +
