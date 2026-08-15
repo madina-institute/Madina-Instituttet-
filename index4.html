@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 09:54:24 -->
+<!-- SIST-ENDRET: 2026-08-15 10:01:27 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -2078,7 +2078,22 @@
     return ut;
   }
 
-  function iso(d){ return d.toISOString().slice(0,10); }
+  // 🔴 toISOString() gir datoen i UTC — ikke her.
+  //
+  // Norge ligger på UTC+2 om sommeren. Lager koden en dag på lokal
+  // midnatt, er klokken 22:00 DAGEN FØR i UTC, og toISOString() svarer
+  // med gårsdagens dato. Ukedagen (getDay) var hele tiden riktig, så
+  // søket fant lørdag — men datoen som fulgte med, var fredagen før.
+  //
+  // Utslaget: lørdag 5. september ble regnet som 2026-09-04, altså FØR
+  // skolestart, og hoppet over. Neste lørdag, den 12., ble vist som
+  // «fredag 11.». Skjermen så konsekvent ut og var det ikke.
+  //
+  // Datoen bygges nå av de lokale feltene. Ingen tidssone involvert.
+  function iso(d){
+    const to = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + to(d.getMonth() + 1) + '-' + to(d.getDate());
+  }
   function datoNorsk(d, lang){
     const t = (d instanceof Date) ? d : new Date(d + 'T00:00:00');
     if(isNaN(t)) return '';
