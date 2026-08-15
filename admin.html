@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 00:31:10 -->
+<!-- SIST-ENDRET: 2026-08-16 00:39:19 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2818,35 +2818,6 @@
     </div>
 
     <div id="koInnhold" style="margin-top:16px;"></div>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         OVERGANG — les timeplanen som finnes, og se om den passer i den
-         nye formen FØR noe skrives.
-
-         Timene ligger i dag som løse rader i 'hours': én rad per klasse,
-         dag og klokkeslett. Klokkeslettene gjentas for hver eneste klasse
-         i programmet, og skal en pause flyttes, må hver rad rettes.
-
-         Den nye formen skiller det som deles fra det som ikke gjør det:
-         klokkeslettene hører til PROGRAMMET, fagene og lærerne til
-         KLASSEN. Men om den formen faktisk passer, kan ikke avgjøres ved
-         å tegne den — bare ved å kjøre den mot timeplanen som står der.
-         Derfor leser knappen under, regner ut, og VISER. Den skriver
-         ingenting.
-         ══════════════════════════════════════════════════════════════ -->
-    <div class="report-card" style="margin-top:22px;">
-      <h3>🔄 Prøv den nye formen mot timeplanen som finnes</h3>
-      <div class="sub">
-        Leser <b>hours</b>, <b>classes</b> og <b>programs</b> og regner ut hvordan
-        timeplanen ville sett ut med klokkeslettene på programmet og fagene på
-        klassen. <b>Ingenting lagres</b> — du får se resultatet og hva som
-        eventuelt ikke passer først.
-      </div>
-      <button class="btn btn-ghost" style="margin-top:12px;" onclick="fgAnalyser()">
-        Analyser timeplanen
-      </button>
-      <div id="fgAnalyseBoks" style="display:none; margin-top:14px;"></div>
-    </div>
   </div>
 
   <!-- ATTENDANCE -->
@@ -4768,28 +4739,6 @@
          placeholder:'f.eks. Madinabarn (Søndag)'},
         {key:'dager', label:'Undervisningsdager', type:'role-checklist', essential:true,
          options:['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']},
-        // 🔴 Undervisningsdagens ytterpunkter. Før lå klokkeslettene bare
-        // på hver enkelt time, og programmet visste ingenting om når det
-        // begynte eller sluttet. Da fantes det heller ingenting å måle en
-        // enkelt time mot: en islam-time søndag 12:25 i et program som er
-        // ferdig 11:00 så ut som en helt vanlig rad.
-        //
-        // Står de tomme, hoppes kontrollen over — den sier ikke fra om
-        // noe den ikke har grunnlag for å bedømme.
-        // 🔴 Fagene programmet består av. Sto før fast i koden, i
-        // KO_FAG_PROGRAM, med «Madinabarn» oppført som et FAG — men
-        // Madinabarn er navnet på programmet, ikke på noe som undervises.
-        // Og «Fellestime» gjaldt aldri for det.
-        //
-        // En liste i koden kan bare endres ved å publisere en ny fil.
-        // Her kan skolen sette den selv, og hvert program får sin egen.
-        {key:'innslag', label:'Fag/innslag i dette programmet (skill med komma)',
-         type:'text', essential:true,
-         placeholder:'f.eks. Koranstund, Fortelling, Lek og læring'},
-        {key:'starttid', label:'Undervisningen begynner', type:'text',
-         placeholder:'f.eks. 09:30'},
-        {key:'sluttid', label:'Undervisningen slutter', type:'text',
-         placeholder:'f.eks. 11:00'},
         // To prismodeller, to felter. Medlemsprisen er PER MÅNED, prisen
         // for ikke-medlemmer er PER ÅR — slik skolen faktisk oppgir dem.
         // Ingen av tallene står i koden; de settes her.
@@ -8320,276 +8269,6 @@
     document.getElementById('planmalerListView').style.display = 'none';
   };
 
-  // ═══════════════════════════════════════════════════════════════════
-  // OVERGANG TIL FAGREKKEFØLGE
-  //
-  // Regner om 'hours' til den nye formen, uten å røre noe:
-  //   programs/{id}.blokker      = klokkeslettene, delt av klassene
-  //   classes/{id}.fagrekkefolge = fag og lærer, per dag, per blokk
-  //
-  // 🔴 Blokkene får id fra klokkeslettet ('b1000' for 10:00), ikke fra
-  // plassen i listen. Med løpenummer ville en ny blokk øverst flyttet
-  // hvert fag i hver klasse ett hakk ned — og ingen ville sett det skje.
-  // Utledet av tiden er id-en dessuten den samme hver gang analysen
-  // kjøres, så to kjøringer gir samme svar.
-  //
-  // Parallelle spor er skolens ordning for arabisk og urdu: to fag i
-  // samme blokk. Alt ANNET som havner to ganger i samme blokk er noe
-  // annet enn ordningen, og skal sies fra om — ikke pakkes inn som om
-  // det var det samme.
-  // ═══════════════════════════════════════════════════════════════════
-  let fgResultat = null;
-
-  function fgBlokkId(tid){
-    const { start } = tpParseTid(tid);
-    return 'b' + start.replace(/[^0-9]/g, '');
-  }
-  const FG_SPRAAK = ['Arabisk', 'Urdu'];
-
-  window.fgAnalyser = function(){
-    const boks = document.getElementById('fgAnalyseBoks');
-    if(!boks) return;
-    boks.style.display = 'block';
-
-    const timer = cache.hours || [];
-    if(timer.length === 0){
-      boks.innerHTML = '<div class="report-empty">Det finnes ingen timer å regne om.</div>';
-      fgResultat = null;
-      return;
-    }
-
-    const klasser = cache.classes || [];
-    const programmer = cache.programs || [];
-    const merknader = [];   // ting som ikke passer — vises alltid
-    const blokkerPerProg = new Map();
-    const rekkefolgePerKlasse = new Map();
-
-    // Rader som ikke hører til en klasse i basen. «Felles oppstart» og
-    // «Felles avslutning» er skrevet som klassenavn i klasse-feltet —
-    // de er programmets egne blokker, ikke en klasses.
-    const uteKlasse = timer.filter(h => !klasser.some(k => k.id === h.klasse));
-    const felles = [...new Set(uteKlasse.map(h => h.klasse))];
-
-    for(const prog of programmer){
-      const progKlasser = klasser.filter(k => k.program === prog.navn || k.program === prog.id);
-      if(progKlasser.length === 0) continue;
-      const progTimer = timer.filter(h => progKlasser.some(k => k.id === h.klasse));
-      if(progTimer.length === 0) continue;
-
-      // 🔴 Blokkene hører til programmet OG DAGEN, ikke til programmet
-      // alene. Madinabarn går søndag; en lørdagsrad i en av klassene er
-      // ikke en søndagsblokk — den er en rad som ikke skulle vært der.
-      // Uten dagen i nøkkelen ville lørdag 13:00 blitt lagt inn som en
-      // blokk i søndagsprogrammet, og hele resten regnet videre på den.
-      const progDager = Array.isArray(prog.dager) ? prog.dager
-                      : String(prog.dager || '').split(',').map(s => s.trim()).filter(Boolean);
-      const fremmedDag = new Map();
-      for(const h of progTimer){
-        if(progDager.length && !progDager.includes(h.dag)){
-          const n = h.dag + '|' + h.tid;
-          if(!fremmedDag.has(n)) fremmedDag.set(n, []);
-          fremmedDag.get(n).push(tpClassName(h));
-        }
-      }
-      for(const [n, kl] of fremmedDag){
-        const [d, t] = n.split('|');
-        merknader.push({ alvor:'feil', tekst:
-          prog.navn + ' går ' + (progDager.join('/') || '(ingen dag satt)') +
-          ', men ' + kl.join(', ') + ' har en time ' + d.toLowerCase() + ' ' + t + '.' });
-      }
-
-      // Ytterpunktene programmet selv oppgir. Uten dem måles ingenting.
-      const pStart = String(prog.starttid || '').trim();
-      const pSlutt = String(prog.sluttid || '').trim();
-      const utenfor = new Map();
-
-      const tider = new Map();
-      for(const h of progTimer){
-        if(progDager.length && !progDager.includes(h.dag)) continue;
-        const { start, end } = tpParseTid(h.tid);
-        if(!start){ merknader.push({ alvor:'feil', tekst:
-          'Klokkeslettet «' + (h.tid || '(tomt)') + '» i ' + tpClassName(h) + ' kan ikke leses.' }); continue; }
-        // Utenfor programmets tid: tas IKKE inn som blokk. Ble den med,
-        // ville den blitt en del av rammen alle andre klasser måles mot.
-        if((pStart && start < pStart) || (pSlutt && (end || start) > pSlutt)){
-          const n = h.dag + '|' + h.tid;
-          if(!utenfor.has(n)) utenfor.set(n, []);
-          utenfor.get(n).push(tpClassName(h));
-          continue;
-        }
-        const id = fgBlokkId(h.tid);
-        const nokkel = h.dag + '|' + id;
-        if(!tider.has(nokkel)) tider.set(nokkel, { id, dag: h.dag, start, slutt: end, tid: h.tid, klasser: new Set() });
-        tider.get(nokkel).klasser.add(h.klasse);
-      }
-      for(const [n, kl] of utenfor){
-        const [d, t] = n.split('|');
-        merknader.push({ alvor:'feil', tekst:
-          prog.navn + ' varer ' + (pStart || '?') + '–' + (pSlutt || '?') +
-          ', men ' + kl.join(', ') + ' har en time ' + d.toLowerCase() + ' ' + t + '.' });
-      }
-      if(!pStart && !pSlutt){
-        merknader.push({ alvor:'advar', tekst:
-          prog.navn + ' mangler start- og sluttid. Timer utenfor programmets tid kan ikke oppdages.' });
-      }
-
-      const perDag = {};
-      for(const b of [...tider.values()].sort((x, y) => x.start.localeCompare(y.start))){
-        (perDag[b.dag] = perDag[b.dag] || []).push(b);
-      }
-
-      // En blokk bare én klasse bruker er ikke felles for programmet. Da er
-      // enten klokkeslettet skrevet ulikt, eller klassen går sin egen vei —
-      // og det må sees på før klokkeslettene flyttes opp på programmet.
-      for(const [dag, liste] of Object.entries(perDag)){
-        for(const b of liste){
-          if(b.klasser.size < progKlasser.length){
-            const mangler = progKlasser.filter(k => !b.klasser.has(k.id)).map(k => k.navn);
-            merknader.push({ alvor: b.klasser.size === 1 ? 'advar' : 'info', tekst:
-              prog.navn + ' · ' + dag.toLowerCase() + ' ' + b.tid + ' brukes ikke av: ' + mangler.join(', ') });
-          }
-        }
-      }
-      blokkerPerProg.set(prog.id, { prog, perDag });
-
-      // Fagrekkefølgen per klasse
-      for(const k of progKlasser){
-        const dager = {};
-        const kTimer = timer.filter(h => h.klasse === k.id);
-        for(const dag of [...new Set(kTimer.map(h => h.dag))]){
-          const blokker = perDag[dag];
-          if(!blokker) continue;   // dagen hører ikke til programmet — allerede meldt
-          const iDag = kTimer.filter(h => h.dag === dag);
-          const perBlokk = new Map();
-          for(const h of iDag){
-            const id = fgBlokkId(h.tid);
-            if(!perBlokk.has(id)) perBlokk.set(id, []);
-            perBlokk.get(id).push(h);
-          }
-          const liste = [];
-          for(const b of blokker){
-            const rader = perBlokk.get(b.id);
-            if(!rader) continue;
-            if(rader.length === 1){
-              liste.push({ blokk: b.id, fag: rader[0].fag || '', larer: rader[0].larer || '' });
-            } else {
-              const fagene = rader.map(r => r.fag || '');
-              const erSpraak = fagene.length === 2 &&
-                fagene.every(f => FG_SPRAAK.some(s => s.toLowerCase() === f.toLowerCase()));
-              if(!erSpraak){
-                merknader.push({ alvor:'feil', tekst:
-                  k.navn + ' · ' + dag + ' ' + b.tid + ' har ' + rader.length +
-                  ' fag samtidig (' + fagene.join(' + ') + '). Parallelle spor gjelder bare arabisk og urdu.' });
-              }
-              liste.push({ blokk: b.id, deles: true,
-                spor: rader.map(r => ({ fag: r.fag || '', larer: r.larer || '' })) });
-            }
-          }
-          if(liste.length) dager[dag] = liste;
-        }
-        rekkefolgePerKlasse.set(k.id, { klasse: k, dager });
-      }
-    }
-
-    // Klasser uten program kommer aldri med i en blokkliste.
-    for(const k of klasser){
-      if(!rekkefolgePerKlasse.has(k.id) && timer.some(h => h.klasse === k.id)){
-        merknader.push({ alvor:'feil', tekst:
-          k.navn + ' har timer, men hører ikke til et program som ble funnet.' });
-      }
-    }
-
-    // Timer uten lærer — de 33 helsesjekken teller. Nevnes her fordi de
-    // følger med inn i den nye formen som tomme felter.
-    const utenLarer = timer.filter(h => !h.larer).length;
-    const utenFag = timer.filter(h => !h.fag).length;
-
-    fgResultat = { blokkerPerProg, rekkefolgePerKlasse };
-
-    const feil = merknader.filter(m => m.alvor === 'feil');
-    const tell = (a) => merknader.filter(m => m.alvor === a).length;
-
-    boks.innerHTML =
-      '<div class="ut-tittel">' + timer.length + ' timer regnet om</div>' +
-      [...blokkerPerProg.values()].map(({ prog, perDag }) =>
-        '<div class="innst-effekt" style="margin-top:10px;">' +
-          '<b>' + escapeHtml(prog.navn) + '</b>' +
-          Object.entries(perDag).map(([d, l]) =>
-            '<br>' + escapeHtml(d) + ' — ' + l.length + ' blokk(er): ' +
-            l.map(b => escapeHtml(b.tid)).join(' · ')).join('') +
-        '</div>').join('') +
-      '<div class="innst-effekt" style="margin-top:10px;">' +
-        [...rekkefolgePerKlasse.values()].map(({ klasse, dager }) =>
-          escapeHtml(klasse.navn) + ': ' +
-          Object.entries(dager).map(([d, l]) => d + ' (' + l.length + ')').join(', ')
-        ).join('<br>') +
-      '</div>' +
-      (felles.length ? '<div class="innst-effekt" style="margin-top:10px;">' +
-        'Felles blokker uten klasse: ' + felles.map(escapeHtml).join(', ') +
-        ' — disse hører til programmet, og tas i et eget steg.</div>' : '') +
-      (utenLarer || utenFag ? '<div class="innst-effekt" style="margin-top:10px;">⚠️ ' +
-        utenLarer + ' time(r) uten lærer' + (utenFag ? ' og ' + utenFag + ' uten fag' : '') +
-        ' — de blir med, men med tomt felt.</div>' : '') +
-      (merknader.length
-        ? '<div class="ut-tittel" style="margin-top:14px;">' +
-            (feil.length ? '🔴 ' + feil.length + ' som ikke passer' : '⚠️ ' + tell('advar') + ' å se på') +
-          '</div><pre class="ut-logg">' +
-          escapeHtml(merknader.map(m =>
-            (m.alvor === 'feil' ? '🔴 ' : m.alvor === 'advar' ? '⚠️ ' : '· ') + m.tekst).join('\n')) +
-          '</pre>'
-        : '<div class="innst-effekt" style="margin-top:12px;">✓ Alt passet i den nye formen.</div>') +
-      (feil.length
-        ? '<div class="innst-effekt" style="margin-top:12px;">Rett det røde først. ' +
-          'Å lagre nå ville skrevet inn en timeplan som ikke stemmer.</div>'
-        : '<button class="btn btn-primary" style="margin-top:14px;" onclick="fgLagre()">' +
-          'Lagre den nye formen</button>' +
-          '<div class="hint" style="margin-top:6px;">Legger til <b>blokker</b> på programmene og ' +
-          '<b>fagrekkefolge</b> på klassene. <b>hours røres ikke</b> — den gamle timeplanen ' +
-          'blir stående til alt er prøvd.</div>');
-  };
-
-  window.fgLagre = async function(){
-    if(!fgResultat){ showToast('Kjør analysen først.'); return; }
-    const { blokkerPerProg, rekkefolgePerKlasse } = fgResultat;
-    if(!confirm('Legge til blokker på ' + blokkerPerProg.size + ' program og fagrekkefølge på ' +
-                rekkefolgePerKlasse.size + ' klasse(r)?\n\nhours røres ikke.')) return;
-
-    let skrevet = 0;
-    const feilet = [];
-    try{
-      // 🔴 updateDoc med ETT felt — ikke setDoc. Programdokumentet bærer
-      // prisene som påmeldingsskjemaet leser uten innlogging; en setDoc
-      // her ville tømt dem, og skjemaet ville stått uten pris.
-      for(const { prog, perDag } of blokkerPerProg.values()){
-        try{
-          const ut = {};
-          for(const [dag, liste] of Object.entries(perDag)){
-            ut[dag] = liste.map(b => ({ id: b.id, start: b.start, slutt: b.slutt, tid: b.tid }));
-          }
-          await updateDoc(doc(db, 'programs', prog.id), { blokker: ut });
-          skrevet++;
-        }catch(err){ feilet.push('program ' + prog.navn + ' — ' + (err.code || err.message)); }
-      }
-      for(const { klasse, dager } of rekkefolgePerKlasse.values()){
-        try{
-          await updateDoc(doc(db, 'classes', klasse.id), { fagrekkefolge: dager });
-          skrevet++;
-        }catch(err){ feilet.push('klasse ' + klasse.navn + ' — ' + (err.code || err.message)); }
-      }
-      await loggSamlet('Fagrekkefølge og blokker utledet fra timeplanen', skrevet,
-        'fgLagre · programs+classes · skrevet=' + skrevet);
-      if(feilet.length === 0){
-        showToast('✓ ' + skrevet + ' dokument(er) oppdatert. hours står urørt.');
-      } else {
-        melding('ADM-FG-01', '⚠️ Delvis lagret',
-          skrevet + ' gikk gjennom. Disse feilet:\n' + feilet.join('\n'));
-      }
-    }catch(err){
-      console.error('fgLagre', err);
-      showToast('Noe gikk galt: ' + (err.message || err), true);
-    }
-  };
-
   function renderPlanmalerList(){
     if(!currentPlanmalerType) return;
     const type = currentPlanmalerType;
@@ -9317,72 +8996,21 @@
     if(dager.includes(forrigeDag)) dSel.value = forrigeDag;
   }
 
-  // Hvilke fag som gir mening for klassens program. Et Madinabarn-innslag
-  // på en lørdagsklasse er ikke en smakssak — det er en feil som først
+  // Hvilke fag som gir mening for klassens program. Et Madinabarn-fag på
+  // en lørdagsklasse er ikke en smakssak — det er en feil som først
   // oppdages når foreldreportalen viser barnet i feil program.
-  //
-  // 🔴 Listen lå før fast i koden, og hadde «Madinabarn» oppført som et
-  // FAG. Madinabarn er navnet på programmet; barna der har innslag —
-  // koranstund, fortelling, lek — ikke skolefag. Og «Fellestime» gjaldt
-  // aldri for dem. Feilen kunne ikke rettes uten å publisere en ny fil.
-  //
-  // Nå står listen på programmet, i feltet 'innslag'. Reserven under
-  // brukes bare for programmer som ennå ikke har fått den satt, slik at
-  // ingenting står tomt i mellomtiden.
-  const KO_FAG_RESERVE = ['Koran', 'Islam', 'Arabisk', 'Urdu', 'Fellestime'];
-
-  function koProgramFor(klasseId){
-    const prog = ((cache.classes || []).find(c => c.id === klasseId) || {}).program || '';
-    return (cache.programs || []).find(x => x.navn === prog || x.id === prog) || null;
-  }
-  function koInnslagListe(p){
-    return String((p && p.innslag) || '').split(',').map(t => t.trim()).filter(Boolean);
-  }
+  const KO_FAG_PROGRAM = {
+    'Madinabarn': ['Madinabarn', 'Fellestime'],
+    'Madina Islamske Skole': ['Koran', 'Islam', 'Arabisk', 'Urdu', 'Fellestime']
+  };
   function koFagFor(klasseId){
-    const p = koProgramFor(klasseId);
-    const egne = koInnslagListe(p);
-    if(egne.length) return egne;
-    // Ukjent program, eller innslag ikke satt ennå: vis alt som finnes
-    // heller enn ingenting. En tom nedtrekksliste ser ut som en feil i
-    // systemet, ikke som et program uten innslag.
-    const alle = (cache.programs || []).flatMap(koInnslagListe);
-    return [...new Set(alle.length ? alle : KO_FAG_RESERVE)];
-  }
-
-  // Dagene programmet faktisk går. Tom liste betyr «vet ikke» — og da
-  // vises alle dagene heller enn ingen. Et tomt nedtrekk ser ut som en
-  // feil i systemet, ikke som et program uten dager satt.
-  function koDagerFor(klasseId){
-    const p = koProgramFor(klasseId);
-    const dager = p && p.dager
-      ? (Array.isArray(p.dager) ? p.dager : String(p.dager).split(',').map(s => s.trim()).filter(Boolean))
-      : [];
-    return dager.length ? dager : ['Lørdag', 'Søndag'];
-  }
-
-  // Setter fag- og dag-listen i timeskjemaet etter klassen som er valgt.
-  //
-  // ⚠️ En verdi som allerede står i raden beholdes ALLTID, selv om den
-  // ikke er lov for programmet. Ble den kastet ut, ville nettopp de
-  // radene som er feil mistet innholdet sitt i det man åpnet dem — og
-  // feilen blitt usynlig i stedet for rettet. Den merkes i stedet.
-  function timeSkjemaFolgKlasse(klasseId){
-    const sett = (id, lovlige) => {
-      const el = document.getElementById(id);
-      if(!el) return;
-      const naa = el.value;
-      el.innerHTML = lovlige.map(v =>
-        '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join('');
-      if(naa && !lovlige.includes(naa)){
-        const o = document.createElement('option');
-        o.value = naa;
-        o.textContent = naa + ' — hører ikke til dette programmet';
-        el.appendChild(o);
-      }
-      if(naa) el.value = naa;
-    };
-    sett('field_fag', koFagFor(klasseId));
-    sett('field_dag', klasseId ? koDagerFor(klasseId) : ['Lørdag', 'Søndag']);
+    const prog = ((cache.classes || []).find(c => c.id === klasseId) || {}).program || '';
+    const nokkel = Object.keys(KO_FAG_PROGRAM).find(k => prog.includes(k));
+    // Ukjent eller tomt program: vis alt heller enn ingenting. En tom
+    // nedtrekksliste ser ut som en feil i systemet, ikke som et manglende
+    // programvalg på klassekortet.
+    return nokkel ? KO_FAG_PROGRAM[nokkel]
+      : [...new Set(Object.values(KO_FAG_PROGRAM).flat())];
   }
 
   // To lærere i samme time krever to økter. Derfor deles blokken alltid
@@ -12028,21 +11656,6 @@
         if(type === 'students' && f.key === 'foresatt'){
           input.addEventListener('change', () => applyStudentDiscountPricing());
         }
-        // 🔴 Timeplanskjemaet visste ingenting om programmet. Fag-listen sto
-        // fast med alle seks fagene for hver eneste klasse, og dag-listen
-        // med både lørdag og søndag — så en Madinabarn-klasse kunne få
-        // «Koran» en lørdag uten at noe sa fra.
-        //
-        // Sperren fantes allerede, men bare i Fagrekkefølge-skjermen
-        // (koFagFor). Den gjaldt ikke her, og det er HER radene ble skrevet
-        // inn for hånd. En regel som bare finnes ett av to steder er ingen
-        // regel — den er en vane.
-        //
-        // Nå følger begge listene klassen som er valgt, og oppdateres i
-        // samme øyeblikk klassen byttes.
-        if(type === 'hours' && f.key === 'klasse'){
-          input.addEventListener('change', () => timeSkjemaFolgKlasse(input.value));
-        }
       } else if(f.type === 'date'){
         input = document.createElement('input');
         input.type = 'date';
@@ -12115,10 +11728,6 @@
     });
 
     container.appendChild(boksEssensiell);
-    // Kjøres også når skjemaet åpnes, ikke bare ved bytte av klasse: en
-    // rad som redigeres har allerede en klasse, og listene må stemme med
-    // den fra første blikk.
-    if(type === 'hours') timeSkjemaFolgKlasse(existing.klasse || '');
     if(harEssensielle && boksResten.children.length){
       const bryter = document.createElement('button');
       bryter.type = 'button';
