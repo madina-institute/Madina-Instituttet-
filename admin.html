@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 23:56:19 -->
+<!-- SIST-ENDRET: 2026-08-16 00:10:02 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8354,35 +8354,65 @@
       const progTimer = timer.filter(h => progKlasser.some(k => k.id === h.klasse));
       if(progTimer.length === 0) continue;
 
-      // Blokkene: hvert distinkte klokkeslett i programmet, sortert.
+      // 🔴 Blokkene hører til programmet OG DAGEN, ikke til programmet
+      // alene. Madinabarn går søndag; en lørdagsrad i en av klassene er
+      // ikke en søndagsblokk — den er en rad som ikke skulle vært der.
+      // Uten dagen i nøkkelen ville lørdag 13:00 blitt lagt inn som en
+      // blokk i søndagsprogrammet, og hele resten regnet videre på den.
+      const progDager = Array.isArray(prog.dager) ? prog.dager
+                      : String(prog.dager || '').split(',').map(s => s.trim()).filter(Boolean);
+      const fremmedDag = new Map();
+      for(const h of progTimer){
+        if(progDager.length && !progDager.includes(h.dag)){
+          const n = h.dag + '|' + h.tid;
+          if(!fremmedDag.has(n)) fremmedDag.set(n, []);
+          fremmedDag.get(n).push(tpClassName(h));
+        }
+      }
+      for(const [n, kl] of fremmedDag){
+        const [d, t] = n.split('|');
+        merknader.push({ alvor:'feil', tekst:
+          prog.navn + ' går ' + (progDager.join('/') || '(ingen dag satt)') +
+          ', men ' + kl.join(', ') + ' har en time ' + d.toLowerCase() + ' ' + t + '.' });
+      }
+
       const tider = new Map();
       for(const h of progTimer){
+        if(progDager.length && !progDager.includes(h.dag)) continue;
         const { start, end } = tpParseTid(h.tid);
         if(!start){ merknader.push({ alvor:'feil', tekst:
           'Klokkeslettet «' + (h.tid || '(tomt)') + '» i ' + tpClassName(h) + ' kan ikke leses.' }); continue; }
         const id = fgBlokkId(h.tid);
-        if(!tider.has(id)) tider.set(id, { id, start, slutt: end, tid: h.tid, klasser: new Set() });
-        tider.get(id).klasser.add(h.klasse);
+        const nokkel = h.dag + '|' + id;
+        if(!tider.has(nokkel)) tider.set(nokkel, { id, dag: h.dag, start, slutt: end, tid: h.tid, klasser: new Set() });
+        tider.get(nokkel).klasser.add(h.klasse);
       }
-      const blokker = [...tider.values()].sort((a, b) => a.start.localeCompare(b.start));
+      const perDag = {};
+      for(const b of [...tider.values()].sort((x, y) => x.start.localeCompare(y.start))){
+        (perDag[b.dag] = perDag[b.dag] || []).push(b);
+      }
 
-      // En blokk som bare én klasse bruker er ikke felles for programmet.
-      // Da er enten klokkeslettet skrevet ulikt, eller klassen går sin
-      // egen vei — og det må sees på før klokkeslettene flyttes opp.
-      for(const b of blokker){
-        if(b.klasser.size < progKlasser.length){
-          const mangler = progKlasser.filter(k => !b.klasser.has(k.id)).map(k => k.navn);
-          merknader.push({ alvor: b.klasser.size === 1 ? 'advar' : 'info', tekst:
-            prog.navn + ' · blokk ' + b.tid + ' brukes ikke av: ' + mangler.join(', ') });
+      // En blokk bare én klasse bruker er ikke felles for programmet. Da er
+      // enten klokkeslettet skrevet ulikt, eller klassen går sin egen vei —
+      // og det må sees på før klokkeslettene flyttes opp på programmet.
+      for(const [dag, liste] of Object.entries(perDag)){
+        for(const b of liste){
+          if(b.klasser.size < progKlasser.length){
+            const mangler = progKlasser.filter(k => !b.klasser.has(k.id)).map(k => k.navn);
+            merknader.push({ alvor: b.klasser.size === 1 ? 'advar' : 'info', tekst:
+              prog.navn + ' · ' + dag.toLowerCase() + ' ' + b.tid + ' brukes ikke av: ' + mangler.join(', ') });
+          }
         }
       }
-      blokkerPerProg.set(prog.id, { prog, blokker });
+      blokkerPerProg.set(prog.id, { prog, perDag });
 
       // Fagrekkefølgen per klasse
       for(const k of progKlasser){
         const dager = {};
         const kTimer = timer.filter(h => h.klasse === k.id);
         for(const dag of [...new Set(kTimer.map(h => h.dag))]){
+          const blokker = perDag[dag];
+          if(!blokker) continue;   // dagen hører ikke til programmet — allerede meldt
           const iDag = kTimer.filter(h => h.dag === dag);
           const perBlokk = new Map();
           for(const h of iDag){
@@ -8435,10 +8465,12 @@
 
     boks.innerHTML =
       '<div class="ut-tittel">' + timer.length + ' timer regnet om</div>' +
-      [...blokkerPerProg.values()].map(({ prog, blokker }) =>
+      [...blokkerPerProg.values()].map(({ prog, perDag }) =>
         '<div class="innst-effekt" style="margin-top:10px;">' +
-          '<b>' + escapeHtml(prog.navn) + '</b> — ' + blokker.length + ' blokk(er): ' +
-          blokker.map(b => escapeHtml(b.tid)).join(' · ') +
+          '<b>' + escapeHtml(prog.navn) + '</b>' +
+          Object.entries(perDag).map(([d, l]) =>
+            '<br>' + escapeHtml(d) + ' — ' + l.length + ' blokk(er): ' +
+            l.map(b => escapeHtml(b.tid)).join(' · ')).join('') +
         '</div>').join('') +
       '<div class="innst-effekt" style="margin-top:10px;">' +
         [...rekkefolgePerKlasse.values()].map(({ klasse, dager }) =>
@@ -8482,11 +8514,13 @@
       // 🔴 updateDoc med ETT felt — ikke setDoc. Programdokumentet bærer
       // prisene som påmeldingsskjemaet leser uten innlogging; en setDoc
       // her ville tømt dem, og skjemaet ville stått uten pris.
-      for(const { prog, blokker } of blokkerPerProg.values()){
+      for(const { prog, perDag } of blokkerPerProg.values()){
         try{
-          await updateDoc(doc(db, 'programs', prog.id), {
-            blokker: blokker.map(b => ({ id: b.id, start: b.start, slutt: b.slutt, tid: b.tid }))
-          });
+          const ut = {};
+          for(const [dag, liste] of Object.entries(perDag)){
+            ut[dag] = liste.map(b => ({ id: b.id, start: b.start, slutt: b.slutt, tid: b.tid }));
+          }
+          await updateDoc(doc(db, 'programs', prog.id), { blokker: ut });
           skrevet++;
         }catch(err){ feilet.push('program ' + prog.navn + ' — ' + (err.code || err.message)); }
       }
