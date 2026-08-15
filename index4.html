@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 10:32:50 -->
+<!-- SIST-ENDRET: 2026-08-15 10:44:30 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1704,10 +1704,22 @@
       console.error('E-postvarsling til lærer feilet:', err);
     }
   }
+  // 🔴 Reserven var å vise ID-en. Før klassene var lest, sto det en
+  // databasenøkkel — «3AlhrvluX4eVRJAGmWI0» — rett ved siden av barnets
+  // navn på velkomstskjermen.
+  //
+  // Tom liste betyr «ikke lest ennå», ikke «finnes ikke». Er listen lest
+  // og verdien ser ut som en id, peker kortet på en klasse som er
+  // slettet — det skal ses, ikke skjules bak tre prikker.
   function resolveClassName(classId){
     if(!classId) return '';
     const c = classes.find(x => x.id === classId);
-    return c ? (c.navn || '') : classId; // fallback: legacy/un-migrated value
+    if(c) return c.navn || '';
+    if(classes.length === 0) return '…';
+    if(/^[A-Za-z0-9_-]{18,}$/.test(classId)){
+      return currentLang === 'ar' ? '(صف محذوف)' : '(slettet klasse)';
+    }
+    return classId;   // gammel fritekstverdi, fra før id-ene kom
   }
   // isError gir rød farge og lengre visetid — en feilmelding må rekke å bli
   // lest, mens en bekreftelse gjerne kan forsvinne raskt.
