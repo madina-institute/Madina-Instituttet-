@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 15:11:37 -->
+<!-- SIST-ENDRET: 2026-08-15 15:22:41 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -312,10 +312,15 @@
 </head>
 <body>
 
-<header>
-  <h1>Madina Skole</h1>
-  <p>Nettpublisering — ett trykk</p>
-</header>
+<div class="hdr-bakgrunn">
+  <header>
+    <img src="logo-bla.png" alt="Madina Institute">
+    <div>
+      <h1>Madina Skole</h1>
+      <p>Nettpublisering · Regler · Status</p>
+    </div>
+  </header>
+</div>
 
 <main>
   <div id="versjonBanner" style="display:none; background:rgba(168,60,60,.10); border:1px solid rgba(168,60,60,.35); color:#a83c3c; border-radius:10px; padding:14px 16px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:13px; line-height:1.6;"></div>
@@ -3545,7 +3550,14 @@
   // Et kort vises når fanen stemmer OG — hvis det har en underdel — den
   // valgte underdelen stemmer. Kort uten underdel hører til hele fanen.
   function visKort(){
-    document.querySelectorAll('#publishView [data-fane]').forEach(kort => {
+    // 🔴 «[data-fane]» traff også fane-KNAPPENE — de bærer samme attributt.
+    // Resultatet: alle knappene unntatt den valgte ble skjult, og
+    // fanelinjen sto igjen med én knapp i et tomt kort. Menyen skjulte
+    // seg selv.
+    //
+    // Derfor «.card[data-fane]»: bare kortene skal styres her. Knappene
+    // styres av classList.toggle over, som bare bytter farge.
+    document.querySelectorAll('#publishView .card[data-fane]').forEach(kort => {
       const faner = String(kort.dataset.fane || '').split(/\s+/);
       const riktigFane = faner.indexOf(aktivFane) !== -1;
       const under = kort.dataset.under;
