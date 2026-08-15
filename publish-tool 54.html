@@ -1,0 +1,3808 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-15 17:50:34 -->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madina Skole — Nettpublisering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     SAMME PALETT SOM PANELET.
+
+     Verktøyet hadde sine egne farger — mørkegrønt på kremhvitt — mens
+     panelet er blått på blågrått. Samme variabelnavn, helt ulike verdier.
+     Det så ut som et annet system, og det er nettopp det et verktøy i
+     samme system ikke skal.
+
+     Verdiene under er hentet ordrett fra admin.html. Endres paletten der,
+     skal denne følge etter — to palettar som skal være like, ender alltid
+     med å bli ulike.
+     ═══════════════════════════════════════════════════════════════ */
+  :root{
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
+    --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
+    --red:#a83c3c;
+    --stat-green-bg:#DCF3E4; --stat-green-fg:#2C6B45;
+    --stat-yellow-bg:#FDF3C7; --stat-yellow-fg:#8A6D1D;
+    --stat-blue-bg:#DCEFFB;  --stat-blue-fg:#1E6E8C;
+    --stat-red-bg:#FBE3E3;   --stat-red-fg:#9B3131;
+  }
+  *{box-sizing:border-box;}
+  html, body{overflow-x:hidden; max-width:100%;}
+  body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink); min-height:100vh;}
+  /* Toppfeltet er panelets: hvit stripe med logoen til venstre, ikke en
+     farget gradient. Den grønne gradienten var det første man så, og den
+     sa «annet system» før man rakk å lese noe. */
+  .hdr-bakgrunn{
+    background:#fff; border-bottom:1px solid var(--line);
+    box-shadow:0 1px 3px rgba(6,25,91,.06); position:sticky; top:0; z-index:400;
+  }
+  header{
+    background:#fff; color:var(--ink);
+    display:flex; align-items:center; gap:14px;
+    max-width:560px; margin:0 auto; width:100%; padding:14px 16px; text-align:start;
+  }
+  header img{ height:38px; width:auto; }
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:23px; margin:0; color:var(--emerald-d);}
+  header p{
+    font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--gold); margin:2px 0 0;
+  }
+  main{max-width:560px; margin:0 auto; padding:20px 16px 60px;}
+
+  /* ---- Statuskort, samme form som panelets ---- */
+  .stat-rad{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin-bottom:18px;
+  }
+  @media (min-width:520px){ .stat-rad{ grid-template-columns:repeat(4, 1fr); } }
+  .stat-card{
+    background:#fff; border:1px solid var(--line); border-radius:16px;
+    padding:14px 15px; box-shadow:var(--shadow); position:relative;
+    display:flex; flex-direction:column; justify-content:center;
+    min-height:88px; overflow:hidden;
+  }
+  .stat-card .stat-ikon{
+    position:absolute; top:11px; inset-inline-end:12px;
+    font-size:16px; opacity:.42; pointer-events:none;
+  }
+  .stat-card .n{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:30px; line-height:1;
+  }
+  .stat-card .l{
+    font-family:'Jost',sans-serif; font-size:9.5px; letter-spacing:.05em;
+    text-transform:uppercase; margin-top:5px; white-space:normal;
+  }
+  /* Fargene er panelets egne — mettede gradienter med hvit tekst, ikke
+     pastell.
+
+     🔴 GRØNT ER RESERVERT FOR STATUSKORTET.
+     Fire kort i samme blå leser som fire like ting, og det var det de
+     var. Men to grønne kort ved siden av hverandre er verre: da betyr
+     grønt «alt er ute» på det ene og ingenting på det andre, og fargen
+     slutter å svare på noe. Bare det første kortet bytter farge —
+     grønt, gult eller rødt. De tre andre står fast.
+ Pastellkortene mine leste som «informasjon»; disse leser som
+     status, og det er forskjellen på et tall og et svar. */
+  .stat-card.stat-blue  { background:linear-gradient(135deg,#1A9BEC,#1372b3); border-color:transparent; }
+  .stat-card.stat-green { background:linear-gradient(135deg,#62C038,#4a9a29); border-color:transparent; }
+  .stat-card.stat-yellow{ background:linear-gradient(135deg,#FF771F,#e05f0d); border-color:transparent; }
+  .stat-card.stat-red   { background:linear-gradient(135deg,#c0392b,#8e2620); border-color:transparent; }
+  .stat-card.stat-morke { background:linear-gradient(135deg,#2b3f8f,#06195B); border-color:transparent; }
+  .stat-card .n, .stat-card .l{ color:#fff; }
+  .stat-card .stat-ikon{ opacity:.55; }
+
+  /* ---- Fanerad, samme form som panelets ---- */
+  /* Fanene er panelets app-sidebar: et hvitt kort med ikon over etikett,
+     og den valgte fylt i hovedfargen. Den tynne tekstraden jeg hadde
+     først lignet ingenting i systemet ellers. */
+  .verktoy-faner{
+    display:flex; position:sticky; top:74px; z-index:300;
+    flex-direction:row; align-items:stretch; gap:4px;
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:8px; margin-bottom:14px; box-shadow:var(--shadow);
+    width:100%; overflow-x:auto; overflow-y:hidden; scrollbar-width:none;
+  }
+  .verktoy-faner::-webkit-scrollbar{ display:none; }
+  .verktoy-fane{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; flex:0 0 auto; min-width:76px; gap:5px;
+    background:transparent; border:none; color:#3a4450;
+    /* 🔴 Cormorant, ikke Jost. Panelet setter gruppenavnene i husets
+       display-skrift og fanene UNDER dem i Jost — forskjellen i skrift er
+       det som bærer hierarkiet. Satte jeg begge i Jost, ville raden lest
+       som en lang liste, og den ville sett ut som en annen meny enn
+       panelets selv om alt annet var likt. */
+    font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:12.5px; line-height:1.25; padding:9px 8px;
+    border-radius:10px; cursor:pointer;
+  }
+  html[dir="rtl"] .verktoy-fane{ font-family:'Tajawal',sans-serif; }
+  .verktoy-fane .ic{ font-size:19px; flex:none; }
+  .verktoy-fane:hover{ background:var(--paper-2); color:var(--ink); }
+  .verktoy-fane.active{ background:var(--emerald); color:#fff; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ANDRE NIVÅ — samme form som panelets sub-sidebar.
+
+     🔴 Uten det lå alt under «Publiser» etter hverandre i én rulling:
+     enkeltfil, leveranse, status. Skulle man til leveransen, måtte man
+     forbi enkeltfil-kortet — og det man IKKE skulle gjøre sto i veien
+     for det man skulle.
+
+     Jost her, Cormorant over: forskjellen i skrift er det som skiller
+     gruppe fra fane. Samme skrift på begge nivåer leses som én lang liste.
+     ═══════════════════════════════════════════════════════════════ */
+  .under-faner{
+    display:flex; flex-direction:row; gap:6px; background:#fff;
+    border:1px solid var(--line); border-radius:16px; padding:8px;
+    box-shadow:var(--shadow); width:100%; margin-bottom:16px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .under-faner::-webkit-scrollbar{ display:none; }
+  .under-fane{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    text-align:center; flex:0 0 auto; min-width:64px;
+    background:transparent; border:none; color:#78808f;
+    font-family:'Jost',sans-serif; font-weight:500; font-size:10.5px;
+    line-height:1.2; padding:10px 6px; border-radius:10px;
+    cursor:pointer; white-space:nowrap;
+  }
+  .under-fane .ic{ font-size:17px; }
+  .under-fane.active{ background:#DCEFFB; color:#1E6E8C; font-weight:600; }
+
+  /* ---- Lenkeruter ---- */
+  #altVelgBoks{
+    max-height:280px; overflow-y:auto; margin:10px 0;
+    border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:#fff;
+  }
+  .velg-fil{
+    display:flex; align-items:center; gap:9px; padding:5px 0;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:#3d4a42;
+  }
+  .velg-fil input{ flex:none; width:16px; height:16px; }
+
+  .lenke-rutenett{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  a.lenke-rute{
+    display:flex; align-items:center; gap:10px; text-decoration:none;
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:13px 14px; color:var(--ink); box-shadow:var(--shadow);
+  }
+  a.lenke-rute:hover{ border-color:var(--emerald-l); }
+  a.lenke-rute .ic{ font-size:19px; }
+  a.lenke-rute .t{ font-family:'Jost',sans-serif; font-size:13px; font-weight:600; }
+  a.lenke-rute .d{ font-family:'Jost',sans-serif; font-size:10.5px; color:#7b8a93; }
+  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:22px 20px; box-shadow:var(--shadow); margin-bottom:16px;}
+  .card h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d); margin:0 0 6px;}
+  .card .sub{font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin-bottom:16px; line-height:1.5;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:5px; font-weight:600;}
+  .clear-btn{
+    background:transparent; border:1px solid var(--line); color:var(--red);
+    font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600; text-transform:none;
+    padding:4px 10px; border-radius:5px; cursor:pointer;
+  }
+  .field input, .field select, .field textarea{
+    width:100%; max-width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:6px;
+    font-family:'Lora',serif; font-size:16px; background:var(--paper); box-sizing:border-box;
+  }
+  .field textarea{
+    font-family:'Jost',monospace; font-size:16px; min-height:220px; resize:vertical;
+    white-space:pre-wrap;
+    overflow-wrap:break-word;
+    word-break:break-word;
+    overflow-x:hidden;
+  }
+  .btn{
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;
+    padding:13px 20px; border-radius:6px; border:none; cursor:pointer; width:100%;
+  }
+  .btn-primary{background:var(--emerald); color:#fff;}
+  .btn-primary:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink); margin-top:8px;}
+  .btn-file-label{
+    display:block; text-align:center; background:var(--paper-2); border:1.5px dashed var(--gold);
+    color:var(--emerald-d); font-family:'Jost',sans-serif; font-size:13px; font-weight:700;
+    letter-spacing:0.02em; padding:13px 14px; border-radius:6px; cursor:pointer; margin-bottom:10px;
+  }
+  .btn-file-label input[type="file"]{ display:none; }
+  /* Inputene ligger som SØSKEN av etiketten sin, ikke inni den, så regelen
+     over traff dem aldri — den native filvelgeren ble stående synlig ved
+     siden av knappen. «for»-attributtet gjør at etiketten åpner den. */
+  #fileUpload, #multiFileUpload{ display:none; }
+  /* Samme kortmønster som panelet — ett visuelt språk, ikke to. */
+  .side-grid{ display:flex; flex-direction:column; gap:14px; margin-bottom:16px; }
+  @media (min-width:640px){
+    .side-grid{ flex-direction:row; flex-wrap:wrap; }
+    .side-grid .side-card{ flex:1 1 calc(50% - 7px); min-width:230px; }
+  }
+  .side-card{
+    flex:1; background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:26px 22px; text-align:center; box-shadow:var(--shadow);
+    cursor:pointer; transition:border-color .2s, transform .2s;
+  }
+  .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .side-card .ic{ font-size:28px; margin-bottom:9px; }
+  .side-card h2{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px;
+    color:var(--emerald-d); margin:0 0 6px;
+  }
+  .side-card p{
+    font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;
+    margin:0; line-height:1.55;
+  }
+  /* Kortene sier hva som skjedde sist — status før man har trykket. */
+  .side-kontekst{
+    font-family:'Jost',sans-serif; font-size:11px; color:var(--gold);
+    margin-top:9px; min-height:14px;
+  }
+
+  .tid-liste{ margin-top:14px; border-top:1px solid var(--line); }
+  .tid-rad{
+    display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+    padding:10px 2px; border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  .tid-fil{
+    font-family:ui-monospace,Menlo,monospace; font-size:12.5px; color:var(--ink);
+    flex:1 1 150px; word-break:break-all;
+  }
+  .tid-nar{
+    font-size:12.5px; color:#4a5a62; text-align:end; white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  /* Eldre enn en uke merkes — ikke som feil, men fordi det er de filene
+     man lettest tror man har den nyeste utgaven av. */
+  .tid-nar.gammel{ color:#8a6d1d; }
+  .tid-alder{ display:block; font-size:11px; color:#8a9a90; margin-top:2px; }
+  .tid-ukjent{ font-size:12px; color:#a03028; }
+
+  .status{font-family:'Jost',sans-serif; font-size:12.5px; margin-top:12px; padding:10px 12px; border-radius:6px; display:none;}
+  .status.show{display:block;}
+  .status.ok{background:rgba(46,107,83,0.10); color:var(--emerald);}
+  .status.err{background:rgba(168,60,60,0.10); color:var(--red);}
+  .status.busy{background:var(--paper-2); color:#5a6860;}
+  .status.warn{background:rgba(183,146,74,0.14); color:#7a5f20;}
+  .btn-danger{
+    background:transparent; border:1px solid var(--red); color:var(--red);
+    margin-top:8px;
+  }
+  .overstyr-linje{
+    display:flex; align-items:center; gap:8px; margin-top:12px;
+    font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;
+  }
+  .overstyr-linje input{ width:16px; height:16px; flex:0 0 auto; }
+  .logg-skille{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+  /* To knapper side om side. På smale skjermer legger de seg under
+     hverandre av seg selv i stedet for å bli for trange å treffe. */
+  .knapperad{ display:flex; gap:8px; flex-wrap:wrap; }
+  .knapperad .btn{ flex:1 1 130px; margin-top:8px; }
+  #setupView{display:none;}
+  #publishView{display:none;}
+  .who-bar{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; background:var(--paper-2);
+    border-radius:8px; padding:10px 14px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:12px;
+  }
+  .who-bar span{flex:1 1 auto; min-width:0; word-break:break-word;}
+  .who-bar button{background:none; border:none; color:var(--red); font-family:'Jost',sans-serif; font-size:11.5px; text-decoration:underline; cursor:pointer;}
+  .notice-info{
+    background:#eef4fb; border:1px solid #c3d8ee; color:#2c5680;
+    border-radius:8px; padding:9px 12px; margin-top:8px; line-height:1.5;
+  }
+  .notice-warn{
+    background:#fdf3e7; border:1px solid #e8c9a0; color:#8a5a1e;
+    border-radius:8px; padding:9px 12px; margin-top:8px; line-height:1.5;
+  }
+  .hint{font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:4px;}
+  .file-loaded-hint{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:10px; display:none;}
+  .file-loaded-hint.show{display:block;}
+  .multi-file-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:9px 12px; margin-top:8px;
+    font-family:'Jost',sans-serif; font-size:12.5px;
+  }
+  .multi-file-row .fname{flex:1 1 auto; min-width:0; word-break:break-word; font-weight:600;}
+  .multi-file-row .fstatus{flex:0 0 auto; font-size:11px; white-space:nowrap;}
+  .multi-file-row .fstatus.pending{color:#8a9a90;}
+  .multi-file-row .fstatus.busy{color:var(--gold);}
+  .multi-file-row .fstatus.ok{color:var(--emerald);}
+  .multi-file-row .fstatus.err{color:var(--red);}
+</style>
+</head>
+<body>
+
+<div class="hdr-bakgrunn">
+  <header>
+    <img src="logo-bla.png" alt="Madina Institute">
+    <div>
+      <h1>Madina Skole</h1>
+      <p>Nettpublisering · Regler · Status</p>
+    </div>
+  </header>
+</div>
+
+<main>
+  <div id="versjonBanner" style="display:none; background:rgba(168,60,60,.10); border:1px solid rgba(168,60,60,.35); color:#a83c3c; border-radius:10px; padding:14px 16px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:13px; line-height:1.6;"></div>
+
+  <!-- FIRST-TIME SETUP -->
+  <div class="card" id="setupView">
+    <h2>Førstegangsoppsett</h2>
+    <div class="sub">
+      Dette gjøres kun én gang. Tokenet lagres bare i denne nettleseren på denne enheten — det sendes aldri til Claude eller noen andre servere enn GitHub selv.
+    </div>
+    <div class="field">
+      <label>GitHub Personal Access Token</label>
+      <input type="password" id="tokenInput" placeholder="github_pat_...">
+      <div class="hint">Lag én på github.com → Settings → Developer settings → Fine-grained tokens. Gi den kun tilgang til dette repoet, og kun "Contents: Read and write".</div>
+    </div>
+    <div class="field">
+      <label>Repo-eier (owner)</label>
+      <input type="text" id="ownerInput" value="madina-institute">
+    </div>
+    <div class="field">
+      <label>Repo-navn</label>
+      <input type="text" id="repoInput" value="Madina-Instituttet-">
+    </div>
+    <div class="field">
+      <label>Branch</label>
+      <input type="text" id="branchInput" value="main">
+    </div>
+    <button class="btn btn-primary" onclick="saveSetup()">Lagre og fortsett</button>
+  </div>
+
+  <!-- PUBLISH -->
+  <div id="publishView">
+    <div class="who-bar">
+      <span id="repoLabel"></span>
+      <button onclick="resetSetup()">Endre oppsett</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         STATUSEN FØRST — før man må trykke på noe.
+
+         🔴 Spørsmålet «nådde filene mine ut?» krevde et trykk og en
+         venting. Det er det spørsmålet man har når man åpner verktøyet,
+         og 15. august gikk en halv time før noen tenkte på å stille det.
+         Nå står svaret øverst, farget, uten at man ber om det.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="stat-rad">
+      <div class="stat-card stat-blue" id="statUtlegg" onclick="velgFane('status')" style="cursor:pointer;">
+        <span class="stat-ikon">🚦</span>
+        <div class="n" id="statUtleggN">…</div>
+        <div class="l" id="statUtleggL">Utlegging</div>
+      </div>
+      <div class="stat-card stat-yellow" id="statAntall">
+        <span class="stat-ikon">📤</span>
+        <div class="n" id="statAntallN">…</div>
+        <div class="l">Publisert (7 døgn)</div>
+      </div>
+      <div class="stat-card stat-blue" id="statSist">
+        <span class="stat-ikon">⏱️</span>
+        <div class="n" id="statSistN">…</div>
+        <div class="l" id="statSistL">Siste publisering</div>
+      </div>
+      <div class="stat-card stat-morke" id="statRegler" onclick="velgFane('regler')" style="cursor:pointer;">
+        <span class="stat-ikon">🔐</span>
+        <div class="n" id="statReglerN">…</div>
+        <div class="l">Reglene</div>
+      </div>
+    </div>
+
+    <!-- Fanene erstatter «velg oppgave»-skjermen. Samme form som
+         panelets faner, slik at det er ett sted å lære, ikke to. -->
+    <div class="verktoy-faner" id="verktoyFaner">
+      <button class="verktoy-fane active" data-fane="publiser" onclick="velgFane('publiser')"><span class="ic">📤</span>Publiser</button>
+      <button class="verktoy-fane" data-fane="regler" onclick="velgFane('regler')"><span class="ic">🔐</span>Regler</button>
+      <button class="verktoy-fane" data-fane="status" onclick="velgFane('status')"><span class="ic">🚦</span>Status</button>
+      <button class="verktoy-fane" data-fane="lenker" onclick="velgFane('lenker')"><span class="ic">🔗</span>Lenker</button>
+      <button class="verktoy-fane" data-fane="arkiv" onclick="velgFane('arkiv')"><span class="ic">📦</span>Arkiv</button>
+    </div>
+
+    <!-- Andre nivå. Bygges av velgFane() etter hvilken fane som er valgt,
+         og skjules helt for faner som ikke har underdeler. -->
+    <div class="under-faner" id="underFaner" style="display:none;"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         LENKER — verktøyet er uansett det man åpner først på telefonen.
+         ⚠️ Alt åpnes i ny fane. Google, Outlook, Zoho og Brevo nekter å
+         vises inne i en ramme (X-Frame-Options) — en innebygd innboks er
+         ikke vanskelig, den er umulig, og en tom hvit rute her ville sett
+         ut som en feil i verktøyet.
+         ══════════════════════════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════════
+         REGLENE — egen fane, fordi de endrer BASEN, ikke nettstedet.
+         Slipp samme arkiv inn her og i Publiser: denne plukker ut
+         firestore.rules og lar resten ligge, den andre gjør motsatt.
+         Da kan ingen publisere reglene ved et uhell midt i en leveranse.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="card" data-fane="regler" style="display:none;">
+      <h2>🔐 Sikkerhetsreglene</h2>
+      <div class="sub">
+        Dette er reglene som gjelder i basen. Publiserer du her, virker de
+        få sekunder etterpå — Console viser den samme filen.
+        <br><br>
+        <b>Slipp gjerne hele leveransen inn:</b> bare <code>firestore.rules</code>
+        plukkes ut, resten ignoreres.
+        <br><br>
+        ⚠️ Firebase stopper ugyldige regler, men <b>ikke gyldige regler som er
+        for åpne</b>. Les gjennom endringen før du publiserer.
+      </div>
+
+      <label class="btn-file-label" for="reglerUpload">📁 Velg firestore.rules eller et arkiv...</label>
+      <input type="file" id="reglerUpload" onchange="handleReglerUpload(event)">
+      <div class="file-loaded-hint" id="reglerHint"></div>
+
+      <label class="hint" for="reglerNotat" style="display:block; margin-top:12px;">Hva ble endret? (valgfritt)</label>
+      <input type="text" id="reglerNotat" placeholder="f.eks. strammet meldinger">
+
+      <textarea id="reglerInnhold" placeholder="Velg en fil over, eller lim inn reglene her..." style="margin-top:12px;"></textarea>
+
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="sjekkRegler()">🔍 Sjekk mot publisert versjon</button>
+      <button class="btn btn-primary" id="reglerPubliserBtn" style="margin-top:10px;" onclick="publiserRegler()">Publiser reglene</button>
+      <div class="status" id="reglerStatus"></div>
+    </div>
+
+    <div class="card" data-fane="lenker" style="display:none;">
+      <h2>🔗 Lenker</h2>
+      <div class="sub">Alt åpnes i en ny fane.</div>
+      <div class="lenke-rutenett" id="lenkeRutenett"></div>
+    </div>
+
+    <div class="card" data-fane="publiser" data-under="flere">
+      <h2>Publiser flere filer samtidig</h2>
+      <div class="sub">
+        Velg flere filer — eller <b>ett ZIP-arkiv</b>, så pakkes det ut her og
+        hver fil legges i sin egen linje.
+        <br><br>
+        Filstien under hvert navn er den filen faktisk publiseres til.
+        <b>Kontroller den før du publiserer</b> — den kan rettes ved å skrive i feltet.
+        Ligger filen i en mappe i arkivet, brukes mappen; ellers slås navnet opp
+        mot filene i repoet.
+      </div>
+
+      <label class="btn-file-label" for="multiFileUpload">📁 Velg filer eller et ZIP-arkiv...</label>
+      <input type="file" id="multiFileUpload" multiple onchange="handleMultiFileUpload(event)">
+
+      <div id="multiFileList"></div>
+
+      <label class="hint" for="multiNotat" style="display:block; margin-top:12px;">
+        Kort beskrivelse av endringen (valgfritt)
+      </label>
+      <input type="text" id="multiNotat" placeholder="f.eks. dagskort i begge portalene">
+      <div class="hint" style="margin-top:4px;">
+        Gjelder alle filene i leveransen — de ble endret av samme grunn.
+        Vises i historikken på GitHub og i rapporten.
+      </div>
+
+      <label class="overstyr-linje">
+        <input type="checkbox" id="multiOverstyr">
+        <span>Publiser likevel — hopp over kontrollen mot GitHub</span>
+      </label>
+
+      <button class="btn btn-ghost" id="multiSjekkBtn" style="display:none; margin-top:10px;" onclick="sjekkAlle()">🔍 Sjekk alle filene</button>
+      <div class="hint" id="multiSjekkHint" style="display:none; margin-top:4px;">
+        Kontrollerer hver fil mot den publiserte versjonen — uten å publisere noe.
+      </div>
+      <button class="btn btn-primary" id="multiPublishBtn" style="display:none; margin-top:10px;" onclick="publishAll()">Publiser alle filene</button>
+      <div class="status" id="multiStatusBox"></div>
+    </div>
+
+    <!-- Gjelder hele repoet, ikke én fil — derfor synlig i begge
+         seksjonene. Sto tidligere inne i enkeltfil-kortet, og fra en
+         leveranse måtte man ut og inn igjen for å nå dem. -->
+    <div class="card" data-fane="status" data-under="utlegging">
+      <h2>🚦 Utleggingen</h2>
+      <div class="sub">Gjelder hele repoet — uavhengig av hvilken fil du holder på med.</div>
+      <!-- 🔴 Svaret på spørsmålet ingen kunne svare på 15.08: ligger det
+           noe i GitHub som aldri kom ut på nettstedet? -->
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="sjekkUtlegging()">
+        🚦 Sjekk utleggingen
+      </button>
+      <div class="hint" style="margin-top:6px;">
+        Sier om siste utlegging lyktes — og hvilke filer som eventuelt ligger
+        i GitHub uten å være ute på nettstedet.
+      </div>
+      <div id="utleggingBoks" style="display:none;"></div>
+
+    </div>
+
+    <!-- 🔴 Bakgrunnen måtte fortelles på nytt i hver eneste nye samtale,
+         og det som ble husket feil, ble bygget videre på. Dette er den
+         delen verktøyet VET: hva som er publisert, når, og om det nådde
+         nettstedet. -->
+    <div class="card" data-fane="status" data-under="rapport" style="display:none;">
+      <h2>📋 Rapport</h2>
+      <div style="margin-top:4px;">
+        <label class="hint" for="rapportDager">Rapport for siste</label>
+        <div class="field-row-2" style="margin-top:6px;">
+          <select id="rapportDager">
+            <option value="1">1 døgn</option>
+            <option value="3">3 døgn</option>
+            <option value="7" selected>7 døgn</option>
+            <option value="14">14 døgn</option>
+            <option value="30">30 døgn</option>
+          </select>
+          <button class="btn btn-ghost" onclick="lagRapport()">📋 Lag rapport</button>
+        </div>
+        <div class="hint" style="margin-top:6px;">
+          Én linje per fil som er endret, med tidspunkt og din egen beskrivelse.
+          Ment å limes inn først i en ny samtale — den sier <b>hva</b> som er
+          gjort, ikke hvorfor.
+        </div>
+        <div id="rapportBoks" style="display:none;"></div>
+      </div>
+
+    </div>
+
+    <div class="card" data-fane="arkiv">
+      <h2>📦 Last ned fra repoet</h2>
+      <div class="sub">
+        Alt hentes fra GitHub i det du trykker — ikke fra kopier på telefonen.
+        <br><br>
+        <b>Til en ny samtale</b> trengs sjelden alt: sammendraget, reglene og
+        <code>firebase.json</code> bærer sammenhengen. De store sidefilene
+        endrer seg oftest, og et arkiv fra i går inneholder dem i feil versjon —
+        be heller om den ene filen når den trengs, så er den fersk.
+      </div>
+
+      <button class="btn btn-primary" id="samtaleBtn" onclick="lastNedSamtale()">🚀 Til en ny samtale</button>
+      <div class="hint" style="margin:6px 0 14px;">
+        Sammendraget · reglene · firebase.json — og statusrapporten som eget notat.
+      </div>
+
+      <button class="btn btn-ghost" onclick="lastNedUtvalg()">☑️ Velg filer selv</button>
+      <div id="altVelgBoks" style="display:none;"></div>
+
+      <button class="btn btn-ghost" id="altBtn" style="margin-top:10px;" onclick="lastNedAlt()">📦 Hele repoet</button>
+      <div class="status" id="altStatus" style="white-space:pre-wrap;"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         SISTE OPPDATERINGER
+
+         Svarer på ett spørsmål: når ble hver fil sist publisert?
+
+         Uten dette begynner hver samtale med gjetting — er filen jeg
+         sitter med nyere enn den som ligger ute, eller eldre? 13. august
+         gikk en halvtime med til nettopp det, og en fil ble nesten
+         skrevet over med en to dager gammel utgave.
+
+         Tidspunktene hentes fra commit-historikken, ikke fra
+         SIST-ENDRET-stempelet i filen: stempelet sier når innholdet ble
+         laget, historikken sier når det faktisk ble lagt ut. Det er som
+         regel det samme, men når det ikke er det, er det historikken som
+         gjelder.
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="card" data-fane="arkiv">
+      <h2>🕒 Siste oppdateringer</h2>
+      <div class="sub">
+        Når hver fil sist ble publisert. Kopier listen inn i en ny samtale
+        med Claude, så vet han med én gang hvilke filer han har en eldre
+        utgave av — og hvilke han ikke skal røre.
+      </div>
+      <button class="btn btn-primary" id="tidBtn" onclick="visSisteOppdateringer()">🕒 Hent tidspunktene</button>
+      <div class="status" id="tidStatus" style="white-space:pre-wrap;"></div>
+      <div id="tidListe"></div>
+    </div>
+
+    <div class="card" data-fane="publiser" data-under="en">
+      <h2>Publiser én fil</h2>
+      <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
+
+      <label class="btn-file-label" for="fileUpload">📁 Velg fil fra telefonen...</label>
+      <!-- 🔴 INGEN accept HER — MED VILJE.
+           iOS oversetter filendelser til sine egne filtyper, og «.rules»
+           kjenner den ikke. Uansett hva som sto i accept, grået iOS ut
+           firestore.rules i velgeren — den ene filen som nå betyr mest.
+           Kontrollen ligger i stedet i innholdet: innholdPasserTilNavn()
+           sier fra hvis det som er valgt ikke passer til filstien. Det er
+           en bedre vakt enn en filendelse: den ser på hva filen ER. -->
+      <input type="file" id="fileUpload" onchange="handleFileUpload(event)">
+      <div class="file-loaded-hint" id="fileLoadedHint"></div>
+
+      <div class="field">
+        <label>Hvilken fil?</label>
+        <select id="filePreset" onchange="onPresetChange()">
+          <option value="index.html">🏠 Hovedside (offentlig) — index.html</option>
+          <option value="admin.html">🛡️ Administrativt panel — admin.html</option>
+          <option value="index1.html">📖 Lærerportal — index1.html</option>
+          <option value="index2.html">📝 Søknadsskjema — index2.html</option>
+          <option value="index4.html">👨‍👩‍👧 Foreldreportal — index4.html</option>
+          <option value="personvern.html">🔒 Personvernerklæring — personvern.html</option>
+          <option value="statistikk.html">📊 Statistikk (skjult) — statistikk.html</option>
+          <option value="foreldreinnsyn.html">👁️ Foreldreinnsyn (skjult) — foreldreinnsyn.html</option>
+          <option value="larerinnsyn.html">👁️ Lærerinnsyn (skjult) — larerinnsyn.html</option>
+          <option value="slettelogg.html">🗑️ Slettelogg (skjult) — slettelogg.html</option>
+          <option value="index3.html">📦 Gammel hovedportal (utgått) — index3.html</option>
+        <option value="madina-brosjyre.html">📄 Brosjyre (deling) — madina-brosjyre.html</option>
+        <option value="timeplan.html">🗓️ Timeplan (offentlig) — timeplan.html</option>
+        <option value="kunngjoring.html">📢 Kunngjøringer — kunngjoring.html</option>
+        <option value="publish-tool.html">🛠️ Dette publiseringsverktøyet — publish-tool.html</option>
+        <option value="functions/index.js">⚙️ Cloud Functions — functions/index.js</option>
+        <option value="firestore.rules">🔐 Sikkerhetsregler (publiseres til basen) — firestore.rules</option>
+          <option value="sw.js">⚡ Service worker (cache) — sw.js</option>
+          <option value="manifest-admin.json">Manifest — Admin (manifest-admin.json)</option>
+          <option value="manifest-larer.json">Manifest — Lærerportal (manifest-larer.json)</option>
+          <option value="manifest-soknad.json">Manifest — Søknadsskjema (manifest-soknad.json)</option>
+          <option value="manifest-foreldre.json">Manifest — Foreldreportal (manifest-foreldre.json)</option>
+          <option value="__custom__">Annen filsti...</option>
+        </select>
+        <div class="hint" id="fileListStatus"></div>
+        <div class="hint" id="lastPublishedHint"></div>
+        <div id="pathNotice" style="display:none;"></div>
+      </div>
+      <div class="field">
+        <label>Kort beskrivelse av endringen (valgfritt)</label>
+        <input type="text" id="commitNote" placeholder="f.eks. la til 30-dagers sperre i sletteloggen"
+               maxlength="80">
+        <div class="hint">Vises i historikken på GitHub, så du senere kan se hva som ble endret og når.</div>
+      </div>
+      <div class="field" id="customPathWrap" style="display:none;">
+        <label>Egendefinert filsti</label>
+        <input type="text" id="customPath" placeholder="f.eks. mappe/fil.html" oninput="updateLastPublishedHint(); updatePathNotice(); nullstillSperre();">
+      </div>
+      <div class="field">
+        <label style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span>Filinnhold</span>
+          <button type="button" class="clear-btn" onclick="clearFileContent()">Tøm innhold</button>
+        </label>
+        <textarea id="fileContent" placeholder="Velg en fil ovenfor, eller lim inn innholdet manuelt her..." wrap="soft" oninput="nullstillSperre()"></textarea>
+      </div>
+      <button class="btn btn-ghost" id="sjekkBtn" onclick="sjekkVersjon()">🔍 Sjekk mot publisert versjon</button>
+      <div class="knapperad">
+        <button class="btn btn-ghost" id="lastNedBtn" onclick="lastNedPublisert()">⬇️ Last ned</button>
+        <button class="btn btn-ghost" id="kopierBtn" onclick="kopierPublisert()">📋 Kopier</button>
+      </div>
+      <div class="hint">Henter den publiserte versjonen. Den har stempelet sitt i behold, så neste kontroll går umiddelbart.</div>
+      <div class="status" id="diffPanel" style="white-space:pre-line;"></div>
+      <button class="btn btn-danger" id="overstyrBtn" style="display:none;" onclick="publiserLikevel()">Publiser likevel</button>
+
+      <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
+      <div class="status" id="statusBox"></div>
+
+      <div class="logg-skille">
+        <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
+        <div class="hint">Går gjennom historikken til filen over og sier fra om rekkefølgen henger sammen. Publiserer ingenting.</div>
+        <div class="status" id="loggResultat" style="white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:11px; line-height:1.5;"></div>
+
+        <div id="versjonNedlasting" style="display:none; margin-top:12px;">
+          <label style="display:block; font-family:'Jost',sans-serif; font-size:11.5px; color:var(--emerald); margin-bottom:5px; font-weight:600;">Hent ned en tidligere versjon</label>
+          <select id="versjonValg"></select>
+          <div class="knapperad">
+            <button class="btn btn-ghost" onclick="lastNedVersjon()">⬇️ Last ned</button>
+            <button class="btn btn-ghost" onclick="kopierVersjon()">📋 Kopier</button>
+          </div>
+          <div class="hint">Filen får versjonsnummer i navnet, så den ikke forveksles med arbeidsfilen din.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+  const LS_KEY = 'madina_publish_config_v1';
+  const LS_LAST_FILE = 'madina_publish_last_file_v1';
+  const LS_LAST_PUBLISHED = 'madina_publish_last_published_v1';
+
+  function loadConfig(){
+    try{ return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){ return null; }
+  }
+  function saveConfig(cfg){ localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }
+
+  function loadLastPublished(){
+    try{ return JSON.parse(localStorage.getItem(LS_LAST_PUBLISHED) || '{}'); } catch(e){ return {}; }
+  }
+  function recordPublished(path){
+    const log = loadLastPublished();
+    log[path] = new Date().toLocaleString('no-NO');
+    localStorage.setItem(LS_LAST_PUBLISHED, JSON.stringify(log));
+  }
+  function updateLastPublishedHint(){
+    const path = currentPath();
+    const log = loadLastPublished();
+    const hintEl = document.getElementById('lastPublishedHint');
+    hintEl.textContent = (path && log[path]) ? 'Sist publisert: ' + log[path] : '';
+  }
+
+  // ===================================================================
+  // FILLISTEN HENTES FRA REPOET
+  // -------------------------------------------------------------------
+  // Listen over filer var tidligere skrevet inn for hånd her i verktøyet.
+  // Hver gang det kom en ny side, måtte verktøyet selv redigeres og
+  // publiseres på nytt — ellers måtte man skrive filstien manuelt hver
+  // eneste gang. Nå spør vi GitHub hvilke filer som faktisk finnes, og
+  // bygger listen av svaret. En ny fil publiseres én gang med
+  // "Annen filsti", og dukker opp i listen av seg selv etterpå.
+  //
+  // Feiler kallet (nett nede, token utløpt), beholdes den innebygde
+  // listen som den er — verktøyet skal aldri bli ubrukelig av dette.
+  // ===================================================================
+
+  // Filtyper det gir mening å publisere herfra. Alt annet (bilder, PDF-er,
+  // node_modules) ville bare fylt listen med støy.
+  const PUBLISERBARE = /\.(html|js|json|css|rules|txt|md|yml|yaml)$/i;
+  const SKJULTE_MAPPER = /^(node_modules|\.git|\.firebase|functions\/node_modules)\//;
+
+  // Ikoner og navn for filene vi allerede kjenner. Ukjente filer får et
+  // nøytralt ikon og vises med sin egen filsti — de forsvinner ikke.
+  const FIL_ETIKETTER = {
+    'index.html':            ['🏠', 'Hovedside (offentlig)'],
+    'admin.html':            ['🛡️', 'Administrativt panel'],
+    'index1.html':           ['📖', 'Lærerportal'],
+    'index2.html':           ['📝', 'Søknadsskjema'],
+    'index3.html':           ['📦', 'Gammel hovedportal (utgått)'],
+    'index4.html':           ['👨‍👩‍👧', 'Foreldreportal'],
+    'personvern.html':       ['🔒', 'Personvernerklæring'],
+    'statistikk.html':       ['📊', 'Statistikk (skjult)'],
+    'foreldreinnsyn.html':   ['👁️', 'Foreldreinnsyn (skjult)'],
+    'larerinnsyn.html':      ['👁️', 'Lærerinnsyn (skjult)'],
+    'slettelogg.html':       ['🗑️', 'Slettelogg (skjult)'],
+    'madina-brosjyre.html':  ['📄', 'Brosjyre (deling)'],
+    'timeplan.html':         ['🗓️', 'Timeplan (offentlig)'],
+    'kunngjoring.html':      ['📢', 'Kunngjøringer'],
+    'publish-tool.html':     ['🛠️', 'Dette publiseringsverktøyet'],
+    'functions/index.js':    ['⚙️', 'Cloud Functions'],
+    'firestore.rules':       ['🔐', 'Sikkerhetsregler (publiseres til basen)'],
+    'sw.js':                 ['⚡', 'Service worker (cache)']
+  };
+
+  function filEtikett(sti){
+    const kjent = FIL_ETIKETTER[sti];
+    if(kjent) return kjent[0] + ' ' + kjent[1] + ' — ' + sti;
+    if(sti.indexOf('functions/') === 0) return '⚙️ ' + sti;
+    if(sti.indexOf('.github/') === 0) return '🤖 ' + sti;
+    if(/^manifest-.*\.json$/i.test(sti)) return '📱 Manifest — ' + sti;
+    return '📄 ' + sti;
+  }
+
+  async function hentFillisteFraRepo(){
+    const cfg = loadConfig();
+    const statusEl = document.getElementById('fileListStatus');
+    if(!cfg || !cfg.token) return;
+    if(statusEl) statusEl.textContent = 'Henter filliste fra GitHub…';
+    try{
+      const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo +
+                  '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1';
+      const res = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' },
+        cache: 'no-store'
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const stier = (data.tree || [])
+        .filter(n => n.type === 'blob')
+        .map(n => n.path)
+        .filter(sti => PUBLISERBARE.test(sti) && !SKJULTE_MAPPER.test(sti))
+        .sort((a, b) => {
+          // Kjente filer først, i den rekkefølgen de står i FIL_ETIKETTER —
+          // det er de man publiserer nesten hver gang.
+          const ka = Object.keys(FIL_ETIKETTER).indexOf(a);
+          const kb = Object.keys(FIL_ETIKETTER).indexOf(b);
+          if(ka !== -1 || kb !== -1) return (ka === -1 ? 999 : ka) - (kb === -1 ? 999 : kb);
+          return a.localeCompare(b);
+        });
+
+      if(stier.length === 0) throw new Error('tom filliste');
+
+      const sel = document.getElementById('filePreset');
+      const forrigeValg = sel.value;
+      sel.innerHTML = stier.map(sti =>
+        `<option value="${sti}">${filEtikett(sti)}</option>`).join('') +
+        '<option value="__custom__">Annen filsti...</option>';
+      if([...sel.options].some(o => o.value === forrigeValg)) sel.value = forrigeValg;
+
+      if(statusEl) statusEl.textContent = '✓ ' + stier.length + ' filer hentet fra repoet.';
+      oppdaterKortkontekst();
+      onPresetChange();
+    } catch(err){
+      console.error('Kunne ikke hente filliste', err);
+      if(statusEl) statusEl.textContent = 'Kunne ikke hente fillisten (' +
+        (err.message || 'nettverksfeil') + ') — bruker den innebygde listen.';
+    }
+  }
+
+  function init(){
+    const cfg = loadConfig();
+    if(cfg && cfg.token && cfg.owner && cfg.repo){
+      document.getElementById('setupView').style.display = 'none';
+      document.getElementById('publishView').style.display = 'block';
+      document.getElementById('repoLabel').textContent = cfg.owner + '/' + cfg.repo + ' (' + cfg.branch + ')';
+      // Pre-select whichever file was published last time — usually the same one gets edited again.
+      const lastFile = localStorage.getItem(LS_LAST_FILE);
+      const sel = document.getElementById('filePreset');
+      if(lastFile && [...sel.options].some(o => o.value === lastFile)){
+        sel.value = lastFile;
+      }
+      onPresetChange();
+      // Oppdaterer listen fra repoet i bakgrunnen. Den innebygde listen
+      // står klar med én gang, så verktøyet er brukbart mens dette pågår.
+      hentFillisteFraRepo().then(() => {
+        const lf = localStorage.getItem(LS_LAST_FILE);
+        const s2 = document.getElementById('filePreset');
+        if(lf && [...s2.options].some(o => o.value === lf)) { s2.value = lf; onPresetChange(); }
+      });
+    } else {
+      document.getElementById('setupView').style.display = 'block';
+      document.getElementById('publishView').style.display = 'none';
+    }
+  }
+
+  window.saveSetup = function(){
+    const token = document.getElementById('tokenInput').value.trim();
+    const owner = document.getElementById('ownerInput').value.trim();
+    const repo = document.getElementById('repoInput').value.trim();
+    const branch = document.getElementById('branchInput').value.trim() || 'main';
+    if(!token || !owner || !repo){
+      alert('Fyll ut token, eier og repo-navn.');
+      return;
+    }
+    saveConfig({ token, owner, repo, branch });
+    init();
+  };
+
+  window.resetSetup = function(){
+    if(!confirm('Vil du fjerne det lagrede tokenet og oppsettet fra denne enheten?')) return;
+    localStorage.removeItem(LS_KEY);
+    init();
+  };
+
+  window.onPresetChange = function(){
+    const val = document.getElementById('filePreset').value;
+    document.getElementById('customPathWrap').style.display = val === '__custom__' ? 'block' : 'none';
+    updateLastPublishedHint();
+    updatePathNotice();
+    // En kontroll gjort for forrige fil skal aldri gjelde for den neste.
+    if(window.nullstillSperre) window.nullstillSperre();
+  };
+
+  // Filer under functions/ publiseres av en ANNEN GitHub Action enn
+  // nettsidene, og den bruker 3–5 minutter i stedet for under ett.
+  // Uten denne beskjeden sitter man og venter på en publisering som ser
+  // ut til å henge, men som egentlig bare tar lengre tid.
+  //
+  // Advarselen fanger også opp den vanligste feilen: å skrive "index.js"
+  // når man mener "functions/index.js". Da havner filen i rota, ingen
+  // funksjoner blir publisert, og ingenting sier ifra.
+  function updatePathNotice(){
+    const el = document.getElementById('pathNotice');
+    if(!el) return;
+    const path = currentPath();
+    let msg = '', cls = 'hint';
+
+    if(path.indexOf('functions/') === 0){
+      msg = '⚙️ Dette er en Cloud Function. Publiseringen kjøres av en egen ' +
+            'GitHub Action og tar 3–5 minutter — vesentlig lengre enn nettsidene.';
+      cls = 'hint notice-info';
+    } else if(/^index\.js$/i.test(path) || /^[^/]+\.js$/i.test(path)){
+      msg = '⚠️ Mente du «functions/' + path + '»? En .js-fil i rotmappen ' +
+            'publiseres IKKE som Cloud Function, og funksjonene forblir uendret.';
+      cls = 'hint notice-warn';
+    } else if(path === 'firestore.rules'){
+      // 🔴 Sto tidligere: «kun dokumentasjon — lim inn manuelt i Console».
+      // Det var sant, og nettopp derfor lå repo-kopien elleve dager bak
+      // de reglene som faktisk gjaldt. Nå legges filen ut av
+      // firebase-rules.yml, og DENNE filen er reglene.
+      msg = '🔐 Dette er de ekte reglene. Publiserer du her, gjelder de i basen ' +
+            'få sekunder etterpå — Console viser den samme filen. ' +
+            'Les gjennom endringen først: Firebase stopper ugyldige regler, ' +
+            'men ikke gyldige regler som er for åpne.';
+      cls = 'hint notice-warn';
+    }
+
+    el.textContent = msg;
+    el.className = cls;
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  window.clearFileContent = function(){
+    const box = document.getElementById('fileContent');
+    box.value = '';
+    box.focus();
+    const statusBox = document.getElementById('statusBox');
+    statusBox.className = 'status';
+    statusBox.textContent = '';
+    const loadedHint = document.getElementById('fileLoadedHint');
+    loadedHint.className = 'file-loaded-hint';
+    loadedHint.textContent = '';
+    document.getElementById('fileUpload').value = '';
+    nullstillSperre();
+  };
+
+  // Reads the picked file straight from the phone's storage (Downloads/
+  // Files app) into the textarea — no manual select-all/copy/paste needed.
+  // Also tries to auto-match the dropdown to the file's own name, so the
+  // person doesn't have to pick that by hand either when the names line up.
+  window.handleFileUpload = function(event){
+    const file = event.target.files && event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      document.getElementById('fileContent').value = e.target.result;
+      const loadedHint = document.getElementById('fileLoadedHint');
+      loadedHint.className = 'file-loaded-hint show';
+      loadedHint.textContent = '✓ Lastet inn: ' + file.name + ' (' + Math.round(file.size/1024) + ' kB)';
+
+      const sel = document.getElementById('filePreset');
+
+      // Nettleseren gir oss bare filnavnet — aldri mappen filen lå i. Et
+      // valgt «index.js» ville derfor havnet i rota og aldri blitt publisert
+      // som Cloud Function. Her slås filnavnet opp mot listen over kjente
+      // filer FØRST, slik at riktig full sti velges automatisk.
+      let treff = [...sel.options].find(o => o.value === file.name);
+      if(!treff){
+        // Ingen eksakt match: se om filnavnet finnes som siste ledd i en
+        // sti i listen (f.eks. «index.js» → «functions/index.js»).
+        const kandidater = [...sel.options].filter(
+          o => o.value.indexOf('/') > 0 && o.value.split('/').pop() === file.name
+        );
+        // Bare når det finnes ÉN mulighet — er det flere, kan vi ikke gjette
+        // riktig, og brukeren må velge selv.
+        if(kandidater.length === 1) treff = kandidater[0];
+      }
+
+      if(treff){
+        sel.value = treff.value;
+        onPresetChange();
+        if(treff.value !== file.name){
+          showStatus('Filen ble automatisk lagt til stien «' + treff.value + '».', 'ok');
+        }
+      } else {
+        sel.value = '__custom__';
+        document.getElementById('customPath').value = file.name;
+        onPresetChange();
+      }
+
+      // Kontrollen kjøres med én gang filen er lest inn, ikke først når du
+      // trykker «Publiser». Da ser du at kopien er gammel FØR du har
+      // bestemt deg — som er hele poenget med den.
+      nullstillSperre();
+      sjekkVersjon();
+    };
+    reader.onerror = function(){
+      showStatus('✗ Kunne ikke lese filen. Prøv å lime inn innholdet manuelt i stedet.', 'err');
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  function currentPath(){
+    const val = document.getElementById('filePreset').value;
+    if(val === '__custom__') return document.getElementById('customPath').value.trim();
+    return val;
+  }
+
+  function showStatus(msg, cls){
+    const box = document.getElementById('statusBox');
+    box.className = 'status show ' + cls;
+    box.textContent = msg;
+    // Meldingen står nederst i et langt kort. På telefon havnet den under
+    // skjermkanten: man trykket «Publiser», filen gikk opp, og skjermen så
+    // helt uforandret ut. Rull den fram — et svar man ikke ser, er intet svar.
+    if(cls !== 'busy'){
+      try{ box.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
+    }
+  }
+
+  // ===================================================================
+  // TIDSSTEMPEL I HVER FIL
+  // -------------------------------------------------------------------
+  // Hver fil som publiseres får en linje øverst med nøyaktig tidspunkt
+  // for publiseringen. Grunnen: når en fil senere sendes videre — til en
+  // kollega, eller inn i en ny samtale — er det umulig å se på innholdet
+  // alene om det er siste versjon eller en gammel kopi. Det har allerede
+  // ført til at eldre filer ble lagt over nyere arbeid.
+  //
+  // Stempelet skrives som en kommentar på filens eget språk, og et
+  // gammelt stempel byttes ut i stedet for at det hoper seg opp.
+  // Filtyper uten kommentar-syntaks (JSON) hoppes over — en kommentar
+  // der ville gjort filen ugyldig.
+  // ===================================================================
+  function noTid(){
+    const d = new Date();
+    const to = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + to(d.getMonth()+1) + '-' + to(d.getDate()) +
+           ' ' + to(d.getHours()) + ':' + to(d.getMinutes()) + ':' + to(d.getSeconds());
+  }
+
+  // 🔴 Disse settes sammen av biter med vilje. Skrives de rett fram, står
+  // teksten «<!-- SIST-ENDRET:» i verktøyets egen kildekode — og når
+  // verktøyet publiserer SEG SELV, finner uttrykket under den, tror det er
+  // et gammelt stempel, og sletter malen ut av koden.
+  //
+  // Det skjedde. Fra 7. august 23:14 sto det «const merke = ''» i den
+  // publiserte versjonen, og HVER html- og md-fil publisert etterpå fikk
+  // et tomt stempel. Feilen var usynlig: verktøyet meldte «✓ Publisert»
+  // hver gang, og filene så normale ut.
+  //
+  // IKKE skriv disse to som én sammenhengende streng.
+  const MERKE_START = '<' + '!--';
+  const MERKE_SLUTT = '--' + '>';
+
+  function stemplFil(sti, innhold){
+    const tid = noTid();
+    const lav = sti.toLowerCase();
+
+    // JSON tåler ikke kommentarer — filen ville blitt ugyldig.
+    if(lav.endsWith('.json')) return innhold;
+
+    if(lav.endsWith('.html')){
+      const merke = MERKE_START + ' SIST-ENDRET: ' + tid + ' ' + MERKE_SLUTT;
+      const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
+      // Etter <!DOCTYPE ...> hvis den finnes, ellers helt øverst.
+      // De ledende linjeskiftene fjernes: den ødelagte versjonen la igjen
+      // en tom linje for hver publisering, og de hopet seg opp.
+      // Uttrykket fanger KUN selve doctype-taggen. Tok det med linjeskiftene
+      // etter den også, havnet den tomme linjen inne i treffet — og da
+      // hjalp det ikke å rydde i resten: stempelet ble stående UNDER den
+      // tomme linjen i stedet for rett etter doctype.
+      const dt = rent.match(/^\s*<!DOCTYPE[^>]*>/i);
+      if(dt) return dt[0] + '\n' + merke + '\n' + rent.slice(dt[0].length).replace(/^\s*\n+/, '');
+      return merke + '\n' + rent.replace(/^\s*\n+/, '');
+    }
+
+    // 🔴 REGLENE TÅLER IKKE STEMPELET ØVERST.
+    //
+    // Firestore krever at «rules_version» er det FØRSTE i filen. Et
+    // kommentarstempel over den gjør reglene ugyldige, og hele
+    // utleggingen stopper.
+    //
+    // Så lenge filen bare var dokumentasjon, spilte det ingen rolle —
+    // ingen kompilerte den. Nå går den til basen, og da må stempelet
+    // flyttes UNDER rules_version-linjen i stedet for å stå over den.
+    if(lav.endsWith('.rules')){
+      const merke = '/' + '* SIST-ENDRET: ' + tid + ' *' + '/';
+      const rent = innhold.replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\n?/g, '');
+      const m = rent.match(/^\s*rules_version[^\n]*\n/);
+      if(m) return rent.slice(0, m[0].length) + merke + '\n' + rent.slice(m[0].length);
+      // Ingen rules_version-linje: filen er uansett ugyldig, og da skal
+      // stempelet ikke skjule hvorfor. La innholdet stå urørt.
+      return rent;
+    }
+
+    if(lav.endsWith('.js') || lav.endsWith('.css')){
+      const merke = '/' + '* SIST-ENDRET: ' + tid + ' *' + '/';
+      const rent = innhold.replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\n?/g, '');
+      return merke + '\n' + rent;
+    }
+
+    if(lav.endsWith('.yml') || lav.endsWith('.yaml')){
+      const merke = '# SIST-ENDRET: ' + tid;
+      const rent = innhold.replace(/^#\s*SIST-ENDRET:.*\n/gm, '');
+      return merke + '\n' + rent;
+    }
+
+    if(lav.endsWith('.md')){
+      const merke = MERKE_START + ' SIST-ENDRET: ' + tid + ' ' + MERKE_SLUTT;
+      const rent = innhold.replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\n?/g, '');
+      return merke + '\n' + rent.replace(/^\n+/, '');
+    }
+
+    return innhold;
+  }
+
+  // UTF-8 safe base64 encoding
+  function toBase64(str){
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  // UTF-8 safe base64 DEkoding — GitHub leverer filinnholdet base64-kodet,
+  // med linjeskift inni. atob() alene gir mojibake på æ/ø/å og arabisk.
+  function fraBase64(b64){
+    const bin = atob(String(b64).replace(/\s+/g, ''));
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  // ===================================================================
+  // VERSJONSKONTROLL FØR PUBLISERING
+  // -------------------------------------------------------------------
+  // Verktøyet hentet allerede filen fra GitHub før hver publisering, men
+  // brukte bare «sha» fra svaret og kastet resten. Innholdet lå der hele
+  // tiden. Nå sammenlignes det med det du er i ferd med å legge over.
+  //
+  // Hvorfor: en gammel kopi som legges over nyere arbeid ser helt normal
+  // ut i det den publiseres — «✓ Publisert» kommer opp som vanlig, og
+  // timene som forsvant merkes først senere.
+  //
+  // SIST-ENDRET-linjen fjernes fra BEGGE sider før sammenligningen.
+  // Uten det ville hver eneste fil sett endret ut, siden stempelet alene
+  // alltid er nytt.
+  // ===================================================================
+  function fjernStempel(txt){
+    return String(txt)
+      .replace(/<!--\s*SIST-ENDRET:[^>]*-->\s*\r?\n?/g, '')
+      .replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\r?\n?/g, '')
+      .replace(/^#\s*SIST-ENDRET:.*\r?\n?/gm, '');
+  }
+
+  // Linjeskift normaliseres også: en fil lastet ned til en PC får gjerne
+  // CRLF, mens GitHub har LF. Uten dette ville to identiske filer sett
+  // forskjellige ut på hver eneste linje.
+  function normaliser(txt){
+    return fjernStempel(txt).replace(/\r\n/g, '\n').replace(/\s+$/, '');
+  }
+
+  function lesStempel(txt){
+    const m = String(txt).match(/SIST-ENDRET:\s*(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/);
+    if(!m) return null;
+    const d = new Date(m[1] + 'T' + m[2]);
+    return isNaN(d) ? null : d;
+  }
+
+  function visTid(d){
+    if(!d) return 'uten stempel';
+    return d.toLocaleDateString('no-NO') + ' kl. ' +
+           d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  }
+
+  async function hentPublisertFil(path){
+    const cfg = loadConfig();
+    const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
+    const headers = {
+      'Authorization': 'Bearer ' + cfg.token,
+      'Accept': 'application/vnd.github+json'
+    };
+    const res = await fetch(apiBase + '?ref=' + encodeURIComponent(cfg.branch), { headers, cache: 'no-store' });
+    if(res.status === 404) return { finnes: false };
+    if(res.status !== 200){
+      const e = await res.json().catch(()=>({}));
+      throw new Error('status ' + res.status + ' ' + (e.message || ''));
+    }
+    const data = await res.json();
+    // Filer over 1 MB leveres uten innhold av contents-API-et. Da hentes
+    // råfilen i stedet, ellers ville store filer alltid sett «tomme» ut og
+    // kontrollen blitt meningsløs nettopp for de største filene.
+    if(!data.content && data.download_url){
+      const rå = await fetch(data.download_url, { cache: 'no-store' });
+      if(!rå.ok) throw new Error('kunne ikke hente råfil (HTTP ' + rå.status + ')');
+      return { finnes: true, innhold: await rå.text() };
+    }
+    return { finnes: true, innhold: fraBase64(data.content || '') };
+  }
+
+  // Returnerer en av:
+  //   ny        — finnes ikke i repoet ennå                → slipper gjennom
+  //   identisk  — nøyaktig samme innhold                   → SPERRES
+  //   eldre     — stempelet ditt er eldre enn det i repoet → SPERRES
+  //   nyere     — stempelet ditt er nyest                  → slipper gjennom
+  //   endret    — samme stempel, ulikt innhold             → slipper gjennom
+  //   ukjent    — stempel mangler på minst én side         → slipper gjennom
+  //   feil      — nettverk/tilgang                         → slipper gjennom
+  async function sammenlignMedPublisert(path, lokaltInnhold){
+    let repo;
+    try{
+      repo = await hentPublisertFil(path);
+    } catch(err){
+      return { status: 'feil', melding: err.message };
+    }
+    if(!repo.finnes) return { status: 'ny' };
+
+    const lokalTid = lesStempel(lokaltInnhold);
+    const repoTid  = lesStempel(repo.innhold);
+
+    // Avtrykket av det publiserte tas med videre: det lar oss senere
+    // avgjøre om den lokale boken er à jour, uten en eneste ekstra
+    // forespørsel.
+    const repoAvtrykk = avtrykk(repo.innhold);
+
+    if(normaliser(lokaltInnhold) === normaliser(repo.innhold)){
+      return { status: 'identisk', lokalTid, repoTid, repoAvtrykk };
+    }
+    if(lokalTid && repoTid){
+      if(lokalTid.getTime() < repoTid.getTime()) return { status: 'eldre', lokalTid, repoTid, repoAvtrykk };
+      if(lokalTid.getTime() > repoTid.getTime()) return { status: 'nyere', lokalTid, repoTid, repoAvtrykk };
+      // Samme stempel, ulikt innhold: dette er det HELT VANLIGE tilfellet.
+      // Du lastet ned filen, endret den, og laster den opp igjen — stempelet
+      // står stille til publiseringen setter et nytt. Ville denne blitt
+      // sperret, ville verktøyet stoppet hver eneste normale endring.
+      return { status: 'endret', lokalTid, repoTid, repoAvtrykk };
+    }
+    return { status: 'ukjent', lokalTid, repoTid, repoAvtrykk };
+  }
+
+  // Kjøres etter hovedsammenligningen. Er alderen ukjent fordi stempelet
+  // mangler, avgjøres den her — først av den lokale boken, og bare hvis
+  // den ikke kan svare, av historikken hos GitHub.
+  async function utdypUkjent(path, lokaltInnhold, r){
+    if(r.status !== 'ukjent') return r;
+
+    const bok = slåOppIBok(path, lokaltInnhold);
+
+    // Er dette nøyaktig noe du har publisert tidligere — og ikke sist —
+    // er saken avgjort på stedet. Null forespørsler.
+    if(bok.kjent && bok.indeks > 0){
+      return { status: 'historisk', treff: {
+        versjonerBak: bok.indeks, dato: bok.dato, melding: 'fra din egen publiseringsbok', kilde: 'bok'
+      }};
+    }
+
+    // Er boken À JOUR med det som faktisk ligger ute — altså: det siste du
+    // publiserte er fortsatt det som er publisert — så kjenner boken hele
+    // historien til denne filen. Da er «ikke i boken» det samme som «aldri
+    // publisert før», og GitHub trenger ikke spørres i det hele tatt.
+    // Dette er det som gjør den vanlige runden umiddelbar.
+    if(!bok.kjent && bok.harBok && r.repoAvtrykk && bok.nyeste && bok.nyeste.a === r.repoAvtrykk){
+      return { status: 'ukjentNy', kilde: 'bok', lokalTid: r.lokalTid, repoTid: r.repoTid };
+    }
+
+    // Boken er tom, eller ute av takt fordi noe ble publisert et annet
+    // sted fra. Da er historikken hos GitHub eneste pålitelige kilde.
+    try{
+      const treff = await finnIHistorikk(path, lokaltInnhold);
+      if(treff) return { status: 'historisk', treff };
+    } catch(err){
+      console.warn('Historikk-kontroll feilet:', err);
+      return { status: 'ukjent', lokalTid: r.lokalTid, repoTid: r.repoTid, historikkFeilet: true };
+    }
+    return { status: 'ukjentNy', lokalTid: r.lokalTid, repoTid: r.repoTid };
+  }
+
+  const SPERRENDE = ['identisk', 'eldre', 'historisk'];
+
+  // ===================================================================
+  // HISTORIKK-KONTROLL — for filer UTEN stempel
+  // -------------------------------------------------------------------
+  // Stempelet skrives kun inn i kopien som sendes til GitHub. Filen som
+  // ligger på telefonen din blir aldri rørt. Jobber du slik at du endrer
+  // den samme lokale filen om og om igjen, får den derfor ALDRI et
+  // stempel — og aldersammenligningen over har ingenting å gå på.
+  //
+  // Da spør vi GitHub i stedet: er dette innholdet nøyaktig en av de
+  // tidligere versjonene av filen? Er det det, er saken avgjort — du
+  // holder på å legge ut igjen noe som allerede er erstattet, og det
+  // trengs verken stempel eller klokke for å slå det fast.
+  //
+  // Kjøres BARE når stempelet mangler, så det koster ingenting i den
+  // vanlige flyten.
+  // ===================================================================
+  // ===================================================================
+  // LOKAL PUBLISERINGSBOK
+  // -------------------------------------------------------------------
+  // Verktøyet vet allerede hva DU har publisert — det er jo det som
+  // publiserer. Her skrives et lite avtrykk av hver publisering ned, slik
+  // at spørsmålet «har jeg lagt ut dette innholdet før?» kan besvares på
+  // stedet, uten å spørre GitHub om noe som helst.
+  //
+  // Dette er laget for arbeidsmåten der man endrer den samme lokale filen
+  // om og om igjen uten å hente ned fra repoet. Da har filen aldri noe
+  // stempel, og stempelsammenligningen har ingenting å gå på.
+  //
+  // Boken lagres i nettleseren. Bytter man telefon eller tømmer
+  // nettleserdata, er den tom — og da faller kontrollen tilbake på
+  // historikken hos GitHub, som alltid virker.
+  // ===================================================================
+  const LS_BOK = 'madina_publish_bok_v1';
+  const BOK_MAKS = 60; // avtrykk per fil
+
+  // cyrb53: kort, rask og god nok her. Avtrykket lagres sammen med
+  // lengden på innholdet, så to ulike filer må kollidere på BEGGE deler
+  // for å forveksles — i praksis utelukket.
+  function avtrykk(tekst){
+    const s = normaliser(tekst);
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for(let i = 0; i < s.length; i++){
+      const ch = s.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36) + '-' + s.length;
+  }
+
+  function lesBok(){
+    try{ return JSON.parse(localStorage.getItem(LS_BOK)) || {}; }
+    catch(e){ return {}; }
+  }
+  function skrivBok(bok){
+    try{ localStorage.setItem(LS_BOK, JSON.stringify(bok)); }
+    catch(e){ console.warn('Kunne ikke lagre publiseringsboken:', e); }
+  }
+  function bokførPublisering(path, innhold){
+    const bok = lesBok();
+    const rad = bok[path] || [];
+    rad.unshift({ a: avtrykk(innhold), t: new Date().toISOString() });
+    bok[path] = rad.slice(0, BOK_MAKS);
+    skrivBok(bok);
+  }
+
+  // Slår opp innholdet i boken.
+  //   {kjent:false}                     — aldri publisert herfra
+  //   {kjent:true, indeks:0}            — det du sist publiserte
+  //   {kjent:true, indeks:n>0, dato}    — en ELDRE publisering: gammel kopi
+  function slåOppIBok(path, innhold){
+    const rad = lesBok()[path];
+    if(!Array.isArray(rad) || rad.length === 0) return { kjent: false, harBok: false };
+    const a = avtrykk(innhold);
+    const i = rad.findIndex(r => r.a === a);
+    // «antall» må være med også når innholdet IKKE finnes — meldingen
+    // under bruker det til å si hvor mange publiseringer boken kjenner.
+    // Uten feltet sto det «undefined tidligere publiseringer registrert».
+    if(i === -1) return { kjent: false, harBok: true, nyeste: rad[0], antall: rad.length };
+    return { kjent: true, harBok: true, indeks: i, dato: new Date(rad[i].t), nyeste: rad[0], antall: rad.length };
+  }
+  // Delt av både sperren før publisering og loggen — hadde de hver sin
+  // kopi av denne, ville de før eller siden svart forskjellig på samme
+  // spørsmål.
+  async function hentVersjoner(path, maks = 12){
+    const cfg = loadConfig();
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = {
+      'Authorization': 'Bearer ' + cfg.token,
+      'Accept': 'application/vnd.github+json'
+    };
+    const listeRes = await fetch(base + '/commits?path=' + encodeURIComponent(path) +
+      '&sha=' + encodeURIComponent(cfg.branch) + '&per_page=' + maks, { headers, cache: 'no-store' });
+    if(!listeRes.ok) throw new Error('historikk: HTTP ' + listeRes.status);
+    const commits = await listeRes.json();
+    if(!Array.isArray(commits)) return [];
+
+    const ut = [];
+    for(const c of commits){
+      const res = await fetch(base + '/contents/' + path + '?ref=' + c.sha, { headers, cache: 'no-store' });
+      if(!res.ok) continue;
+      const data = await res.json();
+      let tekst;
+      if(!data.content && data.download_url){
+        const rå = await fetch(data.download_url, { cache: 'no-store' });
+        if(!rå.ok) continue;
+        tekst = await rå.text();
+      } else {
+        tekst = fraBase64(data.content || '');
+      }
+      ut.push({
+        sha: c.sha,
+        commitDato: new Date(c.commit.author.date),
+        melding: (c.commit.message || '').split('\n')[0],
+        innhold: tekst,
+        stempel: lesStempel(tekst)
+      });
+    }
+    return ut;
+  }
+
+  async function finnIHistorikk(path, lokaltInnhold, maks = 30){
+    const versjoner = await hentVersjoner(path, maks);
+    if(versjoner.length < 2) return null;
+    const mål = normaliser(lokaltInnhold);
+    // Hopper over versjoner[0] — det er den som ligger ute nå, og den er
+    // allerede sammenlignet.
+    for(let i = 1; i < versjoner.length; i++){
+      if(normaliser(versjoner[i].innhold) === mål){
+        return {
+          versjonerBak: i,
+          dato: versjoner[i].commitDato,
+          melding: versjoner[i].melding
+        };
+      }
+    }
+    return null;
+  }
+
+  // ===================================================================
+  // ENDRINGS- OG PUBLISERINGSLOGG
+  // -------------------------------------------------------------------
+  // Går gjennom historikken til én fil og sjekker at rekkefølgen henger
+  // sammen. Er alt i orden, sier den det med én gang — er den ikke det,
+  // peker den på NØYAKTIG hvilken versjon rekkefølgen brøt sammen ved,
+  // slik at man slipper å lete.
+  //
+  // MERK OM KLOKKESLETT: stempelet skrives med lokal tid fra telefonen,
+  // mens commit-datoen fra GitHub er UTC. I Oslo om sommeren gir det to
+  // timers forskjell — helt uten at noe er galt. Derfor sammenlignes
+  // ALDRI stempel mot commit-dato som feil. Kontrollene under holder seg
+  // til stempel-mot-stempel og innhold-mot-innhold, som er upåvirket av
+  // tidssone.
+  // ===================================================================
+  function analyserHistorikk(versjoner){
+    // Snus til kronologisk: eldst først. Da leses funnene i samme
+    // retning som ting faktisk skjedde.
+    const kron = [...versjoner].reverse();
+    const funn = [];
+
+    kron.forEach((v, i) => {
+      const nr = i + 1;
+      const merke = 'v' + nr + ' (' + v.sha.slice(0, 7) + ', ' +
+                    v.commitDato.toLocaleDateString('no-NO') + ')';
+
+      if(!v.stempel){
+        funn.push({ alvor: 'warn', nr,
+          tekst: '⚠️ ' + merke + ' mangler stempel — publisert utenom verktøyet.' });
+      }
+
+      if(i > 0){
+        const forrige = kron[i - 1];
+        // Stempelet gikk bakover: en eldre fil ble lagt over en nyere.
+        if(v.stempel && forrige.stempel && v.stempel.getTime() < forrige.stempel.getTime()){
+          funn.push({ alvor: 'err', nr,
+            tekst: '🛑 ' + merke + ' har ELDRE stempel enn versjonen før (' +
+                   visTid(v.stempel) + ' mot ' + visTid(forrige.stempel) +
+                   '). Her ble en gammel kopi lagt over nyere arbeid.' });
+        }
+        // Identisk innhold som en tidligere versjon = tilbakerulling.
+        // Dette fanger tilfellet der stempelet mangler helt, og er derfor
+        // det som virkelig avdekker en gammel kopi.
+        const like = kron.slice(0, i).findIndex(t => normaliser(t.innhold) === normaliser(v.innhold));
+        if(like !== -1){
+          funn.push({ alvor: like === i - 1 ? 'warn' : 'err', nr,
+            tekst: (like === i - 1 ? '⚠️ ' : '🛑 ') + merke +
+                   (like === i - 1
+                     ? ' er identisk med versjonen rett før — publiseringen endret ingenting.'
+                     : ' er identisk med v' + (like + 1) + '. Filen ble rullet tilbake ' +
+                       (i - like) + ' versjoner, og arbeidet imellom forsvant.') });
+        }
+      }
+    });
+
+    const førsteFeil = funn.find(f => f.alvor === 'err');
+    return { kron, funn, førsteFeil };
+  }
+
+  window.kjorLogg = async function(){
+    const path = currentPath();
+    const boks = document.getElementById('loggResultat');
+    if(!path){
+      boks.className = 'status show warn';
+      boks.textContent = 'Velg en fil først.';
+      return;
+    }
+    boks.className = 'status show busy';
+    boks.textContent = 'Henter historikken for ' + path + '...';
+
+    let versjoner;
+    try{
+      versjoner = await hentVersjoner(path, 12);
+    } catch(err){
+      boks.className = 'status show err';
+      boks.textContent = '✗ Kunne ikke hente historikken: ' + err.message;
+      return;
+    }
+    if(versjoner.length === 0){
+      boks.className = 'status show warn';
+      boks.textContent = 'Fant ingen historikk for «' + path + '». Er filstien riktig?';
+      return;
+    }
+
+    const { kron, funn, førsteFeil } = analyserHistorikk(versjoner);
+
+    const linjer = kron.map((v, i) =>
+      'v' + (i + 1) + '  ' + v.commitDato.toLocaleDateString('no-NO') + ' ' +
+      v.commitDato.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'}) +
+      '  ' + (v.stempel ? 'stempel ' + visTid(v.stempel) : 'uten stempel') +
+      '\n     ' + v.melding
+    );
+
+    let topp;
+    if(førsteFeil){
+      topp = '🛑 LOGGEN HENGER IKKE SAMMEN.\n\nDet begynte ved v' + førsteFeil.nr + ':\n' +
+             førsteFeil.tekst + '\n';
+      boks.className = 'status show err';
+    } else if(funn.length){
+      topp = '⚠️ Rekkefølgen er i orden, men det er merknader:\n';
+      boks.className = 'status show warn';
+    } else {
+      topp = '✅ ALT I ORDEN.\n\n' + kron.length + ' versjoner, i riktig rekkefølge. ' +
+             'Ingen tilbakerulling, ingen stempler ute av stilling.\n';
+      boks.className = 'status show ok';
+    }
+
+    const merknader = funn.length ? '\nMerknader:\n' + funn.map(f => '  ' + f.tekst).join('\n') + '\n' : '';
+    boks.textContent = topp + merknader + '\nHistorikk (eldst først):\n' + linjer.join('\n');
+
+    // Gjør versjonene tilgjengelige for nedlasting. Er noe rullet
+    // tilbake, er det nettopp her man trenger å få tak i den riktige
+    // versjonen — og da skal man slippe å lete den opp på GitHub selv.
+    loggVersjoner = kron;
+    const sel = document.getElementById('versjonValg');
+    sel.innerHTML = kron.map((v, i) =>
+      '<option value="' + i + '">v' + (i + 1) + ' — ' +
+      v.commitDato.toLocaleDateString('no-NO') + ' ' +
+      v.commitDato.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'}) +
+      '</option>').join('');
+    sel.value = String(kron.length - 1);
+    document.getElementById('versjonNedlasting').style.display = 'block';
+  };
+
+
+  function beskrivResultat(r, path){
+    if(r.status === 'ny')      return { sperr:false, cls:'ok',   tekst:'🆕 Ny fil — finnes ikke i repoet ennå. Trygt å publisere.' };
+    if(r.status === 'nyere')   return { sperr:false, cls:'ok',   tekst:'✓ Din versjon er nyere enn den publiserte (' + visTid(r.lokalTid) + ' mot ' + visTid(r.repoTid) + '). Trygt å publisere.' };
+    if(r.status === 'endret')  return { sperr:false, cls:'ok',   tekst:'✓ Endret siden siste publisering. Innholdet er ulikt, stempelet er fra sist du publiserte (' + visTid(r.repoTid) + '). Dette er det normale ved en vanlig endring.' };
+    if(r.status === 'ukjentNy') return { sperr:false, cls:'ok',   tekst:'✓ Innholdet finnes ikke i noen tidligere versjon av filen — dette er nytt arbeid. Trygt å publisere.\n\n(Filen mangler stempel. Alderen ble avgjort mot ' + (r.kilde === 'bok' ? 'din lokale publiseringsbok, som er à jour med det som ligger ute.' : 'historikken på GitHub.') + ')' };
+    if(r.status === 'historisk')return { sperr:true,  cls:'err',  tekst:'🛑 DETTE ER EN GAMMEL KOPI.\n\nInnholdet er nøyaktig likt en tidligere versjon av filen — den fra ' + visTid(r.treff.dato) + ', som ligger ' + r.treff.versjonerBak + ' versjon(er) bak den som er ute nå.\n\nPubliserer du, ruller du filen tilbake og sletter alt arbeid gjort etter den datoen. Hent siste versjon fra GitHub først.\n\n(Kilde: ' + (r.treff.kilde === 'bok' ? 'din lokale publiseringsbok' : 'historikken på GitHub') + '.)' };
+    if(r.status === 'ukjent')  return { sperr:false, cls:'warn', tekst:'⚠️ Kan ikke fastslå alder — stempel mangler' + (r.historikkFeilet ? ', og historikken på GitHub kunne ikke leses' : '') + '. Publisering slippes gjennom, men du er uten sikkerhetsnett her.' };
+    if(r.status === 'feil')    return { sperr:false, cls:'warn', tekst:'⚠️ Kunne ikke sjekke mot GitHub (' + r.melding + '). Publisering er ikke sperret, men da er du uten sikkerhetsnett.' };
+    if(r.status === 'identisk')return { sperr:true,  cls:'err',  tekst:'⛔ IDENTISK med det som allerede ligger ute. Ingenting ville endret seg. Publisering er stoppet.' };
+    if(r.status === 'eldre')   return { sperr:true,  cls:'err',  tekst:'🛑 FILEN DIN ER ELDRE ENN DEN PUBLISERTE.\n\nDin fil:        ' + visTid(r.lokalTid) + '\nPå GitHub:  ' + visTid(r.repoTid) + '\n\nPubliserer du nå, legger du en gammel kopi over nyere arbeid. Hent siste versjon fra GitHub først.' };
+    return { sperr:false, cls:'warn', tekst:'Ukjent resultat.' };
+  }
+
+  // Shared core used by both the single-file and multi-file publish flows.
+  // Returns {ok:true} on success or {ok:false, message} on failure — never
+  // throws, so callers (especially the multi-file loop) can keep going to
+  // the next file even if one fails.
+  // ═══════════════════════════════════════════════════════════════════
+  // NÅDDE FILEN NETTET? — ikke bare GitHub.
+  //
+  // 🔴 15.08: publiseringen sto i en halv time uten at noen visste det.
+  // Verktøyet sa «✓ Publisert» hver gang, og det VAR sant: filene lå i
+  // GitHub. Men firebase.json manglet sin første `{`, så `firebase
+  // deploy` stanset før den lastet opp noe som helst — og alt som ble
+  // publisert i mellomtiden ble liggende i repoet uten å nå nettstedet.
+  //
+  // Skjermen viste gammel side, verktøyet viste grønn hake, og begge
+  // fortalte sannheten om hver sin halvdel.
+  //
+  // Herfra leses resultatet av GitHub Action-en som gjør selve
+  // utleggingen. «Publisert» betyr fra nå av at filen er ute.
+  // ═══════════════════════════════════════════════════════════════════
+
+  // ═══════════════════════════════════════════════════════════════════
+  // HVILKEN ARBEIDSFLYT LEGGER UT DENNE FILEN?
+  //
+  // 🔴 Verktøyet så bare på firebase-hosting.yml. Den kjører på ENHVER
+  // push — den har ikke noe paths-filter — så etter en publisering av
+  // firestore.rules ville verktøyet lest hosting-kjøringen, sett grønt,
+  // og sagt «lagt ut». Reglene kunne samtidig ha feilet i sin egen
+  // kjøring, og ingen ting ville sagt fra.
+  //
+  // Det er nøyaktig feilen fra 15. august, flyttet ett hakk til side:
+  // et grønt svar fra feil spørsmål.
+  // ═══════════════════════════════════════════════════════════════════
+  const HOSTING_WORKFLOW  = 'firebase-hosting.yml';
+  const REGLER_WORKFLOW   = 'firebase-rules.yml';
+  const FUNKSJON_WORKFLOW = 'firebase-functions.yml';
+
+  function workflowFor(sti){
+    const p = String(sti || '');
+    if(p === 'firestore.rules') return REGLER_WORKFLOW;
+    if(p.indexOf('functions/') === 0) return FUNKSJON_WORKFLOW;
+    return HOSTING_WORKFLOW;
+  }
+  function workflowNavn(w){
+    return w === REGLER_WORKFLOW ? 'sikkerhetsreglene'
+         : w === FUNKSJON_WORKFLOW ? 'funksjonene'
+         : 'nettstedet';
+  }
+
+  // Standarden når ingen fil er valgt (f.eks. «Sjekk utleggingen»-knappen).
+  let DEPLOY_WORKFLOW = HOSTING_WORKFLOW;
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PASSER INNHOLDET TIL NAVNET?
+  //
+  // 🔴 15.08: innholdet i firestore.rules ble publisert som
+  // firebase.json. Verktøyet tok imot det uten et ord — GitHub gjør ikke
+  // forskjell på filtyper. Først en halvtime senere, i en loggfil hos
+  // GitHub Actions, kom svaret: «Parse Error … firebase.json».
+  //
+  // Kontrollen er bevisst grov. Den ser bare på de første tegnene og
+  // kjenner igjen fire former som ikke kan forveksles. Den SPØR — den
+  // nekter ikke: det finnes lovlige unntak jeg ikke har tenkt på, og et
+  // verktøy som sier nei til noe riktig er verre enn ett som spør.
+  // ═══════════════════════════════════════════════════════════════════
+  function gjettFiltype(innhold){
+    const t = String(innhold || '').replace(/^\uFEFF/, '').trim();
+    if(!t) return null;
+    if(/^rules_version\s*=|^service\s+cloud\.firestore/m.test(t))       return 'rules';
+    if(/^<!DOCTYPE\s+html|^<html[\s>]/i.test(t))                          return 'html';
+    if(t[0] === '{' || t[0] === '[')                                       return 'json';
+    if(/^name:\s/.test(t) && /^on:\s*$/m.test(t) && /^jobs:\s*$/m.test(t)) return 'yml';
+    return null;
+  }
+  function typeAvSti(sti){
+    const l = String(sti || '').toLowerCase();
+    if(l.endsWith('.rules')) return 'rules';
+    if(l.endsWith('.json'))  return 'json';
+    if(l.endsWith('.html'))  return 'html';
+    if(l.endsWith('.yml') || l.endsWith('.yaml')) return 'yml';
+    if(l.endsWith('.js') || l.endsWith('.mjs') || l.endsWith('.css')) return 'kode';
+    return null;
+  }
+  const TYPENAVN = { rules:'Firestore-regler', json:'JSON', html:'HTML-side', yml:'GitHub-arbeidsflyt', kode:'kode' };
+
+  // Reglene er den ene filen som ikke bare kan gå galt — den kan gå galt
+  // ÅPENT. Firebase nekter regler som ikke kompilerer, men en regel som
+  // er gyldig og for vid slipper rett gjennom og gjelder hele basen.
+  // Derfor en egen kontroll her, før den i det hele tatt forlater telefonen.
+  function reglerSerFarligeUt(innhold){
+    const t = String(innhold || '');
+    if(/match\s*\/\{document=\*\*\}[\s\S]{0,140}allow\s+read\s*,\s*write\s*:\s*if\s+true/.test(t))
+      return 'Reglene åpner HELE basen for alle — «match /{document=**} … allow read, write: if true».';
+    if(!/rules_version/.test(t))
+      return 'Mangler «rules_version» — filen ser ikke komplett ut.';
+    if(!/service\s+cloud\.firestore/.test(t))
+      return 'Mangler «service cloud.firestore» — filen ser ikke komplett ut.';
+    return null;
+  }
+
+  // true = fortsett. false = brukeren avbrøt.
+  function innholdPasserTilNavn(sti, innhold){
+    if(sti === 'firestore.rules'){
+      const fare = reglerSerFarligeUt(innhold);
+      if(fare && !confirm(
+        '🔴 STOPP — kontroller reglene før du publiserer.\n\n' + fare + '\n\n' +
+        'Disse reglene gjelder for hele basen få sekunder etter publisering.\n\n' +
+        'Vil du publisere likevel?')) return false;
+    }
+    const forventet = typeAvSti(sti);
+    const funnet = gjettFiltype(innhold);
+    if(!forventet || !funnet || forventet === funnet) return true;
+    // HTML-filer inneholder ofte JSON-lignende blokker, og en .js kan
+    // starte med { . Bare de tydelige sammenblandingene fanges.
+    if(forventet === 'kode' || funnet === 'kode') return true;
+    return confirm(
+      '⚠️ Innholdet ser ikke ut som ' + (TYPENAVN[forventet] || forventet) + '.\n\n' +
+      'Filsti:    ' + sti + '\n' +
+      'Forventet: ' + (TYPENAVN[forventet] || forventet) + '\n' +
+      'Ser ut som: ' + (TYPENAVN[funnet] || funnet) + '\n\n' +
+      'Publiserer du feil innhold under dette navnet, kan hele utleggingen ' +
+      'stoppe — og det vises ikke her, bare i loggen hos GitHub.\n\n' +
+      'Vil du publisere likevel?'
+    );
+  }
+
+  // Venter på at utleggingen skal bli ferdig etter en publisering.
+  // Kjøringen starter noen sekunder etter commiten, så vi ser etter en
+  // kjøring som er NYERE enn tidspunktet vi publiserte.
+  async function ventPaUtlegging(startetFra, meld, workflow){
+    const frist = Date.now() + 150000;      // to og et halvt minutt
+    let sett = null;
+    while(Date.now() < frist){
+      const kj = (await hentKjoringer(5, workflow)).liste;
+      sett = kj.find(r => new Date(r.created_at).getTime() >= startetFra - 5000);
+      if(sett && sett.status === 'completed') break;
+      if(meld) meld(sett ? 'Legger ut på nettstedet…' : 'Venter på at utleggingen starter…');
+      await new Promise(r => setTimeout(r, 6000));
+    }
+    if(!sett) return { status:'ukjent' };
+    if(sett.status !== 'completed') return { status:'venter', run:sett };
+    // «cancelled» er normalt: publiserer du flere filer, avbryter den
+    // nyeste kjøringen de forrige. Det er sperren i workflowen som virker.
+    if(sett.conclusion === 'success') return { status:'ok', run:sett };
+    if(sett.conclusion === 'cancelled') return { status:'avbrutt', run:sett };
+    return { status:'feilet', run:sett };
+  }
+
+  // 🔴 Første utgave returnerte null på ALT som gikk galt — 401, 403,
+  // 404, nettverksbrudd. Ringte den ut, sto skjermen på «Leser
+  // kjøringene…» uten at noe kom, og årsaken fantes ingen steder.
+  //
+  // Det er nøyaktig feilen dette verktøyet ble utvidet for å fange, skrevet
+  // inn i utvidelsen selv. Nå følger statusen med tilbake, og den som
+  // spør får vite HVA som stoppet.
+  async function ghGet(sti){
+    const cfg = loadConfig();
+    if(!cfg || !cfg.owner || !cfg.repo){
+      return { ok:false, grunn:'Oppsettet mangler — lagre eier, repo og token først.' };
+    }
+    const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + sti;
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    if(cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+    // 🔴 Uten en frist kan spørringen henge for alltid, og boksen blir
+    // stående på «Leser kjøringene…» — som er nøyaktig den tilstanden
+    // dette verktøyet ble utvidet for å fjerne. Tolv sekunder er lenge
+    // nok for GitHub, og kort nok til at man ikke tror det jobber.
+    const avbryt = new AbortController();
+    const frist = setTimeout(() => avbryt.abort(), 12000);
+    try{
+      const r = await fetch(url, { headers, cache: 'no-store', signal: avbryt.signal });
+      clearTimeout(frist);
+      if(r.ok) return { ok:true, data: await r.json() };
+      const kropp = await r.json().catch(() => ({}));
+      const forklaring =
+        (r.status === 401 || r.status === 403)
+          ? 'Tokenet mangler lesetilgang til Actions. Et fintkornet token trenger «Actions: Read» på dette repoet.'
+        : (r.status === 404)
+          ? 'Fant ikke ' + DEPLOY_WORKFLOW + ' — heter arbeidsflyten noe annet, eller mangler tokenet tilgang til repoet?'
+        : (kropp.message || '');
+      return { ok:false, status:r.status, grunn:'GitHub svarte ' + r.status + '. ' + forklaring };
+    }catch(e){
+      clearTimeout(frist);
+      if(e && e.name === 'AbortError'){
+        return { ok:false, grunn:'GitHub svarte ikke innen 12 sekunder. Prøv igjen — eller sjekk nettforbindelsen.' };
+      }
+      return { ok:false, grunn:'Fikk ikke kontakt med GitHub: ' + (e.message || e) };
+    }
+  }
+
+  // Kjøringene for utleggingen, nyeste først. Returnerer også grunnen når
+  // listen ikke kunne hentes — «tom» og «kunne ikke spørre» er to helt
+  // ulike svar, og å vise dem likt er nettopp det som skjulte feilen.
+  async function hentKjoringer(antall, workflow){
+    const w = workflow || DEPLOY_WORKFLOW;
+    const r = await ghGet('/actions/workflows/' + w + '/runs?per_page=' + (antall || 10));
+    if(!r.ok) return { feil: r.grunn, liste: [] };
+    return { feil: null, liste: (r.data && r.data.workflow_runs) ? r.data.workflow_runs : [] };
+  }
+
+  // Feilteksten fra selve deploy-steget. Trekker ut linjene rundt «Error:»
+  // — hele loggen er hundrevis av linjer, og det er de fire som betyr noe.
+  async function hentFeiltekst(runId){
+    const svar = await ghGet('/actions/runs/' + runId + '/jobs');
+    const jobber = svar && svar.ok ? svar.data : null;
+    const jobb = jobber && jobber.jobs && jobber.jobs[0];
+    if(!jobb) return '';
+    // Loggen krever token med repo-lesing. Har vi den ikke, sier vi det
+    // heller enn å finne på en årsak.
+    const cfg = loadConfig();
+    if(!cfg.token) return '';
+    try{
+      const r = await fetch('https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo +
+        '/actions/jobs/' + jobb.id + '/logs', {
+        headers: { 'Authorization': 'Bearer ' + cfg.token }, cache: 'no-store' });
+      if(!r.ok) return '';
+      const tekst = await r.text();
+      const linjer = tekst.split('\n');
+      const ut = [];
+      linjer.forEach((l, i) => {
+        if(/error|Parse Error|exit code/i.test(l)){
+          for(let k = Math.max(0, i - 2); k <= Math.min(linjer.length - 1, i + 4); k++){
+            const ren = linjer[k].replace(/^\S+\s/, '').trimEnd();
+            if(ren && ut.indexOf(ren) === -1) ut.push(ren);
+          }
+        }
+      });
+      return ut.slice(0, 20).join('\n');
+    }catch(e){ return ''; }
+  }
+
+  // Feilen fra en mislykket utlegging, i klartekst og til å kopiere.
+  async function visUtleggingsfeil(run){
+    showStatus('🛑 Utleggingen FEILET. Filen ligger i GitHub, men er IKKE på nettstedet.', 'err');
+    const boks = document.getElementById('utleggingBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+    boks.innerHTML = '<div class="ut-tittel">🛑 Siste utlegging feilet</div>' +
+      '<div class="ut-sub">' + escapeHtmlPT(run.display_title || run.name || '') +
+      ' · ' + visTidStr(run.created_at) + '</div>' +
+      '<div class="ut-sub">Henter årsaken…</div>';
+    const tekst = await hentFeiltekst(run.id);
+    const url = run.html_url || '';
+    boks.innerHTML =
+      '<div class="ut-tittel">🛑 Siste utlegging feilet</div>' +
+      '<div class="ut-sub">' + escapeHtmlPT(run.display_title || run.name || '') +
+      ' · ' + visTidStr(run.created_at) + '</div>' +
+      (tekst
+        ? '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(tekst) + '</pre>' +
+          '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier årsaken</button>'
+        : '<div class="ut-sub">Årsaken ligger i kjøringsloggen. Den krever et token med lesetilgang til repoet — ' +
+          'åpne kjøringen for å se den.</div>') +
+      (url ? '<div class="ut-sub"><a href="' + url + '" target="_blank" rel="noopener">Åpne kjøringen på GitHub →</a></div>' : '');
+  }
+
+  // 🔴 Id-en må sendes med. To bokser kan stå på skjermen samtidig —
+  // utleggingsstatus og rapport — og begge skrev sin logg med id
+  // «utLogg». getElementById gir da den FØRSTE i dokumentet, så
+  // kopiknappen i den nederste boksen kopierte den øverstes tekst.
+  window.kopierUtlegging = function(id){
+    const el = document.getElementById(id || 'utLogg');
+    if(!el) return;
+    navigator.clipboard.writeText(el.textContent)
+      .then(() => showStatus('Årsaken er kopiert.', 'ok'))
+      .catch(() => showStatus('Kunne ikke kopiere — merk teksten manuelt.', 'err'));
+  };
+
+  function escapeHtmlPT(x){
+    return String(x == null ? '' : x).replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // «SJEKK UTLEGGINGEN» — hva ligger i GitHub uten å være på nettet?
+  //
+  // Det var dette spørsmålet ingen kunne svare på i en halv time.
+  // Kjøringene leses nyeste først: alt som er publisert ETTER siste
+  // vellykkede utlegging, ligger i repoet og ingen andre steder.
+  // ═══════════════════════════════════════════════════════════════════
+  // 🔴 visTid() tar et Date-OBJEKT. GitHub svarer med ISO-tekst, og
+  // teksten har ingen toLocaleDateString — kallet kastet, midt i
+  // opptegningen. Boksen ble stående på det jeg hadde skrevet først, og
+  // svaret kom «umiddelbart» fordi det aldri kom noe svar i det hele tatt.
+  function visTidStr(iso){
+    const d = new Date(iso);
+    return isNaN(d) ? String(iso || '') : visTid(d);
+  }
+
+  window.sjekkUtlegging = async function(){
+    try{ await sjekkUtleggingInternt(); }
+    catch(e){
+      // Uten denne forsvant enhver feil i opptegningen sporløst — og
+      // det er nettopp den tilstanden knappen finnes for å avskaffe.
+      const b = document.getElementById('utleggingBoks');
+      if(b){
+        b.style.display = 'block';
+        b.innerHTML = '<div class="ut-tittel">Noe gikk galt i visningen</div>' +
+          '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(e && e.message ? e.message : e) + '</pre>' +
+          '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier meldingen</button>';
+      }
+    }
+  };
+
+  async function sjekkUtleggingInternt(){
+    const boks = document.getElementById('utleggingBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+
+    // 🔴 Lenken skrives FØR spørringen, ikke etter.
+    //
+    // Første utgave viste «Leser kjøringene…» og ventet på GitHub. Svarte
+    // GitHub ikke — eller manglet tokenet lesetilgang til Actions — ble
+    // den setningen stående, og knappen ga ingenting i det hele tatt.
+    //
+    // Selve svaret ligger på Actions-siden uansett. Den lenken krever
+    // ingen token og kan ikke feile, så den står her med en gang.
+    // Klarer vi å lese statusen i tillegg, er det en bonus — ikke
+    // forutsetningen for at knappen skal være til nytte.
+    const cfg = loadConfig();
+    const aksjonURL = (cfg && cfg.owner && cfg.repo)
+      ? 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/actions/workflows/' + DEPLOY_WORKFLOW
+      : '';
+    const lenkeblokk = aksjonURL
+      ? '<div class="ut-sub"><a href="' + aksjonURL + '" target="_blank" rel="noopener">' +
+        '🔗 Åpne utleggingene på GitHub →</a><br>' +
+        'Grønn hake = filene er ute. Rødt kryss = de ligger i GitHub, men ikke på nettstedet.</div>'
+      : '<div class="ut-sub">Lagre oppsettet (eier og repo) for å få lenken hit.</div>';
+
+    boks.innerHTML = '<div class="ut-tittel">Utleggingen</div>' + lenkeblokk +
+      '<div class="ut-sub" id="utAuto">Prøver også å lese statusen automatisk…</div>';
+
+    const svar = await hentKjoringer(15);
+    const auto = document.getElementById('utAuto');
+    // Feiler den automatiske lesingen, mister vi bare bonusen — lenken
+    // over står fortsatt, og den er det viktigste.
+    if(svar.feil){
+      if(auto) auto.innerHTML = 'Kunne ikke lese statusen automatisk. Bruk lenken over.<br>' +
+        '<span style="color:#96a29a;">' + escapeHtmlPT(svar.feil) + '</span>';
+      return;
+    }
+    const kj = svar.liste;
+    if(kj.length === 0){
+      if(auto) auto.textContent = 'Arbeidsflyten har ikke kjørt ennå.';
+      return;
+    }
+    if(auto) auto.remove();
+
+    const sisteOk = kj.find(r => r.status === 'completed' && r.conclusion === 'success');
+    const siste = kj[0];
+
+    // Alt som ble publisert etter siste vellykkede utlegging.
+    const grense = sisteOk ? new Date(sisteOk.created_at).getTime() : 0;
+    const etterpa = kj.filter(r => new Date(r.created_at).getTime() > grense);
+
+    let html = '';
+    if(siste.status !== 'completed'){
+      html += '<div class="ut-tittel">⏳ En utlegging pågår</div>' +
+        '<div class="ut-sub">' + escapeHtmlPT(siste.display_title || '') + '</div>';
+    } else if(siste.conclusion === 'success'){
+      html += '<div class="ut-tittel ok">✓ Alt er ute</div>' +
+        '<div class="ut-sub">Siste utlegging lyktes ' + visTidStr(siste.created_at) + '.</div>';
+    } else {
+      html += '<div class="ut-tittel">🛑 Siste utlegging ' +
+        (siste.conclusion === 'cancelled' ? 'ble avbrutt' : 'feilet') + '</div>';
+      // 🔴 Denne listen er hele poenget: filene som ligger i GitHub uten
+      // å være på nettstedet. Uten den ser man bare at «noe feilet», og
+      // ikke hva som mangler ute.
+      const strandet = etterpa.filter(r => r.conclusion !== 'success');
+      if(strandet.length){
+        html += '<div class="ut-sub">Publisert, men <b>ikke ute</b>:</div><ul class="ut-liste">' +
+          strandet.map(r => '<li>' + escapeHtmlPT(r.display_title || r.name || '') +
+            ' <span class="ut-tid">' + visTidStr(r.created_at) + '</span></li>').join('') +
+          '</ul>';
+      }
+      html += '<div class="ut-sub">Retter du årsaken og publiserer på nytt, går <b>alt</b> ut samtidig — ' +
+        'utleggingen laster opp hele treet, ikke bare den siste filen.</div>';
+    }
+    boks.innerHTML = html + lenkeblokk;
+
+    if(siste.status === 'completed' && siste.conclusion !== 'success' && siste.conclusion !== 'cancelled'){
+      const tekst = await hentFeiltekst(siste.id);
+      boks.innerHTML += tekst
+        ? '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(tekst) + '</pre>' +
+          '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier årsaken</button>'
+        : '<div class="ut-sub">Åpne kjøringen for å se årsaken — loggen krever token med repo-lesing.</div>';
+      if(siste.html_url){
+        boks.innerHTML += '<div class="ut-sub"><a href="' + siste.html_url +
+          '" target="_blank" rel="noopener">Åpne kjøringen på GitHub →</a></div>';
+      }
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // RAPPORTEN — det som skal stå først i en ny samtale.
+  //
+  // Verktøyet vet nøyaktig hva som er publisert, når, og om det nådde
+  // nettstedet. Det er akkurat den delen av bakgrunnen som ellers må
+  // gjenfortelles hver gang, og som er lett å huske feil.
+  //
+  // ⚠️ HVA DEN IKKE ER:
+  // Rapporten sier HVA som ble endret, aldri HVORFOR. Beslutninger,
+  // avveininger og det som fortsatt står åpent, ligger i
+  // PROJECT-SUMMARY-AR.md. Rapporten erstatter ikke sammendraget —
+  // den forteller hvor sammendraget slutter og virkeligheten fortsetter.
+  //
+  // Kilden er commit-listen hos GitHub, ikke den lokale boken: boken
+  // finnes bare i denne nettleseren, mens commitene ser alt som er
+  // publisert uansett hvorfra.
+  // ═══════════════════════════════════════════════════════════════════
+  async function hentCommits(antall){
+    const r = await ghGet('/commits?per_page=' + (antall || 60));
+    if(!r.ok) return { feil: r.grunn, liste: [] };
+    return { feil: null, liste: (r.data || []).map(c => ({
+      dato: (c.commit && c.commit.author && c.commit.author.date) || '',
+      melding: (c.commit && c.commit.message || '').split('\n')[0]
+    })) };
+  }
+
+  // «Oppdater felles.js via publiseringsverktøy»  → felles.js
+  // «Oppdater admin.html — la til skoleår»        → admin.html + notat
+  // 🔴 «via publiseringsverktøy» må bort FØR mønsteret prøves.
+  //
+  // Første utgave lette etter «Oppdater X — notat» og fjernet halen
+  // etterpå. Men de aller fleste commitene har ingen notat og ser slik
+  // ut: «Oppdater felles.js via publiseringsverktøy». Halen falt da
+  // utenfor mønsteret, og filen forsvant fra rapporten.
+  //
+  // Rapporten ville altså vist bare de filene du husket å skrive en
+  // beskrivelse til — og sett komplett ut mens den manglet flertallet.
+  function tolkCommit(melding){
+    const ren = String(melding).replace(/\s*via publiseringsverktøy\s*$/, '').trim();
+    const m = ren.match(/^Oppdater\s+(\S+?)(?:\s+—\s+(.*))?$/);
+    if(!m) return { fil: null, notat: ren };
+    return { fil: m[1], notat: (m[2] || '').trim() };
+  }
+
+  window.lagRapport = async function(){
+    const boks = document.getElementById('rapportBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+    boks.innerHTML = '<div class="ut-sub">Setter sammen rapporten…</div>';
+
+    const cfg = loadConfig();
+    const dager = parseInt((document.getElementById('rapportDager') || {}).value, 10) || 7;
+    const grense = Date.now() - dager * 86400000;
+
+    const [c, k] = await Promise.all([hentCommits(80), hentKjoringer(20, HOSTING_WORKFLOW)]);
+    if(c.feil){
+      boks.innerHTML = '<div class="ut-tittel">Kunne ikke lage rapporten</div>' +
+        '<pre class="ut-logg" id="rapportFeilLogg">' + escapeHtmlPT(c.feil) + '</pre>' +
+        '<button class="btn btn-ghost" onclick="kopierUtlegging(\'rapportFeilLogg\')">📋 Kopier meldingen</button>';
+      return;
+    }
+
+    // Én linje per fil, med SISTE tidspunkt — ikke én linje per
+    // publisering. Publiserer man samme fil fem ganger på en dag, er det
+    // fortsatt én fil som er endret.
+    const perFil = new Map();
+    c.liste.forEach(x => {
+      const t = new Date(x.dato).getTime();
+      if(!t || t < grense) return;
+      const { fil, notat } = tolkCommit(x.melding);
+      if(!fil) return;
+      const f = perFil.get(fil) || { fil, sist: 0, antall: 0, notater: [] };
+      f.antall++;
+      if(t > f.sist) f.sist = t;
+      if(notat && f.notater.indexOf(notat) === -1) f.notater.push(notat);
+      perFil.set(fil, f);
+    });
+    const filer = [...perFil.values()].sort((a, b) => b.sist - a.sist);
+
+    const sisteOk = k.liste.find(r => r.status === 'completed' && r.conclusion === 'success');
+    const siste = k.liste[0];
+    let utlegg;
+    if(!siste) utlegg = 'ukjent — fant ingen kjøringer';
+    else if(siste.status !== 'completed') utlegg = '⏳ en utlegging pågår akkurat nå';
+    else if(siste.conclusion === 'success') utlegg = '✓ alt er ute (siste utlegging ' + visTidStr(siste.created_at) + ')';
+    else utlegg = '🛑 SISTE UTLEGGING FEILET ' + visTidStr(siste.created_at) +
+      ' — filer publisert etter dette ligger i GitHub, men er IKKE på nettstedet';
+
+    const linjer = [];
+    linjer.push('## Status for Madina Skole — ' + visTid(new Date()));
+    linjer.push('');
+    linjer.push('Repo: ' + (cfg ? cfg.owner + '/' + cfg.repo + ' (' + cfg.branch + ')' : '—'));
+    linjer.push('Utlegging: ' + utlegg);
+    linjer.push('');
+    linjer.push('### Filer publisert siste ' + dager + ' døgn');
+    if(filer.length === 0){
+      linjer.push('(ingen)');
+    } else {
+      filer.forEach(f => {
+        linjer.push('- **' + f.fil + '** — ' + visTidStr(new Date(f.sist).toISOString()) +
+          (f.antall > 1 ? ' (' + f.antall + ' publiseringer)' : '') +
+          (f.notater.length ? ' · ' + f.notater.join('; ') : ''));
+      });
+    }
+    linjer.push('');
+    linjer.push('---');
+    linjer.push('Denne listen sier HVA som er endret, ikke HVORFOR.');
+    linjer.push('Beslutninger og det som står åpent: PROJECT-SUMMARY-AR.md.');
+
+    const tekst = linjer.join('\n');
+    boks.innerHTML =
+      '<div class="ut-tittel">📋 Rapport</div>' +
+      '<pre class="ut-logg" id="rapportTekst">' + escapeHtmlPT(tekst) + '</pre>' +
+      '<button class="btn btn-primary" onclick="kopierRapport()">📋 Kopier rapporten</button>';
+  };
+
+  window.kopierRapport = function(){
+    const el = document.getElementById('rapportTekst');
+    if(!el) return;
+    navigator.clipboard.writeText(el.textContent)
+      .then(() => showStatus('Rapporten er kopiert. Lim den inn først i den nye samtalen.', 'ok'))
+      .catch(() => showStatus('Kunne ikke kopiere — merk teksten manuelt.', 'err'));
+  };
+
+  async function publishFileToGitHub(path, content, notat){
+    const cfg = loadConfig();
+    const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
+    const headers = {
+      'Authorization': 'Bearer ' + cfg.token,
+      'Accept': 'application/vnd.github+json'
+    };
+    try{
+      let sha = null;
+      const getRes = await fetch(apiBase + '?ref=' + encodeURIComponent(cfg.branch), { headers, cache: 'no-store' });
+      if(getRes.status === 200){
+        const getData = await getRes.json();
+        sha = getData.sha;
+      } else if(getRes.status !== 404){
+        const errData = await getRes.json().catch(()=>({}));
+        throw new Error('Kunne ikke hente filen (status ' + getRes.status + '): ' + (errData.message || ''));
+      }
+      const putBody = {
+        message: (function(){
+          // Notatet kan komme med som argument (flerfil-publisering, der
+          // ett notat gjelder hele leveransen) eller fra feltet over
+          // (enkeltfil). Uten det første fikk hver fil i en leveranse
+          // meldingen «via publiseringsverktøy» — og rapporten senere
+          // hadde ingen beskrivelse å vise for noen av dem.
+          const note = notat !== undefined && notat !== null
+            ? notat
+            : (document.getElementById('commitNote') || {}).value;
+          const base = 'Oppdater ' + path;
+          return note && String(note).trim()
+            ? base + ' — ' + String(note).trim()
+            : base + ' via publiseringsverktøy';
+        })(),
+        content: toBase64(stemplFil(path, content)),
+        branch: cfg.branch
+      };
+      if(sha) putBody.sha = sha;
+      const putRes = await fetch(apiBase, {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(putBody),
+        cache: 'no-store'
+      });
+      if(putRes.status === 200 || putRes.status === 201){
+        recordPublished(path);
+        // Avtrykket lagres av innholdet slik DU hadde det — uten stempel.
+        // Det er nettopp den formen filen har neste gang du laster den opp
+        // fra telefonen.
+        bokførPublisering(path, content);
+        return { ok: true };
+      }
+      const errData = await putRes.json().catch(()=>({}));
+      return { ok: false, message: 'Feil (status ' + putRes.status + '): ' + (errData.message || 'Ukjent feil') };
+    } catch(err){
+      console.error(err);
+      return { ok: false, message: err.message };
+    }
+  }
+
+  // Settes bare av «Publiser likevel», og nullstilles så snart filen,
+  // innholdet eller filstien endrer seg — slik at en overstyring aldri
+  // henger igjen og gjelder for neste fil også.
+  let overstyrSperre = false;
+
+  window.nullstillSperre = function(){
+    overstyrSperre = false;
+    const p = document.getElementById('diffPanel');
+    if(p){ p.className = 'status'; p.textContent = ''; }
+    const b = document.getElementById('overstyrBtn');
+    if(b) b.style.display = 'none';
+  };
+
+  // Alle statusbokser vises og skjules med KLASSEN «show», aldri med
+  // style.display. Blandes de to, vinner en inline display:none over
+  // .status.show uansett — boksen fylles med tekst og forblir usynlig.
+  function visDiff(cls, tekst){
+    const p = document.getElementById('diffPanel');
+    p.className = 'status show ' + cls;
+    p.textContent = tekst;
+  }
+
+  // ===================================================================
+  // NEDLASTING
+  // -------------------------------------------------------------------
+  // Verktøyet henter allerede filinnhold fra GitHub ved hver kontroll —
+  // her lagres det ned i stedet for å kastes.
+  //
+  // Dette er ikke bare en bekvemmelighet: en fil hentet herfra HAR
+  // stempelet sitt i behold. Redigerer du den og laster den opp igjen,
+  // kjenner kontrollen alderen med én gang, uten å måtte grave i
+  // historikken. Det er den korte veien ut av hele problemet.
+  // ===================================================================
+  function lastNed(filnavn, innhold){
+    try{
+      const blob = new Blob([innhold], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filnavn;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+      return true;
+    } catch(err){
+      console.error('Nedlasting feilet:', err);
+      return false;
+    }
+  }
+
+  // Filnavnet uten mappe: «functions/index.js» lastes ned som «index.js».
+  // Da kjenner opplastingen filen igjen og legger den tilbake på riktig
+  // sti av seg selv.
+  function filnavnAv(sti){
+    return String(sti).split('/').pop();
+  }
+
+  window.lastNedPublisert = async function(){
+    const path = currentPath();
+    if(!path){
+      visDiff('warn', 'Velg en filsti først.');
+      return;
+    }
+    visDiff('busy', 'Henter ' + path + ' fra GitHub...');
+    try{
+      const repo = await hentPublisertFil(path);
+      if(!repo.finnes){
+        visDiff('warn', 'Filen «' + path + '» finnes ikke i repoet.');
+        return;
+      }
+      const ok = lastNed(filnavnAv(path), repo.innhold);
+      const stempel = lesStempel(repo.innhold);
+      visDiff(ok ? 'ok' : 'err', ok
+        ? '⬇️ Lastet ned ' + filnavnAv(path) + '\n\n' +
+          'Stempel: ' + (stempel ? visTid(stempel) : 'uten stempel') + '\n\n' +
+          'Denne kopien er den som ligger ute nå. Redigerer du den og laster ' +
+          'den opp igjen, går kontrollen umiddelbart — den slipper å lete i historikken.'
+        : '✗ Nettleseren tillot ikke nedlastingen.');
+    } catch(err){
+      visDiff('err', '✗ Kunne ikke hente filen: ' + err.message);
+    }
+  };
+
+  // Fylles av loggen, slik at en eldre versjon kan hentes ned uten å
+  // måtte spørre GitHub på nytt.
+  let loggVersjoner = [];
+
+  window.lastNedVersjon = function(){
+    const sel = document.getElementById('versjonValg');
+    const i = parseInt(sel.value, 10);
+    const v = loggVersjoner[i];
+    const boks = document.getElementById('loggResultat');
+    if(!v) return;
+    const sti = currentPath();
+    const navn = filnavnAv(sti).replace(/(\.[^.]+)$/, '__v' + (i + 1) + '_' +
+      v.commitDato.toISOString().slice(0, 10) + '$1');
+    const ok = lastNed(navn, v.innhold);
+    boks.className = 'status show ' + (ok ? 'ok' : 'err');
+    boks.textContent = ok
+      ? '⬇️ Lastet ned ' + navn + '\n\n' +
+        'Dette er versjon ' + (i + 1) + ', fra ' +
+        v.commitDato.toLocaleDateString('no-NO') + '.\n\n' +
+        'Navnet er merket med versjonsnummer med vilje, så den ikke ' +
+        'forveksles med arbeidsfilen din. Skal den publiseres, må navnet ' +
+        'settes tilbake til «' + filnavnAv(sti) + '» først.'
+      : '✗ Nettleseren tillot ikke nedlastingen.';
+  };
+
+  // Kopiering til utklippstavlen.
+  // MERK OM SAFARI: skrivingen må skje inne i selve trykket. Henter vi
+  // filen med await FØRST og kopierer etterpå, er trykket "brukt opp" og
+  // Safari nekter stille. Løsningen er å gi ClipboardItem et LØFTE om
+  // teksten — da holder Safari trykket åpent mens nedlastingen pågår.
+  // Løftet lages én gang og gjenbrukes, så filen aldri hentes to ganger.
+  async function kopierTekst(tekstLøfte){
+    try{
+      if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+        const blobLøfte = Promise.resolve(tekstLøfte)
+          .then(t => new Blob([t], { type: 'text/plain' }));
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blobLøfte })]);
+        return true;
+      }
+    } catch(err){ console.warn('clipboard.write feilet, prøver writeText:', err); }
+
+    try{
+      await navigator.clipboard.writeText(await tekstLøfte);
+      return true;
+    } catch(err){ console.warn('writeText feilet, prøver execCommand:', err); }
+
+    // Siste utvei for eldre nettlesere.
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = await tekstLøfte;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch(err){
+      console.error('Kopiering feilet:', err);
+      return false;
+    }
+  }
+
+  window.kopierPublisert = function(){
+    const path = currentPath();
+    if(!path){
+      visDiff('warn', 'Velg en filsti først.');
+      return;
+    }
+    visDiff('busy', 'Henter ' + path + ' og kopierer...');
+    // Ingen await før kopieringen starter — se merknaden over.
+    const tekstLøfte = hentPublisertFil(path).then(repo => {
+      if(!repo.finnes) throw new Error('filen finnes ikke i repoet');
+      return repo.innhold;
+    });
+    kopierTekst(tekstLøfte).then(async ok => {
+      if(!ok){
+        visDiff('err', '✗ Nettleseren tillot ikke kopiering. Bruk «Last ned» i stedet.');
+        return;
+      }
+      try{
+        const tekst = await tekstLøfte;
+        const stempel = lesStempel(tekst);
+        visDiff('ok', '📋 Kopiert ' + filnavnAv(path) + ' til utklippstavlen\n\n' +
+          'Stempel: ' + (stempel ? visTid(stempel) : 'uten stempel') + '\n' +
+          Math.round(tekst.length / 1024) + ' kB\n\n' +
+          'Denne kopien er den som ligger ute nå. Lim den inn i editoren, ' +
+          'gjør endringene dine, og kontrollen går umiddelbart neste gang.');
+      } catch(err){
+        visDiff('err', '✗ ' + err.message);
+      }
+    });
+  };
+
+  window.kopierVersjon = function(){
+    const i = parseInt(document.getElementById('versjonValg').value, 10);
+    const v = loggVersjoner[i];
+    const boks = document.getElementById('loggResultat');
+    if(!v) return;
+    kopierTekst(Promise.resolve(v.innhold)).then(ok => {
+      boks.className = 'status show ' + (ok ? 'ok' : 'err');
+      boks.textContent = ok
+        ? '📋 Kopiert versjon ' + (i + 1) + ' (' +
+          v.commitDato.toLocaleDateString('no-NO') + ') til utklippstavlen — ' +
+          Math.round(v.innhold.length / 1024) + ' kB.'
+        : '✗ Nettleseren tillot ikke kopiering. Bruk «Last ned» i stedet.';
+    });
+  };
+
+
+  // ===================================================================
+  // HELE PROSJEKTET I ÉN FIL
+  // -------------------------------------------------------------------
+  // Henter hver tekstfil i repoet og pakker dem i ett ZIP-arkiv, sammen
+  // med prosjektsammendraget. Ment for å starte en ny samtale med Claude:
+  // ett trykk her, én fil å legge ved, og innholdet er hentet fra GitHub
+  // — ikke fra kopier som ligger og slenger på telefonen.
+  //
+  // Arkivet skrives uten komprimering («store»). Det gjør filen større,
+  // men koden kort og uten noe eksternt bibliotek å holde ved like.
+  // Binærfiler (bilder o.l.) utelates med vilje: de kan ikke leses som
+  // tekst, og hører ikke hjemme i en samtale om koden.
+  // ===================================================================
+  const TEKST_ENDELSER = ['.html','.js','.json','.css','.rules','.yml','.yaml','.md','.txt','.svg'];
+
+  // Låsefiler er hundrevis av kilobyte maskingenerert støy og hører ikke
+  // hjemme i et arkiv som skal leses av et menneske eller en samtale.
+  const UTELATT = ['package-lock.json', 'yarn.lock'];
+
+  function erTekstfil(sti){
+    const lav = sti.toLowerCase();
+    if(UTELATT.some(u => lav.endsWith(u))) return false;
+    return TEKST_ENDELSER.some(e => lav.endsWith(e));
+  }
+
+  const CRC_TAB = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[i] = c >>> 0;
+    }
+    return t;
+  })();
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LESE ET ZIP-ARKIV — uten bibliotek.
+  //
+  // Verktøyet PAKKER allerede et arkiv (lagZip under). Å lese ett er den
+  // samme strukturen baklengs, og nettleseren kan pakke ut selv med
+  // DecompressionStream. Et bibliotek fra et CDN ville lagt en ny
+  // avhengighet inn i det ene verktøyet man trenger når noe er galt —
+  // og det er nettopp da et CDN ikke skal kunne svikte.
+  //
+  // Leser sentralkatalogen bakfra (slik formatet er ment å leses), ikke
+  // de lokale hodene forfra: bare katalogen vet sikkert hvor hver fil
+  // begynner og hvor lang den er.
+  // ═══════════════════════════════════════════════════════════════════
+  async function lesZip(arrayBuffer){
+    const dv = new DataView(arrayBuffer);
+    const u8 = new Uint8Array(arrayBuffer);
+
+    // Slutten av sentralkatalogen (EOCD) ligger bakerst, etter en
+    // kommentar som kan være opptil 65535 tegn. Derfor leter vi bakfra.
+    let eocd = -1;
+    for(let i = u8.length - 22; i >= 0 && i >= u8.length - 65557; i--){
+      if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+    }
+    if(eocd < 0) throw new Error('Fant ingen ZIP-katalog — er filen et gyldig arkiv?');
+
+    const antall = dv.getUint16(eocd + 10, true);
+    let p = dv.getUint32(eocd + 16, true);
+    const ut = [];
+
+    for(let i = 0; i < antall; i++){
+      if(dv.getUint32(p, true) !== 0x02014b50) throw new Error('Uventet innhold i ZIP-katalogen.');
+      const metode   = dv.getUint16(p + 10, true);
+      const komp     = dv.getUint32(p + 20, true);
+      const navnLen  = dv.getUint16(p + 28, true);
+      const ekstraLen= dv.getUint16(p + 30, true);
+      const kommLen  = dv.getUint16(p + 32, true);
+      const lokal    = dv.getUint32(p + 42, true);
+      const navn     = new TextDecoder('utf-8').decode(u8.slice(p + 46, p + 46 + navnLen));
+      p += 46 + navnLen + ekstraLen + kommLen;
+
+      // Mapper og Mac-ens skjulte filer hører ikke hjemme i listen.
+      if(navn.endsWith('/') || navn.startsWith('__MACOSX/') ||
+         navn.split('/').pop().startsWith('.')) continue;
+
+      // Det lokale hodet har sine EGNE lengdefelter for navn og ekstra —
+      // de er ofte ulike katalogens, og bruker man katalogens her,
+      // begynner dataene noen byte for tidlig eller for sent.
+      const lNavnLen   = dv.getUint16(lokal + 26, true);
+      const lEkstraLen = dv.getUint16(lokal + 28, true);
+      const start = lokal + 30 + lNavnLen + lEkstraLen;
+      const rå = u8.slice(start, start + komp);
+
+      let data;
+      if(metode === 0){
+        data = rå;                                   // lagret uten komprimering
+      } else if(metode === 8){
+        const ds = new DecompressionStream('deflate-raw');
+        const strøm = new Blob([rå]).stream().pipeThrough(ds);
+        data = new Uint8Array(await new Response(strøm).arrayBuffer());
+      } else {
+        throw new Error('Filen «' + navn + '» bruker en komprimering verktøyet ikke kjenner.');
+      }
+      ut.push({ navn: navn.split('/').pop(), sti: navn,
+                innhold: new TextDecoder('utf-8').decode(data) });
+    }
+    return ut;
+  }
+
+  function crc32(bytes) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) c = CRC_TAB[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function dosTid(d) {
+    const tid = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+    const dato = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+    return { tid, dato };
+  }
+
+  function lagZip(filer) {
+    const enc = new TextEncoder();
+    const { tid, dato } = dosTid(new Date());
+    const lokale = [];
+    const sentrale = [];
+    let offset = 0;
+
+    for (const f of filer) {
+      const navn = enc.encode(f.navn);
+      const data = f.bytes;
+      const crc = crc32(data);
+
+      const lh = new Uint8Array(30 + navn.length);
+      const lv = new DataView(lh.buffer);
+      lv.setUint32(0, 0x04034b50, true);
+      lv.setUint16(4, 20, true);
+      lv.setUint16(6, 0x0800, true);   // UTF-8 filnavn
+      lv.setUint16(8, 0, true);        // metode 0 = store
+      lv.setUint16(10, tid, true);
+      lv.setUint16(12, dato, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, data.length, true);
+      lv.setUint32(22, data.length, true);
+      lv.setUint16(26, navn.length, true);
+      lv.setUint16(28, 0, true);
+      lh.set(navn, 30);
+      lokale.push(lh, data);
+
+      const ch = new Uint8Array(46 + navn.length);
+      const cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, tid, true);
+      cv.setUint16(14, dato, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, data.length, true);
+      cv.setUint32(24, data.length, true);
+      cv.setUint16(28, navn.length, true);
+      cv.setUint32(42, offset, true);
+      ch.set(navn, 46);
+      sentrale.push(ch);
+
+      offset += lh.length + data.length;
+    }
+
+    const sdStart = offset;
+    let sdLen = 0;
+    for (const c of sentrale) sdLen += c.length;
+
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, filer.length, true);
+    ev.setUint16(10, filer.length, true);
+    ev.setUint32(12, sdLen, true);
+    ev.setUint32(16, sdStart, true);
+
+    const deler = [...lokale, ...sentrale, eocd];
+    let total = 0;
+    for (const d of deler) total += d.length;
+    const ut = new Uint8Array(total);
+    let p = 0;
+    for (const d of deler) { ut.set(d, p); p += d.length; }
+    return ut;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SISTE OPPDATERINGER
+  //
+  // Én linje per fil: når ble den sist publisert, og av hvem.
+  //
+  // Tidspunktet hentes fra commit-historikken (/commits?path=...), ikke
+  // fra SIST-ENDRET-stempelet inne i filen. Stempelet sier når innholdet
+  // ble laget; historikken sier når det ble lagt ut. Som regel det
+  // samme — men når de spriker, er det historikken som forteller hva som
+  // faktisk ligger ute.
+  //
+  // Én forespørsel per fil er nødvendig: GitHubs tre-API gir ingen
+  // datoer. Med rundt ti tekstfiler er det ti kall, og de kjøres bare
+  // når noen trykker på knappen.
+  // ═══════════════════════════════════════════════════════════════════
+  // Filnavn og navnet paa den som publiserte kommer fra GitHub. Et navn
+  // med < eller & ville ellers brutt oppsettet, eller sneket inn markup.
+  function escTekst(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  window.visSisteOppdateringer = async function(){
+    const cfg = loadConfig();
+    const boks = document.getElementById('tidStatus');
+    const liste = document.getElementById('tidListe');
+    const btn = document.getElementById('tidBtn');
+    const vis = (cls, tekst) => { boks.className = 'status show ' + cls; boks.textContent = tekst; };
+
+    if(!cfg.token){ vis('err', 'Mangler token — fyll ut innstillingene først.'); return; }
+
+    btn.disabled = true;
+    liste.innerHTML = '';
+    vis('busy', 'Henter fillisten…');
+
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' };
+
+    try{
+      const treRes = await fetch(base + '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1',
+        { headers, cache: 'no-store' });
+      if(!treRes.ok) throw new Error('filliste: HTTP ' + treRes.status);
+      const tre = await treRes.json();
+
+      const stier = (tre.tree || [])
+        .filter(n => n.type === 'blob' && erTekstfil(n.path))
+        .map(n => n.path).sort();
+      if(stier.length === 0) throw new Error('fant ingen tekstfiler');
+
+      const rader = [];
+      for(let i = 0; i < stier.length; i++){
+        const sti = stier[i];
+        vis('busy', 'Henter ' + (i + 1) + ' av ' + stier.length + '\n' + sti);
+        try{
+          const r = await fetch(base + '/commits?path=' + encodeURIComponent(sti) +
+            '&sha=' + encodeURIComponent(cfg.branch) + '&per_page=1',
+            { headers, cache: 'no-store' });
+          if(!r.ok) throw new Error('HTTP ' + r.status);
+          const c = await r.json();
+          if(!c.length){ rader.push({ sti, dato: null }); continue; }
+          const co = c[0];
+          rader.push({
+            sti,
+            dato: new Date(co.commit.author.date),
+            hvem: (co.commit.author.name || '').split(' ')[0],
+            melding: (co.commit.message || '').split('\n')[0]
+          });
+        } catch(err){
+          rader.push({ sti, dato: null, feil: err.message });
+        }
+      }
+
+      // Nyeste først: det man lurer på er som regel hva som skjedde sist.
+      rader.sort((a, b) => (b.dato ? b.dato.getTime() : 0) - (a.dato ? a.dato.getTime() : 0));
+      tegnTidsliste(rader);
+      vis('ok', stier.length + ' filer. Trykk «Kopier listen» for å ta den med til Claude.');
+    } catch(err){
+      vis('err', 'Kunne ikke hente tidspunktene:\n' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  function alderTekst(dato){
+    if(!dato) return '';
+    const timer = (Date.now() - dato.getTime()) / 36e5;
+    if(timer < 1) return 'nå nettopp';
+    if(timer < 24) return Math.round(timer) + ' t siden';
+    const dager = Math.round(timer / 24);
+    if(dager === 1) return 'i går';
+    if(dager < 30) return dager + ' dager siden';
+    const mnd = Math.round(dager / 30);
+    return mnd + (mnd === 1 ? ' måned siden' : ' måneder siden');
+  }
+
+  function tegnTidsliste(rader){
+    const el = document.getElementById('tidListe');
+    const fmt = (d) => d.toLocaleString('no-NO',
+      { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    // Filer som ikke er rørt på en uke merkes. Ikke som en feil — mange
+    // filer ligger ferdige i månedsvis — men fordi det er nettopp de man
+    // lettest tror man har den nyeste utgaven av.
+    const uke = 7 * 24 * 36e5;
+
+    el.innerHTML = '<div class="tid-liste">' + rader.map(r => {
+      if(!r.dato){
+        return `<div class="tid-rad">
+          <span class="tid-fil">${escTekst(r.sti)}</span>
+          <span class="tid-ukjent">${r.feil ? 'kunne ikke hentes' : 'ingen historikk'}</span>
+        </div>`;
+      }
+      const gammel = (Date.now() - r.dato.getTime()) > uke;
+      return `<div class="tid-rad">
+        <span class="tid-fil">${escTekst(r.sti)}</span>
+        <span class="tid-nar${gammel ? ' gammel' : ''}">
+          ${fmt(r.dato)}
+          <span class="tid-alder">${alderTekst(r.dato)}${r.hvem ? ' · ' + escTekst(r.hvem) : ''}</span>
+        </span>
+      </div>`;
+    }).join('') + '</div>' +
+    '<button class="btn btn-ghost" style="margin-top:12px;" onclick="kopierTidsliste()">📋 Kopier listen</button>';
+
+    // Teksten legges klar med én gang, i et format som er lett å lime inn
+    // i en samtale: fast bredde, nyeste først, ingen pynt.
+    window.__tidstekst = 'PUBLISERT PÅ ' + loadConfig().repo + ' (' +
+      new Date().toLocaleString('no-NO') + ')\n\n' +
+      rader.map(r => {
+        const navn = r.sti.padEnd(26);
+        if(!r.dato) return navn + (r.feil ? 'kunne ikke hentes' : 'ingen historikk');
+        return navn + fmt(r.dato) + '   ' + alderTekst(r.dato);
+      }).join('\n');
+  }
+
+  window.kopierTidsliste = async function(){
+    const boks = document.getElementById('tidStatus');
+    try{
+      await navigator.clipboard.writeText(window.__tidstekst || '');
+      boks.className = 'status show ok';
+      boks.textContent = '✓ Listen er kopiert. Lim den inn i første melding til Claude.';
+    } catch(err){
+      // Utklippstavlen er sperret i noen nettlesere. Vis teksten i stedet
+      // for å si «kopiering feilet» og la brukeren stå uten listen.
+      boks.className = 'status show';
+      boks.textContent = window.__tidstekst || '';
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // NEDLASTING — alt, eller det du krysser av.
+  //
+  // 🔴 Hele repoet er over én megabyte, og det meste av det er filer som
+  // uansett blir bedt om på nytt når de trengs. Verre: de store filene er
+  // de som endrer seg oftest — index4.html ble publisert seks ganger 15.
+  // august. Et arkiv fra i går inneholder da en fil som er feil fra
+  // første minutt.
+  //
+  // «Ny samtale» tar med de tre som faktisk bærer sammenhengen:
+  // sammendraget (hvorfor), reglene (hvem får se hva) og firebase.json
+  // (ruter og mellomlagring). Resten hentes når den trengs — og da er den
+  // fersk.
+  // ═══════════════════════════════════════════════════════════════════
+  const SAMTALE_FILER = ['PROJECT-SUMMARY-AR.md', 'firestore.rules', 'firebase.json'];
+
+  // Rapporten legges INNE i arkivet, som eget notat. Da sier arkivet selv
+  // hvor sammendraget slutter og virkeligheten fortsetter — uten at man
+  // må huske å kopiere noe ved siden av.
+  window.lastNedSamtale = async function(){
+    const btn = document.getElementById('samtaleBtn');
+    if(btn) btn.disabled = true;
+    showAltStatus('busy', 'Setter sammen rapporten…');
+    let notat = '';
+    try{
+      const [c, k] = await Promise.all([hentCommits(80), hentKjoringer(20, HOSTING_WORKFLOW)]);
+      const linjer = ['# Status ved start av samtalen', '',
+        'Laget ' + visTid(new Date()) + '.', ''];
+      if(k.feil || !k.liste[0]) linjer.push('Utlegging: ukjent — kunne ikke leses.');
+      else {
+        const siste = k.liste[0];
+        linjer.push('Utlegging: ' + (siste.status !== 'completed' ? 'pågår nå'
+          : siste.conclusion === 'success' ? '✓ alt er ute (' + visTidStr(siste.created_at) + ')'
+          : '🛑 SISTE UTLEGGING FEILET ' + visTidStr(siste.created_at) +
+            ' — filer publisert etter dette ligger i GitHub, men er IKKE på nettstedet'));
+      }
+      linjer.push('', '## Filer endret siste 7 døgn', '');
+      if(c.feil){ linjer.push('(kunne ikke leses: ' + c.feil + ')'); }
+      else {
+        const grense = Date.now() - 7*86400000;
+        const per = new Map();
+        c.liste.forEach(x => {
+          const t = new Date(x.dato).getTime();
+          if(!t || t < grense) return;
+          const { fil, notat } = tolkCommit(x.melding);
+          if(!fil) return;
+          const f = per.get(fil) || { sist:0, antall:0, notater:[] };
+          f.antall++; if(t > f.sist) f.sist = t;
+          if(notat && f.notater.indexOf(notat) === -1) f.notater.push(notat);
+          per.set(fil, f);
+        });
+        if(per.size === 0) linjer.push('(ingen)');
+        [...per.entries()].sort((a,b) => b[1].sist - a[1].sist).forEach(([fil, f]) => {
+          linjer.push('- **' + fil + '** — ' + visTidStr(new Date(f.sist).toISOString()) +
+            (f.antall > 1 ? ' (' + f.antall + ' publiseringer)' : '') +
+            (f.notater.length ? ' · ' + f.notater.join('; ') : ''));
+        });
+      }
+      linjer.push('', '---', '',
+        '⚠️ Disse filene er IKKE med i arkivet. Er en av dem endret etter',
+        'sammendragets siste seksjon, be om den ferske kopien før du endrer den.');
+      notat = linjer.join('\n');
+    }catch(err){
+      notat = '# Status\n\nKunne ikke settes sammen: ' + (err.message || err);
+    }
+    if(btn) btn.disabled = false;
+    return lastNedAlt(SAMTALE_FILER, notat);
+  };
+
+  window.lastNedUtvalg = async function(){
+    const boks = document.getElementById('altVelgBoks');
+    if(!boks) return;
+    if(boks.style.display !== 'none' && boks.dataset.fylt){
+      const valgte = [...boks.querySelectorAll('input:checked')].map(i => i.value);
+      if(valgte.length === 0){ showAltStatus('err', 'Kryss av minst én fil.'); return; }
+      return lastNedAlt(valgte);
+    }
+    // Første trykk: hent listen og vis avkrysningen.
+    showAltStatus('busy', 'Henter fillisten…');
+    const cfg = loadConfig();
+    const r = await fetch('https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo +
+      '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1',
+      { headers:{ 'Authorization':'Bearer ' + cfg.token, 'Accept':'application/vnd.github+json' }, cache:'no-store' });
+    if(!r.ok){ showAltStatus('err', 'Kunne ikke hente fillisten (HTTP ' + r.status + ').'); return; }
+    const tre = await r.json();
+    const stier = (tre.tree || []).filter(n => n.type === 'blob' && erTekstfil(n.path))
+      .map(n => n.path).sort();
+    boks.style.display = 'block';
+    boks.dataset.fylt = '1';
+    boks.innerHTML =
+      '<div class="hint" style="margin-bottom:8px;">' + stier.length +
+      ' filer. De tre forhåndsvalgte er de som bærer sammenhengen i en ny samtale.</div>' +
+      stier.map(sti =>
+        '<label class="velg-fil"><input type="checkbox" value="' + escapeHtmlPT(sti) + '"' +
+        (SAMTALE_FILER.indexOf(sti) !== -1 ? ' checked' : '') + '><span>' +
+        escapeHtmlPT(sti) + '</span></label>').join('');
+    showAltStatus('ok', 'Kryss av det du vil ha med, og trykk igjen.');
+  };
+
+  function showAltStatus(cls, tekst){
+    const boks = document.getElementById('altStatus');
+    if(boks){ boks.className = 'status show ' + cls; boks.textContent = tekst; }
+  }
+
+  window.lastNedAlt = async function(valgte, notat){
+    const cfg = loadConfig();
+    const boks = document.getElementById('altStatus');
+    const btn = document.getElementById('altBtn');
+    const vis = (cls, tekst) => { boks.className = 'status show ' + cls; boks.textContent = tekst; };
+
+    btn.disabled = true;
+    vis('busy', 'Henter fillisten fra GitHub...');
+
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' };
+    const enc = new TextEncoder();
+
+    try{
+      const treRes = await fetch(base + '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1',
+        { headers, cache: 'no-store' });
+      if(!treRes.ok) throw new Error('filliste: HTTP ' + treRes.status);
+      const tre = await treRes.json();
+
+      const stier = (tre.tree || [])
+        .filter(n => n.type === 'blob' && erTekstfil(n.path))
+        .map(n => n.path)
+        .filter(p => !valgte || valgte.indexOf(p) !== -1)
+        .sort();
+      if(stier.length === 0) throw new Error(valgte
+        ? 'fant ingen av de valgte filene i repoet'
+        : 'fant ingen tekstfiler');
+
+      const filer = [];
+      const hoppet = [];
+      for(let i = 0; i < stier.length; i++){
+        const sti = stier[i];
+        vis('busy', 'Henter fil ' + (i + 1) + ' av ' + stier.length + '\n' + sti);
+        try{
+          const repo = await hentPublisertFil(sti);
+          if(repo.finnes) filer.push({ navn: sti, bytes: enc.encode(repo.innhold) });
+          else hoppet.push(sti);
+        } catch(err){
+          hoppet.push(sti + ' (' + err.message + ')');
+        }
+      }
+
+      if(notat) filer.push({ navn: 'STATUS-VED-START.md', bytes: enc.encode(notat) });
+      vis('busy', 'Pakker ' + filer.length + ' filer...');
+      const bytes = lagZip(filer);
+      const d = new Date();
+      const to = n => String(n).padStart(2, '0');
+      // 🔴 Klokkeslett med i navnet. Datoen alene ga tre filer med samme
+      // navn på én dag — «madina-2026-08-15.zip» tre ganger — og
+      // nettleseren la til (1) og (2) uten å si hvilken som var nyest.
+      // Å velge feil arkiv i en ny samtale betyr å bygge på gammelt.
+      const navn = 'madina-' + (valgte ? 'utvalg-' : '') +
+        d.getFullYear() + '-' + to(d.getMonth()+1) + '-' + to(d.getDate()) +
+        '-' + to(d.getHours()) + to(d.getMinutes()) + '.zip';
+
+      const blob = new Blob([bytes], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = navn;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+
+      const harSammendrag = filer.some(f => f.navn.toLowerCase().endsWith('.md'));
+      vis(hoppet.length ? 'warn' : 'ok',
+        '📦 ' + navn + '\n\n' +
+        filer.length + ' filer · ' + Math.round(bytes.length / 1024) + ' kB\n' +
+        (harSammendrag ? '✓ sammendraget (.md) er med\n' : '⚠️ fant ingen .md-fil — sammendraget er ikke i repoet\n') +
+        (hoppet.length ? '\nUtelatt:\n  ' + hoppet.join('\n  ') + '\n' : '') +
+        '\nAlt er hentet fra GitHub nå, ikke fra kopier på telefonen. Legg ' +
+        'filen ved i en ny samtale.');
+    } catch(err){
+      vis('err', '✗ ' + err.message);
+    }
+    btn.disabled = false;
+  };
+
+  // ===================================================================
+  // ER SIDEN DU SER PÅ DEN NYESTE?
+  // -------------------------------------------------------------------
+  // En fane som har stått åpen siden i morges kjører fortsatt koden fra
+  // i morges — uansett hvor mange ganger verktøyet er publisert siden.
+  // Det skjedde to ganger 8. august: filer ble publisert av den gamle,
+  // ødelagte utgaven, og kom ut uten stempel. Ingenting sa fra.
+  //
+  // Her sammenlignes stempelet i siden som FAKTISK KJØRER (kommentar-
+  // noden i DOM-en) med stempelet i filen som ligger ute nå. Er de ulike,
+  // sier vi fra med én gang — før noe publiseres med gammel kode.
+  // ===================================================================
+  function egetStempel(){
+    // Kommentaren står mellom <!DOCTYPE> og <html>, altså som barn av
+    // dokumentet selv. Dette er versjonen som kjører i nettleseren nå —
+    // ikke den som ligger på serveren.
+    for(const node of document.childNodes){
+      if(node.nodeType === Node.COMMENT_NODE){
+        const m = String(node.nodeValue).match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+        if(m) return m[1];
+      }
+    }
+    return null;
+  }
+
+  async function sjekkEgenVersjon(){
+    const banner = document.getElementById('versjonBanner');
+    if(!banner) return;
+    let servertekst;
+    try{
+      const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
+      servertekst = await r.text();
+    } catch(err){
+      return; // Uten nett kan vi ikke vite. Da sier vi heller ingenting.
+    }
+    const m = servertekst.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+    const påServer = m ? m[1] : null;
+    const iFanen = egetStempel();
+
+    if(!påServer) return;              // Serverfilen mangler stempel — ingenting å sammenligne
+    if(!iFanen || iFanen < påServer){
+      banner.innerHTML =
+        '<b>⚠️ Du kjører en gammel utgave av verktøyet.</b><br>' +
+        'Fanen ble lastet ' + (iFanen ? 'fra utgaven av ' + iFanen : 'før stempling ble innført') +
+        ', mens utgaven som ligger ute er fra ' + påServer + '.<br>' +
+        'Publiserer du nå, brukes den gamle koden. ' +
+        '<a href="#" onclick="location.reload(true); return false;"><b>Last siden på nytt</b></a> først.';
+      banner.style.display = 'block';
+    }
+  }
+
+  window.sjekkVersjon = async function(){
+    const path = currentPath();
+    const content = document.getElementById('fileContent').value;
+    if(!path || !content.trim()){
+      visDiff('warn', 'Velg en fil og en filsti først.');
+      return null;
+    }
+    visDiff('busy', 'Sammenligner med versjonen som ligger på GitHub...');
+    let r = await sammenlignMedPublisert(path, content);
+    if(r.status === 'ukjent'){
+      visDiff('busy', 'Filen mangler stempel — sjekker publiseringsboken og historikken...');
+      r = await utdypUkjent(path, content, r);
+    }
+    const d = beskrivResultat(r, path);
+
+    // Detaljene bygges av det vi ALLEREDE har hentet. Den gamle
+    // undersøkelsesboksen hentet filen fra GitHub en gang til bare for å
+    // vise disse linjene — én forespørsel til uten grunn.
+    const dittStempel = lesStempel(content);
+    const bok = slåOppIBok(path, content);
+    const bokLinje = !bok.harBok
+      ? 'ingen oppføringer for denne filen ennå'
+      : (bok.kjent
+          ? (bok.indeks === 0
+              ? 'dette er nøyaktig det du sist publiserte'
+              : 'publisert herfra ' + visTid(bok.dato) + ' — ' + bok.indeks + ' publisering(er) siden')
+          : bok.antall + ' tidligere publiseringer registrert, ingen med dette innholdet');
+    const publisertLinje = r.status === 'ny'
+      ? 'finnes ikke i repoet ennå'
+      : (r.repoTid ? visTid(r.repoTid) : 'uten stempel');
+
+    visDiff(d.cls,
+      'Din fil:            ' + (dittStempel ? visTid(dittStempel) : 'uten SIST-ENDRET-stempel') + '\n' +
+      'Publisert versjon:  ' + publisertLinje + '\n' +
+      'Publiseringsbok:    ' + bokLinje + '\n' +
+      'Stempel hvis du publiserer nå: ' + noTid() + '\n\n' +
+      d.tekst);
+
+    document.getElementById('overstyrBtn').style.display = d.sperr ? 'block' : 'none';
+    return d;
+  };
+
+  window.publiserLikevel = function(){
+    overstyrSperre = true;
+    window.publish();
+  };
+
+
+
+
+  window.publish = async function(){
+    const path = currentPath();
+    const content = document.getElementById('fileContent').value;
+    if(!path){
+      showStatus('Velg eller skriv inn en filsti.', 'err');
+      return;
+    }
+    if(!content.trim()){
+      showStatus('Velg en fil eller lim inn filinnholdet først.', 'err');
+      return;
+    }
+    if(!innholdPasserTilNavn(path, content)){
+      showStatus('Publisering avbrutt — sjekk at innholdet hører til denne filstien.', 'err');
+      return;
+    }
+    const btn = document.getElementById('publishBtn');
+    btn.disabled = true;
+
+    // Kontrollen kjøres her, rett før selve publiseringen — ikke bare når
+    // du trykker «Sjekk». Ellers ville en sjekk gjort for fem minutter
+    // siden, på et annet innhold, kunne slippe en gammel fil gjennom.
+    if(!overstyrSperre){
+      showStatus('Sjekker mot publisert versjon...', 'busy');
+      const d = await window.sjekkVersjon();
+      if(d && d.sperr){
+        showStatus('✗ Publisering stoppet — se meldingen over.', 'err');
+        btn.disabled = false;
+        return;
+      }
+    }
+
+    showStatus('Publiserer...', 'busy');
+    const result = await publishFileToGitHub(path, content);
+    if(result.ok){
+      localStorage.setItem(LS_LAST_FILE, document.getElementById('filePreset').value);
+      updateLastPublishedHint();
+      window.nullstillSperre();
+      // 🔴 Her sa det før: «✓ Publisert! Endringen er live om noen
+      // sekunder.» Den setningen var et løfte verktøyet ikke kunne holde
+      // — det visste bare at GitHub hadde tatt imot filen.
+      const wf = workflowFor(path);
+      showStatus('✓ Lagret i GitHub. Venter på utleggingen av ' + workflowNavn(wf) + '…', 'busy');
+      const r = await ventPaUtlegging(Date.now(), m => showStatus('✓ Lagret. ' + m, 'busy'), wf);
+      if(r.status === 'ok'){
+        showStatus(wf === REGLER_WORKFLOW
+          ? '✓ Publisert. Sikkerhetsreglene gjelder i basen nå — Console viser den samme filen.'
+          : '✓ Publisert og lagt ut. Filen er live nå.', 'ok');
+      } else if(r.status === 'avbrutt'){
+        showStatus('✓ Lagret. Utleggingen ble avbrutt av en nyere publisering — det er normalt når du publiserer flere filer.', 'ok');
+      } else if(r.status === 'feilet'){
+        await visUtleggingsfeil(r.run);
+      } else {
+        showStatus('✓ Lagret i GitHub — men jeg fikk ikke bekreftet utleggingen. Trykk «Sjekk utleggingen» under.', 'err');
+      }
+    } else {
+      showStatus('✗ ' + result.message, 'err');
+    }
+    overstyrSperre = false;
+    btn.disabled = false;
+  };
+
+  // Slår et filnavn opp mot listen over ekte filstier. Finnes navnet som
+  // siste ledd i nøyaktig ÉN sti (f.eks. «index.js» → «functions/index.js»),
+  // brukes den stien. Er det flere muligheter, kan vi ikke gjette — da
+  // beholdes navnet som det er.
+  function finnFullSti(filnavn){
+    const sel = document.getElementById('filePreset');
+    if(!sel) return filnavn;
+    const stier = [...sel.options].map(o => o.value).filter(v => v && v !== '__custom__');
+    if(stier.includes(filnavn)) return filnavn;
+    const kandidater = stier.filter(v => v.indexOf('/') > 0 && v.split('/').pop() === filnavn);
+    return kandidater.length === 1 ? kandidater[0] : filnavn;
+  }
+
+  // ===== Multi-file publish =====
+  let multiFiles = []; // [{name, content}]
+
+  // ═══════════════════════════════════════════════════════════════════
+  // FLERE FILER — nå også fra et arkiv.
+  //
+  // 🔴 To ting manglet mot enkeltfil-opplastingen:
+  //
+  // 1) Man måtte hake av hver fil for seg i telefonens filvelger. Et
+  //    arkiv er ett trykk, og det er slik filene uansett kommer.
+  //
+  // 2) Listen viste bare FILNAVNET. Hvor filen faktisk ville havne —
+  //    «index.js» → «functions/index.js» — sto ingen steder, og det
+  //    var nettopp der en feilplassering ville vært synlig FØR
+  //    publisering i stedet for etterpå.
+  //
+  // Nå vises målstien under hvert navn, og den kan rettes.
+  // ═══════════════════════════════════════════════════════════════════
+
+  function tegnMultiListe(){
+    const listEl = document.getElementById('multiFileList');
+    if(!listEl) return;
+    listEl.innerHTML = multiFiles.map((f, i) => {
+      const sti = f.sti || finnFullSti(f.name);
+      const kjent = [...document.getElementById('filePreset').options]
+        .some(o => o.value === sti);
+      return '<div class="multi-file-row">' +
+        '<span class="fname">' + escapeHtmlPT(f.name) +
+          '<br><input class="mf-sti' + (kjent ? '' : ' ukjent') + '" value="' +
+          escapeHtmlPT(sti) + '" oninput="settMultiSti(' + i + ', this.value)">' +
+          (kjent ? '' : '<span class="mf-advarsel">ukjent filsti — sjekk den</span>') +
+        '</span>' +
+        '<span class="fstatus pending" id="mfstatus-' + i + '">Venter</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  window.settMultiSti = function(i, verdi){
+    if(multiFiles[i]) multiFiles[i].sti = String(verdi).trim();
+  };
+
+  function multiKlar(hoppetRegler){
+    const vis = multiFiles.length ? 'block' : 'none';
+    document.getElementById('multiPublishBtn').style.display = vis;
+    document.getElementById('multiSjekkBtn').style.display = vis;
+    document.getElementById('multiSjekkHint').style.display = vis;
+    const boks = document.getElementById('multiStatusBox');
+    boks.className = 'status show ok';
+    boks.innerHTML = multiFiles.length + ' fil' + (multiFiles.length === 1 ? '' : 'er') +
+      ' klare. Kontroller filstiene før du publiserer.' +
+      (hoppetRegler
+        ? '<br>🔐 <b>' + REGELSTI + ' ble ikke tatt med</b> — reglene publiseres fra Regler-fanen.'
+        : '');
+    tegnMultiListe();
+  }
+
+  window.handleMultiFileUpload = async function(event){
+    const fileList = [...(event.target.files || [])];
+    if(fileList.length === 0) return;
+    multiFiles = [];
+    let hoppetRegler = false;
+    const listEl = document.getElementById('multiFileList');
+    const boks = document.getElementById('multiStatusBox');
+    listEl.innerHTML = '';
+
+    for(const file of fileList){
+      const erArkiv = /\.zip$/i.test(file.name) || file.type === 'application/zip';
+      if(erArkiv){
+        boks.className = 'status show busy';
+        boks.textContent = 'Pakker ut ' + file.name + '…';
+        try{
+          const alle = await lesZip(await file.arrayBuffer());
+          if(alle.length === 0) throw new Error('Arkivet inneholdt ingen filer.');
+          // 🔴 Reglene tas IKKE med her. De endrer basen, ikke nettstedet,
+          // og skal ikke kunne gå ut som én av tretti i en leveranse.
+          // At de ble utelatt sies høyt under — et stille utvalg er
+          // nettopp det som lager problemer.
+          const filer = alle.filter(f => f.navn !== REGELSTI);
+          if(alle.length !== filer.length) hoppetRegler = true;
+          filer.forEach(f => {
+            // Stien fra arkivet brukes når den peker inn i en mappe
+            // («functions/index.js»). Ligger filen løst i arkivet, slås
+            // navnet opp mot de kjente stiene, som ved enkeltfil.
+            const sti = f.sti.indexOf('/') > 0 ? f.sti : finnFullSti(f.navn);
+            multiFiles.push({ name: f.navn, content: f.innhold, sti });
+          });
+        }catch(err){
+          boks.className = 'status show err';
+          boks.textContent = 'Kunne ikke lese ' + file.name + ': ' + (err.message || err);
+          return;
+        }
+      } else if(file.name === REGELSTI){
+        hoppetRegler = true;
+      } else {
+        const tekst = await file.text();
+        multiFiles.push({ name: file.name, content: tekst, sti: finnFullSti(file.name) });
+      }
+    }
+    multiKlar(hoppetRegler);
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SJEKK ALLE — uten å publisere.
+  //
+  // 🔴 I enkeltfil kan man kontrollere FØRST og bestemme etterpå. I en
+  // leveranse fantes ikke det valget: kontrollen kjørte inne i
+  // publiseringen, så eneste måte å få vite om en fil var gammel, var å
+  // trykke publiser og se hva som ble hoppet over.
+  //
+  // Det er feil rekkefølge for det som betyr noe. Med ti filer vil man
+  // vite hva som kommer til å skje før noe skjer.
+  // ═══════════════════════════════════════════════════════════════════
+  window.sjekkAlle = async function(){
+    if(multiFiles.length === 0) return;
+    const btn = document.getElementById('multiSjekkBtn');
+    const statusBox = document.getElementById('multiStatusBox');
+    if(btn) btn.disabled = true;
+    statusBox.className = 'status show busy';
+    statusBox.textContent = 'Kontrollerer ' + multiFiles.length + ' filer…';
+
+    let nye = 0, sperret = 0, feilType = 0;
+    for(let idx = 0; idx < multiFiles.length; idx++){
+      const f = multiFiles[idx];
+      const statusEl = document.getElementById('mfstatus-' + idx);
+      const målsti = f.sti || finnFullSti(f.name);
+      if(statusEl){ statusEl.className = 'fstatus busy'; statusEl.textContent = 'Sjekker…'; }
+
+      // Innholdstypen først: en fil under feil navn er en verre feil enn
+      // en gammel kopi, og den skal ses uten at man må lete.
+      const forventet = typeAvSti(målsti), funnet = gjettFiltype(f.content);
+      if(forventet && funnet && forventet !== funnet && forventet !== 'kode' && funnet !== 'kode'){
+        feilType++;
+        if(statusEl){
+          statusEl.className = 'fstatus err';
+          statusEl.innerHTML = '⚠️ Innholdet ser ut som ' + (TYPENAVN[funnet] || funnet) +
+            '<br><span class="mf-grunn">Filstien venter ' + (TYPENAVN[forventet] || forventet) + '.</span>';
+        }
+        continue;
+      }
+
+      let r = await sammenlignMedPublisert(målsti, f.content);
+      if(r.status === 'ukjent') r = await utdypUkjent(målsti, f.content, r);
+      if(statusEl){
+        if(SPERRENDE.includes(r.status)){
+          sperret++;
+          statusEl.className = 'fstatus err';
+          statusEl.innerHTML =
+            (r.status === 'identisk'
+              ? '⛔ Identisk med det som ligger ute'
+              : r.status === 'historisk'
+              ? '🛑 Gammel kopi — publisert ' + visTid(r.treff.dato)
+              : '🛑 Eldre enn den publiserte (din: ' + visTid(r.lokalTid) + ')') +
+            '<br><span class="mf-grunn">Blir hoppet over ved publisering.</span>';
+        } else {
+          nye++;
+          statusEl.className = 'fstatus ok';
+          statusEl.textContent = '✓ Ny — klar til publisering';
+        }
+      }
+    }
+
+    const deler = [];
+    if(nye)      deler.push(nye + ' klare');
+    if(sperret)  deler.push(sperret + ' blir hoppet over');
+    if(feilType) deler.push(feilType + ' med feil innholdstype');
+    statusBox.className = 'status show ' + (feilType ? 'err' : (sperret ? 'warn' : 'ok'));
+    statusBox.textContent = deler.join(' · ') + '. Ingenting er publisert ennå.';
+    if(btn) btn.disabled = false;
+  };
+
+  window.publishAll = async function(){
+    if(multiFiles.length === 0) return;
+    const btn = document.getElementById('multiPublishBtn');
+    btn.disabled = true;
+    const statusBox = document.getElementById('multiStatusBox');
+    const startetKl = Date.now();
+    statusBox.className = 'status show busy';
+    statusBox.textContent = 'Publiserer ' + multiFiles.length + ' filer, én etter én...';
+
+    let okCount = 0, errCount = 0, hoppetOver = 0;
+    // Ett notat for hele leveransen. Filene ble endret av samme grunn —
+    // det er nettopp derfor de publiseres sammen.
+    const fellesNotat = ((document.getElementById('multiNotat') || {}).value || '').trim();
+    // Hvilke utlegginger som faktisk må vente på. En leveranse kan røre
+    // både nettstedet og reglene, og de legges ut av hver sin kjøring.
+    const berørte = new Set();
+    // Published one at a time, with a short pause between each — publishing
+    // several files back-to-back too fast is what caused files to silently
+    // "supersede" each other and never actually go live (seen before with
+    // manual multi-file publishing). This avoids that.
+    for(let idx = 0; idx < multiFiles.length; idx++){
+      const f = multiFiles[idx];
+      // 🔴 Statusen slås opp på PLASSEN i listen, ikke på filnavnet.
+      // «index.js» finnes både i rota og i functions/. Med navnet som
+      // nøkkel delte de to samme status-element, og den ene skrev over
+      // den andres svar — begge så ut til å ha gått bra.
+      const statusEl = document.getElementById('mfstatus-' + idx);
+      if(statusEl){ statusEl.className = 'fstatus busy'; statusEl.textContent = 'Publiserer...'; }
+      // Stien som STÅR I LISTEN gjelder. Den kom enten fra arkivet, fra
+      // oppslaget mot repoet, eller fra en hånd som rettet den — og
+      // regnes den ut på nytt her, blir rettelsen kastet uten et ord.
+      const målsti = f.sti || finnFullSti(f.name);
+      if(!innholdPasserTilNavn(målsti, f.content)){
+        hoppetOver++;
+        if(statusEl){ statusEl.className = 'fstatus err'; statusEl.textContent = '⚠️ Feil innholdstype — hoppet over'; }
+        continue;
+      }
+      if(målsti !== f.name && statusEl){
+        statusEl.textContent = 'Publiserer til ' + målsti + '...';
+      }
+
+      // Samme versjonskontroll som for enkeltfil. Her er den viktigst: ved
+      // opplasting av en hel mappe er det lett å få med en gammel kopi uten
+      // å legge merke til det, og statusen ville sagt «✓ Publisert».
+      if(!document.getElementById('multiOverstyr').checked){
+        if(statusEl) statusEl.textContent = 'Sjekker...';
+        let r = await sammenlignMedPublisert(målsti, f.content);
+        if(r.status === 'ukjent'){
+          if(statusEl) statusEl.textContent = 'Sjekker historikk...';
+          r = await utdypUkjent(målsti, f.content, r);
+        }
+        if(SPERRENDE.includes(r.status)){
+          hoppetOver++;
+          if(statusEl){
+            statusEl.className = 'fstatus err';
+            // Enkeltfil-kontrollen forklarer HVORFOR den stoppet — med
+            // stempel, dato og hva boken vet. Her sto bare «hoppet over»,
+            // og man måtte gjøre kontrollen om igjen i enkeltfil for å få
+            // vite grunnen. Samme svar hører hjemme begge steder.
+            statusEl.innerHTML =
+              (r.status === 'identisk'
+                ? '⛔ Identisk med det som ligger ute'
+                : r.status === 'historisk'
+                ? '🛑 Gammel kopi — dette innholdet ble publisert ' + visTid(r.treff.dato)
+                : '🛑 Eldre enn den publiserte (din: ' + visTid(r.lokalTid) + ')') +
+              '<br><span class="mf-grunn">Ingenting ble skrevet over. ' +
+              (r.status === 'identisk'
+                ? 'Filen er allerede oppdatert.'
+                : 'Hent den publiserte versjonen først hvis du vil bygge videre på den.') +
+              '</span>';
+          }
+          continue;
+        }
+      }
+
+      const result = await publishFileToGitHub(målsti, f.content, fellesNotat);
+      if(result.ok){
+        okCount++;
+        berørte.add(workflowFor(målsti));
+        if(statusEl){ statusEl.className = 'fstatus ok'; statusEl.textContent = '✓ Publisert'; }
+      } else {
+        errCount++;
+        if(statusEl){ statusEl.className = 'fstatus err'; statusEl.textContent = '✗ ' + result.message; }
+      }
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    const deler = [okCount + ' publisert'];
+    if(hoppetOver) deler.push(hoppetOver + ' hoppet over (identisk eller eldre)');
+    if(errCount)   deler.push(errCount + ' feilet');
+    const oppsummering = (errCount === 0 && hoppetOver === 0)
+      ? 'Alle ' + okCount + ' filer lagret i GitHub'
+      : 'Av ' + multiFiles.length + ' filer: ' + deler.join(' · ');
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🔴 «PUBLISERT» MÅ BETY «UTE» — OGSÅ HER.
+    //
+    // Enkeltfil-publiseringen venter på kjøringen og sier fra hvis den
+    // feiler. Flerfil gjorde det ikke: den sa «Alle filer publisert!» i
+    // samme sekund GitHub tok imot den siste. Nøyaktig den setningen sto
+    // på skjermen 15. august mens utleggingen hadde stoppet i en halv
+    // time — og det er i en LEVERANSE dette gjør mest skade, fordi det
+    // er da flest filer blir liggende igjen.
+    // ═══════════════════════════════════════════════════════════════
+    if(okCount === 0 || berørte.size === 0){
+      statusBox.className = 'status show ' + (errCount ? 'err' : 'warn');
+      statusBox.textContent = oppsummering + '. Se status per fil ovenfor.';
+      btn.disabled = false;
+      return;
+    }
+
+    statusBox.className = 'status show busy';
+    statusBox.textContent = '✓ ' + oppsummering + '. Venter på utleggingen…';
+
+    const feilet = [];
+    for(const wf of berørte){
+      const r = await ventPaUtlegging(startetKl, m =>
+        statusBox.textContent = '✓ ' + oppsummering + '. ' + m, wf);
+      if(r.status === 'feilet') feilet.push({ wf, run: r.run });
+    }
+
+    if(feilet.length){
+      statusBox.className = 'status show err';
+      statusBox.textContent = '🛑 Filene ligger i GitHub, men utleggingen av ' +
+        feilet.map(x => workflowNavn(x.wf)).join(' og ') +
+        ' FEILET. De er ikke ute på nettstedet.';
+      await visUtleggingsfeil(feilet[0].run);
+    } else {
+      statusBox.className = 'status show ' + (errCount === 0 && hoppetOver === 0 ? 'ok' : 'warn');
+      statusBox.textContent = '✓ ' + oppsummering + ' — og lagt ut. ' +
+        (hoppetOver || errCount ? 'Se status per fil ovenfor.' : 'Alt er live nå.');
+    }
+    btn.disabled = false;
+  };
+
+  // ===================================================================
+  // KOPIER MELDINGEN
+  // -------------------------------------------------------------------
+  // Meldingene her er ofte det eneste holdepunktet når noe feiler — og
+  // de er lange. Å ta skjermbilde av dem, gjerne i flere deler, er en
+  // dårlig måte å bringe dem videre på.
+  //
+  // I stedet for én knapp ved hver av de fem statusboksene — og en
+  // glemt knapp neste gang det kommer en sjette — settes knappen inn
+  // automatisk ved siden av hver boks, og vises kun når boksen faktisk
+  // har noe å si.
+  //
+  // Knappen ligger som SØSKEN, ikke inni boksen. Koden setter
+  // «boks.textContent = ...» mange steder, og det ville slettet en
+  // knapp som lå inni.
+  // ===================================================================
+  // ===================================================================
+  // OPPGAVEVELGER
+  // -------------------------------------------------------------------
+  // Samme mønster som panelet: velg oppgave, se bare den. Verktøyet var
+  // én lang rulling der tre ulike oppgaver lå etter hverandre — man måtte
+  // bla forbi det man ikke skulle gjøre for å nå det man skulle.
+  //
+  // Kortene bærer også en linje med hva som faktisk skjedde sist. Et kort
+  // som bare sier hva det gjør, sier ingenting om tilstanden; den linjen
+  // gjør valget opplyst i stedet for blindt.
+  // ===================================================================
+
+  // ═══════════════════════════════════════════════════════════════════
+  // FANER I STEDET FOR EN VELG-OPPGAVE-SKJERM.
+  //
+  // Den gamle skjermen krevde ett trykk før man så noe som helst, og ett
+  // til for å komme tilbake. Fanene viser alltid hvor man er og hva som
+  // finnes — samme form som panelet, så det er ett mønster å lære.
+  //
+  // Et kort kan høre til flere faner: «publiser status regler». Status og
+  // rapport gjelder hele repoet, ikke én fil, og skal nås uansett hvor
+  // man står.
+  // ═══════════════════════════════════════════════════════════════════
+  let aktivFane = 'publiser';
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LENKENE — verktøyet er uansett det første man åpner på telefonen.
+  // Listen står i koden fordi den nesten aldri endres, og fordi et
+  // verktøy man åpner når noe er galt, ikke skal måtte hente noe først.
+  // ═══════════════════════════════════════════════════════════════════
+  const LENKER = [
+    ['🤖','Claude','claude.ai','https://claude.ai/'],
+    ['🔥','Firebase','Firestore · regler','https://console.firebase.google.com/project/madina-instituttet/firestore/rules'],
+    ['🐙','GitHub','Repo','__REPO__'],
+    ['⚙️','Actions','Utleggingene','__REPO__/actions'],
+    ['☁️','Google Cloud','Functions · logger','https://console.cloud.google.com/functions/list?project=madina-instituttet'],
+    ['📧','Gmail','E-post','https://mail.google.com/'],
+    ['📨','Outlook','E-post','https://outlook.office.com/mail/'],
+    ['📩','Zoho','E-post','https://mail.zoho.eu/'],
+    ['✉️','Brevo','Utsending','https://app.brevo.com/'],
+    // Filoverføring mellom PC og telefon på samme nett — uten sky.
+    // ⚠️ Åpnes i ny fane, ikke i en ramme: LocalSend trenger tilgang til
+    // det lokale nettet, og det nekter nettleseren en innebygd ramme.
+    // Rammen ville lastet, sett riktig ut, og feilet halvveis.
+    ['📡','LocalSend','Filer mellom PC og telefon','https://web.localsend.org/'],
+    ['🏫','Nettstedet','madinaskole.no','https://madinaskole.no/'],
+    ['🛡️','Panelet','Kontor','https://madinaskole.no/kontor'],
+    ['📖','Lærerportal','Lærer','https://madinaskole.no/lærer'],
+    ['👨‍👩‍👧','Foreldreportal','Foreldre','https://madinaskole.no/foreldre']
+  ];
+
+  function tegnLenker(){
+    const el = document.getElementById('lenkeRutenett');
+    if(!el || el.dataset.tegnet) return;
+    const cfg = loadConfig();
+    const repo = (cfg && cfg.owner && cfg.repo)
+      ? 'https://github.com/' + cfg.owner + '/' + cfg.repo : 'https://github.com/';
+    el.innerHTML = LENKER.map(([ic, t, d, url]) =>
+      '<a class="lenke-rute" target="_blank" rel="noopener" href="' +
+      url.replace(/__REPO__/g, repo) + '">' +
+      '<span class="ic">' + ic + '</span><span><span class="t">' + t +
+      '</span><br><span class="d">' + d + '</span></span></a>').join('');
+    el.dataset.tegnet = '1';
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // STATUSKORTENE — svaret før spørsmålet.
+  // Feiler oppslaget, sier kortene «—», ikke «alt ok». Et grønt kort
+  // bygget på et mislykket oppslag er verre enn et blankt.
+  // ═══════════════════════════════════════════════════════════════════
+  async function tegnStatuskort(){
+    const sett = (id, verdi, etikett) => {
+      const n = document.getElementById(id + 'N'); if(n) n.textContent = verdi;
+      if(etikett){ const l = document.getElementById(id + 'L'); if(l) l.textContent = etikett; }
+    };
+    const farge = (id, klasse) => {
+      const k = document.getElementById(id);
+      if(k) k.className = 'stat-card ' + klasse;
+    };
+
+    const [k, c] = await Promise.all([hentKjoringer(20, HOSTING_WORKFLOW), hentCommits(80)]);
+
+    if(k.feil){
+      sett('statUtlegg', '—', 'Kunne ikke lese');
+      farge('statUtlegg', 'stat-morke');
+    } else {
+      const siste = k.liste[0];
+      if(!siste){ sett('statUtlegg', '—', 'Ingen kjøringer'); farge('statUtlegg','stat-morke'); }
+      else if(siste.status !== 'completed'){ sett('statUtlegg','⏳','Legges ut nå'); farge('statUtlegg','stat-yellow'); }
+      else if(siste.conclusion === 'success'){ sett('statUtlegg','Ute','Alt er lagt ut'); farge('statUtlegg','stat-green'); }
+      else { sett('statUtlegg','🛑','IKKE ute — se Status'); farge('statUtlegg','stat-red'); }
+    }
+
+    if(c.feil){
+      sett('statAntall','—'); sett('statSist','—','Kunne ikke lese');
+    } else {
+      const grense = Date.now() - 7*86400000;
+      const nylige = c.liste.filter(x => new Date(x.dato).getTime() >= grense);
+      const filer = new Set(nylige.map(x => tolkCommit(x.melding).fil).filter(Boolean));
+      sett('statAntall', String(filer.size));
+      const sisteC = c.liste[0];
+      sett('statSist', sisteC ? new Date(sisteC.dato).toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'}) : '—',
+        sisteC ? (tolkCommit(sisteC.melding).fil || 'Siste publisering') : 'Siste publisering');
+      const regel = c.liste.find(x => tolkCommit(x.melding).fil === 'firestore.rules');
+      sett('statRegler', regel ? new Date(regel.dato).toLocaleDateString('no-NO',{day:'numeric',month:'short'}) : '—',
+        'Reglene');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // REGLENE — egen flyt, med arkivfilter begge veier.
+  //
+  // Slipper man leveransen inn her, plukkes firestore.rules ut. Slipper
+  // man den inn under Publiser, gjøres det motsatte. Én fil kan da ikke
+  // gå ut ved et uhell i en bunke med tretti andre — og man slipper å
+  // pakke ut arkivet for hånd bare for å hente ut den ene filen.
+  //
+  // ⚠️ Det som IKKE ble tatt med, sies høyt. Stille utvalg er nettopp
+  // det som lager problemene.
+  // ═══════════════════════════════════════════════════════════════════
+  const REGELSTI = 'firestore.rules';
+
+  window.handleReglerUpload = async function(event){
+    const file = event.target.files && event.target.files[0];
+    if(!file) return;
+    const hint = document.getElementById('reglerHint');
+    const felt = document.getElementById('reglerInnhold');
+    const vis = (tekst, klasse) => {
+      hint.className = 'file-loaded-hint show' + (klasse ? ' ' + klasse : '');
+      hint.innerHTML = tekst;
+    };
+
+    if(/\.zip$/i.test(file.name) || file.type === 'application/zip'){
+      vis('Pakker ut ' + escapeHtmlPT(file.name) + '…');
+      try{
+        const filer = await lesZip(await file.arrayBuffer());
+        const regel = filer.find(f => f.navn === REGELSTI);
+        const andre = filer.filter(f => f.navn !== REGELSTI);
+        if(!regel){
+          felt.value = '';
+          vis('🛑 Fant ingen <b>' + REGELSTI + '</b> i arkivet' +
+              (filer.length ? ' — det inneholdt ' + filer.length + ' andre filer.' : '.'));
+          return;
+        }
+        felt.value = regel.innhold;
+        vis('✓ Hentet <b>' + REGELSTI + '</b> ut av arkivet (' +
+            Math.round(regel.innhold.length/1024) + ' kB).' +
+            (andre.length ? '<br>🔕 ' + andre.length + ' andre filer ble ignorert her — de hører til Publiser-fanen.' : ''));
+      }catch(err){
+        vis('🛑 Kunne ikke lese arkivet: ' + escapeHtmlPT(err.message || err));
+      }
+      return;
+    }
+
+    const tekst = await file.text();
+    felt.value = tekst;
+    vis('✓ Lastet inn: ' + escapeHtmlPT(file.name) + ' (' + Math.round(file.size/1024) + ' kB)' +
+        (file.name !== REGELSTI ? '<br>⚠️ Filen heter ikke ' + REGELSTI + ' — den publiseres uansett dit.' : ''));
+  };
+
+  function reglerStatus(melding, klasse){
+    const el = document.getElementById('reglerStatus');
+    if(!el) return;
+    el.className = 'status show ' + (klasse || '');
+    el.innerHTML = melding;
+    if(klasse !== 'busy'){ try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){} }
+  }
+
+  window.sjekkRegler = async function(){
+    const innhold = document.getElementById('reglerInnhold').value;
+    if(!innhold.trim()){ reglerStatus('Velg en fil eller lim inn reglene først.', 'err'); return; }
+    const fare = reglerSerFarligeUt(innhold);
+    if(fare){ reglerStatus('🛑 ' + escapeHtmlPT(fare), 'err'); return; }
+    reglerStatus('Sjekker mot publisert versjon…', 'busy');
+    let r = await sammenlignMedPublisert(REGELSTI, innhold);
+    if(r.status === 'ukjent') r = await utdypUkjent(REGELSTI, innhold, r);
+    if(SPERRENDE.includes(r.status)){
+      reglerStatus(r.status === 'identisk'
+        ? '⛔ Identisk med reglene som allerede gjelder. Ingenting ville endret seg.'
+        : '🛑 Denne utgaven er eldre enn den som gjelder. Publiseres den, går basen tilbake.', 'err');
+    } else {
+      reglerStatus('✓ Nye regler — trygt å publisere.', 'ok');
+    }
+  };
+
+  window.publiserRegler = async function(){
+    const innhold = document.getElementById('reglerInnhold').value;
+    const notat = (document.getElementById('reglerNotat').value || '').trim();
+    if(!innhold.trim()){ reglerStatus('Velg en fil eller lim inn reglene først.', 'err'); return; }
+    const fare = reglerSerFarligeUt(innhold);
+    if(fare && !confirm('🔴 STOPP\n\n' + fare + '\n\nReglene gjelder hele basen få sekunder etter publisering.\n\nPubliser likevel?')) return;
+
+    const btn = document.getElementById('reglerPubliserBtn');
+    btn.disabled = true;
+    reglerStatus('Publiserer reglene…', 'busy');
+    const res = await publishFileToGitHub(REGELSTI, innhold, notat);
+    if(!res.ok){ reglerStatus('✗ ' + escapeHtmlPT(res.message), 'err'); btn.disabled = false; return; }
+
+    reglerStatus('✓ Lagret i GitHub. Venter på at reglene legges ut…', 'busy');
+    const r = await ventPaUtlegging(Date.now(), m => reglerStatus('✓ Lagret. ' + m, 'busy'), REGLER_WORKFLOW);
+    if(r.status === 'ok'){
+      reglerStatus('✓ Publisert. Reglene gjelder i basen nå — Console viser den samme filen.', 'ok');
+      tegnStatuskort();
+    } else if(r.status === 'avbrutt'){
+      reglerStatus('✓ Lagret. Kjøringen ble avbrutt av en nyere — sjekk Status-fanen.', 'ok');
+    } else if(r.status === 'feilet'){
+      reglerStatus('🛑 Utleggingen FEILET. De gamle reglene gjelder fortsatt i basen.', 'err');
+      await visUtleggingsfeil(r.run);
+    } else {
+      reglerStatus('✓ Lagret — men jeg fikk ikke bekreftet utleggingen. Se Status-fanen.', 'err');
+    }
+    btn.disabled = false;
+  };
+
+  // Underdelene per fane. Står listen her, kan et nytt kort legges til
+  // uten at menyen må vedlikeholdes to steder.
+  const UNDERFANER = {
+    publiser: [['en','📄','Én fil'], ['flere','📚','Flere filer']],
+    status:   [['utlegging','🚦','Utlegging'], ['rapport','📋','Rapport']]
+  };
+  let aktivUnder = {};
+
+  window.velgFane = function(fane){
+    aktivFane = fane;
+    document.querySelectorAll('.verktoy-fane').forEach(b => {
+      b.classList.toggle('active', b.dataset.fane === fane);
+    });
+
+    // Andre nivå bygges bare når fanen har underdeler. Uten det ville en
+    // tom rad stått igjen og sett ut som noe som manglet.
+    const under = UNDERFANER[fane];
+    const rad = document.getElementById('underFaner');
+    if(under){
+      if(!aktivUnder[fane]) aktivUnder[fane] = under[0][0];
+      rad.style.display = '';
+      rad.innerHTML = under.map(([id, ic, tekst]) =>
+        '<button class="under-fane' + (aktivUnder[fane] === id ? ' active' : '') +
+        '" onclick="velgUnder(\'' + fane + '\',\'' + id + '\')">' +
+        '<span class="ic">' + ic + '</span>' + tekst + '</button>').join('');
+    } else {
+      rad.style.display = 'none';
+      rad.innerHTML = '';
+    }
+
+    visKort();
+    if(fane === 'lenker') tegnLenker();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.velgUnder = function(fane, id){
+    aktivUnder[fane] = id;
+    document.querySelectorAll('#underFaner .under-fane').forEach((b, i) => {
+      b.classList.toggle('active', (UNDERFANER[fane][i] || [])[0] === id);
+    });
+    visKort();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Et kort vises når fanen stemmer OG — hvis det har en underdel — den
+  // valgte underdelen stemmer. Kort uten underdel hører til hele fanen.
+  function visKort(){
+    // 🔴 «[data-fane]» traff også fane-KNAPPENE — de bærer samme attributt.
+    // Resultatet: alle knappene unntatt den valgte ble skjult, og
+    // fanelinjen sto igjen med én knapp i et tomt kort. Menyen skjulte
+    // seg selv.
+    //
+    // Derfor «.card[data-fane]»: bare kortene skal styres her. Knappene
+    // styres av classList.toggle over, som bare bytter farge.
+    document.querySelectorAll('#publishView .card[data-fane]').forEach(kort => {
+      const faner = String(kort.dataset.fane || '').split(/\s+/);
+      const riktigFane = faner.indexOf(aktivFane) !== -1;
+      const under = kort.dataset.under;
+      const riktigUnder = !under || under === aktivUnder[aktivFane];
+      kort.style.display = (riktigFane && riktigUnder) ? '' : 'none';
+    });
+  }
+
+
+
+  function oppdaterKortkontekst(){
+    // Sist publiserte fil — hentes fra den lokale publiseringsboken, som
+    // uansett føres ved hver publisering.
+    try{
+      const bok = lesBok();
+      const rader = Object.entries(bok)
+        .map(([sti, rad]) => ({ sti, t: (rad && rad[0] && rad[0].t) || '' }))
+        .filter(r => r.t)
+        .sort((a, b) => b.t.localeCompare(a.t));
+      const el = document.getElementById('ktxEn');
+      if(el){
+        el.textContent = rader.length
+          ? 'Sist: ' + rader[0].sti + ' — ' +
+            new Date(rader[0].t).toLocaleString('no-NO', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})
+          : '';
+      }
+    } catch(e){ /* kontekst er en bonus, aldri et krav */ }
+
+    const nFiler = document.getElementById('filePreset');
+    const elFlere = document.getElementById('ktxFlere');
+    if(elFlere && nFiler){
+      const antall = [...nFiler.options].filter(o => o.value && o.value !== '__custom__').length;
+      elFlere.textContent = antall ? antall + ' filer i repoet' : '';
+    }
+  }
+
+  function utstyrStatusboksene(){
+    document.querySelectorAll('.status').forEach(boks => {
+      if(boks.dataset.harKopi) return;
+      boks.dataset.harKopi = '1';
+
+      const knapp = document.createElement('button');
+      knapp.type = 'button';
+      knapp.className = 'btn btn-ghost kopier-melding';
+      knapp.textContent = '📋 Kopier meldingen';
+      knapp.style.display = 'none';
+      knapp.style.marginTop = '6px';
+      boks.insertAdjacentElement('afterend', knapp);
+
+      knapp.addEventListener('click', () => {
+        // Filstien tas med: en feilmelding uten hvilken fil den gjaldt
+        // er halvparten av opplysningen.
+        const sti = (typeof currentPath === 'function' && currentPath()) || '';
+        const tekst = [
+          'PUBLISERINGSVERKTØY',
+          new Date().toLocaleString('no-NO'),
+          sti ? 'Fil: ' + sti : null,
+          '',
+          boks.textContent.trim()
+        ].filter(l => l !== null).join('\n');
+
+        const ferdig = (ok) => {
+          knapp.textContent = ok ? '✓ Kopiert' : '✗ Kunne ikke kopiere';
+          setTimeout(() => { knapp.textContent = '📋 Kopier meldingen'; }, 2500);
+        };
+        // Samme Safari-hensyn som ellers: skrivingen må skje inne i
+        // trykket, ellers nekter den stille.
+        try{
+          if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+            const blob = new Blob([tekst], { type: 'text/plain' });
+            navigator.clipboard.write([new ClipboardItem({ 'text/plain': Promise.resolve(blob) })])
+              .then(() => ferdig(true))
+              .catch(() => navigator.clipboard.writeText(tekst).then(() => ferdig(true)).catch(() => ferdig(false)));
+          } else {
+            navigator.clipboard.writeText(tekst).then(() => ferdig(true)).catch(() => ferdig(false));
+          }
+        } catch(e){ ferdig(false); }
+      });
+
+      // Viser knappen når boksen har innhold, skjuler den ellers.
+      // Observatøren ser på BOKSEN, mens vi endrer KNAPPEN — den utløser
+      // seg derfor ikke selv.
+      const oppdater = () => {
+        const synlig = boks.classList.contains('show') && boks.textContent.trim().length > 0;
+        knapp.style.display = synlig ? 'block' : 'none';
+      };
+      new MutationObserver(oppdater).observe(boks, {
+        childList: true, characterData: true, subtree: true,
+        attributes: true, attributeFilter: ['class']
+      });
+      oppdater();
+    });
+  }
+
+  init();
+  sjekkEgenVersjon();
+  utstyrStatusboksene();
+  velgFane('publiser');
+  tegnStatuskort();
+</script>
+<style>
+  #lastDeployBadge{
+    /* iOS Safari's bottom toolbar overlaps position:fixed elements sitting
+       right at the true bottom edge of the viewport, so this is lifted well
+       clear of it (and of the home-indicator safe area on notched iPhones)
+       instead of sitting flush at bottom:8px. */
+    position:fixed; bottom:calc(64px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px; z-index:5000;
+    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(3px);
+    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
+    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  }
+  @media (max-width:480px){ #lastDeployBadge{ font-size:9.5px; padding:3px 8px; } }
+
+  #lastEditBadge{
+    position:fixed; bottom:calc(92px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px; z-index:5000;
+    font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(3px);
+    padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);
+    pointer-events:none; letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  }
+  @media (max-width:480px){ #lastEditBadge{ font-size:9.5px; padding:3px 8px; } }
+
+  /* ---- Utleggingsstatus ---- */
+  /* Filstien er det viktigste i listen — den sier hvor filen HAVNER,
+     og det er der en feil ville vært synlig før publisering. */
+  .mf-sti{
+    width:100%; margin-top:4px; padding:5px 8px; border-radius:6px;
+    border:1px solid rgba(0,0,0,0.15); background:#fff;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:#3d4a42;
+  }
+  .mf-sti.ukjent{ border-color:#c98a2e; background:#fdf6e8; }
+  .mf-grunn{
+    display:block; margin-top:3px; font-size:10.5px; color:#8a9a90; font-weight:400;
+  }
+  #multiNotat{
+    width:100%; padding:11px 12px; border-radius:9px;
+    border:1px solid rgba(0,0,0,0.15); background:#fff;
+    font-family:'Jost',sans-serif; font-size:14px; color:#2b3a32;
+  }
+  .mf-advarsel{
+    display:block; margin-top:3px; font-size:10.5px; color:#a9741f;
+  }
+  #rapportBoks{
+    margin-top:14px; padding:14px 16px; border-radius:12px;
+    background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
+  }
+  #rapportBoks .ut-logg{ max-height:340px; }
+  #utleggingBoks{
+    margin-top:14px; padding:14px 16px; border-radius:12px;
+    background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
+  }
+  .ut-tittel{ font-weight:700; font-size:14.5px; margin-bottom:4px; }
+  .ut-tittel.ok{ color:#2f6b34; }
+  .ut-sub{ font-size:12.5px; color:#5f6b62; margin-top:6px; line-height:1.55; }
+  .ut-liste{ margin:6px 0 0; padding-inline-start:20px; font-size:12.5px; color:#5f6b62; }
+  .ut-liste li{ margin-bottom:3px; }
+  .ut-tid{ color:#96a29a; }
+  /* Loggen skal kunne merkes og kopieres — den er poenget med boksen. */
+  .ut-logg{
+    margin:10px 0; padding:10px 12px; border-radius:8px;
+    background:#1d2b22; color:#e8f0e9; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:11px; line-height:1.5; white-space:pre-wrap; word-break:break-word;
+    max-height:260px; overflow:auto; user-select:text; -webkit-user-select:text;
+  }
+</style>
+<div id="lastEditBadge">…</div>
+<div id="lastDeployBadge">Sjekker siste publisering…</div>
+<script>
+  // Viser tidspunktet for siste VELLYKKEDE publisering av nettstedet.
+  // Nettstedet ligger nå på Firebase Hosting (ikke GitHub Pages), og
+  // publiseres av GitHub Action-en firebase-hosting.yml. Vi leser derfor
+  // siste vellykkede kjøring av nettopp den workflow-en. Leser kun
+  // offentlig, ikke-sensitiv informasjon (ingen token nødvendig).
+  // MERK: publiserer du manuelt fra PC med `firebase deploy --only hosting`,
+  // fanges det ikke opp her — da går publiseringen utenom GitHub.
+  (function(){
+    var el = document.getElementById('lastDeployBadge');
+    if(!el) return;
+    var GH_OWNER = 'madina-institute';
+    var GH_REPO = 'Madina-Instituttet-';
+    var API_BASE = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO;
+
+    function showError(msg){
+      el.textContent = 'Siste publisering: kunne ikke sjekke (' + msg + ')';
+      el.style.color = '#a5504a';
+    }
+    function showSuccess(iso){
+      var d = new Date(iso);
+      var datoStr = d.toLocaleDateString('no-NO') + ' kl. ' + d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+      el.textContent = '✓ Siste publisering: ' + datoStr;
+    }
+
+    // Nettstedet publiseres nå via Firebase Hosting, ikke GitHub Pages.
+    // Vi leser derfor siste VELLYKKEDE kjøring av GitHub Action-en som
+    // utfører selve Firebase-publiseringen (firebase-hosting.yml).
+    fetch(API_BASE + '/actions/workflows/firebase-hosting.yml/runs?status=success&per_page=1')
+      .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status + ' — workflow runs'); return res.json(); })
+      .then(function(data){
+        var runs = data && data.workflow_runs;
+        if(!Array.isArray(runs) || runs.length === 0) throw new Error('ingen vellykket publisering funnet');
+        showSuccess(runs[0].updated_at || runs[0].created_at);
+      })
+      .catch(function(err){
+        console.error('Kunne ikke hente siste publisering:', err);
+        showError(err && err.message ? err.message : 'nettverksfeil');
+      });
+  })();
+
+  // Leser filens eget tidsstempel — linjen «SIST-ENDRET» som
+  // publiseringsverktøyet skriver inn øverst i filen ved hver publisering.
+  // Dette er noe annet enn «Siste publisering» under: den forteller når
+  // HELE nettstedet sist ble publisert, mens denne forteller når nettopp
+  // DENNE siden sist ble endret. Er de like, ble siden endret i siste
+  // publisering; er de ulike, har siden stått uendret en stund.
+  (function(){
+    var el = document.getElementById('lastEditBadge');
+    if(!el) return;
+    fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
+        var m = txt.match(/SIST-ENDRET:\s*([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2})/);
+        // Merket forsvant tidligere uten et ord når stempelet manglet. Da
+        // var det umulig å se forskjell på «filen har ikke stempel» og
+        // «merket virker ikke» — to helt ulike problemer. Nå sier det ifra.
+        if(!m){
+          el.textContent = '✏️ Uten tidsstempel — publisert utenom verktøyet';
+          el.style.color = '#a5504a';
+          return;
+        }
+        var d = new Date(m[1].replace(' ', 'T'));
+        el.textContent = '✏️ Sist endret: ' +
+          d.toLocaleDateString('no-NO') + ' kl. ' +
+          d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      })
+      .catch(function(err){
+        el.textContent = '✏️ Kunne ikke lese tidsstempel';
+        el.style.color = '#a5504a';
+      });
+  })();
+</script>
+</body>
+</html>
