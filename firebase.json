@@ -1,4 +1,12 @@
 {
+  "//": "🔴 Uten denne seksjonen visste Firebase ikke hvor reglene lå.",
+  "//2": "firestore.rules lå i repoet som ren dokumentasjon, og de ekte",
+  "//3": "reglene ble limt inn for hånd i Firebase Console. To kopier, og",
+  "//4": "repo-kopien lå elleve dager bak den som faktisk gjaldt.",
+  "//5": "Nå peker Firebase på filen, og Action-en legger den ut.",
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "functions": [
     {
       "source": "functions",
