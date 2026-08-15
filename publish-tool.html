@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 11:59:10 -->
+<!-- SIST-ENDRET: 2026-08-15 12:11:13 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1310,8 +1310,15 @@
     const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + sti;
     const headers = { 'Accept': 'application/vnd.github+json' };
     if(cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+    // 🔴 Uten en frist kan spørringen henge for alltid, og boksen blir
+    // stående på «Leser kjøringene…» — som er nøyaktig den tilstanden
+    // dette verktøyet ble utvidet for å fjerne. Tolv sekunder er lenge
+    // nok for GitHub, og kort nok til at man ikke tror det jobber.
+    const avbryt = new AbortController();
+    const frist = setTimeout(() => avbryt.abort(), 12000);
     try{
-      const r = await fetch(url, { headers, cache: 'no-store' });
+      const r = await fetch(url, { headers, cache: 'no-store', signal: avbryt.signal });
+      clearTimeout(frist);
       if(r.ok) return { ok:true, data: await r.json() };
       const kropp = await r.json().catch(() => ({}));
       const forklaring =
@@ -1322,6 +1329,10 @@
         : (kropp.message || '');
       return { ok:false, status:r.status, grunn:'GitHub svarte ' + r.status + '. ' + forklaring };
     }catch(e){
+      clearTimeout(frist);
+      if(e && e.name === 'AbortError'){
+        return { ok:false, grunn:'GitHub svarte ikke innen 12 sekunder. Prøv igjen — eller sjekk nettforbindelsen.' };
+      }
       return { ok:false, grunn:'Fikk ikke kontakt med GitHub: ' + (e.message || e) };
     }
   }
