@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 13:03:42 -->
+<!-- SIST-ENDRET: 2026-08-15 13:39:44 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -236,9 +236,17 @@
 
     <div class="card" data-seksjon="flere">
       <h2>Publiser flere filer samtidig</h2>
-      <div class="sub">Velg flere filer fra telefonen (f.eks. index.html, index1.html, index4.html) — hver fil publiseres til sin egen filsti automatisk, basert på filnavnet.</div>
+      <div class="sub">
+        Velg flere filer — eller <b>ett ZIP-arkiv</b>, så pakkes det ut her og
+        hver fil legges i sin egen linje.
+        <br><br>
+        Filstien under hvert navn er den filen faktisk publiseres til.
+        <b>Kontroller den før du publiserer</b> — den kan rettes ved å skrive i feltet.
+        Ligger filen i en mappe i arkivet, brukes mappen; ellers slås navnet opp
+        mot filene i repoet.
+      </div>
 
-      <label class="btn-file-label" for="multiFileUpload">📁 Velg flere filer fra telefonen...</label>
+      <label class="btn-file-label" for="multiFileUpload">📁 Velg filer eller et ZIP-arkiv...</label>
       <input type="file" id="multiFileUpload" multiple onchange="handleMultiFileUpload(event)">
 
       <div id="multiFileList"></div>
@@ -372,6 +380,30 @@
         i GitHub uten å være ute på nettstedet.
       </div>
       <div id="utleggingBoks" style="display:none;"></div>
+
+      <!-- 🔴 Bakgrunnen måtte fortelles på nytt i hver eneste nye samtale,
+           og det som ble husket feil, ble bygget videre på. Dette er den
+           delen verktøyet VET: hva som er publisert, når, og om det nådde
+           nettstedet. -->
+      <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.08);">
+        <label class="hint" for="rapportDager">Rapport for siste</label>
+        <div class="field-row-2" style="margin-top:6px;">
+          <select id="rapportDager">
+            <option value="1">1 døgn</option>
+            <option value="3">3 døgn</option>
+            <option value="7" selected>7 døgn</option>
+            <option value="14">14 døgn</option>
+            <option value="30">30 døgn</option>
+          </select>
+          <button class="btn btn-ghost" onclick="lagRapport()">📋 Lag rapport</button>
+        </div>
+        <div class="hint" style="margin-top:6px;">
+          Én linje per fil som er endret, med tidspunkt og din egen beskrivelse.
+          Ment å limes inn først i en ny samtale — den sier <b>hva</b> som er
+          gjort, ikke hvorfor.
+        </div>
+        <div id="rapportBoks" style="display:none;"></div>
+      </div>
 
       <div class="logg-skille">
         <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
@@ -1618,6 +1650,130 @@
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // RAPPORTEN — det som skal stå først i en ny samtale.
+  //
+  // Verktøyet vet nøyaktig hva som er publisert, når, og om det nådde
+  // nettstedet. Det er akkurat den delen av bakgrunnen som ellers må
+  // gjenfortelles hver gang, og som er lett å huske feil.
+  //
+  // ⚠️ HVA DEN IKKE ER:
+  // Rapporten sier HVA som ble endret, aldri HVORFOR. Beslutninger,
+  // avveininger og det som fortsatt står åpent, ligger i
+  // PROJECT-SUMMARY-AR.md. Rapporten erstatter ikke sammendraget —
+  // den forteller hvor sammendraget slutter og virkeligheten fortsetter.
+  //
+  // Kilden er commit-listen hos GitHub, ikke den lokale boken: boken
+  // finnes bare i denne nettleseren, mens commitene ser alt som er
+  // publisert uansett hvorfra.
+  // ═══════════════════════════════════════════════════════════════════
+  async function hentCommits(antall){
+    const r = await ghGet('/commits?per_page=' + (antall || 60));
+    if(!r.ok) return { feil: r.grunn, liste: [] };
+    return { feil: null, liste: (r.data || []).map(c => ({
+      dato: (c.commit && c.commit.author && c.commit.author.date) || '',
+      melding: (c.commit && c.commit.message || '').split('\n')[0]
+    })) };
+  }
+
+  // «Oppdater felles.js via publiseringsverktøy»  → felles.js
+  // «Oppdater admin.html — la til skoleår»        → admin.html + notat
+  // 🔴 «via publiseringsverktøy» må bort FØR mønsteret prøves.
+  //
+  // Første utgave lette etter «Oppdater X — notat» og fjernet halen
+  // etterpå. Men de aller fleste commitene har ingen notat og ser slik
+  // ut: «Oppdater felles.js via publiseringsverktøy». Halen falt da
+  // utenfor mønsteret, og filen forsvant fra rapporten.
+  //
+  // Rapporten ville altså vist bare de filene du husket å skrive en
+  // beskrivelse til — og sett komplett ut mens den manglet flertallet.
+  function tolkCommit(melding){
+    const ren = String(melding).replace(/\s*via publiseringsverktøy\s*$/, '').trim();
+    const m = ren.match(/^Oppdater\s+(\S+?)(?:\s+—\s+(.*))?$/);
+    if(!m) return { fil: null, notat: ren };
+    return { fil: m[1], notat: (m[2] || '').trim() };
+  }
+
+  window.lagRapport = async function(){
+    const boks = document.getElementById('rapportBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+    boks.innerHTML = '<div class="ut-sub">Setter sammen rapporten…</div>';
+
+    const cfg = loadConfig();
+    const dager = parseInt((document.getElementById('rapportDager') || {}).value, 10) || 7;
+    const grense = Date.now() - dager * 86400000;
+
+    const [c, k] = await Promise.all([hentCommits(80), hentKjoringer(20, HOSTING_WORKFLOW)]);
+    if(c.feil){
+      boks.innerHTML = '<div class="ut-tittel">Kunne ikke lage rapporten</div>' +
+        '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(c.feil) + '</pre>' +
+        '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier meldingen</button>';
+      return;
+    }
+
+    // Én linje per fil, med SISTE tidspunkt — ikke én linje per
+    // publisering. Publiserer man samme fil fem ganger på en dag, er det
+    // fortsatt én fil som er endret.
+    const perFil = new Map();
+    c.liste.forEach(x => {
+      const t = new Date(x.dato).getTime();
+      if(!t || t < grense) return;
+      const { fil, notat } = tolkCommit(x.melding);
+      if(!fil) return;
+      const f = perFil.get(fil) || { fil, sist: 0, antall: 0, notater: [] };
+      f.antall++;
+      if(t > f.sist) f.sist = t;
+      if(notat && f.notater.indexOf(notat) === -1) f.notater.push(notat);
+      perFil.set(fil, f);
+    });
+    const filer = [...perFil.values()].sort((a, b) => b.sist - a.sist);
+
+    const sisteOk = k.liste.find(r => r.status === 'completed' && r.conclusion === 'success');
+    const siste = k.liste[0];
+    let utlegg;
+    if(!siste) utlegg = 'ukjent — fant ingen kjøringer';
+    else if(siste.status !== 'completed') utlegg = '⏳ en utlegging pågår akkurat nå';
+    else if(siste.conclusion === 'success') utlegg = '✓ alt er ute (siste utlegging ' + visTidStr(siste.created_at) + ')';
+    else utlegg = '🛑 SISTE UTLEGGING FEILET ' + visTidStr(siste.created_at) +
+      ' — filer publisert etter dette ligger i GitHub, men er IKKE på nettstedet';
+
+    const linjer = [];
+    linjer.push('## Status for Madina Skole — ' + visTid(new Date()));
+    linjer.push('');
+    linjer.push('Repo: ' + (cfg ? cfg.owner + '/' + cfg.repo + ' (' + cfg.branch + ')' : '—'));
+    linjer.push('Utlegging: ' + utlegg);
+    linjer.push('');
+    linjer.push('### Filer publisert siste ' + dager + ' døgn');
+    if(filer.length === 0){
+      linjer.push('(ingen)');
+    } else {
+      filer.forEach(f => {
+        linjer.push('- **' + f.fil + '** — ' + visTidStr(new Date(f.sist).toISOString()) +
+          (f.antall > 1 ? ' (' + f.antall + ' publiseringer)' : '') +
+          (f.notater.length ? ' · ' + f.notater.join('; ') : ''));
+      });
+    }
+    linjer.push('');
+    linjer.push('---');
+    linjer.push('Denne listen sier HVA som er endret, ikke HVORFOR.');
+    linjer.push('Beslutninger og det som står åpent: PROJECT-SUMMARY-AR.md.');
+
+    const tekst = linjer.join('\n');
+    boks.innerHTML =
+      '<div class="ut-tittel">📋 Rapport</div>' +
+      '<pre class="ut-logg" id="rapportTekst">' + escapeHtmlPT(tekst) + '</pre>' +
+      '<button class="btn btn-primary" onclick="kopierRapport()">📋 Kopier rapporten</button>';
+  };
+
+  window.kopierRapport = function(){
+    const el = document.getElementById('rapportTekst');
+    if(!el) return;
+    navigator.clipboard.writeText(el.textContent)
+      .then(() => showStatus('Rapporten er kopiert. Lim den inn først i den nye samtalen.', 'ok'))
+      .catch(() => showStatus('Kunne ikke kopiere — merk teksten manuelt.', 'err'));
+  };
+
   async function publishFileToGitHub(path, content){
     const cfg = loadConfig();
     const apiBase = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path;
@@ -1896,6 +2052,74 @@
     }
     return t;
   })();
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LESE ET ZIP-ARKIV — uten bibliotek.
+  //
+  // Verktøyet PAKKER allerede et arkiv (lagZip under). Å lese ett er den
+  // samme strukturen baklengs, og nettleseren kan pakke ut selv med
+  // DecompressionStream. Et bibliotek fra et CDN ville lagt en ny
+  // avhengighet inn i det ene verktøyet man trenger når noe er galt —
+  // og det er nettopp da et CDN ikke skal kunne svikte.
+  //
+  // Leser sentralkatalogen bakfra (slik formatet er ment å leses), ikke
+  // de lokale hodene forfra: bare katalogen vet sikkert hvor hver fil
+  // begynner og hvor lang den er.
+  // ═══════════════════════════════════════════════════════════════════
+  async function lesZip(arrayBuffer){
+    const dv = new DataView(arrayBuffer);
+    const u8 = new Uint8Array(arrayBuffer);
+
+    // Slutten av sentralkatalogen (EOCD) ligger bakerst, etter en
+    // kommentar som kan være opptil 65535 tegn. Derfor leter vi bakfra.
+    let eocd = -1;
+    for(let i = u8.length - 22; i >= 0 && i >= u8.length - 65557; i--){
+      if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+    }
+    if(eocd < 0) throw new Error('Fant ingen ZIP-katalog — er filen et gyldig arkiv?');
+
+    const antall = dv.getUint16(eocd + 10, true);
+    let p = dv.getUint32(eocd + 16, true);
+    const ut = [];
+
+    for(let i = 0; i < antall; i++){
+      if(dv.getUint32(p, true) !== 0x02014b50) throw new Error('Uventet innhold i ZIP-katalogen.');
+      const metode   = dv.getUint16(p + 10, true);
+      const komp     = dv.getUint32(p + 20, true);
+      const navnLen  = dv.getUint16(p + 28, true);
+      const ekstraLen= dv.getUint16(p + 30, true);
+      const kommLen  = dv.getUint16(p + 32, true);
+      const lokal    = dv.getUint32(p + 42, true);
+      const navn     = new TextDecoder('utf-8').decode(u8.slice(p + 46, p + 46 + navnLen));
+      p += 46 + navnLen + ekstraLen + kommLen;
+
+      // Mapper og Mac-ens skjulte filer hører ikke hjemme i listen.
+      if(navn.endsWith('/') || navn.startsWith('__MACOSX/') ||
+         navn.split('/').pop().startsWith('.')) continue;
+
+      // Det lokale hodet har sine EGNE lengdefelter for navn og ekstra —
+      // de er ofte ulike katalogens, og bruker man katalogens her,
+      // begynner dataene noen byte for tidlig eller for sent.
+      const lNavnLen   = dv.getUint16(lokal + 26, true);
+      const lEkstraLen = dv.getUint16(lokal + 28, true);
+      const start = lokal + 30 + lNavnLen + lEkstraLen;
+      const rå = u8.slice(start, start + komp);
+
+      let data;
+      if(metode === 0){
+        data = rå;                                   // lagret uten komprimering
+      } else if(metode === 8){
+        const ds = new DecompressionStream('deflate-raw');
+        const strøm = new Blob([rå]).stream().pipeThrough(ds);
+        data = new Uint8Array(await new Response(strøm).arrayBuffer());
+      } else {
+        throw new Error('Filen «' + navn + '» bruker en komprimering verktøyet ikke kjenner.');
+      }
+      ut.push({ navn: navn.split('/').pop(), sti: navn,
+                innhold: new TextDecoder('utf-8').decode(data) });
+    }
+    return ut;
+  }
 
   function crc32(bytes) {
     let c = 0xFFFFFFFF;
@@ -2371,34 +2595,87 @@
   // ===== Multi-file publish =====
   let multiFiles = []; // [{name, content}]
 
-  window.handleMultiFileUpload = function(event){
+  // ═══════════════════════════════════════════════════════════════════
+  // FLERE FILER — nå også fra et arkiv.
+  //
+  // 🔴 To ting manglet mot enkeltfil-opplastingen:
+  //
+  // 1) Man måtte hake av hver fil for seg i telefonens filvelger. Et
+  //    arkiv er ett trykk, og det er slik filene uansett kommer.
+  //
+  // 2) Listen viste bare FILNAVNET. Hvor filen faktisk ville havne —
+  //    «index.js» → «functions/index.js» — sto ingen steder, og det
+  //    var nettopp der en feilplassering ville vært synlig FØR
+  //    publisering i stedet for etterpå.
+  //
+  // Nå vises målstien under hvert navn, og den kan rettes.
+  // ═══════════════════════════════════════════════════════════════════
+
+  function tegnMultiListe(){
+    const listEl = document.getElementById('multiFileList');
+    if(!listEl) return;
+    listEl.innerHTML = multiFiles.map((f, i) => {
+      const sti = f.sti || finnFullSti(f.name);
+      const kjent = [...document.getElementById('filePreset').options]
+        .some(o => o.value === sti);
+      return '<div class="multi-file-row">' +
+        '<span class="fname">' + escapeHtmlPT(f.name) +
+          '<br><input class="mf-sti' + (kjent ? '' : ' ukjent') + '" value="' +
+          escapeHtmlPT(sti) + '" oninput="settMultiSti(' + i + ', this.value)">' +
+          (kjent ? '' : '<span class="mf-advarsel">ukjent filsti — sjekk den</span>') +
+        '</span>' +
+        '<span class="fstatus pending" id="mfstatus-' + i + '">Venter</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  window.settMultiSti = function(i, verdi){
+    if(multiFiles[i]) multiFiles[i].sti = String(verdi).trim();
+  };
+
+  function multiKlar(){
+    document.getElementById('multiPublishBtn').style.display = multiFiles.length ? 'block' : 'none';
+    const boks = document.getElementById('multiStatusBox');
+    boks.className = 'status show ok';
+    boks.textContent = multiFiles.length + ' fil' + (multiFiles.length === 1 ? '' : 'er') +
+      ' klare. Kontroller filstiene før du publiserer.';
+    tegnMultiListe();
+  }
+
+  window.handleMultiFileUpload = async function(event){
     const fileList = [...(event.target.files || [])];
     if(fileList.length === 0) return;
     multiFiles = [];
     const listEl = document.getElementById('multiFileList');
+    const boks = document.getElementById('multiStatusBox');
     listEl.innerHTML = '';
-    let loadedCount = 0;
-    fileList.forEach(file => {
-      const row = document.createElement('div');
-      row.className = 'multi-file-row';
-      row.innerHTML = '<span class="fname">' + file.name + '</span><span class="fstatus pending" id="mfstatus-' + CSS.escape(file.name) + '">Venter</span>';
-      listEl.appendChild(row);
 
-      const reader = new FileReader();
-      reader.onload = function(e){
-        multiFiles.push({ name: file.name, content: e.target.result });
-        loadedCount++;
-        if(loadedCount === fileList.length){
-          document.getElementById('multiPublishBtn').style.display = 'block';
-          document.getElementById('multiStatusBox').className = 'status';
+    for(const file of fileList){
+      const erArkiv = /\.zip$/i.test(file.name) || file.type === 'application/zip';
+      if(erArkiv){
+        boks.className = 'status show busy';
+        boks.textContent = 'Pakker ut ' + file.name + '…';
+        try{
+          const filer = await lesZip(await file.arrayBuffer());
+          if(filer.length === 0) throw new Error('Arkivet inneholdt ingen filer.');
+          filer.forEach(f => {
+            // Stien fra arkivet brukes når den peker inn i en mappe
+            // («functions/index.js»). Ligger filen løst i arkivet, slås
+            // navnet opp mot de kjente stiene, som ved enkeltfil.
+            const sti = f.sti.indexOf('/') > 0 ? f.sti : finnFullSti(f.navn);
+            multiFiles.push({ name: f.navn, content: f.innhold, sti });
+          });
+        }catch(err){
+          boks.className = 'status show err';
+          boks.textContent = 'Kunne ikke lese ' + file.name + ': ' + (err.message || err);
+          return;
         }
-      };
-      reader.onerror = function(){
-        const statusEl = document.getElementById('mfstatus-' + CSS.escape(file.name));
-        if(statusEl){ statusEl.className = 'fstatus err'; statusEl.textContent = 'Kunne ikke lese filen'; }
-      };
-      reader.readAsText(file, 'UTF-8');
-    });
+      } else {
+        const tekst = await file.text();
+        multiFiles.push({ name: file.name, content: tekst, sti: finnFullSti(file.name) });
+      }
+    }
+    multiKlar();
   };
 
   window.publishAll = async function(){
@@ -2414,15 +2691,18 @@
     // several files back-to-back too fast is what caused files to silently
     // "supersede" each other and never actually go live (seen before with
     // manual multi-file publishing). This avoids that.
-    for(const f of multiFiles){
-      const statusEl = document.getElementById('mfstatus-' + CSS.escape(f.name));
+    for(let idx = 0; idx < multiFiles.length; idx++){
+      const f = multiFiles[idx];
+      // 🔴 Statusen slås opp på PLASSEN i listen, ikke på filnavnet.
+      // «index.js» finnes både i rota og i functions/. Med navnet som
+      // nøkkel delte de to samme status-element, og den ene skrev over
+      // den andres svar — begge så ut til å ha gått bra.
+      const statusEl = document.getElementById('mfstatus-' + idx);
       if(statusEl){ statusEl.className = 'fstatus busy'; statusEl.textContent = 'Publiserer...'; }
-      // Nettleseren gir oss bare filnavnet, aldri mappen filen lå i. Et
-      // valgt «index.js» ville derfor havnet i rota og aldri blitt
-      // publisert som Cloud Function — mens statusen her likevel sa
-      // "✓ Publisert". Vi slår derfor filnavnet opp mot de ekte stiene i
-      // repoet først, akkurat som enkeltfil-opplastingen gjør.
-      const målsti = finnFullSti(f.name);
+      // Stien som STÅR I LISTEN gjelder. Den kom enten fra arkivet, fra
+      // oppslaget mot repoet, eller fra en hånd som rettet den — og
+      // regnes den ut på nytt her, blir rettelsen kastet uten et ord.
+      const målsti = f.sti || finnFullSti(f.name);
       if(!innholdPasserTilNavn(målsti, f.content)){
         hoppetOver++;
         if(statusEl){ statusEl.className = 'fstatus err'; statusEl.textContent = '⚠️ Feil innholdstype — hoppet over'; }
@@ -2629,6 +2909,22 @@
   @media (max-width:480px){ #lastEditBadge{ font-size:9.5px; padding:3px 8px; } }
 
   /* ---- Utleggingsstatus ---- */
+  /* Filstien er det viktigste i listen — den sier hvor filen HAVNER,
+     og det er der en feil ville vært synlig før publisering. */
+  .mf-sti{
+    width:100%; margin-top:4px; padding:5px 8px; border-radius:6px;
+    border:1px solid rgba(0,0,0,0.15); background:#fff;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:#3d4a42;
+  }
+  .mf-sti.ukjent{ border-color:#c98a2e; background:#fdf6e8; }
+  .mf-advarsel{
+    display:block; margin-top:3px; font-size:10.5px; color:#a9741f;
+  }
+  #rapportBoks{
+    margin-top:14px; padding:14px 16px; border-radius:12px;
+    background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
+  }
+  #rapportBoks .ut-logg{ max-height:340px; }
   #utleggingBoks{
     margin-top:14px; padding:14px 16px; border-radius:12px;
     background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
