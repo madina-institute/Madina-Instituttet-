@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 14:36:38 -->
+<!-- SIST-ENDRET: 2026-08-15 14:40:24 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -91,20 +91,29 @@
      og den valgte fylt i hovedfargen. Den tynne tekstraden jeg hadde
      først lignet ingenting i systemet ellers. */
   .verktoy-faner{
-    display:flex; flex-direction:row; align-items:stretch; gap:4px;
+    display:flex; position:sticky; top:74px; z-index:300;
+    flex-direction:row; align-items:stretch; gap:4px;
     background:#fff; border:1px solid var(--line); border-radius:14px;
-    padding:8px; margin-bottom:16px; box-shadow:var(--shadow);
-    overflow-x:auto; overflow-y:hidden; scrollbar-width:none;
+    padding:8px; margin-bottom:14px; box-shadow:var(--shadow);
+    width:100%; overflow-x:auto; overflow-y:hidden; scrollbar-width:none;
   }
   .verktoy-faner::-webkit-scrollbar{ display:none; }
   .verktoy-fane{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; flex:0 0 auto; min-width:76px; gap:4px;
-    background:transparent; border:0; border-radius:10px; padding:9px 8px;
-    cursor:pointer; color:#5a6860;
-    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; letter-spacing:.02em;
+    text-align:center; flex:0 0 auto; min-width:76px; gap:5px;
+    background:transparent; border:none; color:#3a4450;
+    /* 🔴 Cormorant, ikke Jost. Panelet setter gruppenavnene i husets
+       display-skrift og fanene UNDER dem i Jost — forskjellen i skrift er
+       det som bærer hierarkiet. Satte jeg begge i Jost, ville raden lest
+       som en lang liste, og den ville sett ut som en annen meny enn
+       panelets selv om alt annet var likt. */
+    font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:12.5px; line-height:1.25; padding:9px 8px;
+    border-radius:10px; cursor:pointer;
   }
-  .verktoy-fane .ic{ font-size:19px; line-height:1; }
+  html[dir="rtl"] .verktoy-fane{ font-family:'Tajawal',sans-serif; }
+  .verktoy-fane .ic{ font-size:19px; flex:none; }
+  .verktoy-fane:hover{ background:var(--paper-2); color:var(--ink); }
   .verktoy-fane.active{ background:var(--emerald); color:#fff; }
 
   /* ---- Lenkeruter ---- */
