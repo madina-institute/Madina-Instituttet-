@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 14:40:24 -->
+<!-- SIST-ENDRET: 2026-08-15 14:47:51 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -115,6 +115,35 @@
   .verktoy-fane .ic{ font-size:19px; flex:none; }
   .verktoy-fane:hover{ background:var(--paper-2); color:var(--ink); }
   .verktoy-fane.active{ background:var(--emerald); color:#fff; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ANDRE NIVÅ — samme form som panelets sub-sidebar.
+
+     🔴 Uten det lå alt under «Publiser» etter hverandre i én rulling:
+     enkeltfil, leveranse, status. Skulle man til leveransen, måtte man
+     forbi enkeltfil-kortet — og det man IKKE skulle gjøre sto i veien
+     for det man skulle.
+
+     Jost her, Cormorant over: forskjellen i skrift er det som skiller
+     gruppe fra fane. Samme skrift på begge nivåer leses som én lang liste.
+     ═══════════════════════════════════════════════════════════════ */
+  .under-faner{
+    display:flex; flex-direction:row; gap:6px; background:#fff;
+    border:1px solid var(--line); border-radius:16px; padding:8px;
+    box-shadow:var(--shadow); width:100%; margin-bottom:16px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .under-faner::-webkit-scrollbar{ display:none; }
+  .under-fane{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    text-align:center; flex:0 0 auto; min-width:64px;
+    background:transparent; border:none; color:#78808f;
+    font-family:'Jost',sans-serif; font-weight:500; font-size:10.5px;
+    line-height:1.2; padding:10px 6px; border-radius:10px;
+    cursor:pointer; white-space:nowrap;
+  }
+  .under-fane .ic{ font-size:17px; }
+  .under-fane.active{ background:#DCEFFB; color:#1E6E8C; font-weight:600; }
 
   /* ---- Lenkeruter ---- */
   .lenke-rutenett{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
@@ -347,6 +376,10 @@
       <button class="verktoy-fane" data-fane="arkiv" onclick="velgFane('arkiv')"><span class="ic">📦</span>Arkiv</button>
     </div>
 
+    <!-- Andre nivå. Bygges av velgFane() etter hvilken fane som er valgt,
+         og skjules helt for faner som ikke har underdeler. -->
+    <div class="under-faner" id="underFaner" style="display:none;"></div>
+
     <!-- ══════════════════════════════════════════════════════════════
          LENKER — verktøyet er uansett det man åpner først på telefonen.
          ⚠️ Alt åpnes i ny fane. Google, Outlook, Zoho og Brevo nekter å
@@ -393,7 +426,7 @@
       <div class="lenke-rutenett" id="lenkeRutenett"></div>
     </div>
 
-    <div class="card" data-fane="publiser">
+    <div class="card" data-fane="publiser" data-under="flere">
       <h2>Publiser flere filer samtidig</h2>
       <div class="sub">
         Velg flere filer — eller <b>ett ZIP-arkiv</b>, så pakkes det ut her og
@@ -435,8 +468,8 @@
     <!-- Gjelder hele repoet, ikke én fil — derfor synlig i begge
          seksjonene. Sto tidligere inne i enkeltfil-kortet, og fra en
          leveranse måtte man ut og inn igjen for å nå dem. -->
-    <div class="card" data-fane="publiser status regler">
-      <h2>Status og rapport</h2>
+    <div class="card" data-fane="status" data-under="utlegging">
+      <h2>🚦 Utleggingen</h2>
       <div class="sub">Gjelder hele repoet — uavhengig av hvilken fil du holder på med.</div>
       <!-- 🔴 Svaret på spørsmålet ingen kunne svare på 15.08: ligger det
            noe i GitHub som aldri kom ut på nettstedet? -->
@@ -449,11 +482,15 @@
       </div>
       <div id="utleggingBoks" style="display:none;"></div>
 
-      <!-- 🔴 Bakgrunnen måtte fortelles på nytt i hver eneste nye samtale,
-           og det som ble husket feil, ble bygget videre på. Dette er den
-           delen verktøyet VET: hva som er publisert, når, og om det nådde
-           nettstedet. -->
-      <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.08);">
+    </div>
+
+    <!-- 🔴 Bakgrunnen måtte fortelles på nytt i hver eneste nye samtale,
+         og det som ble husket feil, ble bygget videre på. Dette er den
+         delen verktøyet VET: hva som er publisert, når, og om det nådde
+         nettstedet. -->
+    <div class="card" data-fane="status" data-under="rapport" style="display:none;">
+      <h2>📋 Rapport</h2>
+      <div style="margin-top:4px;">
         <label class="hint" for="rapportDager">Rapport for siste</label>
         <div class="field-row-2" style="margin-top:6px;">
           <select id="rapportDager">
@@ -510,7 +547,7 @@
       <div id="tidListe"></div>
     </div>
 
-    <div class="card" data-fane="publiser">
+    <div class="card" data-fane="publiser" data-under="en">
       <h2>Publiser én fil</h2>
       <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
 
@@ -3313,18 +3350,62 @@
     btn.disabled = false;
   };
 
+  // Underdelene per fane. Står listen her, kan et nytt kort legges til
+  // uten at menyen må vedlikeholdes to steder.
+  const UNDERFANER = {
+    publiser: [['en','📄','Én fil'], ['flere','📚','Flere filer']],
+    status:   [['utlegging','🚦','Utlegging'], ['rapport','📋','Rapport']]
+  };
+  let aktivUnder = {};
+
   window.velgFane = function(fane){
     aktivFane = fane;
     document.querySelectorAll('.verktoy-fane').forEach(b => {
       b.classList.toggle('active', b.dataset.fane === fane);
     });
-    document.querySelectorAll('#publishView [data-fane]').forEach(kort => {
-      const hører = String(kort.dataset.fane || '').split(/\s+/);
-      kort.style.display = hører.indexOf(fane) !== -1 ? '' : 'none';
-    });
+
+    // Andre nivå bygges bare når fanen har underdeler. Uten det ville en
+    // tom rad stått igjen og sett ut som noe som manglet.
+    const under = UNDERFANER[fane];
+    const rad = document.getElementById('underFaner');
+    if(under){
+      if(!aktivUnder[fane]) aktivUnder[fane] = under[0][0];
+      rad.style.display = '';
+      rad.innerHTML = under.map(([id, ic, tekst]) =>
+        '<button class="under-fane' + (aktivUnder[fane] === id ? ' active' : '') +
+        '" onclick="velgUnder(\'' + fane + '\',\'' + id + '\')">' +
+        '<span class="ic">' + ic + '</span>' + tekst + '</button>').join('');
+    } else {
+      rad.style.display = 'none';
+      rad.innerHTML = '';
+    }
+
+    visKort();
     if(fane === 'lenker') tegnLenker();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  window.velgUnder = function(fane, id){
+    aktivUnder[fane] = id;
+    document.querySelectorAll('#underFaner .under-fane').forEach((b, i) => {
+      b.classList.toggle('active', (UNDERFANER[fane][i] || [])[0] === id);
+    });
+    visKort();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Et kort vises når fanen stemmer OG — hvis det har en underdel — den
+  // valgte underdelen stemmer. Kort uten underdel hører til hele fanen.
+  function visKort(){
+    document.querySelectorAll('#publishView [data-fane]').forEach(kort => {
+      const faner = String(kort.dataset.fane || '').split(/\s+/);
+      const riktigFane = faner.indexOf(aktivFane) !== -1;
+      const under = kort.dataset.under;
+      const riktigUnder = !under || under === aktivUnder[aktivFane];
+      kort.style.display = (riktigFane && riktigUnder) ? '' : 'none';
+    });
+  }
+
 
 
   function oppdaterKortkontekst(){
