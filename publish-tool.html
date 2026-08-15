@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 12:36:30 -->
+<!-- SIST-ENDRET: 2026-08-15 12:56:54 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@
       <div class="sub">Velg flere filer fra telefonen (f.eks. index.html, index1.html, index4.html) — hver fil publiseres til sin egen filsti automatisk, basert på filnavnet.</div>
 
       <label class="btn-file-label" for="multiFileUpload">📁 Velg flere filer fra telefonen...</label>
-      <input type="file" id="multiFileUpload" accept=".html,.js,.json,.css,.txt" multiple onchange="handleMultiFileUpload(event)">
+      <input type="file" id="multiFileUpload" accept=".html,.js,.mjs,.json,.css,.txt,.rules,.yml,.yaml,.md,text/plain" multiple onchange="handleMultiFileUpload(event)">
 
       <div id="multiFileList"></div>
 
@@ -292,7 +292,7 @@
       <div class="sub">Velg filen fra telefonen din (fra Nedlastinger/Filer), eller lim inn innholdet manuelt — velg riktig fil og trykk «Publiser».</div>
 
       <label class="btn-file-label" for="fileUpload">📁 Velg fil fra telefonen...</label>
-      <input type="file" id="fileUpload" accept=".html,.js,.json,.css,.txt" onchange="handleFileUpload(event)">
+      <input type="file" id="fileUpload" accept=".html,.js,.mjs,.json,.css,.txt,.rules,.yml,.yaml,.md,text/plain" onchange="handleFileUpload(event)">
       <div class="file-loaded-hint" id="fileLoadedHint"></div>
 
       <div class="field">
@@ -747,7 +747,26 @@
       return merke + '\n' + rent.replace(/^\s*\n+/, '');
     }
 
-    if(lav.endsWith('.js') || lav.endsWith('.css') || lav.endsWith('.rules')){
+    // 🔴 REGLENE TÅLER IKKE STEMPELET ØVERST.
+    //
+    // Firestore krever at «rules_version» er det FØRSTE i filen. Et
+    // kommentarstempel over den gjør reglene ugyldige, og hele
+    // utleggingen stopper.
+    //
+    // Så lenge filen bare var dokumentasjon, spilte det ingen rolle —
+    // ingen kompilerte den. Nå går den til basen, og da må stempelet
+    // flyttes UNDER rules_version-linjen i stedet for å stå over den.
+    if(lav.endsWith('.rules')){
+      const merke = '/' + '* SIST-ENDRET: ' + tid + ' *' + '/';
+      const rent = innhold.replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\n?/g, '');
+      const m = rent.match(/^\s*rules_version[^\n]*\n/);
+      if(m) return rent.slice(0, m[0].length) + merke + '\n' + rent.slice(m[0].length);
+      // Ingen rules_version-linje: filen er uansett ugyldig, og da skal
+      // stempelet ikke skjule hvorfor. La innholdet stå urørt.
+      return rent;
+    }
+
+    if(lav.endsWith('.js') || lav.endsWith('.css')){
       const merke = '/' + '* SIST-ENDRET: ' + tid + ' *' + '/';
       const rent = innhold.replace(/\/\*\s*SIST-ENDRET:[^*]*\*\/\s*\n?/g, '');
       return merke + '\n' + rent;
