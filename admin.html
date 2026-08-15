@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 01:10:39 -->
+<!-- SIST-ENDRET: 2026-08-16 01:31:05 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1029,6 +1029,57 @@
      normal small checkbox no matter where inside a .field they're used, so
      this class of bug can't resurface the next time a checkbox group gets
      added somewhere new. */
+
+  /* ── PROGRAMSIDEN ──────────────────────────────────────────────────
+     Et skjema man fyller ut sjelden, men som avgjør mye: prisen
+     familiene ser, dagen klassene arver. Da skal feltene være store nok
+     til å leses uten å lene seg fram, og verdiene velges fra en liste
+     der det finnes en liste — et klokkeslett skrevet «9.30 morgen»
+     hjelper ingen. */
+  #panel-programside .pg-seksjon{ padding:22px 24px; }
+  #panel-programside .pg-seksjon h3{ margin:0 0 4px; }
+  #panel-programside .pg-rutenett{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+    gap:16px 20px; margin-top:18px;
+  }
+  #panel-programside .field label{
+    font-size:12.5px; letter-spacing:.02em; margin-bottom:7px; color:var(--emerald-d);
+  }
+  #panel-programside .field input,
+  #panel-programside .field select{
+    padding:13px 14px; font-size:17px; background:#fff; border:1.5px solid var(--line);
+    border-radius:8px;
+  }
+  #panel-programside .field input:focus,
+  #panel-programside .field select:focus{
+    outline:none; border-color:var(--emerald-l); background:var(--paper);
+  }
+  #panel-programside .pg-rad{
+    display:grid; grid-template-columns:96px 1fr 140px auto;
+    gap:12px; align-items:center;
+    background:#fff; border:1.5px solid var(--line); border-radius:10px;
+    padding:12px 14px;
+  }
+  #panel-programside .pg-rad.pause{ background:var(--paper-2); border-style:dashed; }
+  #panel-programside .pg-rad .pg-tid{
+    font-family:'Jost',sans-serif; font-weight:700; font-size:13.5px; color:var(--emerald-d);
+    white-space:nowrap;
+  }
+  #panel-programside .pg-rad.pause .pg-tid{ color:#8a9a90; }
+  #panel-programside .pg-rad input,
+  #panel-programside .pg-rad select{
+    width:100%; padding:11px 12px; font-size:16px; font-family:'Lora',serif;
+    border:1px solid var(--line); border-radius:7px; background:var(--paper);
+  }
+  #panel-programside .pg-knapper{ display:flex; gap:4px; }
+  #panel-programside .pg-knapper button{
+    padding:8px 11px; font-size:13px; line-height:1; min-width:38px;
+  }
+  @media (max-width:640px){
+    #panel-programside .pg-rad{ grid-template-columns:1fr; gap:8px; }
+    #panel-programside .pg-seksjon{ padding:18px 16px; }
+  }
+
   .field input[type="checkbox"], .field input[type="radio"]{
     width:15px; height:15px; min-width:15px; padding:0; border:1px solid var(--line);
     flex-shrink:0; accent-color:var(--emerald); cursor:pointer; margin:0; background:#fff;
@@ -2485,98 +2536,100 @@
        resten av dokumentet og latt skjemaet stå uten pris.
        ══════════════════════════════════════════════════════════════ -->
   <div class="panel" id="panel-programside">
-    <div class="report-card">
+    <div class="report-card pg-seksjon">
       <button class="btn btn-ghost" onclick="pgLukk()">← Tilbake til programmene</button>
-      <h3 id="pgTittel" style="margin-top:12px;">Nytt program</h3>
+      <h3 id="pgTittel" style="margin-top:14px;">Nytt program</h3>
       <div class="sub" id="pgUndertittel"></div>
     </div>
 
-    <div class="report-card" style="margin-top:16px;">
-      <h3>Navn og dager</h3>
-      <div class="field">
-        <label>Programnavn</label>
-        <input type="text" id="pgNavn" placeholder="f.eks. Madinabarn (Søndag)">
-      </div>
-      <div class="field">
-        <label>Undervisningsdager</label>
-        <div class="check-row" id="pgDager"></div>
-      </div>
-      <div class="innst-rad">
-        <div class="field">
-          <label>Programmet begynner (dato)</label>
-          <input type="text" id="pgStartdato" placeholder="f.eks. 2026-09-06">
+    <div class="report-card pg-seksjon" style="margin-top:16px;">
+      <h3>1 · Navn og periode</h3>
+      <div class="sub">Navnet er det klasser og elever peker på. Endres det, må de oppdateres.</div>
+      <div class="pg-rutenett">
+        <div class="field" style="grid-column:1/-1;">
+          <label>Programnavn</label>
+          <input type="text" id="pgNavn" placeholder="f.eks. Madinabarn (Søndag)">
         </div>
         <div class="field">
-          <label>Programmet slutter (dato)</label>
-          <input type="text" id="pgSluttdato" placeholder="f.eks. 2027-06-13">
+          <label>Programmet begynner</label>
+          <input type="date" id="pgStartdato">
+        </div>
+        <div class="field">
+          <label>Programmet slutter</label>
+          <input type="date" id="pgSluttdato">
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="pgAktiv"><option value="Ja">Aktivt</option><option value="Nei">Ikke aktivt</option></select>
         </div>
       </div>
-      <div class="hint">Står datoene tomme, gjelder skoleåret som er satt i Skolekalender.</div>
+      <div class="hint" style="margin-top:10px;">Står datoene tomme, gjelder skoleåret fra Skolekalender.</div>
     </div>
 
-    <div class="report-card" style="margin-top:16px;">
-      <h3>Undervisningsdagen</h3>
-      <div class="sub">
-        Skriv hvor lenge hvert innslag varer. Klokkeslettene regnes ut fra
-        når dagen begynner — du trenger ikke skrive dem.
+    <div class="report-card pg-seksjon" style="margin-top:16px;">
+      <h3>2 · Undervisningsdager</h3>
+      <div class="sub">Hvilke ukedager programmet har undervisning.</div>
+      <div class="field" style="margin-top:16px;">
+        <div class="check-row" id="pgDager"></div>
       </div>
-      <div class="innst-rad" style="margin-top:12px;">
+    </div>
+
+    <div class="report-card pg-seksjon" style="margin-top:16px;">
+      <h3>3 · Undervisningsdagen</h3>
+      <div class="sub">
+        Velg når dagen begynner og slutter, og skriv hvert fag med varigheten sin.
+        Klokkeslettene regnes ut — du skriver dem ikke.
+      </div>
+      <div class="pg-rutenett">
         <div class="field">
           <label>Dagen begynner</label>
-          <input type="text" id="pgDagStart" placeholder="09:30" onchange="pgTegnDag()">
+          <select id="pgDagStart" onchange="pgTegnDag()"></select>
         </div>
         <div class="field">
           <label>Dagen slutter</label>
-          <input type="text" id="pgDagSlutt" placeholder="11:00" onchange="pgTegnDag()">
+          <select id="pgDagSlutt" onchange="pgTegnDag()"></select>
         </div>
         <div class="field" id="pgDagVelgerFelt" style="display:none;">
-          <label>Gjelder dagen</label>
+          <label>Oppsettet gjelder</label>
           <select id="pgDagVelger" onchange="pgByttDag()"></select>
         </div>
       </div>
-      <div id="pgInnslag" style="margin-top:12px;"></div>
-      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-        <button class="btn btn-ghost" onclick="pgLeggTil('fag')">+ Fag</button>
-        <button class="btn btn-ghost" onclick="pgLeggTil('pause')">+ Pause</button>
+      <div id="pgInnslag" style="margin-top:18px; display:flex; flex-direction:column; gap:10px;"></div>
+      <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+        <button class="btn btn-ghost" onclick="pgLeggTil('fag')">+ Legg til fag</button>
+        <button class="btn btn-ghost" onclick="pgLeggTil('pause')">+ Legg til pause</button>
       </div>
-      <div id="pgFasit" style="margin-top:12px;"></div>
+      <div id="pgFasit" style="margin-top:14px;"></div>
     </div>
 
-    <div class="report-card" style="margin-top:16px;">
-      <h3>Pris</h3>
-      <div class="innst-effekt">
-        ⚠️ Disse tallene vises på påmeldingsskjemaet og på nettsidens prisside
-        med én gang de lagres. Ingen av dem står skrevet i koden.
+    <div class="report-card pg-seksjon" style="margin-top:16px;">
+      <h3>4 · Pris</h3>
+      <div class="innst-effekt" style="margin-top:10px;">
+        ⚠️ Disse tallene vises på påmeldingsskjemaet og på prissiden med én gang de lagres.
       </div>
-      <div class="innst-rad" style="margin-top:12px;">
+      <div class="pg-rutenett">
         <div class="field">
           <label>Medlemspris per måned (kr)</label>
-          <input type="text" id="pgPrisMedlemMnd" placeholder="f.eks. 500">
+          <input type="text" id="pgPrisMedlemMnd" inputmode="numeric" placeholder="f.eks. 500">
         </div>
         <div class="field">
           <label>Årspris for ikke-medlem (kr)</label>
-          <input type="text" id="pgPrisAar" placeholder="f.eks. 5500">
+          <input type="text" id="pgPrisAar" inputmode="numeric" placeholder="f.eks. 5500">
         </div>
-      </div>
-      <div class="innst-rad">
         <div class="field">
-          <label>Antall måneder programmet går over</label>
-          <input type="text" id="pgAntallManeder" placeholder="f.eks. 9">
+          <label>Antall måneder</label>
+          <select id="pgAntallManeder"></select>
         </div>
         <div class="field">
           <label>Materiellavgift per elev (kr)</label>
-          <input type="text" id="pgMateriellAvgift" placeholder="tomt = bruk fellessatsen">
+          <input type="text" id="pgMateriellAvgift" inputmode="numeric" placeholder="tomt = fellessatsen">
         </div>
-      </div>
-      <div class="field">
-        <label>Aktivt</label>
-        <select id="pgAktiv"><option value="Ja">Ja</option><option value="Nei">Nei</option></select>
       </div>
     </div>
 
-    <div class="report-card" style="margin-top:16px;">
+    <div class="report-card pg-seksjon" style="margin-top:16px;">
       <div id="pgFeil"></div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
         <button class="btn btn-primary" onclick="pgLagre()">Lagre programmet</button>
         <button class="btn btn-ghost" onclick="pgLukk()">Avbryt</button>
       </div>
@@ -9587,12 +9640,6 @@
   // fra plassen i listen. Flyttes et fag opp, beholder det sin id, og
   // klassenes valg følger med i stedet for å hoppe et hakk.
   // ═══════════════════════════════════════════════════════════════════
-  const PG_DAGER = ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag'];
-  let pgId = null;        // null = nytt program
-  let pgDagsoppsett = {}; // { 'Søndag': { start, slutt, innslag:[...] } }
-  let pgAktivDag = '';
-  let pgNesteNr = 1;
-
   function pgMin(t){
     const m = String(t || '').match(/^(\d{1,2})[:.](\d{2})$/);
     return m ? (+m[1]) * 60 + (+m[2]) : null;
@@ -9600,6 +9647,21 @@
   function pgKlokke(m){
     return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
   }
+  const PG_DAGER = ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag'];
+
+  // Klokkeslett velges, ikke skrives. «9.30 morgen» og «0930» og «9:3» er
+  // alle rimelige ting å taste, og alle tre var feil — de ble oppdaget
+  // først når dagen skulle regnes ut. En liste kan ikke skrives feil.
+  const PG_TIDER = (() => {
+    const ut = [];
+    for(let m = 6 * 60; m <= 22 * 60; m += 5) ut.push(pgKlokke(m));
+    return ut;
+  })();
+  const PG_VARIGHETER = [5,10,15,20,25,30,35,40,45,50,55,60,70,75,80,90,100,110,120];
+  let pgId = null;        // null = nytt program
+  let pgDagsoppsett = {}; // { 'Søndag': { start, slutt, innslag:[...] } }
+  let pgAktivDag = '';
+  let pgNesteNr = 1;
   function pgValgteDager(){
     return [...document.querySelectorAll('#pgDager input:checked')].map(c => c.value);
   }
@@ -9615,6 +9677,17 @@
     document.getElementById('pgUndertittel').textContent = id
       ? 'Endringer her slår ut på påmeldingsskjemaet og nettsiden så snart de lagres.'
       : 'Fyll ut navn og dager først — resten kan settes etterpå.';
+    // Nedtrekkene bygges her, ikke i markupen: listene er lange, og en
+    // liste skrevet ut i HTML ville stått to steder den dagen den endres.
+    const fyll = (id, verdier, valgt, tomTekst) => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.innerHTML = (tomTekst ? '<option value="">' + tomTekst + '</option>' : '') +
+        verdier.map(v => '<option value="' + v + '">' + v + '</option>').join('');
+      el.value = valgt || '';
+    };
+    fyll('pgAntallManeder', [1,2,3,4,5,6,7,8,9,10,11,12], p.antallManeder || '', '— velg —');
+
     document.getElementById('pgNavn').value = p.navn || '';
     document.getElementById('pgStartdato').value = p.startdato || '';
     document.getElementById('pgSluttdato').value = p.sluttdato || '';
@@ -9673,17 +9746,29 @@
     if(pgAktivDag) sel.value = pgAktivDag;
     felt.style.display = dager.length > 1 ? '' : 'none';
     const d = pgAktivDag ? pgDagNaa() : { start:'', slutt:'' };
-    document.getElementById('pgDagStart').value = d.start || '';
-    document.getElementById('pgDagSlutt').value = d.slutt || '';
+    pgFyllTid('pgDagStart', d.start);
+    pgFyllTid('pgDagSlutt', d.slutt);
     pgTegnDag();
   };
+
+  // En verdi som allerede står lagret beholdes selv om den ikke finnes i
+  // listen — et gammelt program kan ha 09:32. Den vises da som den er,
+  // i stedet for å bli stille byttet til noe i nærheten.
+  function pgFyllTid(id, valgt){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const liste = PG_TIDER.includes(valgt) || !valgt ? PG_TIDER : [valgt, ...PG_TIDER];
+    el.innerHTML = '<option value="">— velg —</option>' +
+      liste.map(t => '<option value="' + t + '">' + t + '</option>').join('');
+    el.value = valgt || '';
+  }
 
   window.pgByttDag = function(){
     pgLesDagFelt();
     pgAktivDag = document.getElementById('pgDagVelger').value;
     const d = pgDagNaa();
-    document.getElementById('pgDagStart').value = d.start || '';
-    document.getElementById('pgDagSlutt').value = d.slutt || '';
+    pgFyllTid('pgDagStart', d.start);
+    pgFyllTid('pgDagSlutt', d.slutt);
     pgTegnDag();
   };
 
@@ -9744,27 +9829,28 @@
 
     el.innerHTML = d.innslag.length === 0
       ? '<div class="report-empty">Ingen fag lagt inn ennå.</div>'
-      : '<div style="display:flex; flex-direction:column; gap:6px;">' +
-        d.innslag.map((x, i) => {
+      : d.innslag.map((x, i) => {
           const fra = lopende;
           const til = lopende === null ? null : lopende + (x.minutter || 0);
           lopende = til;
-          const tid = (fra === null || til === null) ? '—' : pgKlokke(fra) + '–' + pgKlokke(til);
+          const tid = (fra === null || til === null) ? '— : —' : pgKlokke(fra) + '<br>' + pgKlokke(til);
+          const valg = PG_VARIGHETER.includes(x.minutter) ? PG_VARIGHETER : [x.minutter, ...PG_VARIGHETER];
           return `
-          <div class="innst-rad" style="align-items:center; gap:8px; ${x.type === 'pause' ? 'opacity:.8;' : ''}">
-            <span style="min-width:104px; font-family:'Jost',sans-serif; font-size:12px; font-weight:700; color:${x.type === 'pause' ? '#8a9a90' : 'var(--emerald-d)'};">
-              ${x.type === 'pause' ? '☕' : '📖'} ${escapeHtml(tid)}
-            </span>
-            <input type="text" value="${escapeHtml(x.navn || '')}" placeholder="${x.type === 'pause' ? 'Pause' : 'f.eks. Koranstund'}"
+          <div class="pg-rad ${x.type === 'pause' ? 'pause' : ''}">
+            <span class="pg-tid">${x.type === 'pause' ? '☕' : '📖'}<br>${tid}</span>
+            <input type="text" value="${escapeHtml(x.navn || '')}"
+                   placeholder="${x.type === 'pause' ? 'Pause' : 'Navn på faget'}"
                    onchange="pgSettInnslag(${i}, 'navn', this.value.trim())">
-            <input type="text" value="${x.minutter || 0}" style="max-width:64px;" inputmode="numeric"
-                   onchange="pgSettInnslag(${i}, 'minutter', this.value)">
-            <span style="font-size:12px; color:#8a9a90;">min</span>
-            <button class="btn btn-ghost" style="padding:4px 8px;" onclick="pgFlyttInnslag(${i}, -1)">↑</button>
-            <button class="btn btn-ghost" style="padding:4px 8px;" onclick="pgFlyttInnslag(${i}, 1)">↓</button>
-            <button class="btn btn-ghost" style="padding:4px 8px;" onclick="pgFjernInnslag(${i})">Fjern</button>
+            <select onchange="pgSettInnslag(${i}, 'minutter', this.value)">
+              ${valg.map(v => `<option value="${v}"${v === x.minutter ? ' selected' : ''}>${v} minutter</option>`).join('')}
+            </select>
+            <span class="pg-knapper">
+              <button class="btn btn-ghost" onclick="pgFlyttInnslag(${i}, -1)" title="Flytt opp">↑</button>
+              <button class="btn btn-ghost" onclick="pgFlyttInnslag(${i}, 1)" title="Flytt ned">↓</button>
+              <button class="btn btn-ghost" onclick="pgFjernInnslag(${i})" title="Fjern">✕</button>
+            </span>
           </div>`;
-        }).join('') + '</div>';
+        }).join('');
 
     // Regnskapet for dagen. Uten det oppdages det først når timeplanen
     // er delt ut at dagen er ti minutter for lang.
