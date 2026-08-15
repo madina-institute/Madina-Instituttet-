@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 18:04:35 -->
+<!-- SIST-ENDRET: 2026-08-15 18:32:31 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -681,6 +681,29 @@
       <button class="btn btn-primary" id="publishBtn" onclick="publish()">Publiser til GitHub</button>
       <div class="status" id="statusBox"></div>
 
+      <!-- 🔴 Sperren hindret oss i å legge en gammel kopi over nyere
+           arbeid tre ganger 15. august. Men gikk det først galt, fantes
+           ingen vei tilbake fra telefonen. -->
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="visHistorikkForGjenoppretting()">
+        ↩︎ Hent tilbake en tidligere utgave
+      </button>
+      <div class="hint" style="margin-top:6px;">
+        Viser de ti siste utgavene av filen over. Å hente inn en av dem
+        <b>publiserer ingenting</b> — den legges i skjemaet så du kan lese den først.
+      </div>
+      <div id="gjenopprettBoks" style="display:none;"></div>
+
+      <!-- Filer ingen peker på. Se kommentaren over finnForeldrelose():
+           den naive varianten ville foreslått å slette felles.js. -->
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="finnForeldrelose()">
+        🧹 Finn filer ingen peker på
+      </button>
+      <div class="hint" style="margin-top:6px;">
+        Leser hvem som nevner hvem i repoet. <b>Kandidater, ikke fasit</b> — bilder og
+        filer som hentes med kode kan se ubrukte ut og likevel være i bruk.
+      </div>
+      <div id="foreldreloseBoks" style="display:none;"></div>
+
       <div class="logg-skille">
         <button class="btn btn-ghost" onclick="kjorLogg()">📜 Endrings- og publiseringslogg</button>
         <div class="hint">Går gjennom historikken til filen over og sier fra om rekkefølgen henger sammen. Publiserer ingenting.</div>
@@ -1144,6 +1167,63 @@
     return fjernStempel(txt).replace(/\r\n/g, '\n').replace(/\s+$/, '');
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // HVA ER FORSKJELLEN — linje for linje.
+  //
+  // 🔴 Verktøyet sa «eldre» eller «forskjellig», aldri HVOR.
+  //
+  // 15. august kostet det en halvtime to ganger: firebase.json manglet
+  // sin første «{», og firebase-rules.yml manglet «name:» på linje 1.
+  // Begge var én linje. Begge ble først synlige i en loggfil hos GitHub
+  // Actions, lenge etter at utleggingen hadde stanset.
+  //
+  // Algoritmen er den enkleste som gjør nytte: finn hvor mange linjer som
+  // er like fra toppen, og hvor mange fra bunnen. Alt imellom er
+  // endringen. Det tåler ikke flyttede blokker — men for «en linje falt
+  // ut under kopieringen», som er det som faktisk skjer her, peker den
+  // rett på stedet.
+  // ═══════════════════════════════════════════════════════════════════
+  function finnForskjell(gammel, ny){
+    const a = normaliser(gammel).split('\n');
+    const b = normaliser(ny).split('\n');
+    let f = 0;
+    while(f < a.length && f < b.length && a[f] === b[f]) f++;
+    let s = 0;
+    while(s < a.length - f && s < b.length - f &&
+          a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
+    return {
+      linje: f + 1,
+      fjernet: a.slice(f, a.length - s),
+      lagtTil: b.slice(f, b.length - s),
+      likeLinjer: f + s,
+      totalt: Math.max(a.length, b.length)
+    };
+  }
+
+  // Kort utdrag, ikke hele endringen. Er forskjellen stor, er det ikke
+  // linjene man trenger — da er det nok å vite at den ER stor.
+  function forskjellHtml(gammel, ny, merk){
+    const d = finnForskjell(gammel, ny);
+    if(d.fjernet.length === 0 && d.lagtTil.length === 0) return '';
+    const klipp = t => {
+      const r = String(t).replace(/\t/g, '  ');
+      return escapeHtmlPT(r.length > 90 ? r.slice(0, 90) + '…' : r) || '<i>(tom linje)</i>';
+    };
+    const vis = (liste, tegn, klasse) => liste.slice(0, 4).map(l =>
+      '<div class="diff-linje ' + klasse + '"><span class="d-tegn">' + tegn + '</span>' +
+      klipp(l) + '</div>').join('') +
+      (liste.length > 4 ? '<div class="diff-mer">… og ' + (liste.length - 4) + ' linjer til</div>' : '');
+    const endret = Math.max(d.fjernet.length, d.lagtTil.length);
+    return '<div class="diff-boks">' +
+      '<div class="diff-topp">Første forskjell: <b>linje ' + d.linje + '</b>' +
+      ' · ' + endret + ' av ' + d.totalt + ' linjer</div>' +
+      (d.fjernet.length ? '<div class="diff-merk">' + (merk ? merk[0] : 'I den publiserte') + '</div>' +
+        vis(d.fjernet, '−', 'bort') : '') +
+      (d.lagtTil.length ? '<div class="diff-merk">' + (merk ? merk[1] : 'I din fil') + '</div>' +
+        vis(d.lagtTil, '+', 'inn') : '') +
+      '</div>';
+  }
+
   function lesStempel(txt){
     const m = String(txt).match(/SIST-ENDRET:\s*(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/);
     if(!m) return null;
@@ -1208,18 +1288,18 @@
     const repoAvtrykk = avtrykk(repo.innhold);
 
     if(normaliser(lokaltInnhold) === normaliser(repo.innhold)){
-      return { status: 'identisk', lokalTid, repoTid, repoAvtrykk };
+      return { status: 'identisk', lokalTid, repoTid, repoAvtrykk, repoInnhold: repo.innhold };
     }
     if(lokalTid && repoTid){
-      if(lokalTid.getTime() < repoTid.getTime()) return { status: 'eldre', lokalTid, repoTid, repoAvtrykk };
-      if(lokalTid.getTime() > repoTid.getTime()) return { status: 'nyere', lokalTid, repoTid, repoAvtrykk };
+      if(lokalTid.getTime() < repoTid.getTime()) return { status: 'eldre', lokalTid, repoTid, repoAvtrykk, repoInnhold: repo.innhold };
+      if(lokalTid.getTime() > repoTid.getTime()) return { status: 'nyere', lokalTid, repoTid, repoAvtrykk, repoInnhold: repo.innhold };
       // Samme stempel, ulikt innhold: dette er det HELT VANLIGE tilfellet.
       // Du lastet ned filen, endret den, og laster den opp igjen — stempelet
       // står stille til publiseringen setter et nytt. Ville denne blitt
       // sperret, ville verktøyet stoppet hver eneste normale endring.
-      return { status: 'endret', lokalTid, repoTid, repoAvtrykk };
+      return { status: 'endret', lokalTid, repoTid, repoAvtrykk, repoInnhold: repo.innhold };
     }
-    return { status: 'ukjent', lokalTid, repoTid, repoAvtrykk };
+    return { status: 'ukjent', lokalTid, repoTid, repoAvtrykk, repoInnhold: repo.innhold };
   }
 
   // Kjøres etter hovedsammenligningen. Er alderen ukjent fordi stempelet
@@ -1382,6 +1462,68 @@
     }
     return ut;
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // GJENOPPRETTING — hent en tidligere utgave tilbake.
+  //
+  // 🔴 Sperren stoppet oss tre ganger 15. august fra å legge en gammel
+  // kopi over nyere arbeid. Men gikk det først galt, fantes ingen vei
+  // tilbake fra telefonen — man måtte til github.com på en PC.
+  //
+  // Historikken hentes allerede av hentVersjoner(), med innhold og alt.
+  // Det som manglet var å kunne velge en av dem.
+  //
+  // ⚠️ Gjenoppretting SLETTER ingenting: den publiserer den gamle
+  // teksten som en ny versjon. Angrer man igjen, ligger alt fortsatt der.
+  // ═══════════════════════════════════════════════════════════════════
+  let hentedeVersjoner = [];
+
+  window.visHistorikkForGjenoppretting = async function(){
+    const path = currentPath();
+    const boks = document.getElementById('gjenopprettBoks');
+    if(!path || !boks) return;
+    boks.style.display = 'block';
+    boks.innerHTML = '<div class="ut-sub">Henter historikken for ' + escapeHtmlPT(path) + '…</div>';
+    try{
+      hentedeVersjoner = await hentVersjoner(path, 10);
+    }catch(err){
+      boks.innerHTML = '<div class="ut-tittel">Kunne ikke hente historikken</div>' +
+        '<pre class="ut-logg" id="histLogg">' + escapeHtmlPT(err.message || err) + '</pre>';
+      return;
+    }
+    if(hentedeVersjoner.length === 0){
+      boks.innerHTML = '<div class="ut-sub">Fant ingen tidligere versjoner av denne filen.</div>';
+      return;
+    }
+    boks.innerHTML =
+      '<div class="ut-tittel">Tidligere utgaver av ' + escapeHtmlPT(path) + '</div>' +
+      '<div class="ut-sub">Den øverste er den som ligger ute nå.</div>' +
+      hentedeVersjoner.map((v, i) =>
+        '<div class="hist-rad">' +
+          '<div class="hist-tekst"><b>' + (i === 0 ? 'Nåværende' : 'v' + (hentedeVersjoner.length - i)) + '</b> · ' +
+            visTid(v.commitDato) + '<br><span class="hist-melding">' +
+            escapeHtmlPT(v.melding) + '</span></div>' +
+          (i === 0 ? '<span class="hist-naa">ute nå</span>'
+                   : '<button class="btn btn-ghost hist-knapp" onclick="hentTilbake(' + i + ')">Hent inn</button>') +
+        '</div>').join('');
+  };
+
+  // Henter utgaven INN i skjemaet — publiserer den ikke. Da kan man lese
+  // den, se forskjellen mot det som ligger ute, og selv bestemme.
+  window.hentTilbake = function(i){
+    const v = hentedeVersjoner[i];
+    if(!v) return;
+    document.getElementById('fileContent').value = v.innhold;
+    const hint = document.getElementById('fileLoadedHint');
+    if(hint){
+      hint.className = 'file-loaded-hint show';
+      hint.textContent = '↩︎ Hentet inn utgaven fra ' + visTid(v.commitDato) +
+        '. Den er IKKE publisert — kontroller den, og trykk «Publiser» hvis du vil ha den tilbake.';
+    }
+    nullstillSperre();
+    window.sjekkVersjon();
+    document.getElementById('fileContent').scrollIntoView({ behavior:'smooth', block:'center' });
+  };
 
   async function finnIHistorikk(path, lokaltInnhold, maks = 30){
     const versjoner = await hentVersjoner(path, maks);
@@ -2128,10 +2270,17 @@
   // Alle statusbokser vises og skjules med KLASSEN «show», aldri med
   // style.display. Blandes de to, vinner en inline display:none over
   // .status.show uansett — boksen fylles med tekst og forblir usynlig.
-  function visDiff(cls, tekst){
+  function visDiff(cls, tekst, forskjellHtmlStr){
     const p = document.getElementById('diffPanel');
     p.className = 'status show ' + cls;
+    // Teksten settes som tekst (den har linjeskift og skal ikke tolkes),
+    // forskjellen legges til som markup etterpå.
     p.textContent = tekst;
+    if(forskjellHtmlStr){
+      const boks = document.createElement('div');
+      boks.innerHTML = forskjellHtmlStr;
+      p.appendChild(boks);
+    }
   }
 
   // ===================================================================
@@ -2955,7 +3104,13 @@
       'Publisert versjon:  ' + publisertLinje + '\n' +
       'Publiseringsbok:    ' + bokLinje + '\n' +
       'Stempel hvis du publiserer nå: ' + noTid() + '\n\n' +
-      d.tekst);
+      d.tekst,
+      // Forskjellen vises bare når det ER en forskjell å vise: ikke for
+      // en ny fil (ingenting å sammenligne med) og ikke for en identisk
+      // (da er «identisk» hele svaret).
+      (r.repoInnhold && r.status !== 'ny' && r.status !== 'identisk')
+        ? forskjellHtml(r.repoInnhold, content, ['I den publiserte', 'I din fil'])
+        : '');
 
     document.getElementById('overstyrBtn').style.display = d.sperr ? 'block' : 'none';
     return d;
@@ -3166,6 +3321,124 @@
   // Det er feil rekkefølge for det som betyr noe. Med ti filer vil man
   // vite hva som kommer til å skje før noe skjer.
   // ═══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // FILER INGEN PEKER PÅ.
+  //
+  // 🔴 DEN NAIVE VARIANTEN VILLE REVET NED NETTSTEDET.
+  //
+  // «Foreldreløs = ikke i verktøyets liste» høres riktig ut, men listen
+  // har 29 faste oppføringer, og alt som er bygget siden 12. august står
+  // ikke i den: felles.js, innhold.js, priser.js og de sju undersidene.
+  // Med et sletteikon ved siden av hver av dem hadde første trykk fjernet
+  // det nettstedet lever av.
+  //
+  // Riktig spørsmål er ikke «kjenner jeg filen?» men «er det noe som
+  // peker på den?». Derfor leses src= og href= ut av HTML-filene, og
+  // rewrites ut av firebase.json.
+  //
+  // ⚠️ Og selv da: KANDIDAT, ikke foreldreløs. Bilder, ikoner og filer
+  // som hentes med fetch() i kode ser ingen referanse ut, og de er i full
+  // bruk. Derfor står grunnen ved siden av hver rad, og sletting krever
+  // at filnavnet skrives inn for hånd.
+  // ═══════════════════════════════════════════════════════════════════
+  const ALLTID_I_BRUK = [
+    'firebase.json', 'firestore.rules', '.firebaserc', '.gitignore',
+    'PROJECT-SUMMARY-AR.md', 'index.html', 'sw.js'
+  ];
+
+  window.finnForeldrelose = async function(){
+    const boks = document.getElementById('foreldreloseBoks');
+    if(!boks) return;
+    boks.style.display = 'block';
+    boks.innerHTML = '<div class="ut-sub">Leser filene og hvem som peker på hvem…</div>';
+
+    const cfg = loadConfig();
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = { 'Authorization':'Bearer ' + cfg.token, 'Accept':'application/vnd.github+json' };
+    let stier;
+    try{
+      const r = await fetch(base + '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1',
+        { headers, cache:'no-store' });
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      const tre = await r.json();
+      stier = (tre.tree || []).filter(n => n.type === 'blob').map(n => n.path);
+    }catch(err){
+      boks.innerHTML = '<div class="ut-tittel">Kunne ikke lese filtreet</div>' +
+        '<pre class="ut-logg" id="forLogg">' + escapeHtmlPT(err.message || err) + '</pre>';
+      return;
+    }
+
+    // Alt som nevnes et sted. Vi leter i tekstfilene som kan peke videre.
+    const pekere = new Set();
+    const lesbare = stier.filter(p => /\.(html|js|mjs|css|json|yml|yaml)$/i.test(p));
+    for(const sti of lesbare){
+      try{
+        const r = await fetch(base + '/contents/' + sti + '?ref=' + encodeURIComponent(cfg.branch),
+          { headers, cache:'no-store' });
+        if(!r.ok) continue;
+        const d = await r.json();
+        const tekst = d.content ? fraBase64(d.content) : '';
+        // Ethvert filnavn som nevnes i teksten teller som en peker — enten
+        // det står i src=, href=, en rewrite eller inne i en fetch().
+        stier.forEach(kandidat => {
+          if(kandidat === sti) return;
+          const navn = kandidat.split('/').pop();
+          if(tekst.indexOf(navn) !== -1) pekere.add(kandidat);
+        });
+      }catch(e){ /* hopper over filer som ikke kan leses */ }
+    }
+
+    const kandidater = stier.filter(p =>
+      ALLTID_I_BRUK.indexOf(p) === -1 &&
+      p.indexOf('.github/') !== 0 &&
+      p.indexOf('functions/') !== 0 &&
+      !pekere.has(p));
+
+    if(kandidater.length === 0){
+      boks.innerHTML = '<div class="ut-tittel ok">✓ Ingen kandidater</div>' +
+        '<div class="ut-sub">Alle ' + stier.length + ' filene nevnes et sted.</div>';
+      return;
+    }
+    boks.innerHTML =
+      '<div class="ut-tittel">' + kandidater.length + ' filer ingen peker på</div>' +
+      '<div class="ut-sub">⚠️ <b>Kandidater, ikke fasit.</b> Bilder og filer som hentes ' +
+      'med kode kan se ubrukte ut og likevel være i full bruk. Åpne filen og se etter før du sletter.</div>' +
+      kandidater.map(p =>
+        '<div class="hist-rad"><div class="hist-tekst">' + escapeHtmlPT(p) + '</div>' +
+        '<button class="btn btn-ghost hist-knapp" onclick="slettFil(\'' + escapeHtmlPT(p) + '\')">Slett…</button>' +
+        '</div>').join('');
+  };
+
+  window.slettFil = async function(sti){
+    // Navnet må skrives for hånd. En bekreftelsesdialog trykkes bort på
+    // refleks; å skrive navnet krever at man har lest hva som slettes.
+    const svar = prompt('Slette «' + sti + '» fra repoet?\n\n' +
+      'Filen forsvinner fra nettstedet ved neste utlegging. Historikken i GitHub beholder den,\n' +
+      'så den kan hentes tilbake — men det må gjøres på github.com.\n\n' +
+      'Skriv filnavnet nøyaktig for å bekrefte:');
+    if(svar === null) return;
+    if(svar.trim() !== sti){ alert('Navnet stemte ikke. Ingenting er slettet.'); return; }
+    const cfg = loadConfig();
+    const base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    const headers = { 'Authorization':'Bearer ' + cfg.token, 'Accept':'application/vnd.github+json' };
+    try{
+      const r0 = await fetch(base + '/contents/' + sti + '?ref=' + encodeURIComponent(cfg.branch),
+        { headers, cache:'no-store' });
+      if(!r0.ok) throw new Error('fant ikke filen (HTTP ' + r0.status + ')');
+      const d0 = await r0.json();
+      const r1 = await fetch(base + '/contents/' + sti, {
+        method:'DELETE', headers:{ ...headers, 'Content-Type':'application/json' },
+        body: JSON.stringify({ message:'Slett ' + sti + ' via publiseringsverktøy',
+                               sha:d0.sha, branch:cfg.branch })
+      });
+      if(!r1.ok){ const e = await r1.json().catch(()=>({})); throw new Error(e.message || ('HTTP ' + r1.status)); }
+      showStatus('✓ ' + sti + ' er slettet. Den forsvinner fra nettstedet ved neste utlegging.', 'ok');
+      finnForeldrelose();
+    }catch(err){
+      showStatus('✗ Kunne ikke slette: ' + (err.message || err), 'err');
+    }
+  };
+
   window.sjekkAlle = async function(automatisk){
     if(multiFiles.length === 0) return;
     const btn = document.getElementById('multiSjekkBtn');
@@ -3208,7 +3481,13 @@
               : r.status === 'historisk'
               ? '🛑 Gammel kopi — publisert ' + visTid(r.treff.dato)
               : '🛑 Eldre enn den publiserte (din: ' + visTid(r.lokalTid) + ')') +
-            '<br><span class="mf-grunn">Blir hoppet over ved publisering.</span>';
+            '<br><span class="mf-grunn">Blir hoppet over ved publisering.</span>' +
+            // Med ti filer er «eldre» enda mindre til hjelp enn med én:
+            // man vet ikke hvilken av dem man skal hente på nytt, eller
+            // om det er én linje eller hele filen som skiller.
+            (r.repoInnhold && r.status !== 'identisk'
+              ? forskjellHtml(r.repoInnhold, f.content, ['I den publiserte', 'I din fil'])
+              : '');
         } else {
           nye++;
           statusEl.className = 'fstatus ok';
@@ -3782,6 +4061,48 @@
     font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:#3d4a42;
   }
   .mf-sti.ukjent{ border-color:#c98a2e; background:#fdf6e8; }
+  /* Forskjellen skal kunne leses på en telefon: monospace, små linjer,
+     og aldri mer enn fire av hver — er den større, er det ikke linjene
+     man trenger, men beskjeden om at den ER større. */
+  #gjenopprettBoks, #foreldreloseBoks{
+    margin-top:12px; padding:12px 14px; border-radius:12px;
+    background:#fbf7ef; border:1px solid rgba(0,0,0,0.08);
+  }
+  .hist-rad{
+    display:flex; align-items:center; gap:10px; padding:8px 0;
+    border-top:1px solid var(--line);
+  }
+  .hist-rad:first-of-type{ border-top:0; }
+  .hist-tekst{ flex:1 1 auto; font-family:'Jost',sans-serif; font-size:12px; color:#3d4a42; }
+  .hist-melding{ font-size:10.5px; color:#8a9a90; }
+  .hist-knapp{ flex:0 0 auto; width:auto; margin:0; padding:6px 12px; font-size:11.5px; }
+  .hist-naa{
+    flex:0 0 auto; font-family:'Jost',sans-serif; font-size:10.5px;
+    color:#2C6B45; background:#DCF3E4; border-radius:20px; padding:4px 10px;
+  }
+
+  .diff-boks{
+    margin-top:8px; border:1px solid var(--line); border-radius:9px;
+    background:#fbfcfe; padding:8px 10px; overflow-x:auto;
+  }
+  .diff-topp{
+    font-family:'Jost',sans-serif; font-size:10.5px; color:#5a6860; margin-bottom:6px;
+  }
+  .diff-merk{
+    font-family:'Jost',sans-serif; font-size:9.5px; letter-spacing:.04em;
+    text-transform:uppercase; color:#94a1ab; margin:5px 0 2px;
+  }
+  .diff-linje{
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11px;
+    line-height:1.5; white-space:pre; padding:1px 4px; border-radius:4px;
+  }
+  .diff-linje .d-tegn{ display:inline-block; width:14px; font-weight:700; }
+  .diff-linje.bort{ background:rgba(168,60,60,.08); color:#8e2f2f; }
+  .diff-linje.inn { background:rgba(46,107,83,.10); color:#22624a; }
+  .diff-mer{
+    font-family:'Jost',sans-serif; font-size:10px; color:#94a1ab; padding:2px 4px;
+  }
+
   .mf-grunn{
     display:block; margin-top:3px; font-size:10.5px; color:#8a9a90; font-weight:400;
   }
