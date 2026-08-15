@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 18:32:31 -->
+<!-- SIST-ENDRET: 2026-08-15 18:44:43 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3388,11 +3388,31 @@
       }catch(e){ /* hopper over filer som ikke kan leses */ }
     }
 
+    // 🔴 BILDER OG IKONER HOLDES HELT UTENFOR.
+    //
+    // Første kjøring foreslo å slette bok-qaidah.jpg, bok-hadith.jpg og
+    // resten av bokbildene i laremidler.html. De er i full bruk — men
+    // navnene BYGGES i koden ('bok-' + fag + '.jpg'), så det fullstendige
+    // navnet står ikke skrevet noe sted, og et tekstsøk kan ikke finne det.
+    //
+    // Det var akkurat dette advarselen over listen sa. Men en advarsel
+    // ved siden av en sletteknapp er ikke nok: det holder at ett trykk
+    // gjøres for fort, én gang, så er bildene borte fra læremiddelsiden.
+    //
+    // Derfor er de ikke «kandidater med advarsel» lenger — de er ute av
+    // listen. Verktøyet foreslår bare filer der et tekstsøk faktisk kan
+    // avgjøre spørsmålet: sider og skript.
+    const KAN_IKKE_AVGJØRES = /\.(png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|eot|mp[34]|pdf)$/i;
+
     const kandidater = stier.filter(p =>
       ALLTID_I_BRUK.indexOf(p) === -1 &&
       p.indexOf('.github/') !== 0 &&
       p.indexOf('functions/') !== 0 &&
+      !KAN_IKKE_AVGJØRES.test(p) &&
+      !/^manifest-.*\.json$/i.test(p) &&
       !pekere.has(p));
+
+    const utelatt = stier.filter(p => KAN_IKKE_AVGJØRES.test(p)).length;
 
     if(kandidater.length === 0){
       boks.innerHTML = '<div class="ut-tittel ok">✓ Ingen kandidater</div>' +
@@ -3401,8 +3421,9 @@
     }
     boks.innerHTML =
       '<div class="ut-tittel">' + kandidater.length + ' filer ingen peker på</div>' +
-      '<div class="ut-sub">⚠️ <b>Kandidater, ikke fasit.</b> Bilder og filer som hentes ' +
-      'med kode kan se ubrukte ut og likevel være i full bruk. Åpne filen og se etter før du sletter.</div>' +
+      '<div class="ut-sub">⚠️ <b>Kandidater, ikke fasit.</b> Åpne filen og se etter før du sletter.' +
+      (utelatt ? '<br>🖼️ ' + utelatt + ' bilder og skriftfiler er holdt utenfor: navnene deres ' +
+        'bygges i koden, så et tekstsøk kan ikke avgjøre om de er i bruk.' : '') + '</div>' +
       kandidater.map(p =>
         '<div class="hist-rad"><div class="hist-tekst">' + escapeHtmlPT(p) + '</div>' +
         '<button class="btn btn-ghost hist-knapp" onclick="slettFil(\'' + escapeHtmlPT(p) + '\')">Slett…</button>' +
