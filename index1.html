@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-11 18:59:30 -->
+<!-- SIST-ENDRET: 2026-08-15 10:32:41 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -360,6 +360,50 @@
     background:#fff; border-radius:18px; padding:24px 22px;
     box-shadow:0 18px 44px rgba(0,0,0,.32); text-align:start;
   }
+
+  /* ---- Dagskortet: hva som venter, før man velger hvor man skal ---- */
+  .vk-dagkort{ margin-bottom:14px; }
+  .vk-fri{
+    background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.24);
+    border-radius:18px; padding:14px 16px; text-align:center; margin-bottom:12px;
+  }
+  .vk-fri-navn{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; color:#fff;
+  }
+  html[dir="rtl"] .vk-fri-navn{ font-family:'Tajawal',sans-serif; font-size:19px; }
+  .vk-ned{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:40px;
+    line-height:1.1; color:#fff;
+  }
+  .vk-ned-tekst{ font-family:'Jost',sans-serif; font-size:12.5px; color:rgba(255,255,255,.9); }
+  html[dir="rtl"] .vk-ned-tekst{ font-family:'Tajawal',sans-serif; font-size:13.5px; }
+
+  .vk-dagliste{
+    background:#fff; border-radius:18px; padding:12px 16px 14px;
+    box-shadow:0 18px 44px rgba(0,0,0,.32); text-align:start;
+  }
+  .vk-dag-tittel{
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--emerald);
+    margin-bottom:8px;
+  }
+  html[dir="rtl"] .vk-dag-tittel{ font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; font-size:12.5px; }
+  .vk-time{ display:flex; align-items:baseline; gap:9px; padding:2px 0; }
+  .vk-time-tid{
+    flex:0 0 46px; font-family:'Jost',sans-serif; font-size:12.5px;
+    font-weight:700; color:var(--emerald-d); font-variant-numeric:tabular-nums;
+  }
+  .vk-time-fag{ flex:1 1 auto; font-family:'Jost',sans-serif; font-size:13px; color:var(--ink); }
+  html[dir="rtl"] .vk-time-fag{ font-family:'Tajawal',sans-serif; font-size:13.5px; }
+  /* Klassen står der læreren står i foreldrenes kort — det er dette
+     spørsmålet en lærer har: hvor skal jeg nå. */
+  .vk-time-klasse{ flex:0 0 auto; font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9aa3; }
+  html[dir="rtl"] .vk-time-klasse{ font-family:'Tajawal',sans-serif; }
+  .vk-pause{
+    font-family:'Jost',sans-serif; font-size:10.5px; color:#9aa8b0;
+    padding:1px 0 1px 55px; font-style:italic;
+  }
+  html[dir="rtl"] .vk-pause{ font-family:'Tajawal',sans-serif; font-style:normal; padding:1px 55px 1px 0; }
   .vk-seksjon{ margin-bottom:20px; }
   .vk-etikett{
     font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
@@ -539,6 +583,11 @@
       <div class="vk-hilsen" id="vkHilsen">Velkommen</div>
       <h1 class="vk-navn" id="vkNavn"></h1>
       <p class="vk-under" id="vkUnder">Velg klassen og faget du skal jobbe med nå.</p>
+
+      <!-- Dagen står FØR valget. Læreren åpner portalen for å vite hva
+           som venter — hvilken klasse hun skal jobbe med etterpå, er et
+           svar på det, ikke omvendt. -->
+      <div class="vk-dagkort" id="vkDag"></div>
 
       <div class="vk-kort">
         <div class="vk-seksjon">
@@ -1470,6 +1519,8 @@
   let classes = [];
   let programs = [];
   let schoolCalendar = [];
+  // Tomt betyr «ikke bestemt» — da vises ingen nedtelling, ikke en gjettet.
+  let skolear = { startDato: '', termin1Slutt: '', sluttDato: '' };
   let hours = [];
   let guardians = [];
   let currentTeacher = null;
@@ -1717,6 +1768,165 @@
     tegnAltPaaNytt();
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // LÆRERENS DAG
+  //
+  // Samme kort som i foreldreportalen, men snudd: der er kolonnen
+  // læreren, her er den KLASSEN. En lærer har samme fag i flere klasser
+  // etter hverandre, og det hun trenger å vite er hvor hun skal.
+  //
+  // Kalenderen leses med schoolDayInfo() — den som allerede finnes her,
+  // og som håndterer at en ekstra undervisningsdag slår en ferie.
+  // ═══════════════════════════════════════════════════════════════════
+
+  const VK_UKEDAGER = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+
+  function vkParseTid(tid){
+    if(!tid) return { start:'', end:'' };
+    const p = String(tid).split(/[–-]/).map(x => x.trim());
+    return { start: p[0] || '', end: p[1] || p[0] || '' };
+  }
+  function vkMinutter(a, b){
+    const t = x => { const [h,m] = String(x).split(':').map(Number);
+      return (isNaN(h) || isNaN(m)) ? null : h*60 + m; };
+    const x = t(a), y = t(b);
+    return (x === null || y === null || y <= x) ? 0 : (y - x);
+  }
+  function vkDato(iso){
+    const t = new Date(iso + 'T00:00:00');
+    if(isNaN(t)) return iso;
+    return t.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'no-NO',
+      { weekday:'long', day:'numeric', month:'long' });
+  }
+
+  // Kalenderoppslag uten valgt klasse: velkomstskjermen kommer FØR
+  // valget, så currentProgramId() finnes ikke ennå. Her teller bare
+  // unntak som gjelder alle programmer, pluss de som gjelder et program
+  // læreren faktisk underviser i.
+  function vkMineProgramIder(){
+    const klasseIder = [...new Set(mineTimer().map(h => h.klasse).filter(Boolean))];
+    const navn = klasseIder.map(k => {
+      const c = classes.find(x => x.id === k || x.navn === k);
+      return (c && c.program) || '';
+    }).filter(Boolean);
+    return new Set(navn.map(nv => {
+      const pr = programs.find(x => x.navn === nv || x.id === nv);
+      return pr ? pr.id : nv;
+    }));
+  }
+
+  function vkDagInfo(iso){
+    const mine = vkMineProgramIder();
+    const treff = schoolCalendar.filter(e => {
+      if(e.program && !mine.has(e.program)) return false;
+      const fra = e.fraDato || '';
+      if(!fra) return false;
+      return iso >= fra && iso <= (e.tilDato || fra);
+    });
+    let fri = null, ekstra = null;
+    treff.forEach(e => {
+      if(String(e.type || '').indexOf('Fri') === 0) fri = e;
+      if(String(e.type || '').indexOf('Ekstra') === 0) ekstra = e;
+    });
+    // Ekstradagen vinner — den er et bevisst vedtak, ferien en regel.
+    return ekstra ? { fri:null, ekstra } : { fri, ekstra:null };
+  }
+
+  // Første dag fra og med i dag der læreren har timer og skolen er åpen.
+  function vkNesteDag(){
+    const dager = new Set(mineTimer().map(h => h.dag).filter(Boolean));
+    if(dager.size === 0) return null;
+    const start = new Date(isoOf(new Date()) + 'T00:00:00');
+    for(let i = 0; i < 120; i++){
+      const d = new Date(start.getTime() + i * 86400000);
+      const navn = VK_UKEDAGER[d.getDay()];
+      if(!dager.has(navn)) continue;
+      const iso = isoOf(d);
+      if(skolear.startDato && iso < skolear.startDato) continue;
+      if(skolear.sluttDato && iso > skolear.sluttDato) return null;
+      const info = vkDagInfo(iso);
+      if(info.fri) continue;
+      return { dato: iso, dag: navn };
+    }
+    return null;
+  }
+
+  function tegnVkDag(){
+    const el = document.getElementById('vkDag');
+    if(!el) return;
+    const ar = currentLang === 'ar';
+    const iDag = isoOf(new Date());
+    const info = vkDagInfo(iDag);
+    const neste = vkNesteDag();
+    const biter = [];
+
+    // Ferie eller nedtelling — det som gjelder hele skolen, øverst.
+    if(info.fri){
+      const nedTil = (skolear.startDato && iDag < skolear.startDato)
+        ? Math.ceil((new Date(skolear.startDato + 'T00:00:00') - new Date(iDag + 'T00:00:00')) / 86400000) : 0;
+      biter.push(`
+        <div class="vk-fri">
+          <div class="vk-fri-navn">${escapeHtml(info.fri.beskrivelse || (ar ? 'إجازة' : 'Fri'))}</div>
+          ${nedTil > 0
+            ? `<div class="vk-ned">${nedTil}</div>
+               <div class="vk-ned-tekst">${ar ? 'يوم على بداية الدراسة' : (nedTil === 1 ? 'dag til skolestart' : 'dager til skolestart')}</div>`
+            : (neste ? `<div class="vk-ned-tekst">${ar ? 'نلتقي' : 'Vi ses'} ${vkDato(neste.dato)}</div>` : '')}
+        </div>`);
+    } else if(skolear.startDato && iDag < skolear.startDato){
+      const n = Math.ceil((new Date(skolear.startDato + 'T00:00:00') - new Date(iDag + 'T00:00:00')) / 86400000);
+      biter.push(`
+        <div class="vk-fri">
+          <div class="vk-ned">${n}</div>
+          <div class="vk-ned-tekst">${ar ? 'يوم على بداية الدراسة' : (n === 1 ? 'dag til skolestart' : 'dager til skolestart')}</div>
+        </div>`);
+    }
+
+    if(!neste){
+      el.innerHTML = biter.join('');
+      return;
+    }
+
+    // Én linje per klokkeslett. Blokker slår sammen timer som ligger
+    // inntil hverandre — riktig for å finne pauser, men her ville to
+    // etterfølgende timer sett ut som én.
+    const mine = mineTimer().filter(h => h.dag === neste.dag && h.tid);
+    const tider = [...new Set(mine.map(h => h.tid))]
+      .map(t => ({ tid: t, ...vkParseTid(t) }))
+      .filter(t => t.start)
+      .sort((a, b) => a.start.localeCompare(b.start));
+
+    let forrige = '';
+    const linjer = [];
+    tider.forEach(t => {
+      if(forrige && t.start > forrige){
+        const m = vkMinutter(forrige, t.start);
+        linjer.push(`<div class="vk-pause">☕ ${ar ? 'استراحة' : 'Pause'}${m ? ' ' + m + (ar ? ' د' : ' min') : ''}</div>`);
+      }
+      const rader = mine.filter(h => h.tid === t.tid);
+      const fag = [...new Set(rader.map(r => r.fag).filter(Boolean))];
+      const klasser = [...new Set(rader.map(r => resolveClassName(r.klasse) || r.klasse).filter(Boolean))];
+      linjer.push(`
+        <div class="vk-time">
+          <span class="vk-time-tid">${escapeHtml(t.start)}</span>
+          <span class="vk-time-fag">${escapeHtml(fag.join(' · ') || '—')}</span>
+          <span class="vk-time-klasse">${escapeHtml(klasser.join(', '))}</span>
+        </div>`);
+      forrige = t.end;
+    });
+
+    const ekstra = vkDagInfo(neste.dato).ekstra;
+    const tittel = (ekstra ? (ar ? 'يوم إضافي · ' : 'Ekstra dag · ') : '')
+      + vkDato(neste.dato)
+      + (neste.dato === iDag ? (ar ? ' · النهاردة' : ' · i dag') : '');
+
+    biter.push(`
+      <div class="vk-dagliste">
+        <div class="vk-dag-tittel">${tittel}</div>
+        ${linjer.join('') || `<div class="vk-pause">${ar ? 'مفيش حصص' : 'Ingen timer'}</div>`}
+      </div>`);
+    el.innerHTML = biter.join('');
+  }
+
   function tegnVelkomst(){
     const ar = currentLang === 'ar';
     const navnEl = document.getElementById('vkNavn');
@@ -1727,6 +1937,8 @@
     if(under) under.textContent = ar
       ? 'اختر الصف والمادة اللي هتشتغل عليهم دلوقتي.'
       : 'Velg klassen og faget du skal jobbe med nå.';
+    tegnVkDag();
+
     const kt = document.getElementById('vkKlasseTittel');
     if(kt) kt.textContent = ar ? 'الصف' : 'Klasse';
     const ft = document.getElementById('vkFagTittel');
@@ -1830,9 +2042,23 @@
     renderHome();
   }, (err) => console.error('hours', err));
 
+  // Skoleåret: startdato, terminskifte og slutt. Uten det kan
+  // velkomstskjermen ikke telle ned til skolestart, og ikke vite at
+  // dagene før den ikke er undervisningsdager i det hele tatt.
+  onSnapshot(doc(db, 'settings', 'skolear'), (snap) => {
+    const d = snap.exists() ? (snap.data() || {}) : {};
+    skolear = {
+      startDato: d.startDato || '',
+      termin1Slutt: d.termin1Slutt || '',
+      sluttDato: d.sluttDato || ''
+    };
+    if(currentTeacher) tegnVelkomst();
+  }, (err) => console.error('settings/skolear', err));
+
   watch('schoolCalendar', (snap) => {
     schoolCalendar = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     refreshSchoolCalendars();
+    if(currentTeacher) tegnVelkomst();
   }, (err) => console.error('schoolCalendar', err));
 
   watch('classes', (snap) => {
