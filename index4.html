@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 10:23:35 -->
+<!-- SIST-ENDRET: 2026-08-15 10:32:50 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -2103,16 +2103,41 @@
 
   // Fri-perioden som dekker en dato for dette programmet. Står 'program'
   // tomt på raden, gjelder den alle — det er slik panelet beskriver den.
-  function ferieFor(datoIso, programNavn){
-    return skolekalender.find(k => {
-      if((k.type || '') !== 'Fri (ingen undervisning)') return false;
+  // 🔴 EN EKSTRA UNDERVISNINGSDAG SLÅR EN FERIE.
+  //
+  // Første utgave så bare etter «Fri» og overså «Ekstra undervisningsdag»
+  // helt. Åpnet skolen en oppsamlingsdag midt i en ferie, ville
+  // foreldreportalen fortsatt sagt «Sommerferie» — og familien ville
+  // ikke møtt opp.
+  //
+  // Regelen er panelets egen, og står skrevet der: en dag lagt inn
+  // manuelt er et bevisst vedtak og vinner over regelen den bryter.
+  // Lærerportalen gjorde det riktig fra før (schoolDayInfo); denne
+  // gjorde det ikke.
+  function kalenderTreff(datoIso, programNavn){
+    const gjelder = k => {
       const fra = k.fraDato || '';
       const til = k.tilDato || fra;
       if(!fra || datoIso < fra || datoIso > til) return false;
       const p = (k.program || '').trim();
       if(!p) return true;
       return p === programNavn || resolveDynProgram(p) === programNavn;
-    }) || null;
+    };
+    let fri = null, ekstra = null;
+    skolekalender.forEach(k => {
+      if(!gjelder(k)) return;
+      const t = String(k.type || '');
+      if(t.indexOf('Fri') === 0) fri = k;
+      if(t.indexOf('Ekstra') === 0) ekstra = k;
+    });
+    return { fri, ekstra };
+  }
+  function ferieFor(datoIso, programNavn){
+    const t = kalenderTreff(datoIso, programNavn);
+    return t.ekstra ? null : t.fri;
+  }
+  function ekstradagFor(datoIso, programNavn){
+    return kalenderTreff(datoIso, programNavn).ekstra;
   }
   function resolveDynProgram(idEllerNavn){
     const p = programmer.find(x => x.id === idEllerNavn);
@@ -2138,11 +2163,17 @@
     for(let i = 0; i < 120; i++){
       const d = new Date(start.getTime() + i * 86400000);
       const navn = UKEDAGER[d.getDay()];
-      if(!dager.includes(navn)) continue;
       const dIso = iso(d);
-      if(skolear.startDato && dIso < skolear.startDato) continue;
       if(skolear.sluttDato && dIso > skolear.sluttDato) return null;
-      if(ferieFor(dIso, programNavn)) continue;
+      // Ekstradagen åpner en dag som ellers ville vært stengt — også en
+      // ukedag programmet ikke underviser på. Uten dette ville en
+      // oppsamlingsdag på en onsdag aldri blitt funnet.
+      const ekstra = ekstradagFor(dIso, programNavn);
+      if(!ekstra){
+        if(!dager.includes(navn)) continue;
+        if(skolear.startDato && dIso < skolear.startDato) continue;
+        if(ferieFor(dIso, programNavn)) continue;
+      }
       return { dato: dIso, dag: navn };
     }
     return null;
@@ -2448,7 +2479,10 @@
     const venter = !!(skolear.startDato && iDag < skolear.startDato);
     const erStarten = skolear.startDato && neste.dato === skolear.startDato;
     let tittel = datoNorsk(neste.dato, lang);
-    if(erStarten) tittel = (ar ? 'أول يوم · ' : 'Første dag · ') + tittel;
+    if(ekstradagFor(neste.dato, program)){
+      tittel = (ar ? 'يوم إضافي · ' : 'Ekstra dag · ') + tittel;
+    }
+    else if(erStarten) tittel = (ar ? 'أول يوم · ' : 'Første dag · ') + tittel;
     else if(venter && skolear.startDato && neste.dato > skolear.startDato){
       tittel = (ar ? 'أول يوم دراسي · ' : 'Første undervisningsdag · ') + tittel;
     }
