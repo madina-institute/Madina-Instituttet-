@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 10:47:35 -->
+<!-- SIST-ENDRET: 2026-08-15 20:23:57 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1089,10 +1089,10 @@
           <label data-i18n="yourMessage">Din melding</label>
           <textarea id="guardianAdminMsgReplyText" rows="3"></textarea>
         </div>
-        <div class="field" style="display:flex; gap:16px; align-items:center;">
-          <label style="display:flex; align-items:center; gap:5px; font-weight:400; margin:0;"><input type="radio" name="guardianAdminMsgVisibility" value="private" checked> Svar privat til administrasjonen</label>
-          <label style="display:flex; align-items:center; gap:5px; font-weight:400; margin:0;"><input type="radio" name="guardianAdminMsgVisibility" value="all"> Svar til alle mottakere</label>
-        </div>
+        <!-- Valget «Svar til alle mottakere» er fjernet: samtalen har bare
+             to parter, deg og administrasjonen. Knappen lovet noe som ikke
+             lenger finnes, og en knapp som lyver er verre enn ingen knapp. -->
+        <div class="field" style="font-size:12px; color:#8a9a90;">🔒 Svaret ditt går bare til administrasjonen.</div>
         <button class="btn btn-primary" onclick="sendGuardianAdminMsgReply()">Send melding</button>
       </div>
     </div>
@@ -1264,6 +1264,13 @@
   // helhet, og portalen ville blitt tom i stedet for filtrert.
   // ═════════════════════════════════════════════════════════════════
   let mineBarnIder = [];
+
+  // Den innloggede e-posten, normalisert. Den er nøkkelen meldinger
+  // adresseres på — og den samme verdien regelen ser
+  // (request.auth.token.email.lower()). Settes ved innlogging, før
+  // lytterne startes: en spørring som bygges på tom streng ville gitt
+  // en portal uten meldinger, uten et ord om hvorfor.
+  let minEpost = '';
 
   async function hentMineBarnIder(epost){
     const e = String(epost || '').trim().toLowerCase();
@@ -1808,17 +1815,36 @@
          document.getElementById('teacherMsgListInner').style.display !== 'none') renderGuardianThreadList();
     }
   });
+  // ═══════════════════════════════════════════════════════════════
+  // MELDINGER FRA ADMINISTRASJONEN
+  //
+  // 🔴 Disse to lastet HELE samlingen og filtrerte på skjermen. Hver
+  // forelder hadde dermed alle familiers meldinger liggende i minnet —
+  // også de private svarene. At skjermen viste sine egne, endret ikke
+  // hva nettleseren hadde hentet ned.
+  //
+  // Nå spør portalen om sine egne: hver tråd har én adressat i
+  // 'mottakerEpost', og spørringen har samme form som regelen krever
+  // («mottakerEpost == min e-post»). En spørring Firestore ikke kan
+  // bevise er innenfor regelen, blir avvist i sin helhet — da ville
+  // listen stått tom i stedet for filtrert.
+  //
+  // minEpost settes ved innlogging, FØR startDataListeners().
+  // ═══════════════════════════════════════════════════════════════
   let broadcastThreads = [], broadcastMessages = [];
-  watch('broadcastThreads', (snap) => {
-    broadcastThreads = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  const sporrMineBroadcast = (samling) => () => !minEpost ? []
+    : [query(collection(db, samling), where('mottakerEpost', '==', minEpost))];
+
+  watchQuery('broadcastThreads', sporrMineBroadcast('broadcastThreads'), (rader) => {
+    broadcastThreads = rader;
     if(currentGuardian){
       updateAdminMsgBadge();
       if(document.getElementById('view-adminMsg').style.display !== 'none' &&
          document.getElementById('adminMsgListInner').style.display !== 'none') renderGuardianAdminMsgsList();
     }
   });
-  watch('broadcastMessages', (snap) => {
-    broadcastMessages = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  watchQuery('broadcastMessages', sporrMineBroadcast('broadcastMessages'), (rader) => {
+    broadcastMessages = rader;
     if(currentGuardian){
       updateAdminMsgBadge();
       if(currentAdminMsgThreadId) renderGuardianAdminMsgHistory();
@@ -1948,6 +1974,7 @@
       return;
     }
     mineBarnIder = barn;
+    minEpost = String(auth.currentUser?.email || guardian.epost || '').trim().toLowerCase();
     startDataListeners();
     updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
     addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
@@ -2875,9 +2902,12 @@
   // ===== ADMIN BROADCAST MESSAGES (received from Meldingssenter) =====
   let currentAdminMsgThreadId = null;
 
+  // Alt som er lastet ned ER mitt — spørringen ba bare om mine. Filteret
+  // som sto her var det eneste som skilte min innboks fra alle andres,
+  // og et filter på skjermen er en visning, ikke en sperre.
   function myAdminMsgThreads(){
     if(!currentGuardian) return [];
-    return broadcastThreads.filter(th => (th.recipients||[]).some(r => r.type === 'guardian' && r.id === currentGuardian.id));
+    return broadcastThreads.slice();
   }
 
   function updateAdminMsgBadge(){
@@ -2901,9 +2931,8 @@
     const el = document.getElementById('guardianAdminMsgsList');
     if(!el || !currentGuardian) return;
     const rows = myAdminMsgThreads().map(th => {
-      const msgs = broadcastMessages.filter(m => m.threadId === th.id &&
-        (m.fra === 'Administrasjon' || m.visibility === 'all' || m.avsenderId === currentGuardian.id)
-      ).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const msgs = broadcastMessages.filter(m => m.threadId === th.id)
+        .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
       const last = msgs[msgs.length - 1];
       const seen = localStorage.getItem('adminmsg_seen_' + currentGuardian.id + '_' + th.id);
       const unread = last && last.fra === 'Administrasjon' && (!seen || (last.dato||'') > seen);
@@ -2948,18 +2977,18 @@
   function renderGuardianAdminMsgHistory(){
     const el = document.getElementById('guardianAdminMsgHistory');
     if(!el || !currentAdminMsgThreadId) return;
-    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId &&
-      (m.fra === 'Administrasjon' || m.visibility === 'all' || m.avsenderId === currentGuardian.id)
-    ).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+    // Samtalen er min alene — den går mellom meg og administrasjonen.
+    // 'visibility' er derfor borte: det fantes ingen «alle» å svare til.
+    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId)
+      .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     el.innerHTML = msgs.map(m => {
       const isMe = m.fra !== 'Administrasjon';
       const senderName = isMe ? m.avsenderNavn : 'Administrasjonen';
-      const privateTag = m.visibility === 'private' ? ' <span style="font-size:10px; font-weight:700; color:var(--gold);">🔒 privat</span>' : '';
       return `
       <div class="chat-row ${isMe ? 'me' : ''}">
         <div class="chat-avatar">${escapeHtml(initialsFor(senderName))}</div>
         <div class="chat-bubble">
-          <span class="chat-sender">${escapeHtml(senderName)}${privateTag}</span>
+          <span class="chat-sender">${escapeHtml(senderName)}</span>
           ${escapeHtml(m.tekst||'')}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
         </div>
@@ -2971,12 +3000,15 @@
   window.sendGuardianAdminMsgReply = async function(){
     if(!currentGuardian || !currentAdminMsgThreadId) return;
     const tekst = document.getElementById('guardianAdminMsgReplyText').value.trim();
-    const visibility = document.querySelector('input[name="guardianAdminMsgVisibility"]:checked')?.value || 'private';
     if(!tekst){ notify(t('teacherMsgFill')); return; }
     try{
       await addDoc(collection(db, 'broadcastMessages'), {
-        threadId: currentAdminMsgThreadId, fra: 'Foresatt', avsenderNavn: currentGuardian.navn, avsenderId: currentGuardian.id,
-        visibility, tekst, dato: new Date().toISOString()
+        // 🔴 mottakerEpost må stå på svaret også. Uten den treffer meldingen
+        // ingen spørring — den ville blitt skrevet, kvittert for, og aldri
+        // vist igjen. Verdien er min egen: samtalen er min.
+        threadId: currentAdminMsgThreadId, mottakerEpost: minEpost,
+        fra: 'Foresatt', avsenderNavn: currentGuardian.navn, avsenderId: currentGuardian.id,
+        tekst, dato: new Date().toISOString()
       });
       await updateDoc(doc(db, 'broadcastThreads', currentAdminMsgThreadId), { lastActivityAt: new Date().toISOString() });
       document.getElementById('guardianAdminMsgReplyText').value = '';
