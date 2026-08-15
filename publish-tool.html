@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 12:24:40 -->
+<!-- SIST-ENDRET: 2026-08-15 12:36:30 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -314,7 +314,7 @@
         <option value="kunngjoring.html">📢 Kunngjøringer — kunngjoring.html</option>
         <option value="publish-tool.html">🛠️ Dette publiseringsverktøyet — publish-tool.html</option>
         <option value="functions/index.js">⚙️ Cloud Functions — functions/index.js</option>
-        <option value="firestore.rules">🔐 Sikkerhetsregler (kun dokumentasjon) — firestore.rules</option>
+        <option value="firestore.rules">🔐 Sikkerhetsregler (publiseres til basen) — firestore.rules</option>
           <option value="sw.js">⚡ Service worker (cache) — sw.js</option>
           <option value="manifest-admin.json">Manifest — Admin (manifest-admin.json)</option>
           <option value="manifest-larer.json">Manifest — Lærerportal (manifest-larer.json)</option>
@@ -450,7 +450,7 @@
     'kunngjoring.html':      ['📢', 'Kunngjøringer'],
     'publish-tool.html':     ['🛠️', 'Dette publiseringsverktøyet'],
     'functions/index.js':    ['⚙️', 'Cloud Functions'],
-    'firestore.rules':       ['🔐', 'Sikkerhetsregler (kun dokumentasjon)'],
+    'firestore.rules':       ['🔐', 'Sikkerhetsregler (publiseres til basen)'],
     'sw.js':                 ['⚡', 'Service worker (cache)']
   };
 
@@ -586,9 +586,15 @@
             'publiseres IKKE som Cloud Function, og funksjonene forblir uendret.';
       cls = 'hint notice-warn';
     } else if(path === 'firestore.rules'){
-      msg = 'ℹ️ Denne filen er kun dokumentasjon. De ekte reglene må limes inn ' +
-            'manuelt i Firebase Console → Firestore → Rules.';
-      cls = 'hint notice-info';
+      // 🔴 Sto tidligere: «kun dokumentasjon — lim inn manuelt i Console».
+      // Det var sant, og nettopp derfor lå repo-kopien elleve dager bak
+      // de reglene som faktisk gjaldt. Nå legges filen ut av
+      // firebase-rules.yml, og DENNE filen er reglene.
+      msg = '🔐 Dette er de ekte reglene. Publiserer du her, gjelder de i basen ' +
+            'få sekunder etterpå — Console viser den samme filen. ' +
+            'Les gjennom endringen først: Firebase stopper ugyldige regler, ' +
+            'men ikke gyldige regler som er for åpne.';
+      cls = 'hint notice-warn';
     }
 
     el.textContent = msg;
@@ -1219,7 +1225,36 @@
   // utleggingen. «Publisert» betyr fra nå av at filen er ute.
   // ═══════════════════════════════════════════════════════════════════
 
-  const DEPLOY_WORKFLOW = 'firebase-hosting.yml';
+  // ═══════════════════════════════════════════════════════════════════
+  // HVILKEN ARBEIDSFLYT LEGGER UT DENNE FILEN?
+  //
+  // 🔴 Verktøyet så bare på firebase-hosting.yml. Den kjører på ENHVER
+  // push — den har ikke noe paths-filter — så etter en publisering av
+  // firestore.rules ville verktøyet lest hosting-kjøringen, sett grønt,
+  // og sagt «lagt ut». Reglene kunne samtidig ha feilet i sin egen
+  // kjøring, og ingen ting ville sagt fra.
+  //
+  // Det er nøyaktig feilen fra 15. august, flyttet ett hakk til side:
+  // et grønt svar fra feil spørsmål.
+  // ═══════════════════════════════════════════════════════════════════
+  const HOSTING_WORKFLOW  = 'firebase-hosting.yml';
+  const REGLER_WORKFLOW   = 'firebase-rules.yml';
+  const FUNKSJON_WORKFLOW = 'firebase-functions.yml';
+
+  function workflowFor(sti){
+    const p = String(sti || '');
+    if(p === 'firestore.rules') return REGLER_WORKFLOW;
+    if(p.indexOf('functions/') === 0) return FUNKSJON_WORKFLOW;
+    return HOSTING_WORKFLOW;
+  }
+  function workflowNavn(w){
+    return w === REGLER_WORKFLOW ? 'sikkerhetsreglene'
+         : w === FUNKSJON_WORKFLOW ? 'funksjonene'
+         : 'nettstedet';
+  }
+
+  // Standarden når ingen fil er valgt (f.eks. «Sjekk utleggingen»-knappen).
+  let DEPLOY_WORKFLOW = HOSTING_WORKFLOW;
 
   // ═══════════════════════════════════════════════════════════════════
   // PASSER INNHOLDET TIL NAVNET?
@@ -1254,8 +1289,30 @@
   }
   const TYPENAVN = { rules:'Firestore-regler', json:'JSON', html:'HTML-side', yml:'GitHub-arbeidsflyt', kode:'kode' };
 
+  // Reglene er den ene filen som ikke bare kan gå galt — den kan gå galt
+  // ÅPENT. Firebase nekter regler som ikke kompilerer, men en regel som
+  // er gyldig og for vid slipper rett gjennom og gjelder hele basen.
+  // Derfor en egen kontroll her, før den i det hele tatt forlater telefonen.
+  function reglerSerFarligeUt(innhold){
+    const t = String(innhold || '');
+    if(/match\s*\/\{document=\*\*\}[\s\S]{0,140}allow\s+read\s*,\s*write\s*:\s*if\s+true/.test(t))
+      return 'Reglene åpner HELE basen for alle — «match /{document=**} … allow read, write: if true».';
+    if(!/rules_version/.test(t))
+      return 'Mangler «rules_version» — filen ser ikke komplett ut.';
+    if(!/service\s+cloud\.firestore/.test(t))
+      return 'Mangler «service cloud.firestore» — filen ser ikke komplett ut.';
+    return null;
+  }
+
   // true = fortsett. false = brukeren avbrøt.
   function innholdPasserTilNavn(sti, innhold){
+    if(sti === 'firestore.rules'){
+      const fare = reglerSerFarligeUt(innhold);
+      if(fare && !confirm(
+        '🔴 STOPP — kontroller reglene før du publiserer.\n\n' + fare + '\n\n' +
+        'Disse reglene gjelder for hele basen få sekunder etter publisering.\n\n' +
+        'Vil du publisere likevel?')) return false;
+    }
     const forventet = typeAvSti(sti);
     const funnet = gjettFiltype(innhold);
     if(!forventet || !funnet || forventet === funnet) return true;
@@ -1276,11 +1333,11 @@
   // Venter på at utleggingen skal bli ferdig etter en publisering.
   // Kjøringen starter noen sekunder etter commiten, så vi ser etter en
   // kjøring som er NYERE enn tidspunktet vi publiserte.
-  async function ventPaUtlegging(startetFra, meld){
+  async function ventPaUtlegging(startetFra, meld, workflow){
     const frist = Date.now() + 150000;      // to og et halvt minutt
     let sett = null;
     while(Date.now() < frist){
-      const kj = (await hentKjoringer(5)).liste;
+      const kj = (await hentKjoringer(5, workflow)).liste;
       sett = kj.find(r => new Date(r.created_at).getTime() >= startetFra - 5000);
       if(sett && sett.status === 'completed') break;
       if(meld) meld(sett ? 'Legger ut på nettstedet…' : 'Venter på at utleggingen starter…');
@@ -1340,8 +1397,9 @@
   // Kjøringene for utleggingen, nyeste først. Returnerer også grunnen når
   // listen ikke kunne hentes — «tom» og «kunne ikke spørre» er to helt
   // ulike svar, og å vise dem likt er nettopp det som skjulte feilen.
-  async function hentKjoringer(antall){
-    const r = await ghGet('/actions/workflows/' + DEPLOY_WORKFLOW + '/runs?per_page=' + (antall || 10));
+  async function hentKjoringer(antall, workflow){
+    const w = workflow || DEPLOY_WORKFLOW;
+    const r = await ghGet('/actions/workflows/' + w + '/runs?per_page=' + (antall || 10));
     if(!r.ok) return { feil: r.grunn, liste: [] };
     return { feil: null, liste: (r.data && r.data.workflow_runs) ? r.data.workflow_runs : [] };
   }
@@ -2250,10 +2308,13 @@
       // 🔴 Her sa det før: «✓ Publisert! Endringen er live om noen
       // sekunder.» Den setningen var et løfte verktøyet ikke kunne holde
       // — det visste bare at GitHub hadde tatt imot filen.
-      showStatus('✓ Lagret i GitHub. Venter på utleggingen…', 'busy');
-      const r = await ventPaUtlegging(Date.now(), m => showStatus('✓ Lagret. ' + m, 'busy'));
+      const wf = workflowFor(path);
+      showStatus('✓ Lagret i GitHub. Venter på utleggingen av ' + workflowNavn(wf) + '…', 'busy');
+      const r = await ventPaUtlegging(Date.now(), m => showStatus('✓ Lagret. ' + m, 'busy'), wf);
       if(r.status === 'ok'){
-        showStatus('✓ Publisert og lagt ut. Filen er live nå.', 'ok');
+        showStatus(wf === REGLER_WORKFLOW
+          ? '✓ Publisert. Sikkerhetsreglene gjelder i basen nå — Console viser den samme filen.'
+          : '✓ Publisert og lagt ut. Filen er live nå.', 'ok');
       } else if(r.status === 'avbrutt'){
         showStatus('✓ Lagret. Utleggingen ble avbrutt av en nyere publisering — det er normalt når du publiserer flere filer.', 'ok');
       } else if(r.status === 'feilet'){
