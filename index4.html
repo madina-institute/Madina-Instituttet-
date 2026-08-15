@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 09:30:19 -->
+<!-- SIST-ENDRET: 2026-08-15 09:42:59 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -229,10 +229,10 @@
   .fv-hint{ font-family:'Jost',sans-serif; font-size:12px; color:#a9d2f2; margin:0 0 20px; }
   html[dir="rtl"] .fv-hint{ font-family:'Tajawal',sans-serif; }
   html[dir="rtl"] .fv-under{ font-family:'Tajawal',sans-serif; }
-  .fv-kort{
-    background:#fff; border-radius:18px; padding:8px 0 18px;
-    box-shadow:0 18px 44px rgba(0,0,0,.3); text-align:start; overflow:hidden;
-  }
+  /* 🔴 Var et hvitt kort med barna som rader inni. Nå ER hvert barn et
+     kort — og et hvitt kort inne i et hvitt kort ga en tom flate under
+     navnet som så ut som noe manglet. Beholderen skal ikke ses. */
+  .fv-kort{ background:none; border-radius:0; padding:0; box-shadow:none; text-align:start; }
   /* Hvert barn er en rad man kan trykke paa. Raden ER inngangen - ikke en
      liste man maa lese for saa aa finne en knapp et annet sted. */
   /* ═══════════════════════════════════════════════════════════════
@@ -246,11 +246,22 @@
      akkurat dette barnet — og det er nettopp forskjellen vi vil ha.
      ═══════════════════════════════════════════════════════════════ */
   /* Fellesboksen: gjelder hele familien, står over velgeren. */
-  .fv-felles{ margin-bottom:14px; }
-  .fv-felles .fv-fri, .fv-felles .fv-nedtelling, .fv-felles .fv-feiring{
-    border-top:0; border-radius:16px; overflow:hidden;
-    box-shadow:0 2px 10px rgba(6,25,91,0.06);
+  /* Fellesboksen ligger rett på den blå flaten, ikke inne i et hvitt
+     kort. Fargene under er laget for hvit bakgrunn: marineblå tall på
+     blått ble til et tall man så vidt kunne skimte. Her settes de om
+     til hvitt og gull, som resten av den blå skjermen. */
+  .fv-felles{ margin-bottom:16px; }
+  .fv-felles .fv-fri, .fv-felles .fv-nedtelling{
+    display:block; border-top:0; border-radius:18px; padding:22px 18px;
+    background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22);
+    backdrop-filter:blur(4px); text-align:center;
   }
+  .fv-felles .fv-feiring{ border-top:0; border-radius:18px; overflow:hidden; }
+  .fv-felles .fv-ned-tall{ color:#fff; font-size:64px; text-shadow:0 4px 20px rgba(0,0,0,.25); }
+  .fv-felles .fv-ned-tekst{ color:rgba(255,255,255,.92); font-size:13.5px; }
+  .fv-felles .fv-fri-navn{ color:#fff; }
+  .fv-felles .fv-fri-periode{ color:rgba(255,255,255,.8); }
+  .fv-felles .fv-tilbake-dato{ color:var(--gold-l); }
 
   /* Velgeren. Vises bare med mer enn ett barn. */
   .fv-velg-rad{ margin-bottom:12px; }
@@ -2171,9 +2182,14 @@
               : (myChildren.length === 1 ? 'Du har ett barn på skolen' : 'Du har ' + myChildren.length + ' barn på skolen'));
     }
 
+    // Hintet beskrev den gamle skjermen, der raden var eneste vei inn.
+    // Nå finnes både velger og knapp — og en instruksjon som ikke
+    // stemmer er verre enn ingen.
     const hint = document.getElementById('fvHint');
     if(hint) hint.textContent = myChildren.length === 0 ? ''
-      : (ar ? 'اضغط على اسم الابن لفتح صفحته' : 'Trykk på et barn for å åpne siden');
+      : (myChildren.length > 1
+          ? (ar ? 'اختر الابن لعرض يومه' : 'Velg barn for å se dagen')
+          : '');
 
     if(myChildren.length === 0){
       el.innerHTML = `<div class="fv-tom">${ar
@@ -2217,8 +2233,7 @@
     }
 
     // ── Kortet for det valgte barnet ────────────────────────────────
-    el.innerHTML = kortForBarn(valgt.b, valgt.i, currentLang,
-      fellesTilstand && fellesTilstand.type !== 'dag');
+    el.innerHTML = kortForBarn(valgt.b, valgt.i, currentLang);
 
     const apne = document.getElementById('fvApne');
     if(apne){
@@ -2248,7 +2263,7 @@
   // Skylder familien noe, står det en rød prikk. Tallet finnes under
   // Betaling, der det hører hjemme og der man selv velger å se det.
   // ═══════════════════════════════════════════════════════════════════
-  function kortForBarn(b, i, lang, dagStaarOver){
+  function kortForBarn(b, i, lang){
     const ar = lang === 'ar';
     const rest = toNum(b.belop) - toNum(b.belopBetalt);
     const klasseNavn = resolveClassName(b.klasse);
@@ -2267,7 +2282,7 @@
           </span>
           <span class="fv-pil">${ar ? '←' : '→'}</span>
         </span>
-        ${dagStaarOver ? '' : dagsInnhold(b, lang)}
+        ${dagsInnhold(b, lang)}
       </button>`;
   }
 
@@ -2332,100 +2347,78 @@
   // feiring skal vises selv om skolestart også ligger fram i tid.
   function dagsInnhold(b, lang){
     const ar = lang === 'ar';
-    const iDag = iso(new Date());
     const program = b.program || '';
 
-    // 1) Ferie som gjelder I DAG
-    const ferie = ferieFor(iDag, program);
-    if(ferie){
-      const neste = nesteUndervisningsdag(program);
-      const tilbake = neste
-        ? `<span class="fv-tilbake-dato">${ar ? 'نلتقي' : 'Vi ses'} ${datoNorsk(neste.dato, lang)}</span>`
-        : '';
-      if((ferie.feiring || '') === 'Ja'){
-        const h = hilsenFor(ferie, lang);
-        return `
-          <span class="fv-feiring">
-            <span class="fv-feiring-stjerner">✦ ✦ ✦</span>
-            <span class="fv-feiring-tekst">${escapeHtml(h)}</span>
-            <span class="fv-feiring-stjerner">✦ ✦ ✦</span>
-            ${tilbake}
-          </span>`;
-      }
-      const periode = ferie.tilDato && ferie.tilDato !== ferie.fraDato
-        ? datoNorsk(ferie.fraDato, lang) + ' – ' + datoNorsk(ferie.tilDato, lang)
-        : datoNorsk(ferie.fraDato, lang);
-      // 🔴 Nedtellingen hører hjemme HER, ikke i en egen tilstand.
-      //
-      // Første utgave lot ferien vinne og viste bare «vi ses 5.
-      // september». Men sommerferien ER perioden hvor nedtellingen betyr
-      // noe — resten av året er neste undervisningsdag uansett få dager
-      // unna. Skilt fra hverandre ville det store tallet aldri blitt
-      // vist på den eneste tiden det gjør inntrykk.
-      const nedTilStart = (skolear.startDato && iso(new Date()) < skolear.startDato)
-        ? dagerTil(skolear.startDato) : 0;
-      return `
-        <span class="fv-fri">
-          <span class="fv-fri-navn">${escapeHtml(ferie.beskrivelse || (ar ? 'إجازة' : 'Fri'))}</span>
-          <span class="fv-fri-periode">${periode}</span>
-          ${nedTilStart > 0 ? `
-            <span class="fv-ned-tall">${nedTilStart}</span>
-            <span class="fv-ned-tekst">${ar ? 'يوم على بداية الدراسة'
-              : (nedTilStart === 1 ? 'dag til skolestart' : 'dager til skolestart')}</span>
-            <span class="fv-tilbake-dato">${datoNorsk(skolear.startDato, lang)}</span>`
-          : tilbake}
-        </span>`;
-    }
-
-    // 2) Før skolestart — nedtellingen. Bare når datoen faktisk er satt.
-    if(skolear.startDato && iDag < skolear.startDato){
-      const d = dagerTil(skolear.startDato);
-      return `
-        <span class="fv-nedtelling">
-          <span class="fv-ned-tall">${d}</span>
-          <span class="fv-ned-tekst">${ar
-            ? (d === 1 ? 'يوم على بداية الدراسة' : 'يوم على بداية الدراسة')
-            : (d === 1 ? 'dag til skolestart' : 'dager til skolestart')}</span>
-          <span class="fv-tilbake-dato">${datoNorsk(skolear.startDato, lang)}</span>
-        </span>`;
-    }
-
-    // 3) Neste undervisningsdag med timeplan
+    // 🔴 Timeplanen vises OGSÅ i ferien.
+    //
+    // Første utgave lot ferieboksen erstatte den: kortet sa «Sommerferie»
+    // og stoppet der. Men det er nettopp i ferien en familie lurer på
+    // hvordan dagen kommer til å se ut — og skjermen sto tom i ni uker.
+    //
+    // nesteUndervisningsdag() svarer allerede riktig: den hopper over
+    // ferier og respekterer startDato, så i dag returnerer den 5.
+    // september. Det eneste som trengtes var å slutte å stoppe før den.
+    //
+    // Overskriften skifter i stedet: «Første dag» når skolen ikke har
+    // begynt, datoen alene når den har det.
     const neste = nesteUndervisningsdag(program);
     if(!neste) return '';
+
+    const iDag = iso(new Date());
+    const forStart = (skolear.startDato && iDag < skolear.startDato)
+      || !!ferieFor(iDag, program);
+    const tittel = (forStart ? (ar ? 'أول يوم · ' : 'Første dag · ') : '')
+      + datoNorsk(neste.dato, lang);
 
     const klasseIder = [b.klasse, 'Felles oppstart', 'Felles avslutning'].filter(Boolean);
     const blokker = blokkerFor(neste.dag, klasseIder);
     if(blokker.length === 0){
-      return `<span class="fv-dag"><span class="fv-dag-tittel">${datoNorsk(neste.dato, lang)}</span>
-        <span class="fv-dag-tom">${ar ? 'الجدول لسه ما اتحطش' : 'Timeplanen er ikke lagt inn ennå'}</span></span>`;
+      return `<span class="fv-dag"><span class="fv-dag-tittel">${tittel}</span>
+        <span class="fv-dag-tom">${ar ? 'الجدول لسه ما اتحطش'
+          : 'Timeplanen er ikke lagt inn ennå'}</span></span>`;
     }
+
+    // 🔴 Én linje per TID — ikke per blokk.
+    //
+    // Blokkene slår sammen timer som ligger inntil hverandre. Det er
+    // riktig for panelet, som bruker dem til å finne hull og til å vise
+    // parallelle språkspor. Men for en forelder ble 09:30 Koran og
+    // 10:15 Arabisk til én linje: «09:30 Koran · Arabisk» — som om de
+    // gikk samtidig. Timeplanen løy om sin egen rekkefølge.
+    //
+    // Nå: blokkene brukes KUN til å regne pausene. Linjene følger de
+    // faktiske klokkeslettene. Står to fag på SAMME tid, er de virkelig
+    // parallelle — da hører de sammen på én linje, og gjør det fortsatt.
+    const tider = [...new Set(hours
+      .filter(h => h.dag === neste.dag && klasseIder.includes(h.klasse) && h.tid)
+      .map(h => h.tid))]
+      .map(t => ({ tid: t, ...tpParseTid(t) }))
+      .filter(t => t.start)
+      .sort((a, b) => a.start.localeCompare(b.start));
 
     let forrigeSlutt = '';
     const linjer = [];
-    blokker.forEach(blk => {
-      // Hullet mellom to blokker ER pausen. Uten denne linjen ville
-      // foreldre lurt på hva som skjer i det tomrommet.
-      if(forrigeSlutt && blk.start > forrigeSlutt){
-        const min = minutterMellom(forrigeSlutt, blk.start);
+    tider.forEach(t => {
+      if(forrigeSlutt && t.start > forrigeSlutt){
+        const min = minutterMellom(forrigeSlutt, t.start);
         linjer.push(`<span class="fv-pause">☕ ${ar ? 'استراحة' : 'Pause'}${
           min ? ' ' + min + (ar ? ' د' : ' min') : ''}</span>`);
       }
-      const rader = hours.filter(h => h.dag === neste.dag && klasseIder.includes(h.klasse)
-        && blk.tider.includes(h.tid));
+      const rader = hours.filter(h => h.dag === neste.dag
+        && klasseIder.includes(h.klasse) && h.tid === t.tid);
       const fag = [...new Set(rader.map(r => r.fag).filter(Boolean))];
       const larere = [...new Set(rader.map(r => navnPaLarer(r.larer)).filter(Boolean))];
       linjer.push(`
         <span class="fv-time">
-          <span class="fv-time-tid">${escapeHtml(blk.start)}</span>
+          <span class="fv-time-tid">${escapeHtml(t.start)}</span>
           <span class="fv-time-fag">${escapeHtml(fag.join(' · ') || '—')}</span>
           <span class="fv-time-larer">${escapeHtml(larere.join(', '))}</span>
         </span>`);
-      forrigeSlutt = blk.slutt;
+      forrigeSlutt = t.end;
     });
 
     return `<span class="fv-dag">
-      <span class="fv-dag-tittel">${datoNorsk(neste.dato, lang)}</span>
+      <span class="fv-dag-tittel">${tittel}</span>
       ${linjer.join('')}
     </span>`;
   }
