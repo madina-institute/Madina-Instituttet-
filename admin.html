@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 08:43:34 -->
+<!-- SIST-ENDRET: 2026-08-15 20:23:46 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -6170,6 +6170,62 @@
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
   let broadcastMessagesCache = [];
+
+  // ═══════════════════════════════════════════════════════════════
+  // ÉN SAMTALE PER MOTTAKER — den ene veien meldinger sendes ut
+  //
+  // 🔴 Før dette lå ALLE mottakerne i ett felt på én delt tråd, og
+  // begge portalene lastet ned HELE broadcast-samlingen for så å
+  // filtrere i nettleseren. Enhver forelder hadde dermed hver eneste
+  // families meldinger liggende i minnet — også de private svarene.
+  // Filtrering på skjermen er en visning, ikke en sperre.
+  //
+  // Nå får hver mottaker sin egen tråd med 'mottakerEpost' som eneste
+  // adressat. Regelen blir da en sammenligning av to strenger, uten
+  // oppslag i basen — og portalen SPØR om sine egne, i stedet for å
+  // få alt og gjemme resten.
+  //
+  // 🔴 E-posten er nøkkelen, ikke dokument-id-en. En lærer har ingen
+  // rad i 'tilgang' og ingen i 'foreldreTilgang' — reglene kan derfor
+  // aldri knytte en id til den innloggede. E-posten kan de, fordi
+  // innloggingen ER e-posten.
+  //
+  // 'gruppeId' holder en gruppeutsendelse samlet i innboksen her.
+  // Den brukes KUN til visning; den gir ingen tilgang.
+  //
+  // Returnerer { sendt, utenEpost } — mottakere uten e-postadresse
+  // kan ikke logge inn og får derfor ingen tråd. Antallet returneres
+  // slik at hvert kallested kan SI det. En mottaker som forsvinner i
+  // stillhet er den dyreste feilen vi har.
+  // ═══════════════════════════════════════════════════════════════
+  async function sendBroadcast({ recipients, title, groupLabel, tekst }){
+    const nowIso = new Date().toISOString();
+    const gruppeId = 'grp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    let sendt = 0;
+    const utenEpost = [];
+    for(const r of recipients){
+      const epost = String(r.epost || '').trim().toLowerCase();
+      if(!epost){ utenEpost.push(r.name || r.id || 'ukjent'); continue; }
+      const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
+        mottakerEpost: epost,
+        mottakerNavn: r.name || '',
+        mottakerType: r.type || '',
+        mottakerId: r.id || '',
+        gruppeId, gruppeStorrelse: recipients.length,
+        title, groupLabel,
+        status: 'open', createdAt: nowIso, lastActivityAt: nowIso,
+        sentBy: currentUserEmail || 'ukjent'
+      });
+      await addDoc(collection(db, 'broadcastMessages'), {
+        threadId: threadRef.id, mottakerEpost: epost,
+        fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
+        tekst, dato: nowIso
+      });
+      sendt++;
+    }
+    return { sendt, utenEpost };
+  }
+
   let editingId = null;
   let editingType = null;
   const readyCollections = new Set();
@@ -6460,18 +6516,14 @@
     lines.push('Med vennlig hilsen,\nMadina Skole');
     const text = lines.join('\n');
     const subject = 'Betalingsoversikt — ' + (student.navn || 'ditt barn');
-    const nowIso = new Date().toISOString();
 
-    const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
-      recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '' }],
-      title: subject, groupLabel: 'Betalingsrapport',
-      status: 'open', createdAt: nowIso, lastActivityAt: nowIso,
-      sentBy: currentUserEmail || 'ukjent'
+    const utfall = await sendBroadcast({
+      recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '', epost: guardian.epost || '' }],
+      title: subject, groupLabel: 'Betalingsrapport', tekst: text
     });
-    await addDoc(collection(db, 'broadcastMessages'), {
-      threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
-      visibility: 'all', tekst: text, dato: nowIso
-    });
+    if(utfall.sendt === 0){
+      showToast('⚠️ ' + (guardian.navn || 'Foresatt') + ' har ingen e-post — rapporten ble ikke lagt i Foreldreportalen.', true);
+    }
     if(guardian.epost){
       await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
     }
@@ -7704,18 +7756,14 @@
     ];
     const text = lines.join('\n');
     const subject = 'Faktura — ' + (student.navn || 'ditt barn');
-    const nowIso = new Date().toISOString();
     try{
-      const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
-        recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '' }],
-        title: subject, groupLabel: 'Faktura',
-        status: 'open', createdAt: nowIso, lastActivityAt: nowIso,
-        sentBy: currentUserEmail || 'ukjent'
+      const utfall = await sendBroadcast({
+        recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '', epost: guardian.epost || '' }],
+        title: subject, groupLabel: 'Faktura', tekst: text
       });
-      await addDoc(collection(db, 'broadcastMessages'), {
-        threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
-        visibility: 'all', tekst: text, dato: nowIso
-      });
+      if(utfall.sendt === 0){
+        showToast('⚠️ ' + (guardian.navn || 'Foresatt') + ' har ingen e-post — fakturaen ble ikke lagt i Foreldreportalen.', true);
+      }
       if(guardian.epost){
         await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
       }
@@ -8027,10 +8075,17 @@
   }
 
   window.updateMsRecipientCount = function(){
-    const n = computeMsRecipients().length;
-    document.getElementById('msRecipientCount').textContent = n === 0
-      ? 'Ingen mottakere funnet med dette valget.'
-      : n + ' mottaker' + (n === 1 ? '' : 'e') + ' vil motta denne meldingen — hver som egen samtale.';
+    const alle = computeMsRecipients();
+    const n = alle.length;
+    // Mottakere uten e-post kan ikke logge inn, og får derfor ingen tråd.
+    // Tallet må si det FØR sendingen — ikke etterpå, og aller minst ikke
+    // stilltiende. Teksten «hver som egen samtale» er nå også sann.
+    const uten = alle.filter(r => !String(r.epost || '').trim());
+    const el = document.getElementById('msRecipientCount');
+    if(n === 0){ el.textContent = 'Ingen mottakere funnet med dette valget.'; return; }
+    el.textContent = n + ' mottaker' + (n === 1 ? '' : 'e') + ' vil motta denne meldingen — hver som egen samtale.'
+      + (uten.length ? '  ⚠️ ' + uten.length + ' av dem har ingen e-post og får ingenting: '
+          + uten.map(r => r.name || r.id).join(', ') : '');
   };
   ['msIndividualSelect','msClassSelect','msSubjectSelect'].forEach(id => {
     const el = document.getElementById(id);
@@ -8055,24 +8110,18 @@
     statusBox.textContent = 'Sender til ' + recipients.length + ' mottaker(e)...';
 
     try{
-      const nowIso = new Date().toISOString();
-      // ONE broadcast record for the whole group — not one per person —
-      // with every recipient's id/name/type stored in a single array. Each
-      // recipient still sees this exact thread in their own portal (matched
-      // by their id being present in recipientIds), and can choose to reply
-      // either visibly to everyone in the thread, or privately to admin
-      // only — every individual reply is still saved as its own separate
-      // message either way, just tagged with who sent it and who can see it.
-      const threadRef = await addDoc(collection(db, 'broadcastThreads'), {
-        recipients: recipients.map(r => ({ type:r.type, id:r.id, name:r.name })),
-        title: subject, groupLabel, status: 'open',
-        createdAt: nowIso, lastActivityAt: nowIso,
-        sentBy: currentUserEmail || 'ukjent'
-      });
-      await addDoc(collection(db, 'broadcastMessages'), {
-        threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
-        visibility: 'all', tekst: body, dato: nowIso
-      });
+      // 🔴 ÉN SAMTALE PER MOTTAKER — som teksten over sendeknappen alltid
+      // har lovet («hver som egen samtale»), men som koden ikke gjorde.
+      //
+      // Før lå hele mottakerlisten på én delt tråd. Hver mottaker kunne
+      // dermed lese hele listen — ved «Alle foresatte» betyr det hver
+      // families e-postadresse, hos hver familie. Å utlevere adressene
+      // krever et eget grunnlag, og det finnes ikke når samme melding
+      // kan sendes uten. Nå står hver mottaker alene i sin egen tråd.
+      //
+      // Prisen er flere rader i innboksen. Derfor 'gruppeId', som samler
+      // dem igjen ved visning — se renderBroadcastInbox().
+      const utfall = await sendBroadcast({ recipients, title: subject, groupLabel, tekst: body });
       for(const r of recipients){
         if(!r.epost) continue;
         try{
@@ -8083,8 +8132,19 @@
           });
         } catch(mailErr){ console.error('E-post-varsling feilet for', r.epost, mailErr); }
       }
-      statusBox.style.background = 'rgba(46,107,83,0.10)'; statusBox.style.color = 'var(--emerald)';
-      statusBox.textContent = '✓ Sendt til ' + recipients.length + ' mottaker(e).';
+      // Sier hva som IKKE gikk gjennom. Et tall som bare teller de
+      // vellykkede ser likt ut enten alle fikk meldingen eller halvparten
+      // manglet e-post — og forskjellen ville ingen oppdaget før en
+      // forelder spurte hvorfor hun aldri fikk beskjed.
+      if(utfall.utenEpost.length > 0){
+        statusBox.style.background = 'rgba(196,154,60,0.12)'; statusBox.style.color = 'var(--gold)';
+        statusBox.textContent = '✓ Sendt til ' + utfall.sendt + ' av ' + recipients.length +
+          ' mottaker(e). ' + utfall.utenEpost.length + ' har ingen e-post og fikk ingenting: ' +
+          utfall.utenEpost.join(', ');
+      } else {
+        statusBox.style.background = 'rgba(46,107,83,0.10)'; statusBox.style.color = 'var(--emerald)';
+        statusBox.textContent = '✓ Sendt til ' + utfall.sendt + ' mottaker(e).';
+      }
       document.getElementById('msSubject').value = '';
       document.getElementById('msBody').value = '';
     } catch(err){
@@ -8098,11 +8158,42 @@
     const listEl = document.getElementById('broadcastInboxList');
     if(!listEl) return;
     const query = (document.getElementById('searchBroadcastInbox')?.value || '').toLowerCase();
-    let rows = broadcastThreadsCache.map(th => {
-      const msgs = broadcastMessagesCache.filter(m => m.threadId === th.id).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
-      const last = msgs[msgs.length - 1];
-      const recipientNames = (th.recipients || []).map(r => r.name);
-      return { th, msgs, recipientNames, last: last || { tekst:'', dato: th.createdAt, fra:'Administrasjon' } };
+
+    // 🔴 Én tråd per mottaker gir én RAD per mottaker. En utsendelse til
+    // seksti foresatte ville dermed fylt innboksen med seksti nesten like
+    // rader, og den ene som faktisk svarte ville druknet.
+    //
+    // 'gruppeId' settes ved sending og samler dem igjen HER — i visningen,
+    // ikke i tilgangen. Trådene er fortsatt atskilte i basen; det er bare
+    // administrasjonen som ser dem som én.
+    //
+    // Tråder uten gruppeId (enkeltutsendelser: faktura, betalingsrapport,
+    // timeregistrering) blir sin egen gruppe på ett medlem, og ser ut
+    // nøyaktig som før.
+    const grupper = new Map();
+    for(const th of broadcastThreadsCache){
+      const nokkel = th.gruppeId || th.id;
+      if(!grupper.has(nokkel)) grupper.set(nokkel, []);
+      grupper.get(nokkel).push(th);
+    }
+    let rows = [...grupper.values()].map(traader => {
+      const deler = traader.map(th => ({
+        th,
+        navn: th.mottakerNavn || th.mottakerEpost || '(ukjent mottaker)',
+        msgs: broadcastMessagesCache.filter(m => m.threadId === th.id)
+          .sort((a,b) => (a.dato||'').localeCompare(b.dato||''))
+      })).sort((a,b) => a.navn.localeCompare(b.navn, 'no'));
+      const forste = traader[0];
+      const alleMsgs = deler.flatMap(d => d.msgs).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const sisteAktivitet = traader.map(t => t.lastActivityAt || t.createdAt || '')
+        .sort().slice(-1)[0] || '';
+      const last = alleMsgs[alleMsgs.length - 1];
+      return {
+        th: { ...forste, lastActivityAt: sisteAktivitet },
+        deler,
+        recipientNames: deler.map(d => d.navn),
+        last: last || { tekst:'', dato: forste.createdAt, fra:'Administrasjon' }
+      };
     });
     if(query){
       rows = rows.filter(r =>
@@ -8136,15 +8227,20 @@
             </div>
           </div>
         </summary>
-        <div style="padding:12px 16px 16px 66px; display:flex; flex-direction:column; gap:10px;">
-          ${r.msgs.map(m => `
-            <div style="background:${m.fra === 'Administrasjon' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:9px 12px;">
-              <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:3px;">
-                ${escapeHtml(m.fra === 'Administrasjon' ? 'Administrasjonen' : (m.avsenderNavn||''))}
-                ${m.visibility === 'private' ? '<span style="font-weight:600; color:var(--gold); margin-inline-start:5px;">🔒 Privat svar</span>' : ''}
-                <span style="font-weight:400; color:#8a9a90;"> — ${escapeHtml(inboxTimeLabelAdmin(m.dato))}</span>
+        <div style="padding:12px 16px 16px 66px; display:flex; flex-direction:column; gap:14px;">
+          ${r.deler.map(d => `
+            <div>
+              ${r.deler.length > 1 ? `<div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:#8a9a90; margin-bottom:5px;">${escapeHtml(d.navn)}${d.msgs.some(m => m.fra !== 'Administrasjon') ? ' <span style="color:var(--emerald-d);">· har svart</span>' : ''}</div>` : ''}
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                ${d.msgs.map(m => `
+                  <div style="background:${m.fra === 'Administrasjon' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:9px 12px;">
+                    <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:3px;">
+                      ${escapeHtml(m.fra === 'Administrasjon' ? 'Administrasjonen' : (m.avsenderNavn||''))}
+                      <span style="font-weight:400; color:#8a9a90;"> — ${escapeHtml(inboxTimeLabelAdmin(m.dato))}</span>
+                    </div>
+                    <div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeHtml(m.tekst||'')}</div>
+                  </div>`).join('')}
               </div>
-              <div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeHtml(m.tekst||'')}</div>
             </div>`).join('')}
         </div>
       </details>`;
@@ -8588,16 +8684,13 @@
       if(teacher){
         const subject = 'Din oppmøte-/timeregistrering er endret — ' + (row.dato || '') + (teacher.navn ? ' (' + teacher.navn + ')' : '');
         const text = `Hei ${teacher.navn || ''},\n\nDin registrering for ${row.dato || 'valgt dato'} er endret av administrasjonen:\n\nNy status: ${status}\nNytt antall timer: ${timer}\n\nÅrsak: ${arsak}\n\nMed vennlig hilsen,\nMadina Skole`;
-        const nowIso = new Date().toISOString();
-        await addDoc(collection(db, 'broadcastThreads'), {
-          recipients: [{ type: 'teacher', id: teacher.id, name: teacher.navn || '' }],
-          title: subject, groupLabel: 'Timeregistrering endret',
-          status: 'open', createdAt: nowIso, lastActivityAt: nowIso,
-          sentBy: currentUserEmail || 'ukjent'
-        }).then(threadRef => addDoc(collection(db, 'broadcastMessages'), {
-          threadId: threadRef.id, fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
-          visibility: 'all', tekst: text, dato: nowIso
-        }));
+        const utfall = await sendBroadcast({
+          recipients: [{ type: 'teacher', id: teacher.id, name: teacher.navn || '', epost: teacher.epost || '' }],
+          title: subject, groupLabel: 'Timeregistrering endret', tekst: text
+        });
+        if(utfall.sendt === 0){
+          showToast('⚠️ ' + (teacher.navn || 'Læreren') + ' har ingen e-post — varselet ble ikke lagt i Lærerportalen.', true);
+        }
         if(teacher.epost){
           await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [teacher.epost], message: { subject: '[Madina Skole] ' + subject, text } });
         }
