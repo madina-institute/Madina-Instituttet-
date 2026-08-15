@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 10:32:41 -->
+<!-- SIST-ENDRET: 2026-08-15 10:44:21 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -2063,6 +2063,13 @@
 
   watch('classes', (snap) => {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Navnene kommer etter timeplanen. Uten denne sto velkomstskjermen
+    // igjen med id-er til noe annet tilfeldigvis tegnet den på nytt.
+    if(currentTeacher){
+      const vk = document.getElementById('velkomstView');
+      if(vk && vk.style.display !== 'none') tegnVelkomst();
+      renderHome();
+    }
   });
 
   watch('guardians', (snap) => {
@@ -4230,10 +4237,30 @@
     </div>`;
   }
 
+  // 🔴 Reserven var å vise ID-en. Det ga «3AlhrvluX4eVRJAGmWI0» på skjermen
+  // i det sekundet klassene ennå ikke var lest — en nøkkel fra databasen,
+  // presentert for læreren som om det var navnet på en klasse.
+  //
+  // To ulike tilfeller ble behandlet likt:
+  //   • klassene er IKKE lastet ennå  → navnet finnes, det er bare ikke kommet
+  //   • verdien er en gammel tekst    → den ER navnet, fra før id-ene kom
+  //
+  // Er listen tom, venter vi: da er ingenting lest, og en tilfeldig
+  // strengverdi er langt mer sannsynlig en id enn et klassenavn.
+  // Er listen lest og verdien ikke finnes i den, er den en gammel
+  // fritekstverdi — og da er den riktig å vise.
   function resolveClassName(classId){
     if(!classId) return '';
     const cls = classes.find(c => c.id === classId);
-    return cls ? (cls.navn || cls.klassenavn || '') : classId; // fallback: legacy/un-migrated value
+    if(cls) return cls.navn || cls.klassenavn || '';
+    if(classes.length === 0) return '…';        // ikke lest ennå
+    // Lest, men finnes ikke: klassen er slettet mens timeplanen fortsatt
+    // peker på den. «…» ville skjult det for godt — dette skal ses og
+    // ryddes i panelet.
+    if(/^[A-Za-z0-9_-]{18,}$/.test(classId)){
+      return currentLang === 'ar' ? '(صف محذوف)' : '(slettet klasse)';
+    }
+    return classId;                              // gammel fritekst
   }
 
   // Undervisningsdagene styres nå fra fanen "Programmer" i admin.html
