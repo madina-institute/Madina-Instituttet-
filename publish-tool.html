@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 12:11:13 -->
+<!-- SIST-ENDRET: 2026-08-15 12:18:53 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1425,21 +1425,45 @@
     const boks = document.getElementById('utleggingBoks');
     if(!boks) return;
     boks.style.display = 'block';
-    boks.innerHTML = '<div class="ut-sub">Leser kjøringene…</div>';
+
+    // 🔴 Lenken skrives FØR spørringen, ikke etter.
+    //
+    // Første utgave viste «Leser kjøringene…» og ventet på GitHub. Svarte
+    // GitHub ikke — eller manglet tokenet lesetilgang til Actions — ble
+    // den setningen stående, og knappen ga ingenting i det hele tatt.
+    //
+    // Selve svaret ligger på Actions-siden uansett. Den lenken krever
+    // ingen token og kan ikke feile, så den står her med en gang.
+    // Klarer vi å lese statusen i tillegg, er det en bonus — ikke
+    // forutsetningen for at knappen skal være til nytte.
+    const cfg = loadConfig();
+    const aksjonURL = (cfg && cfg.owner && cfg.repo)
+      ? 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/actions/workflows/' + DEPLOY_WORKFLOW
+      : '';
+    const lenkeblokk = aksjonURL
+      ? '<div class="ut-sub"><a href="' + aksjonURL + '" target="_blank" rel="noopener">' +
+        '🔗 Åpne utleggingene på GitHub →</a><br>' +
+        'Grønn hake = filene er ute. Rødt kryss = de ligger i GitHub, men ikke på nettstedet.</div>'
+      : '<div class="ut-sub">Lagre oppsettet (eier og repo) for å få lenken hit.</div>';
+
+    boks.innerHTML = '<div class="ut-tittel">Utleggingen</div>' + lenkeblokk +
+      '<div class="ut-sub" id="utAuto">Prøver også å lese statusen automatisk…</div>';
 
     const svar = await hentKjoringer(15);
+    const auto = document.getElementById('utAuto');
+    // Feiler den automatiske lesingen, mister vi bare bonusen — lenken
+    // over står fortsatt, og den er det viktigste.
     if(svar.feil){
-      boks.innerHTML = '<div class="ut-tittel">Kunne ikke lese kjøringene</div>' +
-        '<pre class="ut-logg" id="utLogg">' + escapeHtmlPT(svar.feil) + '</pre>' +
-        '<button class="btn btn-ghost" onclick="kopierUtlegging()">📋 Kopier meldingen</button>';
+      if(auto) auto.innerHTML = 'Kunne ikke lese statusen automatisk. Bruk lenken over.<br>' +
+        '<span style="color:#96a29a;">' + escapeHtmlPT(svar.feil) + '</span>';
       return;
     }
     const kj = svar.liste;
     if(kj.length === 0){
-      boks.innerHTML = '<div class="ut-tittel">Ingen kjøringer funnet</div>' +
-        '<div class="ut-sub">Arbeidsflyten ' + DEPLOY_WORKFLOW + ' finnes, men har ikke kjørt ennå.</div>';
+      if(auto) auto.textContent = 'Arbeidsflyten har ikke kjørt ennå.';
       return;
     }
+    if(auto) auto.remove();
 
     const sisteOk = kj.find(r => r.status === 'completed' && r.conclusion === 'success');
     const siste = kj[0];
@@ -1471,7 +1495,7 @@
       html += '<div class="ut-sub">Retter du årsaken og publiserer på nytt, går <b>alt</b> ut samtidig — ' +
         'utleggingen laster opp hele treet, ikke bare den siste filen.</div>';
     }
-    boks.innerHTML = html;
+    boks.innerHTML = html + lenkeblokk;
 
     if(siste.status === 'completed' && siste.conclusion !== 'success' && siste.conclusion !== 'cancelled'){
       const tekst = await hentFeiltekst(siste.id);
