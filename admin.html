@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 00:24:40 -->
+<!-- SIST-ENDRET: 2026-08-16 00:31:10 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4776,6 +4776,16 @@
         //
         // Står de tomme, hoppes kontrollen over — den sier ikke fra om
         // noe den ikke har grunnlag for å bedømme.
+        // 🔴 Fagene programmet består av. Sto før fast i koden, i
+        // KO_FAG_PROGRAM, med «Madinabarn» oppført som et FAG — men
+        // Madinabarn er navnet på programmet, ikke på noe som undervises.
+        // Og «Fellestime» gjaldt aldri for det.
+        //
+        // En liste i koden kan bare endres ved å publisere en ny fil.
+        // Her kan skolen sette den selv, og hvert program får sin egen.
+        {key:'innslag', label:'Fag/innslag i dette programmet (skill med komma)',
+         type:'text', essential:true,
+         placeholder:'f.eks. Koranstund, Fortelling, Lek og læring'},
         {key:'starttid', label:'Undervisningen begynner', type:'text',
          placeholder:'f.eks. 09:30'},
         {key:'sluttid', label:'Undervisningen slutter', type:'text',
@@ -9307,29 +9317,43 @@
     if(dager.includes(forrigeDag)) dSel.value = forrigeDag;
   }
 
-  // Hvilke fag som gir mening for klassens program. Et Madinabarn-fag på
-  // en lørdagsklasse er ikke en smakssak — det er en feil som først
+  // Hvilke fag som gir mening for klassens program. Et Madinabarn-innslag
+  // på en lørdagsklasse er ikke en smakssak — det er en feil som først
   // oppdages når foreldreportalen viser barnet i feil program.
-  const KO_FAG_PROGRAM = {
-    'Madinabarn': ['Madinabarn', 'Fellestime'],
-    'Madina Islamske Skole': ['Koran', 'Islam', 'Arabisk', 'Urdu', 'Fellestime']
-  };
-  function koFagFor(klasseId){
+  //
+  // 🔴 Listen lå før fast i koden, og hadde «Madinabarn» oppført som et
+  // FAG. Madinabarn er navnet på programmet; barna der har innslag —
+  // koranstund, fortelling, lek — ikke skolefag. Og «Fellestime» gjaldt
+  // aldri for dem. Feilen kunne ikke rettes uten å publisere en ny fil.
+  //
+  // Nå står listen på programmet, i feltet 'innslag'. Reserven under
+  // brukes bare for programmer som ennå ikke har fått den satt, slik at
+  // ingenting står tomt i mellomtiden.
+  const KO_FAG_RESERVE = ['Koran', 'Islam', 'Arabisk', 'Urdu', 'Fellestime'];
+
+  function koProgramFor(klasseId){
     const prog = ((cache.classes || []).find(c => c.id === klasseId) || {}).program || '';
-    const nokkel = Object.keys(KO_FAG_PROGRAM).find(k => prog.includes(k));
-    // Ukjent eller tomt program: vis alt heller enn ingenting. En tom
-    // nedtrekksliste ser ut som en feil i systemet, ikke som et manglende
-    // programvalg på klassekortet.
-    return nokkel ? KO_FAG_PROGRAM[nokkel]
-      : [...new Set(Object.values(KO_FAG_PROGRAM).flat())];
+    return (cache.programs || []).find(x => x.navn === prog || x.id === prog) || null;
+  }
+  function koInnslagListe(p){
+    return String((p && p.innslag) || '').split(',').map(t => t.trim()).filter(Boolean);
+  }
+  function koFagFor(klasseId){
+    const p = koProgramFor(klasseId);
+    const egne = koInnslagListe(p);
+    if(egne.length) return egne;
+    // Ukjent program, eller innslag ikke satt ennå: vis alt som finnes
+    // heller enn ingenting. En tom nedtrekksliste ser ut som en feil i
+    // systemet, ikke som et program uten innslag.
+    const alle = (cache.programs || []).flatMap(koInnslagListe);
+    return [...new Set(alle.length ? alle : KO_FAG_RESERVE)];
   }
 
   // Dagene programmet faktisk går. Tom liste betyr «vet ikke» — og da
   // vises alle dagene heller enn ingen. Et tomt nedtrekk ser ut som en
   // feil i systemet, ikke som et program uten dager satt.
   function koDagerFor(klasseId){
-    const prog = ((cache.classes || []).find(c => c.id === klasseId) || {}).program || '';
-    const p = (cache.programs || []).find(x => x.navn === prog || x.id === prog);
+    const p = koProgramFor(klasseId);
     const dager = p && p.dager
       ? (Array.isArray(p.dager) ? p.dager : String(p.dager).split(',').map(s => s.trim()).filter(Boolean))
       : [];
@@ -9357,7 +9381,7 @@
       }
       if(naa) el.value = naa;
     };
-    sett('field_fag', klasseId ? koFagFor(klasseId) : [...new Set(Object.values(KO_FAG_PROGRAM).flat())]);
+    sett('field_fag', koFagFor(klasseId));
     sett('field_dag', klasseId ? koDagerFor(klasseId) : ['Lørdag', 'Søndag']);
   }
 
