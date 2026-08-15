@@ -1,170 +1,401 @@
-{
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "disallowLegacyRuntimeConfig": true,
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ]
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ══════════════════════════════════════════════════════════════
+    // TRINN 4 — Myndighet etter nivå, én nødkonto utenfor
+    //
+    // ⏸️ DENNE UTGAVEN STRAMMER ALT UNNTATT TRE SAMLINGER.
+    //
+    // students, attendance og studentNotes står fortsatt på loggedIn().
+    // Grunnen står ved hver av dem: lærerportalen laster dem uten
+    // filter, og læreren har ingen rad i 'tilgang'. Strammes de nå,
+    // blir lærerportalen tom — stille, og uten at en prøve med
+    // foresattkonto ville oppdaget det.
+    //
+    // Alt annet er strammet: søknader, e-post, slettelogg, lønn,
+    // regnskap, brukere og møtereferater var lesbare for enhver
+    // innlogget konto. Det er de ikke lenger.
+    //
+    // Trinn 1 stengte offentlig lesing. Trinn 2 skilte administrator fra
+    // innlogget og la hierarkiet i 'tilgang'. Trinn 3 flyttet eierskapet
+    // inn i basen, som et dokument panelet kunne redigere.
+    //
+    // Trinn 3 ble rullet tilbake, og grunnen er verdt å huske: hvert
+    // eneste rettighetsoppslag måtte da lese et dokument, og den dagen
+    // dokumentet ble skrevet om, sluttet alt som krevde eier å virke —
+    // uten at noe pekte på hvorfor. En tilgangskontroll som hviler på en
+    // rad i basen, faller sammen med den raden.
+    //
+    // Nå: myndigheten følger NIVÅET i 'tilgang' (1 = øverste ledelse),
+    // og skolens egen adresse er den ene veien tilbake når alt annet
+    // svikter. Det finnes ingen «eier» som rolle lenger — den øverste
+    // ledelsen er ledere, ikke eiere.
+    //
+    // ⚠️ HVA DETTE IKKE GJØR:
+    // Det begrenser IKKE en forelder til sitt eget barn. Portalene
+    // laster hele samlinger og filtrerer i nettleseren, og Firestore
+    // avviser HELE spørringen hvis ett eneste dokument ville brutt
+    // regelen. En regel om «kun egne barn» ville derfor gjort
+    // foreldreportalen TOM, ikke filtrert. Det krever at spørringene
+    // skrives om først.
+    // ══════════════════════════════════════════════════════════════
+
+    function loggedIn() {
+      return request.auth != null;
     }
-  ],
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**",
-      "functions/**",
-      "*.md",
-      "sjekk-sider.mjs"
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(html)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "**/*.@(js|css)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "**/*.@(png|jpg|jpeg|gif|svg|webp|ico)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=604800"
-          }
-        ]
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "/datoer",
-        "destination": "/datoer.html"
-      },
-      {
-        "source": "/program",
-        "destination": "/program.html"
-      },
-      {
-        "source": "/priser",
-        "destination": "/priser.html"
-      },
-      {
-        "source": "/om-oss",
-        "destination": "/om-oss.html"
-      },
-      {
-        "source": "/team",
-        "destination": "/team.html"
-      },
-      {
-        "source": "/portaler",
-        "destination": "/portaler.html"
-      },
-      {
-        "source": "/påmelding",
-        "destination": "/index2.html"
-      },
-      {
-        "source": "/pamelding",
-        "destination": "/index2.html"
-      },
-      {
-        "source": "/lærer",
-        "destination": "/index1.html"
-      },
-      {
-        "source": "/laerer",
-        "destination": "/index1.html"
-      },
-      {
-        "source": "/foreldre",
-        "destination": "/index4.html"
-      },
-      {
-        "source": "/timeplan",
-        "destination": "/timeplan.html"
-      },
-      {
-        "source": "/kunngjøringer",
-        "destination": "/kunngjoring.html"
-      },
-      {
-        "source": "/kunngjoringer",
-        "destination": "/kunngjoring.html"
-      },
-      {
-        "source": "/personvern",
-        "destination": "/personvern.html"
-      },
-      {
-        "source": "/brosjyre",
-        "destination": "/madina-brosjyre.html"
-      },
-      {
-        "source": "/medlemskap",
-        "destination": "/medlemskap.html"
-      },
-      {
-        "source": "/laremidler",
-        "destination": "/laremidler.html"
-      },
-      {
-        "source": "/læremidler",
-        "destination": "/laremidler.html"
-      },
-      {
-        "source": "/kontor",
-        "destination": "/admin.html"
-      },
-      {
-        "source": "/ledelse",
-        "destination": "/ledelseinnsyn.html"
-      },
-      {
-        "source": "/larerinnsyn",
-        "destination": "/larerinnsyn.html"
-      },
-      {
-        "source": "/lærerinnsyn",
-        "destination": "/larerinnsyn.html"
-      },
-      {
-        "source": "/foreldreinnsyn",
-        "destination": "/foreldreinnsyn.html"
-      },
-      {
-        "source": "/slettelogg",
-        "destination": "/slettelogg.html"
-      },
-      {
-        "source": "/statistikk",
-        "destination": "/statistikk.html"
-      },
-      {
-        "source": "/helsesjekk",
-        "destination": "/helsesjekk.html"
-      },
-      {
-        "source": "/publiser",
-        "destination": "/publish-tool.html"
-      }
-    ]
+
+    function minEpost() {
+      return loggedIn() && request.auth.token.email != null
+        ? request.auth.token.email.lower() : '';
+    }
+
+    // ---------- NØDKONTOEN ----------
+    // Skolens egen adresse er den ENESTE som står skrevet inn her.
+    //
+    // Første forsøk la eierskapet i basen (settings/eierskap), slik at
+    // eiere kunne legges til fra panelet. Det kostet et get() i hvert
+    // eneste rettighetsoppslag, og da dokumentet ble skrevet om, sluttet
+    // alt som krevde eier å virke — uten at noe pekte på hvorfor. En
+    // tilgangskontroll som er avhengig av en rad i basen, faller med
+    // den raden.
+    //
+    // Nå: den daglige myndigheten kommer fra nivået i 'tilgang', og
+    // denne ene adressen er veien tilbake når alt annet svikter. Den
+    // brukes ikke til daglig — nettopp derfor kan den stoles på.
+    //
+    // At adressen står her gir ingen tilgang i seg selv. Passordet
+    // ligger i Firebase Authentication.
+    function erNodkonto() {
+      return minEpost() == 'post@madinaskole.no';
+    }
+
+    // Reglene kan ikke gjøre spørringer — bare slå opp én kjent sti.
+    // 'adminUsers' er indeksert på tilfeldig id, så den kan ikke brukes.
+    // Panelet vedlikeholder derfor 'tilgang', med e-posten som id.
+    function erAdmin() {
+      return erNodkonto()
+        || (loggedIn()
+            && minEpost() != ''
+            && exists(/databases/$(database)/documents/tilgang/$(minEpost())));
+    }
+
+    // Mitt eget nivå. Lavere tall = mer myndighet.
+    //   1 Øverste ledelse · 2 Skoleleder · 3 Mellomledelse
+    //   4 Lærere · 5 Assistent/frivillig
+    //
+    // Nødkontoen er nivå 1 uansett hva som står i 'tilgang' — den er
+    // punktet alt annet kan bygges opp fra igjen hvis listen skulle bli
+    // tom eller feilskrevet.
+    function mittNiva() {
+      return erNodkonto() ? 1
+        : (loggedIn() && minEpost() != ''
+           && exists(/databases/$(database)/documents/tilgang/$(minEpost()))
+            ? get(/databases/$(database)/documents/tilgang/$(minEpost())).data.niva
+            : 99);
+    }
+
+    // ---------- settings/eierskap er ute av bruk ----------
+    // Dokumentet styrte hvem som var eier. Det er erstattet av nivået i
+    // 'tilgang' pluss nødkontoen. Regelen står igjen som en sperre: en
+    // gammel fane som fortsatt prøver å skrive dit, skal ikke lykkes.
+    match /settings/eierskap {
+      allow read: if loggedIn();
+      allow write: if false;
+    }
+
+    // ---------- ER DETTE MITT BARN? ----------
+    // foreldreTilgang/{min e-post} → { barn: ['id1','id2'] }
+    //
+    // Reglene kan ikke gjøre spørringer. De kan bare slå opp én kjent
+    // sti — og e-posten min ER stien. Panelet holder listen oppdatert
+    // fra elevkortenes foresatt-felt.
+    // Feltet sjekkes for EKSISTENS før det leses. .get(felt, standard)
+    // er formen som gjorde at eierlisten ikke lot seg oppdatere — en
+    // regel som feiler under evaluering blir til «nei», stille.
+    function harBarneliste() {
+      return minEpost() != ''
+        && exists(/databases/$(database)/documents/foreldreTilgang/$(minEpost()))
+        && 'barn' in get(/databases/$(database)/documents/foreldreTilgang/$(minEpost())).data;
+    }
+    function erMittBarn(elevId) {
+      return harBarneliste()
+        && elevId in get(/databases/$(database)/documents/foreldreTilgang/$(minEpost())).data.barn;
+    }
+
+    // ---------- ROLLEDEFINISJONENE ----------
+    // Hva hver rolle har lov til. Kun øverste ledelse (nivå 1).
+    //
+    // Grunnen: den som kan redigere denne tabellen, kan gi enhver rolle
+    // hvilken som helst rettighet — også sin egen. Å la en skoleleder
+    // endre den ville i praksis hevet skoleleder til øverste nivå.
+    //
+    // Alle innloggede må kunne LESE den; panelet trenger den for å vite
+    // hvilke knapper som skal vises.
+    match /roller/{navn} {
+      allow read: if loggedIn();
+      allow write: if mittNiva() <= 1;
+    }
+
+    // ---------- TILGANGSINDEKSEN SELV ----------
+    // Denne samlingen ER tilgangskontrollen, og den håndhever hierarkiet.
+    //
+    // REGELEN: du kan bare utnevne noen med STRENGT lavere myndighet enn
+    // deg selv. Nivå 1 er unntaket — øverste ledelse kan utnevne en
+    // likemann, og bare nivå 1 kan fjerne en annen på nivå 1.
+    //
+    // Det er et bevisst valg: de tre lederne skal kunne ta inn en fjerde
+    // uten å gå veien om nødkontoen. Prisen er at de også kan fjerne
+    // hverandre — men nødkontoen står utenfor, og kan alltid rette opp.
+    //
+    // Uten dette kunne en skoleleder laget en likemann som deretter
+    // fjernet ham, eller hevet seg selv til øverste nivå. At panelet
+    // skjuler knappene hjelper ikke: hvem som helst kan åpne konsollen
+    // og skrive direkte. Hierarkiet må stå HER for å bety noe.
+    match /tilgang/{epost} {
+      allow read: if loggedIn();
+
+      allow create, update: if loggedIn()
+        && request.resource.data.niva is int
+        && request.resource.data.niva >= 1
+        && (mittNiva() == 1
+              ? request.resource.data.niva >= 1
+              : request.resource.data.niva > mittNiva());
+
+      allow delete: if loggedIn()
+        && (resource.data.niva == 1
+              ? mittNiva() == 1
+              : resource.data.niva > mittNiva());
+    }
+
+    // ---------- FORELDRE-INDEKSEN ----------
+    // Samme grunn som 'tilgang': reglene kan ikke gjøre spørringer, bare
+    // slå opp én kjent sti. De kan derfor ikke svare på «hvilke barn
+    // hører til denne e-posten?». Panelet fører svaret her, med e-posten
+    // som dokument-id:
+    //
+    //     foreldreTilgang/{epost} → { barn: ['id1','id2'], navn }
+    //
+    // Kilden er elevkortets foresatt-felt og e-posten på foresattkortet.
+    // Feltene elevkortet ARVET fra søknaden brukes ikke: de er en kopi av
+    // hva som sto i søknaden, og oppdateres ikke når koblingen endres.
+    //
+    // En forelder skal kunne lese SIN EGEN rad — portalen trenger den for
+    // å vite hvilke barn den skal be om. Ingen skal kunne lese andres:
+    // raden sier hvem som er foreldrene til hvilket barn.
+    //
+    // ⚠️ Denne regelen må publiseres FØR panelet som skriver indeksen.
+    // Motsatt rekkefølge gir avviste skrivinger som bare havner i
+    // feilloggen — indeksen ville stått tom, og alt sett normalt ut.
+    match /foreldreTilgang/{epost} {
+      allow read: if erAdmin() || (minEpost() != '' && epost == minEpost());
+      allow write: if erAdmin();
+    }
+
+    // ---------- ENDRINGSLOGG ----------
+    // Hvem endret hva, fra hva til hva, og når.
+    //
+    // 'deletionLog' fanget bare slettinger. En endring — et beløp, en
+    // rolle, et program — forsvant sporløst: kortet viste den nye verdien,
+    // og den gamle fantes ikke lenger noe sted.
+    //
+    // Kun de FELTENE som betyr noe logges (beløp, roller, program,
+    // foresatt, klasse, timesats). Helsefelter logges som «endret» uten
+    // verdien: den gamle verdien ville da ligget i en samling med andre
+    // tilganger enn elevkortet den kom fra.
+    //
+    // Skrives av enhver med paneltilgang — det er nettopp deres endringer
+    // som skal fanges. Leses av øvre ledelse: en logg over kollegers
+    // arbeid er ikke noe alle skal bla i.
+    //
+    // Endres ALDRI. En logg som kan redigeres av den som logges, er
+    // ingen logg. Slettes av den planlagte opprydningen etter 14 dager.
+    match /endringslogg/{id} {
+      allow create: if erAdmin();
+      allow read:   if erAdmin() && mittNiva() <= 2;
+      allow update: if false;
+      allow delete: if erNodkonto();
+    }
+
+    // ---------- OFFENTLIG SKRIVING (påmeldingsskjemaet) ----------
+
+    // Søknaden inneholder alt familien skrev inn: helseopplysninger,
+    // samtykker, kontaktinfo. Den ble lest av enhver innlogget — også
+    // av andre foreldre.
+    //
+    // Skrives fritt: skjemaet er åpent for familier som ikke har konto.
+    match /registrations/{id} {
+      allow create: if true;
+      allow read: if erAdmin()
+        || (minEpost() != '' && (
+             ('foresatt1_epost' in resource.data
+                && resource.data.foresatt1_epost.lower() == minEpost())
+          || ('foresatt2_epost' in resource.data
+                && resource.data.foresatt2_epost.lower() == minEpost())));
+      allow update, delete: if erAdmin();
+    }
+
+    match /formAnalytics/{id} {
+      allow create: if true;
+      allow read: if erAdmin();
+      allow update, delete: if false;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // KUN ADMINISTRATORER
+    // Ingen portal leser disse — kontrollert mot index1, index2, index4.
+    // ══════════════════════════════════════════════════════════════
+
+    match /salaryPayments/{id}        { allow read, write: if erAdmin(); }
+    match /finances/{id}              { allow read, write: if erAdmin(); }
+    match /financeLog/{id}            { allow read, write: if erAdmin(); }
+    match /studentPayments/{id}       { allow read, write: if erAdmin(); }
+    match /pendingVippsPayments/{id}  { allow read, write: if erAdmin(); }
+
+    match /adminUsers/{id}    { allow read, write: if erAdmin(); }
+    match /ledelse/{id}       { allow read, write: if erAdmin(); }
+    match /meetings/{id}      { allow read, write: if erAdmin(); }
+
+    // 🔴 Unntaket står INNE i regelen, ikke i en egen match.
+    //
+    // Firestore slår sammen alle matchende regler med ELLER. Sperren i
+    // «match /settings/eierskap» over ville derfor ikke overstyrt noe
+    // alene: den brede regelen under ville fortsatt gitt skrivetilgang.
+    // Unntaket må ligge i betingelsen for å bety noe.
+    match /settings/{id} {
+      allow read: if loggedIn();
+      allow write: if erAdmin() && id != 'eierskap';
+    }
+
+    // deletionLog inneholder en FULL kopi av alt som er slettet.
+    match /deletionLog/{id}   { allow read, write: if erAdmin(); }
+
+    // mail inneholder hver e-post systemet har sendt: fakturaer,
+    // betalingsrapporter, kontonummer. Portalene SKRIVER hit (de sender
+    // meldinger), men leser aldri — derfor create uten read.
+    match /mail/{id} {
+      allow create: if loggedIn();
+      allow read, update, delete: if erAdmin();
+    }
+
+    // loginEvents: portalene skriver sin egen innlogging, ingen leser.
+    match /loginEvents/{id} {
+      allow create: if loggedIn();
+      allow read, update, delete: if erAdmin();
+    }
+
+    match /feillogg/{id} {
+      allow create: if loggedIn();
+      allow read: if erAdmin();
+      allow update, delete: if false;
+    }
+
+    // Programmer leses OFFENTLIG: påmeldingsskjemaet viser prisene til
+    // familier som ikke er innlogget. Innholdet er navn, dager og priser
+    // — opplysninger som uansett skal stå på skjemaet. Ingen persondata.
+    // Alternativet var å skrive prisene inn i skjemaet, og da ville de
+    // før eller siden ikke stemt med det panelet regner med.
+    match /programs/{id}        { allow read: if true; allow write: if erAdmin(); }
+    match /schoolCalendar/{id}  { allow read: if loggedIn(); allow write: if erAdmin(); }
+
+    // Kun prisene og rabattsatsene er offentlige — de vises på skjemaet.
+    //
+    // ⚠️ Et nytt felt i settings/priser blir offentlig lesbart samme
+    // sekund det legges inn. Spør først: skal en forelder som IKKE er
+    // logget inn se dette? Kontonummeret hører derfor til
+    // settings/faktura, ikke hit.
+    match /settings/priser      { allow read: if true; allow write: if erAdmin(); }
+
+    // Redigerbar nettstedstekst — leses av forsiden UTEN innlogging.
+    //
+    // Hvorfor eget dokument og ikke et felt i settings/priser: alt der er
+    // offentlig lesbart, og et nytt felt blir det med en gang. Skolens
+    // redigerbare tekst hører ikke sammen med prisene, og skal kunne
+    // endres uten at noen må huske hva ellers som ligger i dokumentet.
+    //
+    // Innholdet er tre felter og ingen persondata:
+    //   skolear   "2027/2028"
+    //   badge     { no, en, ar, ur }
+    //   visBadge  true/false
+    //
+    // ⚠️ Samme advarsel som over: et NYTT felt her blir offentlig med
+    // en gang. Spør først om en familie uten konto skal se det.
+    match /settings/nettsted    { allow read: if true; allow write: if erAdmin(); }
+
+    // ══════════════════════════════════════════════════════════════
+    // KREVER INNLOGGING — leses eller skrives av portalene
+    // ══════════════════════════════════════════════════════════════
+
+    // ⏸️ VENTER PÅ LÆRERPORTALEN — les dette før du strammer.
+    //
+    // Regelen skal bli:
+    //     allow read: if erAdmin() || erMittBarn(id);
+    //
+    // Foreldreportalen er klar: den spør allerede med
+    // where(documentId(), 'in', barn). Lærerportalen er det IKKE — den
+    // laster hele samlingen uten filter (index1.html, watch('students')).
+    //
+    // Og en lærer har ingen rad i 'tilgang': panelet skriver bare rader
+    // for roller med panel:true, og læreren har det ikke. erAdmin() er
+    // altså usann for henne.
+    //
+    // Strammer vi nå, avviser Firestore HELE spørringen — og fordi
+    // onSnapshot ikke prøver på nytt, blir elevlisten stående tom for
+    // resten av økten. Uten feilmelding, uten konsoll på telefonen.
+    //
+    // 🔴 Og prøven ville ikke avslørt det: man tester med en
+    // foresattkonto, ser at alt virker, og lærerportalen er død til
+    // noen sier fra.
+    //
+    // Rekkefølgen er: lærerportalen skriver om spørringene sine først
+    // (den vet allerede hvilke klasser læreren har — se timeplanen),
+    // deretter strammes denne.
+    match /students/{id}        { allow read, write: if loggedIn(); }
+    match /guardians/{id}       { allow read, write: if loggedIn(); }
+    match /teachers/{id}        { allow read, write: if loggedIn(); }
+    match /classes/{id}         { allow read, write: if loggedIn(); }
+
+    // ⏸️ Samme. Læreren fører oppmøte herfra (index1: to skrivekall),
+    // så skriving må uansett være åpen for innlogget.
+    match /attendance/{id}              { allow read, write: if loggedIn(); }
+    match /lessonPlans/{id}             { allow read, write: if loggedIn(); }
+    match /homework/{id}                { allow read, write: if loggedIn(); }
+    match /homeworkSubmissions/{id}     { allow read, write: if loggedIn(); }
+    match /absenceRequests/{id}         { allow read, write: if loggedIn(); }
+    // ⏸️ Samme grunn som students: lærerportalen laster hele samlingen.
+    // Skal bli: read if erAdmin() || erMittBarn(resource.data.studentId)
+    //
+    // ⚠️ Og LESING er det eneste som kan strammes her. Læreren SKRIVER
+    // notater herfra (index1: addDoc studentNotes), så create/update må
+    // fortsatt stå åpen for innlogget — ellers slutter lærerportalen å
+    // kunne lagre, ikke bare å vise.
+    match /studentNotes/{id}            { allow read, write: if loggedIn(); }
+    match /practiceVideos/{id}          { allow read, write: if loggedIn(); }
+    match /dailyPlanTemplates/{id}      { allow read, write: if loggedIn(); }
+    match /monthlyPlanTemplates/{id}    { allow read, write: if loggedIn(); }
+    match /semesterPlanTemplates/{id}   { allow read, write: if loggedIn(); }
+    match /monthlyPlans/{id}            { allow read, write: if loggedIn(); }
+    match /semesterPlans/{id}           { allow read, write: if loggedIn(); }
+    match /hours/{id}                   { allow read, write: if loggedIn(); }
+
+    // teacherAttendance: læreren fører sine EGNE timer i Lærerportalen.
+    match /teacherAttendance/{id}       { allow read, write: if loggedIn(); }
+
+    match /messages/{id}              { allow read, write: if loggedIn(); }
+    match /messageThreads/{id}        { allow read, write: if loggedIn(); }
+    match /broadcastThreads/{id}      { allow read, write: if loggedIn(); }
+    match /broadcastMessages/{id}     { allow read, write: if loggedIn(); }
+    match /classPosts/{id}            { allow read, write: if loggedIn(); }
+    match /classPostComments/{id}     { allow read, write: if loggedIn(); }
+    match /classPollVotes/{id}        { allow read, write: if loggedIn(); }
+    match /eventRSVPs/{id}            { allow read, write: if loggedIn(); }
+    match /announcements/{id}         { allow read, write: if loggedIn(); }
+    match /contactUpdateRequests/{id} { allow read, write: if loggedIn(); }
+    match /paymentRequests/{id}       { allow read, write: if loggedIn(); }
+
+    // Ukjente samlinger: nekt alt.
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
