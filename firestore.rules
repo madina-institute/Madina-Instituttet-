@@ -1,5 +1,5 @@
 rules_version = '2';
-/* SIST-ENDRET: 2026-08-15 13:06:27 */
+/* SIST-ENDRET: 2026-08-15 20:25:00 */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -368,8 +368,56 @@ service cloud.firestore {
 
     match /messages/{id}              { allow read, write: if loggedIn(); }
     match /messageThreads/{id}        { allow read, write: if loggedIn(); }
-    match /broadcastThreads/{id}      { allow read, write: if loggedIn(); }
-    match /broadcastMessages/{id}     { allow read, write: if loggedIn(); }
+    // ---------- MELDINGER FRA ADMINISTRASJONEN ----------
+    // 🔴 Sto på loggedIn(). Portalene lastet hele samlingen og filtrerte i
+    // nettleseren, så enhver forelder hadde hver eneste families meldinger
+    // liggende — inkludert de private svarene. Skjermfilteret var det
+    // eneste som skilte innboksene, og et skjermfilter er en visning.
+    //
+    // Nå har hver tråd ÉN adressat: 'mottakerEpost'. Regelen er da en
+    // sammenligning av to strenger — ingen get(), ingen exists(), ingen
+    // liste. Den kan ikke falle med en rad i basen, og den har ingen
+    // øvre grense den plutselig treffer når skolen vokser.
+    //
+    // 🔴 E-posten er nøkkelen, ikke dokument-id-en: en lærer har ingen rad
+    // i 'tilgang' og ingen i 'foreldreTilgang', så reglene kan aldri
+    // knytte en guardians/teachers-id til den innloggede. E-posten kan de,
+    // fordi innloggingen ER e-posten.
+    //
+    // ⚠️ Portalene måtte skrives om FØR dette. Firestore avviser hele
+    // spørringen hvis ett eneste dokument ville brutt regelen — en
+    // portal som fortsatt ber om hele samlingen blir TOM, ikke filtrert.
+    //
+    // Feltet leses bare når det finnes. En regel som feiler under
+    // evaluering blir til «nei», stille.
+    function erMinTrad() {
+      return minEpost() != ''
+        && 'mottakerEpost' in resource.data
+        && resource.data.mottakerEpost == minEpost();
+    }
+
+    match /broadcastThreads/{id} {
+      allow read: if erAdmin() || erMinTrad();
+      allow create, delete: if erAdmin();
+      // Mottakeren oppdaterer 'lastActivityAt' når hun svarer — og bare
+      // den. Uten begrensningen kunne hun skrevet om tittel, avsender,
+      // eller flyttet tråden til en annen mottaker.
+      allow update: if erAdmin()
+        || (erMinTrad()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['lastActivityAt']));
+    }
+
+    match /broadcastMessages/{id} {
+      allow read: if erAdmin() || erMinTrad();
+      // Et svar kan bare legges i MIN egen samtale. 'allow write:
+      // if loggedIn()' lot enhver innlogget endre og slette hvem som
+      // helst sine meldinger — også administrasjonens.
+      allow create: if erAdmin()
+        || (minEpost() != ''
+            && request.resource.data.mottakerEpost == minEpost());
+      allow update, delete: if erAdmin();
+    }
     match /classPosts/{id}            { allow read, write: if loggedIn(); }
     match /classPostComments/{id}     { allow read, write: if loggedIn(); }
     match /classPollVotes/{id}        { allow read, write: if loggedIn(); }
