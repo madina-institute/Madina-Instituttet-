@@ -2987,6 +2987,15 @@
           <select id="koDag" onchange="koVelgKlasse()"></select>
         </div>
       </div>
+      <!-- Bygg klassens timer fra programmets dagsoppsett. Lærere og delte
+           økter beholdes; overflødige rader havner i sletteloggen. -->
+      <div class="innst-effekt" style="margin-top:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-primary" style="width:auto;"
+          onclick="genererTimeplanFraProgram(document.getElementById('koKlasse').value)">
+          ⚙️ Generer / oppdater timeplan fra programmet
+        </button>
+        <span class="hint" style="margin:0;">Henter fag og klokkeslett fra programmets dag. Lærere du alt har satt, og delte økter, beholdes.</span>
+      </div>
     </div>
 
     <div id="koInnhold" style="margin-top:16px;"></div>
@@ -10319,6 +10328,9 @@
           dag: rad.dag, tid: deler[i], fag: rad.fag || '',
           larer: i === 0 ? (rad.larer || '') : '',
           klasse: rad.klasse,
+          // Begge halvdelene arver innslagId, så generering fra programmet
+          // ser dem som ÉTT delt innslag og lar delingen stå.
+          innslagId: rad.innslagId || '',
           opprettetAv: currentUserEmail || 'ukjent',
           opprettetDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
         });
@@ -10335,6 +10347,151 @@
         'koDelBlokk · hours/' + rad.id + ' · ' + (err.code || err.message || 'ukjent'));
     }
     setTimeout(koVelgKlasse, 600);
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // GENERER TIMEPLAN FRA PROGRAM  (dagsoppsett → hours)
+  //
+  // Programmet er kilden: dagen står oppsatt ÉN gang der, med varigheter.
+  // Her bygges hver klasses timer fra den. Prinsippet er som i koLagre:
+  // AVSTEMMING, ikke blind skriving.
+  //
+  //  • Nøkkelen er innslagId, ikke faget. Bytter du navn på et fag,
+  //    følger læreren med i stedet for å falle av.
+  //  • Pauser lagres ikke — de regnes ut av mellomrommet (renderTimeplanDay).
+  //  • Et innslag som er DELT i to økter (koDelBlokk) står som to rader med
+  //    samme innslagId. Da lar vi delingen stå: kun faget oppdateres, tid
+  //    og lærer røres ikke.
+  //  • En lærer som alt er satt skrives ALDRI over.
+  //  • Rader som ikke lenger svarer til noe innslag i programmet fjernes
+  //    til slutt — til sletteloggen, ikke i det stille.
+  // ═══════════════════════════════════════════════════════════════════
+  function finnProgramFor(obj){
+    if(!obj) return null;
+    const liste = cache.programs || [];
+    if(obj.programId){ const m = liste.find(p => p.id === obj.programId); if(m) return m; }
+    if(obj.program){ const m = liste.find(p => (p.navn || '') === obj.program); if(m) return m; }
+    return null;
+  }
+
+  // Ønskede fag-rader for én dag, med klokkeslett regnet ut fra dagens
+  // starttid + varigheten på hvert innslag. Pauser tar tid, men blir ikke
+  // til rader.
+  function onskedeTimerForDag(dagsoppsett){
+    const ut = [];
+    if(!dagsoppsett || !Array.isArray(dagsoppsett.innslag)) return ut;
+    let klokke = koMin(dagsoppsett.start || '');
+    if(isNaN(klokke)) return ut;
+    dagsoppsett.innslag.forEach(inn => {
+      const min = parseInt(inn.minutter, 10) || 0;
+      const start = klokke, slutt = klokke + min;
+      if((inn.type || 'fag') === 'fag' && String(inn.navn || '').trim()){
+        ut.push({ tid: koKlokke(start) + '–' + koKlokke(slutt), fag: String(inn.navn).trim(), innslagId: inn.id });
+      }
+      klokke = slutt;
+    });
+    return ut;
+  }
+
+  window.genererTimeplanFraProgram = async function(klasseId){
+    if(forhandsvisRoller){ showToast('Forhåndsvisning: ingenting lagres.', true); return; }
+    if(!endringsmodus){ showToast('Lesemodus — slå på «Endringsmodus» øverst for å generere.', true); return; }
+
+    const klasse = (cache.classes || []).find(c => c.id === klasseId);
+    if(!klasse){ showToast('Velg en klasse først.', true); return; }
+    const prog = finnProgramFor(klasse);
+    if(!prog){ showToast('Klassen «' + (klasse.navn || '') + '» peker ikke på et gyldig program.', true); return; }
+    const dager = String(prog.dager || '').split(',').map(s => s.trim()).filter(Boolean);
+    if(dager.length === 0){ showToast('Programmet «' + (prog.navn || '') + '» har ingen undervisningsdager.', true); return; }
+
+    // Rører kun dager som faktisk er satt opp i programmet — en dag uten
+    // oppsett lar vi stå urørt, så ingen håndlaget timeplan slettes ved uhell.
+    const plan = [];
+    const foreldrelose = [];
+    let uendret = 0;
+    for(const dag of dager){
+      const onsket = onskedeTimerForDag((prog.dagsoppsett || {})[dag]);
+      if(onsket.length === 0) continue;
+      const eksisterende = (cache.hours || []).filter(h => h.klasse === klasseId && h.dag === dag);
+      const brukt = new Set();
+      onsket.forEach(mal => {
+        const treff = eksisterende.filter(h => h.innslagId && h.innslagId === mal.innslagId);
+        if(treff.length){
+          const delt = treff.length > 1; // delt i to økter → la delingen stå
+          treff.forEach(r => {
+            brukt.add(r.id);
+            // Skriv bare hvis noe faktisk er endret — ellers er kjøringen et
+            // reelt nullpunkt, og «alt i takt» kan meldes.
+            const endres = delt ? (r.fag !== mal.fag) : (r.fag !== mal.fag || r.tid !== mal.tid);
+            if(endres) plan.push({ dag, mal, rad: r, kunFag: delt });
+            else uendret++;
+          });
+        } else {
+          // Ingen innslagId ennå: adopter en eksisterende rad på samme
+          // klokkeslett (gammel håndlaget time), ellers opprett ny. En
+          // adoptert rad må uansett skrives for å få innslagId.
+          let i = eksisterende.findIndex(h => !brukt.has(h.id) && h.tid === mal.tid && h.fag === mal.fag);
+          if(i < 0) i = eksisterende.findIndex(h => !brukt.has(h.id) && h.tid === mal.tid);
+          const rad = i >= 0 ? eksisterende[i] : null;
+          if(rad) brukt.add(rad.id);
+          plan.push({ dag, mal, rad });
+        }
+      });
+      eksisterende.forEach(h => { if(!brukt.has(h.id)) foreldrelose.push(h); });
+    }
+
+    const nye = plan.filter(p => !p.rad).length;
+    const beholdt = plan.filter(p => p.rad).length;
+    const bort = foreldrelose.length;
+    if(nye + beholdt + bort === 0){ showToast('✓ Timeplanen er allerede i takt med programmet.'); return; }
+
+    if(!confirm(
+      'Oppdatere timeplanen for ' + (klasse.navn || 'klassen') + ' fra «' + (prog.navn || '') + '»?\n\n' +
+      (nye ? nye + ' nye timer opprettes.\n' : '') +
+      (beholdt ? beholdt + ' timer beholdes/oppdateres (lærere og delte økter beholdes).\n' : '') +
+      (bort ? bort + ' timer fjernes (havner i sletteloggen, kan hentes tilbake i 30 dager).\n' : '') +
+      '\nKun dagene som er satt opp i programmet røres.'
+    )) return;
+
+    let ok = 0; const feilet = [];
+    const naa = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
+    for(const { mal, rad, kunFag, dag } of plan){
+      try{
+        if(rad){
+          const patch = { fag: mal.fag, innslagId: mal.innslagId };
+          if(!kunFag) patch.tid = mal.tid; // ikke rør tid på delte økter
+          patch.sistEndretAv = currentUserEmail || 'ukjent';
+          patch.sistEndretDato = naa();
+          await updateDoc(doc(db, 'hours', rad.id), patch);
+        } else {
+          await addDoc(collection(db, 'hours'), {
+            dag, tid: mal.tid, fag: mal.fag, larer: '', klasse: klasseId,
+            innslagId: mal.innslagId,
+            opprettetAv: currentUserEmail || 'ukjent', opprettetDato: naa()
+          });
+        }
+        ok++;
+      }catch(err){
+        console.error('genererTimeplanFraProgram', mal.tid, err);
+        feilet.push((mal.tid || '') + ' ' + (mal.fag || '') + ' — ' + (err.code || err.message || 'ukjent'));
+      }
+    }
+    for(const r of foreldrelose){
+      try{ await logDeletion('hours', r); await deleteDoc(doc(db, 'hours', r.id)); ok++; }
+      catch(err){
+        console.error('genererTimeplanFraProgram/fjern', r.id, err);
+        feilet.push((r.tid || '') + ' ' + (r.fag || '') + ' (fjerning) — ' + (err.code || err.message || 'ukjent'));
+      }
+    }
+
+    try{
+      await loggSamlet('Timeplan generert fra program — ' + (klasse.navn || ''), ok,
+        'genererTimeplanFraProgram · hours · nye=' + nye + ' beholdt=' + beholdt + ' fjernet=' + bort);
+    }catch(e){}
+
+    if(feilet.length) showToast('Ferdig, men ' + feilet.length + ' rad(er) feilet. Se konsollen.', true);
+    else showToast('✓ Timeplanen for ' + (klasse.navn || 'klassen') + ' er oppdatert fra programmet.');
+    if(typeof koVelgKlasse === 'function') setTimeout(koVelgKlasse, 500);
   };
 
   // ═══════════════════════════════════════════════════════════════════
