@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 14:16:42 -->
+<!-- SIST-ENDRET: 2026-08-16 17:34:44 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -14131,6 +14131,32 @@
         dobbel.length, dobbel));
     }
 
+    // ── Elever som mistet klassen sin ──
+    //
+    // 🔴 Holdt ATSKILT fra «elev uten klasse», som er en ny elev som
+    // venter på fordeling. Dette er en elev som HADDE en klasse, og
+    // klassen ble slettet under henne. Samme skjermbilde, helt ulik
+    // handling: den ene skal fordeles, den andre skal først forstås.
+    //
+    // Klasse-id-en blir stående på eleven fordi Firestore ikke rydder
+    // koblinger. Fram til nå så man det bare hvis man tilfeldigvis åpnet
+    // elevkortet og la merke til «utgått / ikke migrert».
+    const klasseFinnes = (id) => (cache.classes || []).some(k => k.id === id);
+    const mistetKlasse = elever.filter(e => e.klasse && !klasseFinnes(e.klasse));
+    if(mistetKlasse.length){
+      funn.push(helseFunn('kritisk', 'HS-MKL',
+        mistetKlasse.length + ' elever mistet klassen sin',
+        'Klassen de sto i, finnes ikke lenger. De faller ut av timeplan, ' +
+        'oppmøte og foreldreportalen — uten at noe sier fra.',
+        'Elever og familier → åpne eleven → velg klasse',
+        mistetKlasse.length,
+        mistetKlasse.slice(0, 8).map(e => {
+          const t = e.tidligereKlasse || {};
+          return e.navn + (t.navn ? ' — var i ' + t.navn + (t.arsak ? ' (' + t.arsak + ')' : '') : '');
+        })));
+    }
+
+
     // ── Elev uten foresatt ──
     const utenForesatt = elever.filter(e => !e.foresatt && !e.foresatt2);
     if(utenForesatt.length){
@@ -17172,11 +17198,78 @@
         'deleteEntry · ' + type + ' · roller=' + (currentUserRoles.join(', ') || 'ingen'));
       return;
     }
+    // ═══════════════════════════════════════════════════════════════
+    // Å SLETTE EN KLASSE MED ELEVER I
+    //
+    // 🔴 Firestore har ingen fremmednøkler. Slettes klassen, blir
+    // klasse-id-en stående som ren tekst på hver elev — og der blir den.
+    // Ingenting rydder den; eleven forsvinner bare fra klassekortet, og
+    // dukker først opp igjen om noen tilfeldigvis åpner elevkortet og
+    // ser «utgått / ikke migrert».
+    //
+    // Vi rydder den IKKE bort automatisk. Sporet er det eneste som
+    // skiller «var i en klasse som ble borte» fra «aldri fordelt» — og
+    // sletteloggen gir 30 dager til å angre: fjernet vi koblingen med én
+    // gang, ville klassen kommet tilbake TOM.
+    //
+    // I stedet skrives det som trengs for å forstå situasjonen, på
+    // eleven selv — ikke i sletteloggen, som ryddes etter 30 dager mens
+    // en elev uten klasse kan bli stående mye lenger.
+    // ═══════════════════════════════════════════════════════════════
+    let mistedeElever = [];
+    let slettGrunn = '';
+    if(type === 'classes'){
+      mistedeElever = (cache.students || []).filter(e => e.klasse === id);
+      if(mistedeElever.length > 0){
+        const navnene = mistedeElever.map(e => e.navn || '(uten navn)').join(', ');
+        const valg = prompt(
+          'Klassen har ' + mistedeElever.length + ' elev(er):\n' + navnene + '\n\n' +
+          'De blir stående uten klasse, og havner i listen «Elever som mistet klassen sin».\n' +
+          'Vil du heller flytte dem først, avbryt her.\n\n' +
+          'Hvorfor slettes klassen?\n' +
+          '  1 = Klassen er tom / brukes ikke\n' +
+          '  2 = Klassen er avlyst\n' +
+          '  3 = Opprettet ved en feil\n' +
+          '  4 = Annet (skriv fritt)\n\n' +
+          'Skriv 1, 2, 3 — eller din egen begrunnelse:', '1');
+        if(valg === null) return;
+        const fasit = { '1':'Klassen er tom / brukes ikke', '2':'Klassen er avlyst', '3':'Opprettet ved en feil' };
+        slettGrunn = fasit[String(valg).trim()] || String(valg).trim();
+        if(!slettGrunn){ showToast('Sletting avbrutt — begrunnelse mangler.', true); return; }
+      }
+    }
+
     if(!confirm('Er du sikker på at du vil slette denne oppføringen?')) return;
     try{
       const row = cache[type].find(r => r.id === id);
       if(row) await logDeletion(type, row);
       await deleteDoc(doc(db, SCHEMAS[type].collectionName, id));
+
+      // Lærerne hentes FØR timene forsvinner med klassen — etterpå finnes
+      // de ingen steder, og listen ville stått uten det ene svaret man
+      // faktisk trenger: hvem underviste disse barna.
+      if(type === 'classes' && mistedeElever.length > 0){
+        const larere = [...new Set((cache.hours || [])
+          .filter(h => h.klasse === id && h.larer)
+          .map(h => resolveDynName('teachers', h.larer))
+          .filter(Boolean))];
+        const spor = {
+          navn: (row && row.navn) || '', id,
+          dato: todayISO(), slettetAv: currentUserEmail || 'ukjent',
+          arsak: slettGrunn, larere
+        };
+        let feilet = 0;
+        for(const e of mistedeElever){
+          try{ await updateDoc(doc(db, 'students', e.id), { tidligereKlasse: spor }); }
+          catch(err){ feilet++; console.error('tidligereKlasse', e.id, err); }
+        }
+        await loggSamlet('Klasse slettet: ' + spor.navn + ' — ' + slettGrunn,
+          mistedeElever.length, 'deleteEntry · classes · elever=' + mistedeElever.length);
+        showToast(feilet === 0
+          ? 'Slettet. ' + mistedeElever.length + ' elev(er) står nå i «mistet klassen sin».'
+          : 'Slettet, men ' + feilet + ' elev(er) fikk ikke merket. Se Helsesjekk.', feilet > 0);
+        return;
+      }
       showToast('Slettet.');
     } catch(err){
       console.error(err);
