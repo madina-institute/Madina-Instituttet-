@@ -1,0 +1,10 @@
+{
+  "name": "Madina Instituttet",
+  "install": "npm config set prefix \"$HOME/.npm-global\" && npm install -g firebase-tools && (cd functions && npm ci)",
+  "terminals": [
+    {
+      "name": "hosting-emulator",
+      "command": "export PATH=\"$HOME/.npm-global/bin:$PATH\" && firebase emulators:start --only hosting --project demo-madina"
+    }
+  ]
+}
