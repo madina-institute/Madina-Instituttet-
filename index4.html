@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 20:23:57 -->
+<!-- SIST-ENDRET: 2026-08-16 15:10:28 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -754,6 +754,34 @@
         <div class="summary-item"><div class="n" id="sumRemaining">0 kr</div><div class="l" data-i18n="sumRemainingLbl">Gjenstår</div></div>
         <div class="summary-item"><div class="n" id="sumChildren">0</div><div class="l" data-i18n="sumChildrenLbl">Antall barn</div></div>
       </div>
+      <!-- ═══════════════════════════════════════════════════════════
+           HVA TOTALEN BESTÅR AV
+
+           🔴 Totalen sto som ett tall. Prissiden på nettstedet sier at
+           bøker og materiell kommer «i tillegg» — men i portalen lå de
+           inni summen, uten et ord. En familie med to barn så 11 350 der
+           de hadde regnet med 11 000, og ingenting på skjermen forklarte
+           de 350 ekstra.
+
+           Beløpene regnes IKKE på nytt her: undervisningen er totalen
+           minus materiellet, slik at de to linjene alltid summerer seg
+           til tallet panelet faktisk har satt. To steder som regner det
+           samme, blir før eller siden uenige — og da er det familien som
+           ser to ulike tall.
+
+           Materiellavgiften er ulik per program (450 for lørdagsskolen,
+           150 for Madinabarn), så den hentes per barn og legges sammen.
+           ═══════════════════════════════════════════════════════════ -->
+      <div id="sumSplitWrap" style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.15); display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:5px;">
+          <span class="l" data-i18n="sumTuitionLbl" style="opacity:.85;">Skolepenger</span>
+          <span class="l" id="sumTuition" style="font-weight:700;">0 kr</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:12px;">
+          <span class="l" data-i18n="sumBooksLbl" style="opacity:.85;">Bøker og materiell</span>
+          <span class="l" id="sumBooks" style="font-weight:700;">0 kr</span>
+        </div>
+      </div>
       <div class="summary-item" id="sumSavingsWrap" style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.15); display:none;">
         <div class="n" id="sumSavings" style="color:var(--gold-l);">0 kr</div>
         <div class="l" data-i18n="sumSavingsLbl">Spart på søskenrabatt</div>
@@ -1366,6 +1394,7 @@
       resetEmailSent: 'E-post for å tilbakestille passord er sendt.',
       resetEmailFailed: 'Kunne ikke sende e-post. Sjekk at e-posten er riktig.',
       sumTotalLbl: 'Totalt', sumPaidLbl: 'Betalt', sumRemainingLbl: 'Gjenstår', sumChildrenLbl: 'Antall barn', sumSavingsLbl: 'Spart på søskenrabatt',
+      sumTuitionLbl: 'Skolepenger', sumBooksLbl: 'Bøker og materiell',
       menuInfo: 'Elevinformasjon', menuInfoDesc: 'Status og detaljer',
       menuSchedule: 'Timeplan', menuScheduleDesc: 'Ukentlig skjema og lærere',
       menuAttendance: 'Oppmøte', menuAttendanceDesc: 'Historikk',
@@ -1446,6 +1475,7 @@
       resetEmailSent: 'تم إرسال بريد لإعادة تعيين كلمة المرور.',
       resetEmailFailed: 'تعذر إرسال البريد. تأكد إن البريد الإلكتروني صحيح.',
       sumTotalLbl: 'الإجمالي', sumPaidLbl: 'المدفوع', sumRemainingLbl: 'المتبقي', sumChildrenLbl: 'عدد الأبناء', sumSavingsLbl: 'التوفير بخصم الإخوة',
+      sumTuitionLbl: 'الرسوم الدراسية', sumBooksLbl: 'الكتب والمواد',
       menuInfo: 'معلومات الطالب', menuInfoDesc: 'الحالة والتفاصيل',
       menuSchedule: 'الجدول الزمني', menuScheduleDesc: 'الجدول الأسبوعي والمعلمون',
       menuAttendance: 'الحضور', menuAttendanceDesc: 'السجل',
@@ -1526,6 +1556,7 @@
       resetEmailSent: 'پاس ورڈ ری سیٹ کرنے کے لیے ای میل بھیج دی گئی ہے۔',
       resetEmailFailed: 'ای میل بھیجی نہیں جا سکی۔ یقینی بنائیں کہ ای میل درست ہے۔',
       sumTotalLbl: 'کل رقم', sumPaidLbl: 'ادا شدہ', sumRemainingLbl: 'باقی رقم', sumChildrenLbl: 'بچوں کی تعداد', sumSavingsLbl: 'بہن بھائی رعایت کی بچت',
+      sumTuitionLbl: 'اسکول فیس', sumBooksLbl: 'کتابیں اور مواد',
       menuInfo: 'طالب علم کی معلومات', menuInfoDesc: 'حالت اور تفصیلات',
       menuSchedule: 'ٹائم ٹیبل', menuScheduleDesc: 'ہفتہ وار شیڈول اور اساتذہ',
       menuAttendance: 'حاضری', menuAttendanceDesc: 'ریکارڈ',
@@ -2664,6 +2695,17 @@
     return toNum(prisOppsett.soskenRabatt3);
   }
 
+  // Materiellavgiften for ett barn, fra barnets eget program. Står den
+  // ikke på programmet, gjelder fellessatsen — samme rekkefølge som
+  // panelet bruker når beløpet settes.
+  function materiellFor(barn){
+    const p = programmer.find(x => (x.navn || '') === (barn.program || ''));
+    if(!p) return toNum(prisOppsett.materiellAvgift);
+    return (p.materiellAvgift !== undefined && p.materiellAvgift !== '')
+      ? toNum(p.materiellAvgift)
+      : toNum(prisOppsett.materiellAvgift);
+  }
+
   function renderSummary(){
     const total = myChildren.reduce((s,c) => s + toNum(c.belop), 0);
     const paid = myChildren.reduce((s,c) => s + toNum(c.belopBetalt), 0);
@@ -2673,6 +2715,21 @@
     document.getElementById('sumPaid').textContent = paid.toLocaleString('no-NO') + ' kr';
     document.getElementById('sumRemaining').textContent = (total-paid).toLocaleString('no-NO') + ' kr';
     document.getElementById('sumChildren').textContent = myChildren.length;
+    // Oppdelingen vises bare når det faktisk ER materiell å vise. Er
+    // avgiften null, ville to linjer der den ene står på 0 bare reist
+    // spørsmålet den skulle svare på.
+    const materiell = myChildren.reduce((s,c) => s + materiellFor(c), 0);
+    const splitWrap = document.getElementById('sumSplitWrap');
+    if(splitWrap){
+      if(materiell > 0 && total > 0){
+        splitWrap.style.display = 'block';
+        document.getElementById('sumTuition').textContent = (total - materiell).toLocaleString('no-NO') + ' kr';
+        document.getElementById('sumBooks').textContent = materiell.toLocaleString('no-NO') + ' kr';
+      } else {
+        splitWrap.style.display = 'none';
+      }
+    }
+
     const savingsWrap = document.getElementById('sumSavingsWrap');
     if(savings > 0){
       savingsWrap.style.display = 'block';
