@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 14:11:32 -->
+<!-- SIST-ENDRET: 2026-08-16 14:16:42 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -10466,7 +10466,11 @@
   // Ønskede fag-rader for én dag, med klokkeslett regnet ut fra dagens
   // starttid + varigheten på hvert innslag. Pauser tar tid, men blir ikke
   // til rader.
-  function onskedeTimerForDag(dagsoppsett){
+  // Klokkeslettene for dagen — RUTENETTET. Lengden hører til plassen i
+  // dagen, ikke til faget som ligger der: alle klassene i et program går
+  // til samme tid, og bytter en klasse om på fagene sine, skal pausene
+  // fortsatt treffe.
+  function blokkerForDag(dagsoppsett){
     const ut = [];
     if(!dagsoppsett || !Array.isArray(dagsoppsett.innslag)) return ut;
     let klokke = koMin(dagsoppsett.start || '');
@@ -10475,11 +10479,55 @@
       const min = parseInt(inn.minutter, 10) || 0;
       const start = klokke, slutt = klokke + min;
       if((inn.type || 'fag') === 'fag' && String(inn.navn || '').trim()){
-        ut.push({ tid: koKlokke(start) + '–' + koKlokke(slutt), fag: String(inn.navn).trim(), innslagId: inn.id });
+        ut.push({ tid: koKlokke(start) + '–' + koKlokke(slutt), inn });
       }
       klokke = slutt;
     });
     return ut;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // KLASSENS EGEN REKKEFØLGE
+  //
+  // 🔴 Før kom faget rett fra programmet: blokk 1 = programmets første
+  // innslag, for HVER klasse. Da ble alle klassene i et program like —
+  // og det er nettopp det de ikke kan være. Har 1A og 1B koran samtidig,
+  // må koranlæreren stå to steder på én gang.
+  //
+  // Nå eier programmet rutenettet (klokkeslettene) og ordforrådet
+  // (fagnavnene). Klassen eier REKKEFØLGEN: hvilket fag som ligger i
+  // hvilken blokk. classes.fagrekkefolge[dag] er en liste med innslag-
+  // id-er, én per undervisningsblokk, i blokkenes rekkefølge.
+  //
+  // Er den ikke satt, gjelder programmets egen rekkefølge — da oppfører
+  // alt seg nøyaktig som før, og ingen klasse endrer seg av at feltet
+  // ble innført.
+  //
+  // Læreren følger FAGET, ikke blokken: flytter koran fra blokk 1 til
+  // blokk 2, følger koranlæreren med. Det er derfor avstemmingen fortsatt
+  // nøkles på innslagId — bare klokkeslettet endrer seg.
+  // ═══════════════════════════════════════════════════════════════════
+  function klassensRekkefolge(klasse, dag, blokker){
+    const lagret = ((klasse && klasse.fagrekkefolge) || {})[dag];
+    const idIRekke = blokker.map(b => b.inn.id);
+    if(!Array.isArray(lagret) || lagret.length === 0) return idIRekke;
+    // Bare id-er som finnes i programmet, uten gjentakelser. Et fag som
+    // er slettet fra programmet faller ut; et nytt fag legges bakerst,
+    // slik at ingen blokk blir stående tom fordi listen er utdatert.
+    const gyldige = lagret.filter((id, i) => idIRekke.includes(id) && lagret.indexOf(id) === i);
+    for(const id of idIRekke) if(!gyldige.includes(id)) gyldige.push(id);
+    return gyldige.slice(0, blokker.length);
+  }
+
+  function onskedeTimerForDag(dagsoppsett, klasse, dag){
+    const blokker = blokkerForDag(dagsoppsett);
+    if(blokker.length === 0) return [];
+    const rekke = klassensRekkefolge(klasse, dag, blokker);
+    const finn = (id) => blokker.find(b => b.inn.id === id);
+    return blokker.map((b, i) => {
+      const valgt = finn(rekke[i]) || b;   // reserve: blokkens eget innslag
+      return { tid: b.tid, fag: String(valgt.inn.navn).trim(), innslagId: valgt.inn.id };
+    });
   }
 
   window.genererTimeplanFraProgram = async function(klasseId){
@@ -10499,7 +10547,7 @@
     const foreldrelose = [];
     let uendret = 0;
     for(const dag of dager){
-      const onsket = onskedeTimerForDag((prog.dagsoppsett || {})[dag]);
+      const onsket = onskedeTimerForDag((prog.dagsoppsett || {})[dag], klasse, dag);
       if(onsket.length === 0) continue;
       const eksisterende = (cache.hours || []).filter(h => h.klasse === klasseId && h.dag === dag);
       const brukt = new Set();
@@ -10696,6 +10744,34 @@
       if(!harTimer){
         timeplanHtml = '<div class="innst-effekt" style="margin-top:6px;">Timeplanen for denne klassen er tom. Trykk «Generer fra programmet» for å bygge den fra dagsoppsettet.</div>';
       }
+
+      // Rekkefølgen klassen selv velger. Klokkeslettene står fast — det er
+      // bare hvilket fag som ligger hvor som endres. Derfor én nedtrekk per
+      // blokk, med klokkeslettet ved siden av, i stedet for piler som flytter
+      // og lar deg lure på hva som havnet hvor.
+      dager.forEach(dag => {
+        const blokker = blokkerForDag((prog.dagsoppsett || {})[dag]);
+        if(blokker.length === 0) return;
+        const rekke = klassensRekkefolge(klasse, dag, blokker);
+        const lagret = ((klasse.fagrekkefolge || {})[dag] || []).join('|');
+        const naa = rekke.join('|');
+        timeplanHtml += '<div class="report-card" style="margin-top:16px; padding:16px 18px;">' +
+          '<div class="eyebrow">Fagrekkefølge' + (dager.length > 1 ? ' · ' + escapeHtml(dag) : '') + '</div>' +
+          '<div class="sub" style="margin-bottom:10px;">Klokkeslettene kommer fra programmet. Her velger du hvilket fag som ligger i hver blokk — klassene i samme program trenger ikke ha samme rekkefølge.</div>' +
+          blokker.map((b, i) => {
+            const valgt = rekke[i] || b.inn.id;
+            return '<div style="display:flex; align-items:center; gap:10px; margin-bottom:7px; flex-wrap:wrap;">' +
+              '<span style="min-width:104px; font-family:Jost,sans-serif; font-weight:700; font-size:12.5px; color:var(--emerald-d); white-space:nowrap;">' + escapeHtml(b.tid) + '</span>' +
+              '<select style="flex:1; min-width:150px; padding:9px 11px; border:1px solid var(--line); border-radius:7px; font-family:Lora,serif; font-size:15px;" onchange="sfSettRekke(\'' + escapeHtml(dag) + '\', ' + i + ', this.value)">' +
+                blokker.map(o => '<option value="' + escapeHtml(o.inn.id) + '"' + (o.inn.id === valgt ? ' selected' : '') + '>' + escapeHtml(o.inn.navn) + '</option>').join('') +
+              '</select></div>';
+          }).join('') +
+          (lagret !== naa
+            ? '<div class="hint" style="margin-top:6px;">Følger programmets rekkefølge. Endrer du noe, lagres klassens egen.</div>'
+            : '') +
+          '<div class="hint" style="margin-top:8px;">Endringen lagres med én gang. Trykk <b>Generer fra programmet</b> etterpå for å skrive den inn i timeplanen — lærerne følger med faget.</div>' +
+        '</div>';
+      });
     }
 
     const midt = '<div class="report-card">' +
@@ -10757,6 +10833,35 @@
 
   window.sfVelgProgram = function(id){ sfProgId = id; sfKlasseId = null; renderSkoleflate(); };
   window.sfVelgKlasse = function(id){ sfKlasseId = id; renderSkoleflate(); };
+
+  // Bytter faget i én blokk. Fagene kan ikke bli borte eller dubleres:
+  // velger du et fag som ligger i en annen blokk, BYTTER de to plass.
+  // Uten byttet ville et fag falt ut av dagen uten at noen så det.
+  window.sfSettRekke = async function(dag, indeks, innslagId){
+    if(!endringsmodus){ showToast('Lesemodus — slå på «Endringsmodus» for å endre.', true); sfRender(); return; }
+    const klasse = (cache.classes || []).find(c => c.id === sfKlasseId);
+    const prog = klasse ? finnProgramFor(klasse) : null;
+    if(!klasse || !prog) return;
+    const blokker = blokkerForDag((prog.dagsoppsett || {})[dag]);
+    const rekke = klassensRekkefolge(klasse, dag, blokker).slice();
+    const fra = rekke.indexOf(innslagId);
+    if(fra === indeks) return;
+    if(fra >= 0) rekke[fra] = rekke[indeks];
+    rekke[indeks] = innslagId;
+
+    const ny = { ...(klasse.fagrekkefolge || {}) };
+    ny[dag] = rekke;
+    try{
+      // Ett felt. Klassedokumentet bærer program, trinn og programId —
+      // en setDoc her ville strøket dem.
+      await updateDoc(doc(db, 'classes', klasse.id), { fagrekkefolge: ny });
+      showToast('✓ Rekkefølgen for ' + (klasse.navn || 'klassen') + ' er lagret. Trykk «Generer» for å skrive den inn i timeplanen.');
+    }catch(err){
+      console.error('sfSettRekke', err);
+      showToast('Noe gikk galt: ' + (err.message || err), true);
+    }
+  };
+
   window.sfGenerer = async function(){ if(sfKlasseId){ await genererTimeplanFraProgram(sfKlasseId); renderSkoleflate(); } };
   window.sfRedigerProgram = function(){ if(sfProgId) pgApne(sfProgId); };
   window.sfRedigerKlasse = function(id){ if(id) openModal('classes', id); };
