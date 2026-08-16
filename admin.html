@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 17:34:44 -->
+<!-- SIST-ENDRET: 2026-08-16 23:44:29 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2419,7 +2419,62 @@
         </select>
       </div>
 
-      <div class="sub" id="msRecipientCount" style="margin-top:-6px; margin-bottom:14px;"></div>
+      <div class="sub" id="msRecipientCount" style="margin-top:-6px; margin-bottom:6px;"></div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           HVEM I GRUPPEN
+
+           🔴 Før var det gruppen eller ingenting. Skulle én familie stå
+           over — de har allerede fått beskjed, eller saken gjelder dem
+           ikke — måtte man sende én og én, og da forsvinner både
+           kvitteringen og arkivet.
+
+           Alle er krysset av fra start. Man fjerner den som ikke skal ha
+           meldingen, i stedet for å hake av tretti navn for å nå tretti.
+
+           Manuelle mottakere ligger i samme liste: en e-post som ikke
+           finnes i systemet i det hele tatt. De merkes «utenfor
+           systemet», fordi de får e-posten, men har ingen portal å svare
+           fra — svaret deres havner i innboksen, ikke i panelet.
+           ══════════════════════════════════════════════════════════ -->
+      <div id="msVelgWrap" style="margin-bottom:14px; display:none;">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+          <button type="button" class="btn btn-ghost" style="padding:5px 12px; font-size:12.5px;" onclick="msVelgAlle(true)">Velg alle</button>
+          <button type="button" class="btn btn-ghost" style="padding:5px 12px; font-size:12.5px;" onclick="msVelgAlle(false)">Fjern alle</button>
+          <input type="text" id="msSok" placeholder="Søk i mottakerne..." oninput="msTegnMottakere()"
+                 style="flex:1; min-width:160px; padding:7px 11px; border:1px solid var(--line); border-radius:7px; font-family:'Lora',serif; font-size:14px;">
+        </div>
+        <div id="msMottakerListe" style="max-height:290px; overflow-y:auto; border:1px solid var(--line); border-radius:9px; padding:8px 12px; background:var(--paper);"></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           VEDLEGG
+
+           Filene lastes opp NÅR meldingen sendes, ikke når de velges.
+           Velger man en fil og ombestemmer seg, ligger det da ingenting
+           igjen i lagringen som ingen vet om.
+
+           ⚠️ Nedlastingslenken fra Firebase er en nøkkel i seg selv: den
+           som har lenken, kommer inn — uansett hva reglene sier. Derfor
+           er den grei for rundskriv, men ikke for noe som gjelder ett
+           bestemt barn.
+           ══════════════════════════════════════════════════════════ -->
+      <div class="field">
+        <label>Vedlegg</label>
+        <input type="file" id="msVedlegg" multiple onchange="msVisVedlegg()">
+        <div id="msVedleggListe" class="hint" style="margin-top:6px;"></div>
+        <div class="hint">Alle mottakerne får de samme filene. Maks 10 MB per fil.</div>
+      </div>
+
+      <div class="field">
+        <label>Legg til en mottaker utenfor systemet</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="text" id="msManuellEpost" placeholder="navn@example.no" style="flex:1; min-width:170px;"
+                 onkeydown="if(event.key==='Enter'){ event.preventDefault(); msLeggTilManuell(); }">
+          <button type="button" class="btn btn-ghost" onclick="msLeggTilManuell()">Legg til</button>
+        </div>
+        <div class="hint">Får e-posten, men har ingen portal å svare fra — svaret kommer som vanlig e-post.</div>
+      </div>
 
       <div class="field">
         <label>Emne</label>
@@ -6423,7 +6478,7 @@
   // slik at hvert kallested kan SI det. En mottaker som forsvinner i
   // stillhet er den dyreste feilen vi har.
   // ═══════════════════════════════════════════════════════════════
-  async function sendBroadcast({ recipients, title, groupLabel, tekst }){
+  async function sendBroadcast({ recipients, title, groupLabel, tekst, vedlegg }){
     const nowIso = new Date().toISOString();
     const gruppeId = 'grp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
     let sendt = 0;
@@ -6444,7 +6499,8 @@
       await addDoc(collection(db, 'broadcastMessages'), {
         threadId: threadRef.id, mottakerEpost: epost,
         fra: 'Administrasjon', avsenderNavn: 'Administrasjonen',
-        tekst, dato: nowIso
+        tekst, dato: nowIso,
+        vedlegg: Array.isArray(vedlegg) ? vedlegg : []
       });
       sendt++;
     }
@@ -8222,6 +8278,11 @@
     document.getElementById('msIndividualWrap').style.display = val === 'individual' ? 'block' : 'none';
     document.getElementById('msClassWrap').style.display = val === 'classGuardians' ? 'block' : 'none';
     document.getElementById('msSubjectWrap').style.display = val === 'subjectTeachers' ? 'block' : 'none';
+    // 🔴 Blankt ark ved bytte av gruppe. Se kommentaren over msFravalgte.
+    msFravalgte.clear();
+    const sok = document.getElementById('msSok');
+    if(sok) sok.value = '';
+    msTegnMottakere();
     updateMsRecipientCount();
   };
 
@@ -8341,9 +8402,105 @@
     return dedupeMsRecipients(raw);
   }
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // UTVALG INNENFOR GRUPPEN + MANUELLE MOTTAKERE
+  //
+  // msFravalgte holder dem som er tatt BORT, ikke dem som er med. Da
+  // følger nye medlemmer automatisk med: melder en familie seg på i
+  // morgen, står hun i gruppen uten at noen må huske å hake henne av.
+  //
+  // 🔴 Utvalget nullstilles når gruppen byttes. Et fravalg som lever
+  // videre fra «alle foresatte» inn i «lærere» er en felle: man ser en
+  // full liste, sender, og oppdager etterpå at én manglet.
+  //
+  // Manuelle mottakere overlever bytte av gruppe — de er lagt til for
+  // denne meldingen, ikke for gruppen.
+  // ═══════════════════════════════════════════════════════════════════
+  let msFravalgte = new Set();
+  let msManuelle = [];
+
+  function msNokkel(r){
+    return String(r.epost || '').trim().toLowerCase() || (r.type + ':' + r.id);
+  }
+
+  // Gruppen pluss de manuelle, med fravalgene fortsatt synlige i listen.
+  function msAlleMottakere(){
+    const fra = computeMsRecipients();
+    const sett = new Set(fra.map(msNokkel));
+    const ekstra = msManuelle.filter(m => !sett.has(msNokkel(m)));
+    return fra.concat(ekstra);
+  }
+
+  function msValgteMottakere(){
+    return msAlleMottakere().filter(r => !msFravalgte.has(msNokkel(r)));
+  }
+
+  window.msVelgAlle = function(alle){
+    if(alle) msFravalgte.clear();
+    else msAlleMottakere().forEach(r => msFravalgte.add(msNokkel(r)));
+    msTegnMottakere(); updateMsRecipientCount();
+  };
+
+  window.msSkiftMottaker = function(nokkel){
+    if(msFravalgte.has(nokkel)) msFravalgte.delete(nokkel);
+    else msFravalgte.add(nokkel);
+    msTegnMottakere(); updateMsRecipientCount();
+  };
+
+  window.msLeggTilManuell = function(){
+    const felt = document.getElementById('msManuellEpost');
+    const ep = String(felt.value || '').trim().toLowerCase();
+    if(!ep) return;
+    // Enkel formsjekk. En adresse med skrivefeil sier ingenting fra av seg
+    // selv: e-posten går ut, spretter tilbake i en logg ingen leser, og
+    // familien tror hun aldri fikk beskjed.
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(ep)){
+      showToast('«' + ep + '» ser ikke ut som en e-postadresse.', true); return;
+    }
+    if(msAlleMottakere().some(r => msNokkel(r) === ep)){
+      showToast('Den står allerede i listen.'); felt.value = ''; return;
+    }
+    msManuelle.push({ type:'manuell', id:'manuell:' + ep, name: ep, epost: ep });
+    msFravalgte.delete(ep);
+    felt.value = '';
+    msTegnMottakere(); updateMsRecipientCount();
+  };
+
+  window.msTegnMottakere = function(){
+    const wrap = document.getElementById('msVelgWrap');
+    const boks = document.getElementById('msMottakerListe');
+    if(!wrap || !boks) return;
+    const alle = msAlleMottakere();
+    wrap.style.display = alle.length > 1 ? 'block' : 'none';
+    if(alle.length <= 1) return;
+
+    const sok = (document.getElementById('msSok')?.value || '').trim().toLowerCase();
+    const synlige = sok
+      ? alle.filter(r => ((r.name || '') + ' ' + (r.epost || '')).toLowerCase().includes(sok))
+      : alle;
+
+    boks.innerHTML = synlige.length === 0
+      ? '<div class="report-empty" style="padding:10px 0;">Ingen treff.</div>'
+      : synlige.map(r => {
+          const n = msNokkel(r);
+          const av = msFravalgte.has(n);
+          const utenEpost = !String(r.epost || '').trim();
+          return '<label style="display:flex; align-items:center; gap:9px; padding:5px 0; cursor:pointer;' +
+            (av ? ' opacity:.45;' : '') + '">' +
+            '<input type="checkbox"' + (av ? '' : ' checked') +
+              ' onchange="msSkiftMottaker(' + JSON.stringify(n).replace(/"/g, '&quot;') + ')">' +
+            '<span style="flex:1; font-size:14px;">' + escapeHtml(r.name || r.epost || r.id) +
+              (r.type === 'manuell' ? ' <span style="color:var(--gold); font-size:11.5px; font-weight:700;">utenfor systemet</span>' : '') +
+              (utenEpost ? ' <span style="color:var(--red); font-size:11.5px; font-weight:700;">ingen e-post</span>' : '') +
+            '</span></label>';
+        }).join('');
+  };
+
   window.updateMsRecipientCount = function(){
-    const alle = computeMsRecipients();
+    const alle = msValgteMottakere();
     const n = alle.length;
+    const fravalgt = msAlleMottakere().length - n;
     // Mottakere uten e-post kan ikke logge inn, og får derfor ingen tråd.
     // Tallet må si det FØR sendingen — ikke etterpå, og aller minst ikke
     // stilltiende. Teksten «hver som egen samtale» er nå også sann.
@@ -8351,6 +8508,7 @@
     const el = document.getElementById('msRecipientCount');
     if(n === 0){ el.textContent = 'Ingen mottakere funnet med dette valget.'; return; }
     el.textContent = n + ' mottaker' + (n === 1 ? '' : 'e') + ' vil motta denne meldingen — hver som egen samtale.'
+      + (fravalgt > 0 ? '  ' + fravalgt + ' er tatt bort.' : '')
       + (uten.length ? '  ⚠️ ' + uten.length + ' av dem har ingen e-post og får ingenting: '
           + uten.map(r => r.name || r.id).join(', ') : '');
   };
@@ -8359,8 +8517,37 @@
     if(el) el.addEventListener('change', updateMsRecipientCount);
   });
 
+
+  // Viser hva som faktisk er valgt, med størrelse. En fil som er for stor
+  // skal sies fra om NÅ — ikke etter at meldingen er skrevet ferdig og
+  // opplastingen stopper midt i utsendelsen.
+  const MS_MAKS_MB = 10;
+  window.msVisVedlegg = function(){
+    const el = document.getElementById('msVedleggListe');
+    const filer = [...(document.getElementById('msVedlegg')?.files || [])];
+    if(!el) return;
+    if(filer.length === 0){ el.textContent = ''; return; }
+    el.innerHTML = filer.map(f => {
+      const mb = f.size / (1024 * 1024);
+      const forStor = mb > MS_MAKS_MB;
+      return '<div style="' + (forStor ? 'color:var(--red); font-weight:700;' : '') + '">📎 ' +
+        escapeHtml(f.name) + ' — ' + mb.toFixed(1) + ' MB' +
+        (forStor ? ' — for stor, maks ' + MS_MAKS_MB + ' MB' : '') + '</div>';
+    }).join('');
+  };
+
   window.sendBroadcastMessage = async function(){
-    const recipients = computeMsRecipients();
+    const recipients = msValgteMottakere();
+    // De fravalgte nevnes ved NAVN i bekreftelsen, ikke bare som et tall.
+    // Et tall skjuler nettopp den feilen dette skal fange: at man tok bort
+    // feil person og ikke oppdager det før hun spør hvorfor hun ikke fikk
+    // beskjed.
+    const fravalgt = msAlleMottakere().filter(r => msFravalgte.has(msNokkel(r)));
+    if(fravalgt.length > 0){
+      const navnene = fravalgt.map(r => r.name || r.epost).join(', ');
+      if(!confirm('Sender til ' + recipients.length + ' mottaker(e).\n\n' +
+                  fravalgt.length + ' får den IKKE:\n' + navnene + '\n\nFortsette?')) return;
+    }
     const subject = document.getElementById('msSubject').value.trim();
     const body = document.getElementById('msBody').value.trim();
     const statusBox = document.getElementById('msStatusBox');
@@ -8388,14 +8575,48 @@
       //
       // Prisen er flere rader i innboksen. Derfor 'gruppeId', som samler
       // dem igjen ved visning — se renderBroadcastInbox().
-      const utfall = await sendBroadcast({ recipients, title: subject, groupLabel, tekst: body });
+      // 🔴 Filene lastes opp FØR meldingene skrives. Går opplastingen i
+      // stykker etterpå, ville halve familien fått en melding som viser
+      // til et vedlegg som ikke finnes.
+      const filer = [...(document.getElementById('msVedlegg')?.files || [])];
+      const forStore = filer.filter(f => f.size / (1024 * 1024) > MS_MAKS_MB);
+      if(forStore.length){
+        statusBox.style.background = 'rgba(160,60,60,0.10)'; statusBox.style.color = 'var(--red)';
+        statusBox.textContent = 'For stor(e) fil(er): ' + forStore.map(f => f.name).join(', ') +
+          ' — maks ' + MS_MAKS_MB + ' MB per fil.';
+        return;
+      }
+      const vedlegg = [];
+      if(filer.length){
+        statusBox.textContent = 'Laster opp ' + filer.length + ' fil(er)...';
+        for(const f of filer){
+          try{
+            const url = await uploadAttachment(f, 'message-attachments');
+            vedlegg.push({ navn: f.name, url, storrelse: f.size });
+          }catch(err){
+            console.error('vedlegg', f.name, err);
+            statusBox.style.background = 'rgba(160,60,60,0.10)'; statusBox.style.color = 'var(--red)';
+            statusBox.textContent = 'Opplastingen av «' + f.name + '» feilet. Ingenting er sendt.';
+            return;
+          }
+        }
+      }
+
+      // Lenkene legges også i e-posten. Uten dem ville et vedlegg bare
+      // finnes i portalen, og de som leser e-posten på telefonen ville
+      // ikke visst at det fantes.
+      const vedleggTekst = vedlegg.length
+        ? '\n\n— Vedlegg —\n' + vedlegg.map(v => v.navn + ': ' + v.url).join('\n')
+        : '';
+
+      const utfall = await sendBroadcast({ recipients, title: subject, groupLabel, tekst: body, vedlegg });
       for(const r of recipients){
         if(!r.epost) continue;
         try{
           await addDoc(collection(db, 'mail'), {
             from: MAIL_FROM,
             to: [r.epost],
-            message: { subject: '[Madina Skole] ' + subject + (r.name ? ' (' + r.name + ')' : ''), text: body }
+            message: { subject: '[Madina Skole] ' + subject + (r.name ? ' (' + r.name + ')' : ''), text: body + vedleggTekst }
           });
         } catch(mailErr){ console.error('E-post-varsling feilet for', r.epost, mailErr); }
       }
@@ -8403,6 +8624,8 @@
       // vellykkede ser likt ut enten alle fikk meldingen eller halvparten
       // manglet e-post — og forskjellen ville ingen oppdaget før en
       // forelder spurte hvorfor hun aldri fikk beskjed.
+      const velger = document.getElementById('msVedlegg');
+      if(velger){ velger.value = ''; msVisVedlegg(); }
       if(utfall.utenEpost.length > 0){
         statusBox.style.background = 'rgba(196,154,60,0.12)'; statusBox.style.color = 'var(--gold)';
         statusBox.textContent = '✓ Sendt til ' + utfall.sendt + ' av ' + recipients.length +
@@ -8506,6 +8729,9 @@
                       <span style="font-weight:400; color:#8a9a90;"> — ${escapeHtml(inboxTimeLabelAdmin(m.dato))}</span>
                     </div>
                     <div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeHtml(m.tekst||'')}</div>
+                    ${(m.vedlegg||[]).length ? `<div style="margin-top:7px; display:flex; flex-direction:column; gap:3px;">${
+                      (m.vedlegg||[]).map(v => `<a href="${escapeHtml(v.url)}" target="_blank" rel="noopener" style="font-size:12px; color:var(--emerald-d); text-decoration:none;">📎 ${escapeHtml(v.navn)}</a>`).join('')
+                    }</div>` : ''}
                   </div>`).join('')}
               </div>
             </div>`).join('')}
