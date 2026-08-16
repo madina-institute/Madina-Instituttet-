@@ -1703,6 +1703,7 @@
   <div class="tab" data-tab="messages" data-side="kommunikasjon">Meldinger</div>
   <div class="tab" data-tab="meldingssenter" data-side="kommunikasjon">Meldingssenter</div>
   <div class="tab" data-tab="announcements" data-side="kommunikasjon">Kunngjøringer</div>
+  <div class="tab" data-tab="skoleflate" data-side="skoleoppsett">Arbeidsflate</div>
   <div class="tab" data-tab="programs" data-side="skoleoppsett">Programmer</div>
   <div class="tab" data-tab="schoolCalendar" data-side="skoleoppsett">Skolekalender</div>
   <div class="tab" data-tab="meetings" data-side="skoleoppsett">Møtereferater</div>
@@ -2514,6 +2515,51 @@
     </div>
     <div class="records-hidden card-grid" id="tablePrograms"></div>
     </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       ARBEIDSFLATE — Program → Klasser → Timeplan → Beregninger på ÉN flate.
+       Legges TIL ved siden av de gamle fanene (Programmer, Klasser,
+       Timeplan). Den erstatter ingenting: gamle lenker og tilganger står.
+       Alt her leser og skriver de samme samlingene som fanene bruker.
+       ══════════════════════════════════════════════════════════════ -->
+  <style>
+    #panel-skoleflate .sf-wrap{ display:grid; grid-template-columns:250px 1fr 290px; gap:16px; align-items:start; }
+    @media(max-width:1000px){ #panel-skoleflate .sf-wrap{ grid-template-columns:1fr; } }
+    #panel-skoleflate .sf-prog{ display:flex; flex-direction:column; gap:2px; border:1px solid var(--line); border-radius:10px; padding:11px 12px; cursor:pointer; background:#fff; }
+    #panel-skoleflate .sf-prog + .sf-prog{ margin-top:9px; }
+    #panel-skoleflate .sf-prog:hover{ border-color:var(--emerald-l); }
+    #panel-skoleflate .sf-prog.sel{ border-color:var(--emerald); background:linear-gradient(180deg,#fff,#f4f8fd); box-shadow:0 6px 16px rgba(74,143,203,.12); }
+    #panel-skoleflate .sf-prog .navn{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px; line-height:1.15; }
+    #panel-skoleflate .sf-prog .meta{ font-family:'Jost',sans-serif; font-size:11px; color:#6b7787; margin-top:3px; }
+    #panel-skoleflate .sf-badge{ font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:999px; background:var(--paper-2); color:var(--emerald-d); display:inline-block; margin-top:7px; }
+    #panel-skoleflate .sf-badge.off{ background:#f2e6e6; color:var(--red); }
+    #panel-skoleflate .sf-facts{ display:flex; gap:20px; flex-wrap:wrap; margin-top:8px; }
+    #panel-skoleflate .sf-fact .k{ font-family:'Jost',sans-serif; font-size:10px; text-transform:uppercase; letter-spacing:.09em; color:#8a94a1; }
+    #panel-skoleflate .sf-fact .v{ font-family:'Jost',sans-serif; font-size:13.5px; font-weight:600; margin-top:2px; }
+    #panel-skoleflate .sf-slot{ display:grid; grid-template-columns:104px 1fr 60px; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--line); border-radius:9px; background:#fbfcfe; margin-top:7px; }
+    #panel-skoleflate .sf-slot.pause{ background:#f6f4ee; border-style:dashed; }
+    #panel-skoleflate .sf-slot .tid{ font-family:'Jost',sans-serif; font-size:12px; font-weight:600; color:var(--emerald-d); }
+    #panel-skoleflate .sf-slot .fag{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15px; }
+    #panel-skoleflate .sf-slot.pause .fag{ font-style:italic; color:#8a7a4a; font-family:'Lora',serif; }
+    #panel-skoleflate .sf-slot .dur{ font-family:'Jost',sans-serif; font-size:11px; color:#6b7787; text-align:end; }
+    #panel-skoleflate .sf-ktab{ font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:999px; border:1px solid var(--line-2,rgba(40,40,90,0.18)); background:#fff; cursor:pointer; display:inline-block; margin:0 8px 8px 0; }
+    #panel-skoleflate .sf-ktab.sel{ background:var(--emerald); color:#fff; border-color:var(--emerald); }
+    #panel-skoleflate .sf-ktab.add{ border-style:dashed; color:var(--emerald-d); }
+    #panel-skoleflate table.sf-sched{ width:100%; border-collapse:collapse; }
+    #panel-skoleflate table.sf-sched th{ font-family:'Jost',sans-serif; font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:#8a94a1; text-align:start; padding:5px 8px; border-bottom:1px solid var(--tabell-linje); }
+    #panel-skoleflate table.sf-sched td{ padding:8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+    #panel-skoleflate .sf-day-h{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; margin:14px 0 4px; }
+    #panel-skoleflate select.sf-larer{ font-family:'Jost',sans-serif; font-size:13px; padding:6px 8px; border:1px solid var(--line-2,rgba(40,40,90,0.18)); border-radius:8px; background:#fff; min-width:150px; }
+    #panel-skoleflate select.sf-larer.tom{ border-color:var(--gold-l); background:#fdf7e7; }
+    #panel-skoleflate .sf-kpi{ display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-bottom:1px dashed var(--line-2,rgba(40,40,90,0.18)); }
+    #panel-skoleflate .sf-kpi:last-child{ border-bottom:none; }
+    #panel-skoleflate .sf-kpi .l{ font-family:'Jost',sans-serif; font-size:12px; color:#5a6672; }
+    #panel-skoleflate .sf-kpi .v{ font-family:'Jost',sans-serif; font-size:15px; font-weight:700; }
+    #panel-skoleflate .sf-kpi .v.big{ font-size:19px; color:var(--emerald-d); }
+  </style>
+  <div class="panel" id="panel-skoleflate">
+    <div id="sfRoot"></div>
+  </div>
 
   <!-- ══════════════════════════════════════════════════════════════
        PROGRAMSIDEN — hele programmet på én side
@@ -10492,6 +10538,206 @@
     if(feilet.length) showToast('Ferdig, men ' + feilet.length + ' rad(er) feilet. Se konsollen.', true);
     else showToast('✓ Timeplanen for ' + (klasse.navn || 'klassen') + ' er oppdatert fra programmet.');
     if(typeof koVelgKlasse === 'function') setTimeout(koVelgKlasse, 500);
+    if(typeof __sfMaybeRerender === 'function') setTimeout(__sfMaybeRerender, 600);
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ARBEIDSFLATE — én flate for Program → Klasser → Timeplan → Beregninger
+  //
+  // Leser og skriver de SAMME samlingene som de gamle fanene. Ingen ny
+  // datakilde: klasser hentes via programId (med navn som reserve), timer
+  // fra hours, priser fra programmet + settings/priser (prisOppsett).
+  // Redigering av selve programmet/klassen åpner de eksisterende
+  // skjemaene (pgApne / openModal), så det finnes bare ÉN vei å endre dem.
+  // ═══════════════════════════════════════════════════════════════════
+  let sfProgId = null, sfKlasseId = null;
+
+  function sfKr(v){
+    const n = parseFloat(String(v == null ? '' : v).toString().replace(/[^\d.]/g, ''));
+    if(isNaN(n)) return '—';
+    return n.toLocaleString('no-NO') + ' kr';
+  }
+  function sfDager(prog){ return String((prog && prog.dager) || '').split(',').map(s => s.trim()).filter(Boolean); }
+  function sfKlasserForProgram(prog){
+    if(!prog) return [];
+    return (cache.classes || []).filter(c =>
+      (c.programId && c.programId === prog.id) || (!c.programId && c.program && c.program === prog.navn)
+    ).sort((a,b) => String(a.navn||'').localeCompare(String(b.navn||'')));
+  }
+  // Alle innslag (fag OG pause) med utregnede klokkeslett — for tidslinjen.
+  function sfTidslinje(dagsoppsett){
+    const ut = [];
+    if(!dagsoppsett || !Array.isArray(dagsoppsett.innslag)) return ut;
+    let k = koMin(dagsoppsett.start || ''); if(isNaN(k)) return ut;
+    dagsoppsett.innslag.forEach(inn => {
+      const m = parseInt(inn.minutter, 10) || 0; const s = k, e = k + m;
+      ut.push({ tid: koKlokke(s) + '–' + koKlokke(e), navn: inn.navn || (inn.type === 'pause' ? 'Pause' : ''), type: inn.type || 'fag', min: m });
+      k = e;
+    });
+    return ut;
+  }
+  function sfLarerSelect(h){
+    const larere = (cache.teachers || []).slice().sort((a,b) => String(a.navn||'').localeCompare(String(b.navn||'')));
+    const valgt = h.larer || '';
+    const tom = valgt ? '' : ' tom';
+    let opts = '<option value="">— velg lærer —</option>';
+    larere.forEach(t => { opts += '<option value="' + escapeHtml(t.id) + '"' + (t.id === valgt ? ' selected' : '') + '>' + escapeHtml(t.navn || t.id) + '</option>'; });
+    return '<select class="sf-larer' + tom + '" onchange="sfSettLarer(\'' + escapeHtml(h.id) + '\', this.value)">' + opts + '</select>';
+  }
+
+  window.renderSkoleflate = function(){
+    const root = document.getElementById('sfRoot'); if(!root) return;
+    const programmer = (cache.programs || []).slice().sort((a,b) => String(a.navn||'').localeCompare(String(b.navn||'')));
+    if(programmer.length === 0){
+      root.innerHTML = '<div class="report-card"><div class="report-empty">Ingen programmer ennå. Opprett ett under <b>Programmer</b>.</div></div>';
+      return;
+    }
+    if(!sfProgId || !programmer.some(p => p.id === sfProgId)) sfProgId = programmer[0].id;
+    const prog = programmer.find(p => p.id === sfProgId);
+    const klasser = sfKlasserForProgram(prog);
+    if(!sfKlasseId || !klasser.some(c => c.id === sfKlasseId)) sfKlasseId = klasser[0] ? klasser[0].id : null;
+    const klasse = klasser.find(c => c.id === sfKlasseId) || null;
+    const dager = sfDager(prog);
+
+    // ---- Venstre: programliste ----
+    let venstre = '<div class="report-card" style="padding:14px 15px;"><div class="eyebrow" style="margin-bottom:10px;">Programmer</div>';
+    programmer.forEach(p => {
+      const kl = sfKlasserForProgram(p).length;
+      const av = p.aktiv === 'Nei';
+      venstre += '<div class="sf-prog' + (p.id === sfProgId ? ' sel' : '') + '" onclick="sfVelgProgram(\'' + escapeHtml(p.id) + '\')">' +
+        '<div class="navn">' + escapeHtml(p.navn || '(uten navn)') + '</div>' +
+        '<div class="meta">' + escapeHtml(p.dager || 'ingen dager') + '</div>' +
+        '<div><span class="sf-badge">' + kl + ' klasse' + (kl === 1 ? '' : 'r') + '</span>' +
+        (av ? ' <span class="sf-badge off">Ikke aktivt</span>' : '') + '</div></div>';
+    });
+    venstre += '<button class="btn btn-ghost" style="width:100%; margin-top:12px;" onclick="pgApne(null)">+ Nytt program</button></div>';
+
+    // ---- Midt: program + dag + klasser + timeplan ----
+    let dagoppsettHtml = '';
+    dager.forEach(dag => {
+      const linjer = sfTidslinje((prog.dagsoppsett || {})[dag]);
+      if(linjer.length === 0){ dagoppsettHtml += '<div class="hint" style="margin-top:8px;">' + escapeHtml(dag) + ': ingen dagsoppsett ennå.</div>'; return; }
+      if(dager.length > 1) dagoppsettHtml += '<div class="sf-day-h">' + escapeHtml(dag) + '</div>';
+      linjer.forEach(l => {
+        dagoppsettHtml += '<div class="sf-slot' + (l.type === 'pause' ? ' pause' : '') + '">' +
+          '<span class="tid">' + escapeHtml(l.tid) + '</span><span class="fag">' + escapeHtml(l.navn) + '</span>' +
+          '<span class="dur">' + l.min + ' min</span></div>';
+      });
+    });
+
+    let klasseTabs = '';
+    klasser.forEach(c => {
+      klasseTabs += '<span class="sf-ktab' + (c.id === sfKlasseId ? ' sel' : '') + '" onclick="sfVelgKlasse(\'' + escapeHtml(c.id) + '\')">' + escapeHtml(c.navn || '(uten navn)') + '</span>';
+    });
+    klasseTabs += '<span class="sf-ktab add" onclick="sfNyKlasse()">+ Ny klasse</span>';
+
+    let timeplanHtml = '';
+    if(!klasse){
+      timeplanHtml = '<div class="report-empty">Ingen klasser i dette programmet ennå. Legg til en klasse for å sette opp timeplan.</div>';
+    } else {
+      let harTimer = false;
+      dager.forEach(dag => {
+        const rows = (cache.hours || []).filter(h => h.klasse === klasse.id && h.dag === dag)
+          .slice().sort((a,b) => koMin(tpParseTid(a.tid).start) - koMin(tpParseTid(b.tid).start));
+        if(rows.length === 0) return;
+        harTimer = true;
+        if(dager.length > 1) timeplanHtml += '<div class="sf-day-h">' + escapeHtml(dag) + '</div>';
+        timeplanHtml += '<table class="sf-sched"><thead><tr><th style="width:120px;">Tid</th><th>Fag</th><th style="width:180px;">Lærer</th></tr></thead><tbody>';
+        rows.forEach(h => {
+          timeplanHtml += '<tr><td class="tid" style="font-family:Jost,sans-serif; font-weight:600; color:var(--emerald-d); white-space:nowrap;">' + escapeHtml(h.tid || '') + '</td>' +
+            '<td style="font-family:\'Cormorant Garamond\',serif; font-weight:700; font-size:16px;">' + escapeHtml(h.fag || '') + '</td>' +
+            '<td>' + sfLarerSelect(h) + '</td></tr>';
+        });
+        timeplanHtml += '</tbody></table>';
+      });
+      if(!harTimer){
+        timeplanHtml = '<div class="innst-effekt" style="margin-top:6px;">Timeplanen for denne klassen er tom. Trykk «Generer fra programmet» for å bygge den fra dagsoppsettet.</div>';
+      }
+    }
+
+    const midt = '<div class="report-card">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">' +
+          '<div><div class="eyebrow">Program</div><h3 style="font-size:22px; margin-top:2px;">' + escapeHtml(prog.navn || '') + '</h3></div>' +
+          '<button class="btn btn-ghost" onclick="sfRedigerProgram()">Rediger program</button>' +
+        '</div>' +
+        '<div class="sf-facts">' +
+          '<div class="sf-fact"><div class="k">Periode</div><div class="v">' + escapeHtml((prog.startdato || '—') + ' – ' + (prog.sluttdato || '—')) + '</div></div>' +
+          '<div class="sf-fact"><div class="k">Dager</div><div class="v">' + escapeHtml(prog.dager || '—') + '</div></div>' +
+          '<div class="sf-fact"><div class="k">Status</div><div class="v" style="color:' + (prog.aktiv === 'Nei' ? 'var(--red)' : 'var(--emerald-d)') + '">' + (prog.aktiv === 'Nei' ? 'Ikke aktivt' : 'Aktivt') + '</div></div>' +
+        '</div>' +
+        '<div class="eyebrow" style="margin:16px 0 2px;">Undervisningsdagen — kilde til klassenes timeplan</div>' +
+        dagoppsettHtml +
+      '</div>' +
+      '<div class="report-card" style="margin-top:16px;">' +
+        '<div class="eyebrow" style="margin-bottom:8px;">Klasser</div>' +
+        '<div>' + klasseTabs + '</div>' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin:18px 0 4px;">' +
+          '<h3 style="font-size:18px;">Timeplan' + (klasse ? ' · ' + escapeHtml(klasse.navn || '') : '') + '</h3>' +
+          (klasse ? '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+            '<button class="btn btn-ghost" onclick="sfRedigerKlasse(\'' + escapeHtml(klasse.id) + '\')">Rediger klasse</button>' +
+            '<button class="btn btn-primary" onclick="sfGenerer()">⚙️ Generer fra programmet</button></div>' : '') +
+        '</div>' +
+        timeplanHtml +
+      '</div>';
+
+    // ---- Høyre: beregninger ----
+    const antMnd = parseFloat(prog.antallManeder) || prisOppsett.antallManeder || 9;
+    const medlemMnd = parseFloat(prog.prisMedlemMnd);
+    const medlemAar = !isNaN(medlemMnd) ? medlemMnd * antMnd : NaN;
+    const aar = parseFloat(prog.prisAar);
+    const ter = prisOppsett.terminer && prisOppsett.terminer >= 1 ? prisOppsett.terminer : 2;
+    const perTermin = (!isNaN(aar) && ter > 1) ? Math.round(aar / ter) : aar;
+    const egetMat = String(prog.materiellAvgift == null ? '' : prog.materiellAvgift).trim();
+    const materiell = egetMat !== '' ? parseFloat(egetMat) : prisOppsett.materiellAvgift;
+    const elevAntall = (cache.students || []).filter(s => (s.programId && s.programId === prog.id) || (!s.programId && s.program === prog.navn)).length;
+    let utenLarer = 0;
+    if(klasse) utenLarer = (cache.hours || []).filter(h => h.klasse === klasse.id && !h.larer).length;
+
+    const hoyre = '<div class="report-card"><div class="eyebrow" style="margin-bottom:6px;">Beregninger</div>' +
+      '<div class="sf-kpi"><span class="l">Medlemspris / mnd</span><span class="v">' + sfKr(prog.prisMedlemMnd) + '</span></div>' +
+      '<div class="sf-kpi"><span class="l">Medlem · ' + antMnd + ' mnd</span><span class="v">' + (isNaN(medlemAar) ? '—' : sfKr(medlemAar)) + '</span></div>' +
+      '<div class="sf-kpi"><span class="l">Ikke-medlem / år</span><span class="v big">' + sfKr(prog.prisAar) + '</span></div>' +
+      '<div class="sf-kpi"><span class="l">Per termin (×' + ter + ')</span><span class="v">' + (isNaN(perTermin) ? '—' : sfKr(perTermin)) + '</span></div>' +
+      '<div class="sf-kpi"><span class="l">Materiell / elev</span><span class="v">' + sfKr(materiell) + '</span></div>' +
+      '<div class="sf-kpi"><span class="l">Søskenrabatt 2. / 3.+</span><span class="v">' + (prisOppsett.rabatt2||0) + '% / ' + (prisOppsett.rabatt3||0) + '%</span></div>' +
+      '<div class="sf-kpi"><span class="l">Depositum</span><span class="v">' + sfKr(prisOppsett.depositum) + '</span></div>' +
+      '<div class="hint" style="margin-top:10px;">Samme tall som påmeldingsskjemaet og prissiden leser. Endres under <b>Programmer</b> og <b>Betalingsinnstillinger</b>.</div>' +
+      '</div>' +
+      '<div class="report-card" style="margin-top:16px;"><div class="eyebrow" style="margin-bottom:8px;">Oversikt</div>' +
+        '<div class="sf-kpi"><span class="l">Elever i programmet</span><span class="v">' + elevAntall + '</span></div>' +
+        '<div class="sf-kpi"><span class="l">Klasser</span><span class="v">' + klasser.length + '</span></div>' +
+        (klasse ? '<div class="sf-kpi"><span class="l">Fag uten lærer (' + escapeHtml(klasse.navn||'') + ')</span><span class="v" style="color:' + (utenLarer ? 'var(--red)' : 'var(--emerald-d)') + '">' + utenLarer + '</span></div>' : '') +
+      '</div>';
+
+    root.innerHTML = '<div class="sf-wrap"><div>' + venstre + '</div><div>' + midt + '</div><div>' + hoyre + '</div></div>';
+  };
+
+  window.sfVelgProgram = function(id){ sfProgId = id; sfKlasseId = null; renderSkoleflate(); };
+  window.sfVelgKlasse = function(id){ sfKlasseId = id; renderSkoleflate(); };
+  window.sfGenerer = async function(){ if(sfKlasseId){ await genererTimeplanFraProgram(sfKlasseId); renderSkoleflate(); } };
+  window.sfRedigerProgram = function(){ if(sfProgId) pgApne(sfProgId); };
+  window.sfRedigerKlasse = function(id){ if(id) openModal('classes', id); };
+  window.sfNyKlasse = function(){
+    const prog = (cache.programs || []).find(p => p.id === sfProgId);
+    openModal('classes', null, prog ? { program: prog.navn } : null);
+  };
+  window.sfSettLarer = async function(hoursId, larerId){
+    try{
+      await updateDoc(doc(db, 'hours', hoursId), {
+        larer: larerId,
+        sistEndretAv: currentUserEmail || 'ukjent',
+        sistEndretDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
+      });
+      showToast('✓ Lærer oppdatert.');
+      setTimeout(__sfMaybeRerender, 500);
+    }catch(err){
+      if(err.code !== 'lesemodus' && err.code !== 'forhandsvisning')
+        showToast('Kunne ikke oppdatere lærer: ' + (err.message || err), true);
+    }
+  };
+  window.__sfMaybeRerender = function(){
+    const p = document.getElementById('panel-skoleflate');
+    if(p && p.classList.contains('active') && typeof renderSkoleflate === 'function') renderSkoleflate();
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -11189,6 +11435,7 @@
     // koordinators, og slett ikke en lærers.
     endringslogg:   { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     helsesjekk:     { hvem: 'ledelse', tekst: 'skoleleder eller øverste ledelse' },
+    skoleflate:     { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     programs:       { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     schoolCalendar: { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     registrations:  { hvem: 'eier',    tekst: 'Opptaksansvarlig eller eier' },
@@ -17023,6 +17270,7 @@
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     if(tab.dataset.tab === 'overview') renderOvFolders();
     if(tab.dataset.tab === 'klasseoppsett'){ koFyllVelgere(); koVelgKlasse(); }
+    if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
     if(tab.dataset.tab === 'roller') renderRoller();
