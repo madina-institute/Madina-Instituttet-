@@ -4834,10 +4834,7 @@
         {key:'navn', label:'Fullt navn', type:'text', essential:true},
         {key:'bilde', label:'Bilde', type:'file', folder:'person-photos', essential:true},
         {key:'elev_fdato', label:'Fødselsdato', type:'text', essential:true},
-        {key:'program', label:'Program', type:'select', essential:true, options:[
-          'Madina Islamske Skole — Integrert program (Lørdag)',
-          'Madinabarn (Søndag)'
-        ]},
+        {key:'program', label:'Program', type:'select', essential:true, optionsFrom:'programs'},
         // Medlemskap avgjør HVILKEN prismodell som gjelder — fast
         // månedspris uten søskenrabatt, eller årspris med. Skolen har
         // bestemt at en FAMILIE er medlem eller ikke, ikke det enkelte
@@ -4981,7 +4978,7 @@
       fields: [
         {key:'navn', label:'Klassenavn', type:'text'},
         {key:'trinn', label:'Trinn/Alder', type:'text'},
-        {key:'program', label:'Program', type:'select', options:['Madina Islamske Skole — Integrert program (Lørdag)', 'Madinabarn (Søndag)']},
+        {key:'program', label:'Program', type:'select', optionsFrom:'programs'},
         {key:'merknad', label:'Merknad', type:'text'}
       ],
       cols: ['navn','trinn','program','merknad']
@@ -12107,9 +12104,21 @@
       let input;
       if(f.type === 'select'){
         input = document.createElement('select');
-        f.options.forEach(opt => {
+        // Dynamiske valg fra en samling (f.eks. programmer): navnet lagres
+        // som verdi, så eksisterende data og de offentlige leserne som
+        // bruker navnet ikke påvirkes. programId settes i tillegg ved lagring.
+        let valg = f.options || [];
+        if(f.optionsFrom){
+          const navnene = (cache[f.optionsFrom] || [])
+            .filter(r => r.navn && r.aktiv !== 'Nei')
+            .map(r => r.navn)
+            .sort((a,b) => a.localeCompare(b));
+          valg = ['', ...navnene];
+          if(existing[f.key] && !valg.includes(existing[f.key])) valg.push(existing[f.key]);
+        }
+        valg.forEach(opt => {
           const o = document.createElement('option');
-          o.value = opt; o.textContent = opt;
+          o.value = opt; o.textContent = (opt === '' && f.optionsFrom) ? '— Velg —' : opt;
           if(existing[f.key] === opt) o.selected = true;
           input.appendChild(o);
         });
@@ -12325,6 +12334,16 @@
     if(!entry[schema.fields[0].key]){
       showToast('Fyll ut ' + schema.fields[0].label.toLowerCase());
       return;
+    }
+    // Stabil kobling til program via id, MEN navnet blir stående i
+    // dokumentet: påmeldingsskjemaet, prissiden og eksisterende
+    // students/registrations leser fortsatt programnavnet som tekst.
+    // Intern oppslag skal lese programId først, så navnet.
+    if(editingType === 'classes' || editingType === 'students'){
+      if(entry.program){
+        const _prog = (cache.programs || []).find(p => (p.navn || '') === entry.program);
+        entry.programId = _prog ? _prog.id : '';
+      }
     }
     entry.sistEndretAv = currentUserEmail || 'ukjent';
     // Klokkeslett tas med: to endringer samme dag var tidligere umulig å
