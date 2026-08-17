@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-17 12:46:24 */
+/* SIST-ENDRET: 2026-08-17 12:59:42 */
 // ═══════════════════════════════════════════════════════════════════
 // TIDSSTEMPLENE — to merker, nederst i hjørnet, på alle offentlige sider
 //
@@ -25,29 +25,49 @@
 // til alle for alltid — er verre enn å være stille.
 // ═══════════════════════════════════════════════════════════════════
 
-function stempelPille(id){
-  let el = document.getElementById(id);
-  if(el) return el;
-  // Boksene lages her, ikke i markupen: da trenger ingen av sidene
-  // endres, og en ny side får merkene bare ved å laste denne filen.
+// 🔴 Merkene står NEDERST PÅ SIDEN, ikke fastklistret i hjørnet.
+//
+// Første utgave la dem med position:fixed nede til høyre. De ble da
+// liggende over innholdet hele veien — i skjemaet dekket de bunnteksten,
+// og på en telefon er hjørnet nettopp der tommelen er. Et utviklermerke
+// skal ikke stå i veien for det familien leser.
+//
+// Nå ligger de i enden av siden, midtstilt, som en del av innholdet: de
+// ruller med, og man finner dem der man leter etter slikt — helt nederst.
+// Samme plassering som i foreldreportalen, slik at de to ikke oppfører
+// seg ulikt.
+//
+// ⚠️ index.html har allerede en <div id="devEditBadge"> i markupen, og
+// felles.css gir den både display:none OG position:fixed. Fant vi den og
+// brukte den som den var, ville forsiden fortsatt hatt et fastklistret
+// merke — og faktisk ingenting, siden display:none aldri ble overstyrt.
+// Derfor FLYTTES den inn i hyllen og får stilen satt her, som de andre.
+function stempelHylle(){
   let hylle = document.getElementById('devStempelHylle');
-  if(!hylle){
-    hylle = document.createElement('div');
-    hylle.id = 'devStempelHylle';
-    hylle.style.cssText = 'position:fixed; z-index:5000; display:flex;' +
-      'flex-direction:column; align-items:flex-end; gap:4px; pointer-events:none;' +
-      'bottom:calc(14px + env(safe-area-inset-bottom, 0px)); inset-inline-end:10px;';
-    document.body.appendChild(hylle);
+  if(hylle) return hylle;
+  hylle = document.createElement('div');
+  hylle.id = 'devStempelHylle';
+  hylle.style.cssText = 'display:block; margin:20px auto 8px; text-align:center;' +
+    'padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px)); width:100%;';
+  document.body.appendChild(hylle);
+  return hylle;
+}
+
+function stempelPille(id){
+  const hylle = stempelHylle();
+  let el = document.getElementById(id);
+  if(!el){
+    el = document.createElement('div');
+    el.id = id;
   }
-  el = document.createElement('div');
-  el.id = id;
-  // Samme utseende som #devEditBadge i felles.css, satt her slik at
-  // stilarket ikke må endres i tillegg til denne filen.
-  el.style.cssText = "font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px;" +
-    'color:#6a7870; background:rgba(255,255,255,0.94); backdrop-filter:blur(3px);' +
-    'padding:4px 10px; border-radius:20px; border:1px solid rgba(0,0,0,0.08);' +
-    'letter-spacing:.01em; box-shadow:0 2px 8px rgba(0,0,0,0.12); white-space:nowrap;';
-  hylle.appendChild(el);
+  if(el.parentNode !== hylle) hylle.appendChild(el);
+  // Stilen settes her, ikke i felles.css — da gjelder den også for boksen
+  // som lå i markupen fra før, og skjemaet slipper å laste et stilark.
+  el.style.cssText = "position:static; display:inline-block; margin:3px 4px;" +
+    "font-family:'Jost',sans-serif,Arial,sans-serif; font-size:10.5px; color:#6a7870;" +
+    'background:rgba(255,255,255,0.92); padding:4px 10px; border-radius:20px;' +
+    'border:1px solid rgba(0,0,0,0.08); pointer-events:none; letter-spacing:.01em;' +
+    'max-width:92vw; white-space:normal;';
   return el;
 }
 
@@ -63,7 +83,7 @@ function visStempler(){
       if(!m){
         if(!dev) return;
         const el = stempelPille('devEditBadge');
-        el.style.display = 'block';
+        el.style.display = 'inline-block';
         el.style.color = '#a5504a';
         el.textContent = '✏️ Uten tidsstempel — publisert utenom verktøyet';
         visUtlegging();
@@ -75,7 +95,7 @@ function visStempler(){
       if(!fersk && !dev) return;   // ingen merker, og ingen kall til GitHub
 
       const el = stempelPille('devEditBadge');
-      el.style.display = 'block';
+      el.style.display = 'inline-block';
       el.textContent = '✏️ Sist endret: ' +
         endret.toLocaleDateString('no-NO') + ' kl. ' +
         endret.toLocaleTimeString('no-NO', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
@@ -84,7 +104,7 @@ function visStempler(){
     .catch(() => {
       if(!dev) return;
       const el = stempelPille('devEditBadge');
-      el.style.display = 'block';
+      el.style.display = 'inline-block';
       el.style.color = '#a5504a';
       el.textContent = '✏️ Kunne ikke lese tidsstempel';
     });
@@ -99,7 +119,7 @@ function visStempler(){
 // uten at siden ser oppdatert ut, ligger feilen et annet sted enn i filen.
 function visUtlegging(){
   const el = stempelPille('devDeployBadge');
-  el.style.display = 'block';
+  el.style.display = 'inline-block';
   el.textContent = '⏳ Sjekker siste publisering…';
   fetch('https://api.github.com/repos/madina-institute/Madina-Instituttet-' +
         '/actions/workflows/firebase-hosting.yml/runs?status=success&per_page=1')
