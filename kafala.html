@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-17 15:14:06 -->
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  KAFALA — informasjonsside for GIVERE
+
+  Målgruppen er menigheten, ikke familiene. Den leses to steder: på en
+  telefon etter fredagsbønnen, og som utskrevet A4 delt ut i moskeen.
+  Derfor én fil, uten avhengigheter — den kan skrives ut, sendes som
+  lenke, eller åpnes uten nett etter første besøk.
+
+  🔴 Tallene står ETT sted i filen, i regnskapsblokken. Prisene på
+  nettstedet leses fra basen; her er de skrevet inn, fordi brosjyren
+  også finnes på papir og et papir ikke oppdaterer seg. Endres prisene,
+  må denne filen rettes for hånd — se PRISER-kommentaren nedenfor.
+
+  ⚠️ Én setning må bekreftes av ledelsen før dette trykkes:
+  «Ingenting går til administrasjon.» Er det ikke bokstavelig sant,
+  skal den ut. Se avsnittet «Hva vi lover».
+  ═══════════════════════════════════════════════════════════════════
+-->
+<html lang="no" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kafala — bær en elev gjennom skoleåret | Madina Skole</title>
+<meta name="description" content="Kafala er et støttefond ved Madina Skole. Givere fra menigheten dekker skolepenger for elever som ellers ikke kan melde seg på.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Madina Skole">
+<meta property="og:title" content="Kafala — bær en elev gjennom skoleåret">
+<meta property="og:description" content="Noen barn står utenfor av én grunn: skolepengene. Kafala dekker forskjellen.">
+<meta property="og:locale" content="nb_NO">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ─── Tokens: skolens egen palett, ikke en ny ────────────────────
+     Brosjyren skal kjennes igjen som Madina Skole av folk som nettopp
+     har lest prissiden. Fargene er derfor hentet ordrett fra
+     felles.css, ikke valgt på nytt. */
+  :root{
+    --blekk:#0d2033;
+    --dyp:#06195B;
+    --blaa:#1A9BEC;
+    --oransje:#FF771F;
+    --gronn:#62C038;
+    --ark:#F0F7FE;
+    --ark-2:#E1EFFB;
+    --linje:rgba(6,25,91,0.14);
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0; background:var(--ark); color:var(--blekk);
+    font-family:'Lora',serif; line-height:1.72; font-size:17px;
+    /* Sifrene settes med samme høyde overalt. Cormorant setter gamle
+       tall som standard — «1 J» ble «ı J» i panelet, og 5 500 ville
+       blitt en bølge i en blokk som handler om nettopp tall. */
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings:"lnum" 1,"tnum" 1;
+  }
+  .ark{max-width:760px; margin:0 auto; padding:0 22px 64px;}
+
+  /* ─── Åpning ────────────────────────────────────────────────────
+     Tesen først, i klartekst. Ingen bilder av barn: familiene i denne
+     ordningen skal ikke kjennes igjen, og et illustrasjonsbarn fra en
+     bildebank ville løyet om hvem dette gjelder. */
+  header{padding:52px 0 8px;}
+  .merke{
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--blaa);
+  }
+  h1{
+    font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:clamp(38px,8.5vw,60px); line-height:1.03;
+    color:var(--dyp); margin:12px 0 6px; letter-spacing:-.01em;
+  }
+  .under{
+    font-family:'Cormorant Garamond',serif; font-style:italic;
+    font-size:clamp(19px,4vw,24px); color:var(--dyp); opacity:.72;
+    margin:0 0 30px;
+  }
+  .tese{font-size:19px; margin:0 0 4px;}
+  .tese strong{color:var(--dyp);}
+  .stille{color:rgba(13,32,51,.62);}
+
+  h2{
+    font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:clamp(25px,5.2vw,32px); color:var(--dyp);
+    margin:46px 0 4px; line-height:1.15;
+  }
+  h2 + .stille{margin:0 0 18px;}
+  p{margin:0 0 15px;}
+
+  /* ─── SIGNATUR: regnskapsblokken ────────────────────────────────
+     Hele ordningen hviler på et lite, etterprøvbart regnestykke, og
+     løftet til giveren er nettopp bokføring man kan kontrollere.
+     Derfor er midtpunktet satt som et ført regnskap: linjer, tall til
+     høyre, dobbel strek over summen. Ikke et stort tall med gradient. */
+  .bok{
+    background:#fff; border:1px solid var(--linje); border-radius:3px;
+    padding:26px 24px 20px; margin:22px 0 6px;
+    box-shadow:0 1px 0 rgba(6,25,91,.06), 0 14px 34px rgba(6,25,91,.07);
+  }
+  .bok-tittel{
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
+    letter-spacing:.15em; text-transform:uppercase;
+    color:var(--dyp); opacity:.55; margin-bottom:16px;
+  }
+  .rad{
+    display:flex; align-items:baseline; gap:14px;
+    padding:9px 0; border-bottom:1px solid rgba(6,25,91,.09);
+  }
+  .rad .hva{flex:1; min-width:0;}
+  .rad .kr{
+    font-family:'Jost',sans-serif; font-weight:600; font-size:17px;
+    white-space:nowrap; color:var(--dyp);
+  }
+  .rad small{display:block; font-size:13.5px; color:rgba(13,32,51,.58); line-height:1.45;}
+  /* Dobbel strek over summen — slik en ført bok gjør det. */
+  .rad.sum{
+    border-bottom:none; border-top:3px double var(--dyp);
+    margin-top:8px; padding-top:13px;
+  }
+  .rad.sum .hva{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:21px; color:var(--dyp);}
+  .rad.sum .kr{font-size:23px;}
+  .rad.mindre .kr{color:var(--oransje);}
+  .bok-note{
+    font-size:14.5px; color:rgba(13,32,51,.62);
+    margin:16px 0 0; padding-top:14px; border-top:1px solid rgba(6,25,91,.09);
+  }
+
+  /* ─── Beløp å gi ────────────────────────────────────────────────
+     Vippsnummeret er satt opp med valgfritt beløp: giveren skriver
+     selv summen. Derfor «foreslåtte», ikke knapper som lover et
+     ferdig valg. */
+  .beloep{display:grid; gap:10px; margin:20px 0 6px;}
+  .valg{
+    display:flex; align-items:baseline; gap:16px;
+    background:#fff; border:1px solid var(--linje); border-radius:3px;
+    padding:15px 18px;
+  }
+  .valg .kr{
+    font-family:'Jost',sans-serif; font-weight:700; font-size:19px;
+    color:var(--dyp); min-width:104px; white-space:nowrap;
+  }
+  .valg .hva{flex:1; font-size:16px;}
+  .valg.fritt{background:var(--ark-2); border-style:dashed;}
+
+  /* ─── Løftene ───────────────────────────────────────────────────
+     Satt som en signert liste, ikke som kulepunkter: et løfte har en
+     avsender. Den grønne streken er den ene fargen som ikke er
+     skolens blå — den brukes bare her, på det som er forpliktende. */
+  .lovnad{
+    border-left:3px solid var(--gronn);
+    padding:2px 0 2px 18px; margin:0 0 18px;
+  }
+  .lovnad p:last-child{margin-bottom:0;}
+  .ikke{
+    border-left:3px solid var(--oransje);
+    padding:2px 0 2px 18px; margin:0 0 18px;
+  }
+  .ikke p:last-child{margin-bottom:0;}
+
+  /* ─── Betaling ──────────────────────────────────────────────────*/
+  .betal{
+    display:flex; gap:26px; align-items:center; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--linje); border-radius:3px;
+    padding:22px 24px; margin:22px 0 0;
+  }
+  .qr-plass{
+    width:158px; height:158px; flex:none;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    border:2px dashed var(--oransje); border-radius:3px;
+    background:repeating-linear-gradient(45deg,#fff,#fff 9px,rgba(255,119,31,.06) 9px,rgba(255,119,31,.06) 18px);
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    color:var(--oransje); line-height:1.45; padding:12px;
+  }
+  .betal-tekst{flex:1; min-width:210px;}
+  .vippsnr{
+    font-family:'Jost',sans-serif; font-weight:700;
+    font-size:clamp(26px,6vw,34px); color:var(--dyp);
+    letter-spacing:.02em; margin:2px 0 4px;
+  }
+  .kategori{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:13px;
+    font-weight:600; color:var(--dyp); background:var(--ark-2);
+    border:1px solid var(--linje); border-radius:999px; padding:4px 13px;
+  }
+
+  footer{
+    margin-top:52px; padding-top:22px; border-top:1px solid var(--linje);
+    font-size:14.5px; color:rgba(13,32,51,.66);
+  }
+  footer strong{color:var(--dyp); font-family:'Cormorant Garamond',serif; font-size:18px; display:block; margin-bottom:4px;}
+  a{color:var(--blaa);}
+
+  @media (max-width:520px){
+    body{font-size:16.5px;}
+    .ark{padding:0 18px 48px;}
+    header{padding:34px 0 4px;}
+    .valg{flex-direction:column; gap:3px;}
+    .valg .kr{min-width:0;}
+  }
+
+  /* ─── Papir ─────────────────────────────────────────────────────
+     Brosjyren deles ut på papir i moskeen. Skjermbakgrunnen tas bort
+     så den ikke spiser toner, og blokkene får ikke brytes over to
+     sider — et halvt regnskap er verre enn ingen. */
+  @media print{
+    @page{size:A4; margin:15mm;}
+    body{background:#fff; font-size:11.5pt; line-height:1.55;}
+    .ark{max-width:none; padding:0;}
+    header{padding:0 0 4px;}
+    h1{font-size:31pt;}
+    .under{font-size:14pt; margin-bottom:16px;}
+    .tese{font-size:12pt;}
+    h2{font-size:16pt; margin:20px 0 4px;}
+    .bok, .valg, .betal{box-shadow:none; break-inside:avoid;}
+    .lovnad, .ikke, .bok, .betal{break-inside:avoid;}
+    footer{margin-top:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="ark">
+
+  <header>
+    <div class="merke">Madina Skole · i samarbeid med Madina Grorud moské</div>
+    <h1>Kafala</h1>
+    <p class="under">Bær en elev gjennom skoleåret</p>
+
+    <p class="tese"><strong>Noen barn står utenfor av én grunn: skolepengene.</strong></p>
+    <p class="tese stille">De sier det sjelden høyt. De melder bare ikke på.</p>
+  </header>
+
+  <h2>Hva et skoleår koster</h2>
+  <p class="stille">Familien betaler det den kan. Fondet dekker forskjellen — ikke hele beløpet.</p>
+
+  <!-- PRISER: skrevet inn for hånd, med vilje. Nettstedet leser prisene
+       fra basen, men denne siden finnes også på papir. Endres prisene i
+       panelet, må disse fire linjene rettes her. -->
+  <div class="bok">
+    <div class="bok-tittel">Ett barn, ett helt år</div>
+
+    <div class="rad">
+      <div class="hva">Skolepenger, hovedprogrammet
+        <small>Koran, islam og valgt språk — lørdager</small>
+      </div>
+      <div class="kr">5 500 kr</div>
+    </div>
+
+    <div class="rad">
+      <div class="hva">Bøker og materiell
+        <small>Elevens egne bøker, beholdes</small>
+      </div>
+      <div class="kr">450 kr</div>
+    </div>
+
+    <div class="rad sum">
+      <div class="hva">Hele året</div>
+      <div class="kr">5 950 kr</div>
+    </div>
+
+    <div class="rad mindre" style="border-bottom:none; padding-bottom:0;">
+      <div class="hva">Madinabarn, 3–6 år
+        <small>Søndager — kortere dag, egen pris</small>
+      </div>
+      <div class="kr">1 650 kr</div>
+    </div>
+
+    <p class="bok-note">Et halvt skoleår for ett barn er 2 975 kr. En familie som greier
+      halvparten selv, trenger like mye — og da rekker fondet til to barn i stedet for ett.</p>
+  </div>
+
+  <h2>Slik kan du bidra</h2>
+  <p class="stille">Foreslåtte beløp. Du skriver selv summen i Vipps.</p>
+
+  <div class="beloep">
+    <div class="valg">
+      <div class="kr">5 950 kr</div>
+      <div class="hva">Full kafala — ett barn, ett helt år</div>
+    </div>
+    <div class="valg">
+      <div class="kr">2 975 kr</div>
+      <div class="hva">Halv kafala — du og familien deler året</div>
+    </div>
+    <div class="valg">
+      <div class="kr">500 kr</div>
+      <div class="hva">Månedlig gjennom skoleåret</div>
+    </div>
+    <div class="valg fritt">
+      <div class="kr">Fritt beløp</div>
+      <div class="hva">Alt går inn i fondet og fordeles derfra</div>
+    </div>
+  </div>
+
+  <h2>Hva vi lover</h2>
+
+  <!-- ⚠️ Første setning må bekreftes av ledelsen før trykk. Er det ikke
+       bokstavelig sant at ingenting går til administrasjon, skal den ut. -->
+  <div class="lovnad">
+    <p>Hver krone går til skolepenger og bøker. Ingenting går til administrasjon.</p>
+    <p>Fondet føres for seg, atskilt fra skolens øvrige regnskap. Giverne får en
+      oversikt hvert semester: hva som kom inn, og hvor mange elever det rakk til.</p>
+  </div>
+
+  <h2>Hva vi ikke lover</h2>
+
+  <div class="ikke">
+    <p><strong>Vi knytter deg ikke til et navngitt barn.</strong> Du bærer en plass, ikke en person.
+      Familiene som søker, gjør det i fortrolighet — de skal ikke bli kjent i menigheten
+      som dem som ikke hadde råd. Du får vite at eleven du bar fullførte semesteret.
+      Ikke hvem.</p>
+    <p><strong>Og vi lover ingen familie noe før pengene finnes.</strong> Ingen får et løfte
+      vi ikke kan holde.</p>
+  </div>
+
+  <h2>Gi med Vipps</h2>
+
+  <div class="betal">
+    <div class="qr-plass">
+      MIDLERTIDIG<br>
+      QR-koden for<br>
+      Kafala-kategorien<br>
+      settes inn her
+    </div>
+    <div class="betal-tekst">
+      <div class="merke">Vippsnummer</div>
+      <div class="vippsnr">943113</div>
+      <span class="kategori">Velg «Kafala — fadderordning»</span>
+      <p style="margin:14px 0 0; font-size:15px;" class="stille">
+        Kategorien har sin egen linje i regnskapet, så bidraget ditt
+        blir ikke blandet med skolepenger fra andre familier.</p>
+    </div>
+  </div>
+
+  <footer>
+    <strong>Madina Skole — Madina Institute Norway</strong>
+    Hagelundveien 2B, 0963 Oslo<br>
+    <a href="mailto:info@madinaskole.no">info@madinaskole.no</a> ·
+    <a href="https://madinaskole.no">madinaskole.no</a><br>
+    Org. nummer: 919674431
+  </footer>
+
+</div>
+</body>
+</html>
