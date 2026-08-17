@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-17 16:08:18 -->
+<!-- SIST-ENDRET: 2026-08-17 16:19:04 -->
 <!--
   ═══════════════════════════════════════════════════════════════════
   STØTTESØKNAD — Kafala
@@ -417,11 +417,24 @@
     border-radius:10px; padding:14px 16px; margin:10px 0 4px;
     font-size:14.5px; line-height:1.6;
   }
+  /* 🔴 HVIT TEKST. Denne blokken ligger UTENFOR kortene, rett på den
+     mørkegrønne bakgrunnen — og arvet kortenes mørke tekstfarge. Den var
+     nesten usynlig.
+     Det er den ene setningen på siden som ikke må gå tapt: «Dette er ikke
+     et løfte om plass.» Står den svakere enn resten, leser familien alt
+     annet og ikke den. */
   .ingen-lovnad{
     border-left:3px solid #FF771F; padding:4px 0 4px 16px;
-    margin:22px 0 6px; font-size:15.5px; line-height:1.65;
+    margin:22px 0 6px; font-size:15.5px; line-height:1.7;
+    color:#ffffff;
   }
-  .ingen-lovnad b{ display:block; margin-bottom:4px; }
+  .ingen-lovnad b{
+    display:block; margin-bottom:6px; color:#ffffff;
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px;
+  }
+
+  /* Feilmeldingen ligger på samme bakgrunn og hadde samme problem. */
+  #feilBoks{ color:#ffffff; }
 </style>
 </head>
 <body>
