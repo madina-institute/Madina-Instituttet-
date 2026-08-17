@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 01:09:49 -->
+<!-- SIST-ENDRET: 2026-08-18 01:34:27 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1080,7 +1080,7 @@
      undervisningsdag» rettet i bare én av dem. Klassisk skript, så det
      er ferdig kjørt før modulen under starter.
      ⚠️ Husk å øke ?v= hver gang skoledager.js endres. -->
-<script src="skoledager.js?v=1"></script>
+<script src="skoledager.js?v=2"></script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -4401,9 +4401,27 @@
   //
   // Lastes ikke modulen, faller vi tilbake på den gamle funksjonen
   // under. Da oppfører portalen seg nøyaktig som før — ikke tom.
+  // 🔴 Bruker IKKE currentProgramId(). Den leter etter klassen i bare
+  // to felter — id og navn — mens getAllowedWeekdays() leter i tre og
+  // også godtar klassenavn. Fant den ikke klassen, ga den tom streng
+  // tilbake, og da falt hver kalenderrad med et programnavn ut. Det er
+  // grunnen til at lørdagene sto åpne mens ferien var borte: ukedagene
+  // ble regnet ut riktig, kalenderen ikke.
+  //
+  // Her leter vi i de samme tre feltene, og sender programfeltet VIDERE
+  // SOM DET ER. Modulen tåler både id og navn, så det er ingen grunn
+  // til å oversette til id først — og en oversettelse som feiler, feiler
+  // stille.
+  function programForKalender(){
+    const valgt = currentTeacher ? valgtKlasse : '';
+    if(!valgt) return '';
+    const cls = classes.find(c => c.id === valgt || c.navn === valgt || c.klassenavn === valgt);
+    return (cls && cls.program) || '';
+  }
+
   function schoolDayInfo(iso, allowed){
     if(window.Skoledager){
-      return window.Skoledager.schoolDayInfo(iso, allowed, currentProgramId());
+      return window.Skoledager.schoolDayInfo(iso, allowed, programForKalender());
     }
     return gammelSchoolDayInfo(iso, allowed);
   }
