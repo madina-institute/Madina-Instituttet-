@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 20:23:53 -->
+<!-- SIST-ENDRET: 2026-08-18 01:09:49 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1075,6 +1075,13 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Skoledagsregelen bor i skoledager.js, ikke her. Den sto tre steder
+     — her, i index4 og i admin — og 15. august ble «Ekstra
+     undervisningsdag» rettet i bare én av dem. Klassisk skript, så det
+     er ferdig kjørt før modulen under starter.
+     ⚠️ Husk å øke ?v= hver gang skoledager.js endres. -->
+<script src="skoledager.js?v=1"></script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
@@ -2041,8 +2048,15 @@
     teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   });
 
+  // Modulen abonnerer ikke selv — den ville blitt en fjerde måte å
+  // lese basen på. Den mates herfra, ved hvert snapshot.
+  function materSkoledager(){
+    if(window.Skoledager) window.Skoledager.settData({ programmer: programs, skolekalender: schoolCalendar, skolear: skolear });
+  }
+
   watch('programs', (snap) => {
     programs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    materSkoledager();
     refreshSchoolCalendars();
   }, (err) => console.error('programs', err));
 
@@ -2075,11 +2089,13 @@
       termin1Slutt: d.termin1Slutt || '',
       sluttDato: d.sluttDato || ''
     };
+    materSkoledager();
     if(currentTeacher) tegnVelkomst();
   }, (err) => console.error('settings/skolear', err));
 
   watch('schoolCalendar', (snap) => {
     schoolCalendar = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    materSkoledager();
     refreshSchoolCalendars();
     if(currentTeacher) tegnVelkomst();
   }, (err) => console.error('schoolCalendar', err));
@@ -4373,7 +4389,26 @@
   // ikke er det. Fridager behandles først, ekstradager sist — en dag som er
   // lagt inn manuelt som ekstra regnes som et bevisst vedtak og vinner
   // derfor over en overlappende ferie.
+  // Kalenderoppslaget flyttet til skoledager.js. Grunnen: denne
+  // versjonen sammenlignet 'program'-feltet med en program-ID og bare
+  // det, så en ferierad lagret med programmets NAVN var usynlig her —
+  // mens foreldreportalen respekterte den. Familien så fri, læreren så
+  // en vanlig skoledag.
+  //
+  // Ukedagene regnes fortsatt ut her. getAllowedWeekdays() har tre
+  // nivåer av reserve, og uten dem ville en klasse uten programpost
+  // stått igjen med null undervisningsdager.
+  //
+  // Lastes ikke modulen, faller vi tilbake på den gamle funksjonen
+  // under. Da oppfører portalen seg nøyaktig som før — ikke tom.
   function schoolDayInfo(iso, allowed){
+    if(window.Skoledager){
+      return window.Skoledager.schoolDayInfo(iso, allowed, currentProgramId());
+    }
+    return gammelSchoolDayInfo(iso, allowed);
+  }
+
+  function gammelSchoolDayInfo(iso, allowed){
     const d = new Date(iso + 'T00:00:00');
     let ok = allowed.includes(d.getDay());
     let label = '';
