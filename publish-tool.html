@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-15 19:41:27 -->
+<!-- SIST-ENDRET: 2026-08-17 12:48:56 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -623,6 +623,20 @@
 
       <div class="field">
         <label>Hvilken fil?</label>
+        <!-- 🔴 Listen bygges fra repoet (hentFillisteFraRepo), så den vokser
+             av seg selv: en ny fil er der så snart den finnes i repoet, uten
+             at noe må legges inn her. Prisen er at den ble lang — og på en
+             telefon betyr en lang nedtrekksliste at man ruller forbi det man
+             leter etter.
+
+             Søkefeltet filtrerer listen mens man skriver. Det VELGER ikke:
+             står det bare én treff igjen, velges den, men ellers får man se
+             hva som passer og velge selv. Et felt som gjetter, gjetter feil
+             den dagen to filer har nesten samme navn. -->
+        <input type="text" id="filSok" placeholder="Søk etter filsti — f.eks. stempler, rules, index"
+               oninput="filtrerFilliste()" autocomplete="off"
+               style="margin-bottom:7px;">
+        <div class="hint" id="filSokStatus" style="margin-top:-3px; margin-bottom:7px;"></div>
         <select id="filePreset" onchange="onPresetChange()">
           <option value="index.html">🏠 Hovedside (offentlig) — index.html</option>
           <option value="admin.html">🛡️ Administrativt panel — admin.html</option>
@@ -792,6 +806,67 @@
     'sw.js':                 ['⚡', 'Service worker (cache)']
   };
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SØK I FILLISTEN
+  //
+  // Listen kommer fra repoet og er lang. Dette filtrerer den mens man
+  // skriver, uten å røre hva som faktisk finnes.
+  //
+  // 🔴 Alle stiene tas vare på i filListeAlle FØRSTE gang søket brukes.
+  // Å filtrere ved å fjerne <option>-er ødelegger listen: neste tastetrykk
+  // ville søkt i det som var igjen etter forrige søk, og en bokstav for
+  // mye ville tømt listen for godt til man lastet siden på nytt.
+  //
+  // «Annen filsti...» blir alltid stående. Det er utveien når søket ikke
+  // finner noe — og det er nettopp da man trenger den.
+  // ═══════════════════════════════════════════════════════════════════
+  let filListeAlle = null;
+
+  function filListeHusk(){
+    const sel = document.getElementById('filePreset');
+    if(!sel) return;
+    filListeAlle = [...sel.options]
+      .filter(o => o.value !== '__custom__')
+      .map(o => ({ value: o.value, text: o.textContent }));
+  }
+
+  window.filtrerFilliste = function(){
+    const sel = document.getElementById('filePreset');
+    const felt = document.getElementById('filSok');
+    const status = document.getElementById('filSokStatus');
+    if(!sel || !felt) return;
+    if(filListeAlle === null) filListeHusk();
+
+    const sok = felt.value.trim().toLowerCase();
+    const forrige = sel.value;
+    const treff = sok
+      ? filListeAlle.filter(o =>
+          o.value.toLowerCase().includes(sok) || o.text.toLowerCase().includes(sok))
+      : filListeAlle;
+
+    sel.innerHTML = treff.map(o =>
+      '<option value="' + o.value.replace(/"/g, '&quot;') + '">' +
+      o.text.replace(/</g, '&lt;') + '</option>').join('') +
+      '<option value="__custom__">Annen filsti...</option>';
+
+    // Beholder valget hvis det fortsatt er blant treffene — ellers ville
+    // en søkebokstav byttet fil under deg, med innholdet du alt har limt inn.
+    if(treff.some(o => o.value === forrige)){
+      sel.value = forrige;
+    } else if(treff.length === 1){
+      sel.value = treff[0].value;
+      onPresetChange();
+    }
+
+    if(!status) return;
+    if(!sok){ status.textContent = ''; return; }
+    status.textContent = treff.length === 0
+      ? 'Ingen filsti passer «' + sok + '» — velg «Annen filsti...» og skriv den selv.'
+      : treff.length + ' av ' + filListeAlle.length + ' filer' +
+        (treff.length === 1 ? ' — valgt.' : '.');
+  };
+
   function filEtikett(sti){
     const kjent = FIL_ETIKETTER[sti];
     if(kjent) return kjent[0] + ' ' + kjent[1] + ' — ' + sti;
@@ -836,6 +911,13 @@
         `<option value="${sti}">${filEtikett(sti)}</option>`).join('') +
         '<option value="__custom__">Annen filsti...</option>';
       if([...sel.options].some(o => o.value === forrigeValg)) sel.value = forrigeValg;
+
+      // 🔴 Kopien søket bruker må bygges på nytt her. Ble den ikke det,
+      // søkte man videre i den gamle innebygde listen — og de nye filene
+      // fra repoet var usynlige for søket, men synlige i nedtrekket.
+      filListeHusk();
+      const sokFelt = document.getElementById('filSok');
+      if(sokFelt && sokFelt.value.trim()) filtrerFilliste();
 
       if(statusEl) statusEl.textContent = '✓ ' + stier.length + ' filer hentet fra repoet.';
       oppdaterKortkontekst();
