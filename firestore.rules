@@ -1,5 +1,5 @@
 rules_version = '2';
-/* SIST-ENDRET: 2026-08-15 20:25:00 */
+/* SIST-ENDRET: 2026-08-17 15:15:47 */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -234,6 +234,42 @@ service cloud.firestore {
           || ('foresatt2_epost' in resource.data
                 && resource.data.foresatt2_epost.lower() == minEpost())));
       allow update, delete: if erAdmin();
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // STØTTESØKNADER — Kafala
+    //
+    // En familie som ikke har råd til skolepengene, sender inn dette
+    // skjemaet. Skjemaet er ikke publisert noe sted; det sendes personlig
+    // til en familie som har tatt kontakt selv.
+    //
+    // 🔴 EGEN SAMLING, IKKE 'registrations'. Vanlige påmeldinger leses av
+    // flere i staben. Disse skal ikke leses av flere: innholdet er at en
+    // familie ikke har råd, med barnenavn i. Derfor nivå 1 og 2 — øverste
+    // ledelse og skoleleder — og ingen andre. En lærer som åpner
+    // elevkortet skal ikke kunne se hvordan familien kom inn.
+    //
+    // 🔴 create: if true — som for 'registrations'. Skjemaet sendes uten
+    // innlogging, og familien HAR ingen konto ennå. Skjulingen ligger i at
+    // adressen ikke er publisert, ikke i reglene. Derfor er det desto
+    // viktigere at lesing er stengt: en uleselig samling som hvem som
+    // helst kan skrive til, er trygg. Motsatt er den ikke.
+    //
+    // ⚠️ Familien får IKKE lese sin egen søknad tilbake, i motsetning til
+    // 'registrations' der foresatt kan se sin påmelding. Det er med vilje:
+    // søknaden inneholder køplass og saksnotater, og en familie som ser
+    // «nr. 7 i køen» har fått et løfte vi ikke har gitt.
+    // ══════════════════════════════════════════════════════════════
+    match /stotteSoknader/{id} {
+      allow create: if true;
+      allow read, update, delete: if mittNiva() <= 2;
+    }
+
+    // Fondet: gaver inn, tildelinger ut. Ingen giveropplysninger er
+    // nødvendige for å drive ordningen, men beløpene må kunne føres —
+    // derfor samme lukking som søknadene.
+    match /kafalaFond/{id} {
+      allow read, write: if mittNiva() <= 2;
     }
 
     match /formAnalytics/{id} {
