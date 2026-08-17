@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-17 15:14:45 -->
+<!-- SIST-ENDRET: 2026-08-17 15:46:59 -->
 <!--
   ═══════════════════════════════════════════════════════════════════
   STØTTESØKNAD — Kafala
@@ -34,6 +34,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Søknad om støtte — Madina Skole</title>
 <meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Madina Skole">
+<meta property="og:title" content="Søknad om støtte — Madina Skole">
+<meta property="og:description" content="Personlig skjema for familier som har tatt kontakt med skolen om skolepengene.">
+<meta property="og:locale" content="nb_NO">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -398,12 +403,18 @@
 
 <div class="book kort-skjema">
 
-  <div class="hero">
-    <img src="logo-hvit.png" alt="Madina Skole" class="hero-logo">
-    <div class="tag">MADINA INSTITUTE — MADINA SKOLE</div>
-    <h1 class="title">Søknad om støtte</h1>
-    <p class="lead">Til familier som har tatt kontakt med oss om skolepengene.
-      Skjemaet er personlig og behandles av skolens ledelse alene.</p>
+  <!-- 🔴 Klassenavnene her MÅ være .cover / .logo-img / .eyebrow / .sub.
+       Første utgave brukte .hero / .hero-logo / .title, som ikke finnes i
+       dette stilarket: logoen kom uten mål og sprengte skjermen, og
+       overskriften arvet kortenes mørkeblå farge — mørk tekst på mørk
+       bakgrunn. Stilarket er hentet fra påmeldingsskjemaet, så navnene
+       må hentes derfra også. -->
+  <div class="cover">
+    <img src="logo-hvit.png" alt="Madina Skole" class="logo-img">
+    <div class="eyebrow">Madina Institute — Madina Skole</div>
+    <h1>Søknad om støtte</h1>
+    <div class="sub">Til familier som har tatt kontakt med oss om skolepengene.
+      Skjemaet er personlig og behandles av skolens ledelse alene.</div>
   </div>
 
   <form id="stotteForm" autocomplete="on">
