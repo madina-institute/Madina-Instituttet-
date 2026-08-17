@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-18 00:47:26 */
+/* SIST-ENDRET: 2026-08-18 00:58:21 */
 /* ═══════════════════════════════════════════════════════════════════
    skoledager.js — ÉN kilde for spørsmålet «er dette en skoledag?»
 
@@ -218,20 +218,30 @@ window.Skoledager = (function () {
     return null;
   }
 
-  /* Tynn erstatning for index1s egen schoolDayInfo(iso, allowed).
-     Signaturen beholdes så portalen ikke må skrives om — 'allowed' er
-     ukedagsnumre og brukes bare når programmet ikke er kjent. */
+  /* Kompatibilitetsform for portalenes egen schoolDayInfo(iso, allowed).
+     Signaturen beholdes så index1 ikke må skrives om.
+
+     ⚠️ Denne gjør med vilje BARE halve jobben: den henter kalenderen
+     herfra — det er der feilen lå, siden index1 bare tålte program-id
+     og ikke navn — men lar ukedagene være kallerens ansvar.
+
+     Grunnen: index1s getAllowedWeekdays() har tre nivåer av reserve.
+     Finnes ingen programpost, leser den ukedagene ut av selve
+     programnavnet. Tok vi ukedagene fra programkortets 'dager' i
+     stedet, ville en klasse uten programpost stått igjen med null
+     undervisningsdager — en tom skjerm, uten feilmelding.
+
+     Skoleårets grenser holdes også utenfor. index1 bruker denne til å
+     validere datofelter, og en lærer kan ha grunn til å føre noe
+     utenfor terminen. Vil du ha grensene med, kall dagStatus(). */
   function schoolDayInfo(datoIso, allowed, program) {
-    if (program) {
-      var i = dagStatus(datoIso, program);
-      return { ok: i.ok, label: i.label, status: i.status };
-    }
-    var treff = kalenderTreff(datoIso, '');
+    var treff = kalenderTreff(datoIso, program || '');
     var ok = Array.isArray(allowed) && allowed.indexOf(lesDato(datoIso).getDay()) !== -1;
     var label = '';
-    if (treff.fri) { ok = false; label = treff.fri.beskrivelse || 'Fri'; }
-    if (treff.ekstra) { ok = true; label = treff.ekstra.beskrivelse || 'Ekstra undervisningsdag'; }
-    return { ok: ok, label: label, status: ok ? 'undervisningsdag' : 'ferie' };
+    var status = ok ? 'undervisningsdag' : 'ikke-undervisningsdag';
+    if (treff.fri) { ok = false; label = treff.fri.beskrivelse || 'Fri'; status = 'ferie'; }
+    if (treff.ekstra) { ok = true; label = treff.ekstra.beskrivelse || 'Ekstra undervisningsdag'; status = 'ekstradag'; }
+    return { ok: ok, label: label, status: status };
   }
 
   /* For Helsesjekk. To funn, begge stille i dag:
