@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-12 03:05:46 -->
+<!-- SIST-ENDRET: 2026-08-17 12:48:24 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1790,6 +1790,20 @@
     }
   });
 </script>
+<!-- 🔴 Tidsstemplene. Skjemaet lastet ingen felles filer og hadde ingen
+     merker i det hele tatt: det var den ene siden familien faktisk sender
+     opplysninger fra, og den eneste man ikke kunne se om var oppdatert.
+
+     Bare stempler.js, ikke felles.js: skjemaet har ikke språkbytte, og
+     felles.js ville lest det lagrede språkvalget og forsøkt å snu siden
+     til arabisk hvis familien valgte arabisk på prissiden. Skjemaet er
+     bygget på norsk, med norsk oppsett.
+
+     Samme regel som de offentlige sidene: synlig for alle første time
+     etter endring, deretter bare med «?dev». -->
+<script src="/stempler.js?v=20260817-01"></script>
+<script>visStempler();</script>
+
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
