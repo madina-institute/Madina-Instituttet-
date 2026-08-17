@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 23:44:29 -->
+<!-- SIST-ENDRET: 2026-08-17 12:17:36 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -599,8 +599,13 @@
      Grepet gjelder alle listene — elever, lærere, foresatte, søknader,
      programmer, klasser — fordi de deler samme .record-card. */
   .card-grid{ display:flex; flex-direction:column; gap:0; }
-  .card-grid .record-card{ border-radius:0; margin:0; border-top-width:0; border-color:var(--tabell-linje); }
-  .card-grid .record-card:first-child{ border-top-width:1px; border-radius:12px 12px 0 0; }
+  /* 🔴 Kortene lå limt sammen til én blokk med hårstreker mellom: to
+     oppføringer så ut som ett kort med en strek i, og var det ene feltet
+     tomt i den ene, ble de to ulike høye uten at man skjønte hvorfor.
+     Nå er hvert kort et kort, med luft rundt. */
+  .card-grid{ gap:10px; }
+  .card-grid .record-card{ border-radius:12px; margin:0; border-top-width:1px; border-color:var(--line); }
+  .card-grid .record-card:first-child{ border-top-width:1px; border-radius:12px; }
   /* Gruppeoverskrifter («Øvre ledelse» / «Administrativt kadre») ligger
      i samme kolonne som kortene. Med gap:0 må kortet rett etter en
      overskrift få tilbake sin egen topplinje og runde hjørner — ellers
@@ -608,7 +613,7 @@
   .card-grid > div[style*="border-bottom"] + .record-card{
     border-top-width:1px; border-radius:12px 12px 0 0;
   }
-  .card-grid .record-card:last-child{ border-radius:0 0 12px 12px; }
+  .card-grid .record-card:last-child{ border-radius:12px; }
   .card-grid .record-card:only-child{ border-radius:12px; }
   /* Løftet ved hover ville brutt tabellinjene. Bakgrunnen markerer
      raden i stedet — samme signal, uten at rutenettet skjelver. */
@@ -632,6 +637,36 @@
     flex:none; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(160deg, var(--emerald) 0%, var(--emerald-d) 100%); color:#fff;
     font-family:'Jost',sans-serif; font-weight:700; font-size:15px; letter-spacing:0.02em;
+    overflow:hidden;
+  }
+  /* Bildet ligger allerede på personen og vises inne i kortet. Utenpå sto
+     to bokstaver — så man måtte åpne hver enkelt for å kjenne igjen noen. */
+  .record-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* Klasser har ikke bilde. De får en ramme i stedet, med klassens navn i.
+     Fargen utledes av navnet, så samme klasse har samme farge hver gang —
+     det er den som gjør listen mulig å kjenne igjen på et blikk. */
+  .klasse-ramme{
+    flex:none; width:46px; height:46px; border-radius:11px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Jost',sans-serif; font-weight:700; font-size:14.5px;
+    color:#fff; letter-spacing:0.03em; position:relative;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.45), 0 1px 3px rgba(31,74,58,.18);
+  }
+  .klasse-ramme::after{
+    content:''; position:absolute; inset:3px; border-radius:8px;
+    border:1px solid rgba(255,255,255,.5); pointer-events:none;
+  }
+  /* 🔴 Cormorant Garamond setter tall som «gamle» sifre: 1 blir like høy
+     som en liten bokstav, 3 og 6 stikker under linjen. Klassen «1 J» så
+     ut som «ı J», og 263 i statistikken leste som bølger. Fontene er
+     riktig for navn og overskrifter — den er bare ikke laget for tall.
+     Denne linjen tvinger sifre i samme høyde overalt de står ved siden
+     av tekst, uten å bytte font. */
+  .record-title, .record-field, .record-contact-row, .record-pill,
+  .kort-navn, .stat-tall, h1, h2, h3, h4{
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1;
   }
   .record-title{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17.5px; color:var(--ink); line-height:1.25; }
   /* Pålogget-merket. Prikken pulserer fordi den viser noe som er sant
@@ -8077,6 +8112,26 @@
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
   }
 
+
+  // Fargen til en klasseramme. Utledet av navnet, ikke tilfeldig: samme
+  // klasse skal ha samme farge i dag og neste uke, ellers mister rammen
+  // hele hensikten sin.
+  const KLASSE_FARGER = ['#2e6b53','#3a6ea5','#8a5a2b','#6b4a7a','#2f7070','#8a4a4a','#4a6b2e','#5a4a8a'];
+  function klasseFarge(navn){
+    const t = String(navn || '');
+    let sum = 0;
+    for(let i = 0; i < t.length; i++) sum = (sum * 31 + t.charCodeAt(i)) % 100000;
+    return KLASSE_FARGER[sum % KLASSE_FARGER.length];
+  }
+  // Kort merke fra klassenavnet: «Klasse 2 A» → «2A», «1 J» → «1J».
+  // Sifrene beholdes — de er det man kjenner klassen på.
+  function klasseMerke(navn){
+    const t = String(navn || '').replace(/klasse/i, '').trim();
+    const biter = t.split(/\s+/).filter(Boolean);
+    const kort = biter.join('');
+    return (kort || t || '?').slice(0, 3).toUpperCase();
+  }
+
   function render(type){
     const schema = SCHEMAS[type];
     const searchEl = document.getElementById('search' + capitalize(type));
@@ -9052,20 +9107,30 @@
           ${type === 'teacherAttendance' && (row.godkjenningsstatus||'Venter godkjenning') === 'Venter godkjenning' ? `
             <button class="btn-edit" style="background:var(--emerald); color:#fff; border-color:var(--emerald);" onclick="approveTeacherAttendance('${row.id}')">✅ Godkjenn</button>
             <button class="btn-edit" onclick="openEditApproveAttendance('${row.id}')">✏️ Rediger og godkjenn</button>` : ''}
-          ${type === 'classes'
-            // Klassekortet samler timeplan, elever og lærere ett sted.
-            // «Rediger» og «Slett» blir stående: en klasse er en liten
-            // oppføring, og å gjemme redigeringen inne i kortet ville
-            // gjort en enkel navneendring til tre klikk.
-            ? `<button class="btn-edit" onclick="visKlassekort('${row.id}')">👁 Vis</button>` : ''}
-          ${['students','teachers','guardians'].includes(type)
-            // Personkort viser bare «Vis» utenpå. Rediger, Vipps-krav og
-            // sletting ligger inne i kortet — det gjør listen rolig å bla i,
-            // og en destruktiv handling krever at man først har åpnet den
-            // personen og sett hvem det faktisk er.
-            ? `<button class="btn-edit" onclick="showPersonDetail('${type}','${row.id}')">👁 Vis</button>`
-            : `<button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
-               <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>`}
+          ${
+            // 🔴 «Rediger» og «Slett» er borte fra utsiden for ALLE typer.
+            // De ligger inne i kortet, bak «Vis».
+            //
+            // To grunner. Listen blir rolig å bla i: ett kort, ett valg,
+            // i stedet for tre knapper per rad ganget med tretti rader.
+            // Og en sletting krever nå at man først har åpnet oppføringen
+            // og sett hva den faktisk er — «Slett» sto rett ved siden av
+            // «Vis», på en telefon, med en tomme mellom.
+            //
+            // ⚠️ Rettighetene henger på knappene, ikke på listen. Både
+            // detaljkortene og editEntry/deleteEntry sjekker tilgang selv
+            // (se samletTilgang), så det å fjerne knappene her åpner
+            // ingenting — det flytter dem.
+            type === 'classes'
+              ? `<button class="btn-edit" onclick="visKlassekort('${row.id}')">👁 Vis</button>`
+              : (['students','teachers','guardians'].includes(type)
+                  ? `<button class="btn-edit" onclick="showPersonDetail('${type}','${row.id}')">👁 Vis</button>`
+                  // Andre lister (timer, datoer, søknader) redigeres i bulk og
+                  // har ikke noe detaljkort å gjemme knappene bak. De står
+                  // uendret — å lage et «Vis» som bare viser de samme
+                  // feltene på nytt, ville lagt til et klikk uten å gi noe.
+                  : `<button class="btn-edit" onclick="editEntry('${type}','${row.id}')">Rediger</button>
+                     <button class="btn-danger" onclick="deleteEntry('${type}','${row.id}')">Slett</button>`)}
         </div>`;
       }
       const card = document.createElement('div');
@@ -9083,7 +9148,13 @@
           : '';
       card.innerHTML = `
         <div class="record-card-top">
-          <div class="record-avatar">${escapeHtml(initials)}</div>
+          ${type === 'classes'
+            ? `<div class="klasse-ramme" style="background:${klasseFarge(titleVal)};">${escapeHtml(klasseMerke(titleVal))}</div>`
+            : (row.bilde
+                ? `<div class="record-avatar"><img src="${escapeHtml(row.bilde)}" alt=""></div>`
+                : (['students','teachers','guardians'].includes(type)
+                    ? `<div class="record-avatar"><img src="${escapeHtml(personAvatarUrl(row))}" alt=""></div>`
+                    : `<div class="record-avatar">${escapeHtml(initials)}</div>`))}
           <div>
             <div class="record-title">${escapeHtml(titleVal)}${merke}</div>
             ${pillHtml}
@@ -9783,7 +9854,12 @@
       <button class="btn btn-ghost" style="width:auto;" onclick="editEntry('classes','${escapeHtml(klasseId)}')">✏️ Rediger klassen</button>
       <button class="btn btn-ghost" style="width:auto;" onclick="koApneKlasse('${escapeHtml(klasseId)}')">🔀 Endre fagrekkefølge</button>
       <button class="btn btn-ghost" style="width:auto;" onclick="eksporterKlasse('${escapeHtml(klasseId)}')">⬇️ CSV</button>
-      <button class="btn btn-primary" style="width:auto;" onclick="skrivUtKlasse('${escapeHtml(klasseId)}')">🖨️ Skriv ut</button>`;
+      <button class="btn btn-primary" style="width:auto;" onclick="skrivUtKlasse('${escapeHtml(klasseId)}')">🖨️ Skriv ut</button>
+      <!-- 🔴 Slett flyttet hit fra listen. Den sto rett ved siden av «Vis»,
+           på en telefon, med en tomme mellom — og en klasse med elever i
+           tar tre elever med seg. Nå må kortet åpnes først, slik at man har
+           sett timeplanen og elevlisten før man kan slette den. -->
+      <button class="btn btn-danger" style="width:auto;" onclick="deleteEntry('classes','${escapeHtml(klasseId)}')">🗑️ Slett klassen</button>`;
     overlay.classList.add('open');
   };
 
