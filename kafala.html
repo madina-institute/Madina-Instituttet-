@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-17 15:24:09 -->
+<!-- SIST-ENDRET: 2026-08-17 15:36:30 -->
 <!--
   ═══════════════════════════════════════════════════════════════════
   KAFALA — informasjonsside for GIVERE
@@ -38,7 +38,7 @@
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
 <style>
   /* ─── Tokens: skolens egen palett, ikke en ny ────────────────────
@@ -93,10 +93,15 @@
     font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
     letter-spacing:.16em; text-transform:uppercase; color:var(--blaa);
   }
+  .forvarsel{
+    font-family:'Cormorant Garamond',serif; font-style:italic;
+    font-size:clamp(16px,3.6vw,19px); color:var(--blaa);
+    margin:14px 0 -2px; letter-spacing:.01em;
+  }
   h1{
     font-family:'Cormorant Garamond',serif; font-weight:700;
     font-size:clamp(38px,8.5vw,60px); line-height:1.03;
-    color:var(--dyp); margin:12px 0 6px; letter-spacing:-.01em;
+    color:var(--dyp); margin:8px 0 6px; letter-spacing:-.01em;
   }
   .under{
     font-family:'Cormorant Garamond',serif; font-style:italic;
@@ -185,6 +190,33 @@
   }
   .ikke p:last-child{margin-bottom:0;}
 
+  /* Hadithen. Ingen ramme, ingen bakgrunn — den skal ikke se ut som en
+     reklameboks. Bare luft rundt, sentrert, og en tynn strek over og
+     under som gir den en egen plass på siden. */
+  .hadith{
+    margin:44px 0 8px; padding:26px 0;
+    border-top:1px solid var(--linje); border-bottom:1px solid var(--linje);
+    text-align:center;
+  }
+  .hadith .ar{
+    font-family:'Tajawal','Cormorant Garamond',serif;
+    font-size:clamp(19px,4.6vw,24px); line-height:1.95;
+    color:var(--dyp); margin:0 0 16px;
+  }
+  .hadith .no{
+    font-family:'Cormorant Garamond',serif; font-style:italic;
+    font-size:clamp(17px,3.8vw,20px); line-height:1.55;
+    color:var(--blekk); opacity:.82; margin:0 auto; max-width:52ch;
+  }
+  .hadith .kilde{
+    font-family:'Jost',sans-serif; font-size:10.5px; font-weight:600;
+    letter-spacing:.16em; text-transform:uppercase;
+    color:var(--blaa); margin:14px 0 0;
+  }
+  @media print{
+    .hadith{ margin:22px 0 6px; padding:16px 0; break-inside:avoid; }
+  }
+
   /* ─── Betaling ──────────────────────────────────────────────────*/
   .betal{
     display:flex; gap:26px; align-items:center; flex-wrap:wrap;
@@ -264,6 +296,19 @@
 
   <header>
     <div class="merke">Madina Skole · i samarbeid med Madina Grorud moské</div>
+    <!-- 🔴 Halv linje, ikke hele hadithen. Den rammer siden inn med det den
+         handler om, fra første blikk — for leseren i moskeen som ikke ruller
+         hele veien ned.
+
+         Hadithen står fortsatt i sin helhet lenger nede, ETTER at vi har
+         vist at pengene er ryddige. Der leses den som en grunn. Sto den hel
+         her, ville siden åpnet med et fromt argument før noe var godtgjort
+         — og da er den overtalelse, ikke grunn.
+
+         Faren ved to steder er at ingen av dem får vekt. Derfor er dette en
+         kort linje uten kilde og uten arabisk: den peker, den siterer ikke.
+         Sitatet skjer ett sted. -->
+    <p class="forvarsel">En vedvarende gave · kunnskap andre får nytte av</p>
     <h1>Kafala</h1>
     <p class="under">Bær en elev gjennom skoleåret</p>
 
@@ -323,8 +368,8 @@
       <div class="hva">Halv kafala — du og familien deler året</div>
     </div>
     <div class="valg">
-      <div class="kr">500 kr</div>
-      <div class="hva">Månedlig gjennom skoleåret</div>
+      <div class="kr">660 kr</div>
+      <div class="hva">Månedlig gjennom skoleåret — 9 måneder</div>
     </div>
     <div class="valg fritt">
       <div class="kr">Fritt beløp</div>
@@ -351,6 +396,27 @@
       Ikke hvem.</p>
     <p><strong>Og vi lover ingen familie noe før pengene finnes.</strong> Ingen får et løfte
       vi ikke kan holde.</p>
+  </div>
+
+  <!-- 🔴 Hadithen står HER, ikke øverst. Etter at giveren har lest hva
+       vi lover og ikke lover, og rett før han bestemmer seg. Sto den
+       først, ville den vært et fromt argument brukt før vi hadde vist
+       at pengene er ryddige — og da er den bønnfalling, ikke grunn.
+
+       Den beskriver dessuten denne ordningen bokstavelig: en vedvarende
+       gave, kunnskap andre får nytte av, og et barn som lærer å be.
+       Alle tre i samme handling. Derfor er den ikke pynt.
+
+       Eneste stedet på siden med arabisk. Teksten står på arabisk fordi
+       den bærer sin vekt der for mange i menigheten, og på norsk fordi
+       ikke alle leser arabisk. -->
+  <div class="hadith">
+    <p class="ar" dir="rtl" lang="ar">إذا مات ابنُ آدمَ انقطعَ عملُه إلّا من ثلاث:
+      صدقةٍ جاريةٍ، أو علمٍ يُنتفَعُ به، أو ولدٍ صالحٍ يدعو له</p>
+    <p class="no">Når mennesket dør, opphører gjerningene hans — unntatt tre:
+      en vedvarende gave, kunnskap andre får nytte av, og et rettskaffent
+      barn som ber for ham.</p>
+    <p class="kilde">Hadith</p>
   </div>
 
   <h2>Gi med Vipps</h2>
