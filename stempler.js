@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-17 12:59:42 */
+/* SIST-ENDRET: 2026-08-17 13:15:15 */
 // ═══════════════════════════════════════════════════════════════════
 // TIDSSTEMPLENE — to merker, nederst i hjørnet, på alle offentlige sider
 //
@@ -42,6 +42,14 @@
 // brukte den som den var, ville forsiden fortsatt hatt et fastklistret
 // merke — og faktisk ingenting, siden display:none aldri ble overstyrt.
 // Derfor FLYTTES den inn i hyllen og får stilen satt her, som de andre.
+// 🔴 Utgavemerket. Da merkene sluttet å virke, gikk det en halvtime med
+// å finne ut HVILKEN stempler.js nettleseren egentlig kjørte: verktøyet
+// sa 12:59, filen på nettstedet sa 12:46, og det var ingen måte å se det
+// på uten å åpne selve filen og lese kommentarene.
+//
+// Med «?dev» står utgaven nå i merket. Ett blikk svarer på spørsmålet.
+const STEMPLER_UTGAVE = 'B2';
+
 function stempelHylle(){
   let hylle = document.getElementById('devStempelHylle');
   if(hylle) return hylle;
@@ -98,7 +106,8 @@ function visStempler(){
       el.style.display = 'inline-block';
       el.textContent = '✏️ Sist endret: ' +
         endret.toLocaleDateString('no-NO') + ' kl. ' +
-        endret.toLocaleTimeString('no-NO', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        endret.toLocaleTimeString('no-NO', { hour:'2-digit', minute:'2-digit', second:'2-digit' }) +
+        (dev ? '  ·  merker ' + STEMPLER_UTGAVE : '');
       visUtlegging();
     })
     .catch(() => {
