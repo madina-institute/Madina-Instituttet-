@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-18 01:40:22 -->
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sjekk — skoledager.js</title>
+<style>
+  body{margin:0;padding:20px;background:#f6f6fb;color:#22223a;
+       font-family:system-ui,-apple-system,sans-serif;line-height:1.5;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .und{font-size:13px;color:#77778a;margin:0 0 20px;}
+  .rad{background:#fff;border:1px solid #e3e3ee;border-radius:12px;
+       padding:14px 16px;margin-bottom:10px;}
+  .rad b{display:block;font-size:11px;letter-spacing:.12em;
+         text-transform:uppercase;color:#77778a;margin-bottom:5px;}
+  .ok{border-left:5px solid #2e7d52;}
+  .feil{border-left:5px solid #b3261e;}
+  .sv{font-size:17px;font-weight:600;}
+  .ok .sv{color:#2e7d52;} .feil .sv{color:#b3261e;}
+  code{font-size:12.5px;word-break:break-all;color:#44445c;}
+  .fasit{margin-top:22px;padding:14px 16px;background:#fffbe9;
+         border:1px solid #e8dcae;border-radius:12px;font-size:14px;}
+</style>
+</head>
+<body>
+
+<h1>Sjekk — skoledager.js</h1>
+<p class="und">Leser ingenting fra basen. Svarer bare på ett spørsmål:
+lastes modulen, og regner den riktig?</p>
+
+<div id="ut"></div>
+
+<div class="fasit" id="fasit"></div>
+
+<!-- ABSOLUTT sti, med skråstrek foran. Er dette den eneste som virker,
+     mens den relative feiler, ligger feilen i omskrivingen av /lærer. -->
+<script src="/skoledager.js?sjekk=1"></script>
+<script>
+(function(){
+  var ut = document.getElementById('ut');
+  function rad(navn, verdi, ok){
+    ut.insertAdjacentHTML('beforeend',
+      '<div class="rad ' + (ok ? 'ok' : 'feil') + '"><b>' + navn +
+      '</b><span class="sv">' + verdi + '</span></div>');
+  }
+  function info(navn, verdi){
+    ut.insertAdjacentHTML('beforeend',
+      '<div class="rad"><b>' + navn + '</b><code>' + verdi + '</code></div>');
+  }
+
+  info('Adressen du står på', location.href);
+  info('Grunnadresse for relative stier', document.baseURI);
+
+  var lastet = !!window.Skoledager;
+  rad('Er modulen lastet?', lastet ? 'JA' : 'NEI — den kom aldri fram', lastet);
+
+  var fasit = document.getElementById('fasit');
+  if(!lastet){
+    fasit.innerHTML = '<b>Konklusjon:</b> filen ble ikke lastet i det hele tatt. ' +
+      'Da faller lærerportalen tilbake på sin gamle funksjon, og ingenting endrer seg — ' +
+      'akkurat det du ser. Sjekk at <code>/skoledager.js</code> svarer med kode og ikke med en HTML-side.';
+    return;
+  }
+
+  var funk = ['settData','dagStatus','schoolDayInfo','planDager','nesteSkoledag','avviksrapport']
+             .filter(function(f){ return typeof window.Skoledager[f] === 'function'; });
+  rad('Funksjoner på plass', funk.length + ' av 6', funk.length === 6);
+
+  // Data formet nøyaktig som raden i Skolekalender: programmet lagret
+  // med NAVN, slik nedtrekkslisten i panelet skriver det.
+  var PROGRAMNAVN = 'Madina Islamske Skole — Integrert program (Lørdag)';
+  window.Skoledager.settData({
+    programmer: [{ id:'pA1', navn: PROGRAMNAVN, dager:['Lørdag'] }],
+    skolear: { startDato:'2026-09-05', sluttDato:'2027-05-29' },
+    skolekalender: [{
+      id:'k1', type:'Fri (ingen undervisning)', beskrivelse:'Høstferie',
+      fraDato:'2026-10-03', tilDato:'2026-10-03', program: PROGRAMNAVN
+    }]
+  });
+
+  var LOR = [6];
+  var a = window.Skoledager.schoolDayInfo('2026-10-03', LOR, PROGRAMNAVN);
+  rad('3. okt med programNAVN',
+      a.ok ? 'ÅPEN — feil' : 'STENGT · ' + a.label, !a.ok);
+
+  var b = window.Skoledager.schoolDayInfo('2026-10-03', LOR, 'pA1');
+  rad('3. okt med program-ID',
+      b.ok ? 'ÅPEN — feil' : 'STENGT · ' + b.label, !b.ok);
+
+  var c = window.Skoledager.schoolDayInfo('2026-10-10', LOR, PROGRAMNAVN);
+  rad('10. okt (vanlig lørdag)', c.ok ? 'ÅPEN — riktig' : 'STENGT — feil', c.ok);
+
+  var d = window.Skoledager.schoolDayInfo('2026-10-03', LOR, '');
+  rad('3. okt UTEN program',
+      d.ok ? 'ÅPEN' : 'STENGT',  true);
+
+  var alt = !a.ok && !b.ok && c.ok;
+  fasit.innerHTML = alt
+    ? '<b>Konklusjon:</b> modulen er lastet og regner riktig. Feilen ligger da ikke her, ' +
+      'men i hva lærerportalen sender inn som program. Legg merke til siste linje: ' +
+      'uten program ' + (d.ok ? 'står 3. okt ÅPEN' : 'er 3. okt stengt') +
+      ' — det er nettopp det portalen gjør hvis den ikke finner klassens program.'
+    : '<b>Konklusjon:</b> modulen er lastet, men regner feil. Da ligger feilen i skoledager.js.';
+})();
+</script>
+
+</body>
+</html>
