@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-17 15:14:06 -->
+<!-- SIST-ENDRET: 2026-08-17 15:24:09 -->
 <!--
   ═══════════════════════════════════════════════════════════════════
   KAFALA — informasjonsside for GIVERE
@@ -30,7 +30,12 @@
 <meta property="og:site_name" content="Madina Skole">
 <meta property="og:title" content="Kafala — bær en elev gjennom skoleåret">
 <meta property="og:description" content="Noen barn står utenfor av én grunn: skolepengene. Kafala dekker forskjellen.">
+<meta property="og:url" content="https://madinaskole.no/kafala.html">
+<meta property="og:image" content="https://madinaskole.no/og-forside.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:locale" content="nb_NO">
+<meta name="twitter:card" content="summary_large_image">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -64,11 +69,26 @@
   }
   .ark{max-width:760px; margin:0 auto; padding:0 22px 64px;}
 
+  /* Avsenderlinjen. Logoen i full farge mot lys bakgrunn, og adressen
+     skrevet ut ved siden av — den er lenken, så den skal se ut som en. */
+  .hjem{
+    display:flex; align-items:center; gap:13px;
+    padding:26px 0 0; text-decoration:none;
+  }
+  .hjem img{ height:46px; width:auto; display:block; }
+  .hjem span{
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:600;
+    color:var(--blaa); letter-spacing:.01em;
+  }
+  @media print{
+    .hjem span{ color:var(--dyp); }
+  }
+
   /* ─── Åpning ────────────────────────────────────────────────────
      Tesen først, i klartekst. Ingen bilder av barn: familiene i denne
      ordningen skal ikke kjennes igjen, og et illustrasjonsbarn fra en
      bildebank ville løyet om hvem dette gjelder. */
-  header{padding:52px 0 8px;}
+  header{padding:26px 0 8px;}
   .merke{
     font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
     letter-spacing:.16em; text-transform:uppercase; color:var(--blaa);
@@ -227,6 +247,20 @@
 </head>
 <body>
 <div class="ark">
+
+  <!-- 🔴 Logo og lenke til nettstedet ØVERST, ikke bare i bunnteksten.
+       Siden ber om penger. Uten avsender man kjenner igjen, og uten en
+       vei til å sjekke at skolen finnes, leses den som svindel — og da
+       er alt annet på siden bortkastet.
+
+       To filnavn: forsiden bruker «logo-bla.png», men filen kan hete
+       «logo-blå.png». onerror faller tilbake på den andre, slik at det
+       ikke står et brukket bilde øverst på en innsamlingsside. -->
+  <a class="hjem" href="https://madinaskole.no" rel="noopener">
+    <img src="logo-blå.png" alt="Madina Skole"
+         onerror="this.onerror=null; this.src='logo-bla.png';">
+    <span>madinaskole.no</span>
+  </a>
 
   <header>
     <div class="merke">Madina Skole · i samarbeid med Madina Grorud moské</div>
