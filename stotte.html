@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-17 15:46:59 -->
+<!-- SIST-ENDRET: 2026-08-17 16:02:06 -->
 <!--
   ═══════════════════════════════════════════════════════════════════
   STØTTESØKNAD — Kafala
@@ -42,16 +42,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
+/* 🔴 GRØNN, IKKE BLÅ. Skjemaet er en kopi av påmeldingsskjemaet, og to
+     nesten like sider med samme farge er en felle: en familie — eller en
+     i staben — kan tro den står i det vanlige skjemaet og fylle ut feil.
+     Fargen er det raskeste skillet som finnes, raskere enn å lese
+     overskriften.
+
+     Grønnen er #62C038 fra skolens egen palett, den samme som
+     foreldreportalen bruker. Ikke en ny farge: familien har sett den før,
+     og den hører hjemme her.
+
+     Variabelnavnene beholder «emerald» selv om verdiene nå er grønne.
+     Stilarket er hentet ordrett fra påmeldingsskjemaet, og å døpe om
+     variablene ville betydd å endre hundre steder for å vinne et ord. */
+  :root{
     --ink:      #16283a;
-    --emerald:  #2f7cc9;
-    --emerald-d:#1c5490;
+    --emerald:  #4ea52c;
+    --emerald-d:#2f6b1a;
     --gold:     #b7924a;
     --gold-l:   #d9bd7c;
     --paper:    #fbf8f1;
-    --paper-2:  #eef4fa;
+    --paper-2:  #eef7ea;
     --line:     rgba(22,40,58,0.16);
-    --shadow:   0 16px 36px rgba(28,84,144,0.14);
+    --shadow:   0 16px 36px rgba(47,107,26,0.16);
   }
   *{box-sizing:border-box;}
   /* Shown only when the page detects it's running inside an app's built-in
@@ -82,13 +95,12 @@
 
   /* HEADER */
   .cover{
-    /* Samme blå som Lærerportalen. Verdiene er hentet ordrett fra
-       .mlogin i index1.html — et blått som «ligner» blir feil igjen ved
-       neste endring.
+    /* Grønn, som foreldreportalen. Verdiene er skolens egne — en grønn
+       som «ligner» blir feil igjen ved neste endring.
        🔴 Bakgrunnen bak kortet er URØRT. Det er forskjellen mellom det
        mørke underlaget og det lyse kortet som gir dybden; gjør man begge
        lyse, forsvinner rammen. */
-    background:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
+    background:linear-gradient(168deg, #62C038 0%, #4ea52c 55%, #2f6b1a 100%);
     border-radius:6px; padding:52px 40px; text-align:center; color:var(--paper);
     box-shadow:var(--shadow); border:1px solid rgba(217,189,124,0.35); position:relative;
   }
