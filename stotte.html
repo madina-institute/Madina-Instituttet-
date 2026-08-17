@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-17 15:14:45 -->
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  STØTTESØKNAD — Kafala
+
+  🔴 DENNE SIDEN ER IKKE PUBLISERT NOE STED. Ingen lenke fra nettstedet,
+  ingen oppføring i menyen. Adressen sendes personlig til en familie som
+  først har tatt kontakt selv og fortalt om situasjonen sin.
+
+  Skjulingen er distribusjon, ikke sikkerhet. Sikkerheten ligger i
+  reglene: samlingen 'stotteSoknader' kan skrives til av hvem som helst
+  (familien har ingen konto), men leses bare av nivå 1 og 2 — øverste
+  ledelse og skoleleder. En lærer ser ingenting.
+
+  🔴 VI BER IKKE OM DOKUMENTASJON PÅ INNTEKT. To grunner:
+
+  Familien som trenger det mest, er den som vegrer seg for å skrive.
+  Å kreve papirer hever terskelen foran nettopp dem.
+
+  Og papirene ville blitt en mappe om en families fattigdom, med
+  barnenavn i — som må sikres, lagres og slettes. Vi trenger den ikke.
+  Vi trenger et beløp og en køplass.
+
+  ⚠️ Skjemaet lover ingenting. Teksten sier det tre steder: over
+  knappen, i kvitteringen, og i e-posten. Det er ikke en formalitet —
+  en familie som har fortalt oss at den ikke har råd og deretter ikke
+  hører noe, har det verre enn før den skrev.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Søknad om støtte — Madina Skole</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+    --ink:      #16283a;
+    --emerald:  #2f7cc9;
+    --emerald-d:#1c5490;
+    --gold:     #b7924a;
+    --gold-l:   #d9bd7c;
+    --paper:    #fbf8f1;
+    --paper-2:  #eef4fa;
+    --line:     rgba(22,40,58,0.16);
+    --shadow:   0 16px 36px rgba(28,84,144,0.14);
+  }
+  *{box-sizing:border-box;}
+  /* Shown only when the page detects it's running inside an app's built-in
+     browser (WhatsApp, Instagram, Facebook, etc.) rather than a real Safari/
+     Chrome tab — those in-app browsers can silently break Firebase login.
+     No code can force-open Safari automatically (an Apple/app-level
+     restriction), so this just tells the person exactly where to tap. */
+  #inAppBrowserBanner{
+    display:none; position:sticky; top:0; z-index:3000; background:var(--gold);
+    color:#3a2e10; font-family:'Jost',sans-serif; font-size:12.5px; line-height:1.5;
+    padding:12px 16px; text-align:center; box-shadow:var(--shadow);
+  }
+  #inAppBrowserBanner strong{font-weight:700;}
+  #inAppBrowserBanner .close-banner{
+    background:none; border:none; color:#3a2e10; font-weight:700; font-size:14px;
+    cursor:pointer; margin-inline-start:10px; text-decoration:underline;
+  }
+
+  body{
+    margin:0; background:var(--emerald-d);
+    background-image:
+      radial-gradient(1000px 500px at 50% -10%, rgba(183,146,74,0.10), transparent 60%),
+      linear-gradient(180deg,var(--emerald-d),#0b2018 60%,#091a13);
+    font-family:'Lora',serif; color:var(--ink);
+    padding:50px 16px 80px;
+  }
+  .book{max-width:820px; margin:0 auto;}
+
+  /* HEADER */
+  .cover{
+    /* Samme blå som Lærerportalen. Verdiene er hentet ordrett fra
+       .mlogin i index1.html — et blått som «ligner» blir feil igjen ved
+       neste endring.
+       🔴 Bakgrunnen bak kortet er URØRT. Det er forskjellen mellom det
+       mørke underlaget og det lyse kortet som gir dybden; gjør man begge
+       lyse, forsvinner rammen. */
+    background:linear-gradient(168deg, #1A9BEC 0%, #1580c4 55%, #0d5f96 100%);
+    border-radius:6px; padding:52px 40px; text-align:center; color:var(--paper);
+    box-shadow:var(--shadow); border:1px solid rgba(217,189,124,0.35); position:relative;
+  }
+  .cover::before,.cover::after{content:"";position:absolute;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);}
+  .cover::before{top:18px;} .cover::after{bottom:18px;}
+  /* Gullfargen sto på mørk blå. På den lyse blå blir den grumsete —
+     to mellomtoner mot hverandre. Portalene bruker en blek blåhvit. */
+  .cover .eyebrow{font-family:'Jost',sans-serif;letter-spacing:0.28em;text-transform:uppercase;font-size:11px;color:#cfe3f6;margin-bottom:16px;}
+  .cover h1{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(30px,5.5vw,42px);margin:0 0 8px;}
+  .cover .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:#eaf6ff;}
+  /* Den hvite logoen har ingen egen bakgrunn — border-radius ville
+     tegnet en kant rundt ingenting. Den får plass i stedet. */
+  .cover .logo-img{width:min(190px,58%);height:auto;margin:0 auto 18px;display:block;}
+  .success-box{display:none; text-align:center; padding:60px 30px; background:var(--paper); border-radius:6px; box-shadow:var(--shadow); margin-top:20px;}
+
+  .progress-wrap{margin-top:20px;}
+  .progress-bar{height:6px; background:rgba(246,242,231,0.2); border-radius:3px; overflow:hidden;}
+  .progress-fill{height:100%; width:16.66%; background:var(--gold-l); border-radius:3px; transition:width .3s ease;}
+  .progress-label{
+    margin-top:8px; text-align:center; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--gold-l);
+  }
+
+  .step-nav{display:flex; justify-content:space-between; gap:14px; margin-top:24px;}
+  .btn-step{
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.05em; text-transform:uppercase;
+    padding:14px 28px; border-radius:4px; cursor:pointer; border:none; font-weight:700;
+  }
+  .btn-next{background:var(--gold-l); color:var(--emerald-d); margin-inline-start:auto; box-shadow:0 8px 18px rgba(217,189,124,0.3);}
+  .btn-back{background:var(--emerald); border:1px solid var(--emerald); color:#fff;}
+
+  .field.field-invalid{
+    background:rgba(168,60,60,0.06); border-left:3px solid #a83c3c; padding:10px 12px; border-radius:0 4px 4px 0; margin-left:-12px;
+  }
+  .field.field-invalid label{color:#a83c3c;}
+  .field.field-invalid input[type=text],
+  .field.field-invalid input[type=date],
+  .field.field-invalid input[type=tel],
+  .field.field-invalid input[type=email],
+  .field.field-invalid textarea{
+    border-bottom-color:#a83c3c;
+  }
+  .success-box h2{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d); margin:0 0 10px;}
+  .success-box p{font-size:15px; color:#5a6860;}
+  .error-msg-top{display:none; background:#fdecec; border:1px solid #e0a0a0; color:#a83c3c; padding:14px 18px; border-radius:6px; font-family:'Jost',sans-serif; font-size:13px; margin-top:16px;}
+
+  /* CARD (section) */
+  .card{
+    background:var(--paper); margin-top:20px; border-radius:6px;
+    padding:32px 36px; box-shadow:var(--shadow); border:1px solid var(--line);
+  }
+  .card.admin{background:var(--paper-2); border:1px dashed var(--gold);}
+  .tag{
+    display:inline-flex; align-items:center; gap:10px; font-family:'Jost',sans-serif;
+    font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:8px;
+  }
+  .tag .num{font-family:'Cormorant Garamond',serif;font-weight:700;font-style:italic;font-size:22px;color:var(--emerald);letter-spacing:0;}
+  h2.title{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:24px;color:var(--emerald-d);margin:0 0 4px;}
+  .hint{font-size:13.5px;color:#5a6860;margin:0 0 18px;}
+  hr.rule{border:none;height:1px;background:linear-gradient(90deg,var(--gold),transparent 70%);width:60px;margin:0 0 18px;}
+
+  /* FORM ELEMENTS */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  .checkbox-row{
+    display:flex; align-items:flex-start; gap:10px; font-size:14.5px; line-height:1.6; cursor:pointer;
+  }
+  .checkbox-row input[type="checkbox"]{ margin-top:4px; width:18px; height:18px; flex-shrink:0; }
+  .checkbox-row a{ color:var(--emerald-d); }
+  .back-link{
+    background:var(--emerald); border:1px solid var(--emerald); color:#fff;
+    font-family:'Jost',sans-serif; font-size:12px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase;
+    cursor:pointer; padding:12px 18px; border-radius:3px;
+  }
+  .policy-toggle{
+    width:100%; text-align:start; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
+    padding:12px 16px; font-family:'Jost',sans-serif; font-size:13.5px; font-weight:600; color:var(--emerald-d);
+    cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+  }
+  .policy-box{
+    background:#fff; border:1px solid var(--line); border-top:none; border-radius:0 0 8px 8px;
+    padding:18px 20px; margin-top:-1px; max-height:340px; overflow-y:auto;
+  }
+  .policy-box h4{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16.5px; color:var(--emerald-d); margin:16px 0 5px;}
+  .policy-box h4:first-child{margin-top:0;}
+  .policy-box p, .policy-box li{font-size:13.5px; line-height:1.6;}
+  .policy-box ul{padding-inline-start:20px; margin:4px 0;}
+  .policy-updated{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin:0 0 6px;}
+  .full-row{grid-column: 1 / -1;}
+  .age-confirm-box{
+    background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:14px 16px;
+  }
+  .age-confirm-box p{margin:0 0 10px; font-size:14.5px;}
+  .age-warning{
+    background:rgba(168,60,60,0.08); border:1px solid rgba(168,60,60,0.3); border-radius:6px;
+    padding:9px 12px; margin-top:10px; font-family:'Jost',sans-serif; font-size:12.5px; color:#a83c3c;
+  }
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px 24px;}
+  @media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:0.03em;
+    color:var(--emerald); margin-bottom:6px; font-weight:600;
+  }
+  .field input[type=text], .field input[type=date], .field input[type=tel], .field input[type=email], .field textarea, .field select{
+    width:100%; border:none; border-bottom:1.4px solid var(--line); background:transparent;
+    font-family:'Lora',serif; font-size:16px; padding:7px 2px; color:var(--ink);
+    outline:none; transition:border-color .2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{border-bottom-color:var(--gold);}
+  .field textarea{resize:vertical; min-height:44px; border:1px solid var(--line); border-radius:4px; padding:8px 10px;}
+
+  .radio-row, .check-row{display:flex; gap:22px; flex-wrap:wrap; margin-top:4px;}
+  .radio-row label, .check-row label{
+    display:flex; align-items:center; gap:7px; font-size:14.5px; font-family:'Lora',serif; cursor:pointer;
+  }
+  input[type=radio], input[type=checkbox]{
+    width:16px; height:16px; accent-color:var(--emerald); cursor:pointer;
+  }
+
+  .divider{border:none; border-top:1px dotted var(--line); margin:22px 0;}
+
+  /* PROGRAM SELECTOR — highlighted */
+  .program-opts{display:flex; flex-direction:column; gap:12px;}
+  /* Flat underkant når prisen står rett under. */
+  .prog-opt.har-pris{ border-radius:8px 8px 0 0; }
+  .prog-opt{
+    display:flex; align-items:flex-start; gap:14px; background:var(--paper-2);
+    border:1px solid var(--line); border-radius:8px; padding:16px 18px; cursor:pointer;
+    transition:border-color .2s, background .2s;
+  }
+  .prog-opt:hover{border-color:var(--gold);}
+  .prog-opt input{margin-top:3px;}
+  .prog-opt .p-body{flex:1;}
+  .prog-opt .p-title{font-family:'Jost',sans-serif; font-weight:600; font-size:14.5px; color:var(--emerald-d);}
+  .prog-opt .p-meta{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold); letter-spacing:0.04em; margin-top:2px;}
+  .prog-opt .p-sub{font-size:13px; color:#5a6860; margin-top:4px;}
+
+  .subject-check{margin-top:14px; padding-left:30px;}
+  .subject-check.hidden-hint{font-size:12.5px; color:#8a9a90; font-style:italic;}
+
+  /* LEVEL SCALE */
+  .level-scale{display:flex; gap:10px; margin-top:6px; flex-wrap:wrap;}
+  .level-scale label{
+    flex:1; min-width:100px; text-align:center; border:1px solid var(--line); border-radius:6px;
+    padding:10px 8px; font-family:'Jost',sans-serif; font-size:12.5px; cursor:pointer; color:var(--ink);
+    transition:background .2s, border-color .2s;
+  }
+  .level-scale input{display:none;}
+  .level-scale input:checked + span{color:var(--emerald-d); font-weight:600;}
+  .level-scale label:has(input:checked){background:var(--gold-xl,#f0e2c2); border-color:var(--gold);}
+
+  .kartlegging-block{background:var(--paper-2); border-radius:8px; padding:20px 22px; margin-bottom:16px;}
+  .kartlegging-block h4{font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--gold); margin:0 0 12px;}
+
+  /* ---- Medlemsboks ---- */
+  .medlem-boks{
+    background:#fff; border:1px solid var(--emerald); border-radius:14px;
+    padding:20px 18px; margin-top:16px;
+  }
+  .medlem-tittel{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px;
+    color:var(--emerald-d, var(--emerald)); margin-bottom:9px;
+  }
+  .medlem-brod{
+    font-family:'Jost',sans-serif; font-size:13.5px; line-height:1.75;
+    color:#4a5a62; margin:0 0 9px;
+  }
+  /* Advarselen får egen ramme. Den handler om noe skolen kan bli
+     medansvarlig for, og skal ikke leses som en fotnote. */
+  .medlem-advarsel{
+    font-family:'Jost',sans-serif; font-size:13px; line-height:1.75; color:#7a5c12;
+    background:#fdf8ec; border-inline-start:4px solid #b7924a;
+    border-radius:9px; padding:12px 14px; margin:12px 0 14px;
+  }
+  .medlem-knapper{ display:flex; gap:9px; flex-wrap:wrap; }
+  .medlem-knapp{
+    font-family:'Jost',sans-serif; font-size:13.5px; font-weight:600; text-decoration:none;
+    padding:11px 18px; border-radius:9px; border:1.5px solid var(--emerald);
+    color:var(--emerald); background:#fff; flex:1 1 190px; text-align:center;
+  }
+  .medlem-knapp.primar{ background:var(--emerald); color:#fff; }
+  .medlem-knapp:hover{ background:var(--emerald); color:#fff; }
+  .medlem-moske{
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#7b8a93; margin-top:13px;
+  }
+  .medlem-moske a{ color:var(--emerald); }
+
+  .note-box{
+    margin-top:6px; padding:12px 16px; background:rgba(183,146,74,0.10); border-left:3px solid var(--gold);
+    font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); line-height:1.6; border-radius:0 4px 4px 0;
+  }
+
+/* Priskortet ligger rett under programmet det gjelder, og henger
+     visuelt sammen med det — samme bredde, tett inntil, uten egen skygge. */
+  .pris-inline{
+    background:#fff; border:1px solid var(--line); border-top:0;
+    border-radius:0 0 8px 8px; margin:-9px 0 12px; overflow:hidden;
+  }
+  .pris-inline .pk-fot{ border-top:1px solid var(--line); }
+
+  /* ══ PRISKORT — ett per program ══════════════════════════════════ */
+  .priskort{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    overflow:hidden; margin-bottom:14px; box-shadow:var(--shadow);
+  }
+  .pk-topp{
+    background:var(--paper-2); padding:14px 18px; border-bottom:1px solid var(--line);
+  }
+  .pk-navn{font-family:'Jost',sans-serif; font-weight:600; font-size:15px; color:var(--emerald-d);}
+  .pk-meta{font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.1em;
+           text-transform:uppercase; color:#8a9aa8; margin-top:3px;}
+
+  /* To priser side om side. Medlemsprisen får mest vekt — den er
+     tilbudet, og den er lavest. */
+  .pk-priser{display:flex;}
+  .pk-pris{flex:1; padding:18px 16px; text-align:center;}
+  .pk-pris + .pk-pris{border-inline-start:1px solid var(--line);}
+  .pk-pris.medlem{background:rgba(47,124,201,0.06);}
+
+  .pk-etikett{
+    font-family:'Jost',sans-serif; font-size:10px; font-weight:600;
+    letter-spacing:.12em; text-transform:uppercase; color:#8a9aa8; margin-bottom:6px;
+  }
+  .pk-pris.medlem .pk-etikett{color:var(--emerald);}
+  .pk-tall{
+    font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:34px; line-height:1; color:var(--ink);
+  }
+  .pk-pris.medlem .pk-tall{color:var(--emerald-d); font-size:38px;}
+  .pk-enhet{font-family:'Jost',sans-serif; font-size:11px; color:#8a9aa8; margin-top:5px;}
+  .pk-spar{
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:600;
+    color:var(--emerald); margin-top:7px;
+  }
+
+  .pk-fot{
+    padding:11px 18px; font-family:'Jost',sans-serif; font-size:11.5px;
+    color:#6b7d8f; border-top:1px solid var(--line); line-height:1.55;
+  }
+
+  /* ══ SØSKENRABATT ═══════════════════════════════════════════════ */
+  .sosken{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:18px; margin-bottom:14px; box-shadow:var(--shadow);
+  }
+  .sosken h3{
+    font-family:'Cormorant Garamond',serif; font-size:19px; margin:0 0 3px; color:var(--emerald-d);
+  }
+  .sosken .s-sub{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9aa8; margin-bottom:14px;}
+  .s-rad{display:flex; gap:10px;}
+  .s-boks{
+    flex:1; text-align:center; padding:14px 8px;
+    background:var(--paper-2); border-radius:8px;
+  }
+  .s-barn{font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.08em;
+          text-transform:uppercase; color:#8a9aa8;}
+  .s-pst{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:30px;
+         line-height:1.1; color:var(--emerald-d); margin-top:4px;}
+  .s-full{color:#b3bfc9;}
+  .s-note{
+    font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7d8f;
+    margin-top:13px; line-height:1.6; padding-top:12px; border-top:1px solid var(--line);
+  }
+
+  .price-detalj{font-family:'Jost',sans-serif; font-size:12px; color:rgba(255,255,255,.82); margin-top:8px; line-height:1.6;}
+
+  .price-box{
+    margin-top:18px; padding:20px 22px; background:var(--emerald); border-radius:8px; text-align:center;
+  }
+  .price-label{font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold-l); margin-bottom:8px;}
+  .price-amount{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:32px; color:#fff;}
+
+  .sig-row{display:flex; gap:30px; align-items:flex-end; margin-top:20px; flex-wrap:wrap;}
+  .sig-line{flex:1; min-width:220px; border-bottom:1.4px solid var(--ink); padding-bottom:6px; font-family:'Jost',sans-serif; font-size:12px; color:#5a6860;}
+
+  .footer{text-align:center; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:rgba(246,242,231,0.45); margin-top:30px;}
+
+  .submit-wrap{text-align:center; margin-top:28px;}
+  .btn-submit{
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:0.06em; text-transform:uppercase;
+    background:var(--gold-l); color:var(--emerald-d); font-weight:700; border:none; border-radius:3px;
+    padding:15px 46px; cursor:pointer; box-shadow:0 10px 22px rgba(217,189,124,0.3);
+  }
+
+  @media print{
+    body{background:#fff; padding:0;}
+    .card{box-shadow:none; break-inside:avoid;}
+    .cover{box-shadow:none;}
+    .submit-wrap{display:none;}
+  }
+
+  /* ─── Kort skjema, ikke veiviser ──────────────────────────────────
+     Påmeldingsskjemaet har seks steg fordi det samler mye. Dette
+     samler fem ting. En veiviser her ville gjort en kort henvendelse
+     til en prosess, og prosessen er det som skremmer folk fra å
+     spørre om hjelp i det hele taket. */
+  .kort-skjema .card{ margin-bottom:18px; }
+  .beloep-hjelp{
+    background:var(--paper-2, #E1EFFB); border:1px solid rgba(6,25,91,.12);
+    border-radius:10px; padding:14px 16px; margin:10px 0 4px;
+    font-size:14.5px; line-height:1.6;
+  }
+  .ingen-lovnad{
+    border-left:3px solid #FF771F; padding:4px 0 4px 16px;
+    margin:22px 0 6px; font-size:15.5px; line-height:1.65;
+  }
+  .ingen-lovnad b{ display:block; margin-bottom:4px; }
+</style>
+</head>
+<body>
+
+<div class="book kort-skjema">
+
+  <div class="hero">
+    <img src="logo-hvit.png" alt="Madina Skole" class="hero-logo">
+    <div class="tag">MADINA INSTITUTE — MADINA SKOLE</div>
+    <h1 class="title">Søknad om støtte</h1>
+    <p class="lead">Til familier som har tatt kontakt med oss om skolepengene.
+      Skjemaet er personlig og behandles av skolens ledelse alene.</p>
+  </div>
+
+  <form id="stotteForm" autocomplete="on">
+
+    <div class="card">
+      <div class="num">01</div>
+      <div class="tag">ELEVEN</div>
+      <h2 class="title">Barnet søknaden gjelder</h2>
+      <div class="rule"></div>
+
+      <div class="field">
+        <label for="elevNavn">Barnets fulle navn</label>
+        <input type="text" id="elevNavn" name="elevNavn" required>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="fodselsdato">Fødselsdato</label>
+          <input type="date" id="fodselsdato" name="fodselsdato" required>
+        </div>
+        <div class="field">
+          <label for="program">Hvilket program</label>
+          <select id="program" name="program" required>
+            <option value="">— velg —</option>
+            <option>Madina Skole — Integrert program (Lørdag)</option>
+            <option>Madinabarn (Søndag)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Har barnet gått hos oss før?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="tidligereElev" value="Ja"> Ja</label>
+          <label><input type="radio" name="tidligereElev" value="Nei" checked> Nei</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="num">02</div>
+      <div class="tag">FORESATT</div>
+      <h2 class="title">Kontaktopplysninger</h2>
+      <div class="rule"></div>
+
+      <div class="field">
+        <label for="foresattNavn">Ditt fulle navn</label>
+        <input type="text" id="foresattNavn" name="foresattNavn" required>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="epost">E-post</label>
+          <input type="email" id="epost" name="epost" required>
+        </div>
+        <div class="field">
+          <label for="telefon">Telefon</label>
+          <input type="tel" id="telefon" name="telefon" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="antallBarn">Hvor mange av barna dine ønsker du plass for?</label>
+        <select id="antallBarn" name="antallBarn">
+          <option>1</option><option>2</option><option>3</option>
+          <option>4</option><option>5 eller flere</option>
+        </select>
+        <div class="hint">Søk med ett skjema per barn. Dette feltet forteller oss
+          bare at det gjelder flere, slik at søsken kan holdes sammen.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="num">03</div>
+      <div class="tag">MEDLEMSKAP</div>
+      <h2 class="title">Er familien medlem i Madina Institute?</h2>
+      <div class="rule"></div>
+
+      <div class="field">
+        <div class="radio-row">
+          <label><input type="radio" name="medlem" value="Ja"> Ja</label>
+          <label><input type="radio" name="medlem" value="Nei" checked> Nei</label>
+          <label><input type="radio" name="medlem" value="Vet ikke"> Vet ikke</label>
+        </div>
+      </div>
+
+      <!-- 🔴 Dette spørsmålet står FØR beløpet, med vilje. Medlemskap er
+           gratis og senker prisen med rundt 1 000 kr per barn. En del av
+           dem som søker støtte, trenger mindre enn de tror — eller ingen.
+           Sto spørsmålet etterpå, hadde familien alt bestemt seg for at
+           den trengte hjelp.
+
+           ⚠️ Støtten er IKKE betinget av medlemskap. Vi opplyser, vi
+           krever ikke. Å gjøre hjelp avhengig av religiøs registrering
+           er ikke noe vi gjør. -->
+      <div class="beloep-hjelp">
+        <b>Medlemskap koster ingenting</b>, og gir lavere pris —
+        rundt 1 000 kr mindre per barn for et helt skoleår.
+        <br><br>
+        Det er verdt å sjekke før du fyller ut resten: kanskje trenger du
+        mindre støtte enn du tror. <b>Støtten er ikke avhengig av
+        medlemskap</b> — vi spør bare fordi det kan gjøre beløpet mindre
+        for deg.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="num">04</div>
+      <div class="tag">BELØPET</div>
+      <h2 class="title">Hva klarer familien å betale?</h2>
+      <div class="rule"></div>
+
+      <div class="field">
+        <label for="kanBetale">Beløp per måned, i kroner</label>
+        <input type="number" id="kanBetale" name="kanBetale" min="0" step="50" required
+               inputmode="numeric" placeholder="f.eks. 250">
+        <div class="hint">Skriv det tallet du vet du klarer hver måned gjennom
+          skoleåret — ikke det du håper å klare. Et beløp du greier er mer
+          verdt for oss enn et høyere som ryker i november.</div>
+      </div>
+
+      <div class="beloep-hjelp">
+        Vi ber ikke om lønnsslipp, kontoutskrift eller vedtak fra NAV.
+        Beløpet du skriver, er det vi går ut fra.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="num">05</div>
+      <div class="tag">FRIVILLIG</div>
+      <h2 class="title">Er det noe vi bør vite?</h2>
+      <div class="rule"></div>
+
+      <div class="field">
+        <label for="merknad">Kort merknad — helt frivillig</label>
+        <textarea id="merknad" name="merknad" rows="4"
+          placeholder="Du trenger ikke skrive noe her."></textarea>
+        <div class="hint">Du skal ikke forklare eller forsvare noe. Skriv bare hvis
+          det er noe praktisk vi ellers ikke ville vite.</div>
+      </div>
+    </div>
+
+    <!-- ⚠️ Står rett over knappen, ikke nederst på siden. Dette er det
+         siste familien leser før den sender, og det er den ene setningen
+         som ikke må misforstås. -->
+    <div class="ingen-lovnad">
+      <b>Dette er ikke et løfte om plass.</b>
+      Vi kan bare tilby plass når det finnes midler i fondet, og vi
+      kontakter familiene i den rekkefølgen de har meldt seg.
+      <br><br>
+      Vi tar kontakt uansett — også hvis vi ikke får det til.
+    </div>
+
+    <div id="feilBoks" class="note-box" style="display:none;"></div>
+
+    <div class="step-nav">
+      <button type="submit" class="btn-step btn-next" id="sendBtn">Send søknaden</button>
+    </div>
+  </form>
+
+  <div id="takkBoks" class="card" style="display:none;">
+    <div class="tag">MOTTATT</div>
+    <h2 class="title">Vi har mottatt henvendelsen din</h2>
+    <div class="rule"></div>
+    <p>Takk for at du tok kontakt. Søknaden er registrert hos skolens ledelse,
+      og ingen andre har tilgang til den.</p>
+    <p><b>Dette er ikke et løfte om plass.</b> Vi kan bare tilby plass når det
+      finnes midler i fondet, og vi kontakter familiene i den rekkefølgen de
+      har meldt seg.</p>
+    <p>Vi tar kontakt uansett — også hvis vi ikke får det til.</p>
+  </div>
+
+  <div class="footer">
+    Madina Skole — Madina Institute Norway<br>
+    Hagelundveien 2B, 0963 Oslo · info@madinaskole.no
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOgrnCLlZnfBZgIm1fLb0KxlTdvkLlsM",
+    authDomain: "madina-instituttet.firebaseapp.com",
+    projectId: "madina-instituttet",
+    storageBucket: "madina-instituttet.firebasestorage.app",
+    messagingSenderId: "174564736838",
+    appId: "1:174564736838:web:033f873c8b420d4bc96f47"
+  };
+  const app = initializeApp(firebaseConfig);
+  // Samme try/catch som i påmeldingsskjemaet: Safari med avansert
+  // personvernbeskyttelse blokkerer recaptcha, og et kast herfra stopper
+  // HELE modulen — siden ser normal ut, men ingenting virker, uten
+  // feilmelding. Det tok en kveld å finne sist.
+  try{
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfsK2wtAAAAAM9ZnHHDH_-4gVrCMNfibpBeHbt9'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(err){
+    console.warn('App Check kunne ikke settes opp (fortsetter uten):', err);
+  }
+  const db = getFirestore(app);
+
+  const skjema = document.getElementById('stotteForm');
+  const feilBoks = document.getElementById('feilBoks');
+  const takkBoks = document.getElementById('takkBoks');
+  const knapp = document.getElementById('sendBtn');
+
+  function radioVerdi(navn){
+    const v = document.querySelector('input[name="' + navn + '"]:checked');
+    return v ? v.value : '';
+  }
+
+  skjema.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    feilBoks.style.display = 'none';
+    knapp.disabled = true;
+    knapp.textContent = 'Sender…';
+
+    try{
+      await addDoc(collection(db, 'stotteSoknader'), {
+        elevNavn:       document.getElementById('elevNavn').value.trim(),
+        fodselsdato:    document.getElementById('fodselsdato').value,
+        program:        document.getElementById('program').value,
+        tidligereElev:  radioVerdi('tidligereElev'),
+        foresattNavn:   document.getElementById('foresattNavn').value.trim(),
+        epost:          document.getElementById('epost').value.trim().toLowerCase(),
+        telefon:        document.getElementById('telefon').value.trim(),
+        antallBarn:     document.getElementById('antallBarn').value,
+        medlem:         radioVerdi('medlem'),
+        kanBetalePerMnd: parseInt(document.getElementById('kanBetale').value, 10) || 0,
+        merknad:        document.getElementById('merknad').value.trim(),
+
+        // Køplassen er tidspunktet. Rekkefølgen avgjøres av når familien
+        // meldte seg, ikke av en vurdering av hvem som trenger det mest —
+        // to familiers nød kan ingen rangere riktig etter et skjema.
+        mottatt:        new Date().toISOString(),
+        status:         'Ny',
+        // Settes av ledelsen senere. Står her fra starten slik at feltet
+        // finnes i alle dokumenter og panelet ikke må håndtere at det
+        // mangler i de eldste.
+        tildeltFra:     '',
+        behandletAv:    ''
+      });
+
+      skjema.style.display = 'none';
+      takkBoks.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }catch(err){
+      console.error('stotteSoknader', err);
+      // Feilmeldingen sier hva familien kan gjøre, og gir en vei videre
+      // som ikke krever at skjemaet virker. En familie som har fylt ut
+      // alt dette og møter «noe gikk galt» skal ikke stå fast.
+      feilBoks.style.display = 'block';
+      feilBoks.textContent = 'Søknaden ble ikke sendt. Sjekk internettforbindelsen ' +
+        'og prøv igjen — eller send opplysningene på e-post til info@madinaskole.no, ' +
+        'så registrerer vi dem for deg.';
+      knapp.disabled = false;
+      knapp.textContent = 'Send søknaden';
+    }
+  });
+</script>
+</body>
+</html>
