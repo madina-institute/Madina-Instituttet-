@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-18 10:57:17 -->
+<html lang="ar" dir="rtl" id="rot">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الإسلام · المستوى الأول · مدرسة المدينة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Til foreldrene · للأهالي
+
+   Kort side, ikke læreplanen. Foreldre trenger ikke sporinndeling,
+   vekter eller begrunnelsen for kapittelrekkefølgen — de trenger å
+   vite hva barnet lærer, når, og hva som ventes av dem hjemme.
+
+   ÉN kilde: all tekst ligger i T nederst, med begge språk side om
+   side. Knappen bytter språk OG leseretning. To språk, én fil —
+   ellers glir de fra hverandre ved første retting.
+
+   De tre forpliktelsene nederst (signatur, samtale, avkryssing) er
+   vedtatt av skolen. Står de her, er de et løfte til familien.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --krem:#FBF7EF; --papir:#FFF; --gron:#1A4034; --gron-lys:#2C6B4F;
+  --gron-blek:#EAF2EC; --gull:#C69B3F; --gull-blek:#F6EEDC;
+  --blek:#8A8578; --blekk:#2A2A28; --linje:#E8E1D2;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0; background:var(--krem); color:var(--blekk);
+  font-family:'Jost',system-ui,sans-serif; line-height:1.6;
+}
+html[dir="rtl"] body{
+  font-family:'Noto Naskh Arabic','Jost',system-ui,sans-serif;
+  line-height:1.9;
+}
+
+.sprak{
+  position:sticky; top:0; z-index:10;
+  background:rgba(251,247,239,.94); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--linje);
+  padding:10px 18px; display:flex; justify-content:flex-end;
+}
+.sprak button{
+  font-family:'Jost',sans-serif; font-size:13px; font-weight:500;
+  color:var(--gron); background:var(--papir);
+  border:1px solid var(--linje); border-radius:20px;
+  padding:7px 18px; cursor:pointer;
+}
+.sprak button:hover{background:var(--gron-blek);}
+.sprak button:focus-visible{outline:2px solid var(--gron); outline-offset:2px;}
+
+.topp{text-align:center; padding:34px 20px 26px;}
+.eyebrow{font-family:'Jost',sans-serif; font-size:11px; font-weight:500;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--gull);}
+h1{font-size:clamp(26px,6vw,38px); font-weight:700; line-height:1.25;
+  margin:.3em 0 .2em; color:var(--gron);}
+html[dir="ltr"] h1{font-family:'Cormorant Garamond',Georgia,serif; font-weight:600;}
+.under{font-size:14.5px; color:var(--blek); max-width:32em; margin:0 auto;}
+.regel{width:60px; height:2px; background:var(--gull); margin:20px auto 0; border-radius:2px;}
+
+main{max-width:720px; margin:0 auto; padding:0 18px 50px;}
+section{margin-top:30px;}
+h2{font-size:21px; font-weight:700; color:var(--gron); margin:0 0 10px;
+  display:flex; align-items:center; gap:9px;}
+html[dir="ltr"] h2{font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:24px;}
+h2::before{content:''; width:4px; height:19px; background:var(--gull);
+  border-radius:2px; flex:none;}
+p{margin:0 0 12px; font-size:15px;}
+
+.kort{background:var(--papir); border:1px solid var(--linje);
+  border-radius:14px; padding:18px 20px;}
+
+.kap{display:grid; grid-template-columns:34px 1fr auto; gap:12px;
+  align-items:center; padding:11px 0; border-bottom:1px solid var(--linje);}
+.kap:last-child{border-bottom:0;}
+.kap-nr{width:30px; height:30px; border-radius:50%; display:flex;
+  align-items:center; justify-content:center; font-family:'Jost',sans-serif;
+  font-size:13px; font-weight:600; background:var(--gron-blek); color:var(--gron);}
+.kap.b .kap-nr{background:var(--gull-blek); color:#8A6A1E;}
+.kap-tit{font-size:15.5px; font-weight:500; line-height:1.35;}
+.kap-nar{font-family:'Jost',sans-serif; font-size:12px; color:var(--blek); white-space:nowrap;}
+
+.pkt{display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--linje);}
+.pkt:last-child{border-bottom:0;}
+.pkt-ikon{font-size:20px; flex:none; line-height:1.3;}
+.pkt b{display:block; color:var(--gron); font-size:15.5px; margin-bottom:3px;}
+.pkt span{font-size:14.5px; color:#4A4842;}
+
+.uthev{background:var(--gull-blek); border:1px dashed var(--gull);
+  border-radius:12px; padding:15px 17px; margin-top:14px; font-size:14.5px;}
+.uthev b{color:var(--gron);}
+
+.fot{text-align:center; padding:24px 18px 46px; font-size:12.5px;
+  color:var(--blek); border-top:1px solid var(--linje); margin-top:30px;}
+
+@media print{
+  @page{size:A4 portrait; margin:15mm;}
+  body{background:#fff;} .sprak{display:none;}
+  .kort{break-inside:avoid;}
+  *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+
+<div class="sprak"><button id="bytt" type="button">Norsk</button></div>
+
+<header class="topp">
+  <div class="eyebrow" id="t-eyebrow"></div>
+  <h1 id="t-h1"></h1>
+  <p class="under" id="t-under"></p>
+  <div class="regel"></div>
+</header>
+
+<main>
+  <section>
+    <h2 id="t-h-hva"></h2>
+    <p id="t-p-hva"></p>
+    <div class="kort" id="kapitler"></div>
+  </section>
+
+  <section>
+    <h2 id="t-h-dua"></h2>
+    <p id="t-p-dua"></p>
+  </section>
+
+  <section>
+    <h2 id="t-h-hjemme"></h2>
+    <p id="t-p-hjemme"></p>
+    <div class="kort" id="hjemme"></div>
+  </section>
+
+  <section>
+    <h2 id="t-h-sprak"></h2>
+    <div class="kort"><p id="t-p-sprak" style="margin:0"></p></div>
+    <div class="uthev" id="t-uthev"></div>
+  </section>
+</main>
+
+<div class="fot" id="t-fot"></div>
+
+<script>
+/* All tekst, begge språk, ett sted. */
+const T = {
+  ar: {
+    knapp:'Norsk', dir:'rtl', lang:'ar',
+    eyebrow:'مدرسة المدينة الإسلامية',
+    h1:'التربية الإسلامية · المستوى الأول',
+    under:'دليل مختصر للأهل · العام الدراسي ٢٠٢٦–٢٠٢٧',
+    hHva:'ماذا يتعلّم ابنك هذا العام',
+    pHva:'كتاب واحد في ستّة فصول. وفي كل سبت حصّتان: واحدة عن العقيدة، وأخرى عن العبادة والسيرة — حتى لا يقضي الطفل يومًا كاملًا في موضوع واحد.',
+    kapitler:[
+      [1,'الله — الخالق، والكون، والحيوان، والماء، والإنسان، وأسماؤه الحسنى','سبتمبر – يناير','A'],
+      [2,'الإيمان — الملائكة، والكتب، والأنبياء','فبراير – مايو','A'],
+      [3,'النبيّ محمد ﷺ — اسمه، ومولده، وأسرته، وأخلاقه','سبتمبر – أكتوبر','B'],
+      [4,'القرآن الكريم — كيف نزل، والسور، والجزء، وأدب التعامل معه','أكتوبر – ديسمبر','B'],
+      [5,'الإسلام — الأركان الخمسة: الشهادة والصلاة والزكاة والصوم والحج','يناير – مارس','B'],
+      [6,'كلمات وعبارات عربية — بسم الله، والحمد لله، وأدعية اليوم','أبريل – مايو','B']],
+    hDua:'دعاء الأسبوع',
+    pDua:'مع الكتاب كرّاسة صغيرة فيها ثمانية وثلاثون دعاءً. يأخذ الصفّ دعاءً أو مجموعة كل أسبوع، في خمس دقائق من أول الحصّة أو آخرها. وبجانب كل دعاء في الكرّاسة مربّع تأشير — يؤشّره الطفل بنفسه حين يحفظه.',
+    hHjemme:'ما هو مطلوب منكم في البيت',
+    pHjemme:'ثلاثة أشياء، وكلها قصيرة:',
+    hjemme:[
+      ['✍️','التوقيع على الواجب','بعض الواجبات تطلب توقيع أحد الوالدين في الكتاب. التوقيع لا يعني أن الواجب صحيح — بل أنكم رأيتموه.'],
+      ['💬','سؤال واحد كل أسبوع','كثير من الواجبات تطلب من الطفل أن يسأل أحدًا في البيت أو يحكي له ما تعلّمه. دقيقتان تكفيان، وهما أنفع من مراجعة الكتاب.'],
+      ['✅','متابعة كرّاسة الدعاء','حفظ الدعاء يقع في البيت لا في الصفّ. اسمعوه منه، ودعوه يؤشّر المربّع بنفسه.']],
+    hSprak:'وإن كنتم لا تقرؤون النرويجية',
+    pSprak:'لا يمنعكم ذلك من المشاركة. الكتاب والحصص بالنرويجية، لكن الأمور الثلاثة المطلوبة منكم لا تحتاج قراءة الكتاب: تسمعون الدعاء، وتسألون «ماذا أخذتم اليوم؟»، وتوقّعون.',
+    uthev:'<b>وأنفعها الثاني.</b> الطفل الذي يحكي ما تعلّمه يثبّته أكثر ممّا يثبّته أي مراجعة — وأنتم لا تحتاجون أن تعرفوا الجواب لتسألوا السؤال.',
+    fot:'مدرسة المدينة الإسلامية · Hagelundveien 2b, 0963 Oslo'
+  },
+  no: {
+    knapp:'عربي', dir:'ltr', lang:'no',
+    eyebrow:'Madina Islamske Skole',
+    h1:'Islam · Trinn 1',
+    under:'Kort veiledning til foreldre · skoleåret 2026–2027',
+    hHva:'Hva barnet ditt lærer i år',
+    pHva:'Én bok, seks kapitler. Hver lørdag har islam to økter: én om troen og én om praksis og Profetens ﷺ liv — slik at barnet aldri får en hel dag med bare ett tema.',
+    kapitler:[
+      [1,'Allah — Skaperen, universet, dyrene, vannet, mennesket og Hans vakre navn','sep – jan','A'],
+      [2,'Iman — englene, de hellige bøkene og profetene','feb – mai','A'],
+      [3,'Profeten Muhammad ﷺ — navnet, fødselen, familien og karakteren','sep – okt','B'],
+      [4,'Den hellige Koranen — hvordan den kom, surah, juz og respekt for den','okt – des','B'],
+      [5,'Islam — de fem søylene: shahadah, salah, zakah, sawm og hajj','jan – mar','B'],
+      [6,'Arabiske ord og uttrykk — bismillah, alhamdulillah og dagens dua','apr – mai','B']],
+    hDua:'Ukens dua',
+    pDua:'Sammen med boka følger et lite hefte med 38 dua. Klassen tar én dua eller én gruppe hver uke, i omtrent fem minutter i starten eller slutten av timen. Ved siden av hver dua står en avkryssingsrute — barnet krysser av selv når hun kan den.',
+    hHjemme:'Dette venter vi av dere hjemme',
+    pHjemme:'Tre ting, alle korte:',
+    hjemme:[
+      ['✍️','Signere leksa','Noen lekser ber om en signatur fra en av foreldrene i boka. Signaturen betyr ikke at leksa er riktig — bare at dere har sett den.'],
+      ['💬','Ett spørsmål i uka','Mange lekser ber barnet spørre noen hjemme, eller fortelle hva hun har lært. To minutter holder, og det virker bedre enn å gå gjennom boka.'],
+      ['✅','Følge med på dua-heftet','Memoreringen skjer hjemme, ikke i klasserommet. Hør henne, og la henne krysse av ruten selv.']],
+    hSprak:'Hvis dere ikke leser norsk',
+    pSprak:'Det hindrer dere ikke i å delta. Boka og timene er på norsk, men ingen av de tre tingene vi ber om krever at dere leser den: dere hører dua, dere spør «hva lærte dere i dag?», og dere signerer.',
+    uthev:'<b>Og det andre er det som virker best.</b> Et barn som forteller hva hun har lært, husker det bedre enn av noen repetisjon — og dere trenger ikke kunne svaret for å stille spørsmålet.',
+    fot:'Madina Islamske Skole · Hagelundveien 2b, 0963 Oslo'
+  }
+};
+
+const esc = x => String(x ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function tegn(spr){
+  const t = T[spr];
+  const rot = document.getElementById('rot');
+  rot.setAttribute('dir', t.dir);
+  rot.setAttribute('lang', t.lang);
+  document.getElementById('bytt').textContent = t.knapp;
+  document.title = t.h1 + ' · ' + t.eyebrow;
+
+  const sett = (id, v) => document.getElementById(id).textContent = v;
+  sett('t-eyebrow', t.eyebrow); sett('t-h1', t.h1); sett('t-under', t.under);
+  sett('t-h-hva', t.hHva); sett('t-p-hva', t.pHva);
+  sett('t-h-dua', t.hDua); sett('t-p-dua', t.pDua);
+  sett('t-h-hjemme', t.hHjemme); sett('t-p-hjemme', t.pHjemme);
+  sett('t-h-sprak', t.hSprak); sett('t-p-sprak', t.pSprak);
+  sett('t-fot', t.fot);
+  document.getElementById('t-uthev').innerHTML = t.uthev;
+
+  document.getElementById('kapitler').innerHTML = t.kapitler.map(([nr,tit,nar,spor]) => `
+    <div class="kap ${spor==='B'?'b':''}">
+      <span class="kap-nr">${nr}</span>
+      <span class="kap-tit">${esc(tit)}</span>
+      <span class="kap-nar">${esc(nar)}</span>
+    </div>`).join('');
+
+  document.getElementById('hjemme').innerHTML = t.hjemme.map(([ikon,tit,tekst]) => `
+    <div class="pkt">
+      <span class="pkt-ikon" aria-hidden="true">${ikon}</span>
+      <span><b>${esc(tit)}</b><span>${esc(tekst)}</span></span>
+    </div>`).join('');
+}
+
+let spr = 'ar';
+tegn(spr);
+document.getElementById('bytt').addEventListener('click', () => {
+  spr = (spr === 'ar') ? 'no' : 'ar';
+  tegn(spr);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script>
+
+</body>
+</html>
