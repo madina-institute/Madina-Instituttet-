@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 10:42:04 -->
-<html lang="no">
+<!-- SIST-ENDRET: 2026-08-18 14:08:24 -->
+<html lang="no" dir="ltr" id="rot">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Læreplan · Islam · Trinn 1 · Madina Islamske Skole</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
    Læreplan · Islam · trinn 1
@@ -161,157 +161,128 @@ h2 .strek{display:inline-block;width:4px;height:20px;background:var(--gull);
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 }
 @media (prefers-reduced-motion:reduce){.kap-pil{transition:none;}}
+
+/* ── språkbryter ────────────────────────────────────────────────
+   Rammen snur retning; øktene gjør det ikke. Norsk tekst inne i en
+   RTL-beholder blir uleselig, så alt som ER norsk tvinges til ltr
+   uansett sidespråk. Feltnavnene over dem følger siden. */
+.sprakbar{position:sticky;top:0;z-index:20;display:flex;justify-content:flex-end;
+  padding:9px 20px;background:rgba(251,247,239,.94);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--linje,#E8E1D2);}
+.sprakbar button{font-family:'Jost',sans-serif;font-size:13px;font-weight:500;
+  color:#1A4034;background:#fff;border:1px solid var(--linje,#E8E1D2);
+  border-radius:20px;padding:7px 18px;cursor:pointer;}
+.sprakbar button:hover{background:#EAF2EC;}
+.sprakbar button:focus-visible{outline:2px solid #1A4034;outline-offset:2px;}
+
+html[dir="rtl"] body{font-family:'Noto Naskh Arabic','Jost',system-ui,sans-serif;line-height:1.9;}
+html[dir="rtl"] h1,html[dir="rtl"] h2,html[dir="rtl"] h3{font-family:'Noto Naskh Arabic',serif;}
+html[dir="rtl"] .strek{margin-right:0;margin-left:9px;}
+
+/* norsk innhold holdes venstrestilt også når siden er arabisk */
+html[dir="rtl"] .kap-krop .mal-liste,
+html[dir="rtl"] .kap-krop .vers,
+html[dir="rtl"] .kap-krop .emneliste,
+html[dir="rtl"] .okt-krop .malboks,
+html[dir="rtl"] .okt-krop .tidsplan,
+html[dir="rtl"] .okt-krop ul,
+html[dir="rtl"] .okt-krop ol,
+html[dir="rtl"] .okt-krop .ordbok,
+html[dir="rtl"] .okt-krop .qa,
+html[dir="rtl"] .okt-krop .blokk p,
+html[dir="rtl"] .kap-tit,html[dir="rtl"] .okt-tit,
+html[dir="rtl"] .dua-tab,html[dir="rtl"] .lek h4,
+html[dir="rtl"] .lek p,html[dir="rtl"] .spor-kort ol{
+  direction:ltr;text-align:left;font-family:'Jost',system-ui,sans-serif;line-height:1.6;}
+@media print{.sprakbar{display:none;}}
 </style>
 </head>
 <body>
 
+<div class="sprakbar"><button id="bytt" type="button">عربي</button></div>
+
 <header class="topp">
-  <div class="eyebrow">Madina Islamske Skole</div>
-  <h1>Læreplan · Islam · Trinn 1</h1>
-  <p class="under">
-    <em>Innføring i islamsk tro og praksis 1</em> med Dua-heftet<br>
-    Seks kapitler · to spor · 30 økter per spor<br>60 av 60 økter ferdig skrevet
-  </p>
+  <div class="eyebrow" id="t-eyebrow"></div>
+  <h1 id="t-h1"></h1>
+  <p class="under" id="t-under"></p>
   <div class="regel"></div>
 </header>
 
 <main>
 
   <section>
-    <h2><span class="strek"></span>To spor, ikke ett</h2>
-    <p class="ingress">
-      Islam har to økter à 30 minutter hver undervisningsdag. De følger
-      hvert sitt spor, så eleven aldri får en hel dag med bare ett tema —
-      hun møter troen og praksisen samme dag, hver dag.
-    </p>
+    <h2 id="h0"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i0"></p>
     <div class="spor-par" id="sporPar"></div>
-    <div class="merk">
-      <b>Spor B følger ikke kapittelnumrene.</b> Forordet sier at serien
-      starter med troen, deretter kjærligheten til Allah og Profeten ﷺ,
-      og til slutt de andre sidene ved praksis. Rekkefølgen er lagt etter
-      det. Tre ting følger av valget: praksis kommer sist slik forordet
-      ber om; zakah og sawm faller inne i ramadan i 2026/27; og Profeten
-      pluss Koranen fyller høsten nøyaktig — sju økter hver — så spor B
-      får et rent kapittelskille ved juleferien.
-      <br><br>
-      Prisen: korankapittelet åpner med verset om at Koranen ble sendt
-      ned i ramadan, og ligger nå i november. Vi fikk ikke både sawm og
-      korankapittelet inn i ramadan. Og ramadan flytter seg elleve dager
-      hvert år — så begrunnelse nummer to gjelder dette året og må
-      sjekkes på nytt, ikke antas.
-    </div>
+    <div class="merk" id="m0"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>De seks kapitlene</h2>
-    <p class="ingress">Trykk på et kapittel for å se målene og verset.
-      Målene er bokas egne, ordrett fra «Her skal du lære om»-siden.</p>
+    <h2 id="h1"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i1"></p>
     <div id="kapitler"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Spor A · Allah — atten økter</h2>
-    <p class="ingress">Åpner året 5. september og varer til slutten av januar. Trykk på en økt for hele opplegget: mål, forslag til timeforløp, bakgrunn for læreren, kjernen, ord, spørsmål med svaret du ser etter, vanlige misforståelser, aktivitet og lekse.</p>
+    <h2 id="h2"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i2"></p>
     <div id="okter-allah"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Spor A · Iman — tolv økter</h2>
-    <p class="ingress">Fra februar til midten av mai. Kapittelets mest abstrakte stoff, og tre av øktene faller inne i ramadan — bakgrunnen er skrevet med det for øye.</p>
+    <h2 id="h3"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i3"></p>
     <div id="okter-iman"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Spor B · Profeten Muhammad ﷺ — sju økter</h2>
-    <p class="ingress">Undervises parallelt med Allah fra 5. september. Forordet ber om at kjærligheten til Profeten ﷺ kommer før praksisen; derfor står dette først i spor B.</p>
+    <h2 id="h4"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i4"></p>
     <div id="okter-profeten"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Spor B · Den hellige Koranen — sju økter</h2>
-    <p class="ingress">Fra slutten av oktober til juleferien. Sammen med profetkapittelet fyller det høsten nøyaktig — fjorten lørdager.</p>
+    <h2 id="h5"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i5"></p>
     <div id="okter-koranen"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Spor B · Islam — elleve økter</h2>
-    <p class="ingress">De fem søylene. Fra januar til slutten av mars.</p>
+    <h2 id="h6"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i6"></p>
     <div id="okter-islam"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Spor B · Arabiske ord og uttrykk — fem økter</h2>
-    <p class="ingress">Årets siste kapittel. Samler det klassen har sagt hver uke i dua-tråden siden september.</p>
+    <h2 id="h7"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i7"></p>
     <div id="okter-arabiske"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Dua-tråden</h2>
-    <p class="ingress">
-      Omtrent fem minutter i begynnelsen eller slutten av timen — aldri på
-      bekostning av boka. Enheten er gruppen, ikke den enkelte dua:
-      heftet har 38 dua og året har 33 lørdager, så én per uke går ikke opp.
-    </p>
+    <h2 id="h8"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i8"></p>
     <div class="panel">
       <table class="dua-tab" id="duaTab"></table>
-      <div class="merk">
-        <b>Surah al-Fatihah og al-Ikhlas er tatt ut.</b> De står i heftet,
-        men læres i koranfaget. Fem minutter i uka lærer ingen en surah,
-        men lærer godt et uttrykk som «alhamdulillah». Det frigjør fem uker
-        til repetisjon.
-      </div>
-      <div class="merk uferdig">
-        <b>Ikke besluttet:</b> å utvide Sana og tredje og fjerde kalimah
-        fra to til tre uker hver. To uker à fem minutter er ti minutter på
-        en lang arabisk tekst for et barn som ikke kan arabisk.
-      </div>
+      <div class="merk" id="m1"></div>
+      <div class="merk uferdig" id="m2"></div>
     </div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Aktivitetsbanken</h2>
-    <p class="ingress">
-      For minuttene som blir til overs. En lærer som blir ferdig på 22
-      minutter har åtte minutter uro foran seg — her ligger svaret ferdig.
-      Banken hører til skolen, ikke til islamfaget: de samme lekene virker
-      på tajwid-ord og arabiske gloser.
-    </p>
+    <h2 id="h9"><span class="strek"></span><span class="tx"></span></h2>
+    <p class="ingress" id="i9"></p>
     <div class="panel" id="bank"></div>
   </section>
 
   <section>
-    <h2><span class="strek"></span>Hva som gjenstår</h2>
+    <h2 id="h10"><span class="strek"></span><span class="tx"></span></h2>
     <div class="panel">
-      <div class="merk">
-        <b>Alle seks kapitlene er skrevet ut — 60 av 60 økter.</b>
-        Hele læreverket, s. 10–107, er dekket uten hull. Spor A og
-        spor B har tretti økter hver.
-      </div>
-      <div class="merk uferdig">
-        <b>Ikke besluttet — sawm og ramadan.</b> Med elleve økter i
-        Islam-kapittelet faller zakah på 6. mars, inne i ramadan, men
-        sawm på 13. mars — lørdagen etter eid. Å undervise fasten uken
-        etter at barna nettopp har levd den er ikke dårlig, men det var
-        ikke hensikten. Bytter du om økt 8 og 9, kommer sawm inn i
-        ramadan. Bokas egen rekkefølge er zakah før sawm.
-      </div>
-      <div class="merk uferdig">
-        <b>Differensiering er ikke skrevet.</b> Trinn 1 rommer både
-        seksåringen som ennå ikke leser og tolvåringen som begynte sent.
-        Feltet skrives etter at en lærer har undervist en lørdag med dette
-        og sagt hva hun manglet — felt som legges til før undervisning,
-        blir fylt ut og deretter oversett.
-      </div>
-      <div class="merk uferdig">
-        <b>Nasheed er ikke valgt.</b> Valget tilhører skolen og moskeen,
-        og mye av repertoaret er opphavsrettsbeskyttet.
-      </div>
-      <div class="merk">
-        <b>Årsplanen med datoer</b> genereres separat, av
-        <code>skoledager.js</code>, ut fra klassens program og
-        skolekalenderen. Den hører ikke hjemme her — to klasser kan dele
-        dette trinnet og likevel ha ulike datoer.
-      </div>
+      <div class="merk" id="m3"></div>
+      <div class="merk uferdig" id="m4"></div>
+      <div class="merk uferdig" id="m5"></div>
+      <div class="merk uferdig" id="m6"></div>
+      <div class="merk" id="m7"></div>
     </div>
   </section>
 
@@ -369,91 +340,186 @@ const DUA = [
  [15,'Toalett — inn og ut','s. 11',1],[16,'Prøve','s. 12',1]
 ];
 
+
+/* ── all rammetekst, begge språk, ett sted ──────────────────────
+   Øktene selv står bare på norsk og røres ikke av bryteren.       */
+const TEKST = {
+ no:{ knapp:'عربي', dir:'ltr', lang:'no',
+  eyebrow:'Madina Islamske Skole',
+  h1:'Læreplan · Islam · Trinn 1',
+  under:'<em>Innføring i islamsk tro og praksis 1</em> med Dua-heftet<br>Seks kapitler · to spor · 30 økter per spor<br>60 av 60 økter ferdig skrevet',
+  h:['To spor, ikke ett','De seks kapitlene',
+     'Spor A · Allah — atten økter','Spor A · Iman — tolv økter',
+     'Spor B · Profeten Muhammad ﷺ — sju økter','Spor B · Den hellige Koranen — sju økter',
+     'Spor B · Islam — elleve økter','Spor B · Arabiske ord og uttrykk — fem økter',
+     'Dua-tråden','Aktivitetsbanken','Hva som gjenstår'],
+  i:['Islam har to økter à 30 minutter hver undervisningsdag. De følger hvert sitt spor, så eleven aldri får en hel dag med bare ett tema — hun møter troen og praksisen samme dag, hver dag.',
+     'Trykk på et kapittel for å se målene og verset. Målene er bokas egne, ordrett fra «Her skal du lære om»-siden.',
+     'Åpner året 5. september og varer til slutten av januar. Trykk på en økt for hele opplegget: mål, forslag til timeforløp, bakgrunn for læreren, kjernen, ord, spørsmål med svaret du ser etter, vanlige misforståelser, aktivitet og lekse.',
+     'Fra februar til midten av mai. Kapittelets mest abstrakte stoff, og tre av øktene faller inne i ramadan — bakgrunnen er skrevet med det for øye.',
+     'Undervises parallelt med Allah fra 5. september. Forordet ber om at kjærligheten til Profeten ﷺ kommer før praksisen; derfor står dette først i spor B.',
+     'Fra slutten av oktober til juleferien. Sammen med profetkapittelet fyller det høsten nøyaktig — fjorten lørdager.',
+     'De fem søylene. Fra januar til slutten av mars.',
+     'Årets siste kapittel. Samler det klassen har sagt hver uke i dua-tråden siden september.',
+     'Omtrent fem minutter i begynnelsen eller slutten av timen — aldri på bekostning av boka. Enheten er gruppen, ikke den enkelte dua: heftet har 38 dua og året har 33 lørdager, så én per uke går ikke opp.',
+     'For minuttene som blir til overs. En lærer som blir ferdig på 22 minutter har åtte minutter uro foran seg — her ligger svaret ferdig. Banken hører til skolen, ikke til islamfaget: de samme lekene virker på tajwid-ord og arabiske gloser.'],
+  m:['<b>Spor B følger ikke kapittelnumrene.</b> Forordet sier at serien starter med troen, deretter kjærligheten til Allah og Profeten ﷺ, og til slutt de andre sidene ved praksis. Rekkefølgen er lagt etter det. To ting følger av valget: praksis kommer sist slik forordet ber om, og Profeten pluss Koranen fyller høsten nøyaktig — sju økter hver — så spor B får et rent kapittelskille ved juleferien.<br><br>Prisen: korankapittelet åpner med verset om at Koranen ble sendt ned i ramadan, og ligger nå i november. Og ramadan flytter seg elleve dager hvert år — enhver ramadan-begrunnelse gjelder ett år av gangen og må sjekkes på nytt.',
+     '<b>Surah al-Fatihah og al-Ikhlas er tatt ut.</b> De står i heftet, men læres i koranfaget. Fem minutter i uka lærer ingen en surah, men lærer godt et uttrykk som «alhamdulillah». Det frigjør fem uker til repetisjon.',
+     '<b>Ikke besluttet:</b> å utvide Sana og tredje og fjerde kalimah fra to til tre uker hver. To uker à fem minutter er ti minutter på en lang arabisk tekst for et barn som ikke kan arabisk.',
+     '<b>Alle seks kapitlene er skrevet ut — 60 av 60 økter.</b> Hele læreverket, s. 10–107, er dekket uten hull. Spor A og spor B har tretti økter hver.',
+     '<b>Ikke besluttet — sawm og ramadan.</b> Med elleve økter i Islam-kapittelet faller zakah på 6. mars, inne i ramadan, men sawm på 13. mars — lørdagen etter eid. Å undervise fasten uken etter at barna nettopp har levd den er ikke dårlig, men det var ikke hensikten. Bytter du om økt 8 og 9, kommer sawm inn i ramadan. Bokas egen rekkefølge er zakah før sawm.',
+     '<b>Differensiering er ikke skrevet.</b> Trinn 1 rommer både seksåringen som ennå ikke leser og tolvåringen som begynte sent. Feltet skrives etter at en lærer har undervist en lørdag med dette og sagt hva hun manglet — felt som legges til før undervisning, blir fylt ut og deretter oversett.',
+     '<b>Nasheed er ikke valgt.</b> Valget tilhører skolen og moskeen, og mye av repertoaret er opphavsrettsbeskyttet.',
+     '<b>Årsplanen med datoer</b> genereres separat, av <code>skoledager.js</code>, ut fra klassens program og skolekalenderen. Den hører ikke hjemme her — to klasser kan dele dette trinnet og likevel ha ulike datoer.'],
+  spor:'Spor', sider:'sider · 30 økter', sidkort:'sider', okter:'økter', skrevet:'øktene er skrevet',
+  L:{mal:'Mål',timeplan:'Slik kan timen gå',bakgrunn:'Bakgrunn for læreren',
+     kjerne:'Kjerne — dette skal med',hvisTid:'Hvis det blir tid',ord:'Ord',
+     qa:'Spørsmål — med svaret du ser etter',feil:'Vanlige misforståelser',
+     aktivitet:'Aktivitet',fyll:'Blir det tid til overs',lekser:'Lekse',
+     kobling:'Kobling',verktoy:'Verktøy'},
+  duaSum:'<b>26 uker</b> + 7 til repetisjon', duaTot:'= 33 lørdager', uke:'uke', uker:'uker'
+ },
+ ar:{ knapp:'Norsk', dir:'rtl', lang:'ar',
+  eyebrow:'مدرسة المدينة الإسلامية',
+  h1:'منهج التربية الإسلامية · المستوى الأول',
+  under:'كتاب <em>Innføring i islamsk tro og praksis 1</em> مع كرّاسة الدعاء<br>ستة فصول · مساران · ثلاثون حصّة لكل مسار<br>الستّون كلها مكتوبة',
+  h:['مساران لا مسار واحد','الفصول الستة',
+     'المسار A · الله — ثماني عشرة حصّة','المسار A · الإيمان — اثنتا عشرة حصّة',
+     'المسار B · النبيّ محمد ﷺ — سبع حصص','المسار B · القرآن الكريم — سبع حصص',
+     'المسار B · الإسلام — إحدى عشرة حصّة','المسار B · كلمات وعبارات عربية — خمس حصص',
+     'خيط الدعاء','بنك الأنشطة','ما بقي'],
+  i:['للإسلام حصّتان في كل يوم دراسي، ثلاثون دقيقة لكلٍّ منهما. تسير كل واحدة في مسار مستقلّ، فلا يقضي التلميذ يومًا كاملًا في موضوع واحد — بل يلقى العقيدة والعمل في اليوم نفسه.',
+     'اضغط على أي فصل لترى أهدافه وآيته. والأهداف منقولة عن الكتاب حرفيًّا من صفحة «هنا تتعلّم».',
+     'يفتتح العام في ٥ سبتمبر ويمتدّ إلى آخر يناير. اضغط على أي حصّة لترى تحضيرها كاملًا: الهدف، وسير الحصّة المقترح، وخلفية للمعلّمة، والنواة، والمفردات، والأسئلة بأجوبتها المنتظرة، والأخطاء الشائعة، والنشاط، والواجب.',
+     'من فبراير إلى منتصف مايو. أشدّ مادة الفصل تجريدًا، وثلاث من حصصه تقع في رمضان — وخلفيتها مكتوبة على ذلك الأساس.',
+     'يُدرَّس موازيًا لفصل «الله» من ٥ سبتمبر. مقدّمة الكتاب تطلب أن تسبق محبّة النبيّ ﷺ تعليمَ العمل، فقُدِّم في المسار الثاني.',
+     'من أواخر أكتوبر إلى عطلة الميلاد. مع فصل النبيّ يملأ الخريف بالضبط — أربعة عشر سبتًا.',
+     'الأركان الخمسة. من يناير إلى آخر مارس.',
+     'آخر فصول العام. يجمع ما قاله الصفّ كل أسبوع في خيط الدعاء منذ سبتمبر.',
+     'خمس دقائق تقريبًا في أول الحصّة أو آخرها — ولا تُؤخذ من وقت الكتاب أبدًا. والوحدة هي المجموعة لا الدعاء الواحد: في الكرّاسة ثمانية وثلاثون دعاءً وفي العام ثلاثة وثلاثون سبتًا، فدعاءٌ لكل أسبوع لا يستقيم.',
+     'للدقائق التي تفضل. المعلّمة التي تُنهي في اثنتين وعشرين دقيقة أمامها ثماني دقائق من الفوضى — وهنا الجواب جاهز. والبنك ملك المدرسة لا مادة الإسلام: هذه الألعاب نفسها تنفع في التجويد ومفردات العربية.'],
+  m:['<b>المسار الثاني لا يتبع ترقيم الفصول.</b> مقدّمة الكتاب تقول إن السلسلة تبدأ بالعقيدة، ثم محبّة الله والنبيّ ﷺ، ثم بقية أوجه العمل. والترتيب هنا مبنيّ على ذلك. ونتج عنه أمران: العمل يأتي آخرًا كما تطلب المقدّمة، وفصلا النبيّ والقرآن يملآن الخريف بالضبط — سبع حصص لكلٍّ — فيقع فاصل نظيف بين الفصلين عند عطلة الميلاد.<br><br>والثمن: فصل القرآن يُفتتح بآية نزوله في رمضان، وموضعه الآن نوفمبر. ورمضان يتقدّم أحد عشر يومًا كل سنة — فكل حجّة مبنيّة عليه تخصّ سنة واحدة وتُراجَع.',
+     '<b>الفاتحة والإخلاص أُخرجتا.</b> هما في الكرّاسة، لكن تُحفَّظان في حصّة القرآن. خمس دقائق في الأسبوع لا تحفّظ سورة، وتكفي تمامًا لعبارة مثل «الحمد لله». وبذلك تفرغ خمسة أسابيع للمراجعة.',
+     '<b>لم يُقرَّر بعد:</b> تمديد الثناء والكلمتين الثالثة والرابعة من أسبوعين إلى ثلاثة. أسبوعان × خمس دقائق = عشر دقائق على نصّ عربيّ طويل لطفل لا يعرف العربية.',
+     '<b>الفصول الستة كلها مكتوبة — ٦٠ حصّة من ٦٠.</b> الكتاب مغطّى من صفحة ١٠ إلى ١٠٧ بلا فجوة. ثلاثون حصّة في كل مسار.',
+     '<b>لم يُقرَّر — الصيام ورمضان.</b> بإحدى عشرة حصّة في فصل الإسلام تقع الزكاة في ٦ مارس داخل رمضان، لكن الصيام في ١٣ مارس — السبت التالي للعيد. وتدريس الصيام بعد أسبوع من عيشه ليس سيّئًا، لكنه ليس المقصود. فإن بدّلت الحصّتين ٨ و٩ دخل الصيام في رمضان. وترتيب الكتاب نفسه: الزكاة قبل الصيام.',
+     '<b>التمايز لم يُكتب.</b> المستوى الأول يضمّ ابن السادسة الذي لم يقرأ بعد، وابن الثانية عشرة الذي بدأ متأخّرًا. ويُكتب الحقل بعد أن يدرّس معلّم سبتًا واحدًا بهذه المادة ويقول ما نقصه — فالحقل الذي يُضاف قبل التدريس يُملأ ثم يُهمَل.',
+     '<b>النشيد لم يُختَر.</b> الاختيار للمدرسة والمسجد، وأكثر ما هو متاح محفوظ الحقوق.',
+     '<b>الخطة المؤرَّخة</b> تُولَّد على حدة من <code>skoledager.js</code>، من برنامج الصفّ وتقويم المدرسة. ولا مكان لها هنا — فصفّان قد يتشاركان هذا المستوى وتختلف تواريخهما.'],
+  spor:'المسار', sider:'صفحة · ٣٠ حصّة', sidkort:'صفحة', okter:'حصّة', skrevet:'الحصص مكتوبة',
+  L:{mal:'الهدف',timeplan:'سير الحصّة المقترح',bakgrunn:'خلفية للمعلّمة',
+     kjerne:'النواة — ما لا يُستغنى عنه',hvisTid:'إن اتّسع الوقت',ord:'المفردات',
+     qa:'الأسئلة — ومعها الجواب المنتظر',feil:'أخطاء شائعة',
+     aktivitet:'النشاط',fyll:'إن فضل وقت',lekser:'الواجب',
+     kobling:'روابط',verktoy:'الأدوات'},
+  duaSum:'<b>٢٦ أسبوعًا</b> + ٧ للمراجعة', duaTot:'= ٣٣ سبتًا', uke:'أسبوع', uker:'أسابيع'
+ }
+};
+let SPR = 'no';
+const T = () => TEKST[SPR];
+
 const esc = x => String(x ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* spor */
-document.getElementById('sporPar').innerHTML = SPOR.map(s => `
-  <div class="spor-kort ${s.id.toLowerCase()}">
-    <span class="merke">${esc(s.okt)}</span>
-    <h3>Spor ${s.id} — ${esc(s.navn)}</h3>
-    <ol>${s.kap.map(k=>`<li>${esc(k)}</li>`).join('')}</ol>
-    <span class="sum">${s.sider} sider · 30 økter</span>
-  </div>`).join('');
+/* ── tegner hele siden på nytt i valgt språk ───────────────────── */
+function tegnAlt(){
+  const t = T(), rot = document.getElementById('rot');
+  rot.setAttribute('dir', t.dir); rot.setAttribute('lang', t.lang);
+  document.getElementById('bytt').textContent = t.knapp;
 
-/* kapitler — i sporenes rekkefølge, ikke etter nummer */
-const orden = ['allah','iman','profeten','koranen','islam','arabiske'];
-document.getElementById('kapitler').innerHTML = orden.map(id=>{
-  const k = KAPITLER.find(x=>x.id===id);
-  return `
-  <div class="kap ${k.spor==='B'?'b':''}${k.ferdig?' aktiv':''}">
-    <button class="kap-hode" type="button" aria-expanded="false">
-      <span class="kap-nr">${k.nr}</span>
-      <span>
-        <span class="kap-tit">${esc(k.tittel)}</span>
-        <span class="kap-meta">Spor ${k.spor} · ${esc(k.sider)} · ${k.vekt} sider · ${k.okter} økter${k.ferdig?' · øktene er skrevet':''}</span>
-      </span>
-      <span class="kap-pil" aria-hidden="true">▾</span>
-    </button>
-    <div class="kap-krop" hidden>
-      <ul class="mal-liste">${k.mal.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>
-      <p class="vers">${esc(k.vers)}${k.kilde?`<span class="kilde">${esc(k.kilde)}</span>`:''}</p>
-      <div class="emneliste">${k.emner.map(e=>`<span>${esc(e)}</span>`).join('')}</div>
-    </div>
-  </div>`;
-}).join('');
+  document.getElementById('t-eyebrow').textContent = t.eyebrow;
+  document.getElementById('t-h1').textContent = t.h1;
+  document.getElementById('t-under').innerHTML = t.under;
+  t.h.forEach((x,n)=>{ const e=document.querySelector('#h'+n+' .tx'); if(e) e.textContent=x; });
+  t.i.forEach((x,n)=>{ const e=document.getElementById('i'+n); if(e) e.textContent=x; });
+  t.m.forEach((x,n)=>{ const e=document.getElementById('m'+n); if(e) e.innerHTML=x; });
 
-/* økter */
-function ordbok(o){
-  const n = Object.keys(o||{});
-  if(!n.length) return '';
-  return `<div class="blokk"><h4>Ord</h4><div class="ordbok">${
-    n.map(k=>`<div><b>${esc(k)}</b> <span>— ${esc(o[k])}</span></div>`).join('')}</div></div>`;
+  /* «s. 10–35» → «ص 10–35» */
+  const sid = x => SPR==='ar' ? String(x).replace(/^s\.\s*/,'ص ') : x;
+
+  document.getElementById('sporPar').innerHTML = SPOR.map(s => `
+    <div class="spor-kort ${s.id.toLowerCase()}">
+      <span class="merke">${esc(s.okt)}</span>
+      <h3>${esc(t.spor)} ${s.id} — ${esc(s.navn)}</h3>
+      <ol>${s.kap.map(k=>`<li>${esc(k)}</li>`).join('')}</ol>
+      <span class="sum">${s.sider} ${esc(t.sider)}</span>
+    </div>`).join('');
+
+  const orden = ['allah','iman','profeten','koranen','islam','arabiske'];
+  document.getElementById('kapitler').innerHTML = orden.map(id=>{
+    const k = KAPITLER.find(x=>x.id===id);
+    return `
+    <div class="kap ${k.spor==='B'?'b':''}${k.ferdig?' aktiv':''}">
+      <button class="kap-hode" type="button" aria-expanded="false">
+        <span class="kap-nr">${k.nr}</span>
+        <span>
+          <span class="kap-tit">${esc(k.tittel)}</span>
+          <span class="kap-meta">${esc(t.spor)} ${k.spor} · ${esc(sid(k.sider))} · ${k.vekt} ${esc(t.sidkort)} · ${k.okter} ${esc(t.okter)}${k.ferdig?' · '+esc(t.skrevet):''}</span>
+        </span>
+        <span class="kap-pil" aria-hidden="true">▾</span>
+      </button>
+      <div class="kap-krop" hidden>
+        <ul class="mal-liste">${k.mal.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>
+        <p class="vers">${esc(k.vers)}${k.kilde?`<span class="kilde">${esc(k.kilde)}</span>`:''}</p>
+        <div class="emneliste">${k.emner.map(e=>`<span>${esc(e)}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const L = t.L;
+  const ordbok = o => {
+    const n = Object.keys(o||{});
+    return n.length ? `<div class="blokk"><h4>${esc(L.ord)}</h4><div class="ordbok">${
+      n.map(k=>`<div><b>${esc(k)}</b> <span>— ${esc(o[k])}</span></div>`).join('')}</div></div>` : '';
+  };
+  orden.forEach(id => {
+    document.getElementById('okter-'+id).innerHTML = OKTER[id].map(o=>`
+    <div class="okt">
+      <button class="okt-hode" type="button" aria-expanded="false">
+        <span class="okt-nr">${o.nr}</span>
+        <span>
+          <span class="okt-tit">${esc(o.tittel)}</span><br>
+          <span class="okt-sider">${esc(sid(o.sider))}</span>
+        </span>
+        <span class="kap-pil" aria-hidden="true">▾</span>
+      </button>
+      <div class="okt-krop" hidden>
+        <div class="blokk"><h4>${esc(L.mal)}</h4><div class="malboks">${esc(o.mal)}</div></div>
+        <div class="blokk"><h4>${esc(L.timeplan)}</h4><div class="tidsplan">${esc(o.timeplan)}</div></div>
+        <div class="blokk"><h4>${esc(L.bakgrunn)}</h4><ul>${o.bakgrunn.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        <div class="blokk"><h4>${esc(L.kjerne)}</h4><ol>${o.kjerne.map(b=>`<li>${esc(b)}</li>`).join('')}</ol></div>
+        <div class="blokk gull"><h4>${esc(L.hvisTid)}</h4><ul>${o.hvisTid.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        ${ordbok(o.ord)}
+        <div class="blokk"><h4>${esc(L.qa)}</h4>
+          ${o.qa.map(([q,sv])=>`<div class="qa"><div class="q">${esc(q)}</div><div class="s">${esc(sv)}</div></div>`).join('')}</div>
+        <div class="blokk rod"><h4>${esc(L.feil)}</h4><ul>${o.feil.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        <div class="blokk"><h4>${esc(L.aktivitet)}</h4><p>${esc(o.aktivitet)}</p></div>
+        <div class="blokk gull"><h4>${esc(L.fyll)}</h4><ul>${o.fyll.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        <div class="blokk"><h4>${esc(L.lekser)}</h4><p>${esc(o.lekser)}</p></div>
+        <div class="blokk"><h4>${esc(L.kobling)}</h4><ul>${o.kobling.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        <div class="blokk"><h4>${esc(L.verktoy)}</h4><p>${esc(o.verktoy)}</p></div>
+      </div>
+    </div>`).join('');
+  });
+
+  document.getElementById('duaTab').innerHTML = DUA.map(([n,ti,sd,u])=>
+    `<tr><td>${n}</td><td>${esc(ti)}</td><td>${esc(sid(sd))} · ${u} ${esc(u===1?t.uke:t.uker)}</td></tr>`).join('')
+    + `<tr><td></td><td>${t.duaSum}</td><td>${esc(t.duaTot)}</td></tr>`;
+
+  document.getElementById('bank').innerHTML = BANK.map(([ti,mi,sk,po])=>`
+    <div class="lek">
+      <span class="min">${esc(mi)}</span>
+      <h4>${esc(ti)}</h4>
+      <p>${esc(sk)}</p>
+      <p class="poeng">${esc(po)}</p>
+    </div>`).join('');
 }
-function tegnOkter(id, liste){
-  document.getElementById(id).innerHTML = liste.map(o=>`
-  <div class="okt">
-    <button class="okt-hode" type="button" aria-expanded="false">
-      <span class="okt-nr">${o.nr}</span>
-      <span>
-        <span class="okt-tit">${esc(o.tittel)}</span><br>
-        <span class="okt-sider">${esc(o.sider)}</span>
-      </span>
-      <span class="kap-pil" aria-hidden="true">▾</span>
-    </button>
-    <div class="okt-krop" hidden>
-      <div class="blokk"><h4>Mål</h4><div class="malboks">${esc(o.mal)}</div></div>
-      <div class="blokk"><h4>Slik kan timen gå</h4><div class="tidsplan">${esc(o.timeplan)}</div></div>
-      <div class="blokk"><h4>Bakgrunn for læreren</h4><ul>${o.bakgrunn.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
-      <div class="blokk"><h4>Kjerne — dette skal med</h4><ol>${o.kjerne.map(b=>`<li>${esc(b)}</li>`).join('')}</ol></div>
-      <div class="blokk gull"><h4>Hvis det blir tid</h4><ul>${o.hvisTid.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
-      ${ordbok(o.ord)}
-      <div class="blokk"><h4>Spørsmål — med svaret du ser etter</h4>
-        ${o.qa.map(([q,s])=>`<div class="qa"><div class="q">${esc(q)}</div><div class="s">${esc(s)}</div></div>`).join('')}</div>
-      <div class="blokk rod"><h4>Vanlige misforståelser</h4><ul>${o.feil.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
-      <div class="blokk"><h4>Aktivitet</h4><p>${esc(o.aktivitet)}</p></div>
-      <div class="blokk gull"><h4>Blir det tid til overs</h4><ul>${o.fyll.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
-      <div class="blokk"><h4>Lekse</h4><p>${esc(o.lekser)}</p></div>
-      <div class="blokk"><h4>Kobling</h4><ul>${o.kobling.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
-      <div class="blokk"><h4>Verktøy</h4><p>${esc(o.verktoy)}</p></div>
-    </div>
-  </div>`).join('');
-}
-['allah','iman','profeten','koranen','islam','arabiske']
-  .forEach(id => tegnOkter('okter-' + id, OKTER[id]));
 
-/* dua */
-document.getElementById('duaTab').innerHTML = DUA.map(([n,t,s,u])=>
-  `<tr><td>${n}</td><td>${esc(t)}</td><td>${esc(s)} · ${u} ${u===1?'uke':'uker'}</td></tr>`).join('')
-  + `<tr><td></td><td><b>26 uker</b> + 7 til repetisjon</td><td>= 33 lørdager</td></tr>`;
-
-/* bank */
-document.getElementById('bank').innerHTML = BANK.map(([t,m,s,p])=>`
-  <div class="lek">
-    <span class="min">${esc(m)}</span>
-    <h4>${esc(t)}</h4>
-    <p>${esc(s)}</p>
-    <p class="poeng">${esc(p)}</p>
-  </div>`).join('');
+tegnAlt();
+document.getElementById('bytt').addEventListener('click', () => {
+  SPR = (SPR === 'no') ? 'ar' : 'no';
+  tegnAlt();
+  window.scrollTo({top:0, behavior:'smooth'});
+});
 
 /* åpne og lukke */
 document.addEventListener('click', e => {
