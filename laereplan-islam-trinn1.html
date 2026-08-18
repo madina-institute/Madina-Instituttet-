@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-18 02:36:18 -->
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Læreplan · Islam · Trinn 1 · Madina Islamske Skole</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Læreplan · Islam · trinn 1
+
+   Én side som viser alt som er bygget: faget delt i to spor, de
+   seks kapitlene, de sju øktene i kapittelet om Profeten ﷺ,
+   dua-tråden og aktivitetsbanken.
+
+   Ingen datoer. De hører til i årsplanen, som genereres av
+   skoledager.js ut fra klassens program og skolekalenderen.
+
+   All tekst ligger i DATA nederst. Skal noe rettes, rettes det
+   der — ikke i markupen.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --krem:#FBF7EF; --papir:#FFF; --gron:#1A4034; --gron-lys:#2C6B4F;
+  --gron-blek:#EAF2EC; --gull:#C69B3F; --gull-blek:#F6EEDC;
+  --rose-bg:#FBEEEF; --rose:#A8474E;
+  --blek:#8A8578; --blekk:#2A2A28; --linje:#E8E1D2;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{margin:0;background:var(--krem);color:var(--blekk);
+  font-family:'Jost',system-ui,-apple-system,sans-serif;line-height:1.55;}
+
+.topp{text-align:center;padding:48px 20px 30px;border-bottom:1px solid var(--linje);}
+.eyebrow{font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--gull);}
+.topp h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;
+  font-size:clamp(28px,6.5vw,44px);line-height:1.12;margin:.28em 0 .18em;color:var(--gron);}
+.topp .under{font-size:14px;color:var(--blek);font-weight:300;max-width:32em;margin:0 auto;}
+.regel{width:64px;height:2px;background:var(--gull);margin:20px auto 0;border-radius:2px;}
+
+main{max-width:900px;margin:0 auto;padding:0 18px 60px;}
+section{margin-top:34px;}
+h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;
+  color:var(--gron);margin:0 0 4px;}
+h2 .strek{display:inline-block;width:4px;height:20px;background:var(--gull);
+  border-radius:2px;margin-right:9px;vertical-align:-2px;}
+.ingress{font-size:14px;color:#5C5A52;margin:0 0 16px;max-width:44em;}
+
+.panel{background:var(--papir);border:1px solid var(--linje);border-radius:14px;padding:20px 18px;}
+
+/* spor */
+.spor-par{display:grid;gap:12px;grid-template-columns:1fr 1fr;}
+.spor-kort{border:1px solid var(--linje);border-radius:11px;padding:14px 15px;background:var(--papir);}
+.spor-kort.a{border-left:4px solid var(--gron-lys);}
+.spor-kort.b{border-left:4px solid var(--gull);}
+.spor-kort .merke{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;color:var(--blek);}
+.spor-kort h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:19px;font-weight:600;margin:3px 0 6px;color:var(--gron);}
+.spor-kort ol{margin:0;padding-left:18px;font-size:13.5px;color:#5C5A52;}
+.spor-kort .sum{display:block;margin-top:8px;font-size:11.5px;color:var(--blek);font-weight:500;}
+
+/* kapittelkort */
+.kap{background:var(--papir);border:1px solid var(--linje);border-radius:13px;
+  margin-bottom:10px;overflow:hidden;}
+.kap.aktiv{border-color:var(--gron-lys);box-shadow:0 0 0 2px var(--gron-blek);}
+.kap-hode{display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:center;
+  width:100%;text-align:left;background:none;border:0;font:inherit;color:inherit;
+  padding:14px 16px;cursor:pointer;}
+.kap-hode:hover{background:rgba(26,64,52,.03);}
+.kap-hode:focus-visible{outline:2px solid var(--gron);outline-offset:-3px;}
+.kap-nr{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:600;background:var(--gron-blek);color:var(--gron);}
+.kap.b .kap-nr{background:var(--gull-blek);color:#8A6A1E;}
+.kap-tit{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:var(--gron);line-height:1.2;}
+.kap-meta{font-size:12px;color:var(--blek);margin-top:2px;}
+.kap-pil{font-size:11px;color:var(--blek);transition:transform .18s ease;}
+.kap.apen .kap-pil{transform:rotate(180deg);}
+.kap-krop{padding:0 16px 18px;border-top:1px solid var(--linje);}
+.kap-krop[hidden]{display:none;}
+
+.mal-liste{margin:14px 0 0;padding-left:18px;}
+.mal-liste li{font-size:14px;margin-bottom:3px;}
+.vers{font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;font-style:italic;
+  color:var(--gron);margin:14px 0 0;padding:12px 14px;background:var(--krem);
+  border-left:3px solid var(--gull);border-radius:0 8px 8px 0;line-height:1.45;}
+.vers .kilde{display:block;font-family:'Jost',sans-serif;font-style:normal;
+  font-size:11px;color:var(--blek);margin-top:5px;}
+.emneliste{margin:14px 0 0;font-size:13.5px;color:#5C5A52;}
+.emneliste span{display:inline-block;background:var(--krem);border:1px solid var(--linje);
+  border-radius:20px;padding:3px 11px;margin:0 5px 5px 0;font-size:12.5px;}
+
+/* økter */
+.okt{background:var(--papir);border:1px solid var(--linje);border-radius:12px;
+  margin-bottom:9px;overflow:hidden;}
+.okt-hode{display:grid;grid-template-columns:30px 1fr auto;gap:11px;align-items:center;
+  width:100%;text-align:left;background:none;border:0;font:inherit;color:inherit;
+  padding:13px 15px;cursor:pointer;}
+.okt-hode:hover{background:rgba(198,155,63,.06);}
+.okt-hode:focus-visible{outline:2px solid var(--gull);outline-offset:-3px;}
+.okt-nr{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:600;background:var(--gull-blek);color:#8A6A1E;}
+.okt-tit{font-size:15px;font-weight:500;line-height:1.3;}
+.okt-sider{font-size:11.5px;color:var(--blek);}
+.okt-krop{padding:2px 15px 16px;border-top:1px solid var(--linje);}
+.okt-krop[hidden]{display:none;}
+
+.blokk{margin-top:14px;}
+.blokk h4{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--gron-lys);margin:0 0 6px;}
+.blokk.gull h4{color:var(--gull);}
+.blokk.rod h4{color:var(--rose);}
+.blokk p{margin:0 0 7px;font-size:13.5px;color:#4A4842;}
+.blokk ul,.blokk ol{margin:0;padding-left:17px;}
+.blokk li{font-size:13.5px;line-height:1.5;margin-bottom:4px;color:#4A4842;}
+.malboks{background:var(--gron-blek);border-radius:10px;padding:12px 14px;
+  font-size:14px;font-weight:500;color:var(--gron);}
+.tidsplan{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+  background:var(--krem);border:1px solid var(--linje);border-radius:10px;
+  padding:11px 13px;white-space:pre-wrap;color:#4A4842;line-height:1.7;}
+.qa{border-left:2px solid var(--linje);padding-left:12px;margin-bottom:9px;}
+.qa .q{font-size:13.5px;font-weight:500;}
+.qa .s{font-size:13px;color:var(--blek);}
+.blokk.rod li{color:var(--rose);}
+.ordbok div{font-size:13.5px;margin-bottom:4px;}
+.ordbok b{color:var(--gron);font-weight:600;}
+.ordbok span{color:var(--blek);}
+
+/* dua + bank */
+.dua-tab{width:100%;border-collapse:collapse;font-size:13.5px;}
+.dua-tab td{padding:7px 4px;border-bottom:1px solid var(--linje);}
+.dua-tab td:first-child{color:var(--blek);width:26px;}
+.dua-tab td:last-child{text-align:right;color:var(--blek);white-space:nowrap;font-size:12px;}
+.lek{border-bottom:1px solid var(--linje);padding:12px 0;}
+.lek:last-child{border-bottom:0;}
+.lek h4{font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:600;
+  color:var(--gron);margin:0 0 3px;}
+.lek .min{font-size:11px;color:var(--gull);font-weight:600;letter-spacing:.08em;text-transform:uppercase;}
+.lek p{margin:5px 0 0;font-size:13.5px;color:#4A4842;}
+.lek .poeng{color:var(--blek);font-size:13px;}
+
+.merk{background:var(--gull-blek);border:1px dashed var(--gull);border-radius:11px;
+  padding:13px 15px;margin-top:14px;font-size:13.5px;color:#4A4842;}
+.merk b{color:var(--gron);}
+.uferdig{background:var(--rose-bg);border:1px dashed #E2B9BC;color:#7A3B41;}
+.uferdig b{color:var(--rose);}
+
+.fot{text-align:center;padding:26px 18px 50px;font-size:12px;color:var(--blek);
+  border-top:1px solid var(--linje);margin-top:34px;}
+
+@media (max-width:640px){
+  .spor-par{grid-template-columns:1fr;}
+  .kap-hode{grid-template-columns:32px 1fr auto;gap:10px;}
+}
+@media print{
+  @page{size:A4 portrait;margin:14mm 12mm;}
+  body{background:#fff;}
+  .kap-krop[hidden],.okt-krop[hidden]{display:block !important;}
+  .kap,.okt,.panel{break-inside:avoid;page-break-inside:avoid;}
+  .kap-pil,.okt-hode{cursor:default;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+@media (prefers-reduced-motion:reduce){.kap-pil{transition:none;}}
+</style>
+</head>
+<body>
+
+<header class="topp">
+  <div class="eyebrow">Madina Islamske Skole</div>
+  <h1>Læreplan · Islam · Trinn 1</h1>
+  <p class="under">
+    <em>Innføring i islamsk tro og praksis 1</em> med Dua-heftet<br>
+    Seks kapitler · to spor · 30 økter per spor
+  </p>
+  <div class="regel"></div>
+</header>
+
+<main>
+
+  <section>
+    <h2><span class="strek"></span>To spor, ikke ett</h2>
+    <p class="ingress">
+      Islam har to økter à 30 minutter hver undervisningsdag. De følger
+      hvert sitt spor, så eleven aldri får en hel dag med bare ett tema —
+      hun møter troen og praksisen samme dag, hver dag.
+    </p>
+    <div class="spor-par" id="sporPar"></div>
+    <div class="merk">
+      <b>Spor B følger ikke kapittelnumrene.</b> Forordet sier at serien
+      starter med troen, deretter kjærligheten til Allah og Profeten ﷺ,
+      og til slutt de andre sidene ved praksis. Rekkefølgen er lagt etter
+      det. Tre ting følger av valget: praksis kommer sist slik forordet
+      ber om; zakah og sawm faller inne i ramadan i 2026/27; og Profeten
+      pluss Koranen fyller høsten nøyaktig — sju økter hver — så spor B
+      får et rent kapittelskille ved juleferien.
+      <br><br>
+      Prisen: korankapittelet åpner med verset om at Koranen ble sendt
+      ned i ramadan, og ligger nå i november. Vi fikk ikke både sawm og
+      korankapittelet inn i ramadan. Og ramadan flytter seg elleve dager
+      hvert år — så begrunnelse nummer to gjelder dette året og må
+      sjekkes på nytt, ikke antas.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="strek"></span>De seks kapitlene</h2>
+    <p class="ingress">Trykk på et kapittel for å se målene og verset.
+      Målene er bokas egne, ordrett fra «Her skal du lære om»-siden.</p>
+    <div id="kapitler"></div>
+  </section>
+
+  <section>
+    <h2><span class="strek"></span>Profeten Muhammad ﷺ — sju økter</h2>
+    <p class="ingress">
+      Ferdig skrevet. Trykk på en økt for hele opplegget: mål, forslag til
+      timeforløp, bakgrunn for læreren, kjernen, ord, spørsmål med svaret
+      du ser etter, vanlige misforståelser, aktivitet og lekse.
+    </p>
+    <div id="okter"></div>
+  </section>
+
+  <section>
+    <h2><span class="strek"></span>Dua-tråden</h2>
+    <p class="ingress">
+      Omtrent fem minutter i begynnelsen eller slutten av timen — aldri på
+      bekostning av boka. Enheten er gruppen, ikke den enkelte dua:
+      heftet har 38 dua og året har 33 lørdager, så én per uke går ikke opp.
+    </p>
+    <div class="panel">
+      <table class="dua-tab" id="duaTab"></table>
+      <div class="merk">
+        <b>Surah al-Fatihah og al-Ikhlas er tatt ut.</b> De står i heftet,
+        men læres i koranfaget. Fem minutter i uka lærer ingen en surah,
+        men lærer godt et uttrykk som «alhamdulillah». Det frigjør fem uker
+        til repetisjon.
+      </div>
+      <div class="merk uferdig">
+        <b>Ikke besluttet:</b> å utvide Sana og tredje og fjerde kalimah
+        fra to til tre uker hver. To uker à fem minutter er ti minutter på
+        en lang arabisk tekst for et barn som ikke kan arabisk.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="strek"></span>Aktivitetsbanken</h2>
+    <p class="ingress">
+      For minuttene som blir til overs. En lærer som blir ferdig på 22
+      minutter har åtte minutter uro foran seg — her ligger svaret ferdig.
+      Banken hører til skolen, ikke til islamfaget: de samme lekene virker
+      på tajwid-ord og arabiske gloser.
+    </p>
+    <div class="panel" id="bank"></div>
+  </section>
+
+  <section>
+    <h2><span class="strek"></span>Hva som gjenstår</h2>
+    <div class="panel">
+      <div class="merk uferdig">
+        <b>Fem kapitler mangler økter.</b> Bare Profeten ﷺ er skrevet ut.
+        Neste er «Allah» — 18 økter, s. 11–36, i to omganger.
+      </div>
+      <div class="merk uferdig">
+        <b>Differensiering er ikke skrevet.</b> Trinn 1 rommer både
+        seksåringen som ennå ikke leser og tolvåringen som begynte sent.
+        Feltet skrives etter at en lærer har undervist en lørdag med dette
+        og sagt hva hun manglet — felt som legges til før undervisning,
+        blir fylt ut og deretter oversett.
+      </div>
+      <div class="merk uferdig">
+        <b>Nasheed er ikke valgt.</b> Valget tilhører skolen og moskeen,
+        og mye av repertoaret er opphavsrettsbeskyttet.
+      </div>
+      <div class="merk">
+        <b>Årsplanen med datoer</b> genereres separat, av
+        <code>skoledager.js</code>, ut fra klassens program og
+        skolekalenderen. Den hører ikke hjemme her — to klasser kan dele
+        dette trinnet og likevel ha ulike datoer.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="fot">Madina Islamske Skole · Hagelundveien 2b, 0963 Oslo</div>
+
+<script>
+const SPOR = [
+  { id:'A', navn:'Tro', okt:'Økt 1 · Del 1', sider:44, kap:['Allah','Iman'] },
+  { id:'B', navn:'Praksis', okt:'Økt 2 · Del 2', sider:49,
+    kap:['Profeten Muhammad ﷺ','Den hellige Koranen','Islam','Arabiske ord og uttrykk'] }
+];
+
+const KAPITLER = [
+  { nr:1, id:'allah', tittel:'Allah', spor:'A', sider:'s. 11–36', vekt:26, okter:18,
+    mal:['Allah','Allahs vakre navn','Skaperen — universet, dyreriket, mennesket'],
+    vers:'«Sannelig, Herren deres er Allah! Han som skapte himlene og jorden.»',
+    kilde:'Surah al-A\u2019raf 7:54',
+    emner:['Skaperen','Hvem er Allah','Allah er skaperen av alt','Universet','Dyreriket','Vann','Mennesket','Allahs vakre navn','Oppgaver'] },
+  { nr:2, id:'iman', tittel:'Iman', spor:'A', sider:'s. 37–54', vekt:18, okter:12,
+    mal:['Troen','Allah','Engler','Hellige bøker','Profeter'],
+    vers:'«Iman er grunnlaget for hele religionen.»', kilde:'',
+    emner:['Vi tror på Allah den allmektige','Engler','Fire sentrale engler','Hellige bøker','De fire hellige bøkene','Profeter','Rasul og nabi','Profetene i Koranen','Profetenes mirakler','Oppgaver'] },
+  { nr:4, id:'profeten', tittel:'Profeten Muhammad ﷺ', spor:'B', sider:'s. 74–85', vekt:12, okter:7, ferdig:true,
+    mal:['Profeten Muhammad ﷺ','Salawat','De vakre navnene til Profeten ﷺ','Navn på familiemedlemmene til Profeten ﷺ'],
+    vers:'«Allah og Hans engler velsigner Profeten. Dere som tror, send også velsignelser over ham.»',
+    kilde:'Surah al-Ahzab 33:56',
+    emner:['Salawat','Profetens vakre navn','Fødselen','Familien','Profetens personlighet','Oppgaver'] },
+  { nr:5, id:'koranen', tittel:'Den hellige Koranen', spor:'B', sider:'s. 86–96', vekt:11, okter:7,
+    mal:['Den hellige Koranen','Hva Koranen forteller oss','Surah','Hvordan skal vi respektere Koranen'],
+    vers:'«Måneden ramadan er den da Koranen ble sendt ned, som er rettledning for menneskeheten.»',
+    kilde:'Surah al-Baqarah 2:185',
+    emner:['Hva Koranen forteller oss','Surah','Juz','Respekt for Koranen','Oppgaver'] },
+  { nr:3, id:'islam', tittel:'Islam', spor:'B', sider:'s. 56–72', vekt:17, okter:10,
+    mal:['Islam','Muslimer','De fem søylene'],
+    vers:'«Sannelig, islam er religionen i Allahs øyne.»', kilde:'Surah al-\u2018Imran 3:19',
+    emner:['Muslim','De fem søylene','Shahadah','Salah','Zakah','Sawm','Hajj','Oppgaver'] },
+  { nr:6, id:'arabiske', tittel:'Arabiske ord og uttrykk', spor:'B', sider:'s. 98–107', vekt:10, okter:6,
+    mal:['Bismillahir Rahmanir Rahim','Alhamdulillah','Dua for ulike anledninger'],
+    vers:'«De mest elskede ordene hos Allah er: subhanallahi wa bihamdihi.»', kilde:'Sahih Muslim',
+    emner:['Bismillahir Rahmanir Rahim','Alhamdulillah','Korte dua for ulike anledninger'] }
+];
+
+const OKTER = [
+{nr:1,tittel:'Kapittelåpning + Profeten Muhammad ﷺ',sider:'s. 74–76',
+ mal:'Eleven kan si hvem Profeten ﷺ er, at han er den siste profeten, og hvorfor vi sier «fred være med han».',
+ timeplan:'0–4    Kapittelåpningen: bildet, boksen, verset\n4–8    Æresbevisningen — øv i kor\n8–20   Kjernen\n20–26  Aktivitet\n26–30  Oppsummering og lekse',
+ bakgrunn:['Tidligere profeter ble sendt til sitt eget folk. Det nye er at han er sendt til ALLE mennesker — derfor står «til menneskeheten» der, og det er dette elevene skal sitte igjen med.','Trosbekjennelsen har to halvdeler, og den andre er om ham. Det er derfor boka sier at troen ikke er hel uten dette.','«Åpenbaring» betyr at kunnskapen kom FRA Allah ﷻ — den var ikke hans egen tanke. Dette er det viktigste å få riktig i dag.','Sunnah = hans måte å gjøre ting på. Ordet kommer igjen hele året. Nevn det, men ikke forklar det ferdig nå.','Bildet på s. 74 er Profetens ﷺ moské i Madina, med den grønne kuppelen. Mange av elevene har sett den på bilde hjemme.'],
+ kjerne:['Han er Allahs ﷻ sendebud til alle mennesker.','Han er nevnt i trosbekjennelsen — troen er ikke hel uten ham.','Alt vi vet om islam kom gjennom ham, fordi han fikk åpenbaringer.','De som trodde på ham i Mekka ble sahaba.','Han er den siste. Ingen profet kommer etter ham.'],
+ hvisTid:['Allah ﷻ valgte ham som den siste og mest kjære profeten, og den fremste blant alle mennesker.','Følger vi ham og elsker ham, ærer og elsker Allah ﷻ oss.'],
+ ord:{'sendebud':'en som bærer et budskap fra Allah ﷻ','sahaba':'de som trodde på ham og var sammen med ham','åpenbaring':'kunnskap som kommer fra Allah ﷻ','salawat':'velsignelsen vi sender over ham'},
+ qa:[['Hvem sendte Profeten ﷺ?','Allah ﷻ. Han kom ikke av seg selv.'],['Hva betyr det at han er den SISTE?','Det kommer ingen etter ham. Budskapet er ferdig.'],['Hvem var sahaba?','De som trodde på ham og var sammen med ham — ikke bare familien.']],
+ feil:['«Profeten skrev Koranen.» Nei — den kom fra Allah ﷻ.','«Sahaba var familien hans.» Nei — det var alle som trodde. Familien kommer i økt 5.','Barn blander nabi og rasul. Ikke ta det i dag; det hører til kapittelet Iman, s. 48.'],
+ aktivitet:'Skriv sendebud · sahaba · åpenbaring på tavla. Hver elev velger ett ord og forklarer det til sidemannen. To sier det høyt til slutt.',
+ fyll:['Hviskeleken — setningen «Profeten ﷺ er sendt til alle mennesker». Vis hvorfor det var viktig å være nøye med hvem som fortalte videre.','Finn det i boka — hvor mange ganger står ordet «sendebud» på s. 76?'],
+ lekser:'Si salawat én gang hver kveld denne uken. Foreldrene signerer i boka.',
+ kobling:['Shahadah → kapittelet «Islam», s. 61','Nabi og rasul → kapittelet «Iman», s. 48','Ukens dua: Søke tilflukt + Bismillah, heftet s. 2'],
+ verktoy:'Elevboka · tavle og tusj'},
+
+{nr:2,tittel:'Salawat',sider:'s. 77',
+ mal:'Eleven vet hva salawat er, når den sies, og kan si den selv.',
+ timeplan:'0–3    Repetisjon: hvem er Profeten ﷺ?\n3–8    Hva salawat er, og når vi sier den\n8–18   Øv formen — i kor, så enkeltvis\n18–24  Hvorfor: nærhet, kjærlighet, et rent hjerte\n24–30  De ti belønningene, aktivitet, lekse',
+ bakgrunn:['Salawat kalles også durood. Elevene hører begge ordene hjemme; nevn begge så de vet det er det samme.','Den vanligste formen er Sallallahu alaihi wa sallam. På norsk sier vi «fred være med han» — boka gjør det selv, på hver eneste side.','Poenget for et barn er ikke plikten, men vanen: den sies HVER gang navnet høres, leses eller sies. En time med dette kapittelet gir tjue naturlige anledninger.','De ti belønningene står stort på s. 77. Barn husker tallet — bruk det som inngang, ikke som hele forklaringen.'],
+ kjerne:['Hver gang vi hører eller sier navnet hans, ber vi Allah ﷻ velsigne ham. Det kalles salawat.','Den vanligste formen er Sallallahu alaihi wa sallam. Den kan sies på ulike språk.','Vi sier den for å vise respekt og kjærlighet.','Den bringer oss nærmere Allah ﷻ, øker kjærligheten til Profeten ﷺ og renser hjertet.','Én salawat gir ti belønninger.'],
+ hvisTid:['Når kan vi si den? Før vi legger oss, på vei hjem fra skolen eller moskeen, når vi er syke, når vi ikke føler oss bra.','Salawat kalles også durood.'],
+ ord:{'salawat':'velsignelsen vi ber Allah ﷻ sende over Profeten ﷺ','durood':'det samme som salawat','Sallallahu alaihi wa sallam':'fred og velsignelse være med ham'},
+ qa:[['Når sier vi salawat?','Hver gang vi hører, leser eller sier navnet hans.'],['Hvorfor sier vi den?','For å vise respekt og kjærlighet — og fordi den bringer oss nærmere Allah ﷻ.'],['Hvor mange belønninger for én salawat?','Ti.']],
+ feil:['«Salawat er en dua for oss selv.» Nei — vi ber om velsignelse over HAM. Belønningen kommer i tillegg.','«Den må sies på arabisk.» Boka sier selv at den kan sies på ulike språk. Den arabiske formen læres likevel, fordi den er den vanlige.'],
+ aktivitet:'Alle sier salawat i kor tre ganger, langsomt. Deretter én runde der hver elev sier den alene. Læreren retter uttalen vennlig, én ting om gangen.',
+ fyll:['Den stille runden — passer denne timen bedre enn noen annen.','Sant eller usant — «Vi sier salawat bare i moskeen.» «Én salawat gir ti belønninger.» «Salawat og durood er to forskjellige ting.»'],
+ lekser:'Tell hvor mange ganger du sier salawat på én dag. Skriv tallet i boka.',
+ kobling:['Æresbevisningene foran i boka','Profetens ﷺ vakre navn → neste økt','Ukens dua: Første kalimah, heftet s. 2'],
+ verktoy:'Elevboka · tavle og tusj'},
+
+{nr:3,tittel:'Profetens ﷺ vakre navn',sider:'s. 78–79',
+ mal:'Eleven kan minst fire av navnene og vet at hvert navn forteller noe om ham.',
+ timeplan:'0–4    Repetisjon av salawat\n4–8    Hvorfor navn betyr noe\n8–20   Gå gjennom de åtte navnene, to og to\n20–26  Aktivitet\n26–30  Oppsummering og lekse',
+ bakgrunn:['Ideen elevene skal ta med seg: et navn er ikke bare en etikett — det forteller en egenskap. Muhammad = den som er priset. Mustafa = den utvalgte. Aqib = den siste.','🔴 asma un nabi forveksles lett med al-Asma al-Husna, Allahs ﷻ vakre navn. Boka tar dette som feilen elevene skal finne på s. 84 — så det er verdt å si tydelig i dag.','Plansjen på s. 79 viser svært mange navn. Målet i dag er de åtte i tabellen. Bruk plansjen som et blikk: «det finnes mange flere».','Aqib og Nabi kommer igjen i Iman-kapittelet. Nevn det, la det ligge.'],
+ kjerne:['Profetens ﷺ mange navn forteller oss om hans egenskaper.','Navnene kalles asma un nabi.','Muhammad — den som er priset. Ahmad — mest prisverdig.','Nabi — profet. Rasul — sendebud.','Basheer — den som gir det gode budskap. Aqib — den siste.','Hamid — lovpriste. Mustafa — den utvalgte.'],
+ hvisTid:['Se på plansjen s. 79: navnene er langt flere enn de åtte.','Spør hvem i klassen som heter Muhammad, Ahmad eller Mustafa — og hva navnet deres da betyr.'],
+ ord:{'asma un nabi':'Profetens ﷺ vakre navn','al-Asma al-Husna':'Allahs ﷻ vakre navn — ikke det samme','Mustafa':'den utvalgte','al-Amin':'den troverdige (kommer i økt 6)'},
+ qa:[['Hva betyr Muhammad?','Den som er priset.'],['Hva kalles Profetens ﷺ vakre navn?','asma un nabi.'],['Hva forteller navnene oss?','Noe om egenskapene hans — ikke bare hva han het.']],
+ feil:['🔴 «De vakre navnene kalles al-Asma al-Husna.» Nei — det er Allahs ﷻ navn. Profetens ﷺ heter asma un nabi.','«Muhammad betyr den utvalgte.» Nei — det er Mustafa. Muhammad betyr den priste. Boka bruker akkurat denne feilen på s. 84.'],
+ aktivitet:'Ordkortene: åtte kort med navnet på den ene siden og betydningen på den andre. Elevene trekker etter tur og gjetter betydningen før de snur.',
+ fyll:['Ordkortene — de åtte navnene. Kortene tas vare på; de brukes igjen i økt 7.','Tavlestafett — to lag skriver så mange av navnene de husker.','Sant eller usant — «Aqib betyr den første.» «Rasul betyr sendebud.»'],
+ lekser:'Lær fire av navnene utenat med betydningen.',
+ kobling:['Allahs ﷻ vakre navn → kapittelet «Allah», s. 34','Nabi og rasul → kapittelet «Iman», s. 48','Ukens dua: Andre kalimah, heftet s. 2'],
+ verktoy:'Elevboka · ordkort med åtte navn · tavle og tusj'},
+
+{nr:4,tittel:'Fødselen',sider:'s. 80',
+ mal:'Eleven vet når og hvor Profeten ﷺ ble født, og hvem som ga ham navnet.',
+ timeplan:'0–4    Repetisjon: hva betyr Muhammad?\n4–14   Dagen, måneden, stedet\n14–20  Kartet: Mekka og Madina\n20–26  Aktivitet\n26–30  Oppsummering og lekse',
+ bakgrunn:['Tre opplysninger skal sitte: mandag · den 12. i rabi\u2019 al-Awwal · Mekka. Alt annet er ramme.','rabi\u2019 al-Awwal er den tredje måneden i den islamske kalenderen. Fin anledning til å vise at det finnes en annen kalender enn den på veggen — og at den er grunnen til at eid flytter seg hvert år.','Bestefaren Abdul Muttalib ga navnet. Faren het Abdullah. 🔴 Boka bruker nettopp denne forvekslingen som feil på s. 84.','Fødestedet ligger nær Kaba og er i dag gjort om til et bibliotek.','Faller Profetens ﷺ fødselsdag i skoleåret, hører den hjemme i fellessamlingen — ikke i denne timen.'],
+ kjerne:['Profeten ﷺ ble født på en mandag.','Den 12. dagen i måneden rabi\u2019 al-Awwal, den tredje måneden i den islamske kalenderen.','Bestefaren Abdul Muttalib ga ham navnet Muhammad — «den som er priset».','Han ble født i Mekka. Fødestedet ligger nær Kaba.'],
+ hvisTid:['Fødestedet er i dag gjort om til et bibliotek.','Se kartet: Mekka i sør, Madina i nord. Moskeen fra s. 74 ligger i Madina.'],
+ ord:{'rabi\u2019 al-Awwal':'den tredje måneden i den islamske kalenderen','Mekka':'byen han ble født i','Kaba':'huset i Mekka som muslimer vender seg mot','Abdul Muttalib':'bestefaren, som ga ham navnet'},
+ qa:[['Hvilken ukedag ble han født?','Mandag.'],['Hvem ga ham navnet?','Bestefaren Abdul Muttalib.'],['Hvilken by?','Mekka.']],
+ feil:['🔴 «Bestefaren het Abdullah.» Nei — Abdullah er faren. Bestefaren er Abdul Muttalib.','«Han ble født i Madina.» Nei — født i Mekka. Madina kommer senere i livet hans.'],
+ aktivitet:'Tegn en enkel tidslinje på tavla med de tre opplysningene: mandag · 12. rabi\u2019 al-Awwal · Mekka. Elevene skriver den av i boka.',
+ fyll:['Hvem er jeg? — «Jeg er bestefaren hans. Jeg ga ham navnet.»','Finn det i boka — finn navnet på måneden han ble født i.','Sett det i rekkefølge — de tolv islamske månedene, hvis klassen er moden for det.'],
+ lekser:'Skriv de tre opplysningene i boka og les dem for en hjemme.',
+ kobling:['Den islamske kalenderen → fellessamlingen ved eid og mawlid','Kaba → kapittelet «Islam», hajj s. 68','Ukens dua: Fem korte uttrykk, heftet s. 3'],
+ verktoy:'Elevboka · tavle og tusj · kart over Arabia (valgfritt)'},
+
+{nr:5,tittel:'Familien',sider:'s. 81',
+ mal:'Eleven kan navngi foreldrene, bestefaren og minst to av barna.',
+ timeplan:'0–4    Repetisjon: hvem ga ham navnet?\n4–10   Bani Hashim og Quraish\n10–20  Familietreet, gruppe for gruppe\n20–26  Aktivitet\n26–30  Oppsummering og lekse',
+ bakgrunn:['Familietreet på s. 81 er stort. Del det i fire grupper: foreldre og fostermor · bestefar og onkler · første kone · barna.','Krev ikke at alle navn sitter i dag. Boka ber om at listen læres utenat (s. 85) — det er en lekse over flere uker, ikke en time.','Fatima nevnes igjen mange ganger senere i skoleløpet. Skal ett barnenavn sitte, la det være hennes.','Halima Sadia var fostermoren. Barn spør ofte hvorfor; det var skikken i Mekka at spedbarn ble sendt ut på landet. Ett svar, ikke en historietime.','Bani Hashim var familien, Quraish var stammen. Forklar med klassen selv: «familien din» mot «alle som bor i gaten».'],
+ kjerne:['Profeten ﷺ tilhørte familien Bani Hashim, i den høyt aktede Quraish-stammen.','Far: Abdullah. Mor: Amina. Bestefar: Abdul Muttalib. Fostermor: Halima Sadia.','Onkler: Abbas, Abu Talib, Hamza.','Første kone: Khadijah.','Døtre: Fatima, Ruqayyah, Umm Kulthoom, Zainab.','Sønner: Abdullah, Qasim, Ibrahim.'],
+ hvisTid:['Hva er forskjellen på en familie og en stamme?','Hvorfor hadde han en fostermor?'],
+ ord:{'Bani Hashim':'familien hans','Quraish':'stammen familien tilhørte','Khadijah':'hans første kone','fostermor':'en som ammer og passer et barn som ikke er hennes eget'},
+ qa:[['Hva het foreldrene hans?','Abdullah og Amina.'],['Hvem var Khadijah?','Hans første kone.'],['Nevn to av døtrene.','Fatima, Ruqayyah, Umm Kulthoom eller Zainab.']],
+ feil:['«Halima Sadia var moren hans.» Nei — fostermoren. Moren het Amina.','«Bani Hashim og Quraish er to forskjellige familier.» Bani Hashim er familien, Quraish er stammen den hørte til.'],
+ aktivitet:'Tegn et tomt familietre på tavla med bare rollene: far, mor, bestefar, kone, døtre, sønner. Elevene fyller inn navnene etter hukommelsen, med boka lukket.',
+ fyll:['Hvem er jeg? — «Jeg er hans første kone.» «Jeg er onkelen hans, og jeg heter Hamza.»','Tavlestafett — to lag skriver så mange familiemedlemmer de husker.','Tegn ordet — for de yngste: tegn familietreet i stedet for å skrive det.'],
+ lekser:'Lær navnene på foreldrene, bestefaren og døtrene. Listen står på s. 85.',
+ kobling:['Fatima → nevnes gjennom hele skoleløpet','«Lær utenat»-oppgaven, s. 85','Ukens dua: Fire korte uttrykk, heftet s. 4'],
+ verktoy:'Elevboka · tavle og tusj · ark til familietre'},
+
+{nr:6,tittel:'Profetens ﷺ personlighet',sider:'s. 82–83',
+ mal:'Eleven kan forklare hvorfor han ble kalt al-Amin og al-Sadiq, og nevne tre trekk ved karakteren hans.',
+ timeplan:'0–4    Repetisjon av familien\n4–10   Handelsmannen — al-Amin og al-Sadiq\n10–22  Karakteren: barmhjertighet, barn, de svake, dyrene\n22–27  «Sa aldri nei» — samtale\n27–30  Oppsummering og lekse',
+ bakgrunn:['Dette er kapittelets hjerte. De andre øktene er opplysninger; denne handler om hvem han var — og det er den timen som kan endre hvordan et barn oppfører seg i friminuttet.','al-Amin og al-Sadiq er tilnavn han fikk FØR åpenbaringen, av folk som ikke fulgte ham. Det er poenget: også de som var uenige med ham, stolte på ham.','Boka er konkret, og det er en styrke: han lekte med barn, var god mot kvinner, hedret de eldre, passet på at ingen skadet dyrene, delte ut det han hadde hjemme, gikk heller sulten selv.','«Sa aldri nei» er den setningen elevene husker. La den stå litt. Spør hva det ville koste dem selv å aldri si nei.','Boka avslutter med at den beste måten å øke kjærligheten er å lære om livet hans — en naturlig bro til resten av skoleåret.'],
+ kjerne:['Han var en kjent handelsmann i Mekka.','Han ble kalt al-Amin — den troverdige, en man kan stole på.','Og al-Sadiq — den som alltid snakker sant.','Han var barmhjertig og brydde seg om de svake og fattige.','Ekstra snill mot barn og lekte mye med dem. God mot kvinner, hedret de eldre, passet på at ingen skadet dyrene.','Han delte ut det han hadde hjemme, og gikk heller sulten selv enn å la de rundt ham sulte.','Ba noen ham om noe, sa han aldri nei.'],
+ hvisTid:['Han hadde en vakker stemme og den mest sannferdige tale.','Ord er ikke nok til å beskrive hans skjønnhet og gode karakter.','En av de beste måtene å øke kjærligheten til ham er å lære om livet hans.'],
+ ord:{'al-Amin':'den troverdige','al-Sadiq':'den som alltid snakker sant','barmhjertig':'en som viser omsorg for dem som har det vondt','handelsmann':'en som kjøper og selger varer'},
+ qa:[['Hvorfor ble han kalt al-Amin?','Fordi folk kunne stole på ham.'],['Hva gjorde han med maten hjemme?','Delte den ut, og gikk heller sulten selv.'],['Hvem fikk navnene til å feste seg?','Folk i Mekka — også de som ikke fulgte ham.']],
+ feil:['«Han fikk navnet al-Amin fordi han var profet.» Nei — han fikk det som ung handelsmann, før åpenbaringen.','🔴 «Han foretrakk at andre gikk sultne.» Motsatt — han gikk heller sulten selv. Boka bruker denne feilen på s. 84.'],
+ aktivitet:'Skriv al-Amin og al-Sadiq på tavla. Hver elev forteller om én gang de selv holdt et løfte eller sa sannheten når det var vanskelig. Ingen tvinges.',
+ fyll:['Sant eller usant — hele «Finn feilen»-settet fra s. 84 passer her.','Forklar til sidemannen — al-Amin · al-Sadiq · barmhjertig','Spørsmålsstafetten — elevene lager spørsmål fra hele kapittelet.'],
+ lekser:'Gjør én ting denne uken som en al-Amin ville gjort. Fortell om det neste gang.',
+ kobling:['Zakah og omsorg for de fattige → kapittelet «Islam», s. 64','Oppgavene s. 84–85 → neste økt','Ukens dua: Seks korte uttrykk, heftet s. 5'],
+ verktoy:'Elevboka · tavle og tusj'},
+
+{nr:7,tittel:'Oppgaver',sider:'s. 84–85',
+ mal:'Eleven viser at stoffet sitter, og læreren ser hvem som trenger repetisjon.',
+ timeplan:'0–5    Muntlig oppsummering av hele kapittelet\n5–12   «Bruk ordene under» — skriftlig\n12–20  «Finn feilen» — muntlig i klassen\n20–26  «Hva betyr disse ordene?»\n26–30  Gjennomgang av «Lær utenat» og «Øvelse» som lekse',
+ bakgrunn:['Fem oppgavetyper: Bruk ordene under · Finn feilen · Hva betyr disse ordene · Lær utenat · Øvelse. Samme mønster går igjen i alle kapitler — elevene kjenner det igjen etter to ganger.','«Finn feilen» er kapittelets beste oppgave og bør gjøres MUNTLIG. Hver feil peker rett på en av øktene: navnets betydning (økt 3), den siste profeten (økt 1), bestefaren (økt 4), asma un nabi (økt 3), sulten (økt 6).','«Lær utenat» og «Øvelse» rekkes ikke på tretti minutter. Sett dem som lekse over flere uker.','Merk hvem som svarer feil på hva — det forteller om en økt må tas igjen. Skriv det i avviksfeltet, ikke i hodet.'],
+ kjerne:['Ordene til utfyllingsoppgaven: barmhjertig · Mekka · peneste · mandag · ære.','Feilene som skal finnes: navnet Muhammads betydning · «nest siste» profet · bestefarens navn · asma un nabi mot al-Asma al-Husna · at han foretrakk at andre gikk sultne.','Ordene som skal forklares: asma un nabi · salawat · sahaba · al-Amin · al-Sadiq · rabi\u2019 al-Awwal.','Lær utenat: familielisten, s. 85.','Øvelse: de vakre navnene.'],
+ hvisTid:['La elevene lage sine egne «Finn feilen»-setninger til hverandre. Et godt villedende spørsmål viser at stoffet sitter.'],
+ ord:{},
+ qa:[['Hva var det viktigste du lærte om Profeten ﷺ i dette kapittelet?','Åpent. Svaret sier mer om timen enn om eleven.']],
+ feil:['Alle kapittelets vanlige feil samles her. Går en av dem igjen hos flere, er det den økten som må tas igjen — ikke hele kapittelet.'],
+ aktivitet:'«Finn feilen» muntlig: læreren leser den gale setningen, elevene retter den høyt og sier hvorfor.',
+ fyll:['Spørsmålsstafetten — elevene stiller hverandre spørsmål fra hele kapittelet.','Ordkortene — navnekortene fra økt 3 hentes fram igjen.','Tavlestafett — familiemedlemmer mot vakre navn, to lag.'],
+ lekser:'«Lær utenat» s. 85 — familielisten. Fortsetter over flere uker.',
+ kobling:['Neste kapittel i spor B: «Den hellige Koranen», s. 86','Ukens dua: Tredje kalimah, heftet s. 6'],
+ verktoy:'Elevboka · skrivebok · ordkort fra økt 3 · tavle og tusj'}
+];
+
+const DUA = [
+ [1,'Søke tilflukt hos Allah + Bismillah','s. 2',1],[2,'Første kalimah — Det rene ordet','s. 2',1],
+ [3,'Andre kalimah — Troserklæringen','s. 2',2],[4,'Fem korte uttrykk','s. 3',2],
+ [5,'Fire korte uttrykk','s. 4',2],[6,'Seks korte uttrykk','s. 5',2],
+ [7,'Tredje kalimah — Lovprisning','s. 6',2],[8,'Fjerde kalimah — Allah er én','s. 6',2],
+ [9,'Sana','s. 7',2],[10,'Moskeen — inn og ut','s. 8',1],
+ [11,'Sove og våkne','s. 8–9',2],[12,'Mat — før, glemt, etter','s. 9',2],
+ [13,'Drikke — vann og melk','s. 10',2],[14,'Hjemmefra og hjem','s. 10–11',1],
+ [15,'Toalett — inn og ut','s. 11',1],[16,'Prøve','s. 12',1]
+];
+
+const BANK = [
+ ['Hviskeleken','5–7 min','Elevene sitter på rekke. Læreren hvisker en setning til den første. Den går videre, og den siste sier den høyt. Sammenlign med originalen.','Viser hvor lett et budskap endrer seg fra munn til munn.'],
+ ['Sant eller usant','4–6 min','Læreren leser en påstand. Elevene reiser seg for sant, blir sittende for usant. Feil svar rettes med én setning.','Bokas «Finn feilen»-oppgaver er ferdig materiale.'],
+ ['Ordkortene','5 min','Dagens ord på kort, lagt med teksten ned. Den som snur et kort forklarer ordet med egne ord.','Kortene samles gjennom året og blir en voksende bunke.'],
+ ['Tavlestafett','6–8 min','To lag. Én fra hvert lag skriver ett ord fra listen, så neste.','Beveger klassen. Passer sist i timen.'],
+ ['Hvem er jeg?','5–8 min','Læreren beskriver en person i jeg-form. Elevene gjetter.','Navn festes til en historie i stedet for til en liste.'],
+ ['Sett det i rekkefølge','5 min','Hendelser skrives i tilfeldig rekkefølge. Elevene setter dem i orden.','Virker like godt på bønnens trinn og på hajj.'],
+ ['Forklar til sidemannen','3–4 min','Hver elev velger ett ord fra timen og forklarer det til sidemannen.','Den korteste som finnes. Den som forklarer, lærer mest.'],
+ ['Tegn ordet','6 min','Eleven tegner et ord på tavla uten bokstaver. De andre gjetter.','Fungerer for de yngste som ennå ikke leser.'],
+ ['Spørsmålsstafetten','5 min','Én elev stiller et spørsmål til en annen. Svarer hun riktig, stiller hun neste.','Et godt spørsmål viser at stoffet sitter.'],
+ ['Den stille runden','3 min','Alle sier salawat én gang, med lav stemme, én etter én.','Avslutter timen rolig i stedet for i støy.'],
+ ['Finn det i boka','4 min','Læreren stiller et spørsmål. Elevene leter i boka og rekker opp hånden.','Elever som kan slå opp selv, blir mindre avhengige av læreren.'],
+ ['Ordveggen','2 min','Ett ord per uke settes opp på veggen og blir stående.','Ikke en lek, men en vane. Etter tretti uker henger hele årets ordforråd der.']
+];
+
+const esc = x => String(x ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* spor */
+document.getElementById('sporPar').innerHTML = SPOR.map(s => `
+  <div class="spor-kort ${s.id.toLowerCase()}">
+    <span class="merke">${esc(s.okt)}</span>
+    <h3>Spor ${s.id} — ${esc(s.navn)}</h3>
+    <ol>${s.kap.map(k=>`<li>${esc(k)}</li>`).join('')}</ol>
+    <span class="sum">${s.sider} sider · 30 økter</span>
+  </div>`).join('');
+
+/* kapitler — i sporenes rekkefølge, ikke etter nummer */
+const orden = ['allah','iman','profeten','koranen','islam','arabiske'];
+document.getElementById('kapitler').innerHTML = orden.map(id=>{
+  const k = KAPITLER.find(x=>x.id===id);
+  return `
+  <div class="kap ${k.spor==='B'?'b':''}${k.ferdig?' aktiv':''}">
+    <button class="kap-hode" type="button" aria-expanded="false">
+      <span class="kap-nr">${k.nr}</span>
+      <span>
+        <span class="kap-tit">${esc(k.tittel)}</span>
+        <span class="kap-meta">Spor ${k.spor} · ${esc(k.sider)} · ${k.vekt} sider · ${k.okter} økter${k.ferdig?' · øktene er skrevet':''}</span>
+      </span>
+      <span class="kap-pil" aria-hidden="true">▾</span>
+    </button>
+    <div class="kap-krop" hidden>
+      <ul class="mal-liste">${k.mal.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>
+      <p class="vers">${esc(k.vers)}${k.kilde?`<span class="kilde">${esc(k.kilde)}</span>`:''}</p>
+      <div class="emneliste">${k.emner.map(e=>`<span>${esc(e)}</span>`).join('')}</div>
+    </div>
+  </div>`;
+}).join('');
+
+/* økter */
+function ordbok(o){
+  const n = Object.keys(o||{});
+  if(!n.length) return '';
+  return `<div class="blokk"><h4>Ord</h4><div class="ordbok">${
+    n.map(k=>`<div><b>${esc(k)}</b> <span>— ${esc(o[k])}</span></div>`).join('')}</div></div>`;
+}
+document.getElementById('okter').innerHTML = OKTER.map(o=>`
+  <div class="okt">
+    <button class="okt-hode" type="button" aria-expanded="false">
+      <span class="okt-nr">${o.nr}</span>
+      <span>
+        <span class="okt-tit">${esc(o.tittel)}</span><br>
+        <span class="okt-sider">${esc(o.sider)}</span>
+      </span>
+      <span class="kap-pil" aria-hidden="true">▾</span>
+    </button>
+    <div class="okt-krop" hidden>
+      <div class="blokk"><h4>Mål</h4><div class="malboks">${esc(o.mal)}</div></div>
+      <div class="blokk"><h4>Slik kan timen gå</h4><div class="tidsplan">${esc(o.timeplan)}</div></div>
+      <div class="blokk"><h4>Bakgrunn for læreren</h4><ul>${o.bakgrunn.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+      <div class="blokk"><h4>Kjerne — dette skal med</h4><ol>${o.kjerne.map(b=>`<li>${esc(b)}</li>`).join('')}</ol></div>
+      <div class="blokk gull"><h4>Hvis det blir tid</h4><ul>${o.hvisTid.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+      ${ordbok(o.ord)}
+      <div class="blokk"><h4>Spørsmål — med svaret du ser etter</h4>
+        ${o.qa.map(([q,s])=>`<div class="qa"><div class="q">${esc(q)}</div><div class="s">${esc(s)}</div></div>`).join('')}</div>
+      <div class="blokk rod"><h4>Vanlige misforståelser</h4><ul>${o.feil.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+      <div class="blokk"><h4>Aktivitet</h4><p>${esc(o.aktivitet)}</p></div>
+      <div class="blokk gull"><h4>Blir det tid til overs</h4><ul>${o.fyll.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+      <div class="blokk"><h4>Lekse</h4><p>${esc(o.lekser)}</p></div>
+      <div class="blokk"><h4>Kobling</h4><ul>${o.kobling.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+      <div class="blokk"><h4>Verktøy</h4><p>${esc(o.verktoy)}</p></div>
+    </div>
+  </div>`).join('');
+
+/* dua */
+document.getElementById('duaTab').innerHTML = DUA.map(([n,t,s,u])=>
+  `<tr><td>${n}</td><td>${esc(t)}</td><td>${esc(s)} · ${u} ${u===1?'uke':'uker'}</td></tr>`).join('')
+  + `<tr><td></td><td><b>26 uker</b> + 7 til repetisjon</td><td>= 33 lørdager</td></tr>`;
+
+/* bank */
+document.getElementById('bank').innerHTML = BANK.map(([t,m,s,p])=>`
+  <div class="lek">
+    <span class="min">${esc(m)}</span>
+    <h4>${esc(t)}</h4>
+    <p>${esc(s)}</p>
+    <p class="poeng">${esc(p)}</p>
+  </div>`).join('');
+
+/* åpne og lukke */
+document.addEventListener('click', e => {
+  const h = e.target.closest('.kap-hode, .okt-hode');
+  if(!h) return;
+  const boks = h.parentElement;
+  const krop = boks.querySelector('.kap-krop, .okt-krop');
+  const apen = krop.hasAttribute('hidden');
+  krop.toggleAttribute('hidden', !apen);
+  h.setAttribute('aria-expanded', String(apen));
+  boks.classList.toggle('apen', apen);
+});
+</script>
+
+</body>
+</html>
