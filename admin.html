@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 12:56:15 -->
+<!-- SIST-ENDRET: 2026-08-18 13:13:47 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9957,6 +9957,11 @@
           border-bottom:2px solid #e4edf6;
         }
         h2:first-child{ margin-top:0; }
+        /* Månedsplanen henges på veggen eller legges i en perm — én
+           måned per ark. Uten dette deler september seg over to sider
+           og oktober begynner midt på den andre. */
+        h2.ap-mnd{ break-before:page; page-break-before:always; }
+        h2.ap-mnd:first-child{ break-before:auto; page-break-before:auto; }
         p{ font-size:12.5px; line-height:1.65; margin:0 0 10px; }
 
         table{ border-collapse:collapse; width:100%; font-size:12.5px; }
@@ -15758,7 +15763,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   function apTabell(p, tittel){
     const rader = p.dager || [];
     const vis = apVisAlle ? rader : rader.slice(0, 8);
-    const sporIder = [...new Set(rader.flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+    const sporIder = apSporIder(rader);
     return `
       <div class="report-card" style="margin-top:16px;">
         <h3>${escapeHtml(tittel)}</h3>
@@ -15779,9 +15784,114 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
                 '<td class="ap-liten">' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
           </tr>`).join('')}
         </tbody></table></div>
-        ${rader.length > 8 ? `<button class="btn btn-ghost" style="width:auto; margin-top:12px;"
-          onclick="apVisAlle = !apVisAlle; apRender();">${apVisAlle ? 'Vis færre' : 'Vis alle ' + rader.length + ' dagene'}</button>` : ''}
+
+        <!-- 🔴 Knappen sto med onclick="apVisAlle = !apVisAlle; apRender();".
+             Den gjorde ingenting, og sa ingenting om hvorfor.
+             En innebygd onclick kjører i GLOBAL scope. apVisAlle og
+             apRender er begge modulscope — de finnes rett og slett ikke
+             der. Tilordningen lagde en ny global variabel, og linjen etter
+             kastet ReferenceError inne i attributtet, der ingen ser den.
+             Alt annet i denne filen kalles som window.noe() nettopp
+             derfor. Denne ene var glemt. -->
+        <div style="display:flex; gap:9px; flex-wrap:wrap; margin-top:12px;">
+          ${rader.length > 8 ? `<button class="btn btn-ghost" style="width:auto;"
+            onclick="apVisAlt()">${apVisAlle ? 'Vis færre' : 'Vis alle ' + rader.length + ' dagene'}</button>` : ''}
+          <button class="btn btn-ghost" style="width:auto;" onclick="apSkrivUt()">🖨️ Hele året</button>
+          <button class="btn btn-ghost" style="width:auto;" onclick="apSkrivUtMaaneder()">🖨️ Månedsplan</button>
+        </div>
       </div>`;
+  }
+
+  window.apVisAlt = function(){ apVisAlle = !apVisAlle; apRender(); };
+
+  function apSporIder(rader){
+    return [...new Set((rader || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+  }
+
+  // Utkastet hvis det finnes, ellers den frosne. Utskriften skal virke
+  // FØR frysing også: et ark er lettere å lese gjennom enn en tabell på
+  // en telefon, og det er nettopp før frysing man skal lese det.
+  function apGjeldende(){
+    if(apUtkast && apUtkast.feil.length === 0) return apUtkast;
+    return (arsplanCache || []).find(a => a.id === apDokId(apKlasseId)) || apUtkast || null;
+  }
+
+  // ── MÅNEDER ───────────────────────────────────────────────────────
+  //
+  // Året er oversikten. Måneden er det læreren faktisk henger på veggen
+  // og tar med seg: fire–fem lørdager, med mål og lekser, på ett ark.
+  //
+  // 📌 Innholdet hentes fra fagplanen, ikke fra den frosne planen.
+  // Den frosne planen eier DATOENE — de skal stå. Teksten i økten eier
+  // fagplanen, og retter du en formulering der, skal den nå læreren.
+  // Fryser man teksten også, må hele året genereres på nytt for å rette
+  // en skrivefeil.
+  function apMndNokkel(iso){ return String(iso).slice(0, 7); }
+  function apMndNavn(iso){
+    const d = new Date(String(iso) + 'T00:00:00');
+    if(isNaN(d)) return String(iso);
+    const n = d.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' });
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  function apMaaneder(p){
+    const ut = [];
+    (p.dager || []).forEach(r => {
+      const n = apMndNokkel(r.dato);
+      let m = ut.find(x => x.nokkel === n);
+      if(!m){ m = { nokkel: n, navn: apMndNavn(r.dato), dager: [] }; ut.push(m); }
+      m.dager.push(r);
+    });
+    return ut;
+  }
+  function apOktDetalj(o){
+    if(!o) return null;
+    const full = (fpOkter || []).find(x => x.id === o.oktId);
+    return {
+      nr: o.nr,
+      kapittel: o.kapittelTittel || o.kapittel || '',
+      tittel: (full && full.tittel) || o.tittel || '',
+      mal: (full && full.mal) || '',
+      lekser: (full && full.lekser) || '',
+      sider: full ? fpSider(full.sider) : ''
+    };
+  }
+
+  window.apSkrivUtMaaneder = function(){
+    const p = apGjeldende();
+    if(!p) return;
+    const sporIder = apSporIder(p.dager);
+    const mnd = apMaaneder(p);
+    apneUtskrift(utskriftsmal({
+      tittel: 'Månedsplan · ' + (p.klasseNavn || ''),
+      undertittel: (p.fagplanNavn || '') + ' · ' + (p.programNavn || ''),
+      innhold: mnd.map(m => `
+        <h2 class="ap-mnd">${escapeHtml(m.navn)} — ${m.dager.length} ${m.dager.length === 1 ? 'dag' : 'dager'}</h2>
+        ${m.dager.map(r => {
+          if(r.reservert) return `<table class="nv"><tbody>
+            <tr><th>${escapeHtml(apDatoLang(r.dato))}</th><td><i>${escapeHtml(r.reservert)}</i></td></tr>
+          </tbody></table>`;
+          const rader = sporIder.map(id => {
+            const d = apOktDetalj(r[id]);
+            if(!d) return '';
+            return `<tr><th>Spor ${id}${d.sider ? ' · ' + escapeHtml(d.sider) : ''}</th><td>
+              <b>${escapeHtml(d.kapittel)} ${d.nr} — ${escapeHtml(d.tittel)}</b>
+              ${d.mal ? '<br>' + escapeHtml(d.mal) : ''}
+              ${d.lekser ? '<br><i>Lekse: ' + escapeHtml(d.lekser) + '</i>' : ''}
+            </td></tr>`;
+          }).join('');
+          return `<table class="nv"><tbody>
+            <tr><th>${escapeHtml(apDatoLang(r.dato))}</th><td></td></tr>
+            ${rader}
+            ${r.dua ? `<tr><th>Dua</th><td>${escapeHtml(r.dua.tittel || '')}${r.dua.side ? ' · s. ' + r.dua.side : ''}</td></tr>` : ''}
+          </tbody></table>`;
+        }).join('')}`).join('')
+    }));
+  };
+
+  function apDatoLang(iso){
+    const d = new Date(String(iso) + 'T00:00:00');
+    if(isNaN(d)) return String(iso);
+    return d.toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
   function apDatoKort(iso){
@@ -15840,9 +15950,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   };
 
   window.apSkrivUt = function(){
-    const p = (arsplanCache || []).find(a => a.id === apDokId(apKlasseId));
+    const p = apGjeldende();
     if(!p) return;
-    const sporIder = [...new Set((p.dager || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+    const sporIder = apSporIder(p.dager);
     apneUtskrift(utskriftsmal({
       tittel: 'Årsplan · ' + (p.klasseNavn || ''),
       undertittel: (p.fagplanNavn || '') + ' · ' + (p.programNavn || ''),
@@ -15857,7 +15967,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         <h2>Året</h2>
         <p>${p.antallDager} undervisningsdager, ${p.antallUndervisning} med pensum og
         ${p.antallReservert} holdt av til repetisjon og prøve.
-        Frosset ${p.generertDato ? new Date(p.generertDato).toLocaleDateString('no-NO') : '—'}.</p>
+        ${p.generertDato
+          ? 'Frosset ' + new Date(p.generertDato).toLocaleDateString('no-NO') + '.'
+          : 'UTKAST — ikke frosset. Datoene kan fortsatt endre seg.'}</p>
         <table><thead><tr><th>Dato</th>
           ${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th></tr></thead><tbody>
         ${(p.dager || []).map(r => `<tr>
@@ -15875,9 +15987,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   };
 
   window.apEksporterCSV = function(){
-    const p = (arsplanCache || []).find(a => a.id === apDokId(apKlasseId));
+    const p = apGjeldende();
     if(!p) return;
-    const sporIder = [...new Set((p.dager || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+    const sporIder = apSporIder(p.dager);
     const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     const linjer = [['Dato', 'Dag', ...sporIder.flatMap(id => ['Spor ' + id + ' kapittel', 'Spor ' + id + ' økt']),
       'Dua', 'Merknad'].map(q).join(',')];
