@@ -1,5 +1,5 @@
 rules_version = '2';
-/* SIST-ENDRET: 2026-08-18 02:16:28 */
+/* SIST-ENDRET: 2026-08-18 11:27:00 */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -398,6 +398,32 @@ service cloud.firestore {
     // Motsatt rekkefølge gir avviste skrivinger som bare havner i
     // feilloggen — skjermen ser ut til å virke, og ingenting lagres.
     match /fagplan/{id} {
+      allow read: if loggedIn();
+      allow write: if mittNiva() <= 3;
+    }
+
+    // 🔴 ØKTENE LIGGER I EN UNDERSAMLING — OG DEN ARVER INGENTING.
+    //
+    // Regelen over gjelder DOKUMENTET fagplan/{id}, ikke det som ligger
+    // under det. En undersamling er ikke dekket av foreldrenes regel;
+    // den faller rett ned i «Ukjente samlinger: nekt alt» nederst i
+    // denne filen.
+    //
+    // Uten linjene her ville importknappen i panelet skrevet selve
+    // planen — 15 kB, ett dokument — og så blitt avvist på hver eneste
+    // av de seksti øktene. Feilen havner bare i nettleserloggen:
+    // skjermen viser en lagret plan, og timene den skal holdes med
+    // finnes ikke.
+    //
+    // Hvorfor undersamling og ikke ett stort dokument: de seksti øktene
+    // er til sammen ~213 kB. Læreren som slår opp neste lørdags økt på
+    // telefonen skal laste 3 kB, ikke 213. Og to som retter hvert sitt
+    // kapittel skal ikke overskrive hverandre — det er nøyaktig den
+    // stille feilen samlingen er delt opp for å unngå.
+    //
+    // Samme grense som planen selv: leses av alle innloggede fordi
+    // læreren forbereder timen sin fra den, skrives fra nivå 3.
+    match /fagplan/{id}/okter/{oktId} {
       allow read: if loggedIn();
       allow write: if mittNiva() <= 3;
     }
