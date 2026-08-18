@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 13:13:47 -->
+<!-- SIST-ENDRET: 2026-08-18 13:22:16 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1412,6 +1412,41 @@
     font-variant-numeric:lining-nums tabular-nums;}
   .ap-tab .ap-liten{font-size:11px; color:#8a9a90;}
   .ap-tab tr.ap-holdt td{background:var(--paper); color:#8a9a90;}
+  /* Månedsvelgeren: brikker, ikke nedtrekk. Ni måneder er få nok til å
+     vises alle sammen, og da ser man også hvor mange lørdager hver har
+     — det er det tallet man planlegger etter. */
+  .ap-valg{display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 4px;}
+  .ap-chip{display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+    border:1px solid var(--line); background:#fff; color:#5a6860;
+    font-family:'Jost',sans-serif; font-size:12.5px; padding:6px 12px;
+    border-radius:999px; transition:background .15s, border-color .15s;}
+  .ap-chip:hover{background:var(--paper);}
+  .ap-chip.pa{border-color:var(--emerald); background:#e8f1ec; color:var(--emerald-d); font-weight:600;}
+  .ap-chip .n{font-size:10.5px; color:var(--gold); font-variant-numeric:lining-nums tabular-nums;}
+  .ap-chip.pa .n{color:var(--emerald);}
+
+  .ap-mnd-liste{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .ap-dag{border:1px solid var(--line); border-radius:9px; background:#fff; overflow:hidden;}
+  .ap-dag.holdt{background:var(--paper);}
+  .ap-dag-hode{padding:9px 14px; background:var(--paper); border-bottom:1px solid var(--line);
+    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; color:var(--emerald-d);
+    font-variant-numeric:lining-nums tabular-nums;}
+  .ap-dag.holdt .ap-dag-hode{color:#8a9a90;}
+  .ap-dag-linje{display:flex; gap:12px; padding:10px 14px; border-bottom:1px solid var(--paper-2);
+    font-family:'Jost',sans-serif; font-size:12.5px;}
+  .ap-dag-linje:last-child{border-bottom:none;}
+  .ap-spor{flex:0 0 88px; color:var(--gold); font-size:11px; text-transform:uppercase;
+    letter-spacing:.04em; padding-top:1px;}
+  .ap-spor .s{display:block; color:#8a9a90; text-transform:none; letter-spacing:0;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .ap-innhold{flex:1 1 auto; min-width:0; color:#3c5a4a; line-height:1.5;}
+  .ap-innhold .ap-mal{color:#5a6860; font-size:12px; margin-top:3px;}
+  .ap-innhold .ap-lekse{color:#7a6a3a; font-size:12px; margin-top:3px; font-style:italic;}
+  @media(max-width:520px){
+    .ap-dag-linje{flex-direction:column; gap:3px;}
+    .ap-spor{flex:none;}
+    .ap-spor .s{display:inline; margin-inline-start:6px;}
+  }
   .fp-kap-hode:hover{background:var(--paper);}
   .fp-kap-navn{font-weight:600; color:var(--emerald-d); flex:1 1 140px; min-width:0;}
   .fp-merke{font-family:'Jost',sans-serif; font-size:11px; padding:2px 8px; border-radius:999px;
@@ -9957,11 +9992,6 @@
           border-bottom:2px solid #e4edf6;
         }
         h2:first-child{ margin-top:0; }
-        /* Månedsplanen henges på veggen eller legges i en perm — én
-           måned per ark. Uten dette deler september seg over to sider
-           og oktober begynner midt på den andre. */
-        h2.ap-mnd{ break-before:page; page-break-before:always; }
-        h2.ap-mnd:first-child{ break-before:auto; page-break-before:auto; }
         p{ font-size:12.5px; line-height:1.65; margin:0 0 10px; }
 
         table{ border-collapse:collapse; width:100%; font-size:12.5px; }
@@ -15504,6 +15534,7 @@
   let apKlasseId = '';
   let apUtkast = null;      // det som er regnet ut, ennå ikke lagret
   let apVisAlle = false;
+  let apVisning = 'ar';      // 'ar' eller 'YYYY-MM'
 
   function apDokId(klasseId){ return klasseId + '_' + SKOLEAR.replace('/', '-'); }
 
@@ -15654,6 +15685,7 @@
     apKlasseId = klasseId;
     apUtkast = null;
     apVisAlle = false;
+    apVisning = 'ar';
     if(klasseId){
       // Planen for klassens trinn må være lastet før noe kan regnes ut.
       const klasse = (cache.classes || []).find(c => c.id === klasseId);
@@ -15760,72 +15792,125 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       ${apTabell(u, 'Slik blir året')}`;
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // TO VISNINGER AV SAMME PLAN
+  //
+  //   Året      oversikten — 33 rader, én linje hver. Til planlegging.
+  //   Måneden   arbeidsdokumentet — fire–fem lørdager med mål, lekser
+  //             og dua. Det læreren faktisk holder i hånden.
+  //
+  // Måneden var først bare en utskrift. Det var feil: den som skal
+  // forberede oktober vil se oktober på skjermen, ikke skrive ut ni
+  // ark for å finne den ene. Utskriften er nå en knapp INNE i
+  // visningen, og den skriver ut den måneden man ser på.
+  // ═══════════════════════════════════════════════════════════════════
   function apTabell(p, tittel){
     const rader = p.dager || [];
-    const vis = apVisAlle ? rader : rader.slice(0, 8);
-    const sporIder = apSporIder(rader);
+    const mnd = apMaaneder(p);
+    // Er den valgte måneden ikke i denne planen — klassen ble byttet —
+    // faller vi tilbake til året i stedet for å vise en tom skjerm.
+    const valgt = mnd.find(m => m.nokkel === apVisning) || null;
     return `
       <div class="report-card" style="margin-top:16px;">
         <h3>${escapeHtml(tittel)}</h3>
-        <div class="sub">${rader.length} dager</div>
-        <div style="overflow-x:auto; margin-top:12px;">
-        <table class="ap-tab"><thead><tr>
-          <th>Dato</th>${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th>
-        </tr></thead><tbody>
-          ${vis.map(r => `<tr${r.reservert ? ' class="ap-holdt"' : ''}>
-            <td class="ap-dato">${escapeHtml(apDatoKort(r.dato))}</td>
-            ${r.reservert
-              ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
-              : sporIder.map(id => {
-                  const o = r[id];
-                  return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + '</b> ' + o.nr +
-                    '<br><span class="ap-liten">' + escapeHtml(o.tittel || '') + '</span>' : '—') + '</td>';
-                }).join('') +
-                '<td class="ap-liten">' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
-          </tr>`).join('')}
-        </tbody></table></div>
+        <div class="sub">${valgt ? valgt.navn + ' · ' + valgt.dager.length + ' dager'
+                                 : rader.length + ' dager gjennom året'}</div>
 
-        <!-- 🔴 Knappen sto med onclick="apVisAlle = !apVisAlle; apRender();".
-             Den gjorde ingenting, og sa ingenting om hvorfor.
-             En innebygd onclick kjører i GLOBAL scope. apVisAlle og
-             apRender er begge modulscope — de finnes rett og slett ikke
-             der. Tilordningen lagde en ny global variabel, og linjen etter
-             kastet ReferenceError inne i attributtet, der ingen ser den.
-             Alt annet i denne filen kalles som window.noe() nettopp
-             derfor. Denne ene var glemt. -->
-        <div style="display:flex; gap:9px; flex-wrap:wrap; margin-top:12px;">
-          ${rader.length > 8 ? `<button class="btn btn-ghost" style="width:auto;"
-            onclick="apVisAlt()">${apVisAlle ? 'Vis færre' : 'Vis alle ' + rader.length + ' dagene'}</button>` : ''}
-          <button class="btn btn-ghost" style="width:auto;" onclick="apSkrivUt()">🖨️ Hele året</button>
-          <button class="btn btn-ghost" style="width:auto;" onclick="apSkrivUtMaaneder()">🖨️ Månedsplan</button>
+        <div class="ap-valg">
+          <button class="ap-chip${!valgt ? ' pa' : ''}" onclick="apVis('ar')">Hele året</button>
+          ${mnd.map(m => `<button class="ap-chip${valgt && valgt.nokkel === m.nokkel ? ' pa' : ''}"
+            onclick="apVis('${m.nokkel}')">${escapeHtml(m.kort)}<span class="n">${m.dager.length}</span></button>`).join('')}
+        </div>
+
+        ${valgt ? apMaanedVisning(p, valgt) : apAarVisning(p, rader)}
+
+        <div style="display:flex; gap:9px; flex-wrap:wrap; margin-top:16px;">
+          ${valgt
+            ? `<button class="btn btn-primary" style="width:auto;"
+                 onclick="apSkrivUtMaaned('${valgt.nokkel}')">🖨️ Skriv ut ${escapeHtml(valgt.navn.toLowerCase())}</button>`
+            : `<button class="btn btn-primary" style="width:auto;" onclick="apSkrivUt()">🖨️ Skriv ut året</button>`}
+          <button class="btn btn-ghost" style="width:auto;" onclick="apEksporterCSV()">⬇️ CSV</button>
         </div>
       </div>`;
   }
 
+  function apAarVisning(p, rader){
+    const vis = apVisAlle ? rader : rader.slice(0, 8);
+    const sporIder = apSporIder(rader);
+    return `
+      <div style="overflow-x:auto; margin-top:12px;">
+      <table class="ap-tab"><thead><tr>
+        <th>Dato</th>${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th>
+      </tr></thead><tbody>
+        ${vis.map(r => `<tr${r.reservert ? ' class="ap-holdt"' : ''}>
+          <td class="ap-dato">${escapeHtml(apDatoKort(r.dato))}</td>
+          ${r.reservert
+            ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
+            : sporIder.map(id => {
+                const o = r[id];
+                return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + '</b> ' + o.nr +
+                  '<br><span class="ap-liten">' + escapeHtml(o.tittel || '') + '</span>' : '—') + '</td>';
+              }).join('') +
+              '<td class="ap-liten">' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
+        </tr>`).join('')}
+      </tbody></table></div>
+      ${rader.length > 8 ? `<button class="btn btn-ghost" style="width:auto; margin-top:12px;"
+        onclick="apVisAlt()">${apVisAlle ? 'Vis færre' : 'Vis alle ' + rader.length + ' dagene'}</button>` : ''}`;
+  }
+
+  function apMaanedVisning(p, m){
+    const sporIder = apSporIder(p.dager);
+    return '<div class="ap-mnd-liste">' + m.dager.map(r => {
+      if(r.reservert) return `
+        <div class="ap-dag holdt">
+          <div class="ap-dag-hode">${escapeHtml(apDatoLang(r.dato))}</div>
+          <div class="ap-dag-linje"><i>${escapeHtml(r.reservert)}</i></div>
+        </div>`;
+      return `
+        <div class="ap-dag">
+          <div class="ap-dag-hode">${escapeHtml(apDatoLang(r.dato))}</div>
+          ${sporIder.map(id => {
+            const d = apOktDetalj(r[id]);
+            if(!d) return '';
+            return `<div class="ap-dag-linje">
+              <div class="ap-spor">Spor ${id}${d.sider ? '<span class="s">' + escapeHtml(d.sider) + '</span>' : ''}</div>
+              <div class="ap-innhold">
+                <b>${escapeHtml(d.kapittel)} ${d.nr} — ${escapeHtml(d.tittel)}</b>
+                ${d.mal ? '<div class="ap-mal">' + escapeHtml(d.mal) + '</div>' : ''}
+                ${d.lekser ? '<div class="ap-lekse">Lekse: ' + escapeHtml(d.lekser) + '</div>' : ''}
+              </div>
+            </div>`;
+          }).join('')}
+          ${r.dua ? `<div class="ap-dag-linje">
+            <div class="ap-spor">Dua</div>
+            <div class="ap-innhold">${escapeHtml(r.dua.tittel || '')}${r.dua.side ? ' <span class="ap-liten">· s. ' + r.dua.side + '</span>' : ''}</div>
+          </div>` : ''}
+        </div>`;
+    }).join('') + '</div>';
+  }
+
+  window.apVis = function(hva){ apVisning = hva; apVisAlle = false; apRender(); };
   window.apVisAlt = function(){ apVisAlle = !apVisAlle; apRender(); };
 
   function apSporIder(rader){
     return [...new Set((rader || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
   }
 
-  // Utkastet hvis det finnes, ellers den frosne. Utskriften skal virke
-  // FØR frysing også: et ark er lettere å lese gjennom enn en tabell på
-  // en telefon, og det er nettopp før frysing man skal lese det.
+  // Utkastet hvis det finnes, ellers den frosne. Visning og utskrift
+  // skal virke FØR frysing også: det er nettopp før frysing man leser
+  // gjennom, og en tabell på en telefon er ikke stedet å gjøre det.
   function apGjeldende(){
     if(apUtkast && apUtkast.feil.length === 0) return apUtkast;
     return (arsplanCache || []).find(a => a.id === apDokId(apKlasseId)) || apUtkast || null;
   }
 
-  // ── MÅNEDER ───────────────────────────────────────────────────────
-  //
-  // Året er oversikten. Måneden er det læreren faktisk henger på veggen
-  // og tar med seg: fire–fem lørdager, med mål og lekser, på ett ark.
+  // ── MÅNEDENE ──────────────────────────────────────────────────────
   //
   // 📌 Innholdet hentes fra fagplanen, ikke fra den frosne planen.
   // Den frosne planen eier DATOENE — de skal stå. Teksten i økten eier
   // fagplanen, og retter du en formulering der, skal den nå læreren.
-  // Fryser man teksten også, må hele året genereres på nytt for å rette
-  // en skrivefeil.
+  // Fryses teksten også, må hele året genereres på nytt for å rette en
+  // skrivefeil.
   function apMndNokkel(iso){ return String(iso).slice(0, 7); }
   function apMndNavn(iso){
     const d = new Date(String(iso) + 'T00:00:00');
@@ -15833,12 +15918,18 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     const n = d.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' });
     return n.charAt(0).toUpperCase() + n.slice(1);
   }
+  function apMndKort(iso){
+    const d = new Date(String(iso) + 'T00:00:00');
+    if(isNaN(d)) return String(iso);
+    const n = d.toLocaleDateString('no-NO', { month: 'short' }).replace('.', '');
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
   function apMaaneder(p){
     const ut = [];
-    (p.dager || []).forEach(r => {
+    ((p && p.dager) || []).forEach(r => {
       const n = apMndNokkel(r.dato);
       let m = ut.find(x => x.nokkel === n);
-      if(!m){ m = { nokkel: n, navn: apMndNavn(r.dato), dager: [] }; ut.push(m); }
+      if(!m){ m = { nokkel: n, navn: apMndNavn(r.dato), kort: apMndKort(r.dato), dager: [] }; ut.push(m); }
       m.dager.push(r);
     });
     return ut;
@@ -15856,42 +15947,44 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     };
   }
 
-  window.apSkrivUtMaaneder = function(){
+  // Én måned, ett ark. Ikke ni ark for å finne oktober.
+  window.apSkrivUtMaaned = function(nokkel){
     const p = apGjeldende();
     if(!p) return;
+    const m = apMaaneder(p).find(x => x.nokkel === nokkel);
+    if(!m) return;
     const sporIder = apSporIder(p.dager);
-    const mnd = apMaaneder(p);
     apneUtskrift(utskriftsmal({
-      tittel: 'Månedsplan · ' + (p.klasseNavn || ''),
-      undertittel: (p.fagplanNavn || '') + ' · ' + (p.programNavn || ''),
-      innhold: mnd.map(m => `
-        <h2 class="ap-mnd">${escapeHtml(m.navn)} — ${m.dager.length} ${m.dager.length === 1 ? 'dag' : 'dager'}</h2>
-        ${m.dager.map(r => {
-          if(r.reservert) return `<table class="nv"><tbody>
-            <tr><th>${escapeHtml(apDatoLang(r.dato))}</th><td><i>${escapeHtml(r.reservert)}</i></td></tr>
+      tittel: m.navn,
+      undertittel: (p.klasseNavn || '') + ' · ' + (p.fagplanNavn || ''),
+      avvik: p.generertDato ? null
+        : [{ tekst: 'Utkast — årsplanen er ikke frosset. Datoene kan fortsatt endre seg.' }],
+      innhold: m.dager.map(r => {
+        if(r.reservert) return `<table class="nv"><tbody>
+          <tr><th>${escapeHtml(apDatoLang(r.dato))}</th><td><i>${escapeHtml(r.reservert)}</i></td></tr>
+        </tbody></table>`;
+        const rader = sporIder.map(id => {
+          const d = apOktDetalj(r[id]);
+          if(!d) return '';
+          return `<tr><th>Spor ${id}${d.sider ? ' · ' + escapeHtml(d.sider) : ''}</th><td>
+            <b>${escapeHtml(d.kapittel)} ${d.nr} — ${escapeHtml(d.tittel)}</b>
+            ${d.mal ? '<br>' + escapeHtml(d.mal) : ''}
+            ${d.lekser ? '<br><i>Lekse: ' + escapeHtml(d.lekser) + '</i>' : ''}
+          </td></tr>`;
+        }).join('');
+        return `<h2>${escapeHtml(apDatoLang(r.dato))}</h2>
+          <table class="nv"><tbody>${rader}
+          ${r.dua ? `<tr><th>Dua</th><td>${escapeHtml(r.dua.tittel || '')}${r.dua.side ? ' · s. ' + r.dua.side : ''}</td></tr>` : ''}
           </tbody></table>`;
-          const rader = sporIder.map(id => {
-            const d = apOktDetalj(r[id]);
-            if(!d) return '';
-            return `<tr><th>Spor ${id}${d.sider ? ' · ' + escapeHtml(d.sider) : ''}</th><td>
-              <b>${escapeHtml(d.kapittel)} ${d.nr} — ${escapeHtml(d.tittel)}</b>
-              ${d.mal ? '<br>' + escapeHtml(d.mal) : ''}
-              ${d.lekser ? '<br><i>Lekse: ' + escapeHtml(d.lekser) + '</i>' : ''}
-            </td></tr>`;
-          }).join('');
-          return `<table class="nv"><tbody>
-            <tr><th>${escapeHtml(apDatoLang(r.dato))}</th><td></td></tr>
-            ${rader}
-            ${r.dua ? `<tr><th>Dua</th><td>${escapeHtml(r.dua.tittel || '')}${r.dua.side ? ' · s. ' + r.dua.side : ''}</td></tr>` : ''}
-          </tbody></table>`;
-        }).join('')}`).join('')
+      }).join('')
     }));
   };
 
   function apDatoLang(iso){
     const d = new Date(String(iso) + 'T00:00:00');
     if(isNaN(d)) return String(iso);
-    return d.toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'long' });
+    const n = d.toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'long' });
+    return n.charAt(0).toUpperCase() + n.slice(1);
   }
 
   function apDatoKort(iso){
