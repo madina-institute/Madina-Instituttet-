@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-17 12:17:36 -->
+<!-- SIST-ENDRET: 2026-08-18 11:38:37 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1348,6 +1348,48 @@
     margin:0 0 4px;
   }
   .report-card .sub{font-family:'Jost',sans-serif; font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:14px;}
+
+  /* ── FAGPLAN ──────────────────────────────────────────────────────
+     Egne klasser med fp-prefiks. Skjermen låner ellers report-card,
+     field og btn fra resten av panelet, så den arver skriftene og
+     fargene uten å gjenta dem.
+     📌 Merk: 'ut-tittel' og 'ut-logg' brukes to steder i filen uten å
+     være definert noe sted i stilarket — de rendres altså som naken
+     tekst. Derfor er de ikke gjenbrukt her.                         */
+  .fp-liste{display:flex; flex-direction:column; gap:8px;}
+  .fp-kap{border:1px solid var(--line); border-radius:9px; background:#fff; overflow:hidden;}
+  .fp-kap-hode{display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:11px 14px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13.5px;}
+  .fp-kap-hode:hover{background:var(--paper);}
+  .fp-kap-navn{font-weight:600; color:var(--emerald-d); flex:1 1 140px; min-width:0;}
+  .fp-merke{font-family:'Jost',sans-serif; font-size:11px; padding:2px 8px; border-radius:999px;
+    background:var(--paper-2); color:#5a6860; white-space:nowrap;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .fp-merke.spor-a{background:#e8f1ec; color:#2f5d45;}
+  .fp-merke.spor-b{background:#fbf3e0; color:#7a5f1e;}
+  .fp-merke.avvik{background:#f7e3e3; color:#a83c3c;}
+  .fp-okter{border-top:1px solid var(--line); padding:6px 0; display:none;}
+  .fp-kap.apen .fp-okter{display:block;}
+  .fp-okt-rad{display:flex; align-items:center; gap:10px; padding:8px 14px; cursor:pointer;
+    font-family:'Jost',sans-serif; font-size:13px; border-bottom:1px solid var(--paper-2);}
+  .fp-okt-rad:last-child{border-bottom:none;}
+  .fp-okt-rad:hover{background:var(--paper);}
+  .fp-okt-nr{min-width:26px; color:var(--gold); font-weight:700;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .fp-felt{margin-bottom:13px;}
+  .fp-felt label{display:block; font-family:'Jost',sans-serif; font-size:12px;
+    color:#5a6860; margin-bottom:4px;}
+  .fp-felt .fp-hjelp{font-size:11px; color:#8a9a90;}
+  .fp-lest{background:var(--paper); border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; font-family:'Jost',sans-serif; font-size:12.5px; color:#3c5a4a;
+    white-space:pre-wrap; line-height:1.55;}
+  .fp-tall{font-variant-numeric:lining-nums tabular-nums;}
+  .fp-feil{background:#f7e3e3; border:1px solid #e0bcbc; border-radius:8px; padding:12px 14px;
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#7d2b2b; white-space:pre-wrap;
+    line-height:1.6; margin-top:12px;}
+  .fp-ok{background:#e8f1ec; border:1px solid #bcd6c7; border-radius:8px; padding:12px 14px;
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#2f5d45; white-space:pre-wrap;
+    line-height:1.6; margin-top:12px;}
   .bar-row{margin-bottom:12px;}
   .bar-row:last-child{margin-bottom:0;}
   .bar-label{
@@ -1730,6 +1772,7 @@
   <div class="tab" data-tab="klasseoppsett" data-side="pedagogisk">Fagrekkefølge</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
+  <div class="tab" data-tab="fagplan" data-side="pedagogisk">Fagplan</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
   <div class="tab" data-tab="planmaler" data-side="pedagogisk">Planmaler</div>
   <div class="tab" data-tab="planArkiv" data-side="pedagogisk">Planarkiv</div>
@@ -3176,6 +3219,94 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════════════
+       FAGPLAN — pensumet, ikke timeplanen og ikke forberedelsen
+
+       Tre lag som lett forveksles, og som har hvert sitt sted:
+
+         fagplan       HVA som skal læres. Ingen datoer, ingen klasse.
+         årsplan       NÅR. Fryses per klasse og skoleår. (ikke bygget)
+         lessonPlans   HVEM som gjorde hva. Lærerens egen forberedelse.
+
+       Grunnen til at planen ikke bærer datoer: to klasser kan dele ett
+       trinn og likevel gå i hvert sitt program — én på lørdag, én på
+       søndag. La planen fått lørdagsdatoer, ville søndagsklassen sett
+       datoer som ikke var dens.
+
+       Framdrift skrives ALDRI hit. Den hører til den enkelte klassen.
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-fagplan">
+
+    <div class="report-card">
+      <h3>📖 Fagplan</h3>
+      <div class="sub">Pensum per fag og trinn</div>
+      <div class="innst-effekt">
+        Planen sier <b>hva</b> som skal læres og i hvilken rekkefølge — ikke når.
+        Datoene regnes ut fra klassens program og skolekalenderen, og fryses
+        per klasse. Endrer du en ferie, endrer ikke planen seg under føttene
+        på læreren.
+      </div>
+      <div class="innst-rad" style="margin-top:14px;">
+        <div class="field">
+          <label>Plan</label>
+          <select id="fpVelger" onchange="fpVelgPlan(this.value)">
+            <option value="">— Ingen planer importert —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="fpInnhold" style="margin-top:16px;"></div>
+
+    <!-- ── IMPORT ──────────────────────────────────────────────────
+         Engangsimport. Etterpå er BASEN kilden, ikke filen.
+
+         🔴 Knappen nekter å skrive over en plan som finnes fra før,
+         med mindre haken settes. Uten den sperren kunne noen ha
+         importert på nytt om tre uker og strøket alle rettelsene som
+         var gjort i mellomtiden — uten et eneste varsel.
+
+         Alt skrives i ÉN batch: enten hele planen med alle øktene,
+         eller ingenting. En import som stoppet halvveis ville etterlatt
+         en plan med tolv av seksti økter, og skjermen hadde vist en
+         lagret plan mens timene den skal holdes med manglet.
+         ────────────────────────────────────────────────────────── -->
+    <div class="report-card" style="margin-top:16px;">
+      <h3>⬆️ Importer plan fra fil</h3>
+      <div class="sub">Én gang per plan — basen er kilden etterpå</div>
+
+      <div class="field">
+        <label>Planfil (fagplan-…-trinn….json)</label>
+        <input type="file" id="fpFilPlan" accept=".json,application/json"
+               onchange="fpLesFil(this, 'plan')">
+      </div>
+      <div class="field">
+        <label>Øktfil (okter-trinn….json) — valgfri</label>
+        <input type="file" id="fpFilOkter" accept=".json,application/json"
+               onchange="fpLesFil(this, 'okter')">
+        <p class="fp-hjelp" style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin:6px 0 0;">
+          En plan kan importeres uten ferdigskrevne økter. Da står kapitlene
+          med vekt og mål, og øktene skrives inn etter hvert.
+        </p>
+      </div>
+
+      <div id="fpFilStatus"></div>
+
+      <label style="display:flex; align-items:flex-start; gap:9px; margin:14px 0 0;
+                    font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; cursor:pointer;">
+        <input type="checkbox" id="fpOverskriv" style="margin-top:3px; flex:none;">
+        <span>Ja, skriv over planen om den finnes fra før. Rettelser gjort i
+              panelet etter forrige import går tapt.</span>
+      </label>
+
+      <button class="btn btn-primary" style="margin-top:14px;" onclick="fpImporter()">
+        Kontroller og importer
+      </button>
+
+      <div id="fpImportResultat"></div>
+    </div>
+  </div>
+
   <!-- LESSON PLANS -->
   <div class="panel" id="panel-lessonPlans">
 
@@ -3775,7 +3906,8 @@
 <script type="module">
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, doc, getDocs, query, where, deleteField,
+    getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query, where, deleteField,
+    writeBatch,
     addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, setDoc as _setDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
@@ -3876,6 +4008,16 @@
   const updateDoc = (...a) => { sperrIForhandsvisning(); return _updateDoc(...a); };
   const deleteDoc = (...a) => { sperrIForhandsvisning(); return _deleteDoc(...a); };
   const setDoc    = (...a) => { sperrIForhandsvisning(); return _setDoc(...a); };
+  // 🔴 En batch går UTENOM de fire innpakkingene over: batch.set() er
+  // Firestores egen metode, og sperren ligger på addDoc/setDoc — ikke på
+  // den. Uten denne linjen ville en import kjørt seg helt gjennom i
+  // forhåndsvisning og i lesemodus, og skrevet seksti økter til basen
+  // mens skjermen sa at ingenting lagres.
+  //
+  // Sperren står på commit, ikke på writeBatch(): da rekker vi å bygge
+  // opp og telle skrivingene, og kan si «62 skrivinger, sperret i
+  // lesemodus» i stedet for å feile før vi vet hva som skulle skjedd.
+  const batchCommit = (b) => { sperrIForhandsvisning(); return b.commit(); };
   const storage = getStorage(app);
   const auth = getAuth(app);
 
@@ -14151,6 +14293,665 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  // FAGPLAN — pensumet inn i basen
+  //
+  // Dette er den første skjermen som legger selve LÆREPLANEN i basen.
+  // Alt annet i panelet har hittil handlet om folk, penger og timeplan.
+  //
+  // 🔴 HVORFOR DENNE IKKE LIGGER I 'SCHEMAS'
+  //
+  // SCHEMAS er CRUD-maskineriet: felter, kolonner, generisk tabell. Én
+  // fagplan er ikke en rad — den er et dokument med kapitler, spor,
+  // vekter og en undersamling på seksti økter. Den generiske tabellen
+  // ville vist «[object Object]» i hver kolonne.
+  //
+  // Men det er en hardere grunn også: attachListener måler om panelet er
+  // ferdig tilkoblet med
+  //     readyCollections.size >= Object.keys(SCHEMAS).length
+  // De to tallene står i dag på 26 mot 26. Legges 'fagplan' i SCHEMAS
+  // uten en tilhørende attachListener, når summen aldri opp, og
+  // synkroniseringsmerket blir stående på «Kobler til… (mangler:
+  // fagplan)» for alltid — uten at noe er galt.
+  //
+  // Derfor følger denne samme mønster som broadcastThreads: egen
+  // hurtigbuffer, egen onSnapshot, utenfor SCHEMAS.
+  //
+  // 📌 Og øktene lyttes det IKKE på. Seksti økter er ~213 kB; det er ikke
+  // noe hver administrator skal laste ned ved hver innlogging. De hentes
+  // når skjermen åpnes, med getDocs.
+  // ═══════════════════════════════════════════════════════════════════
+  let fagplanCache = [];      // planene selv — små, tåler en lytter
+  let fpValgt = '';           // hvilken plan som vises
+  let fpOkter = [];           // øktene til fpValgt, hentet på forespørsel
+  let fpOkterFor = '';        // hvilken plan fpOkter faktisk hører til
+  let fpApneKap = new Set();  // hvilke kapitler som står utslått
+  let fpApenOkt = '';         // økten som redigeres, '' = ingen
+  const fpFil = { plan: null, okter: null, planNavn: '', okterNavn: '' };
+
+  // Dokument-id: fag + trinn. Leselig, forutsigbar, og den samme hver
+  // gang samme fil importeres — det er den som gjør at en ny import
+  // treffer den gamle planen i stedet for å lage en til ved siden av.
+  function fpLagId(plan){
+    const fag = String(plan.fag || '').toLowerCase()
+      .replace(/[æå]/g, 'a').replace(/ø/g, 'o')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return fag + '_t' + String(plan.trinn || '').trim();
+  }
+  function fpOktId(kapittelId, nr){ return kapittelId + '-' + nr; }
+
+  // «10–12», ikke «10,12». Sidetallene ligger som [10, 12] i filen, og
+  // skrevet rett ut ble de til en liste som så ut som to sider i stedet
+  // for et spenn. Samme feil er rettet i læreplansiden.
+  function fpSider(s){
+    if(!Array.isArray(s) || s.length === 0) return '';
+    if(s.length === 1 || s[0] === s[1]) return 's. ' + s[0];
+    return 's. ' + s[0] + '–' + s[1];
+  }
+  function fpLesSider(tekst){
+    const tall = String(tekst || '').match(/\d+/g);
+    if(!tall || tall.length === 0) return null;
+    return tall.length === 1 ? [Number(tall[0])] : [Number(tall[0]), Number(tall[1])];
+  }
+
+  // ── FILINNLESING ──────────────────────────────────────────────────
+  // Bare lesing og parsing her. Ingenting røres i basen før knappen.
+  window.fpLesFil = function(input, hvilken){
+    const fil = input.files && input.files[0];
+    const status = document.getElementById('fpFilStatus');
+    if(!fil){ fpFil[hvilken] = null; fpFil[hvilken + 'Navn'] = ''; fpFilStatus(); return; }
+    const leser = new FileReader();
+    leser.onload = (e) => {
+      try{
+        fpFil[hvilken] = JSON.parse(e.target.result);
+        fpFil[hvilken + 'Navn'] = fil.name;
+      }catch(err){
+        fpFil[hvilken] = null;
+        fpFil[hvilken + 'Navn'] = '';
+        // Filnavnet står i meldingen: med to filvelgere rett under
+        // hverandre er «ugyldig JSON» alene ikke nok til å vite hvilken.
+        status.innerHTML = '<div class="fp-feil">🔴 ' + escapeHtml(fil.name) +
+          ' er ikke gyldig JSON.\n' + escapeHtml(String(err.message || err)) + '</div>';
+        return;
+      }
+      fpFilStatus();
+    };
+    leser.onerror = () => {
+      status.innerHTML = '<div class="fp-feil">🔴 Klarte ikke lese ' +
+        escapeHtml(fil.name) + '.</div>';
+    };
+    leser.readAsText(fil, 'utf-8');
+  };
+
+  function fpFilStatus(){
+    const el = document.getElementById('fpFilStatus');
+    if(!el) return;
+    const linjer = [];
+    if(fpFil.plan){
+      linjer.push('✓ ' + fpFil.planNavn + ' — ' + (fpFil.plan.navn || '(uten navn)') +
+        ', ' + ((fpFil.plan.kapitler || []).length) + ' kapitler');
+    }
+    if(fpFil.okter){
+      const n = (fpFil.okter.kapitler || []).reduce((s, k) => s + ((k.okter || []).length), 0);
+      linjer.push('✓ ' + fpFil.okterNavn + ' — ' + n + ' økter' +
+        (fpFil.okter.aktivitetsbank ? ', aktivitetsbank' : ''));
+    }
+    el.innerHTML = linjer.length
+      ? '<div class="fp-ok fp-tall">' + escapeHtml(linjer.join('\n')) + '</div>' : '';
+  }
+
+  // ── KONTROLL ──────────────────────────────────────────────────────
+  //
+  // 🔴 Den viktigste prøven her er at de TO filene holdes opp mot
+  // hverandre, ikke hver for seg. En fil er alltid enig med seg selv.
+  //
+  // Den fanget en ekte feil første gang den kjørte: planen kaller det
+  // siste kapittelet 'arabiske-ord', øktfilen kaller det 'arabiske'.
+  // Uten denne prøven ville importen gått gjennom uten et ord, planen
+  // fått et kapittel med null økter, og fem ferdigskrevne økter blitt
+  // liggende under en kapittel-id ingenting peker på.
+  //
+  // Derfor prøves begge retninger: kapitler i øktfilen som planen ikke
+  // kjenner, OG kapitler i planen som venter økter og ikke får dem.
+  function fpKontroller(){
+    const feil = [], merk = [];
+    const plan = fpFil.plan;
+    if(!plan){ feil.push('Ingen planfil valgt.'); return { feil, merk }; }
+
+    if(!String(plan.fag || '').trim()) feil.push('Planen mangler «fag».');
+    if(!String(plan.trinn || '').trim()) feil.push('Planen mangler «trinn».');
+    if(!Array.isArray(plan.kapitler) || plan.kapitler.length === 0){
+      feil.push('Planen har ingen kapitler.');
+      return { feil, merk };
+    }
+
+    const sett = new Set();
+    plan.kapitler.forEach((k, i) => {
+      const id = String(k.id || '').trim();
+      if(!id){ feil.push('Kapittel nr. ' + (i + 1) + ' mangler id.'); return; }
+      if(sett.has(id)) feil.push('Kapittel-id «' + id + '» står to ganger i planen.');
+      sett.add(id);
+    });
+
+    const vekt = plan.kapitler.reduce((s, k) => s + (Number(k.vekt) || 0), 0);
+    const bok = Array.isArray(plan.bok && plan.bok.sider) ? plan.bok.sider : null;
+    if(bok && bok.length === 2){
+      const spenn = bok[1] - bok[0] + 1;
+      if(vekt !== spenn){
+        // Ikke blokkerende: vekt trenger ikke være sider. For koranen er
+        // den vers. Men når boka OPPGIR et sidespenn og vekten er sider,
+        // skal de møtes — og gjør de ikke det, er det verdt å se på.
+        merk.push('Vektsummen er ' + vekt + ', boka spenner over ' + spenn +
+          ' sider (' + bok[0] + '–' + bok[1] + '). Kontroller at ingen kapitler overlapper.');
+      }
+    }
+
+    if(!fpFil.okter) return { feil, merk };
+
+    const okap = Array.isArray(fpFil.okter.kapitler) ? fpFil.okter.kapitler : [];
+    if(okap.length === 0) feil.push('Øktfilen har ingen kapitler.');
+
+    const okartet = {};
+    okap.forEach(k => {
+      const id = String(k.id || '').trim();
+      if(!id){ feil.push('Et kapittel i øktfilen mangler id.'); return; }
+      if(!sett.has(id)){
+        feil.push('Øktfilen har kapittelet «' + id + '», som ikke finnes i planen. ' +
+          'Planen kjenner: ' + [...sett].join(', ') + '.');
+      }
+      okartet[id] = k;
+    });
+
+    plan.kapitler.forEach(k => {
+      const id = String(k.id || '').trim();
+      if(!id) return;
+      const vil = Number(k.antallOkter) || 0;
+      const har = okartet[id] ? (okartet[id].okter || []).length : 0;
+      if(vil > 0 && !okartet[id]){
+        feil.push('Kapittelet «' + id + '» venter ' + vil +
+          ' økter, men øktfilen har ingen for det.');
+        return;
+      }
+      if(vil !== har){
+        feil.push('Kapittelet «' + id + '»: planen sier ' + vil +
+          ' økter, øktfilen har ' + har + '.');
+      }
+      const nr = (okartet[id] ? okartet[id].okter || [] : []).map(o => o.nr);
+      if(new Set(nr).size !== nr.length){
+        feil.push('Kapittelet «' + id + '» har to økter med samme nummer.');
+      }
+    });
+
+    return { feil, merk };
+  }
+
+  // ── IMPORT ────────────────────────────────────────────────────────
+  window.fpImporter = async function(){
+    const ut = document.getElementById('fpImportResultat');
+    ut.innerHTML = '';
+
+    const { feil, merk } = fpKontroller();
+    if(feil.length){
+      ut.innerHTML = '<div class="fp-feil">🔴 ' + feil.length +
+        ' må rettes i filene før import:\n\n' + escapeHtml(feil.join('\n')) + '</div>';
+      return;
+    }
+
+    const plan = fpFil.plan;
+    const id = fpLagId(plan);
+
+    // Finnes den fra før? Denne prøven må stå før alt annet: den er hele
+    // grunnen til at ingen kan importere over tre ukers rettelser.
+    let fantes = false, gamleOkter = [], beholdtVariant = null;
+    try{
+      const snap = await getDoc(doc(db, 'fagplan', id));
+      fantes = snap.exists();
+      if(fantes) beholdtVariant = snap.data().rekkefolgeVariant || null;
+    }catch(err){
+      ut.innerHTML = '<div class="fp-feil">🔴 Fikk ikke lest basen: ' +
+        escapeHtml(String(err.code || err.message || err)) + '</div>';
+      return;
+    }
+
+    if(fantes){
+      try{
+        const snap = await getDocs(collection(db, 'fagplan', id, 'okter'));
+        gamleOkter = snap.docs.map(d => d.id);
+      }catch(err){ gamleOkter = []; }
+
+      if(!document.getElementById('fpOverskriv').checked){
+        melding('ADM-FGP-01', '⛔ Planen finnes fra før',
+          'Planen «' + id + '» ligger allerede i basen med ' + gamleOkter.length +
+          ' økter. Importen er stoppet.\n\n' +
+          'Alt som er rettet i panelet siden forrige import blir strøket av en ny ' +
+          'import. Vil du likevel — sett haken over knappen først.',
+          'fpImporter · fagplan/' + id);
+        return;
+      }
+    }
+
+    // ── Selve plandokumentet ──
+    // 🔴 To felter fjernes med vilje, fordi de beskriver FILEN og ikke
+    // pensumet. Blir de liggende, lyver de fra dagen basen overtar:
+    //   _rettelse   en historisk merknad om en feil som alt er rettet.
+    //               Hører hjemme i sammendraget, og står der (§114).
+    //   _okter      «Se okter-trinn1.json» — en peker til en fil vi
+    //               nettopp sluttet å bruke som kilde.
+    // Resten av _-feltene beholdes: de forklarer avgjørelser (hvorfor
+    // spor B ikke følger kapittelnumrene, hva som er utelatt fra
+    // dua-heftet, hva som ennå ikke er bestemt) og hører til pensumet.
+    const fjernet = [];
+    const kapitler = plan.kapitler.map(k => {
+      const kopi = { ...k };
+      ['_rettelse', '_okter', 'okterSkrevet'].forEach(f => {
+        if(f in kopi){ fjernet.push(k.id + '.' + f); delete kopi[f]; }
+      });
+      return kopi;
+    });
+
+    const planDok = {
+      ...plan,
+      kapitler,
+      // 'bok' som standard: bokas egen rekkefølge. Feltet er en
+      // BESLUTNING, ikke en merknad — hvilken av to rekkefølger skolen
+      // har valgt. Årsplangeneratoren leser det når den bygges.
+      rekkefolgeVariant: beholdtVariant || plan.rekkefolgeVariant || 'bok',
+      importertDato: new Date().toISOString(),
+      importertAv: currentUserEmail || 'ukjent'
+    };
+    delete planDok._rettelse;
+
+    // ── Øktene ──
+    const okter = [];
+    if(fpFil.okter){
+      (fpFil.okter.kapitler || []).forEach(kap => {
+        (kap.okter || []).forEach(o => {
+          const kopi = { ...o };
+          delete kopi._rettelse;
+          okter.push({
+            id: fpOktId(kap.id, o.nr),
+            data: {
+              ...kopi,
+              kapittel: kap.id,
+              kapittelTittel: kap.tittel || '',
+              spor: kap.spor || ''
+            }
+          });
+        });
+      });
+    }
+
+    // Økter fra en tidligere import som ikke finnes i den nye filen. Uten
+    // dette ville en plan som krympet fra 60 til 58 økter beholdt de to
+    // gamle — usynlig, og med feil innhold.
+    const nye = new Set(okter.map(o => o.id));
+    const foreldrelose = gamleOkter.filter(oid => !nye.has(oid));
+
+    const bank = fpFil.okter && fpFil.okter.aktivitetsbank;
+    const antall = 1 + okter.length + foreldrelose.length + (bank ? 1 : 0);
+
+    // Firestore tar 500 skrivinger i én batch. Seksti økter er godt
+    // innenfor, men trinn 2–6 og de andre fagene kommer etter. Bedre å
+    // si det tydelig her enn å la commit() feile på grensen.
+    if(antall > 450){
+      ut.innerHTML = '<div class="fp-feil">🔴 ' + antall +
+        ' skrivinger er for mye for én batch (grensen er 500).\nDenne planen må ' +
+        'deles opp før den kan importeres i ett stykke.</div>';
+      return;
+    }
+
+    try{
+      const b = writeBatch(db);
+      b.set(doc(db, 'fagplan', id), planDok);
+      okter.forEach(o => b.set(doc(db, 'fagplan', id, 'okter', o.id), o.data));
+      foreldrelose.forEach(oid => b.delete(doc(db, 'fagplan', id, 'okter', oid)));
+      // Banken er skolens, ikke planens: den tjener tajwid og arabisk like
+      // mye som islam. merge, ikke overskriv — en annen plan kan ha lagt
+      // noe der før.
+      if(bank) b.set(doc(db, 'settings', 'aktivitetsbank'), bank, { merge: true });
+
+      await batchCommit(b);
+
+      await loggSamlet('Fagplan importert: ' + (plan.navn || id), antall,
+        'fpImporter · fagplan/' + id + ' · ' + okter.length + ' økter · ' +
+        (fantes ? 'overskrev' : 'ny') + ' · ' + foreldrelose.length + ' foreldreløse fjernet');
+
+      const linjer = [
+        (fantes ? '✓ Planen er skrevet over.' : '✓ Planen er importert.'),
+        '',
+        'Plan:    fagplan/' + id,
+        'Økter:   ' + okter.length,
+        'Bank:    ' + (bank ? (bank.leker || []).length + ' leker → settings/aktivitetsbank' : 'ikke i filen'),
+        'Skriving: ' + antall + ' i én batch'
+      ];
+      if(foreldrelose.length) linjer.push('Fjernet:  ' + foreldrelose.length + ' økter som ikke lenger finnes i filen');
+      if(beholdtVariant) linjer.push('Beholdt:  rekkefolgeVariant = ' + beholdtVariant + ' (satt i panelet, ikke overskrevet)');
+      if(fjernet.length) linjer.push('Strøket:  ' + fjernet.join(', ') + ' — beskriver filen, ikke pensumet');
+      if(merk.length) linjer.push('', '⚠️ ' + merk.join('\n⚠️ '));
+
+      ut.innerHTML = '<div class="fp-ok fp-tall">' + escapeHtml(linjer.join('\n')) + '</div>';
+      document.getElementById('fpOverskriv').checked = false;
+
+      fpValgt = id;
+      fpOkterFor = '';
+      await fpHentOkter(id);
+      fpRender();
+    }catch(err){
+      if(err && (err.code === 'forhandsvisning' || err.code === 'lesemodus')){
+        ut.innerHTML = '<div class="fp-feil">' + escapeHtml(err.message) +
+          '\n' + antall + ' skrivinger var klare, ingen ble utført.</div>';
+        return;
+      }
+      console.error('fpImporter', err);
+      melding('ADM-FGP-02', '🔴 Importen stoppet',
+        'Ingenting er lagret — en batch er enten hel eller ingenting, så basen ' +
+        'står som før.\n\n' + String(err.message || err),
+        'fpImporter · fagplan/' + id + ' · ' + antall + ' skrivinger');
+    }
+  };
+
+  // ── HENTING OG VISNING ────────────────────────────────────────────
+  async function fpHentOkter(planId){
+    if(!planId){ fpOkter = []; fpOkterFor = ''; return; }
+    if(fpOkterFor === planId) return;   // alt hentet
+    try{
+      const snap = await getDocs(collection(db, 'fagplan', planId, 'okter'));
+      fpOkter = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      fpOkterFor = planId;
+    }catch(err){
+      console.error('fpHentOkter', err);
+      fpOkter = [];
+      fpOkterFor = '';
+      showToast('Fikk ikke hentet øktene: ' + (err.code || err.message), true);
+    }
+  }
+
+  window.fpVelgPlan = async function(id){
+    fpValgt = id;
+    fpApneKap = new Set();
+    fpApenOkt = '';
+    if(id) await fpHentOkter(id);
+    fpRender();
+  };
+
+  window.fpApneKapittel = function(kapId){
+    if(fpApneKap.has(kapId)) fpApneKap.delete(kapId); else fpApneKap.add(kapId);
+    fpApenOkt = '';
+    fpRender();
+  };
+
+  window.fpApneOkt = function(oktId){
+    fpApenOkt = (fpApenOkt === oktId) ? '' : oktId;
+    fpRender();
+  };
+
+  function fpRender(){
+    const velger = document.getElementById('fpVelger');
+    if(!velger) return;
+
+    const planer = [...fagplanCache].sort((a, b) =>
+      String(a.navn || a.id).localeCompare(String(b.navn || b.id), 'no'));
+    if(planer.length === 0){
+      velger.innerHTML = '<option value="">— Ingen planer importert —</option>';
+    } else {
+      velger.innerHTML = '<option value="">— Velg plan —</option>' + planer.map(p =>
+        '<option value="' + escapeHtml(p.id) + '">' +
+        escapeHtml(p.navn || p.id) + '</option>').join('');
+      if(planer.some(p => p.id === fpValgt)) velger.value = fpValgt;
+    }
+
+    const el = document.getElementById('fpInnhold');
+    const plan = planer.find(p => p.id === fpValgt);
+    if(!plan){
+      el.innerHTML = planer.length === 0
+        ? '<div class="report-card"><div class="fp-lest">Ingen plan er importert ennå. ' +
+          'Bruk importen nederst på siden.</div></div>'
+        : '';
+      return;
+    }
+
+    el.innerHTML = fpPlanHode(plan) + fpKapitler(plan);
+  }
+
+  function fpPlanHode(plan){
+    const kap = Array.isArray(plan.kapitler) ? plan.kapitler : [];
+    const vil = kap.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
+    const har = fpOkter.length;
+    const variant = plan.rekkefolgeVariant || 'bok';
+
+    return `
+      <div class="report-card">
+        <h3>${escapeHtml(plan.navn || plan.id)}</h3>
+        <div class="sub">${escapeHtml(plan.fag || '')} · trinn ${escapeHtml(String(plan.trinn || ''))}</div>
+        <div class="fp-lest fp-tall">${escapeHtml(
+          (plan.bok && plan.bok.tittel ? plan.bok.tittel + ' · ' + (plan.bok.forlag || '') + '\n' : '') +
+          kap.length + ' kapitler · ' + har + ' av ' + vil + ' økter skrevet' +
+          (plan.importertDato ? '\nImportert ' + new Date(plan.importertDato)
+            .toLocaleDateString('no-NO') + ' av ' + (plan.importertAv || 'ukjent') : '')
+        )}</div>
+
+        <!-- ── REKKEFØLGEVARIANT ─────────────────────────────────────
+             Ikke en merknad i en fil, men et valg i basen.
+
+             Boka setter zakah før sawm. Følges den, faller sawm rett
+             ETTER ramadan i 2026/27 — barna har nettopp levd måneden,
+             men timen kommer for sent til å forberede den.
+
+             ⚠️ Ramadan flytter seg elleve dager i året. Valget gjelder
+             ett skoleår og skal tas opp igjen, ikke arves.
+
+             📌 Feltet SKRIVES her og LESES av årsplangeneratoren, som
+             ennå ikke finnes. Ingenting flytter seg av at du bytter i
+             dag — det er en beslutning som ligger klar. Det står i
+             teksten under, så ingen tror timene har byttet plass.
+             ────────────────────────────────────────────────────── -->
+        <div class="fp-felt" style="margin-top:16px;">
+          <label>Rekkefølge i kapittelet «Islam»</label>
+          <select onchange="fpSettVariant(this.value)">
+            <option value="bok"${variant === 'bok' ? ' selected' : ''}>Bokas rekkefølge — zakah før sawm</option>
+            <option value="ramadan"${variant === 'ramadan' ? ' selected' : ''}>Sawm inn i ramadan — økt 8 og 9 bytter plass</option>
+          </select>
+          <p class="fp-hjelp" style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin:6px 0 0;">
+            Valget lagres nå og brukes når årsplanen for en klasse skal
+            genereres. Øktene under står i bokas rekkefølge uansett hva som
+            er valgt her — det er datoene som fordeles, ikke pensumet som
+            skrives om.
+          </p>
+        </div>
+      </div>`;
+  }
+
+  function fpKapitler(plan){
+    const kap = Array.isArray(plan.kapitler) ? plan.kapitler : [];
+    // Rekkefølgen fra planen, ikke kapittelnumrene: spor B følger
+    // forordet (profeten → koranen → islam → arabiske ord), ikke boka.
+    const rekke = [];
+    const rk = plan.rekkefolge || {};
+    ['A', 'B'].forEach(s => (rk[s] || []).forEach(id => rekke.push(id)));
+    const sortert = [
+      ...rekke.map(id => kap.find(k => k.id === id)).filter(Boolean),
+      ...kap.filter(k => !rekke.includes(k.id))
+    ];
+
+    return '<div class="fp-liste" style="margin-top:14px;">' + sortert.map(k => {
+      const mine = fpOkter.filter(o => o.kapittel === k.id)
+        .sort((a, b) => (a.nr || 0) - (b.nr || 0));
+      const vil = Number(k.antallOkter) || 0;
+      const apen = fpApneKap.has(k.id);
+      const avvik = mine.length !== vil;
+      return `
+        <div class="fp-kap${apen ? ' apen' : ''}">
+          <div class="fp-kap-hode" onclick="fpApneKapittel('${escapeHtml(k.id)}')">
+            <span style="color:var(--gold);">${apen ? '▾' : '▸'}</span>
+            <span class="fp-kap-navn">${escapeHtml(k.tittel || k.id)}</span>
+            <span class="fp-merke spor-${String(k.spor || '').toLowerCase()}">Spor ${escapeHtml(k.spor || '?')}</span>
+            <span class="fp-merke">${escapeHtml(fpSider(k.sider))}</span>
+            <span class="fp-merke${avvik ? ' avvik' : ''}">${mine.length}/${vil} økter</span>
+          </div>
+          <div class="fp-okter">
+            ${mine.length === 0
+              ? '<div style="padding:10px 14px; font-family:\'Jost\',sans-serif; font-size:12.5px; color:#8a9a90;">Ingen økter skrevet for dette kapittelet.</div>'
+              : mine.map(o => fpApenOkt === o.id ? fpOktSkjema(o) : `
+                <div class="fp-okt-rad" onclick="fpApneOkt('${escapeHtml(o.id)}')">
+                  <span class="fp-okt-nr">${o.nr}</span>
+                  <span style="flex:1 1 auto; min-width:0;">${escapeHtml(o.tittel || '')}</span>
+                  <span class="fp-merke">${escapeHtml(fpSider(o.sider))}</span>
+                </div>`).join('')}
+          </div>
+        </div>`;
+    }).join('') + '</div>';
+  }
+
+  // ── ØKTSKJEMA ─────────────────────────────────────────────────────
+  //
+  // 📌 HVA SOM KAN REDIGERES HER, OG HVA SOM IKKE KAN
+  //
+  // Rettinger kommer fra et bilde av en bokside: et sidetall som var
+  // feil, en formulering som ikke stemte. Den veien går bilde → skjerm →
+  // base, og de feltene er åpne her.
+  //
+  // Tre felter står som lesning: nøkkelord (oppslagsverk), spørsmål med
+  // fasit (par), og fyllstoff (peker inn i aktivitetsbanken). De er ikke
+  // tekst, de er struktur, og et tekstfelt over dem ville gjort dem til
+  // tekst første gang noen lagret. Halvbygd redigering er verre enn
+  // ingen: den ser ut til å virke.
+  //
+  // 🔴 'vekt' og 'antallOkter' på kapittelet er heller ikke redigerbare.
+  // De to seksti øktene ER fordelingen av vekten. Skrus vekten ned uten
+  // at øktene skrives om, står planen og øktene og sier hver sin ting —
+  // og skjermen viser 18/12 uten å kunne forklare hvorfor.
+  function fpOktSkjema(o){
+    const f = (n) => 'fpO_' + n;
+    const liste = (v) => Array.isArray(v) ? v.join('\n') : String(v || '');
+    return `
+      <div style="padding:14px; background:var(--paper); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span class="fp-okt-nr">${o.nr}</span>
+          <b style="font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); flex:1 1 auto;">Økt ${o.nr}</b>
+          <button class="btn btn-ghost" style="width:auto; padding:5px 12px;"
+            onclick="fpApneOkt('${escapeHtml(o.id)}')">Lukk</button>
+        </div>
+
+        <div class="fp-felt">
+          <label>Tittel</label>
+          <input type="text" id="${f('tittel')}" value="${escapeHtml(o.tittel || '')}">
+        </div>
+        <div class="fp-felt">
+          <label>Sider i boka</label>
+          <input type="text" id="${f('sider')}" value="${escapeHtml(fpSider(o.sider).replace('s. ', ''))}" placeholder="10–11">
+        </div>
+        <div class="fp-felt">
+          <label>Læringsmål</label>
+          <textarea id="${f('mal')}" rows="2">${escapeHtml(o.mal || '')}</textarea>
+        </div>
+        ${[
+          ['timeplan', 'Timeplan — én linje per bolk'],
+          ['bakgrunn', 'Bakgrunn for læreren — én linje per avsnitt'],
+          ['kjerne', 'Kjernen — én linje per punkt'],
+          ['hvisTid', 'Hvis det blir tid — én linje per punkt'],
+          ['misforstaelser', 'Vanlige misforståelser — én linje hver'],
+          ['kobling', 'Kobling til andre økter — én linje hver'],
+          ['verktoy', 'Verktøy — én linje hver']
+        ].map(([n, merkelapp]) => `
+        <div class="fp-felt">
+          <label>${merkelapp}</label>
+          <textarea id="${f(n)}" rows="${Math.min(8, Math.max(2, (o[n] || []).length + 1))}">${escapeHtml(liste(o[n]))}</textarea>
+        </div>`).join('')}
+        <div class="fp-felt">
+          <label>Aktivitet</label>
+          <textarea id="${f('aktivitet')}" rows="3">${escapeHtml(o.aktivitet || '')}</textarea>
+        </div>
+        <div class="fp-felt">
+          <label>Lekser</label>
+          <textarea id="${f('lekser')}" rows="2">${escapeHtml(o.lekser || '')}</textarea>
+        </div>
+
+        <div class="fp-felt">
+          <label>Nøkkelord, spørsmål og fyllstoff <span class="fp-hjelp">— vises, redigeres ikke her</span></label>
+          <div class="fp-lest">${escapeHtml(fpStrukturLest(o))}</div>
+        </div>
+
+        <button class="btn btn-primary" style="width:auto;"
+          onclick="fpLagreOkt('${escapeHtml(o.id)}')">Lagre økt ${o.nr}</button>
+      </div>`;
+  }
+
+  function fpStrukturLest(o){
+    const d = [];
+    const nk = o.nokkelord || {};
+    const nkn = Object.keys(nk);
+    if(nkn.length) d.push('Nøkkelord (' + nkn.length + '): ' + nkn.join(', '));
+    if(Array.isArray(o.sporsmal) && o.sporsmal.length){
+      d.push('Spørsmål med fasit (' + o.sporsmal.length + '):');
+      o.sporsmal.forEach(p => d.push('  • ' + (p[0] || '') + '\n    → ' + (p[1] || '')));
+    }
+    if(Array.isArray(o.fyllstoff) && o.fyllstoff.length){
+      d.push('Fyllstoff: ' + o.fyllstoff.map(x => x.lek).filter(Boolean).join(', '));
+    }
+    return d.length ? d.join('\n') : 'Ingen.';
+  }
+
+  window.fpLagreOkt = async function(oktId){
+    const o = fpOkter.find(x => x.id === oktId);
+    if(!o) return;
+    const les = (n) => (document.getElementById('fpO_' + n) || {}).value || '';
+    // Tomme linjer faller ut. Uten det ville et ekstra linjeskift på
+    // slutten av et tekstfelt blitt til et tomt punkt i lærerens ark.
+    const somListe = (n) => les(n).split('\n').map(s => s.trim()).filter(Boolean);
+
+    const nye = {
+      tittel: les('tittel').trim(),
+      mal: les('mal').trim(),
+      aktivitet: les('aktivitet').trim(),
+      lekser: les('lekser').trim(),
+      timeplan: somListe('timeplan'),
+      bakgrunn: somListe('bakgrunn'),
+      kjerne: somListe('kjerne'),
+      hvisTid: somListe('hvisTid'),
+      misforstaelser: somListe('misforstaelser'),
+      kobling: somListe('kobling'),
+      verktoy: somListe('verktoy')
+    };
+    const sider = fpLesSider(les('sider'));
+    if(sider) nye.sider = sider;
+
+    try{
+      await updateDoc(doc(db, 'fagplan', fpValgt, 'okter', oktId), nye);
+      Object.assign(o, nye);
+      await loggSamlet('Økt endret: ' + (o.kapittelTittel || o.kapittel) + ' nr. ' + o.nr,
+        Object.keys(nye).length, 'fpLagreOkt · fagplan/' + fpValgt + '/okter/' + oktId);
+      showToast('✓ Økt ' + o.nr + ' er lagret.');
+      fpApenOkt = '';
+      fpRender();
+    }catch(err){
+      if(err && (err.code === 'forhandsvisning' || err.code === 'lesemodus')) return;
+      console.error('fpLagreOkt', err);
+      melding('ADM-FGP-03', '🔴 Økten ble ikke lagret',
+        String(err.message || err),
+        'fpLagreOkt · fagplan/' + fpValgt + '/okter/' + oktId);
+    }
+  };
+
+  window.fpSettVariant = async function(verdi){
+    if(!fpValgt) return;
+    try{
+      await updateDoc(doc(db, 'fagplan', fpValgt), {
+        rekkefolgeVariant: verdi,
+        rekkefolgeVariantSatt: new Date().toISOString(),
+        rekkefolgeVariantAv: currentUserEmail || 'ukjent'
+      });
+      await loggSamlet('Rekkefølgevariant satt til «' + verdi + '»', 1,
+        'fpSettVariant · fagplan/' + fpValgt);
+      showToast('✓ Valget er lagret. Det brukes når årsplanen genereres.');
+    }catch(err){
+      if(err && (err.code === 'forhandsvisning' || err.code === 'lesemodus')){ fpRender(); return; }
+      console.error('fpSettVariant', err);
+      showToast('Fikk ikke lagret valget: ' + (err.code || err.message), true);
+      fpRender();
+    }
+  };
+
+
+  // ═══════════════════════════════════════════════════════════════════
   // FLYTTING: rollen «Eier» → «Øverste leder»
   //
   // Navnet står tre steder: som dokument-id i 'roller', som tekst i hver
@@ -17813,6 +18614,12 @@
     if(tab.dataset.tab === 'lessonPlans') showLpChoice();
     if(tab.dataset.tab === 'overview') renderOvFolders();
     if(tab.dataset.tab === 'klasseoppsett'){ koFyllVelgere(); koVelgKlasse(); }
+    // Øktene hentes her, ikke ved innlogging: de er ~213 kB og angår
+    // bare den som faktisk åpner planen.
+    if(tab.dataset.tab === 'fagplan'){
+      fpRender();
+      if(fpValgt) fpHentOkter(fpValgt).then(fpRender);
+    }
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
@@ -17920,6 +18727,24 @@
     onSnapshot(collection(db, 'messageThreads'), (snap) => {
       messageThreadsCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       if(document.getElementById('panel-messages') && document.getElementById('panel-messages').classList.contains('active')) renderMessagesInbox();
+    });
+    // 🔴 UTENFOR SCHEMAS — MED VILJE.
+    // attachListener() teller ferdige samlinger mot Object.keys(SCHEMAS)
+    // .length. De to tallene står på 26 mot 26; legges 'fagplan' i
+    // SCHEMAS uten en attachListener, når summen aldri opp og
+    // synkroniseringsmerket blir stående på «Kobler til…» for alltid.
+    // Samme mønster som broadcastThreads rett under: egen buffer, egen
+    // lytter, ingen plass i CRUD-maskineriet.
+    //
+    // 📌 Bare planene lyttes det på — de er små. Øktene er ~213 kB til
+    // sammen og hentes når skjermen åpnes, ikke ved hver innlogging.
+    onSnapshot(collection(db, 'fagplan'), (snap) => {
+      fagplanCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      const p = document.getElementById('panel-fagplan');
+      if(p && p.classList.contains('active')) fpRender();
+    }, (err) => {
+      console.error('fagplan', err);
+      showToast('Kunne ikke koble til: fagplan (' + err.code + ')', true);
     });
     onSnapshot(collection(db, 'broadcastThreads'), (snap) => {
       broadcastThreadsCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
