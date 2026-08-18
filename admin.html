@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 18:01:13 -->
+<!-- SIST-ENDRET: 2026-08-18 18:56:28 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1362,7 +1362,18 @@
      leseren trodd de kom etter hverandre. */
   .fp-spor{display:grid; grid-template-columns:1fr; gap:16px;}
   @media(min-width:820px){ .fp-spor{grid-template-columns:1fr 1fr;} }
-  .fp-sporkol{min-width:0;}
+  /* 🔴 To kolonner er riktig for OVERSIKTEN, men galt når en økt er åpen.
+     Kortet havnet da i en halv kolonne — rundt 350 px — mens etiketten tok
+     146 av dem. Teksten brøt etter tre ord, og hele økta ble en søyle.
+     På telefonen så det bra ut, fordi der er det bare én kolonne.
+     Er en økt åpen, faller sporene sammen til én kolonne og kortet får
+     hele bredden. Overskriftene står igjen, så leseren ser fortsatt
+     hvilket spor han er i. */
+  .fp-spor.les{grid-template-columns:1fr;}
+  /* Og som sikkerhetsnett: kortet måler sin EGEN beholder, ikke vinduet.
+     En medieregel spør skjermen om bredden — men det var aldri skjermen
+     som var smal her. */
+  .fp-sporkol{min-width:0; container-type:inline-size;}
   .fp-sporhode{display:flex; align-items:baseline; gap:9px; padding:0 0 8px;
     border-bottom:2px solid var(--line); margin-bottom:12px;}
   .fp-sporhode h4{font-family:'Cormorant Garamond',serif; font-weight:700;
@@ -1492,6 +1503,15 @@
     .ok-etikett{flex:none;}
     .ok-ord{grid-template-columns:1fr; gap:1px 0;}
     .ok-ord dd{margin-bottom:7px;}
+  }
+  /* Samme sammenbrudd, men målt mot kortets egen beholder. Dekker
+     tilfellet der vinduet er bredt og spalten likevel er smal. */
+  @container (max-width: 620px){
+    .ok-bolk{flex-direction:column; gap:5px;}
+    .ok-etikett{flex:none;}
+    .ok-ord{grid-template-columns:1fr; gap:1px 0;}
+    .ok-ord dd{margin-bottom:7px;}
+    .ok-tid{flex-direction:row;}
   }
   /* Månedsvelgeren: brikker, ikke nedtrekk. Ni måneder er få nok til å
      vises alle sammen, og da ser man også hvor mange lørdager hver har
@@ -15393,7 +15413,8 @@
     const kjente = new Set(spor.flatMap(sp => rk[sp.id] || kap.filter(k => k.spor === sp.id).map(k => k.id)));
     const hjemlose = kap.filter(k => !kjente.has(k.id));
 
-    return '<div class="fp-spor" style="margin-top:16px;">' + kolonner + '</div>' +
+    return '<div class="fp-spor' + (fpApenOkt ? ' les' : '') +
+      '" style="margin-top:16px;">' + kolonner + '</div>' +
       (hjemlose.length ? '<div class="fp-liste" style="margin-top:16px;">' +
         '<div class="fp-fot">⚠️ Uten spor:</div>' +
         hjemlose.map(k => fpKapittelkort(k, 1)).join('') + '</div>' : '');
