@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 13:22:16 -->
+<!-- SIST-ENDRET: 2026-08-18 14:06:38 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1412,6 +1412,71 @@
     font-variant-numeric:lining-nums tabular-nums;}
   .ap-tab .ap-liten{font-size:11px; color:#8a9a90;}
   .ap-tab tr.ap-holdt td{background:var(--paper); color:#8a9a90;}
+  /* Ferieraden skal STOPPE øyet. Den er ikke en dag med mindre innhold —
+     den er en uke som ikke finnes, og det er en opplysning i seg selv. */
+  .ap-tab tr.ap-ferie td{background:#fdf4f4; color:#8a5a5a;}
+  .ap-tab tr.ap-ferie .ap-dato{color:#a83c3c;}
+  .ap-tab tr.ap-ekstra td{background:#fbf7ea; color:#7a6a3a;}
+  .ap-tab tr.ap-ekstra .ap-dato{color:#a89050;}
+  .ap-dag.ferie{background:#fdf4f4; border-color:#e8cccc;}
+  .ap-dag.ferie .ap-dag-hode{background:#f9e9e9; border-bottom-color:#e8cccc; color:#a83c3c;}
+  .ap-dag.ekstra{background:#fbf7ea; border-color:#e6dcc0;}
+  .ap-dag.ekstra .ap-dag-hode{background:#f6efdc; border-bottom-color:#e6dcc0; color:#7a6a3a;}
+
+  /* ── ØKTKORTET ────────────────────────────────────────────────────
+     Til lesing, ikke til utfylling. Etikettene står i en smal kolonne
+     til venstre på brede skjermer og over innholdet på smale — samme
+     grep som personkortet bruker. */
+  .ok-kort{background:#fff; border:1px solid var(--gold-l, var(--line)); border-radius:12px;
+    box-shadow:var(--shadow); margin:8px 10px 12px; overflow:hidden;}
+  .ok-hode{display:flex; align-items:flex-start; gap:12px; padding:15px 18px 13px;
+    background:linear-gradient(135deg,#f4f9f6 0%, #eaf2ed 100%); border-bottom:1px solid var(--line);}
+  .ok-nr{flex:none; width:34px; height:34px; border-radius:9px; display:flex;
+    align-items:center; justify-content:center; background:var(--emerald-d); color:#fff;
+    font-family:'Jost',sans-serif; font-weight:700; font-size:14px;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .ok-tittel{flex:1 1 auto; min-width:0;}
+  .ok-tittel h4{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px;
+    color:var(--emerald-d); margin:0 0 2px; line-height:1.25;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .ok-under{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold);
+    text-transform:uppercase; letter-spacing:.04em;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .ok-lukk{flex:none; background:transparent; border:none; cursor:pointer;
+    color:#8a9a90; font-size:16px; line-height:1; padding:4px 6px;}
+  .ok-lukk:hover{color:var(--ink);}
+  .ok-mal{margin:0; padding:13px 18px; background:#f7fbf8; border-bottom:1px solid var(--paper-2);
+    font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); line-height:1.55;}
+  .ok-bolk{display:flex; gap:16px; padding:13px 18px; border-bottom:1px solid var(--paper-2);}
+  .ok-bolk:last-of-type{border-bottom:none;}
+  .ok-etikett{flex:0 0 146px; font-family:'Jost',sans-serif; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.06em; color:var(--gold); padding-top:2px;}
+  .ok-innhold{flex:1 1 auto; min-width:0; font-family:'Jost',sans-serif; font-size:12.5px;
+    color:#3c5a4a; line-height:1.6;}
+  .ok-innhold p{margin:0 0 8px;} .ok-innhold p:last-child{margin-bottom:0;}
+  .ok-liste{margin:0; padding-inline-start:18px;} .ok-liste li{margin-bottom:5px;}
+  .ok-tid{display:flex; gap:12px; padding:4px 0; border-bottom:1px solid var(--paper-2);}
+  .ok-tid:last-child{border-bottom:none;}
+  .ok-tid .min{flex:0 0 56px; color:var(--gold); font-weight:600;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .ok-spm{padding:7px 0; border-bottom:1px solid var(--paper-2);}
+  .ok-spm:last-child{border-bottom:none;}
+  .ok-spm .q{font-weight:600; color:var(--emerald-d);}
+  .ok-spm .a{color:#5a6860; padding-inline-start:14px; position:relative;}
+  .ok-spm .a::before{content:'→'; position:absolute; inset-inline-start:0; color:var(--gold);}
+  .ok-ord{margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 12px;}
+  .ok-ord dt{font-weight:600; color:var(--emerald-d);}
+  .ok-ord dd{margin:0; color:#5a6860;}
+  .ok-merker{display:flex; flex-wrap:wrap; gap:6px;}
+  .ok-merke{background:var(--paper-2); border-radius:999px; padding:3px 11px; font-size:11.5px; color:#5a6860;}
+  .ok-handlinger{display:flex; gap:9px; flex-wrap:wrap; padding:14px 18px;
+    background:var(--paper); border-top:1px solid var(--line);}
+  @media(max-width:600px){
+    .ok-bolk{flex-direction:column; gap:5px;}
+    .ok-etikett{flex:none;}
+    .ok-ord{grid-template-columns:1fr; gap:1px 0;}
+    .ok-ord dd{margin-bottom:7px;}
+  }
   /* Månedsvelgeren: brikker, ikke nedtrekk. Ni måneder er få nok til å
      vises alle sammen, og da ser man også hvor mange lørdager hver har
      — det er det tallet man planlegger etter. */
@@ -14538,7 +14603,8 @@
   let fpOkter = [];           // øktene til fpValgt, hentet på forespørsel
   let fpOkterFor = '';        // hvilken plan fpOkter faktisk hører til
   let fpApneKap = new Set();  // hvilke kapitler som står utslått
-  let fpApenOkt = '';         // økten som redigeres, '' = ingen
+  let fpApenOkt = '';         // økten som er åpnet for lesing, '' = ingen
+  let fpRedigerOkt = '';      // økten som faktisk redigeres, '' = ingen
   const fpFil = { plan: null, okter: null, planNavn: '', okterNavn: '' };
 
   // Dokument-id: fag + trinn. Leselig, forutsigbar, og den samme hver
@@ -14941,10 +15007,22 @@
     fpRender();
   };
 
+  // 🔴 Å ÅPNE ER IKKE Å REDIGERE.
+  //
+  // Første utgave slo rett over i et skjema med tolv tekstfelter så
+  // snart man trykket på en økt. Det er feil to ganger: den vanligste
+  // handlingen er å LESE økten — læreren slår opp neste lørdag — og et
+  // åpent skjema inviterer til å endre noe man bare ville se på.
+  //
+  // Resten av panelet gjør det motsatt: kortet viser, og redigering
+  // ligger bak en knapp. Denne følger nå samme vei.
   window.fpApneOkt = function(oktId){
-    fpApenOkt = (fpApenOkt === oktId) ? '' : oktId;
+    if(fpApenOkt === oktId){ fpApenOkt = ''; fpRedigerOkt = ''; }
+    else { fpApenOkt = oktId; fpRedigerOkt = ''; }
     fpRender();
   };
+  window.fpRediger = function(oktId){ fpRedigerOkt = oktId; fpRender(); };
+  window.fpAvbrytRediger = function(){ fpRedigerOkt = ''; fpRender(); };
 
   function fpRender(){
     const velger = document.getElementById('fpVelger');
@@ -15175,7 +15253,9 @@
           ${k.mal && k.mal.length ? `<div class="fp-mal">🎯 ${(k.mal || []).map(m => escapeHtml(m)).join(' · ')}</div>` : ''}
           ${mine.length === 0
             ? '<div class="fp-tomt">Ingen økter skrevet for dette kapittelet.</div>'
-            : mine.map(o => fpApenOkt === o.id ? fpOktSkjema(o) : `
+            : mine.map(o => fpApenOkt === o.id
+              ? (fpRedigerOkt === o.id ? fpOktSkjema(o) : fpOktKort(o))
+              : `
               <div class="fp-okt-rad" onclick="fpApneOkt('${escapeHtml(o.id)}')">
                 <span class="fp-okt-nr">${o.nr}</span>
                 <span class="fp-okt-tittel">${escapeHtml(o.tittel || '')}</span>
@@ -15207,6 +15287,82 @@
   // De to seksti øktene ER fordelingen av vekten. Skrus vekten ned uten
   // at øktene skrives om, står planen og øktene og sier hver sin ting —
   // og skjermen viser 18/12 uten å kunne forklare hvorfor.
+  // ── ØKTKORTET ─────────────────────────────────────────────────────
+  //
+  // Det leseren møter: hele økten satt opp til å leses, ikke til å
+  // fylles ut. Samme identitet som resten av panelets kort — Cormorant
+  // til overskrifter, seksjoner med egen etikett, og handlingene
+  // nederst.
+  //
+  // Prøven fra §112 gjelder her: rekker læreren å lese hele økten før
+  // lørdag? Derfor står timeplanen som en tidslinje med minuttene i en
+  // egen, smal kolonne, og spørsmålene med fasit rett ved siden av
+  // spørsmålet — ikke som to lister man må holde mot hverandre.
+  function fpOktKort(o){
+    const bolk = (etikett, innhold) => innhold
+      ? `<div class="ok-bolk"><div class="ok-etikett">${etikett}</div>
+         <div class="ok-innhold">${innhold}</div></div>` : '';
+    const liste = (v) => (Array.isArray(v) && v.length)
+      ? '<ul class="ok-liste">' + v.map(x => '<li>' + escapeHtml(String(x)) + '</li>').join('') + '</ul>' : '';
+    const avsnitt = (v) => (Array.isArray(v) && v.length)
+      ? v.map(x => '<p>' + escapeHtml(String(x)) + '</p>').join('') : '';
+
+    const timeplan = (o.timeplan || []).map(l => {
+      const m = String(l).match(/^\s*([\d\u2013\u2014-]+)\s+(.*)$/);
+      return m ? `<div class="ok-tid"><span class="min">${escapeHtml(m[1])}</span>
+                  <span>${escapeHtml(m[2])}</span></div>`
+               : `<div class="ok-tid"><span class="min"></span><span>${escapeHtml(String(l))}</span></div>`;
+    }).join('');
+
+    const sp = (o.sporsmal || []).map(p => {
+      const spm = Array.isArray(p) ? p[0] : (p && p.spm);
+      const svar = Array.isArray(p) ? p[1] : (p && p.svar);
+      return `<div class="ok-spm"><div class="q">${escapeHtml(spm || '')}</div>
+              <div class="a">${escapeHtml(svar || '')}</div></div>`;
+    }).join('');
+
+    const nk = Object.entries(o.nokkelord || {});
+    const fyll = (o.fyllstoff || []).filter(x => x && x.lek);
+
+    return `
+      <div class="ok-kort">
+        <div class="ok-hode">
+          <span class="ok-nr">${o.nr}</span>
+          <div class="ok-tittel">
+            <h4>${escapeHtml(o.tittel || '')}</h4>
+            <div class="ok-under">${escapeHtml(o.kapittelTittel || o.kapittel || '')}
+              ${o.sider ? '· ' + escapeHtml(fpSider(o.sider)) : ''}</div>
+          </div>
+          <button class="ok-lukk" onclick="fpApneOkt('${escapeHtml(o.id)}')" title="Lukk">✕</button>
+        </div>
+
+        ${o.mal ? `<div class="ok-mal">🎯 ${escapeHtml(o.mal)}</div>` : ''}
+        ${timeplan ? `<div class="ok-bolk"><div class="ok-etikett">Slik går timen</div>
+          <div class="ok-innhold">${timeplan}</div></div>` : ''}
+        ${bolk('Bakgrunn for læreren', avsnitt(o.bakgrunn))}
+        ${bolk('Kjernen', liste(o.kjerne))}
+        ${sp ? `<div class="ok-bolk"><div class="ok-etikett">Spørsmål — med forventet svar</div>
+          <div class="ok-innhold">${sp}</div></div>` : ''}
+        ${bolk('Vanlige misforståelser', liste(o.misforstaelser))}
+        ${bolk('Aktivitet', o.aktivitet ? '<p>' + escapeHtml(o.aktivitet) + '</p>' : '')}
+        ${bolk('Hvis det blir tid', liste(o.hvisTid))}
+        ${fyll.length ? bolk('Fyllstoff', '<div class="ok-merker">' + fyll.map(x =>
+          `<span class="ok-merke">${escapeHtml(x.lek)}</span>`).join('') + '</div>') : ''}
+        ${bolk('Lekser', o.lekser ? '<p>' + escapeHtml(o.lekser) + '</p>' : '')}
+        ${nk.length ? bolk('Nøkkelord', '<dl class="ok-ord">' + nk.map(([k, v]) =>
+          `<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(String(v))}</dd>`).join('') + '</dl>') : ''}
+        ${bolk('Ta med', liste(o.verktoy))}
+        ${bolk('Henger sammen med', liste(o.kobling))}
+
+        <div class="ok-handlinger">
+          <button class="btn btn-primary" style="width:auto;"
+            onclick="fpRediger('${escapeHtml(o.id)}')">✏️ Rediger økten</button>
+          <button class="btn btn-ghost" style="width:auto;"
+            onclick="fpSkrivUtOkt('${escapeHtml(o.id)}')">🖨️ Skriv ut</button>
+        </div>
+      </div>`;
+  }
+
   function fpOktSkjema(o){
     const f = (n) => 'fpO_' + n;
     const liste = (v) => Array.isArray(v) ? v.join('\n') : String(v || '');
@@ -15216,7 +15372,7 @@
           <span class="fp-okt-nr">${o.nr}</span>
           <b style="font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d); flex:1 1 auto;">Økt ${o.nr}</b>
           <button class="btn btn-ghost" style="width:auto; padding:5px 12px;"
-            onclick="fpApneOkt('${escapeHtml(o.id)}')">Lukk</button>
+            onclick="fpAvbrytRediger()">Avbryt</button>
         </div>
 
         <div class="fp-felt">
@@ -15538,6 +15694,46 @@
 
   function apDokId(klasseId){ return klasseId + '_' + SKOLEAR.replace('/', '-'); }
 
+  // Hver dato i skoleåret som programmet har en ukedag på — uansett om
+  // det blir undervisning av den. Alt som avgjør noe kommer fra
+  // dagStatus(); her går vi bare gjennom kalenderen.
+  function apAlleDager(prog){
+    const ut = [];
+    const fra = skolearOppsett.startDato, til = skolearOppsett.sluttDato;
+    if(!fra || !til || fra > til || !window.Skoledager) return ut;
+    // 🔴 Ukedagen må siles FØR dagStatus, ikke etter.
+    //
+    // dagStatus() svarer 'ferie' for HVER dag en ferierad dekker — også
+    // tirsdager. Det er riktig for den: spørsmålet den svarer på er «er
+    // det skole denne datoen», og i høstferien er svaret nei uansett
+    // ukedag. Men her spør vi om noe annet: hvilke av KLASSENS dager
+    // faller bort. Uten denne silingen ble høstferien til sju rader —
+    // mandag til søndag — i en plan som bare har lørdager.
+    //
+    // Ukedagene leses fra programmets eget 'dager'-felt. Regelen om hva
+    // en dag ER kommer fortsatt fra skoledager.js; her velges bare
+    // hvilke datoer den skal spørres om.
+    const ukedager = Array.isArray(prog.dager) ? prog.dager
+      : String(prog.dager || '').split(/[,;]/).map(x => x.trim()).filter(Boolean);
+    if(ukedager.length === 0) return ut;
+
+    const d = new Date(fra + 'T00:00:00');
+    const slutt = new Date(til + 'T00:00:00');
+    let vakt = 0;
+    while(d <= slutt && vakt++ < 2000){
+      const navn = window.Skoledager.UKEDAGER[d.getDay()];
+      if(ukedager.includes(navn)){
+        const dIso = window.Skoledager.iso(d);
+        const info = window.Skoledager.dagStatus(dIso, prog.id);
+        if(info.status !== 'ikke-undervisningsdag'){
+          ut.push({ dato: dIso, dag: navn, status: info.status, label: info.label });
+        }
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return ut;
+  }
+
   // Avtrykk av ALT planen ble regnet ut fra. Endres én av dem, er den
   // frosne planen utdatert — og det er dette som avslører det.
   // Beskrivelsen er med: en ferie som bytter navn er verdt å vite om,
@@ -15568,8 +15764,20 @@
     if(!window.Skoledager) feil.push('skoledager.js er ikke lastet.');
     if(feil.length) return { feil, merk };
 
-    const dager = window.Skoledager.planDager(
-      skolearOppsett.startDato, skolearOppsett.sluttDato, prog.id);
+    // 🔴 ALLE dagene programmet skulle hatt — også de som faller bort.
+    //
+    // Første utgave brukte planDager(), som gir undervisningsdagene og
+    // ingenting annet. Da hoppet planen fra 3. til 17. oktober uten et
+    // ord, og den som leste arket kunne ikke se om en uke var borte
+    // eller om noe var galt. En uke som forsvinner i stillhet er
+    // nøyaktig den feilen vi har brukt uker på å fjerne andre steder.
+    //
+    // Nå spørres skoledager.js for HVER dato i året, og svaret bæres
+    // med: ferier står i planen med navnet sitt. Regelen skrives
+    // fortsatt ikke her — dagStatus() avgjør alt, også hva som er feil
+    // ukedag.
+    const alle = apAlleDager(prog);
+    const dager = alle.filter(d => d.status === 'undervisningsdag');
     if(dager.length === 0){
       feil.push('Programmet «' + (prog.navn || '') + '» gir ingen undervisningsdager i skoleåret. ' +
         'Kontroller ukedagene på programmet og datoene på skoleåret.');
@@ -15645,9 +15853,25 @@
 
     // ── Radene ──
     let iUnd = 0;
-    const rader = dager.map((d, i) => {
-      const rad = { dato: d.dato, dag: d.dag, nr: i + 1, reservert: holdt.get(d.dato) || null };
-      if(!rad.reservert){
+    let nrUnd = 0;
+    const rader = alle.map(d => {
+      // type sier hva raden ER. Uten det måtte hver leser gjette ut fra
+      // hvilke felter som tilfeldigvis manglet.
+      if(d.status === 'ferie'){
+        return { dato: d.dato, dag: d.dag, type: 'ferie',
+                 label: d.label || 'Fri', reservert: null };
+      }
+      if(d.status === 'ekstradag'){
+        // Ekstradager er oppsamling, ikke ny undervisningstid — de står
+        // uten fastsatt innhold. Det er skoledager.js sitt eget premiss,
+        // og grunnen til at de holdes utenfor nevneren.
+        return { dato: d.dato, dag: d.dag, type: 'ekstra',
+                 label: d.label || 'Ekstra undervisningsdag', reservert: null };
+      }
+      const reservert = holdt.get(d.dato) || null;
+      const rad = { dato: d.dato, dag: d.dag, nr: ++nrUnd,
+                    type: reservert ? 'reservert' : 'undervisning', reservert };
+      if(!reservert){
         spor.forEach(sp => {
           const o = sp.okter[iUnd];
           if(o) rad[sp.id] = { oktId: o.id, nr: o.nr, tittel: o.tittel || '',
@@ -15674,6 +15898,10 @@
       antallDager: dager.length,
       antallUndervisning: undervisning.length,
       antallReservert: holdt.size,
+      // Tapte dager telles for seg. Tallet er verdt å se: det er dette
+      // som avgjør om pensumet får plass.
+      antallFerie: alle.filter(d => d.status === 'ferie').length,
+      antallEkstra: alle.filter(d => d.status === 'ekstradag').length,
       antallHost: host.length,
       antallVar: var_.length,
       dager: rader
@@ -15813,13 +16041,15 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     return `
       <div class="report-card" style="margin-top:16px;">
         <h3>${escapeHtml(tittel)}</h3>
-        <div class="sub">${valgt ? valgt.navn + ' · ' + valgt.dager.length + ' dager'
-                                 : rader.length + ' dager gjennom året'}</div>
+        <div class="sub">${valgt
+          ? valgt.navn + ' · ' + valgt.undervisning + ' undervisningsdager'
+          : (p.antallUndervisning || 0) + ' med pensum · ' + (p.antallReservert || 0) +
+            ' holdt av' + (p.antallFerie ? ' · ' + p.antallFerie + ' faller bort' : '')}</div>
 
         <div class="ap-valg">
           <button class="ap-chip${!valgt ? ' pa' : ''}" onclick="apVis('ar')">Hele året</button>
           ${mnd.map(m => `<button class="ap-chip${valgt && valgt.nokkel === m.nokkel ? ' pa' : ''}"
-            onclick="apVis('${m.nokkel}')">${escapeHtml(m.kort)}<span class="n">${m.dager.length}</span></button>`).join('')}
+            onclick="apVis('${m.nokkel}')">${escapeHtml(m.kort)}<span class="n">${m.undervisning}</span></button>`).join('')}
         </div>
 
         ${valgt ? apMaanedVisning(p, valgt) : apAarVisning(p, rader)}
@@ -15842,17 +16072,33 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       <table class="ap-tab"><thead><tr>
         <th>Dato</th>${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th>
       </tr></thead><tbody>
-        ${vis.map(r => `<tr${r.reservert ? ' class="ap-holdt"' : ''}>
-          <td class="ap-dato">${escapeHtml(apDatoKort(r.dato))}</td>
-          ${r.reservert
-            ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
-            : sporIder.map(id => {
-                const o = r[id];
-                return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + '</b> ' + o.nr +
-                  '<br><span class="ap-liten">' + escapeHtml(o.tittel || '') + '</span>' : '—') + '</td>';
-              }).join('') +
-              '<td class="ap-liten">' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
-        </tr>`).join('')}
+        ${vis.map(r => {
+          const t = apType(r);
+          // 🔴 Ferien får sin EGEN rad, med navnet i fet skrift.
+          // Før ble den bare hoppet over, og planen gikk fra 3. til 17.
+          // oktober uten et ord. Den som leste kunne ikke vite om en uke
+          // var borte eller om noe var galt — og det er verre enn å miste
+          // uken.
+          if(t === 'ferie' || t === 'ekstra'){
+            return `<tr class="ap-${t}">
+              <td class="ap-dato">${escapeHtml(apDatoKort(r.dato))}</td>
+              <td colspan="${sporIder.length + 1}">
+                <b>${escapeHtml(r.label || (t === 'ferie' ? 'Fri' : 'Ekstra undervisningsdag'))}</b>
+                <span class="ap-liten">· ${t === 'ferie' ? 'ingen undervisning' : 'oppsamling, uten fastsatt pensum'}</span>
+              </td></tr>`;
+          }
+          return `<tr${t === 'reservert' ? ' class="ap-holdt"' : ''}>
+            <td class="ap-dato">${escapeHtml(apDatoKort(r.dato))}</td>
+            ${t === 'reservert'
+              ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
+              : sporIder.map(id => {
+                  const o = r[id];
+                  return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + '</b> ' + o.nr +
+                    '<br><span class="ap-liten">' + escapeHtml(o.tittel || '') + '</span>' : '—') + '</td>';
+                }).join('') +
+                '<td class="ap-liten">' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
+          </tr>`;
+        }).join('')}
       </tbody></table></div>
       ${rader.length > 8 ? `<button class="btn btn-ghost" style="width:auto; margin-top:12px;"
         onclick="apVisAlt()">${apVisAlle ? 'Vis færre' : 'Vis alle ' + rader.length + ' dagene'}</button>` : ''}`;
@@ -15861,7 +16107,20 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   function apMaanedVisning(p, m){
     const sporIder = apSporIder(p.dager);
     return '<div class="ap-mnd-liste">' + m.dager.map(r => {
-      if(r.reservert) return `
+      const t = apType(r);
+      if(t === 'ferie' || t === 'ekstra') return `
+        <div class="ap-dag ${t}">
+          <div class="ap-dag-hode">${escapeHtml(apDatoLang(r.dato))}</div>
+          <div class="ap-dag-linje">
+            <div class="ap-innhold">
+              <b>${escapeHtml(r.label || (t === 'ferie' ? 'Fri' : 'Ekstra undervisningsdag'))}</b>
+              <div class="ap-mal">${t === 'ferie'
+                ? 'Ingen undervisning denne dagen. Pensumet står stille og fortsetter neste gang.'
+                : 'Oppsamlingsdag. Den er satt opp for å ta igjen noe, og har derfor ikke fast pensum.'}</div>
+            </div>
+          </div>
+        </div>`;
+      if(t === 'reservert') return `
         <div class="ap-dag holdt">
           <div class="ap-dag-hode">${escapeHtml(apDatoLang(r.dato))}</div>
           <div class="ap-dag-linje"><i>${escapeHtml(r.reservert)}</i></div>
@@ -15891,6 +16150,14 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
 
   window.apVis = function(hva){ apVisning = hva; apVisAlle = false; apRender(); };
   window.apVisAlt = function(){ apVisAlle = !apVisAlle; apRender(); };
+
+  // Planen som ble frosset FØR feriene kom med har ingen 'type'. Da
+  // utledes den av det som finnes, i stedet for at gamle planer blir
+  // uleselige.
+  function apType(r){
+    if(r.type) return r.type;
+    return r.reservert ? 'reservert' : 'undervisning';
+  }
 
   function apSporIder(rader){
     return [...new Set((rader || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
@@ -15929,8 +16196,12 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     ((p && p.dager) || []).forEach(r => {
       const n = apMndNokkel(r.dato);
       let m = ut.find(x => x.nokkel === n);
-      if(!m){ m = { nokkel: n, navn: apMndNavn(r.dato), kort: apMndKort(r.dato), dager: [] }; ut.push(m); }
+      if(!m){ m = { nokkel: n, navn: apMndNavn(r.dato), kort: apMndKort(r.dato),
+                    dager: [], undervisning: 0 }; ut.push(m); }
       m.dager.push(r);
+      // Tallet på brikken er undervisningsdager — det er det man
+      // planlegger etter. Ferier står i listen, men telles ikke med.
+      if(apType(r) === 'undervisning') m.undervisning++;
     });
     return ut;
   }
@@ -15960,7 +16231,11 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       avvik: p.generertDato ? null
         : [{ tekst: 'Utkast — årsplanen er ikke frosset. Datoene kan fortsatt endre seg.' }],
       innhold: m.dager.map(r => {
-        if(r.reservert) return `<table class="nv"><tbody>
+        const t = apType(r);
+        if(t === 'ferie' || t === 'ekstra') return `<h2>${escapeHtml(apDatoLang(r.dato))}</h2>
+          <p><b>${escapeHtml(r.label || (t === 'ferie' ? 'Fri' : 'Ekstra undervisningsdag'))}</b>
+          — ${t === 'ferie' ? 'ingen undervisning' : 'oppsamlingsdag uten fast pensum'}.</p>`;
+        if(t === 'reservert') return `<table class="nv"><tbody>
           <tr><th>${escapeHtml(apDatoLang(r.dato))}</th><td><i>${escapeHtml(r.reservert)}</i></td></tr>
         </tbody></table>`;
         const rader = sporIder.map(id => {
@@ -16065,16 +16340,23 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
           : 'UTKAST — ikke frosset. Datoene kan fortsatt endre seg.'}</p>
         <table><thead><tr><th>Dato</th>
           ${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th></tr></thead><tbody>
-        ${(p.dager || []).map(r => `<tr>
-          <td class="tid" style="white-space:nowrap;">${escapeHtml(apDatoKort(r.dato))}</td>
-          ${r.reservert
-            ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
-            : sporIder.map(id => {
-                const o = r[id];
-                return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + ' ' + o.nr + '</b><br>' +
-                  escapeHtml(o.tittel || '') : '—') + '</td>';
-              }).join('') + '<td>' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
-        </tr>`).join('')}
+        ${(p.dager || []).map(r => {
+          const t = apType(r);
+          if(t === 'ferie' || t === 'ekstra') return `<tr>
+            <td class="tid" style="white-space:nowrap;">${escapeHtml(apDatoKort(r.dato))}</td>
+            <td colspan="${sporIder.length + 1}"><b>${escapeHtml(r.label ||
+              (t === 'ferie' ? 'Fri' : 'Ekstra undervisningsdag'))}</b></td></tr>`;
+          return `<tr>
+            <td class="tid" style="white-space:nowrap;">${escapeHtml(apDatoKort(r.dato))}</td>
+            ${t === 'reservert'
+              ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
+              : sporIder.map(id => {
+                  const o = r[id];
+                  return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + ' ' + o.nr + '</b><br>' +
+                    escapeHtml(o.tittel || '') : '—') + '</td>';
+                }).join('') + '<td>' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
+          </tr>`;
+        }).join('')}
         </tbody></table>`
     }));
   };
