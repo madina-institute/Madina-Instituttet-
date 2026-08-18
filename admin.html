@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 15:06:23 -->
+<!-- SIST-ENDRET: 2026-08-18 15:39:26 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -16261,7 +16261,12 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
 
   function apMaanedVisning(p, m){
     const sporIder = apSporIder(p.dager);
-    return '<div class="ap-mnd-liste">' + m.dager.map(r => {
+    const merknad = (() => {
+      const plan = (fagplanCache || []).find(x => x.id === p.fagplanId);
+      const t = plan && plan._om_rekkefolge_kort;
+      return t ? '<p class="fp-fot" style="margin-top:12px;">' + escapeHtml(t) + '</p>' : '';
+    })();
+    return merknad + '<div class="ap-mnd-liste">' + m.dager.map(r => {
       const t = apType(r);
       if(t === 'ferie' || t === 'ekstra') return `
         <div class="ap-dag ${t}">
@@ -16385,7 +16390,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       undertittel: (p.klasseNavn || '') + ' · ' + (p.fagplanNavn || ''),
       avvik: p.generertDato ? null
         : [{ tekst: 'Utkast — årsplanen er ikke frosset. Datoene kan fortsatt endre seg.' }],
-      innhold: m.dager.map(r => {
+      innhold: apSporMerknad(p) + m.dager.map(r => {
         const t = apType(r);
         if(t === 'ferie' || t === 'ekstra') return `<h2>${escapeHtml(apDatoLang(r.dato))}</h2>
           <p><b>${escapeHtml(r.label || (t === 'ferie' ? 'Fri' : 'Ekstra undervisningsdag'))}</b>
@@ -16409,6 +16414,26 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       }).join('')
     }));
   };
+
+  // 🔴 Hvorfor kapitlene ikke kommer i bokas rekkefølge.
+  //
+  // Spor B i trinn 1 går profeten → koranen → islam → arabiske ord.
+  // Islam er kapittel 3 og ligger som nummer tre i sporet: slår læreren
+  // opp i innholdsfortegnelsen, ser det ut som et hopp.
+  //
+  // Det er det ikke — rekkefølgen kommer fra bokas eget forord, som
+  // setter troen først, så kjærligheten til Profeten ﷺ, så resten av
+  // praksis. Men den som ikke vet det, kan ikke gjette det.
+  //
+  // 📌 Setningen leses fra planen, ikke skrives i koden: trinn 2 følger
+  // bokas rekkefølge og skal ikke ha den. Står feltet tomt, står det
+  // ingenting.
+  function apSporMerknad(p){
+    const plan = (fagplanCache || []).find(x => x.id === p.fagplanId);
+    const t = plan && plan._om_rekkefolge_kort;
+    if(!t) return '';
+    return '<p style="color:#5a6b7d; font-size:11.5px;">' + escapeHtml(t) + '</p>';
+  }
 
   function apDatoLang(iso){
     const d = new Date(String(iso) + 'T00:00:00');
@@ -16488,6 +16513,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       })(),
       innhold: `
         <h2>Året</h2>
+        ${apSporMerknad(p)}
         <p>${p.antallDager} undervisningsdager, ${p.antallUndervisning} med pensum og
         ${p.antallReservert} holdt av til repetisjon og prøve.
         ${p.generertDato
