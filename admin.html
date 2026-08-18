@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 12:24:31 -->
+<!-- SIST-ENDRET: 2026-08-18 12:56:15 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1395,6 +1395,23 @@
     color:#8a9a90; text-transform:uppercase; letter-spacing:.05em; margin-top:5px;}
   .fp-fot{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
     line-height:1.55; margin:9px 0 0;}
+  .fp-klasser{display:flex; flex-wrap:wrap; gap:8px;}
+  .fp-klasse{display:flex; align-items:center; gap:7px; cursor:pointer;
+    border:1px solid var(--line); border-radius:999px; padding:6px 13px 6px 10px;
+    font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; background:#fff;}
+  .fp-klasse.pa{border-color:var(--emerald); background:#e8f1ec; color:var(--emerald-d);}
+  .fp-klasse i{color:#a89050; font-style:normal; font-size:11px;}
+  /* Årsplantabellen: mange rader, smal skjerm. Datoen er ankeret og må
+     aldri brytes — resten kan. */
+  .ap-tab{border-collapse:collapse; width:100%; font-family:'Jost',sans-serif; font-size:12.5px;}
+  .ap-tab th{text-align:start; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--gold); font-weight:600; padding:6px 9px; border-bottom:2px solid var(--line);}
+  .ap-tab td{padding:8px 9px; border-bottom:1px solid var(--paper-2); vertical-align:top;
+    color:#3c5a4a;}
+  .ap-tab .ap-dato{white-space:nowrap; color:var(--emerald-d); font-weight:600;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .ap-tab .ap-liten{font-size:11px; color:#8a9a90;}
+  .ap-tab tr.ap-holdt td{background:var(--paper); color:#8a9a90;}
   .fp-kap-hode:hover{background:var(--paper);}
   .fp-kap-navn{font-weight:600; color:var(--emerald-d); flex:1 1 140px; min-width:0;}
   .fp-merke{font-family:'Jost',sans-serif; font-size:11px; padding:2px 8px; border-radius:999px;
@@ -1815,6 +1832,7 @@
        Den står FØRST under Undervisning med vilje: pensumet er det
        alt det andre i seksjonen viser til. -->
   <div class="tab" data-tab="fagplan" data-side="laereplan pedagogisk">Fagplan</div>
+  <div class="tab" data-tab="arsplan" data-side="laereplan pedagogisk">Årsplan</div>
   <div class="tab" data-tab="fagplanImport" data-side="laereplan">Importer plan</div>
   <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
   <div class="tab" data-tab="hours" data-side="pedagogisk">Timeplan</div>
@@ -3309,6 +3327,40 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════
+       ÅRSPLAN — der pensumet møter kalenderen
+
+       Fagplanen har ingen datoer. Her får den dem, for ÉN klasse, og
+       resultatet fryses.
+
+       🔴 Fryses, ikke regnes ut på nytt hver gang. Planen som ble delt
+       ut i september skal ikke flytte seg under føttene på læreren
+       fordi noen la inn en ferie i mars. Endres kalenderen etterpå,
+       sier skjermen fra — den retter ikke i det stille.
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-arsplan">
+    <div class="report-card">
+      <h3>🗓️ Årsplan</h3>
+      <div class="sub">Fagplanen fordelt på klassens egne undervisningsdager</div>
+      <div class="innst-effekt">
+        Dagene kommer fra klassens program og skolekalenderen — samme regel
+        som oppmøtet og portalene bruker. Ferier trekkes fra. Ekstra
+        undervisningsdager holdes utenfor: de settes opp for å ta igjen noe
+        som gikk tapt, ikke for å gi plass til mer pensum.
+      </div>
+      <div class="innst-rad" style="margin-top:14px;">
+        <div class="field">
+          <label>Klasse</label>
+          <select id="apKlasse" onchange="apVelgKlasse(this.value)">
+            <option value="">— Velg klasse —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="apInnhold" style="margin-top:16px;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
        IMPORT — egen fane, ikke en boks nederst på plansiden
 
        Import er en engangshandling. Lå den under planen man leser
@@ -3959,6 +4011,24 @@
 <div class="toast" id="toast"></div>
 
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     skoledager.js — ÉN kilde for «er dette en skoledag?»
+
+     Regelen lå tre steder: index4, index1 og her inne uten eget navn.
+     Årsplangeneratoren under kaller herfra i stedet for å skrive den
+     for fjerde gang. Filen sier det selv i toppen.
+
+     ⚠️ Vanlig script, ikke module: den setter window.Skoledager
+     synkront. Modulen under er utsatt (defer), så den er alltid på
+     plass før noe kaller den.
+
+     📌 Modulen henter ingenting selv — den mates fra onSnapshot, se
+     matSkoledager() lenger nede. Uten mating kjenner den verken
+     programmer, kalender eller skoleårets grenser, og svarer «ikke
+     undervisningsdag» på alt. Stille.
+     ═══════════════════════════════════════════════════════════════════ -->
+<script src="skoledager.js"></script>
 
 <script type="module">
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -6345,6 +6415,7 @@
       skolearOppsett.startDato   = d.startDato || '';
       skolearOppsett.termin1Slutt = d.termin1Slutt || '';
       skolearOppsett.sluttDato   = d.sluttDato || '';
+      matSkoledager();
       innstMeta('skolearMeta', d);
       fyllSkolear();
     }, (err) => console.error('settings/skolear', err));
@@ -6788,10 +6859,29 @@
     }
   }, 12000);
 
+  // Mater skoledager.js. Kalles fra HVER kilde den er avhengig av —
+  // programmer, skolekalender og skoleårets grenser. Glemmes én av dem,
+  // svarer modulen fortsatt, bare feil: en ferie som ikke finnes for den
+  // er en undervisningsdag, og planen får en lørdag som ikke er der.
+  function matSkoledager(){
+    if(!window.Skoledager) return;
+    window.Skoledager.settData({
+      programmer: cache.programs || [],
+      skolekalender: cache.schoolCalendar || [],
+      skolear: skolearOppsett || {}
+    });
+    // Er en årsplan åpen, kan den ha blitt utdatert av det som nettopp
+    // kom inn. Den REGNES ikke om — den er frosset — men merket over
+    // den skal si fra.
+    const p = document.getElementById('panel-arsplan');
+    if(p && p.classList.contains('active') && typeof apRender === 'function') apRender();
+  }
+
   function attachListener(type){
     const colRef = collection(db, SCHEMAS[type].collectionName);
     onSnapshot(colRef, (snapshot) => {
       cache[type] = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+      if(type === 'programs' || type === 'schoolCalendar') matSkoledager();
       try{
         render(type);
       } catch(renderErr){
@@ -12072,6 +12162,7 @@
     attendance: 'Registrer daglig oppmøte',
     absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
     fagplan: 'Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter',
+    arsplan: 'Fagplanen fordelt på klassens egne undervisningsdager — frosset per klasse',
     fagplanImport: 'Legg en plan inn i basen fra fil — én gang per plan',
     lessonPlans: 'Lærernes pedagogiske forberedelser',
     planmaler: 'Maler for daglig forberedelse, månedsplan og semesterplan per fag/klasse',
@@ -12096,7 +12187,7 @@
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
     okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
-    fagplan: '📖', fagplanImport: '⬆️',
+    fagplan: '📖', arsplan: '🗓️', fagplanImport: '⬆️',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
@@ -14907,8 +14998,80 @@
             genereres. Øktene under står i bokas rekkefølge uansett — det er datoene
             som fordeles, ikke pensumet som skrives om.</p>
         </div>
+
+        ${fpKlasseKobling(plan)}
       </div>`;
   }
+
+  // ── HVILKE KLASSER FØLGER PLANEN ──────────────────────────────────
+  //
+  // Feltet heter fagtrinn og er et OPPSLAG per fag, ikke ett tall:
+  //     classes/{id}.fagtrinn = { islam: 'islam_t1', koran: 'koran_t2' }
+  // En klasse kan ligge på trinn 1 i islam og trinn 2 i koran, og det er
+  // det vanlige — ikke unntaket.
+  //
+  // ⚠️ Og feltet heter ikke 'trinn'. Det navnet er tatt to ganger fra
+  // før: classes.trinn er en aldersgruppe i fritekst («7–9 år») som
+  // trykkes på klassekortet, og registrations.klassetrinn er elevens
+  // trinn i den norske grunnskolen. Et tredje trinn i samme base ville
+  // ingen klart å holde fra hverandre.
+  //
+  // 📌 Verdien er dokument-id, ikke et tall. Samme grunn som programId:
+  // en peker overlever at noe skifter navn.
+  //
+  // Valget står HER og ikke på klassekortet, fordi det er her man har
+  // planen foran seg — og fordi klasseskjemaet er den generiske
+  // CRUD-tabellen, som ikke kan vise et oppslag.
+  function fpKlasseKobling(plan){
+    const fag = String(plan.fag || '').toLowerCase();
+    const klasser = [...(cache.classes || [])].filter(c => c.navn)
+      .sort((a, b) => String(a.navn).localeCompare(String(b.navn), 'no'));
+    if(klasser.length === 0) return '';
+    return `
+      <div class="fp-felt" style="margin-top:18px;">
+        <label>Hvilke klasser følger denne planen i ${escapeHtml(plan.fag || 'faget')}?</label>
+        <div class="fp-klasser">
+          ${klasser.map(k => {
+            const naa = ((k.fagtrinn || {})[fag]) || '';
+            const paa = naa === plan.id;
+            const annen = naa && !paa;
+            return `<label class="fp-klasse${paa ? ' pa' : ''}">
+              <input type="checkbox" ${paa ? 'checked' : ''}
+                onchange="fpSettKlasse('${escapeHtml(k.id)}', this.checked)">
+              <span>${escapeHtml(k.navn)}${annen ? ' <i>(følger ' + escapeHtml(naa) + ')</i>' : ''}</span>
+            </label>`;
+          }).join('')}
+        </div>
+        <p class="fp-fot">Uten dette vet årsplanen ikke hvilket pensum klassen skal ha.
+          Én plan kan følges av flere klasser — de får hver sin årsplan, fordi
+          datoene kommer fra klassens eget program.</p>
+      </div>`;
+  }
+
+  window.fpSettKlasse = async function(klasseId, paa){
+    const plan = fpPlan();
+    if(!plan) return;
+    const fag = String(plan.fag || '').toLowerCase();
+    const k = (cache.classes || []).find(c => c.id === klasseId);
+    if(!k) return;
+    // Bare denne fagnøkkelen røres. En setDoc på hele fagtrinn ville
+    // strøket klassens koran- eller arabisktrinn i samme slengen.
+    const nytt = { ...(k.fagtrinn || {}) };
+    if(paa) nytt[fag] = plan.id; else delete nytt[fag];
+    try{
+      await updateDoc(doc(db, 'classes', klasseId), { fagtrinn: nytt });
+      await loggSamlet((paa ? 'Klasse knyttet til fagplan: ' : 'Klasse løsnet fra fagplan: ') +
+        (k.navn || '') + ' · ' + fag + ' → ' + (paa ? plan.id : '—'), 1,
+        'fpSettKlasse · classes/' + klasseId + '.fagtrinn.' + fag);
+      showToast(paa ? '✓ ' + (k.navn || '') + ' følger ' + (plan.navn || plan.id) + '.'
+                    : '✓ ' + (k.navn || '') + ' følger ikke lenger denne planen.');
+    }catch(err){
+      if(err && (err.code === 'forhandsvisning' || err.code === 'lesemodus')){ fpRender(); return; }
+      console.error('fpSettKlasse', err);
+      showToast('Fikk ikke lagret: ' + (err.code || err.message), true);
+      fpRender();
+    }
+  };
 
   // ── DE TO SPORENE ─────────────────────────────────────────────────
   //
@@ -15312,6 +15475,421 @@
     lastNedFil('fagplan-' + fpValgt + '-' + new Date().toISOString().slice(0, 10) + '.csv',
       '\ufeff' + linjer.join('\n'), 'text/csv;charset=utf-8;');
     showToast('✓ ' + rader.length + ' økter eksportert.');
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ÅRSPLAN — fagplanen møter klassens egne lørdager
+  //
+  // Fagplanen er datoløs med vilje. To klasser kan følge samme plan og
+  // gå i hvert sitt program — én på lørdag, én på søndag. Datoene hører
+  // derfor til KLASSEN, og de regnes ut her.
+  //
+  // 🔴 OG DE FRYSES. En generert plan er en kopi, ikke et oppslag.
+  // Alternativet — å regne den ut på nytt hver gang skjermen åpnes —
+  // høres ryddigere ut og er verre: planen læreren fikk i september
+  // ville endret seg den dagen noen la inn en påskeferie, uten at noe
+  // sa fra. Nå står den, og skjermen sier at kalenderen har flyttet
+  // seg. Det er to helt ulike ting, og bare den ene er ærlig.
+  //
+  // 📌 Dagene kommer fra skoledager.js. Regelen skrives ikke her. Den
+  // filen finnes nettopp fordi den var skrevet tre steder og ble rettet
+  // ett av dem.
+  // ═══════════════════════════════════════════════════════════════════
+  let arsplanCache = [];
+  let apKlasseId = '';
+  let apUtkast = null;      // det som er regnet ut, ennå ikke lagret
+  let apVisAlle = false;
+
+  function apDokId(klasseId){ return klasseId + '_' + SKOLEAR.replace('/', '-'); }
+
+  // Avtrykk av ALT planen ble regnet ut fra. Endres én av dem, er den
+  // frosne planen utdatert — og det er dette som avslører det.
+  // Beskrivelsen er med: en ferie som bytter navn er verdt å vite om,
+  // selv om datoene står stille.
+  function apKalenderAvtrykk(prog){
+    const rader = (cache.schoolCalendar || [])
+      .map(k => [k.fraDato || '', k.tilDato || '', k.type || '', k.program || '', k.beskrivelse || ''].join('|'))
+      .sort();
+    return [
+      'p:' + (prog ? (prog.id + '/' + (prog.dager || '')) : '—'),
+      'a:' + (skolearOppsett.startDato || '') + '/' + (skolearOppsett.termin1Slutt || '') +
+        '/' + (skolearOppsett.sluttDato || ''),
+      'k:' + rader.join('#')
+    ].join('§');
+  }
+
+  // ── UTREGNINGEN ───────────────────────────────────────────────────
+  //
+  // Returnerer alltid et svar, også når det ikke går opp. Feilene er
+  // data, ikke unntak: skjermen skal kunne vise «det mangler to
+  // lørdager» sammen med resten, ikke i stedet for det.
+  function apRegnUt(klasse, plan, okter){
+    const feil = [], merk = [];
+    const prog = finnProgramFor(klasse);
+    if(!prog) feil.push('Klassen peker ikke på et gyldig program. Sett feltet «Program» på klassen.');
+    if(!skolearOppsett.startDato || !skolearOppsett.sluttDato)
+      feil.push('Skoleåret mangler start- eller sluttdato. Settes under Skole → Skolekalender.');
+    if(!window.Skoledager) feil.push('skoledager.js er ikke lastet.');
+    if(feil.length) return { feil, merk };
+
+    const dager = window.Skoledager.planDager(
+      skolearOppsett.startDato, skolearOppsett.sluttDato, prog.id);
+    if(dager.length === 0){
+      feil.push('Programmet «' + (prog.navn || '') + '» gir ingen undervisningsdager i skoleåret. ' +
+        'Kontroller ukedagene på programmet og datoene på skoleåret.');
+      return { feil, merk };
+    }
+
+    // ── Semesterskillet ──
+    // Er termin1Slutt ikke satt, finnes det ingen høst og vår — da blir
+    // alle de reserverte liggende sist. Bedre enn å gjette en dato.
+    const skille = skolearOppsett.termin1Slutt || '';
+    if(!skille) merk.push('Skoleåret har ingen terminslutt. Alle repetisjonsdagene legges sist i året.');
+    const host = skille ? dager.filter(d => d.dato <= skille) : [];
+    const var_ = skille ? dager.filter(d => d.dato > skille) : dager.slice();
+
+    // ── De reserverte ──
+    // Fagplanen oppgir ANTALL, ikke datoer, og sier selv at generatoren
+    // plasserer dem sist i hvert semester. Rekkefølgen bakfra er derfor
+    // gitt: siste-dag helt sist, slutt-var rett før, slutt-host sist i
+    // høsten.
+    const res = (plan.reserverte || []);
+    const holdt = new Map();   // dato → formål
+    const taBakfra = (liste, antall, formal) => {
+      for(let i = 0; i < antall; i++){
+        const d = liste[liste.length - 1 - holdtIListe(liste)];
+        if(!d) break;
+        holdt.set(d.dato, formal);
+      }
+    };
+    const holdtIListe = (liste) => liste.filter(d => holdt.has(d.dato)).length;
+    // siste-dag først, så slutt-var — begge bakfra i våren, i den
+    // rekkefølgen gir siste-dag den aller siste lørdagen.
+    res.filter(r => r.nar === 'siste-dag').forEach(r => taBakfra(var_, Number(r.antall) || 0, r.formal || 'Reservert'));
+    res.filter(r => r.nar === 'slutt-var').forEach(r => taBakfra(var_, Number(r.antall) || 0, r.formal || 'Reservert'));
+    res.filter(r => r.nar === 'slutt-host').forEach(r => taBakfra(host, Number(r.antall) || 0, r.formal || 'Reservert'));
+    res.filter(r => !['siste-dag', 'slutt-var', 'slutt-host'].includes(r.nar))
+       .forEach(r => taBakfra(var_, Number(r.antall) || 0, r.formal || 'Reservert'));
+
+    const undervisning = dager.filter(d => !holdt.has(d.dato));
+
+    // ── Sporene ──
+    // Hver undervisningsdag tar én økt fra hvert spor, i sporets egen
+    // rekkefølge — som IKKE er kapittelnumrene for spor B.
+    const rk = plan.rekkefolge || {};
+    const spor = (plan.spor || []).map(sp => {
+      const ids = rk[sp.id] || (plan.kapitler || []).filter(k => k.spor === sp.id).map(k => k.id);
+      const rekke = [];
+      ids.forEach(kapId => {
+        okter.filter(o => o.kapittel === kapId)
+          .sort((a, b) => (a.nr || 0) - (b.nr || 0))
+          .forEach(o => rekke.push(o));
+      });
+      return { ...sp, okter: rekke };
+    });
+
+    spor.forEach(sp => {
+      if(sp.okter.length > undervisning.length){
+        feil.push(sp.navn + ': ' + sp.okter.length + ' økter, men bare ' +
+          undervisning.length + ' undervisningsdager. ' +
+          (sp.okter.length - undervisning.length) + ' økter får ikke plass.');
+      } else if(sp.okter.length < undervisning.length){
+        merk.push(sp.navn + ' har ' + (undervisning.length - sp.okter.length) +
+          ' dag(er) uten innhold på slutten.');
+      }
+    });
+
+    // ── Dua-tråden ──
+    // 16 grupper med hver sitt antall uker — til sammen 26. De legges på
+    // de første undervisningsdagene; resten av året er repetisjon.
+    // 📌 Avkryssingen finnes trykt i heftet. Den dupliseres ikke her.
+    const duaRekke = [];
+    ((plan.tillegg || []).find(t => (t.grupper || []).length) || {}).grupper
+      ?.forEach(g => { for(let i = 0; i < (Number(g.uker) || 1); i++) duaRekke.push(g); });
+
+    // ── Radene ──
+    let iUnd = 0;
+    const rader = dager.map((d, i) => {
+      const rad = { dato: d.dato, dag: d.dag, nr: i + 1, reservert: holdt.get(d.dato) || null };
+      if(!rad.reservert){
+        spor.forEach(sp => {
+          const o = sp.okter[iUnd];
+          if(o) rad[sp.id] = { oktId: o.id, nr: o.nr, tittel: o.tittel || '',
+                               kapittel: o.kapittel, kapittelTittel: o.kapittelTittel || '' };
+        });
+        const g = duaRekke[iUnd];
+        if(g) rad.dua = { nr: g.nr, tittel: g.tittel || '', side: g.side || null };
+        iUnd++;
+      }
+      return rad;
+    });
+
+    return {
+      feil, merk,
+      klasseId: klasse.id,
+      klasseNavn: klasse.navn || '',
+      programId: prog.id,
+      programNavn: prog.navn || '',
+      fagplanId: plan.id,
+      fagplanNavn: plan.navn || plan.id,
+      skolear: SKOLEAR,
+      rekkefolgeVariant: plan.rekkefolgeVariant || 'bok',
+      kalenderAvtrykk: apKalenderAvtrykk(prog),
+      antallDager: dager.length,
+      antallUndervisning: undervisning.length,
+      antallReservert: holdt.size,
+      antallHost: host.length,
+      antallVar: var_.length,
+      dager: rader
+    };
+  }
+
+  // ── SKJERMEN ──────────────────────────────────────────────────────
+  window.apVelgKlasse = async function(klasseId){
+    apKlasseId = klasseId;
+    apUtkast = null;
+    apVisAlle = false;
+    if(klasseId){
+      // Planen for klassens trinn må være lastet før noe kan regnes ut.
+      const klasse = (cache.classes || []).find(c => c.id === klasseId);
+      const planId = apPlanIdFor(klasse);
+      if(planId) await fpHentOkter(planId);
+    }
+    apRender();
+  };
+
+  // Hvilken fagplan følger klassen? classes.fagtrinn er et oppslag per
+  // fag — en klasse kan ligge på trinn 1 i islam og trinn 2 i koran.
+  // Verdien er dokument-id, ikke et tall: en peker overlever at noe
+  // skifter navn.
+  function apPlanIdFor(klasse){
+    const ft = (klasse && klasse.fagtrinn) || {};
+    const verdier = Object.values(ft).filter(Boolean);
+    return verdier[0] || '';
+  }
+
+  function apRender(){
+    const velger = document.getElementById('apKlasse');
+    if(!velger) return;
+    const klasser = [...(cache.classes || [])].filter(c => c.navn)
+      .sort((a, b) => String(a.navn).localeCompare(String(b.navn), 'no'));
+    velger.innerHTML = '<option value="">— Velg klasse —</option>' + klasser.map(c =>
+      `<option value="${escapeHtml(c.id)}">${escapeHtml(c.navn)}</option>`).join('');
+    if(klasser.some(c => c.id === apKlasseId)) velger.value = apKlasseId;
+
+    const el = document.getElementById('apInnhold');
+    const klasse = klasser.find(c => c.id === apKlasseId);
+    if(!klasse){ el.innerHTML = ''; return; }
+
+    const planId = apPlanIdFor(klasse);
+    const plan = (fagplanCache || []).find(p => p.id === planId);
+    if(!plan){
+      el.innerHTML = `<div class="report-card">
+        <div class="fp-lest">Klassen «${escapeHtml(klasse.navn)}» følger ingen fagplan ennå.
+Gå til fanen <b>Fagplan</b>, velg planen, og huk av klassen under «Hvilke klasser følger denne planen».</div>
+      </div>`;
+      return;
+    }
+
+    const lagret = (arsplanCache || []).find(a => a.id === apDokId(apKlasseId)) || null;
+    el.innerHTML = apStatuskort(klasse, plan, lagret) +
+      (apUtkast ? apUtkastkort(apUtkast) : '') +
+      (lagret && !apUtkast ? apTabell(lagret, 'Lagret årsplan') : '');
+  }
+
+  function apStatuskort(klasse, plan, lagret){
+    const prog = finnProgramFor(klasse);
+    // 🔴 Utdatert = kalenderen har flyttet seg SIDEN planen ble frosset.
+    // Planen er ikke feil — den er bare eldre enn det den ble laget av.
+    const utdatert = lagret && prog && lagret.kalenderAvtrykk &&
+      lagret.kalenderAvtrykk !== apKalenderAvtrykk(prog);
+    return `
+      <div class="report-card">
+        <h3>${escapeHtml(klasse.navn)}</h3>
+        <div class="sub">${escapeHtml(plan.navn || plan.id)} · ${escapeHtml((prog && prog.navn) || 'uten program')}</div>
+        ${lagret ? `
+          <div class="fp-noekkel">
+            <div><span class="t">${lagret.antallDager || 0}</span><span class="e">dager i planen</span></div>
+            <div><span class="t">${lagret.antallUndervisning || 0}</span><span class="e">med pensum</span></div>
+            <div><span class="t">${lagret.antallReservert || 0}</span><span class="e">holdt av</span></div>
+          </div>
+          <p class="fp-fot">Frosset ${lagret.generertDato ? new Date(lagret.generertDato).toLocaleDateString('no-NO') : '—'}
+            av ${escapeHtml(lagret.generertAv || 'ukjent')} · rekkefølge «${escapeHtml(lagret.rekkefolgeVariant || 'bok')}»</p>
+          ${utdatert ? `<div class="fp-feil">⚠️ Skolekalenderen, programmet eller skoleårets datoer
+            har endret seg siden planen ble frosset.
+
+Planen står som den er — det er meningen. Læreren skal ikke oppdage
+at timene har flyttet seg. Vil du at den skal følge den nye kalenderen,
+må du generere den på nytt, og da bør de som har fått den gamle få beskjed.</div>` : ''}
+        ` : '<div class="fp-lest">Ingen årsplan er frosset for denne klassen ennå.</div>'}
+
+        <div style="display:flex; gap:9px; flex-wrap:wrap; margin-top:14px;">
+          <button class="btn btn-primary" style="width:auto;" onclick="apGenerer()">
+            ⚙️ ${lagret ? 'Regn ut på nytt' : 'Regn ut årsplan'}
+          </button>
+          ${lagret ? `<button class="btn btn-ghost" style="width:auto;" onclick="apSkrivUt()">🖨️ Skriv ut</button>
+          <button class="btn btn-ghost" style="width:auto;" onclick="apEksporterCSV()">⬇️ CSV</button>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function apUtkastkort(u){
+    const kanLagres = u.feil.length === 0;
+    return `
+      <div class="report-card" style="margin-top:16px;">
+        <h3>Utkast — ikke lagret</h3>
+        <div class="sub">Kontroller før du fryser</div>
+        <div class="fp-noekkel">
+          <div><span class="t">${u.antallDager}</span><span class="e">undervisningsdager</span></div>
+          <div><span class="t">${u.antallHost}</span><span class="e">høst</span></div>
+          <div><span class="t">${u.antallVar}</span><span class="e">vår</span></div>
+          <div><span class="t">${u.antallReservert}</span><span class="e">holdt av</span></div>
+        </div>
+        ${u.feil.length ? '<div class="fp-feil">🔴 ' + escapeHtml(u.feil.join('\n')) +
+          '\n\nRett dette først — enten i skolekalenderen eller i fagplanen. Planen lagres ikke slik.</div>' : ''}
+        ${u.merk.length ? '<div class="fp-ok">⚠️ ' + escapeHtml(u.merk.join('\n')) + '</div>' : ''}
+        ${kanLagres ? `<button class="btn btn-primary" style="width:auto; margin-top:14px;"
+          onclick="apFrys()">🧊 Frys årsplanen for ${escapeHtml(u.klasseNavn)}</button>
+          <p class="fp-fot">Etter frysing står datoene stille, også om kalenderen endres.</p>` : ''}
+      </div>
+      ${apTabell(u, 'Slik blir året')}`;
+  }
+
+  function apTabell(p, tittel){
+    const rader = p.dager || [];
+    const vis = apVisAlle ? rader : rader.slice(0, 8);
+    const sporIder = [...new Set(rader.flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+    return `
+      <div class="report-card" style="margin-top:16px;">
+        <h3>${escapeHtml(tittel)}</h3>
+        <div class="sub">${rader.length} dager</div>
+        <div style="overflow-x:auto; margin-top:12px;">
+        <table class="ap-tab"><thead><tr>
+          <th>Dato</th>${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th>
+        </tr></thead><tbody>
+          ${vis.map(r => `<tr${r.reservert ? ' class="ap-holdt"' : ''}>
+            <td class="ap-dato">${escapeHtml(apDatoKort(r.dato))}</td>
+            ${r.reservert
+              ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
+              : sporIder.map(id => {
+                  const o = r[id];
+                  return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + '</b> ' + o.nr +
+                    '<br><span class="ap-liten">' + escapeHtml(o.tittel || '') + '</span>' : '—') + '</td>';
+                }).join('') +
+                '<td class="ap-liten">' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
+          </tr>`).join('')}
+        </tbody></table></div>
+        ${rader.length > 8 ? `<button class="btn btn-ghost" style="width:auto; margin-top:12px;"
+          onclick="apVisAlle = !apVisAlle; apRender();">${apVisAlle ? 'Vis færre' : 'Vis alle ' + rader.length + ' dagene'}</button>` : ''}
+      </div>`;
+  }
+
+  function apDatoKort(iso){
+    const d = new Date(String(iso) + 'T00:00:00');
+    if(isNaN(d)) return String(iso);
+    return d.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' });
+  }
+
+  window.apGenerer = async function(){
+    const klasse = (cache.classes || []).find(c => c.id === apKlasseId);
+    if(!klasse) return;
+    const planId = apPlanIdFor(klasse);
+    const plan = (fagplanCache || []).find(p => p.id === planId);
+    if(!plan) return;
+    await fpHentOkter(planId);
+    apUtkast = apRegnUt(klasse, plan, fpOkter.filter(o => true));
+    apVisAlle = false;
+    apRender();
+  };
+
+  window.apFrys = async function(){
+    if(!apUtkast || apUtkast.feil.length) return;
+    const u = apUtkast;
+    const dok = {
+      klasseId: u.klasseId, klasseNavn: u.klasseNavn,
+      programId: u.programId, programNavn: u.programNavn,
+      fagplanId: u.fagplanId, fagplanNavn: u.fagplanNavn,
+      skolear: u.skolear,
+      // 🔴 Hva planen ble laget AV. Uten dette kan ingen om et halvt år
+      // forklare hvorfor klassen har sawm før zakah — eller se at
+      // kalenderen har flyttet seg siden.
+      rekkefolgeVariant: u.rekkefolgeVariant,
+      kalenderAvtrykk: u.kalenderAvtrykk,
+      antallDager: u.antallDager,
+      antallUndervisning: u.antallUndervisning,
+      antallReservert: u.antallReservert,
+      generertDato: new Date().toISOString(),
+      generertAv: currentUserEmail || 'ukjent',
+      dager: u.dager
+    };
+    try{
+      await setDoc(doc(db, 'arsplan', apDokId(u.klasseId)), dok);
+      await loggSamlet('Årsplan frosset: ' + u.klasseNavn + ' ' + u.skolear,
+        u.dager.length, 'apFrys · arsplan/' + apDokId(u.klasseId) +
+        ' · ' + u.antallUndervisning + ' undervisningsdager · ' + u.antallReservert + ' holdt av');
+      showToast('✓ Årsplanen for ' + u.klasseNavn + ' er frosset.');
+      apUtkast = null;
+      apRender();
+    }catch(err){
+      if(err && (err.code === 'forhandsvisning' || err.code === 'lesemodus')) return;
+      console.error('apFrys', err);
+      melding('ADM-ARS-01', '🔴 Årsplanen ble ikke lagret',
+        String(err.message || err),
+        'apFrys · arsplan/' + apDokId(u.klasseId));
+    }
+  };
+
+  window.apSkrivUt = function(){
+    const p = (arsplanCache || []).find(a => a.id === apDokId(apKlasseId));
+    if(!p) return;
+    const sporIder = [...new Set((p.dager || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+    apneUtskrift(utskriftsmal({
+      tittel: 'Årsplan · ' + (p.klasseNavn || ''),
+      undertittel: (p.fagplanNavn || '') + ' · ' + (p.programNavn || ''),
+      avvik: (() => {
+        const prog = (cache.programs || []).find(x => x.id === p.programId);
+        return (prog && p.kalenderAvtrykk && p.kalenderAvtrykk !== apKalenderAvtrykk(prog))
+          ? [{ tekst: 'Skolekalenderen har endret seg siden denne planen ble frosset. ' +
+                      'Arket viser planen slik den ble delt ut.' }]
+          : null;
+      })(),
+      innhold: `
+        <h2>Året</h2>
+        <p>${p.antallDager} undervisningsdager, ${p.antallUndervisning} med pensum og
+        ${p.antallReservert} holdt av til repetisjon og prøve.
+        Frosset ${p.generertDato ? new Date(p.generertDato).toLocaleDateString('no-NO') : '—'}.</p>
+        <table><thead><tr><th>Dato</th>
+          ${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th></tr></thead><tbody>
+        ${(p.dager || []).map(r => `<tr>
+          <td class="tid" style="white-space:nowrap;">${escapeHtml(apDatoKort(r.dato))}</td>
+          ${r.reservert
+            ? `<td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td>`
+            : sporIder.map(id => {
+                const o = r[id];
+                return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + ' ' + o.nr + '</b><br>' +
+                  escapeHtml(o.tittel || '') : '—') + '</td>';
+              }).join('') + '<td>' + (r.dua ? escapeHtml(r.dua.tittel || '') : '—') + '</td>'}
+        </tr>`).join('')}
+        </tbody></table>`
+    }));
+  };
+
+  window.apEksporterCSV = function(){
+    const p = (arsplanCache || []).find(a => a.id === apDokId(apKlasseId));
+    if(!p) return;
+    const sporIder = [...new Set((p.dager || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+    const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const linjer = [['Dato', 'Dag', ...sporIder.flatMap(id => ['Spor ' + id + ' kapittel', 'Spor ' + id + ' økt']),
+      'Dua', 'Merknad'].map(q).join(',')];
+    (p.dager || []).forEach(r => linjer.push([
+      r.dato, r.dag || '',
+      ...sporIder.flatMap(id => [(r[id] || {}).kapittelTittel || '', (r[id] || {}).tittel || '']),
+      (r.dua || {}).tittel || '', r.reservert || ''
+    ].map(q).join(',')));
+    lastNedFil('arsplan-' + (p.klasseNavn || 'klasse').replace(/[^\p{L}\p{N}]+/gu, '_') +
+      '-' + p.skolear.replace('/', '-') + '.csv',
+      '\ufeff' + linjer.join('\n'), 'text/csv;charset=utf-8;');
+    showToast('✓ ' + (p.dager || []).length + ' dager eksportert.');
   };
 
   window.fpSettVariant = async function(verdi){
@@ -19004,6 +19582,7 @@
       if(fpValgt) fpHentOkter(fpValgt).then(fpRender);
     }
     if(tab.dataset.tab === 'fagplanImport') fpFilStatus();
+    if(tab.dataset.tab === 'arsplan') apRender();
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
@@ -19122,6 +19701,16 @@
     //
     // 📌 Bare planene lyttes det på — de er små. Øktene er ~213 kB til
     // sammen og hentes når skjermen åpnes, ikke ved hver innlogging.
+    // Årsplanene: én per klasse per skoleår, ~8 kB hver. Små nok til en
+    // lytter, og skjermen skal vise «finnes / finnes ikke» uten et kall.
+    onSnapshot(collection(db, 'arsplan'), (snap) => {
+      arsplanCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      const p = document.getElementById('panel-arsplan');
+      if(p && p.classList.contains('active')) apRender();
+    }, (err) => {
+      console.error('arsplan', err);
+      showToast('Kunne ikke koble til: arsplan (' + err.code + ')', true);
+    });
     onSnapshot(collection(db, 'fagplan'), (snap) => {
       fagplanCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       const p = document.getElementById('panel-fagplan');
