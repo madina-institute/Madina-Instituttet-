@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 17:50:53 -->
+<!-- SIST-ENDRET: 2026-08-18 18:01:13 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -15921,6 +15921,18 @@
              tekst: d.length ? d.map(k => navn[k]).join(' · ') : '—', ar };
   }
 
+  // Ett sted for oversettelsen kode → navn. Faller tilbake til rå verdi
+  // hvis en søknad allerede bærer selve navnet — noen gjør det.
+  function kfProgramNavn(r){
+    const raa = String(r.program || '').trim();
+    if(!raa) return '';
+    let navn = '';
+    try{ navn = mapRegistrationProgram(raa) || ''; }catch(e){ navn = ''; }
+    if(navn) return navn;
+    // Ikke en kjent kode — men kanskje selve navnet, fra en eldre søknad.
+    return /[A-ZÆØÅ]/.test(raa) ? raa : '';
+  }
+
   function kfSoknader(){
     const prog = (document.getElementById('kfProgram') || {}).value || '';
     const st = (document.getElementById('kfStatus') || {}).value || 'aktive';
@@ -15929,14 +15941,30 @@
       const s = String(r.status || 'Ny');
       if(st === 'godkjent' && s !== 'Godkjent') return false;
       if(st === 'aktive' && s === 'Avslått') return false;
-      if(prog && String(r.program || '') !== prog) return false;
+      // 🔴 SØKNADEN BÆRER KODER, IKKE PROGRAMNAVN.
+      //
+      // Avkrysningsboksene i skjemaet sender «madina_islamske_skole» og
+      // «madinabarn» — og de kan komme som en KOMMALISTE hvis familien
+      // krysset av for to. Eldre søknader har i tillegg kodene
+      // 'sprak_arabisk' og 'sprak_urdu' fra den gang språk var et eget
+      // program.
+      //
+      // Første utgave her sammenlignet r.program direkte med navnet i
+      // nedtrekket. Da forsvant hver eneste søknad i det øyeblikket man
+      // valgte et program — listen ble tom, og ingenting sa hvorfor.
+      //
+      // mapRegistrationProgram() gjør nøyaktig denne oversettelsen ved
+      // godkjenning. Den brukes her også, så de to stedene ikke kan
+      // svare ulikt på samme søknad.
+      if(prog && kfProgramNavn(r) !== prog) return false;
       return true;
     }).map(r => ({
       id: r.id,
       navn: r.elev_navn || '',
       alder: kfAlder(r.elev_fdato),
       trinn: String(r.klassetrinn || '').trim(),
-      program: String(r.program || ''),
+      program: kfProgramNavn(r),
+      programRaa: String(r.program || ''),
       koran: kfKoran(r),
       sprak: kfSprak(r),
       erfaring: parseFloat(String(r.tidligere_skole_ar || '').replace(',', '.')) || 0,
@@ -15972,7 +16000,10 @@
     const velger = document.getElementById('kfProgram');
     if(!velger) return;
     if(!velger.dataset.fylt){
-      const p = [...new Set((cache.registrations || []).map(r => r.program).filter(Boolean))].sort();
+      // Navn i nedtrekket, ikke koder. Sto kodene her, valgte man
+      // «madina_islamske_skole» og fikk et navn ingen kjenner igjen.
+      const p = [...new Set((cache.registrations || [])
+        .map(kfProgramNavn).filter(Boolean))].sort();
       velger.innerHTML = '<option value="">— Alle —</option>' +
         p.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
       velger.dataset.fylt = '1';
@@ -15980,9 +16011,35 @@
 
     const el = document.getElementById('kfInnhold');
     const alle = kfSoknader();
+
+    // 🔴 Et filter som fjerner noen i stillhet er verre enn ingen filter.
+    // Her regnes det ut hvor mange som falt fra og på hvilket av de tre
+    // stegene, slik at «hvor ble resten av listen av» aldri blir et
+    // spørsmål man må gjette på.
+    const raa = (cache.registrations || []).filter(r => String(r.elev_navn || '').trim());
+    const st = (document.getElementById('kfStatus') || {}).value || 'aktive';
+    const prog = (document.getElementById('kfProgram') || {}).value || '';
+    const avStatus = raa.filter(r => {
+      const s2 = String(r.status || 'Ny');
+      return (st === 'godkjent' && s2 !== 'Godkjent') || (st === 'aktive' && s2 === 'Avslått');
+    });
+    const utenProgram = prog ? raa.filter(r => !kfProgramNavn(r)) : [];
+    const annetProgram = prog ? raa.filter(r => kfProgramNavn(r) && kfProgramNavn(r) !== prog) : [];
+    const frafall = (raa.length !== alle.length) ? `
+      <div class="fp-ok" style="margin-top:0;">${escapeHtml(
+        raa.length + ' søknader i basen · ' + alle.length + ' med i utregningen.\n' +
+        (avStatus.length ? avStatus.length + ' faller på statusfilteret.\n' : '') +
+        (annetProgram.length ? annetProgram.length + ' hører til et annet program.\n' : '') +
+        (utenProgram.length ? utenProgram.length + ' har tomt eller ukjent programfelt: ' +
+           utenProgram.slice(0, 10).map(r => r.elev_navn).join(' · ') : ''))}</div>` : '';
+
     if(alle.length === 0){
-      el.innerHTML = '<div class="report-card"><div class="fp-lest">Ingen søknader passer ' +
-        'filteret.</div></div>';
+      el.innerHTML = `<div class="report-card">
+        <div class="fp-lest">Ingen søknader passer filteret.</div>${frafall}
+        ${prog ? '<p class="fp-fot">⚠️ Søknadsskjemaet sender programKODER, ikke navn. ' +
+          'Er programfeltet tomt på en søknad, kommer den ikke med når du velger et program — ' +
+          'velg «Alle» for å se dem.</p>' : ''}
+      </div>`;
       return;
     }
 
@@ -16001,7 +16058,7 @@
       : (a.koran - b.koran) || (a.alder - b.alder) || a.navn.localeCompare(b.navn, 'no'));
     const grupper = kfDel(sortert, antall);
 
-    el.innerHTML = kfSammendrag(alle, medAlder, utenAlder, grupper, metode) +
+    el.innerHTML = kfSammendrag(alle, medAlder, utenAlder, grupper, metode, frafall) +
       grupper.map((g, i) => kfGruppe(g, i, metode)).join('') +
       kfAvvik(grupper, metode) +
       `<div class="report-card" style="margin-top:16px;">
@@ -16014,7 +16071,7 @@
        </div>`;
   };
 
-  function kfSammendrag(alle, medAlder, utenAlder, grupper, metode){
+  function kfSammendrag(alle, medAlder, utenAlder, grupper, metode, frafall){
     const aldre = medAlder.map(s => s.alder);
     const sprak = {};
     alle.forEach(s => { sprak[s.sprak.valg] = (sprak[s.sprak.valg] || 0) + 1; });
@@ -16037,6 +16094,7 @@
 ${escapeHtml(utenAlder.map(s => s.navn).join(' · '))}
 
 Uten fødselsdato kan ingen si hvor eleven hører hjemme. Rett datoen i søknaden først.</div>` : ''}
+        ${frafall || ''}
       </div>`;
   }
 
