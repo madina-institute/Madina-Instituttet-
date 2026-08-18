@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 14:06:38 -->
+<!-- SIST-ENDRET: 2026-08-18 15:06:23 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1395,6 +1395,22 @@
     color:#8a9a90; text-transform:uppercase; letter-spacing:.05em; margin-top:5px;}
   .fp-fot{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
     line-height:1.55; margin:9px 0 0;}
+  .lr-liste{display:flex; flex-direction:column; gap:10px;}
+  .lr-regel{display:flex; gap:14px; background:#fff; border:1px solid var(--line);
+    border-radius:11px; padding:15px 17px;}
+  .lr-nr{flex:none; width:30px; height:30px; border-radius:8px; display:flex;
+    align-items:center; justify-content:center; background:var(--paper-2); color:var(--gold);
+    font-family:'Jost',sans-serif; font-weight:700; font-size:13.5px;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .lr-tekst{flex:1 1 auto; min-width:0;}
+  .lr-tekst h4{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px;
+    color:var(--emerald-d); margin:0 0 5px;}
+  .lr-tekst p{font-family:'Jost',sans-serif; font-size:12.5px; color:#3c5a4a;
+    line-height:1.6; margin:0 0 8px;}
+  .lr-opphav{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
+    border-inline-start:2px solid var(--gold-l, var(--line)); padding-inline-start:9px;
+    margin-bottom:7px;}
+  .lr-kontroll{font-family:'Jost',sans-serif; font-size:11px; color:#5a6860;}
   .fp-klasser{display:flex; flex-wrap:wrap; gap:8px;}
   .fp-klasse{display:flex; align-items:center; gap:7px; cursor:pointer;
     border:1px solid var(--line); border-radius:999px; padding:6px 13px 6px 10px;
@@ -1933,6 +1949,7 @@
        alt det andre i seksjonen viser til. -->
   <div class="tab" data-tab="fagplan" data-side="laereplan pedagogisk">Fagplan</div>
   <div class="tab" data-tab="arsplan" data-side="laereplan pedagogisk">Årsplan</div>
+  <div class="tab" data-tab="laereplanregler" data-side="laereplan">Regler</div>
   <div class="tab" data-tab="fagplanImport" data-side="laereplan">Importer plan</div>
   <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
   <div class="tab" data-tab="hours" data-side="pedagogisk">Timeplan</div>
@@ -3458,6 +3475,40 @@
     </div>
 
     <div id="apInnhold" style="margin-top:16px;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       REGLENE — det som må stå i hodet før en økt skrives
+
+       Seks regler er kommet ut av å skrive seksti økter. Fire av dem
+       kan ingen maskin kontrollere; de handler om hvordan en setning
+       lander hos et barn. To kan Helsesjekk telle, og gjør det.
+
+       🔴 De ligger i basen og ikke i koden fordi de vil endre seg —
+       den syvende kommer den dagen noen underviser en lørdag og sier
+       hva som manglet. Ligger de i koden, må siden publiseres for å
+       legge til en linje, og da blir de ikke lagt til.
+
+       📌 Og de ligger HER, i samme seksjon som pensumet skrives, ikke
+       i et dokument utenfor systemet. En regel ingen leser er ingen
+       regel; en regel som står ved siden av arbeidet, blir lest.
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-laereplanregler">
+    <div class="report-card">
+      <h3>⚖️ Regler for læreplanen</h3>
+      <div class="sub">Leses før en økt skrives — gjelder alle fag og alle trinn</div>
+      <div class="innst-effekt">
+        Reglene er ikke prinsipper noen fant på. Hver av dem kom ut av et
+        sted i teksten der en formulering kunne ha landet feil hos et barn,
+        og ble rettet.
+      </div>
+      <div id="lrInnhold" style="margin-top:16px;"></div>
+      <div id="lrTom" style="display:none;">
+        <div class="fp-lest">Ingen regler er lagt inn ennå.</div>
+        <button class="btn btn-primary" style="width:auto; margin-top:12px;"
+          onclick="lrLeggInnStandard()">Legg inn de seks reglene vi arbeider etter</button>
+      </div>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════
@@ -6543,6 +6594,13 @@
       renderOkonomiHub();
       renderLonnOversikt();
     }, (err) => console.error('settings/lonn', err));
+
+    onSnapshot(doc(db, 'settings', 'laereplanregler'), (snap) => {
+      const d = snap.exists() ? (snap.data() || {}) : {};
+      laereplanregler = Array.isArray(d.regler) ? d.regler : [];
+      const p = document.getElementById('panel-laereplanregler');
+      if(p && p.classList.contains('active')) lrRender();
+    }, (err) => console.error('settings/laereplanregler', err));
 
     onSnapshot(doc(db, 'settings', 'varsler'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
@@ -12263,6 +12321,7 @@
     absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
     fagplan: 'Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter',
     arsplan: 'Fagplanen fordelt på klassens egne undervisningsdager — frosset per klasse',
+    laereplanregler: 'Reglene som gjelder når en økt skrives — for alle fag og trinn',
     fagplanImport: 'Legg en plan inn i basen fra fil — én gang per plan',
     lessonPlans: 'Lærernes pedagogiske forberedelser',
     planmaler: 'Maler for daglig forberedelse, månedsplan og semesterplan per fag/klasse',
@@ -12287,7 +12346,7 @@
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
     okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
-    fagplan: '📖', arsplan: '🗓️', fagplanImport: '⬆️',
+    fagplan: '📖', arsplan: '🗓️', laereplanregler: '⚖️', fagplanImport: '⬆️',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
@@ -15669,6 +15728,102 @@
   };
 
   // ═══════════════════════════════════════════════════════════════════
+  // REGLENE FOR LÆREPLANEN
+  //
+  // settings/laereplanregler. Én rad per regel:
+  //     { nr, tittel, regel, hvorfra, kontroll }
+  //
+  // 'hvorfra' er det viktigste feltet. En regel uten opphav blir til et
+  // prinsipp noen fant på, og prinsipper forhandles bort. Står stedet
+  // den kom fra ved siden av — «Allah 17: al-Alim» — er den ikke lenger
+  // til forhandling.
+  //
+  // 'kontroll' sier om Helsesjekk kan telle den. Fire av seks kan den
+  // ikke, og det skal stå: da vet den som leser at de fire hviler på
+  // mennesket alene.
+  // ═══════════════════════════════════════════════════════════════════
+  let laereplanregler = [];
+
+  const LR_STANDARD = [
+    { nr: 1, tittel: 'Trygghet før prøvelse',
+      regel: 'Der stoffet kan få barnet til å føle seg overvåket eller skamfullt, ' +
+             'kommer det trygge først. «Han kjenner deg» før «Han vet hva du gjør». ' +
+             'Engelen på høyre side før den på venstre.',
+      hvorfra: 'Allah 17 (al-Alim), Iman 6 (skriverne), Islam 9 (fasten) — trinn 1',
+      kontroll: null },
+    { nr: 2, tittel: 'Bekreftelse, ikke anklage',
+      regel: 'Der stoffet berører andre trosretninger, formuleres det som det vi tror, ' +
+             'ikke som en anklage mot andre. Elevene går på norsk skole resten av uken. ' +
+             'De skal ikke få en setning de kan såre noen med på mandag.',
+      hvorfra: 'Allah 3, Iman 7, Islam 2 — trinn 1',
+      kontroll: null },
+    { nr: 3, tittel: 'Det som forutsetter noe, blir ikke en målestokk',
+      regel: 'Stoff som forutsetter en evne eller en situasjon — å faste, å ha et hjem, ' +
+             'å ha begge foreldre — sies som boka sier det, uten å gjøres om til noe ' +
+             'eleven måles på.',
+      hvorfra: 'Islam 9 (sawm), Allah 14 (motgang) — trinn 1 og 2',
+      kontroll: null },
+    { nr: 4, tittel: 'Tallene hører til hvisTid, ikke kjerne',
+      regel: 'Fakta og tall som gleder — geparden, elefantens 270 kilo, 7000 eplesorter — ' +
+             'ligger i hvisTid. Går klassen ut uten å ha sagt «subhanallah», er timen ' +
+             'tapt selv om alle tallene sitter.',
+      hvorfra: 'Allah — trinn 1. Boka setter selv ordet stort etter tallene.',
+      kontroll: null },
+    { nr: 5, tittel: 'Hver økt har ett alternativ uten lesing',
+      regel: 'Minst én lek i fyllstoff skal kunne gjøres av den som ennå ikke leser. ' +
+             'Trinnet rommer både seksåringen og den som begynte sent.',
+      hvorfra: 'Funnet 18. august: 30 av 60 økter i trinn 1 manglet det.',
+      kontroll: 'HS-LES' },
+    { nr: 6, tittel: 'Koran memoreres i koranfaget',
+      regel: 'Dua-heftet lærer PLASSEN i bønnen, ikke teksten utenat. Fem minutter i uken ' +
+             'memorerer ikke al-Fatihah eller Ayat-ul-Kursi — de hører til koranfaget, ' +
+             'og læreren der må få beskjed.',
+      hvorfra: 'Trinn 1: al-Fatihah og al-Ikhlas. Trinn 2: også Ayat-ul-Kursi.',
+      kontroll: null }
+  ];
+
+  function lrRender(){
+    const el = document.getElementById('lrInnhold');
+    const tom = document.getElementById('lrTom');
+    if(!el) return;
+    if(laereplanregler.length === 0){
+      el.innerHTML = '';
+      if(tom) tom.style.display = 'block';
+      return;
+    }
+    if(tom) tom.style.display = 'none';
+    el.innerHTML = '<div class="lr-liste">' + [...laereplanregler]
+      .sort((a, b) => (a.nr || 0) - (b.nr || 0)).map(r => `
+      <div class="lr-regel">
+        <div class="lr-nr">${r.nr}</div>
+        <div class="lr-tekst">
+          <h4>${escapeHtml(r.tittel || '')}</h4>
+          <p>${escapeHtml(r.regel || '')}</p>
+          ${r.hvorfra ? `<div class="lr-opphav">Kom fra: ${escapeHtml(r.hvorfra)}</div>` : ''}
+          <div class="lr-kontroll">${r.kontroll
+            ? '🩺 Helsesjekk teller denne — kode ' + escapeHtml(r.kontroll)
+            : '👤 Kan ikke telles. Den hviler på den som skriver økten.'}</div>
+        </div>
+      </div>`).join('') + '</div>';
+  }
+
+  window.lrLeggInnStandard = async function(){
+    try{
+      await setDoc(doc(db, 'settings', 'laereplanregler'),
+        { regler: LR_STANDARD, oppdatert: new Date().toISOString(),
+          av: currentUserEmail || 'ukjent' }, { merge: true });
+      await loggSamlet('Læreplanregler lagt inn', LR_STANDARD.length,
+        'lrLeggInnStandard · settings/laereplanregler');
+      showToast('✓ ' + LR_STANDARD.length + ' regler er lagt inn.');
+    }catch(err){
+      if(err && (err.code === 'forhandsvisning' || err.code === 'lesemodus')) return;
+      console.error('lrLeggInnStandard', err);
+      melding('ADM-LRE-01', '🔴 Reglene ble ikke lagret',
+        String(err.message || err), 'lrLeggInnStandard · settings/laereplanregler');
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
   // ÅRSPLAN — fagplanen møter klassens egne lørdager
   //
   // Fagplanen er datoløs med vilje. To klasser kan følge samme plan og
@@ -16896,6 +17051,134 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       }
     } catch(err){
       funn.push(helseFunn('viktig', 'HS-BFE', 'Kunne ikke lese innbetalingene',
+        'Kontrollen kunne ikke gjennomføres.', 'Se feilkoden under', 1,
+        [err.code || err.message || 'ukjent']));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // LÆREPLANEN — to kontroller ingen kunne se før
+    //
+    // Begge fant noe første gang de kjørte, på et pensum som var
+    // ferdigskrevet og publisert. Det er grunnen til at de finnes: en
+    // regel vi bærer i hodet og anvender seksti ganger for hånd, blir
+    // brutt uten at noen merker det.
+    //
+    // ⚠️ INGEN AV DEM HAR FIKS-KNAPP, OG SKAL ALDRI FÅ EN.
+    // «Legg til tegn-ordet der det mangler» ville satt en tegnelek i en
+    // økt om bordskikk. Det er læreren som velger leken; kontrollen
+    // sier bare hvor det trengs et valg.
+    // ═══════════════════════════════════════════════════════════════
+    try{
+      const planer = fagplanCache || [];
+      for(const plan of planer){
+        let okter = [];
+        try{
+          const snap = await getDocs(collection(db, 'fagplan', plan.id, 'okter'));
+          okter = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        } catch(e){ continue; }
+        if(okter.length === 0) continue;
+
+        // Hvilke leker krever ikke lesing? Banken sier det selv i
+        // 'utenLesing'. Står feltet der ikke, faller vi tilbake på de tre
+        // som ble skrevet for de yngste — men da sier vi fra om det
+        // også, for da er svaret vårt og ikke bankens.
+        let utenLesing = [], bankLest = false;
+        try{
+          const b = await getDoc(doc(db, 'settings', 'aktivitetsbank'));
+          if(b.exists()){
+            bankLest = true;
+            const d = b.data();
+            utenLesing = Array.isArray(d.utenLesing) ? d.utenLesing
+              : (d.leker || []).filter(l => l.utenLesing).map(l => l.id);
+          }
+        } catch(e){}
+        if(utenLesing.length === 0) utenLesing = ['tegn-ordet', 'hvem-er-jeg', 'stille-runden'];
+
+        const lek = (o) => (o.fyllstoff || []).map(f => f && f.lek).filter(Boolean);
+
+        // ── 1. Økter uten et alternativ for den som ikke leser ──
+        const stengt = okter.filter(o => {
+          const L = lek(o);
+          return L.length > 0 && !L.some(x => utenLesing.includes(x));
+        });
+        if(stengt.length){
+          // Sammenhengende rekker teller mest: én enkelt økt er et hull,
+          // fem på rad er en måned der barnet ikke har noe å gjøre.
+          const perKap = {};
+          okter.forEach(o => { (perKap[o.kapittel] = perKap[o.kapittel] || []).push(o); });
+          let versteRekke = 0, versteKap = '';
+          Object.entries(perKap).forEach(([kid, liste]) => {
+            const sortert = [...liste].sort((a, b) => (a.nr || 0) - (b.nr || 0));
+            let kj = 0;
+            sortert.forEach(o => {
+              const L = lek(o);
+              if(L.length > 0 && !L.some(x => utenLesing.includes(x))){
+                kj++;
+                if(kj > versteRekke){ versteRekke = kj; versteKap = kid; }
+              } else kj = 0;
+            });
+          });
+          funn.push(helseFunn(versteRekke >= 3 ? 'kritisk' : 'viktig', 'HS-LES',
+            stengt.length + ' av ' + okter.length + ' økter i «' + (plan.navn || plan.id) +
+            '» har ingen aktivitet for den som ikke leser',
+            'Trinnet rommer både seksåringen som ennå ikke leser og den som ' +
+            'begynte sent. Har alle valgene i fyllstoff lesing som forutsetning, ' +
+            'sitter det barnet uten noe å gjøre i minuttene som blir til overs.' +
+            (versteRekke >= 3 ? ' Verst i «' + versteKap + '»: ' + versteRekke +
+              ' økter på rad.' : '') +
+            (bankLest ? '' : ' (Aktivitetsbanken ble ikke lest — listen over ' +
+              'lesefrie leker er kodens egen reserve.)'),
+            'Læreplan → Fagplan — velg en lek uten lesing i disse øktene',
+            stengt.length,
+            stengt.slice(0, 8).map(o => (o.kapittelTittel || o.kapittel) + ' økt ' + o.nr +
+              ': ' + lek(o).join(', '))));
+        }
+
+        // ── 2. Samme lek mange økter på rad ──
+        // Ikke antallet — 25 bruk av sant-usant fordelt over seksti økter
+        // er ingenting, uker skiller dem. Det er REKKENE som slår ut:
+        // samme lek fem lørdager etter hverandre ser læreren.
+        const perKap = {};
+        okter.forEach(o => { (perKap[o.kapittel] = perKap[o.kapittel] || []).push(o); });
+        const rekker = [];
+        Object.entries(perKap).forEach(([kid, liste]) => {
+          const sortert = [...liste].sort((a, b) => (a.nr || 0) - (b.nr || 0));
+          const navn = (sortert[0] && sortert[0].kapittelTittel) || kid;
+          const alleLeker = [...new Set(sortert.flatMap(lek))];
+          alleLeker.forEach(l => {
+            let kj = 0, start = 0;
+            sortert.forEach(o => {
+              if(lek(o).includes(l)){
+                if(kj === 0) start = o.nr;
+                kj++;
+                if(kj >= 3) rekker.push({ l, navn, start, n: kj });
+              } else kj = 0;
+            });
+          });
+        });
+        // Bare den lengste rekken per lek per kapittel
+        const beste = {};
+        rekker.forEach(r => {
+          const k = r.l + '|' + r.navn;
+          if(!beste[k] || beste[k].n < r.n) beste[k] = r;
+        });
+        const liste = Object.values(beste);
+        if(liste.length){
+          funn.push(helseFunn('viktig', 'HS-GJE',
+            liste.length + ' steder i «' + (plan.navn || plan.id) +
+            '» der samme aktivitet går igjen tre lørdager eller mer på rad',
+            'Feltet fyllstoff er en reserve for minuttene som blir til overs. ' +
+            'Går samme lek igjen uke etter uke, mister den den virkningen — ' +
+            'og læreren ser gjentakelsen selv om ingen andre gjør det.',
+            'Bytt lek i ETT eller TO av de tilstøtende stedene — ikke fordel på nytt',
+            liste.length,
+            liste.sort((a, b) => b.n - a.n).slice(0, 8)
+              .map(r => r.navn + ' økt ' + r.start + '–' + (r.start + r.n - 1) +
+                ': ' + r.l + ' (' + r.n + ' på rad)')));
+        }
+      }
+    } catch(err){
+      funn.push(helseFunn('viktig', 'HS-LFE', 'Kunne ikke lese læreplanen',
         'Kontrollen kunne ikke gjennomføres.', 'Se feilkoden under', 1,
         [err.code || err.message || 'ukjent']));
     }
@@ -20070,6 +20353,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     }
     if(tab.dataset.tab === 'fagplanImport') fpFilStatus();
     if(tab.dataset.tab === 'arsplan') apRender();
+    if(tab.dataset.tab === 'laereplanregler') lrRender();
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
