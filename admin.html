@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 16:21:14 -->
+<!-- SIST-ENDRET: 2026-08-18 17:50:53 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1932,6 +1932,7 @@
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
   <div class="tab" data-tab="registrations" data-side="admin">Søknader</div>
+  <div class="tab" data-tab="klasseforslag" data-side="admin pedagogisk">Klasseforslag</div>
   <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
   <div class="tab" data-tab="okonomiHub" data-side="okonomi">Oversikt</div>
   <div class="tab" data-tab="cashier" data-side="okonomi">Elevbetalinger</div>
@@ -2467,6 +2468,67 @@
   </div>
 
   <!-- REGISTRATIONS -->
+  <!-- ═══════════════════════════════════════════════════════════════
+       KLASSEFORSLAG — hvem hører sammen
+
+       🔴 DENNE SKJERMEN SKRIVER INGENTING.
+       'registrations' er den eneste samlingen med ekte data i basen.
+       Verktøyet leser, regner og foreslår. Fordelingen gjøres av et
+       menneske, i klassekortet, etterpå.
+
+       ⚠️ OG DEN RØRER IKKE HELSEFELTENE.
+       larevansker, bbt_ppt, sykdom, allergi og medisin ligger bak
+       'helse'-rettigheten, og de skal ikke inn i en gruppering. Å dele
+       barn etter lærevansker er ikke det dette verktøyet er til for,
+       og feltet er tilgangsstyrt nettopp derfor.
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-klasseforslag">
+    <div class="report-card">
+      <h3>🧩 Klasseforslag</h3>
+      <div class="sub">Hvem hører sammen — regnet ut fra søknadene</div>
+      <div class="innst-effekt">
+        Verktøyet leser søknadene, regner ut alder og ferdighetsnivå, og foreslår
+        en inndeling. <b>Ingenting lagres.</b> Fordelingen gjør du selv i klassekortet
+        etterpå — dette er grunnlaget å gjøre den på.
+      </div>
+
+      <div class="innst-rad" style="margin-top:14px;">
+        <div class="field">
+          <label>Program</label>
+          <select id="kfProgram" onchange="kfRender()"><option value="">— Alle —</option></select>
+        </div>
+        <div class="field">
+          <label>Ta med søknader som er</label>
+          <select id="kfStatus" onchange="kfRender()">
+            <option value="aktive">Ny · Venteliste · Godkjent</option>
+            <option value="godkjent">Bare godkjente</option>
+            <option value="alle">Alle, også avslåtte</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Antall klasser</label>
+          <select id="kfAntall" onchange="kfRender()">
+            <option value="auto">Regn ut selv (maks 14 per klasse)</option>
+            <option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option>
+            <option value="6">6</option><option value="7">7</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Del først etter</label>
+          <select id="kfMetode" onchange="kfRender()">
+            <option value="alder">Alder — og vis hvor ferdighetene spriker</option>
+            <option value="koran">Koranferdighet — og vis hvor alderen spriker</option>
+          </select>
+        </div>
+      </div>
+      <p class="fp-fot">Alder regnes per 5. september 2026, ikke per i dag. En elev som
+        fyller år i oktober skal plasseres etter alderen han har ved skolestart.</p>
+    </div>
+
+    <div id="kfInnhold" style="margin-top:16px;"></div>
+  </div>
+
   <div class="panel" id="panel-registrations">
     <div class="report-card" style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;" id="formAnalyticsBox">
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormVisits">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Besøkte lenken</div></div>
@@ -12337,6 +12399,7 @@
     absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
     fagplan: 'Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter',
     arsplan: 'Fagplanen fordelt på klassens egne undervisningsdager — frosset per klasse',
+    klasseforslag: 'Foreslår hvem som hører sammen i klasse — leser søknadene, skriver ingenting',
     laereplanregler: 'Reglene som gjelder når en økt skrives — for alle fag og trinn',
     fagplanImport: 'Legg en plan inn i basen fra fil — én gang per plan',
     lessonPlans: 'Lærernes pedagogiske forberedelser',
@@ -12362,7 +12425,7 @@
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
     okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
-    fagplan: '📖', arsplan: '🗓️', laereplanregler: '⚖️', fagplanImport: '⬆️',
+    klasseforslag: '🧩', fagplan: '📖', arsplan: '🗓️', laereplanregler: '⚖️', fagplanImport: '⬆️',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
@@ -15775,6 +15838,320 @@
     lastNedFil('fagplan-' + fpValgt + '-' + new Date().toISOString().slice(0, 10) + '.csv',
       '\ufeff' + linjer.join('\n'), 'text/csv;charset=utf-8;');
     showToast('✓ ' + rader.length + ' økter eksportert.');
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // KLASSEFORSLAG
+  //
+  // Spørsmålet skjermen svarer på er ikke «hvilket nivå har eleven», men
+  // «hvem hører sammen». Det er to ulike spørsmål, og bare det andre kan
+  // besvares med tall.
+  //
+  // 🔴 DERFOR REGNES DET IKKE ÉTT NIVÅTALL.
+  // En sjuåring som leser Koranen flytende og en tolvåring som begynner
+  // fra ingenting ville fått samme sum, og summen ville skjult begge.
+  // I stedet holdes tre mål fra hverandre — alder, koranferdighet og
+  // språkferdighet — og skjermen viser hvor de peker ULIKE veier. Det er
+  // nettopp de tilfellene et menneske må se på.
+  //
+  // 🔴 OG DEN SKRIVER INGENTING. 'registrations' er den eneste ekte
+  // samlingen i basen. Verktøyet leser, foreslår og skriver ut.
+  //
+  // ⚠️ Helsefeltene er utelatt med vilje: larevansker, bbt_ppt, sykdom,
+  // allergi, medisin. De ligger bak 'helse'-rettigheten, og å gruppere
+  // barn etter dem er ikke det dette er til for.
+  // ═══════════════════════════════════════════════════════════════════
+  const KF_SKOLESTART = '2026-09-05';
+
+  // ja / nei / tomt kommer fra skjemaet i mange former. Én tolkning, ett sted.
+  function kfJa(v){
+    const t = String(v == null ? '' : v).trim().toLowerCase();
+    return t === 'ja' || t === 'yes' || t === 'true' || t === 'x' || t === '1';
+  }
+
+  // Alder ved SKOLESTART, ikke i dag. En elev som fyller år i oktober skal
+  // plasseres etter alderen han har når han møter opp — ikke etter den han
+  // tilfeldigvis har den dagen noen kjører verktøyet.
+  function kfAlder(fdato){
+    if(!fdato) return null;
+    const f = new Date(String(fdato).slice(0, 10) + 'T00:00:00');
+    const s = new Date(KF_SKOLESTART + 'T00:00:00');
+    if(isNaN(f) || f > s) return null;
+    let a = s.getFullYear() - f.getFullYear();
+    const m = s.getMonth() - f.getMonth();
+    if(m < 0 || (m === 0 && s.getDate() < f.getDate())) a--;
+    return a;
+  }
+
+  // Koranstigen. Rekkefølgen er ikke funnet på: den følger måten faget
+  // faktisk bygges på — først bokstavene (qaida), så lesing, så tajwīd,
+  // så memorering, og til slutt ijāzah.
+  const KF_KORAN = [
+    { felt: 'koran_qaida',    navn: 'Qaida' },
+    { felt: 'koran_lese',     navn: 'Leser' },
+    { felt: 'koran_tajwid',   navn: 'Tajwīd' },
+    { felt: 'koran_memorert', navn: 'Memorert' },
+    { felt: 'koran_ijazah',   navn: 'Ijāzah' }
+  ];
+  function kfKoran(r){
+    // Høyeste trinn som er krysset av — ikke antall kryss. Den som leser
+    // med tajwīd, kan lese, enten han krysset av for det eller ikke.
+    let n = 0;
+    KF_KORAN.forEach((t, i) => { if(kfJa(r[t.felt])) n = i + 1; });
+    return n;
+  }
+  function kfKoranNavn(n){
+    return n === 0 ? 'Ingen' : KF_KORAN[n - 1].navn;
+  }
+
+  // Språkferdighet: fire uavhengige ferdigheter for arabisk. Urdu-skjemaet
+  // har ett samlefelt i stedet, så det behandles for seg — ikke tvinges
+  // inn i samme form.
+  function kfSprak(r){
+    const valg = String(r.sprakvalg || '').trim();
+    if(/urdu/i.test(valg)){
+      const f = String(r.urdu_ferdighet || '').trim();
+      const ar = parseFloat(String(r.urdu_ar || '').replace(',', '.')) || 0;
+      return { valg: 'Urdu', niva: f ? -1 : (ar > 0 ? -1 : 0), tekst: f || (ar ? ar + ' år' : '—'), ar };
+    }
+    const d = ['ar_lese', 'ar_skrive', 'ar_forsta', 'ar_snakke'].filter(k => kfJa(r[k]));
+    const ar = parseFloat(String(r.arabisk_ar || '').replace(',', '.')) || 0;
+    const navn = { ar_lese: 'lese', ar_skrive: 'skrive', ar_forsta: 'forstå', ar_snakke: 'snakke' };
+    return { valg: valg || 'Arabisk', niva: d.length,
+             tekst: d.length ? d.map(k => navn[k]).join(' · ') : '—', ar };
+  }
+
+  function kfSoknader(){
+    const prog = (document.getElementById('kfProgram') || {}).value || '';
+    const st = (document.getElementById('kfStatus') || {}).value || 'aktive';
+    return (cache.registrations || []).filter(r => {
+      if(!String(r.elev_navn || '').trim()) return false;
+      const s = String(r.status || 'Ny');
+      if(st === 'godkjent' && s !== 'Godkjent') return false;
+      if(st === 'aktive' && s === 'Avslått') return false;
+      if(prog && String(r.program || '') !== prog) return false;
+      return true;
+    }).map(r => ({
+      id: r.id,
+      navn: r.elev_navn || '',
+      alder: kfAlder(r.elev_fdato),
+      trinn: String(r.klassetrinn || '').trim(),
+      program: String(r.program || ''),
+      koran: kfKoran(r),
+      sprak: kfSprak(r),
+      erfaring: parseFloat(String(r.tidligere_skole_ar || '').replace(',', '.')) || 0,
+      tidligere: kfJa(r.tidligere_skole),
+      status: String(r.status || 'Ny')
+    }));
+  }
+
+  // Median, ikke gjennomsnitt. Én tolvåring i en gruppe sjuåringer flytter
+  // gjennomsnittet nok til at hele gruppen ser eldre ut enn den er.
+  function kfMedian(tall){
+    const t = tall.filter(x => x != null).sort((a, b) => a - b);
+    if(t.length === 0) return null;
+    const m = Math.floor(t.length / 2);
+    return t.length % 2 ? t[m] : (t[m - 1] + t[m]) / 2;
+  }
+
+  function kfDel(liste, antall){
+    // Like store grupper, i den rekkefølgen listen alt er sortert i.
+    // Resten fordeles på de første gruppene, ikke dumpes i den siste.
+    const ut = [];
+    const per = Math.floor(liste.length / antall), rest = liste.length % antall;
+    let i = 0;
+    for(let g = 0; g < antall; g++){
+      const n = per + (g < rest ? 1 : 0);
+      ut.push(liste.slice(i, i + n));
+      i += n;
+    }
+    return ut.filter(g => g.length);
+  }
+
+  window.kfRender = function(){
+    const velger = document.getElementById('kfProgram');
+    if(!velger) return;
+    if(!velger.dataset.fylt){
+      const p = [...new Set((cache.registrations || []).map(r => r.program).filter(Boolean))].sort();
+      velger.innerHTML = '<option value="">— Alle —</option>' +
+        p.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+      velger.dataset.fylt = '1';
+    }
+
+    const el = document.getElementById('kfInnhold');
+    const alle = kfSoknader();
+    if(alle.length === 0){
+      el.innerHTML = '<div class="report-card"><div class="fp-lest">Ingen søknader passer ' +
+        'filteret.</div></div>';
+      return;
+    }
+
+    const utenAlder = alle.filter(s => s.alder == null);
+    const metode = (document.getElementById('kfMetode') || {}).value || 'alder';
+    const valgt = (document.getElementById('kfAntall') || {}).value || 'auto';
+    const medAlder = alle.filter(s => s.alder != null);
+    const antall = valgt === 'auto'
+      ? Math.max(1, Math.ceil(medAlder.length / 14))
+      : parseInt(valgt, 10);
+
+    // Sorteringen ER metoden. Det som sorteres først, blir det gruppene
+    // deles etter; det andre målet blir det som spriker og skal vises.
+    const sortert = [...medAlder].sort((a, b) => metode === 'alder'
+      ? (a.alder - b.alder) || (a.koran - b.koran) || a.navn.localeCompare(b.navn, 'no')
+      : (a.koran - b.koran) || (a.alder - b.alder) || a.navn.localeCompare(b.navn, 'no'));
+    const grupper = kfDel(sortert, antall);
+
+    el.innerHTML = kfSammendrag(alle, medAlder, utenAlder, grupper, metode) +
+      grupper.map((g, i) => kfGruppe(g, i, metode)).join('') +
+      kfAvvik(grupper, metode) +
+      `<div class="report-card" style="margin-top:16px;">
+         <div style="display:flex; gap:9px; flex-wrap:wrap;">
+           <button class="btn btn-primary" style="width:auto;" onclick="kfSkrivUt()">🖨️ Skriv ut forslaget</button>
+           <button class="btn btn-ghost" style="width:auto;" onclick="kfEksporterCSV()">⬇️ CSV</button>
+         </div>
+         <p class="fp-fot">🔴 Ingenting er lagret. Forslaget er et grunnlag — fordelingen
+           gjør du i klassekortet.</p>
+       </div>`;
+  };
+
+  function kfSammendrag(alle, medAlder, utenAlder, grupper, metode){
+    const aldre = medAlder.map(s => s.alder);
+    const sprak = {};
+    alle.forEach(s => { sprak[s.sprak.valg] = (sprak[s.sprak.valg] || 0) + 1; });
+    const nybegynnere = alle.filter(s => s.koran === 0).length;
+    return `
+      <div class="report-card">
+        <h3>${alle.length} søknader</h3>
+        <div class="sub">delt i ${grupper.length} ${grupper.length === 1 ? 'gruppe' : 'grupper'} etter ${metode === 'alder' ? 'alder' : 'koranferdighet'}</div>
+        <div class="fp-noekkel">
+          <div><span class="t">${aldre.length ? Math.min(...aldre) + '–' + Math.max(...aldre) : '—'}</span><span class="e">år ved skolestart</span></div>
+          <div><span class="t">${kfMedian(aldre) ?? '—'}</span><span class="e">median alder</span></div>
+          <div><span class="t">${nybegynnere}</span><span class="e">uten koranferdighet</span></div>
+          <div><span class="t">${Math.max(...grupper.map(g => g.length))}</span><span class="e">største gruppe</span></div>
+        </div>
+        <p class="fp-fot">Språkvalg: ${Object.entries(sprak).map(([k, v]) => escapeHtml(k) + ' ' + v).join(' · ')}.
+          Språkvalget deler ikke klassen — arabisk og urdu går samtidig, i hvert sitt spor,
+          i samme blokk.</p>
+        ${utenAlder.length ? `<div class="fp-feil">🔴 ${utenAlder.length} søknader mangler
+          eller har ugyldig fødselsdato, og er holdt utenfor inndelingen:
+${escapeHtml(utenAlder.map(s => s.navn).join(' · '))}
+
+Uten fødselsdato kan ingen si hvor eleven hører hjemme. Rett datoen i søknaden først.</div>` : ''}
+      </div>`;
+  }
+
+  function kfGruppe(g, i, metode){
+    const aldre = g.map(s => s.alder);
+    const koran = g.map(s => s.koran);
+    // Spredningen er tallet som betyr noe. En gruppe der alle er åtte år
+    // men halve leser med tajwīd og halve ikke kan bokstavene, er ikke én
+    // gruppe — den er to som tilfeldigvis er født samtidig.
+    const alderSprik = Math.max(...aldre) - Math.min(...aldre);
+    const koranSprik = Math.max(...koran) - Math.min(...koran);
+    const sprik = metode === 'alder' ? koranSprik : alderSprik;
+    const sprikNavn = metode === 'alder' ? 'korannivå' : 'år i alder';
+    return `
+      <div class="report-card" style="margin-top:16px;">
+        <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
+          <h3 style="margin:0;">Gruppe ${i + 1}</h3>
+          <span class="fp-merke fp-tall">${g.length} elever</span>
+          <span class="fp-merke fp-tall">${Math.min(...aldre)}–${Math.max(...aldre)} år</span>
+          <span class="fp-merke${sprik >= 3 ? ' avvik' : ''} fp-tall">spriker ${sprik} i ${sprikNavn}</span>
+        </div>
+        <div style="overflow-x:auto; margin-top:12px;">
+        <table class="ap-tab"><thead><tr>
+          <th>Navn</th><th>Alder</th><th>Trinn</th><th>Koran</th><th>Språk</th><th>Erfaring</th>
+        </tr></thead><tbody>
+          ${g.map(s => `<tr>
+            <td>${escapeHtml(s.navn)}</td>
+            <td class="ap-dato">${s.alder}</td>
+            <td class="ap-liten">${escapeHtml(s.trinn || '—')}</td>
+            <td>${escapeHtml(kfKoranNavn(s.koran))}</td>
+            <td class="ap-liten">${escapeHtml(s.sprak.valg)}: ${escapeHtml(s.sprak.tekst)}</td>
+            <td class="ap-liten">${s.tidligere ? (s.erfaring ? s.erfaring + ' år' : 'ja') : '—'}</td>
+          </tr>`).join('')}
+        </tbody></table></div>
+      </div>`;
+  }
+
+  // De som ligger langt fra sin egen gruppe. Dette er hele poenget med
+  // skjermen: ikke inndelingen, men de få navnene et menneske må se på.
+  function kfAvvik(grupper, metode){
+    const funn = [];
+    grupper.forEach((g, i) => {
+      const m = metode === 'alder' ? kfMedian(g.map(s => s.koran)) : kfMedian(g.map(s => s.alder));
+      g.forEach(s => {
+        const v = metode === 'alder' ? s.koran : s.alder;
+        const d = Math.abs(v - m);
+        if(d >= 2) funn.push({
+          navn: s.navn, gruppe: i + 1,
+          tekst: metode === 'alder'
+            ? kfKoranNavn(s.koran) + ' i en gruppe der de fleste er ' + kfKoranNavn(Math.round(m))
+            : s.alder + ' år i en gruppe der de fleste er ' + m
+        });
+      });
+    });
+    if(funn.length === 0){
+      return `<div class="fp-ok" style="margin-top:16px;">✓ Ingen elev ligger påfallende
+        langt fra sin egen gruppe. Inndelingen henger sammen på begge mål.</div>`;
+    }
+    return `
+      <div class="report-card" style="margin-top:16px;">
+        <h3>⚠️ ${funn.length} som bør ses på</h3>
+        <div class="sub">Passer ikke helt inn i gruppen de havnet i</div>
+        <div class="fp-lest">${escapeHtml(funn.map(f =>
+          'Gruppe ' + f.gruppe + ' — ' + f.navn + ': ' + f.tekst).join('\n'))}</div>
+        <p class="fp-fot">Dette er ikke feil i inndelingen. Det er elevene der de to målene
+          peker hver sin vei, og der en lærer må avgjøre hva som veier tyngst — å følge
+          jevnaldrende, eller å følge sitt eget nivå.</p>
+      </div>`;
+  }
+
+  window.kfSkrivUt = function(){
+    const alle = kfSoknader();
+    const medAlder = alle.filter(s => s.alder != null);
+    const metode = (document.getElementById('kfMetode') || {}).value || 'alder';
+    const valgt = (document.getElementById('kfAntall') || {}).value || 'auto';
+    const antall = valgt === 'auto' ? Math.max(1, Math.ceil(medAlder.length / 14)) : parseInt(valgt, 10);
+    const sortert = [...medAlder].sort((a, b) => metode === 'alder'
+      ? (a.alder - b.alder) || (a.koran - b.koran) || a.navn.localeCompare(b.navn, 'no')
+      : (a.koran - b.koran) || (a.alder - b.alder) || a.navn.localeCompare(b.navn, 'no'));
+    const grupper = kfDel(sortert, antall);
+    const uten = alle.filter(s => s.alder == null);
+    apneUtskrift(utskriftsmal({
+      tittel: 'Klasseforslag',
+      undertittel: alle.length + ' søknader · delt etter ' + (metode === 'alder' ? 'alder' : 'koranferdighet'),
+      avvik: [{ tekst: 'Forslag, ikke vedtak. Ingenting er lagret i basen — fordelingen ' +
+        'gjøres i klassekortet.' }].concat(uten.length
+          ? [{ tekst: uten.length + ' søknader mangler fødselsdato og står utenfor: ' +
+               uten.map(s => s.navn).join(', ') }] : []),
+      innhold: grupper.map((g, i) => {
+        const aldre = g.map(s => s.alder);
+        return `<h2>Gruppe ${i + 1} — ${g.length} elever, ${Math.min(...aldre)}–${Math.max(...aldre)} år</h2>
+        <table><thead><tr><th>Navn</th><th>Alder</th><th>Trinn</th><th>Koran</th><th>Språk</th></tr></thead><tbody>
+        ${g.map(s => `<tr><td>${escapeHtml(s.navn)}</td>
+          <td class="tid">${s.alder}</td><td>${escapeHtml(s.trinn || '—')}</td>
+          <td>${escapeHtml(kfKoranNavn(s.koran))}</td>
+          <td>${escapeHtml(s.sprak.valg + ': ' + s.sprak.tekst)}</td></tr>`).join('')}
+        </tbody></table>`;
+      }).join('')
+    }));
+  };
+
+  window.kfEksporterCSV = function(){
+    const alle = kfSoknader();
+    if(alle.length === 0){ showToast('Ingen søknader å eksportere.', true); return; }
+    const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const linjer = [['Navn', 'Alder ved skolestart', 'Klassetrinn', 'Program', 'Korannivå',
+      'Språkvalg', 'Språkferdighet', 'År arabisk/urdu', 'Tidligere skole (år)', 'Status']
+      .map(q).join(',')];
+    [...alle].sort((a, b) => (a.alder ?? 99) - (b.alder ?? 99) || a.navn.localeCompare(b.navn, 'no'))
+      .forEach(s => linjer.push([s.navn, s.alder ?? '', s.trinn, s.program,
+        kfKoranNavn(s.koran), s.sprak.valg, s.sprak.tekst, s.sprak.ar || '',
+        s.tidligere ? (s.erfaring || 'ja') : '', s.status].map(q).join(',')));
+    lastNedFil('klasseforslag-' + new Date().toISOString().slice(0, 10) + '.csv',
+      '\ufeff' + linjer.join('\n'), 'text/csv;charset=utf-8;');
+    showToast('✓ ' + alle.length + ' søknader eksportert.');
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -20462,6 +20839,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(tab.dataset.tab === 'fagplanImport') fpFilStatus();
     if(tab.dataset.tab === 'arsplan') apRender();
     if(tab.dataset.tab === 'laereplanregler') lrRender();
+    if(tab.dataset.tab === 'klasseforslag') kfRender();
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
