@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 18:56:28 -->
+<!-- SIST-ENDRET: 2026-08-18 20:19:55 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1360,8 +1360,16 @@
      pensumets form: hver lørdag tar én økt fra hvert spor, og de går
      parallelt gjennom hele året. Sto kapitlene i én kolonne, ville
      leseren trodd de kom etter hverandre. */
-  .fp-spor{display:grid; grid-template-columns:1fr; gap:16px;}
-  @media(min-width:820px){ .fp-spor{grid-template-columns:1fr 1fr;} }
+  /* 🔴 auto-fit, ikke @media(min-width).
+     En medieregel spør VINDUET om bredden. Men innholdet ligger inne i et
+     felt som to sidemenyer alt har spist av — på en bred skjerm ble det
+     derfor to kolonner à ~330 px, og teksten falt ned i smale bånd.
+     På telefonen, der menyene er borte, så det riktig ut. Feilen viste
+     seg altså BARE på den store skjermen.
+     minmax måler plassen som faktisk finnes: er det under ~880 px igjen,
+     blir det én kolonne uansett hvor bred skjermen er. */
+  .fp-spor{display:grid; gap:16px;
+    grid-template-columns:repeat(auto-fit, minmax(430px, 1fr));}
   /* 🔴 To kolonner er riktig for OVERSIKTEN, men galt når en økt er åpen.
      Kortet havnet da i en halv kolonne — rundt 350 px — mens etiketten tok
      146 av dem. Teksten brøt etter tre ord, og hele økta ble en søyle.
@@ -2740,7 +2748,9 @@
           <option value="sundayTeachers">Madinabarn-lærere (søndag)</option>
           <option value="ledelse">Ledelsen</option>
           <option value="assistants">Assistenter/frivillige</option>
-          <option value="soknaderOgVarslede">Søkere og varslede i administrasjonen</option>
+          <option value="soknaderOgVarslede">Søkere — alle, med administrasjonen</option>
+          <option value="soknaderLordag">Søkere — Madina Skole (lørdag), med administrasjonen</option>
+          <option value="soknaderSondag">Søkere — Madinabarn (søndag), med administrasjonen</option>
         </select>
       </div>
 
@@ -8216,6 +8226,60 @@
         </div>`;
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // 🔴 FELT SKJEMAET SENDER, SOM PANELET IKKE KJENNER
+    //
+    // Hele kortet tegnes av SCHEMAS[type].fields. Et felt som ikke står
+    // der, er USYNLIG — på skjermen, på utskriften og i CSV-eksporten —
+    // selv om verdien ligger i dokumentet.
+    //
+    // Det skjedde med spørsmålet «har du gått hos oss før?»: skjemaet
+    // spør, familien svarer, svaret lagres, og ingen ser det igjen.
+    // Ingen feilmelding, ingen tom rad — feltet finnes bare ikke for
+    // panelet.
+    //
+    // Denne seksjonen viser alt som ligger i dokumentet og ikke er
+    // dekket. Da oppdages et nytt spørsmål i skjemaet samme dag det
+    // stilles, og nøkkelnavnet står svart på hvitt så det kan legges
+    // inn i SCHEMAS med riktig etikett.
+    //
+    // ⚠️ Vises bare for den som kan se helseopplysninger. Et ukjent felt
+    // kan inneholde hva som helst — og et felt vi ikke kjenner, kan vi
+    // heller ikke vite om skal maskeres.
+    // ═══════════════════════════════════════════════════════════════
+    const PD_SYSTEMFELT = new Set(['id','opprettetAv','opprettetDato','sistEndretAv',
+      'sistEndretDato','sistEndretGrunn','bilde','fraSoknadId','godkjentAv','godkjentDato',
+      'avslattAv','avslattDato','behandletAv','behandletDato','tidligereKlasse']);
+    const kjenteKeys = new Set(schema.fields.map(f => f.key));
+    const ukjente = Object.keys(row)
+      .filter(k => !kjenteKeys.has(k) && !PD_SYSTEMFELT.has(k) && !k.startsWith('_'))
+      .filter(k => { const v = row[k]; return v !== '' && v != null && v !== false; })
+      .sort();
+    if(ukjente.length && kanSeHelse()){
+      const idx = seksjoner.length + 2;
+      html += `
+        <div class="pd-seksjon" data-seksjon="${idx}">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+            <span class="pd-caret">▶</span>
+            <span class="pd-seksjon-tittel">🔎 Sendt inn, men ikke kjent av panelet</span>
+            <span class="pd-seksjon-antall">${ukjente.length}</span>
+          </button>
+          <div class="pd-seksjon-body">
+            <div style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
+                        line-height:1.55; margin-bottom:9px;">
+              Skjemaet sender disse feltene, men panelet har ingen etikett for dem. De vises
+              derfor ikke andre steder — heller ikke på utskrift eller i eksport. Nøkkelnavnet
+              står til venstre; si ifra, så legges feltet inn med riktig navn.
+            </div>
+            ${ukjente.map(k => {
+              let v = row[k];
+              if(v && typeof v === 'object') v = JSON.stringify(v);
+              return `<div class="pd-felt"><span class="pd-felt-label" style="font-family:monospace; text-transform:none;">${escapeHtml(k)}</span><span class="pd-felt-verdi">${escapeHtml(String(v))}</span></div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }
+
     if(sporing.length){
       const idx = seksjoner.length + 1;
       html += `
@@ -8927,6 +8991,40 @@
     return result;
   }
 
+  // 🔴 Søknaden bærer programKODER, ikke navn — og kan bære to, adskilt
+  // med komma. mapRegistrationProgram() er den samme oversettelsen som
+  // brukes ved godkjenning og i Klasseforslag. Tre steder, én regel.
+  function msErMadinabarn(r){
+    const navn = (function(){
+      try{ return mapRegistrationProgram(String(r.program || '')) || ''; }catch(e){ return ''; }
+    })();
+    if(navn) return /madinabarn/i.test(navn);
+    // Ukjent kode — fall tilbake på råteksten, ellers forsvinner søknaden
+    // ut av begge listene og ingen skriver til familien.
+    return /madinabarn/i.test(String(r.program || ''));
+  }
+
+  // Bygger mottakerne av en liste søknader. Begge foresatte tas med når
+  // begge er oppgitt: skjemaet spør om to, og å skrive til bare den første
+  // er et valg ingen har tatt.
+  function msSokereFra(soknader){
+    const ut = [];
+    soknader.forEach(r => {
+      const elev = r.elev_navn || 'søker';
+      if(String(r.foresatt1_epost || '').trim()){
+        ut.push({ type:'soker', id: r.id + ':1',
+                  name: (r.foresatt1_navn || 'Foresatt') + ' (' + elev + ')',
+                  epost: r.foresatt1_epost });
+      }
+      if(String(r.foresatt2_epost || '').trim()){
+        ut.push({ type:'soker', id: r.id + ':2',
+                  name: (r.foresatt2_navn || 'Foresatt 2') + ' (' + elev + ')',
+                  epost: r.foresatt2_epost });
+      }
+    });
+    return ut;
+  }
+
   function computeMsRecipients(){
     const val = document.getElementById('msMottakerType').value;
     let raw = [];
@@ -8999,6 +9097,52 @@
         if(!ep) return;
         const ansatt = (cache.teachers || []).find(t => (t.epost || '').trim().toLowerCase() === ep.toLowerCase());
         raw.push({ type:'ansatt', id:'varsel:' + ep, name: (ansatt && ansatt.navn) || ep, epost: ep });
+      });
+    } else if(val === 'soknaderLordag' || val === 'soknaderSondag'){
+      // ═══════════════════════════════════════════════════════════════
+      // SØKERE DELT PÅ PROGRAM
+      //
+      // Beskjeder til de to programmene er sjelden like: oppstart,
+      // møtetid og pris er ulike. Sendes én felles melding, må den
+      // skrives så generelt at den ikke sier noe — eller den sier noe
+      // som er galt for halvparten.
+      //
+      // 📌 Administrasjonen er MED I BEGGE. De skal se hva som gikk ut,
+      // uansett hvilken halvdel det gjaldt, og listen hentes fra
+      // varselOppsett.nySoknadMottakere — den samme som varsles ved ny
+      // påmelding. En egen liste her ville blitt to som glir fra
+      // hverandre.
+      // ═══════════════════════════════════════════════════════════════
+      const UTE2 = ['Avslått', 'Trukket', 'Avmeldt', 'Slettet'];
+      const vilHaBarn = (val === 'soknaderSondag');
+      const soknader2 = (cache.registrations || [])
+        .filter(r => !UTE2.includes(String(r.status || '').trim()))
+        .filter(r => msErMadinabarn(r) === vilHaBarn);
+      raw = msSokereFra(soknader2);
+
+      // ⚠️ En søknad med tomt eller ukjent programfelt havner i
+      // lørdagslisten. Det er med vilje — alternativet var at familien
+      // forsvant ut av BEGGE listene og aldri fikk noen beskjed.
+      //
+      // Men den skal ikke forsvinne i en liste på tretti navn heller.
+      // Derfor merkes den her, slik at den er synlig i mottakerlisten og
+      // kan hakes av hvis meldingen ikke gjelder den.
+      if(!vilHaBarn){
+        const ukjentProg = new Set(soknader2
+          .filter(r => !(function(){ try{ return mapRegistrationProgram(String(r.program || '')); }catch(e){ return ''; } })())
+          .map(r => r.id));
+        raw.forEach(m => {
+          if(ukjentProg.has(String(m.id).split(':')[0])){
+            m.name += ' ⚠️ ukjent program';
+          }
+        });
+      }
+      (varselOppsett.nySoknadMottakere || []).forEach(e => {
+        const ep = String(e || '').trim();
+        if(!ep) return;
+        const t = (cache.teachers || []).find(x => String(x.epost || '').trim().toLowerCase() === ep.toLowerCase());
+        raw.push({ type: t ? 'teacher' : 'ekstern', id: t ? t.id : ep,
+                   name: (t ? t.navn : ep) + ' (administrasjon)', epost: ep });
       });
     } else if(val === 'assistants'){
       raw = cache.teachers.filter(t => {
