@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 12:10:04 -->
+<!-- SIST-ENDRET: 2026-08-18 12:24:31 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4287,7 +4287,14 @@
     return false;
   }
 
-  const LOGO_DATA_URI = "logo-bla.png";
+  // Navnet var LOGO_DATA_URI. Det er ikke en data-URI — det er et
+  // filnavn, og har alltid vært det. Et navn som lyver om hva det er
+  // koster den neste som leser koden et forsøk på å finne base64-en som
+  // ikke finnes.
+  //
+  // 🔵 Den BLÅ logoen, på lyst papir. Sto den på et mørkt felt, forsvant
+  // den nesten inn i bakgrunnen — det var slik utskriftsarket så ut før.
+  const LOGO_UTSKRIFT = "logo-bla.png";
 
   // "Remember me": we only ever remember the e-post address (safe, not a
   // secret) — never the password. This lets the login field pre-fill so
@@ -9820,20 +9827,38 @@
         body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; }
         .ark{ max-width:780px; margin:0 auto; }
 
+        /* ── TOPPFELTET ──────────────────────────────────────────────
+           Var en mettet blå flate over hele arkets bredde. Den så bra ut
+           på skjermen og kostet en stripe blekk på hvert eneste ark —
+           og disse arkene skrives ut i bunker: ett per klasse, ett per
+           økt, ett per lærer.
+           Nå er den en lys vannblå tone. Identiteten holder: samme blå
+           familie, samme logo, samme skrifter — bare uten flaten.
+           📌 Og logoen kan endelig være den BLÅ. På det mørke feltet lå
+           en blå logo oppå blått og forsvant nesten.                   */
         .topp{
-          background:linear-gradient(135deg,#2f7cc9 0%, #1c5490 100%);
-          color:#fff; padding:22px 26px 20px; text-align:center;
+          background:linear-gradient(135deg,#eef6fd 0%, #d8e9f8 100%);
+          color:#1c5490; padding:22px 26px 20px; text-align:center;
+          border-bottom:3px solid #b9d5ee;
         }
         .topp img{ height:38px; width:auto; margin-bottom:8px; }
         .aar{
           font-size:10px; letter-spacing:.24em; text-transform:uppercase;
-          color:#cfe3f6; margin-bottom:4px;
+          color:#6f93b6; margin-bottom:4px;
         }
         .topp h1{
           font-family:'Cormorant Garamond',Georgia,serif; font-weight:700;
-          font-size:29px; margin:0 0 3px; letter-spacing:.01em;
+          font-size:29px; margin:0 0 3px; letter-spacing:.01em; color:#1c5490;
         }
-        .topp .under{ font-size:12px; color:#dceaf7; }
+        .topp .under{ font-size:12px; color:#4a7099; }
+
+        /* 🔴 Cormorant setter tall i gammel stil som standard: ettallet
+           blir en prikkløs i, og «trinn 1» leses «trinn ı». Det sto på
+           det trykte arket til noen så det. Alle overskrifter og alle
+           tallkolonner tvinges derfor til versaltall med fast bredde. */
+        h1, h2, .tid, .tall, td, th{
+          font-variant-numeric:lining-nums tabular-nums;
+        }
 
         .kropp{ padding:20px 26px 26px; }
         h2{
@@ -9886,15 +9911,17 @@
           border-top:1px solid #e4edf6; font-size:10.5px; color:#7b8a93;
           display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
         }
-        /* Uten dette skriver nettleseren ut det blå toppfeltet som hvitt,
-           og arket mister det eneste som gjør det til skolens. */
+        /* Uten dette skriver nettleseren ut toppfeltet som helt hvitt, og
+           arket mister det eneste som gjør det til skolens. Regelen betyr
+           mindre nå enn før — feltet er lyst uansett — men uten den
+           forsvinner også tabellhodene og de gule merkene. */
         @media print{
           body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         }
       </style></head><body>
       <div class="ark">
         <div class="topp">
-          <img src="${LOGO_DATA_URI}" alt="Madina Skole">
+          <img src="${LOGO_UTSKRIFT}" alt="Madina Skole">
           <div class="aar">Skoleåret ${escapeHtml(SKOLEAR)}</div>
           <h1>${escapeHtml(tittel || '')}</h1>
           ${undertittel ? `<div class="under">${escapeHtml(undertittel)}</div>` : ''}
@@ -15155,12 +15182,15 @@
     apneUtskrift(utskriftsmal({
       tittel: plan.navn || plan.id,
       undertittel: (plan.bok && plan.bok.tittel) || '',
-      // Står planen og øktene og sier hver sin ting, skal den som holder
-      // arket vite det før han leser videre.
+      // 🔴 utskriftsmal() leser a.tekst og a.hard — altså OBJEKTER. Her
+      // sto en liste med rene strenger, og arket ville skrevet «⚠️
+      // undefined» øverst. Feilen viser seg bare når planen faktisk er
+      // ufullstendig, så den kunne ligget til første halvferdige plan.
       avvik: (() => {
         const vil = kap.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
         return fpOkter.length === vil ? null
-          : [fpOkter.length + ' av ' + vil + ' økter er skrevet. Arket viser bare det som finnes.'];
+          : [{ tekst: fpOkter.length + ' av ' + vil + ' økter er skrevet. ' +
+                      'Arket viser bare det som finnes.' }];
       })(),
       innhold: `
         <h2>Om planen</h2>
