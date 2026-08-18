@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 15:39:26 -->
+<!-- SIST-ENDRET: 2026-08-18 15:51:18 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -17221,10 +17221,33 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       tegnHelsesjekk();
       return;
     }
+    // 🔴 try/finally, ikke to linjer.
+    //
+    // Sto det «helseHenter = true» før kallet og «= false» etter, ble
+    // flagget stående på true for alltid hvis helseFraBasen kastet. Da
+    // returnerte «if(helseHenter) return» på aller første linje, og
+    // knappen gjorde INGENTING ved hvert eneste trykk etterpå — uten et
+    // ord, uten en feilmelding, og uten at en ny sjekk kunne kjøres før
+    // siden ble lastet på nytt.
+    //
+    // Det er den samme stille feilen vi har jaget hele veien: en tilstand
+    // som settes, og et unntak som hopper over stedet der den ryddes.
+    let fraBasen = [];
     helseHenter = true;
     tegnHelsesjekk();
-    const fraBasen = await helseFraBasen();
-    helseHenter = false;
+    try{
+      fraBasen = await helseFraBasen();
+    }catch(err){
+      console.error('helseFraBasen', err);
+      // Feilen blir et FUNN, ikke en stille tom liste. En kontroll som
+      // ikke kunne kjøres, er noe man må vite om.
+      fraBasen = [helseFunn('viktig', 'HS-KJO', 'Full sjekk stoppet underveis',
+        'Kontrollene som leser fra basen rakk ikke å bli ferdige, så listen ' +
+        'under er ufullstendig.', 'Prøv igjen. Står det seg, send feilkoden videre.',
+        1, [String(err && (err.code || err.message) || err)])];
+    }finally{
+      helseHenter = false;
+    }
     helseResultat = {
       funn: [...gratis, ...fraBasen].sort((a,b) => HELSE_ALVOR[a.alvor] - HELSE_ALVOR[b.alvor]),
       komplett: true, tid: new Date().toISOString()
