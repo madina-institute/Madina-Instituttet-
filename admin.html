@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 11:47:35 -->
+<!-- SIST-ENDRET: 2026-08-18 12:10:04 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1356,10 +1356,45 @@
      📌 Merk: 'ut-tittel' og 'ut-logg' brukes to steder i filen uten å
      være definert noe sted i stilarket — de rendres altså som naken
      tekst. Derfor er de ikke gjenbrukt her.                         */
+  /* To spor ved siden av hverandre. Det er ikke en layoutvalg — det er
+     pensumets form: hver lørdag tar én økt fra hvert spor, og de går
+     parallelt gjennom hele året. Sto kapitlene i én kolonne, ville
+     leseren trodd de kom etter hverandre. */
+  .fp-spor{display:grid; grid-template-columns:1fr; gap:16px;}
+  @media(min-width:820px){ .fp-spor{grid-template-columns:1fr 1fr;} }
+  .fp-sporkol{min-width:0;}
+  .fp-sporhode{display:flex; align-items:baseline; gap:9px; padding:0 0 8px;
+    border-bottom:2px solid var(--line); margin-bottom:12px;}
+  .fp-sporhode h4{font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:17px; color:var(--emerald-d); margin:0; flex:1 1 auto;}
+  .fp-sporhode .n{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold);
+    font-variant-numeric:lining-nums tabular-nums; white-space:nowrap;}
   .fp-liste{display:flex; flex-direction:column; gap:8px;}
   .fp-kap{border:1px solid var(--line); border-radius:9px; background:#fff; overflow:hidden;}
-  .fp-kap-hode{display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    padding:11px 14px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13.5px;}
+  .fp-kap-hode{display:flex; align-items:center; gap:10px;
+    padding:11px 14px 6px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13.5px;}
+  .fp-pil{color:var(--gold); flex:none;}
+  .fp-kap-linje{padding:0 14px 11px; cursor:default;}
+  .fp-kap-under{display:flex; justify-content:space-between; gap:10px;
+    font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:5px;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .fp-okt-tittel{flex:1 1 auto; min-width:0;}
+  .fp-mal{padding:9px 14px; font-family:'Jost',sans-serif; font-size:11.5px;
+    color:#5a6860; background:var(--paper); border-bottom:1px solid var(--paper-2);}
+  .fp-tomt{padding:10px 14px; font-family:'Jost',sans-serif; font-size:12.5px; color:#8a9a90;}
+  /* Nøkkeltallene: ett tall, én etikett. Tallene er hele poenget, så de
+     settes stort og i tabellsifre — ellers hopper de i bredden. */
+  .fp-noekkel{display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+    gap:12px; margin-top:14px; padding:14px 0 12px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .fp-noekkel .t{display:block; font-family:'Cormorant Garamond',serif; font-weight:700;
+    font-size:26px; line-height:1; color:var(--emerald-d);
+    font-variant-numeric:lining-nums tabular-nums;}
+  .fp-noekkel .t .av{font-size:16px; color:var(--gold);}
+  .fp-noekkel .e{display:block; font-family:'Jost',sans-serif; font-size:10.5px;
+    color:#8a9a90; text-transform:uppercase; letter-spacing:.05em; margin-top:5px;}
+  .fp-fot{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
+    line-height:1.55; margin:9px 0 0;}
   .fp-kap-hode:hover{background:var(--paper);}
   .fp-kap-navn{font-weight:600; color:var(--emerald-d); flex:1 1 140px; min-width:0;}
   .fp-merke{font-family:'Jost',sans-serif; font-size:11px; padding:2px 8px; border-radius:999px;
@@ -1603,6 +1638,7 @@
   <button data-sb-side="admin" onclick="sidebarSelectSide('admin')"><span class="ic">🎓</span> Elever og familier</button>
   <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')"><span class="ic">💰</span> Økonomi</button>
   <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')"><span class="ic">📚</span> Undervisning</button>
+  <button data-sb-side="laereplan" onclick="sidebarSelectSide('laereplan')"><span class="ic">📖</span> Læreplan</button>
   <button data-sb-side="kommunikasjon" onclick="sidebarSelectSide('kommunikasjon')"><span class="ic">✉️</span> Kommunikasjon</button>
   <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')"><span class="ic">🏫</span> Skole</button>
   <button data-sb-side="system" onclick="sidebarSelectSide('system')"><span class="ic">⚙️</span> System</button>
@@ -1667,6 +1703,11 @@
         <div class="ic">🎓</div>
         <h2>Pedagogisk</h2>
         <p>Oppmøte · Timeforberedelser · Lekser · Kunngjøringer · Elevnotater</p>
+      </div>
+      <div class="side-card" onclick="selectSide('laereplan')">
+        <div class="ic">📖</div>
+        <h2>Læreplan</h2>
+        <p>Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter. Uten datoer: de hører til klassen, ikke til planen</p>
       </div>
       <div class="side-card" onclick="promptPasswordAndSelectSide('registrering')">
         <div class="ic">📝</div>
@@ -1767,12 +1808,19 @@
   <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
   <div class="tab" data-tab="lonn" data-side="okonomi personale">Lønn</div>
   <div class="tab" data-tab="betaling" data-side="okonomi">Innstillinger</div>
+  <!-- Fagplan hører til TO seksjoner. data-side matches med ~= , som
+       treffer ett ord i en mellomromsdelt liste — samme grep som Lønn
+       bruker for å ligge både under Økonomi og Personale. Alternativet
+       var to paneler med samme innhold, og de ville kommet ut av takt.
+       Den står FØRST under Undervisning med vilje: pensumet er det
+       alt det andre i seksjonen viser til. -->
+  <div class="tab" data-tab="fagplan" data-side="laereplan pedagogisk">Fagplan</div>
+  <div class="tab" data-tab="fagplanImport" data-side="laereplan">Importer plan</div>
   <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
   <div class="tab" data-tab="hours" data-side="pedagogisk">Timeplan</div>
   <div class="tab" data-tab="klasseoppsett" data-side="pedagogisk">Fagrekkefølge</div>
   <div class="tab" data-tab="attendance" data-side="pedagogisk">Oppmøte</div>
   <div class="tab" data-tab="absenceRequests" data-side="pedagogisk">Fraværsmeldinger</div>
-  <div class="tab" data-tab="fagplan" data-side="pedagogisk">Fagplan</div>
   <div class="tab" data-tab="lessonPlans" data-side="pedagogisk">Forberedelser</div>
   <div class="tab" data-tab="planmaler" data-side="pedagogisk">Planmaler</div>
   <div class="tab" data-tab="planArkiv" data-side="pedagogisk">Planarkiv</div>
@@ -3258,6 +3306,15 @@
 
     <div id="fpInnhold" style="margin-top:16px;"></div>
 
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       IMPORT — egen fane, ikke en boks nederst på plansiden
+
+       Import er en engangshandling. Lå den under planen man leser
+       hver uke, ville man rullet forbi «skriv over» hver gang.
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-fagplanImport">
     <!-- ── IMPORT ──────────────────────────────────────────────────
          Engangsimport. Etterpå er BASEN kilden, ikke filen.
 
@@ -11987,6 +12044,8 @@
     klasseoppsett: 'Flytt fag mellom blokker i én klasse — klokkeslettene står stille',
     attendance: 'Registrer daglig oppmøte',
     absenceRequests: 'Behandle fraværsmeldinger fra foresatte',
+    fagplan: 'Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter',
+    fagplanImport: 'Legg en plan inn i basen fra fil — én gang per plan',
     lessonPlans: 'Lærernes pedagogiske forberedelser',
     planmaler: 'Maler for daglig forberedelse, månedsplan og semesterplan per fag/klasse',
     planArkiv: 'Samlet arkiv over alle innsendte planer — daglig, månedlig og semester',
@@ -12010,6 +12069,7 @@
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
     okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
+    fagplan: '📖', fagplanImport: '⬆️',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
@@ -14766,17 +14826,34 @@
     const vil = kap.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
     const har = fpOkter.length;
     const variant = plan.rekkefolgeVariant || 'bok';
+    const lordager = Math.max(...['A', 'B'].map(sp =>
+      kap.filter(k => k.spor === sp).reduce((s, k) => s + (Number(k.antallOkter) || 0), 0)));
+    const holdt = (plan.reserverte || []).reduce((s, r) => s + (Number(r.antall) || 0), 0);
 
     return `
       <div class="report-card">
-        <h3>${escapeHtml(plan.navn || plan.id)}</h3>
-        <div class="sub">${escapeHtml(plan.fag || '')} · trinn ${escapeHtml(String(plan.trinn || ''))}</div>
-        <div class="fp-lest fp-tall">${escapeHtml(
-          (plan.bok && plan.bok.tittel ? plan.bok.tittel + ' · ' + (plan.bok.forlag || '') + '\n' : '') +
-          kap.length + ' kapitler · ' + har + ' av ' + vil + ' økter skrevet' +
-          (plan.importertDato ? '\nImportert ' + new Date(plan.importertDato)
-            .toLocaleDateString('no-NO') + ' av ' + (plan.importertAv || 'ukjent') : '')
-        )}</div>
+        <div style="display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;">
+          <div style="flex:1 1 200px; min-width:0;">
+            <h3>${escapeHtml(plan.navn || plan.id)}</h3>
+            <div class="sub">${escapeHtml((plan.bok && plan.bok.tittel) || plan.fag || '')}</div>
+          </div>
+          <button class="btn btn-ghost" style="width:auto; padding:7px 14px;"
+            onclick="fpSkrivUtPlan()">🖨️ Skriv ut planen</button>
+          <button class="btn btn-ghost" style="width:auto; padding:7px 14px;"
+            onclick="fpEksporterCSV()">⬇️ CSV</button>
+        </div>
+
+        <!-- Regnskapet for året, i én linje. Tallet som betyr noe er ikke
+             hvor mange sider boka har, men hvor mange lørdager planen
+             krever — det er den eneste harde grensen i skoleåret. -->
+        <div class="fp-noekkel">
+          <div><span class="t">${lordager}</span><span class="e">lørdager i pensum</span></div>
+          <div><span class="t">${holdt}</span><span class="e">holdt av til repetisjon</span></div>
+          <div><span class="t">${lordager + holdt}</span><span class="e">lørdager i alt</span></div>
+          <div><span class="t">${har}<span class="av">/${vil}</span></span><span class="e">økter skrevet</span></div>
+        </div>
+        <p class="fp-fot">Hver lørdag tar én økt fra hvert spor. Datoene ligger ikke
+          her — de regnes ut fra klassens program og fryses per klasse.</p>
 
         <!-- ── REKKEFØLGEVARIANT ─────────────────────────────────────
              Ikke en merknad i en fil, men et valg i basen.
@@ -14793,61 +14870,98 @@
              dag — det er en beslutning som ligger klar. Det står i
              teksten under, så ingen tror timene har byttet plass.
              ────────────────────────────────────────────────────── -->
-        <div class="fp-felt" style="margin-top:16px;">
+        <div class="fp-felt" style="margin-top:18px;">
           <label>Rekkefølge i kapittelet «Islam»</label>
           <select onchange="fpSettVariant(this.value)">
             <option value="bok"${variant === 'bok' ? ' selected' : ''}>Bokas rekkefølge — zakah før sawm</option>
             <option value="ramadan"${variant === 'ramadan' ? ' selected' : ''}>Sawm inn i ramadan — økt 8 og 9 bytter plass</option>
           </select>
-          <p class="fp-hjelp" style="font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin:6px 0 0;">
-            Valget lagres nå og brukes når årsplanen for en klasse skal
-            genereres. Øktene under står i bokas rekkefølge uansett hva som
-            er valgt her — det er datoene som fordeles, ikke pensumet som
-            skrives om.
-          </p>
+          <p class="fp-fot">Valget lagres nå og brukes når årsplanen for en klasse
+            genereres. Øktene under står i bokas rekkefølge uansett — det er datoene
+            som fordeles, ikke pensumet som skrives om.</p>
         </div>
       </div>`;
   }
 
+  // ── DE TO SPORENE ─────────────────────────────────────────────────
+  //
+  // Spor A er tro, spor B er praksis, og de går PARALLELT: hver lørdag
+  // tar én økt fra hvert. Derfor står de i hver sin kolonne i stedet for
+  // under hverandre — en enkelt liste ville lest som en rekkefølge, og
+  // da ville «Arabiske ord» sett ut som årets siste time i stedet for
+  // årets siste time i spor B.
+  //
+  // 📌 Rekkefølgen INNAD i et spor kommer fra plan.rekkefolge, ikke fra
+  // kapittelnumrene: forordet setter praksis til slutt, så spor B går
+  // profeten → koranen → islam → arabiske ord.
   function fpKapitler(plan){
     const kap = Array.isArray(plan.kapitler) ? plan.kapitler : [];
-    // Rekkefølgen fra planen, ikke kapittelnumrene: spor B følger
-    // forordet (profeten → koranen → islam → arabiske ord), ikke boka.
-    const rekke = [];
     const rk = plan.rekkefolge || {};
-    ['A', 'B'].forEach(s => (rk[s] || []).forEach(id => rekke.push(id)));
-    const sortert = [
-      ...rekke.map(id => kap.find(k => k.id === id)).filter(Boolean),
-      ...kap.filter(k => !rekke.includes(k.id))
-    ];
+    const spor = (plan.spor || []).length ? plan.spor
+      : [{ id: 'A', navn: 'Spor A' }, { id: 'B', navn: 'Spor B' }];
 
-    return '<div class="fp-liste" style="margin-top:14px;">' + sortert.map(k => {
-      const mine = fpOkter.filter(o => o.kapittel === k.id)
-        .sort((a, b) => (a.nr || 0) - (b.nr || 0));
-      const vil = Number(k.antallOkter) || 0;
-      const apen = fpApneKap.has(k.id);
-      const avvik = mine.length !== vil;
+    const kolonner = spor.map(sp => {
+      const ids = rk[sp.id] || kap.filter(k => k.spor === sp.id).map(k => k.id);
+      const mine = ids.map(id => kap.find(k => k.id === id)).filter(Boolean);
+      const sum = mine.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
       return `
-        <div class="fp-kap${apen ? ' apen' : ''}">
-          <div class="fp-kap-hode" onclick="fpApneKapittel('${escapeHtml(k.id)}')">
-            <span style="color:var(--gold);">${apen ? '▾' : '▸'}</span>
-            <span class="fp-kap-navn">${escapeHtml(k.tittel || k.id)}</span>
-            <span class="fp-merke spor-${String(k.spor || '').toLowerCase()}">Spor ${escapeHtml(k.spor || '?')}</span>
-            <span class="fp-merke">${escapeHtml(fpSider(k.sider))}</span>
-            <span class="fp-merke${avvik ? ' avvik' : ''}">${mine.length}/${vil} økter</span>
+        <div class="fp-sporkol">
+          <div class="fp-sporhode">
+            <h4>${escapeHtml(sp.navn || sp.id)}</h4>
+            <span class="n">${sum} økter${sp.oktNavn ? ' · ' + escapeHtml(sp.oktNavn) : ''}</span>
           </div>
-          <div class="fp-okter">
-            ${mine.length === 0
-              ? '<div style="padding:10px 14px; font-family:\'Jost\',sans-serif; font-size:12.5px; color:#8a9a90;">Ingen økter skrevet for dette kapittelet.</div>'
-              : mine.map(o => fpApenOkt === o.id ? fpOktSkjema(o) : `
-                <div class="fp-okt-rad" onclick="fpApneOkt('${escapeHtml(o.id)}')">
-                  <span class="fp-okt-nr">${o.nr}</span>
-                  <span style="flex:1 1 auto; min-width:0;">${escapeHtml(o.tittel || '')}</span>
-                  <span class="fp-merke">${escapeHtml(fpSider(o.sider))}</span>
-                </div>`).join('')}
-          </div>
+          <div class="fp-liste">${mine.map(k => fpKapittelkort(k, sum)).join('')}</div>
         </div>`;
-    }).join('') + '</div>';
+    }).join('');
+
+    // Kapitler som ikke hører til noe spor skal ikke bli usynlige.
+    const kjente = new Set(spor.flatMap(sp => rk[sp.id] || kap.filter(k => k.spor === sp.id).map(k => k.id)));
+    const hjemlose = kap.filter(k => !kjente.has(k.id));
+
+    return '<div class="fp-spor" style="margin-top:16px;">' + kolonner + '</div>' +
+      (hjemlose.length ? '<div class="fp-liste" style="margin-top:16px;">' +
+        '<div class="fp-fot">⚠️ Uten spor:</div>' +
+        hjemlose.map(k => fpKapittelkort(k, 1)).join('') + '</div>' : '');
+  }
+
+  function fpKapittelkort(k, sporSum){
+    const mine = fpOkter.filter(o => o.kapittel === k.id).sort((a, b) => (a.nr || 0) - (b.nr || 0));
+    const vil = Number(k.antallOkter) || 0;
+    const apen = fpApneKap.has(k.id);
+    const avvik = mine.length !== vil;
+    // Bredden er kapittelets andel av SPORET, ikke av hele planen. Det er
+    // sporet som fordeles på lørdagene, så det er der andelen betyr noe.
+    const andel = sporSum > 0 ? Math.round((vil / sporSum) * 100) : 0;
+    return `
+      <div class="fp-kap${apen ? ' apen' : ''}">
+        <div class="fp-kap-hode" onclick="fpApneKapittel('${escapeHtml(k.id)}')">
+          <span class="fp-pil">${apen ? '▾' : '▸'}</span>
+          <span class="fp-kap-navn">${escapeHtml(k.tittel || k.id)}</span>
+          <span class="fp-merke${avvik ? ' avvik' : ''}">${mine.length}/${vil}</span>
+        </div>
+        <div class="fp-kap-linje">
+          <div class="bar-track"><div class="bar-fill" style="width:${andel}%;"></div></div>
+          <div class="fp-kap-under">
+            <span>${escapeHtml(fpSider(k.sider))}</span>
+            <span>${vil} økter · ${andel}% av sporet</span>
+          </div>
+        </div>
+        <div class="fp-okter">
+          ${k.mal && k.mal.length ? `<div class="fp-mal">🎯 ${(k.mal || []).map(m => escapeHtml(m)).join(' · ')}</div>` : ''}
+          ${mine.length === 0
+            ? '<div class="fp-tomt">Ingen økter skrevet for dette kapittelet.</div>'
+            : mine.map(o => fpApenOkt === o.id ? fpOktSkjema(o) : `
+              <div class="fp-okt-rad" onclick="fpApneOkt('${escapeHtml(o.id)}')">
+                <span class="fp-okt-nr">${o.nr}</span>
+                <span class="fp-okt-tittel">${escapeHtml(o.tittel || '')}</span>
+                <span class="fp-merke">${escapeHtml(fpSider(o.sider))}</span>
+              </div>`).join('')}
+          ${mine.length ? `<div style="padding:9px 14px;">
+            <button class="btn btn-ghost" style="width:auto; padding:5px 12px; font-size:12px;"
+              onclick="event.stopPropagation(); fpSkrivUtKapittel('${escapeHtml(k.id)}')">🖨️ Skriv ut kapittelet</button>
+          </div>` : ''}
+        </div>
+      </div>`;
   }
 
   // ── ØKTSKJEMA ─────────────────────────────────────────────────────
@@ -14919,8 +15033,12 @@
           <div class="fp-lest">${escapeHtml(fpStrukturLest(o))}</div>
         </div>
 
-        <button class="btn btn-primary" style="width:auto;"
-          onclick="fpLagreOkt('${escapeHtml(o.id)}')">Lagre økt ${o.nr}</button>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+          <button class="btn btn-primary" style="width:auto;"
+            onclick="fpLagreOkt('${escapeHtml(o.id)}')">Lagre økt ${o.nr}</button>
+          <button class="btn btn-ghost" style="width:auto;"
+            onclick="fpSkrivUtOkt('${escapeHtml(o.id)}')">🖨️ Skriv ut økten</button>
+        </div>
       </div>`;
   }
 
@@ -14984,6 +15102,186 @@
         String(err.message || err),
         'fpLagreOkt · fagplan/' + fpValgt + '/okter/' + oktId);
     }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // UTSKRIFT — samme mal som klassekortet og timeforberedelsen
+  //
+  // Panelet hadde tre håndskrevne stilark før de ble samlet i
+  // utskriftsmal(). Læreplanen legger ikke til et fjerde: den bruker den
+  // samme, og arver blått toppfelt, logo, skoleår og skriftene.
+  //
+  // Tre nivåer, fordi tre ulike ark trengs:
+  //   planen      til en ledermøte-mappe — hva året består av
+  //   kapittelet  til en lærer som skal ha én bolk
+  //   økten       til lørdag morgen — ETT ark, i hånden
+  //
+  // 📌 Øktarket er det som faktisk brukes. Målet i §112 var at læreren
+  // skal rekke å lese hele økten før lørdag; et ark som ikke får plass
+  // på to sider har allerede feilet den prøven.
+  // ═══════════════════════════════════════════════════════════════════
+  function fpPlan(){ return (fagplanCache || []).find(p => p.id === fpValgt) || null; }
+
+  function fpListeHtml(v){
+    if(!Array.isArray(v) || v.length === 0) return '';
+    return '<ul>' + v.map(x => '<li>' + escapeHtml(String(x)) + '</li>').join('') + '</ul>';
+  }
+
+  window.fpSkrivUtPlan = function(){
+    const plan = fpPlan();
+    if(!plan) return;
+    const kap = plan.kapitler || [];
+    const rk = plan.rekkefolge || {};
+    const spor = (plan.spor || []);
+
+    const sporTabell = spor.map(sp => {
+      const ids = rk[sp.id] || kap.filter(k => k.spor === sp.id).map(k => k.id);
+      const mine = ids.map(id => kap.find(k => k.id === id)).filter(Boolean);
+      const sum = mine.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
+      return `<h2>${escapeHtml(sp.navn || sp.id)} — ${sum} økter${sp.oktNavn ? ' · ' + escapeHtml(sp.oktNavn) : ''}</h2>
+        <table><thead><tr><th>Kapittel</th><th>Sider</th><th>Økter</th><th>Læringsmål</th></tr></thead><tbody>
+        ${mine.map(k => `<tr>
+          <td><b>${escapeHtml(k.tittel || k.id)}</b></td>
+          <td class="tid">${escapeHtml(fpSider(k.sider))}</td>
+          <td class="tid">${Number(k.antallOkter) || 0}</td>
+          <td>${(k.mal || []).map(m => escapeHtml(m)).join(' · ')}</td>
+        </tr>`).join('')}
+        </tbody></table>`;
+    }).join('');
+
+    const holdt = (plan.reserverte || []);
+    const tillegg = (plan.tillegg || []);
+
+    apneUtskrift(utskriftsmal({
+      tittel: plan.navn || plan.id,
+      undertittel: (plan.bok && plan.bok.tittel) || '',
+      // Står planen og øktene og sier hver sin ting, skal den som holder
+      // arket vite det før han leser videre.
+      avvik: (() => {
+        const vil = kap.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
+        return fpOkter.length === vil ? null
+          : [fpOkter.length + ' av ' + vil + ' økter er skrevet. Arket viser bare det som finnes.'];
+      })(),
+      innhold: `
+        <h2>Om planen</h2>
+        <p>Planen sier hva som skal læres og i hvilken rekkefølge — ikke når.
+        Datoene regnes ut fra klassens program og skolekalenderen, og fryses per
+        klasse. To klasser kan følge samme plan og likevel ligge ulikt an.</p>
+        <p>Hver undervisningsdag tar én økt fra hvert spor.</p>
+        ${sporTabell}
+        ${holdt.length ? `<h2>Holdt av</h2>
+          <table><thead><tr><th>Når</th><th>Antall</th><th>Formål</th></tr></thead><tbody>
+          ${holdt.map(r => `<tr><td>${escapeHtml(r.nar || '')}</td>
+            <td class="tid">${escapeHtml(String(r.antall || ''))}</td>
+            <td>${escapeHtml(r.formal || '')}</td></tr>`).join('')}
+          </tbody></table>` : ''}
+        ${tillegg.map(t => `<h2>${escapeHtml(t.tittel || '')}</h2>
+          <p>${escapeHtml(fpSider(t.sider))}${t.minutter ? ' · ca. ' + t.minutter + ' min per gang' : ''}</p>
+          ${(t.grupper || []).length ? `<table><thead><tr><th>Nr</th><th>Gruppe</th><th>Side</th><th>Uker</th></tr></thead><tbody>
+            ${(t.grupper || []).map(g => `<tr><td class="tid">${escapeHtml(String(g.nr || ''))}</td>
+              <td>${escapeHtml(g.tittel || '')}</td>
+              <td class="tid">${escapeHtml(String(g.side || ''))}</td>
+              <td class="tid">${escapeHtml(String(g.uker || ''))}</td></tr>`).join('')}
+            </tbody></table>` : ''}`).join('')}
+        ${(plan.merknader || []).length ? '<h2>Merknader</h2>' + fpListeHtml(plan.merknader) : ''}`
+    }));
+  };
+
+  window.fpSkrivUtKapittel = function(kapId){
+    const plan = fpPlan();
+    if(!plan) return;
+    const k = (plan.kapitler || []).find(x => x.id === kapId);
+    if(!k) return;
+    const mine = fpOkter.filter(o => o.kapittel === kapId).sort((a, b) => (a.nr || 0) - (b.nr || 0));
+    apneUtskrift(utskriftsmal({
+      tittel: k.tittel || kapId,
+      undertittel: (plan.navn || '') + ' · ' + fpSider(k.sider) + ' · ' + mine.length + ' økter',
+      innhold: `
+        ${(k.mal || []).length ? '<h2>Læringsmål</h2>' + fpListeHtml(k.mal) : ''}
+        ${k.vers ? `<h2>Vers</h2><p>${escapeHtml(k.vers)}</p>
+          <p style="color:#5a6b7d; font-size:11.5px;">${escapeHtml(k.verskilde || '')}</p>` : ''}
+        <h2>Øktene</h2>
+        ${mine.length === 0 ? '<p class="tom">Ingen økter skrevet.</p>' : mine.map(o => `
+          <table class="nv"><tbody>
+            <tr><th>Økt ${o.nr}</th><td><b>${escapeHtml(o.tittel || '')}</b> — ${escapeHtml(fpSider(o.sider))}</td></tr>
+            <tr><th>Mål</th><td>${escapeHtml(o.mal || '')}</td></tr>
+          </tbody></table>`).join('')}`
+    }));
+  };
+
+  window.fpSkrivUtOkt = function(oktId){
+    const plan = fpPlan();
+    const o = fpOkter.find(x => x.id === oktId);
+    if(!plan || !o) return;
+    const sp = (o.sporsmal || []).map(p => Array.isArray(p)
+      ? { spm: p[0], svar: p[1] } : { spm: p.spm, svar: p.svar });
+    apneUtskrift(utskriftsmal({
+      tittel: o.tittel || ('Økt ' + o.nr),
+      undertittel: (plan.navn || '') + ' · ' + (o.kapittelTittel || o.kapittel) +
+        ' · økt ' + o.nr + ' · ' + fpSider(o.sider),
+      innhold: `
+        <h2>Mål for økten</h2>
+        <p>${escapeHtml(o.mal || '')}</p>
+
+        ${(o.timeplan || []).length ? `<h2>Slik går timen</h2>
+          <table><tbody>${(o.timeplan || []).map(l => {
+            // Linjene er «0–4␉tekst» eller «0–4  tekst». Første tallgruppe
+            // er minuttene; resten er det som skal skje. Deles de ikke,
+            // blir minuttene liggende inne i setningen og arket kan ikke
+            // leses i et blikk.
+            const m = String(l).match(/^\s*([\d\u2013\u2014-]+)\s+(.*)$/);
+            return m ? `<tr><td class="tid" style="width:74px; white-space:nowrap;">${escapeHtml(m[1])}</td><td>${escapeHtml(m[2])}</td></tr>`
+                     : `<tr><td colspan="2">${escapeHtml(String(l))}</td></tr>`;
+          }).join('')}</tbody></table>` : ''}
+
+        ${(o.bakgrunn || []).length ? '<h2>Bakgrunn for læreren</h2>' +
+          (o.bakgrunn || []).map(t => '<p>' + escapeHtml(t) + '</p>').join('') : ''}
+
+        ${(o.kjerne || []).length ? '<h2>Kjernen</h2>' + fpListeHtml(o.kjerne) : ''}
+
+        ${sp.length ? `<h2>Spørsmål — med forventet svar</h2>
+          <table><thead><tr><th>Spørsmål</th><th>Svar</th></tr></thead><tbody>
+          ${sp.map(p => `<tr><td>${escapeHtml(p.spm || '')}</td><td>${escapeHtml(p.svar || '')}</td></tr>`).join('')}
+          </tbody></table>` : ''}
+
+        ${(o.misforstaelser || []).length ? '<h2>Vanlige misforståelser</h2>' + fpListeHtml(o.misforstaelser) : ''}
+
+        ${o.aktivitet ? '<h2>Aktivitet</h2><p>' + escapeHtml(o.aktivitet) + '</p>' : ''}
+        ${(o.hvisTid || []).length ? '<h2>Hvis det blir tid</h2>' + fpListeHtml(o.hvisTid) : ''}
+        ${o.lekser ? '<h2>Lekser</h2><p>' + escapeHtml(o.lekser) + '</p>' : ''}
+
+        ${(o.nokkelord && Object.keys(o.nokkelord).length) ? `<h2>Nøkkelord</h2>
+          <table class="nv"><tbody>${Object.entries(o.nokkelord)
+            .map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(String(v))}</td></tr>`).join('')}
+          </tbody></table>` : ''}
+
+        ${(o.verktoy || []).length ? '<h2>Ta med</h2>' + fpListeHtml(o.verktoy) : ''}
+        ${(o.kobling || []).length ? '<h2>Henger sammen med</h2>' + fpListeHtml(o.kobling) : ''}`
+    }));
+  };
+
+  // CSV: én rad per økt. Samme form som resten av panelets eksporter —
+  // BOM først, ellers leser Excel æøå som noe annet.
+  window.fpEksporterCSV = function(){
+    const plan = fpPlan();
+    if(!plan) return;
+    if(fpOkter.length === 0){ showToast('Ingen økter å eksportere.', true); return; }
+    const kapRekke = {};
+    (plan.kapitler || []).forEach((k, i) => { kapRekke[k.id] = i; });
+    const rader = [...fpOkter].sort((a, b) =>
+      (kapRekke[a.kapittel] - kapRekke[b.kapittel]) || (a.nr - b.nr));
+    const felt = ['Spor', 'Kapittel', 'Økt', 'Tittel', 'Sider', 'Læringsmål',
+      'Aktivitet', 'Lekser', 'Nøkkelord'];
+    const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const linjer = [felt.map(q).join(',')];
+    rader.forEach(o => linjer.push([
+      o.spor || '', o.kapittelTittel || o.kapittel || '', o.nr, o.tittel || '',
+      fpSider(o.sider), o.mal || '', o.aktivitet || '', o.lekser || '',
+      Object.keys(o.nokkelord || {}).join(' · ')
+    ].map(q).join(',')));
+    lastNedFil('fagplan-' + fpValgt + '-' + new Date().toISOString().slice(0, 10) + '.csv',
+      '\ufeff' + linjer.join('\n'), 'text/csv;charset=utf-8;');
+    showToast('✓ ' + rader.length + ' økter eksportert.');
   };
 
   window.fpSettVariant = async function(verdi){
@@ -18675,6 +18973,7 @@
       fpRender();
       if(fpValgt) fpHentOkter(fpValgt).then(fpRender);
     }
+    if(tab.dataset.tab === 'fagplanImport') fpFilStatus();
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
