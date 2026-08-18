@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 16:00:25 -->
+<!-- SIST-ENDRET: 2026-08-18 16:21:14 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -14834,9 +14834,23 @@
       if(!id) return;
       const vil = Number(k.antallOkter) || 0;
       const har = okartet[id] ? (okartet[id].okter || []).length : 0;
+      // 🔴 Et kapittel som IKKE er med i øktfilen er ikke en feil.
+      //
+      // Pensumet skrives ett kapittel om gangen — én økt-fil per kapittel,
+      // fjorten økter i slengen. Krevde importen at alle fem kapitlene var
+      // ferdige før den slapp noe gjennom, kunne ingenting importeres før
+      // hele året var skrevet. Da ville vi aldri sett en økt i skjermen
+      // før alt var ferdig, og feil ville blitt oppdaget seksti økter for sent.
+      //
+      // Merknad, ikke stopp: den som importerer skal VITE at fire kapitler
+      // står tomme, men få lov til å gjøre det likevel.
       if(vil > 0 && !okartet[id]){
-        feil.push('Kapittelet «' + id + '» venter ' + vil +
-          ' økter, men øktfilen har ingen for det.');
+        // Ordlyden må være sann BEGGE veier: kapittelet kan være uskrevet
+        // ennå, eller det kan ligge ferdig i basen fra en tidligere runde.
+        // Kontrollen kjører før basen leses, så den kan ikke vite hvilken —
+        // og da skal den ikke påstå noe om det.
+        merk.push('Kapittelet «' + id + '» står ikke i denne filen (' + vil +
+          ' økter). Ligger de i basen fra før, blir de stående urørt.');
         return;
       }
       if(vil !== har){
@@ -14986,8 +15000,24 @@
     // Økter fra en tidligere import som ikke finnes i den nye filen. Uten
     // dette ville en plan som krympet fra 60 til 58 økter beholdt de to
     // gamle — usynlig, og med feil innhold.
+    // 🔴 FORELDRELØSE FJERNES BARE INNENFOR KAPITLENE FILEN FAKTISK RØRER.
+    //
+    // Sto det «alt som ikke er i den nye filen, slettes», ville import av
+    // kapittel to STRØKET kapittel én. Fjorten ferdigskrevne økter borte,
+    // i samme batch som skrev de neste — og meldingen ville sagt «✓ importert».
+    //
+    // Det er den dyreste feilen i hele denne skjermen, og den ville bare
+    // vist seg andre gang noen brukte den.
     const nye = new Set(okter.map(o => o.id));
-    const foreldrelose = gamleOkter.filter(oid => !nye.has(oid));
+    const kapitlerIFilen = new Set((fpFil.okter && fpFil.okter.kapitler || [])
+      .map(k => String(k.id || '').trim()).filter(Boolean));
+    const foreldrelose = gamleOkter.filter(oid => {
+      if(nye.has(oid)) return false;
+      // Øktens id er «kapittel-nr». Hører den til et kapittel filen ikke
+      // nevner, står den urørt.
+      const kap = oid.slice(0, oid.lastIndexOf('-'));
+      return kapitlerIFilen.has(kap);
+    });
 
     const bank = fpFil.okter && fpFil.okter.aktivitetsbank;
     const antall = 1 + okter.length + foreldrelose.length + (bank ? 1 : 0);
@@ -15027,6 +15057,10 @@
         'Skriving: ' + antall + ' i én batch'
       ];
       if(foreldrelose.length) linjer.push('Fjernet:  ' + foreldrelose.length + ' økter som ikke lenger finnes i filen');
+      // Hva som sto der fra før og ble LATT I FRED er like verdt å vise som
+      // det som ble skrevet. Ellers må man gjette om forrige kapittel overlevde.
+      const urort = gamleOkter.length - okter.filter(o => gamleOkter.includes(o.id)).length - foreldrelose.length;
+      if(urort > 0) linjer.push('Urørt:    ' + urort + ' økter i kapitler filen ikke nevner');
       if(beholdtVariant) linjer.push('Beholdt:  rekkefolgeVariant = ' + beholdtVariant + ' (satt i panelet, ikke overskrevet)');
       if(fjernet.length) linjer.push('Strøket:  ' + fjernet.join(', ') + ' — beskriver filen, ikke pensumet');
       if(merk.length) linjer.push('', '⚠️ ' + merk.join('\n⚠️ '));
