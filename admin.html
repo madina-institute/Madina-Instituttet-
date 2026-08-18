@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 15:51:18 -->
+<!-- SIST-ENDRET: 2026-08-18 16:00:25 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8638,7 +8638,23 @@
     const countEl = document.getElementById('count' + capitalize(type));
     if(countEl) countEl.innerHTML = data.length + ' ' + (countLabels[type] || 'oppføringer') + ' <span class="toggle-arrow">▾</span>';
     if(type === 'hours') renderWeekView();
-    if(['hours','classes','teachers'].includes(type)) koOppdaterFraBasen();
+    // 🔴 Sto: koOppdaterFraBasen(). Finnes ikke, har aldri gjort det.
+    //
+    // Dette står MIDT i render(), så alt under linjen ble hoppet over
+    // hver gang hours, classes eller teachers kom inn fra basen — altså
+    // ved hver eneste innlogging. Feilen sto i «det åpne» i sammendraget
+    // som «stopper tegningen midtveis»; her er den.
+    //
+    // Meningen var å tegne Fagrekkefølge-skjermen på nytt når timene
+    // endrer seg. Den funksjonen heter koVelgKlasse, og den skal bare
+    // kjøre når skjermen faktisk er åpen — ellers bygger den opp en
+    // skjerm ingen ser, ved hver oppdatering.
+    if(['hours','classes','teachers'].includes(type)){
+      const p = document.getElementById('panel-klasseoppsett');
+      if(p && p.classList.contains('active') && typeof koVelgKlasse === 'function'){
+        try{ koVelgKlasse(); }catch(e){ console.error('koVelgKlasse', e); }
+      }
+    }
     if(type === 'students' && document.getElementById('tableGuardians')) render('guardians');
     if(type === 'classes'){ populateAttendanceClassFilter(); populateCashierClassSelect(); populateCashierLedelseClassSelect(); renderStudentFolders(); renderGuardianFolders(); }
     if(type === 'students'){ renderCashierPanel(); renderCashierLedelsePanel(); }
@@ -16959,7 +16975,16 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         'Elevene er plassert, men det finnes ingen timer. Foreldre ser ' +
         'en tom timeplan, og lærerportalen finner ingen fag for klassen.',
         'Undervisning → Timeplan',
-        utenTimer.length, utenTimer.map(k => resolveClassName(k) || k)));
+        // 🔴 Sto: resolveClassName(k). Den funksjonen finnes ikke — den har
+        // aldri gjort det. Kallet er det ENESTE i filen, og navnet ligner
+        // resolveDynName, som er den som faktisk finnes.
+        //
+        // Følgen var ute av all proporsjon: helseFraMinnet() er det FØRSTE
+        // kjorHelsesjekk() kaller, før alt annet. Kastet den, kom man aldri
+        // til de andre kontrollene, aldri til tegningen, aldri til noe.
+        // Hele Helsesjekk-skjermen var død — og den døde bare når en klasse
+        // med elever manglet timeplan, altså ikke alltid.
+        utenTimer.length, utenTimer.map(k => resolveDynName('classes', k) || k)));
     }
 
     // ── Arvet id-felt ──
