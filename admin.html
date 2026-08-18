@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 11:38:37 -->
+<!-- SIST-ENDRET: 2026-08-18 11:47:35 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -14353,6 +14353,20 @@
     return tall.length === 1 ? [Number(tall[0])] : [Number(tall[0]), Number(tall[1])];
   }
 
+  // Leter etter liste-i-liste. Firestore avviser dem, og feilmeldingen
+  // derfra peker ikke på hvor i dokumentet verdien satt — med seksti
+  // økter er det forskjellen på en rettelse og en leting.
+  function fpFinnNestede(verdi, sti, ut){
+    if(Array.isArray(verdi)){
+      verdi.forEach((v, i) => {
+        if(Array.isArray(v)) ut.push(sti + '[' + i + ']');
+        else fpFinnNestede(v, sti + '[' + i + ']', ut);
+      });
+    } else if(verdi && typeof verdi === 'object'){
+      Object.keys(verdi).forEach(k => fpFinnNestede(verdi[k], sti + '.' + k, ut));
+    }
+  }
+
   // ── FILINNLESING ──────────────────────────────────────────────────
   // Bare lesing og parsing her. Ingenting røres i basen før knappen.
   window.fpLesFil = function(input, hvilken){
@@ -14561,12 +14575,29 @@
     delete planDok._rettelse;
 
     // ── Øktene ──
+    // ── Øktene ──
+    //
+    // 🔴 FIRESTORE TAR IKKE ARRAY INNI ARRAY.
+    //
+    // 'sporsmal' står i filen som par: [[spørsmål, fasit], …]. Det er en
+    // liste av lister, og basen avviser den. Første import stoppet på
+    // nettopp dette — 62 skrivinger i én batch, én ugyldig verdi, og
+    // ingenting ble skrevet. (At batchen er atomisk er grunnen til at
+    // basen sto urørt etterpå og ikke halvfylt.)
+    //
+    // Paret blir til et oppslag med navn. Da tåler basen det, og feltene
+    // heter noe: p[1] var «fasit» bare hvis man visste det.
+    const somSporsmal = (v) => (Array.isArray(v) ? v : []).map(p =>
+      Array.isArray(p) ? { spm: String(p[0] || ''), svar: String(p[1] || '') }
+                       : { spm: String((p && p.spm) || ''), svar: String((p && p.svar) || '') });
+
     const okter = [];
     if(fpFil.okter){
       (fpFil.okter.kapitler || []).forEach(kap => {
         (kap.okter || []).forEach(o => {
           const kopi = { ...o };
           delete kopi._rettelse;
+          if('sporsmal' in kopi) kopi.sporsmal = somSporsmal(kopi.sporsmal);
           okter.push({
             id: fpOktId(kap.id, o.nr),
             data: {
@@ -14578,6 +14609,24 @@
           });
         });
       });
+    }
+
+    // 🔴 Og så prøves ALT som skal skrives, ikke bare det vi visste om.
+    //
+    // 'sporsmal' var den ene formen vi kjente. Trinn 2–6 og de andre
+    // fagene skrives ikke ennå, og neste fil kan ha et annet par-felt.
+    // Da skal importen si hvilket felt og hvilken økt — ikke stoppe på
+    // en melding fra Firestore som bare sier at data var ugyldige.
+    const ugyldig = [];
+    fpFinnNestede(planDok, 'fagplan/' + id, ugyldig);
+    okter.forEach(o => fpFinnNestede(o.data, 'okter/' + o.id, ugyldig));
+    if(ugyldig.length){
+      ut.innerHTML = '<div class="fp-feil">🔴 Firestore tar ikke lister inni lister. ' +
+        ugyldig.length + ' steder må skrives om til oppslag:\n\n' +
+        escapeHtml(ugyldig.slice(0, 20).join('\n')) +
+        (ugyldig.length > 20 ? '\n… og ' + (ugyldig.length - 20) + ' til' : '') +
+        '\n\nIngenting er skrevet.</div>';
+      return;
     }
 
     // Økter fra en tidligere import som ikke finnes i den nye filen. Uten
@@ -14882,7 +14931,13 @@
     if(nkn.length) d.push('Nøkkelord (' + nkn.length + '): ' + nkn.join(', '));
     if(Array.isArray(o.sporsmal) && o.sporsmal.length){
       d.push('Spørsmål med fasit (' + o.sporsmal.length + '):');
-      o.sporsmal.forEach(p => d.push('  • ' + (p[0] || '') + '\n    → ' + (p[1] || '')));
+      // Basen har oppslag {spm, svar}. Par [spm, svar] tåles også, så en
+      // økt som ble lagt inn før omskrivingen fortsatt vises.
+      o.sporsmal.forEach(p => {
+        const spm = Array.isArray(p) ? p[0] : (p && p.spm);
+        const svar = Array.isArray(p) ? p[1] : (p && p.svar);
+        d.push('  • ' + (spm || '') + '\n    → ' + (svar || ''));
+      });
     }
     if(Array.isArray(o.fyllstoff) && o.fyllstoff.length){
       d.push('Fyllstoff: ' + o.fyllstoff.map(x => x.lek).filter(Boolean).join(', '));
