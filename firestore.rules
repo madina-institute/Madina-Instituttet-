@@ -1,5 +1,5 @@
 rules_version = '2';
-/* SIST-ENDRET: 2026-08-18 11:27:00 */
+/* SIST-ENDRET: 2026-08-18 12:44:09 */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -430,6 +430,37 @@ service cloud.firestore {
 
     // Aktivitetsbanken trenger ingen egen regel: den bor i
     // settings/aktivitetsbank, og settings er allerede dekket over.
+
+    // ══════════════════════════════════════════════════════════════
+    // ÅRSPLANEN — der pensumet har fått datoer
+    //
+    // Ett dokument per klasse per skoleår: arsplan/{klasseId}_{skolear}.
+    // Fagplanen er datoløs fordi to klasser kan dele ett trinn og gå i
+    // hvert sitt program. Her er den fordelt på ÉN klasses egne dager.
+    //
+    // 🔴 Dokumentet er FROSSET. Det regnes ikke ut på nytt ved lesing.
+    // Planen læreren fikk i september skal ikke endre seg fordi noen
+    // legger inn en påskeferie i mars — den skal stå, og panelet skal
+    // si fra om at kalenderen har flyttet seg. Derfor er dette lagrede
+    // data og ikke et oppslag, og derfor har det en egen regel.
+    //
+    // LESES av alle innloggede: læreren trenger sine egne datoer, og
+    // foreldreportalen viser hva klassen holder på med denne måneden.
+    //
+    // SKRIVES fra nivå 3 — samme grense som fagplanen. Å fryse en
+    // årsplan er å bestemme hva klassen skal gjennom i år; det er ikke
+    // en lærerhandling. Læreren fører oppmøte og skriver forberedelser.
+    //
+    // ⚠️ Nøkkelen inneholder klasse-id, men regelen begrenser ikke en
+    // lærer til sine egne klasser. Det ville krevd at portalene sluttet
+    // å laste hele samlingen og filtrere i nettleseren — Firestore
+    // avviser HELE spørringen hvis ett dokument bryter regelen, så en
+    // slik innstramming ville gitt en TOM portal, ikke en filtrert.
+    // Samme forbehold som står ved students og attendance.
+    match /arsplan/{id} {
+      allow read: if loggedIn();
+      allow write: if mittNiva() <= 3;
+    }
 
     match /lessonPlans/{id}             { allow read, write: if loggedIn(); }
     match /homework/{id}                { allow read, write: if loggedIn(); }
