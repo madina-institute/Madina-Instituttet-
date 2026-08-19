@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 02:15:00 -->
+<!-- SIST-ENDRET: 2026-08-20 02:35:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1870,11 +1870,10 @@
   </div>
   <button data-sb-side="home" onclick="showSideChoice()" title="Hjem"><span class="ic">🏠</span><span class="lbl">Hjem</span></button>
   <button data-sb-side="admin" onclick="sidebarSelectSide('admin')" title="Elever og familier"><span class="ic">🎓</span><span class="lbl">Elever</span></button>
-  <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')" title="Undervisning"><span class="ic">📚</span><span class="lbl">Undervisning</span></button>
+  <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')" title="Undervisning og læreplan"><span class="ic">📚</span><span class="lbl">Undervisning</span></button>
   <button data-sb-side="kommunikasjon" onclick="sidebarSelectSide('kommunikasjon')" title="Kommunikasjon"><span class="ic">✉️</span><span class="lbl">Melding</span></button>
   <button data-sb-side="personale" onclick="sidebarSelectSide('personale')" title="Personale"><span class="ic">👥</span><span class="lbl">Personale</span></button>
   <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')" title="Økonomi"><span class="ic">💰</span><span class="lbl">Økonomi</span></button>
-  <button data-sb-side="laereplan" onclick="sidebarSelectSide('laereplan')" title="Læreplan"><span class="ic">📖</span><span class="lbl">Læreplan</span></button>
   <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')" title="Skoleoppsett"><span class="ic">🏫</span><span class="lbl">Skole</span></button>
   <button data-sb-side="system" onclick="sidebarSelectSide('system')" title="System"><span class="ic">⚙️</span><span class="lbl">System</span></button>
   <button data-sb-side="portaler" onclick="sidebarSelectSide('portaler')" title="Portaler"><span class="ic">🔗</span><span class="lbl">Portaler</span></button>
@@ -2019,27 +2018,29 @@
   <div class="tab" data-tab="registrations" data-side="admin" data-nav-hidden="1" style="display:none;">Søknader</div>
   <div class="tab" data-tab="teachers" data-side="personale">Lærere</div>
   <div class="tab" data-tab="ledelse" data-side="personale">Ledelse</div>
-  <div class="tab" data-tab="allePersoner" data-side="personale">Alle personer</div>
+  <div class="tab" data-tab="meetings" data-side="personale">Møtereferater</div>
+  <div class="tab" data-tab="allePersoner" data-side="personale" data-nav-advanced="1">Alle personer</div>
   <div class="tab" data-tab="paalogget" data-side="personale">Pålogget nå</div>
   <div class="tab" data-tab="roller" data-side="personale">Roller og tilganger</div>
   <div class="tab" data-tab="okonomiHub" data-side="okonomi">Økonomioversikt</div>
-  <div class="tab" data-tab="cashier" data-side="okonomi">Elevbetalinger</div>
+  <div class="tab" data-tab="cashier" data-side="okonomi">Kasserer</div>
   <div class="tab" data-tab="paymentRequests" data-side="okonomi">Betalingsforespørsler</div>
-  <div class="tab" data-tab="finances" data-side="okonomi">Kasse</div>
+  <div class="tab" data-tab="finances" data-side="okonomi">Kassebok</div>
   <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
   <div class="tab" data-tab="lonn" data-side="okonomi personale">Lønn</div>
   <div class="tab" data-tab="betaling" data-side="okonomi">Innstillinger</div>
-  <div class="tab" data-tab="cashierLedelse" data-side="okonomi" id="tabCashierLedelse">Elevbetalinger (ledelse)</div>
+  <!-- Skjult — eier-verktøy er nå innebygd i Kasserer når du er eier -->
+  <div class="tab" data-tab="cashierLedelse" data-side="okonomi" data-nav-hidden="1" id="tabCashierLedelse" style="display:none;">Kasserer (ledelse)</div>
   <!-- Fagplan hører til TO seksjoner. data-side matches med ~= , som
        treffer ett ord i en mellomromsdelt liste — samme grep som Lønn
        bruker for å ligge både under Økonomi og Personale. Alternativet
        var to paneler med samme innhold, og de ville kommet ut av takt.
        Den står FØRST under Undervisning med vilje: pensumet er det
        alt det andre i seksjonen viser til. -->
-  <div class="tab" data-tab="fagplan" data-side="laereplan pedagogisk">Fagplan</div>
-  <div class="tab" data-tab="arsplan" data-side="laereplan pedagogisk">Årsplan</div>
-  <div class="tab" data-tab="laereplanregler" data-side="laereplan">Regler</div>
-  <div class="tab" data-tab="fagplanImport" data-side="laereplan">Importer plan</div>
+  <div class="tab" data-tab="fagplan" data-side="pedagogisk">Fagplan</div>
+  <div class="tab" data-tab="arsplan" data-side="pedagogisk">Årsplan</div>
+  <div class="tab" data-tab="laereplanregler" data-side="pedagogisk">Læreplanregler</div>
+  <div class="tab" data-tab="fagplanImport" data-side="pedagogisk">Importer plan</div>
   <div class="tab" data-tab="classes" data-side="pedagogisk">Klasser</div>
   <div class="tab" data-tab="hours" data-side="pedagogisk">Timeplan</div>
   <div class="tab" data-tab="klasseoppsett" data-side="pedagogisk">Fagrekkefølge</div>
@@ -2056,7 +2057,6 @@
   <div class="tab" data-tab="skoleflate" data-side="skoleoppsett">Arbeidsflate</div>
   <div class="tab" data-tab="programs" data-side="skoleoppsett">Programmer</div>
   <div class="tab" data-tab="schoolCalendar" data-side="skoleoppsett">Skolekalender</div>
-  <div class="tab" data-tab="meetings" data-side="skoleoppsett">Møtereferater</div>
   <div class="tab" data-tab="reports" data-side="skoleoppsett">Rapporter</div>
   <div class="tab" data-tab="veiledning" data-side="system">Veiledning</div>
   <div class="tab" data-tab="overview" data-side="system">Systemadmin</div>
@@ -2692,8 +2692,12 @@
     <div class="records-hidden card-grid" id="tableMeetings"></div>
   </div>
 
-  <!-- FINANCES -->
+  <!-- FINANCES — skolens kassebok (inntekt/utgift), ikke elevbetalinger -->
   <div class="panel" id="panel-finances">
+    <div class="report-card" style="margin-bottom:16px;">
+      <h3>🏦 Kassebok — skolens inntekter og utgifter</h3>
+      <div class="sub">Her føres skolens kontantstrøm: innbetalinger, utgifter og saldo. For å registrere hva <b>elevene</b> skylder og har betalt, bruk fanen <b>Kasserer</b>.</div>
+    </div>
     <div class="report-grid" style="margin-bottom:20px;">
       <div class="stat-card"><div class="n" id="finStatElever">0 kr</div><div class="l">Innbetalt fra elever (skolepenger)</div></div>
       <div class="stat-card"><div class="n" id="finStatInn">0 kr</div><div class="l">Totalt innbetalt (elever + annet)</div></div>
@@ -3364,8 +3368,8 @@
   <!-- CASHIER (Kasserer) -->
   <div class="panel" id="panel-cashier">
     <div class="report-card">
-      <h3>💰 Kasserer — betalingsoversikt per klasse</h3>
-      <div class="sub">Velg en klasse for å se alle elevene samlet: skyldig, betalt, restbeløp og full betalingshistorikk</div>
+      <h3>💰 Kasserer — elevbetalinger per klasse</h3>
+      <div class="sub">Registrer innbetalinger, send Vipps-krav og rapporter. Eiere ser i tillegg rabatt, faktura, refusjon og utestående Vipps-krav.</div>
       <div class="field-row-2">
         <div class="field">
           <label>Klasse</label>
@@ -7411,6 +7415,7 @@
     students = students.sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
 
     let totalBelop = 0, totalBetalt = 0;
+    const isEier = erOversteLeder();
     const rowsHtml = students.map(s => {
       const belop = cashierKr(s.belop);
       const betalt = cashierKr(s.belopBetalt);
@@ -7422,10 +7427,23 @@
         ? `${cashierFormatDatoTid(last.dato)}<br><span class="tag-pill">${escapeHtml(last.kilde || '')}</span>`
         : '<span style="color:#8a9a90;">Ingen ennå</span>';
       const checked = cashierSelectedIds.has(s.id) ? 'checked' : '';
+      const pending = (cache.pendingVippsPayments || []).filter(p => p.studentId === s.id);
+      const lastVippsPayment = history.find(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0);
+      const pendingHtml = isEier && pending.length
+        ? pending.map(p => `
+            <div style="font-size:11.5px; margin-bottom:4px; color:var(--gold);">
+              ${cashierKr(p.amountKr).toLocaleString('no-NO')} kr — ${cashierFormatDatoTid(p.createdAt)}
+              <button class="btn-edit" style="padding:2px 8px; font-size:11px;" onclick="cancelPendingVippsRequest('${p.id}','${escapeHtml(p.reference)}')">✖️ Avbryt</button>
+            </div>`).join('')
+        : '';
+      const eierActions = isEier ? `
+              <button class="btn-edit" onclick="openLedelseDiscountModal('${s.id}')">🏷️ Rabatt</button>
+              <button class="btn-edit" onclick="sendGuardianInvoice('${s.id}')">🧾 Send faktura</button>
+              ${lastVippsPayment ? `<button class="btn-edit" onclick="openLedelseRefundModal('${s.id}','${escapeHtml(lastVippsPayment.reference)}',${cashierKr(lastVippsPayment.belop)})">💸 Refunder</button>` : ''}` : '';
       return `
         <tr>
           <td><input type="checkbox" class="cashier-row-check" data-id="${escapeHtml(s.id)}" ${checked} onchange="onCashierRowCheck('${s.id}', this.checked)"></td>
-          <td><strong>${escapeHtml(s.navn || '—')}</strong></td>
+          <td><strong>${escapeHtml(s.navn || '—')}</strong>${pendingHtml ? '<div style="margin-top:6px;">' + pendingHtml + '</div>' : ''}</td>
           <td>${belop.toLocaleString('no-NO')} kr</td>
           <td>${betalt.toLocaleString('no-NO')} kr</td>
           <td style="color:${rest > 0 ? 'var(--red)' : 'var(--emerald)'}; font-weight:700;">${rest.toLocaleString('no-NO')} kr</td>
@@ -7437,6 +7455,7 @@
               <button class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
               <button class="btn-edit" style="background:#ff5b24; color:#fff; border-color:#ff5b24;" onclick="sendStudentVippsRequest('${s.id}')">⚡ Send Vipps-krav</button>
               <button class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
+              ${eierActions}
             </div>
           </td>
         </tr>`;
@@ -13192,7 +13211,8 @@
     allePersoner: 'Alle personer fra alle kilder — uten mapper og uten filter',
     endringslogg: 'Hvem endret hva, de siste 14 dagene',
     helsesjekk: 'Hva er galt i basen akkurat nå — og hva du gjør med det',
-    finances: 'Inntekter, utgifter og saldo',
+    finances: 'Skolens inntekter og utgifter — saldo og kasseposter',
+    cashier: 'Elevbetalinger per klasse — registrer, Vipps, rapporter',
     teachers: 'Registrer og administrer lærere',
     guardians: 'Oversikt over foresatte',
     students: 'Elevregister, program og betaling',
@@ -13232,7 +13252,7 @@
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
     okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', opptak: '🎯', registrations: '📝', meldingssenter: '📤', skoleflate: '🏫',
     klasseforslag: '🧩', fagplan: '📖', arsplan: '🗓️', laereplanregler: '⚖️', fagplanImport: '⬆️',
-    lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
+    lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', finances: '🏦', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
 
   let currentSideForBack = null;
@@ -13279,6 +13299,11 @@
 
   window.sidebarSelectSide = function(side){
     if(side === 'portaler'){ showPortalLinks(); return; }
+    if(side === 'laereplan'){
+      selectSide('pedagogisk');
+      selectSubTab('fagplan');
+      return;
+    }
     selectSide(side);
   };
 
@@ -13313,12 +13338,11 @@
   // uten dupliserte paneler; rekkefølgen gjelder bare der den vises.
   const TAB_ORDER = {
     admin: ['opptak','students','guardians','contactUpdateRequests','klasseforslag'],
-    personale: ['teachers','ledelse','allePersoner','paalogget','roller','lonn'],
-    okonomi: ['okonomiHub','cashier','paymentRequests','finances','financeLog','lonn','betaling','cashierLedelse'],
-    pedagogisk: ['fagplan','arsplan','classes','hours','klasseoppsett','attendance','absenceRequests','lessonPlans','planmaler','planArkiv','homework','studentNotes','klasseforslag'],
-    laereplan: ['fagplan','arsplan','laereplanregler','fagplanImport'],
+    personale: ['teachers','ledelse','meetings','allePersoner','paalogget','roller','lonn'],
+    okonomi: ['okonomiHub','cashier','paymentRequests','finances','financeLog','lonn','betaling'],
+    pedagogisk: ['fagplan','arsplan','laereplanregler','fagplanImport','classes','hours','klasseoppsett','attendance','absenceRequests','lessonPlans','planmaler','planArkiv','homework','studentNotes','klasseforslag'],
     kommunikasjon: ['messages','meldingssenter','announcements'],
-    skoleoppsett: ['skoleflate','programs','schoolCalendar','meetings','reports'],
+    skoleoppsett: ['skoleflate','programs','schoolCalendar','reports'],
     system: ['veiledning','overview','endringslogg','helsesjekk','utvikler']
   };
 
@@ -13899,7 +13923,11 @@
     // kommet ut av takt med hverandre.
     const tabsForSide = sortTabsForSide(side,
       Array.from(document.querySelectorAll('.tab[data-side~="' + side + '"]'))
-        .filter(tab => !tab.dataset.navHidden)
+        .filter(tab => {
+          if(tab.dataset.navHidden) return false;
+          if(tab.dataset.navAdvanced === '1' && !erOversteLeder()) return false;
+          return true;
+        })
     );
     subSidebar.innerHTML = tabsForSide.map(tab => {
       const laast = faneLast(tab.dataset.tab);
@@ -13918,6 +13946,10 @@
   window.selectSubTab = function(tabName){
     if(tabName === 'registrations'){
       selectSubTab('opptak');
+      return;
+    }
+    if(tabName === 'cashierLedelse'){
+      selectSubTab('cashier');
       return;
     }
     document.getElementById('subChooseView').style.display = 'none';
@@ -15847,7 +15879,7 @@
     if(t.antallRest > 0){
       legg('folg', t.antallRest + ' elever med utestående',
         'Til sammen ' + kr0(t.rest) + ' kr.',
-        'Åpne kassen', 'okonomi', 'cashier');
+        'Åpne kasserer', 'okonomi', 'cashier');
     }
     const ventende = (cache.paymentRequests || []).filter(r =>
       !r.status || r.status === 'Venter' || r.status === 'Ny');
@@ -15912,7 +15944,7 @@
     }, 0);
     el.innerHTML = `
       <button onclick="goToTask('okonomi','finances')">
-        <div class="n">${kr0(saldo)}</div><div class="l">kr i kassen</div></button>
+        <div class="n">${kr0(saldo)}</div><div class="l">kr i kassebok</div></button>
       <button onclick="goToTask('okonomi','cashier')">
         <div class="n">${t.antallRest}</div><div class="l">elever med restbeløp</div></button>
       <button onclick="goToTask('okonomi','betaling')">
