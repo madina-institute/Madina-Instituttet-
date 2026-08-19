@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 00:12:00 -->
+<!-- SIST-ENDRET: 2026-08-20 01:45:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1254,8 +1254,28 @@
     min-width:26px; text-align:center;
   }
   .task-row.has-count .task-count{ color:var(--red); }
+  .task-row.task-zero{ opacity:0.55; }
+  .task-row.task-zero .task-count{ color:#c5cad2; }
+  .task-row.task-zero.has-count{ opacity:1; }
+  .task-all-clear{
+    font-family:'Jost',sans-serif; font-size:12px; color:#4a7c59; background:#eef6f0;
+    border-radius:8px; padding:8px 12px; margin-bottom:10px; text-align:center;
+  }
+  #dashTasksList{ max-height:min(340px,50vh); overflow-y:auto; padding-inline-end:2px; }
   .task-empty{ font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:24px 0; }
   .shortcuts-title{ font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--ink); margin:4px 0 14px; font-weight:700; }
+  .shortcut-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+  @media (min-width:640px){ .shortcut-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:960px){ .shortcut-grid{ grid-template-columns:repeat(4,1fr); } }
+  .shortcut-card{
+    display:flex; align-items:flex-start; gap:12px; background:#fff; border:1px solid var(--line);
+    border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); cursor:pointer;
+    transition:border-color .2s, transform .15s; text-align:start;
+  }
+  .shortcut-card:hover{ border-color:var(--gold); transform:translateY(-1px); }
+  .shortcut-card .sc-ic{ font-size:26px; flex:none; line-height:1; }
+  .shortcut-card h4{ font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; color:var(--ink); margin:0 0 4px; }
+  .shortcut-card p{ font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin:0; line-height:1.35; }
   .donut-wrap{ position:relative; width:128px; height:128px; margin:0 auto 16px; }
   .donut{ width:100%; height:100%; border-radius:50%; }
   .donut-center{ position:absolute; inset:18px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
@@ -1893,57 +1913,39 @@
       </div>
     </div>
 
-    <h3 class="shortcuts-title">Snarveier</h3>
-    <div class="side-grid">
-      <div class="side-card" onclick="goToTask('okonomi','okonomiHub')">
-        <div class="ic">🏛️</div>
-        <h2>Eier / Ledelsen</h2>
-        <p>Ledelse · Møtereferater · Kasse/Økonomi</p>
+    <h3 class="shortcuts-title">Hurtighandlinger</h3>
+    <div class="shortcut-grid">
+      <div class="shortcut-card" onclick="goToTask('admin','opptak')">
+        <span class="sc-ic">🎯</span>
+        <div><h4>Opptak</h4><p>Behandle søknader, Vipps og klassevalg</p></div>
       </div>
-      <div class="side-card" onclick="selectSide('okonomi')">
-        <div class="ic">💰</div>
-        <h2>Økonomi</h2>
-        <p>Kasse · Kasserer · Lønn · Betalingslogg · Betalingsforespørsler · Betalingsinnstillinger</p>
+      <div class="shortcut-card" onclick="goToTask('okonomi','cashier')">
+        <span class="sc-ic">💳</span>
+        <div><h4>Kasserer</h4><p>Elevbetalinger, utestående og Vipps-krav</p></div>
       </div>
-      <div class="side-card" onclick="selectSide('skoleoppsett')">
-        <div class="ic">🏫</div>
-        <h2>Skoleoppsett</h2>
-        <p>Programmer · Skolekalender — priser og undervisningsdager for hele skolen. Kun eier.</p>
+      <div class="shortcut-card" onclick="goToTask('kommunikasjon','messages')">
+        <span class="sc-ic">✉️</span>
+        <div><h4>Meldinger</h4><p>Samtaler fra foresatte og lærere</p></div>
       </div>
-      <div class="side-card" onclick="selectSide('admin')">
-        <div class="ic">🗂️</div>
-        <h2>Administrativ</h2>
-        <p>Lærere · Foresatte · Elever · Klasser · Timeplan · Kontaktendringer · Betaling · Rapporter</p>
+      <div class="shortcut-card" onclick="goToTask('kommunikasjon','meldingssenter')">
+        <span class="sc-ic">📤</span>
+        <div><h4>Meldingssenter</h4><p>Send melding til grupper eller enkeltpersoner</p></div>
       </div>
-      <div class="side-card" onclick="selectSide('pedagogisk')">
-        <div class="ic">🎓</div>
-        <h2>Pedagogisk</h2>
-        <p>Oppmøte · Timeforberedelser · Lekser · Kunngjøringer · Elevnotater</p>
+      <div class="shortcut-card" onclick="goToTask('skoleoppsett','skoleflate')">
+        <span class="sc-ic">🏫</span>
+        <div><h4>Arbeidsflate</h4><p>Skoleoversikt, klasser og daglig drift</p></div>
       </div>
-      <div class="side-card" onclick="selectSide('laereplan')">
-        <div class="ic">📖</div>
-        <h2>Læreplan</h2>
-        <p>Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter. Uten datoer: de hører til klassen, ikke til planen</p>
+      <div class="shortcut-card" onclick="goToTask('skoleoppsett','reports')">
+        <span class="sc-ic">📈</span>
+        <div><h4>Rapporter</h4><p>Statistikk, utskrift og CSV-eksport</p></div>
       </div>
-      <div class="side-card" onclick="goToTask('admin','opptak')">
-        <div class="ic">📝</div>
-        <h2>Registrering</h2>
-        <p>Søknader — godkjenn, avslå eller sett på venteliste</p>
+      <div class="shortcut-card" onclick="goToTask('personale','paalogget')">
+        <span class="sc-ic">🟢</span>
+        <div><h4>Pålogget nå</h4><p>Se hvem som er inne i systemet</p></div>
       </div>
-      <div class="side-card" onclick="promptPasswordAndSelectSide('oversikt')">
-        <div class="ic">⚙️</div>
-        <h2>Oversikt</h2>
-        <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
-      </div>
-      <div class="side-card" onclick="goToTask('system','veiledning')">
-        <div class="ic">📖</div>
-        <h2>Veiledning</h2>
-        <p>Bruksanvisning for panelet — seksjoner, roller, priser, eksport og hva man gjør når noe ikke virker</p>
-      </div>
-      <div class="side-card" onclick="goToTask('system','utvikler')">
-        <div class="ic">🛠️</div>
-        <h2>Verktøy og sider</h2>
-        <p>Helsesjekk · App Check · Publiseringsverktøy · innsynssider · alle portaler og konsoller</p>
+      <div class="shortcut-card" onclick="sidebarSelectSide('portaler')">
+        <span class="sc-ic">🔗</span>
+        <div><h4>Portaler</h4><p>Lærer-, foresatt- og elevportaler</p></div>
       </div>
     </div>
   </div>
@@ -12957,6 +12959,35 @@
 
   const ATT_STATUS_COLORS = { 'Til stede':'#4A8FCB', 'Fraværende':'#a83c3c', 'Syk':'#b7924a', 'Permisjon':'#8a8fa3' };
 
+  function countMessagesAwaitingReply(){
+    const groups = {};
+    (cache.messages || []).forEach(m => {
+      const key = m.threadId || ('legacy_' + m.klasse + '_' + (m.guardianId || m.guardianNavn || ''));
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(m);
+    });
+    return Object.values(groups).filter(msgs => {
+      const last = msgs.sort((a,b) => (a.dato||'').localeCompare(b.dato||'')).pop();
+      return last && last.fra !== 'Lærer';
+    }).length;
+  }
+
+  function buildDashboardTaskDefs(){
+    const activeStudents = cache.students.filter(s => s.elevStatus !== 'Sluttet/trukket');
+    return [
+      { key:'registrations', ic:'📝', label:'Nye søknader', count: cache.registrations.filter(r => r.status === 'Ny').length, side:'admin', tab:'opptak' },
+      { key:'waitlist', ic:'⏳', label:'Søknader på venteliste', count: cache.registrations.filter(r => r.status === 'Venteliste').length, side:'admin', tab:'opptak' },
+      { key:'messages', ic:'✉️', label:'Meldinger som venter svar', count: countMessagesAwaitingReply(), side:'kommunikasjon', tab:'messages' },
+      { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
+      { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
+      { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => !r.status || r.status === 'Venter' || r.status === 'Ny').length, side:'okonomi', tab:'paymentRequests' },
+      { key:'vippsPending', ic:'📲', label:'Vipps-krav som venter', count: (cache.pendingVippsPayments || []).length, side:'okonomi', tab:'cashier' },
+      { key:'teacherAttendance', ic:'⏱️', label:'Timelister til godkjenning', count: cache.teacherAttendance.filter(t => (t.godkjenningsstatus || 'Venter godkjenning') === 'Venter godkjenning').length, side:'okonomi', tab:'lonn' },
+      { key:'unpaidStudents', ic:'💰', label:'Ubetalte elever', count: activeStudents.filter(s => s.betalt === 'Nei').length, side:'okonomi', tab:'cashier' },
+      { key:'noClassStudents', ic:'📭', label:'Elever uten klasse', count: activeStudents.filter(s => !s.klasse).length, side:'admin', tab:'students', folder:'__none__' }
+    ];
+  }
+
   function renderDashboardWidgets(){
     const donutEl = document.getElementById('dashDonut');
     if(!donutEl) return;
@@ -12987,31 +13018,28 @@
       }).join('');
     }
 
-    // Oppgaver som venter: itemized breakdown of everything needing admin
-    // action (feeds the same underlying data as the KPI strip's counts,
-    // but broken out per category so it's clear WHAT needs attention, not
-    // just how many). Each row jumps straight to the relevant section.
+    // Oppgaver som venter: full oversikt over alt som trenger handling.
+    // Rader med tall > 0 vises først og fremheves; null-rader beholdes nederst
+    // som referanse slik at listen alltid er komplett.
     const tasksEl = document.getElementById('dashTasksList');
     if(tasksEl){
-      const taskDefs = [
-        { key:'registrations', ic:'📝', label:'Nye søknader', count: cache.registrations.filter(r => r.status === 'Ny').length, side:'admin', tab:'opptak' },
-        { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
-        { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
-        { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => r.status === 'Ny').length, side:'okonomi', tab:'paymentRequests' }
-      ];
+      const taskDefs = buildDashboardTaskDefs()
+        .sort((a,b) => (b.count > 0) - (a.count > 0) || b.count - a.count || a.label.localeCompare(b.label, 'no'));
       const anyTasks = taskDefs.some(t => t.count > 0);
-      tasksEl.innerHTML = anyTasks
-        ? taskDefs.map(t => `
-            <div class="task-row${t.count > 0 ? ' has-count' : ''}" onclick="goToTask('${t.side}'${t.tab ? `,'${t.tab}'` : ''})">
+      const clearBanner = anyTasks ? '' : '<div class="task-all-clear">Ingen oppgaver venter — alt er oppdatert ✅</div>';
+      tasksEl.innerHTML = clearBanner + taskDefs.map(t => {
+        const folderArg = t.folder ? `,'${t.folder}'` : '';
+        return `
+            <div class="task-row${t.count > 0 ? ' has-count' : ' task-zero'}" onclick="goToTask('${t.side}'${t.tab ? `,'${t.tab}'` : ''}${folderArg})">
               <span class="task-ic">${t.ic}</span>
               <span class="task-label">${escapeHtml(t.label)}</span>
               <span class="task-count">${t.count}</span>
-            </div>`).join('')
-        : '<div class="task-empty">Ingen oppgaver venter — alt er oppdatert ✅</div>';
+            </div>`;
+      }).join('');
     }
   }
 
-  window.goToTask = function(side, tab){
+  window.goToTask = function(side, tab, folder){
     if(side === 'registrering'){
       selectSide('admin');
       selectSubTab('opptak');
@@ -13023,6 +13051,10 @@
     }
     selectSide(side);
     if(tab) selectSubTab(tab);
+    if(folder === '__none__' && tab === 'students'){
+      studentSelectedFolder = '__none__';
+      visMappeInnhold('studentToolbar', 'tableStudents', true);
+    }
   };
 
   function countBy(list, key){
