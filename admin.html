@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 20:19:55 -->
+<!-- SIST-ENDRET: 2026-08-19 20:35:13 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1811,9 +1811,9 @@
   <div class="wrap">
     <div class="dash-strip" id="dashStrip">
       <div class="stat-card stat-purple" style="cursor:pointer;" onclick="goToTask('admin','students')"><span class="stat-ikon">🎓</span><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
-      <div class="stat-card stat-yellow alert" id="dashCardRegs" style="cursor:pointer;" onclick="goToTask('admin','registrations')"><span class="alert-dot"></span><span class="stat-ikon">📝</span><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
+      <div class="stat-card stat-yellow alert" id="dashCardRegs" style="cursor:pointer;" onclick="goToTask('admin','opptak')"><span class="alert-dot"></span><span class="stat-ikon">📝</span><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
       <div class="stat-card stat-pink alert" id="dashCardRequests" style="cursor:pointer;" onclick="goToTask('pedagogisk','absenceRequests')"><span class="alert-dot"></span><span class="stat-ikon">🔔</span><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
-      <div class="stat-card stat-blue alert" id="dashCardUnpaid" style="cursor:pointer;" onclick="goToTask('admin','students')"><span class="alert-dot"></span><span class="stat-ikon">💳</span><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
+      <div class="stat-card stat-blue alert" id="dashCardUnpaid" style="cursor:pointer;" onclick="goToTask('okonomi','cashier')"><span class="alert-dot"></span><span class="stat-ikon">💳</span><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
     </div>
 
     <div class="dash-widgets" id="dashWidgets">
@@ -1840,7 +1840,7 @@
 
     <h3 class="shortcuts-title">Snarveier</h3>
     <div class="side-grid">
-      <div class="side-card" onclick="selectSide('eier')">
+      <div class="side-card" onclick="goToTask('okonomi','okonomiHub')">
         <div class="ic">🏛️</div>
         <h2>Eier / Ledelsen</h2>
         <p>Ledelse · Møtereferater · Kasse/Økonomi</p>
@@ -1870,7 +1870,7 @@
         <h2>Læreplan</h2>
         <p>Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter. Uten datoer: de hører til klassen, ikke til planen</p>
       </div>
-      <div class="side-card" onclick="promptPasswordAndSelectSide('registrering')">
+      <div class="side-card" onclick="goToTask('admin','opptak')">
         <div class="ic">📝</div>
         <h2>Registrering</h2>
         <p>Søknader — godkjenn, avslå eller sett på venteliste</p>
@@ -1880,12 +1880,12 @@
         <h2>Oversikt</h2>
         <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
       </div>
-      <div class="side-card" onclick="selectSide('veiledning')">
+      <div class="side-card" onclick="goToTask('system','veiledning')">
         <div class="ic">📖</div>
         <h2>Veiledning</h2>
         <p>Bruksanvisning for panelet — seksjoner, roller, priser, eksport og hva man gjør når noe ikke virker</p>
       </div>
-      <div class="side-card" onclick="selectSide('verktoy')">
+      <div class="side-card" onclick="goToTask('system','utvikler')">
         <div class="ic">🛠️</div>
         <h2>Verktøy og sider</h2>
         <p>Helsesjekk · App Check · Publiseringsverktøy · innsynssider · alle portaler og konsoller</p>
@@ -1959,6 +1959,7 @@
   <div class="tab" data-tab="roller" data-side="personale">Roller og tilganger</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
+  <div class="tab" data-tab="opptak" data-side="admin">Opptak</div>
   <div class="tab" data-tab="registrations" data-side="admin">Søknader</div>
   <div class="tab" data-tab="klasseforslag" data-side="admin pedagogisk">Klasseforslag</div>
   <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
@@ -2557,6 +2558,10 @@
     <div id="kfInnhold" style="margin-top:16px;"></div>
   </div>
 
+  <div class="panel" id="panel-opptak">
+    <div id="opRoot"></div>
+  </div>
+
   <div class="panel" id="panel-registrations">
     <div class="report-card" style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;" id="formAnalyticsBox">
       <div style="flex:1 1 100px;"><div style="font-family:'Cormorant Garamond',serif; font-weight:700; font-size:26px; color:var(--emerald-d);" id="statFormVisits">0</div><div style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;">Besøkte lenken</div></div>
@@ -2965,6 +2970,45 @@
     #panel-skoleflate .sf-kpi .l{ font-family:'Jost',sans-serif; font-size:12px; color:#5a6672; }
     #panel-skoleflate .sf-kpi .v{ font-family:'Jost',sans-serif; font-size:15px; font-weight:700; }
     #panel-skoleflate .sf-kpi .v.big{ font-size:19px; color:var(--emerald-d); }
+
+    /* Opptak — samlet arbeidsflate (søknad → handling → klasse/pris) */
+    #panel-opptak .op-flow{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:12px; color:#5a6672; }
+    #panel-opptak .op-flow span{ background:#fff; border:1px solid var(--line); padding:6px 12px; border-radius:999px; }
+    #panel-opptak .op-flow span.on{ background:var(--emerald); color:#fff; border-color:var(--emerald); font-weight:600; }
+    #panel-opptak .op-wrap{ display:grid; grid-template-columns:minmax(240px,280px) 1fr minmax(260px,300px); gap:16px; align-items:start; }
+    @media(max-width:1100px){ #panel-opptak .op-wrap{ grid-template-columns:1fr; } }
+    #panel-opptak .op-panel{ background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+    #panel-opptak .op-ph{ padding:14px 16px; border-bottom:1px solid var(--line); }
+    #panel-opptak .op-ph h2{ margin:0; font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--emerald-d); }
+    #panel-opptak .op-ph p{ margin:4px 0 0; font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7787; }
+    #panel-opptak .op-ftabs{ display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); }
+    #panel-opptak .op-ftab{ font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+    #panel-opptak .op-ftab.on{ background:var(--emerald); color:#fff; border-color:var(--emerald); }
+    #panel-opptak .op-search{ margin:10px 12px; width:calc(100% - 24px); padding:9px 11px; border:1px solid var(--line); border-radius:8px; font-family:'Jost',sans-serif; font-size:13px; }
+    #panel-opptak .op-list{ max-height:560px; overflow-y:auto; }
+    #panel-opptak .op-item{ padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer; font-family:'Jost',sans-serif; }
+    #panel-opptak .op-item:hover{ background:var(--paper-2); }
+    #panel-opptak .op-item.sel{ background:var(--stat-blue-bg); box-shadow:inset 3px 0 0 var(--emerald); }
+    #panel-opptak .op-item .navn{ font-weight:600; font-size:14px; }
+    #panel-opptak .op-item .meta{ font-size:11px; color:#6b7787; margin-top:3px; }
+    #panel-opptak .op-pill{ display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-top:5px; margin-right:4px; }
+    #panel-opptak .op-pill.ny{ background:var(--stat-yellow-bg); color:var(--stat-yellow-fg); }
+    #panel-opptak .op-pill.vipps{ background:#ffe8de; color:#b33a00; }
+    #panel-opptak .op-body{ padding:16px 18px 20px; }
+    #panel-opptak .op-body h3{ font-family:'Cormorant Garamond',serif; font-size:26px; margin:0 0 14px; }
+    #panel-opptak .op-kv{ display:grid; grid-template-columns:118px 1fr; gap:6px 12px; font-family:'Jost',sans-serif; font-size:13px; margin-bottom:16px; }
+    #panel-opptak .op-kv .k{ color:#6b7787; font-size:11.5px; }
+    #panel-opptak .op-acts{ display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+    #panel-opptak .op-wait{ font-family:'Jost',sans-serif; font-size:12px; color:#b33a00; background:#fff4ef; border:1px solid #ffc9b0; border-radius:8px; padding:10px 12px; margin-top:8px; }
+    #panel-opptak .op-forslag{ background:var(--paper-2); border-radius:10px; padding:12px; margin-bottom:14px; font-family:'Jost',sans-serif; font-size:12.5px; }
+    #panel-opptak .op-forslag h4{ margin:0 0 8px; font-size:13px; color:var(--emerald-d); }
+    #panel-opptak .op-chip{ display:inline-block; background:#fff; border:1px solid var(--line); border-radius:8px; padding:6px 10px; margin:0 6px 6px 0; font-size:12px; }
+    #panel-opptak .op-chip.rec{ border-color:var(--emerald); background:var(--stat-blue-bg); font-weight:600; }
+    #panel-opptak .op-lbl{ font-family:'Jost',sans-serif; font-size:12px; font-weight:600; display:block; margin-top:10px; }
+    #panel-opptak .op-kpi{ border-top:1px dashed var(--line); margin-top:14px; padding-top:12px; }
+    #panel-opptak .op-kpi div{ display:flex; justify-content:space-between; font-family:'Jost',sans-serif; font-size:13px; padding:5px 0; }
+    #panel-opptak .op-kpi .v{ font-weight:700; color:var(--emerald-d); }
+    #panel-opptak .op-empty{ padding:24px 18px; font-family:'Jost',sans-serif; font-size:13px; color:#6b7787; text-align:center; }
   </style>
   <div class="panel" id="panel-skoleflate">
     <div id="sfRoot"></div>
@@ -7467,7 +7511,23 @@
   }
 
   let regSelectedFolder = null;
+  let regFolderInited = false;
   const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått', __test__:'🧪 Testsøknader' };
+
+  function ensureRegFolderDefault(){
+    if(regFolderInited) return;
+    regFolderInited = true;
+    regSelectedFolder = 'Ny';
+    visMappeInnhold('regToolbar', 'tableRegistrations', true);
+    document.querySelectorAll('#regFolderRow .folder-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.status === 'Ny');
+    });
+    const label = document.getElementById('regFolderActiveLabel');
+    if(label){
+      label.textContent = '📂 Viser: ' + REG_FOLDER_LABELS.Ny + ' — trykk igjen for å lukke';
+    }
+    render('registrations');
+  }
 
   window.setRegFolder = function(status){
     // Klikk på samme mappe igjen lukker den, i stedet for å vise alt.
@@ -8818,6 +8878,7 @@
     // sammenligner mot forrige resultat og skriver bare ved faktisk endring.
     if(['students','guardians'].includes(type)) skrivForeldreIndeks();
     if(['registrations','students','guardians','teachers','classes'].includes(type)) visTestdataStatus();
+    if(type === 'registrations' && typeof __opMaybeRerender === 'function') __opMaybeRerender();
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
       updateMsRecipientCount();
@@ -11907,6 +11968,275 @@
   };
 
   // ═══════════════════════════════════════════════════════════════════
+  // OPPTAK — samlet arbeidsflate for søknader (kø → handling → klasse/pris)
+  //
+  // Leser og skriver de SAMME samlingene som Søknader-fanen. Ingen ny
+  // datakilde — approveRegistration, sendRealVippsRequest og resten
+  // gjenbrukes. Klasseforslag-logikken (kf*) brukes kun som forslag.
+  // ═══════════════════════════════════════════════════════════════════
+  let opFolder = 'Ny';
+  let opSelectedId = null;
+  let opSearchQuery = '';
+  window.opKlasseValg = {};
+
+  const OP_FOLDER_LABELS = { '':'Alle', Ny:'Nye', Venteliste:'Venteliste', Godkjent:'Godkjent', Avslått:'Avslått', __test__:'Testsøknader' };
+
+  function opFilteredList(){
+    let data = (cache.registrations || []).slice();
+    if(opFolder === '__test__') data = data.filter(r => r.erTestdata === true);
+    else if(opFolder === '') data = data.filter(r => r.erTestdata !== true);
+    else data = data.filter(r => r.erTestdata !== true && (r.status || 'Ny') === opFolder);
+    if(opSearchQuery){
+      const q = opSearchQuery.toLowerCase();
+      data = data.filter(r =>
+        (r.elev_navn || '').toLowerCase().includes(q) ||
+        (r.foresatt1_navn || '').toLowerCase().includes(q) ||
+        (kfProgramNavn(r) || '').toLowerCase().includes(q) ||
+        (r.foresatt1_tlf || '').includes(q)
+      );
+    }
+    return data.sort((a, b) => (b.innsendtDato || '').localeCompare(a.innsendtDato || ''));
+  }
+
+  function opKlasserForReg(reg){
+    const progNavn = kfProgramNavn(reg);
+    const prog = (cache.programs || []).find(p => p.navn === progNavn);
+    if(prog) return sfKlasserForProgram(prog);
+    return (cache.classes || []).filter(c => c.program === progNavn)
+      .sort((a, b) => String(a.navn || '').localeCompare(String(b.navn || '')));
+  }
+
+  function opFinnGruppeInfo(reg){
+    const progNavn = kfProgramNavn(reg);
+    const peers = (cache.registrations || []).filter(r => {
+      if(!String(r.elev_navn || '').trim()) return false;
+      if(String(r.status || 'Ny') === 'Avslått') return false;
+      if(kfProgramNavn(r) !== progNavn) return false;
+      return true;
+    }).map(r => ({
+      id: r.id,
+      navn: r.elev_navn || '',
+      alder: kfAlder(r.elev_fdato),
+      koran: kfKoran(r),
+      trinn: String(r.klassetrinn || '').trim()
+    })).filter(r => r.alder != null);
+    if(peers.length === 0) return null;
+    const sortert = [...peers].sort((a, b) =>
+      (a.alder - b.alder) || (a.koran - b.koran) || a.navn.localeCompare(b.navn, 'no'));
+    const antall = Math.max(1, Math.ceil(sortert.length / 14));
+    const grupper = kfDel(sortert, antall);
+    for(let i = 0; i < grupper.length; i++){
+      const g = grupper[i];
+      if(g.some(s => s.id === reg.id)){
+        const aldre = g.map(s => s.alder);
+        return {
+          gruppeNr: i + 1,
+          antall: g.length,
+          alderMin: Math.min(...aldre),
+          alderMax: Math.max(...aldre),
+          koranSprik: Math.max(...g.map(s => s.koran)) - Math.min(...g.map(s => s.koran)),
+          medlemmer: g
+        };
+      }
+    }
+    return null;
+  }
+
+  function opPrisForReg(reg){
+    const program = mapRegistrationProgram(reg.program);
+    const guardianPhone = reg.foresatt1_tlf || '';
+    const existingGuardian = guardianPhone
+      ? cache.guardians.find(g => g.telefon === guardianPhone)
+      : cache.guardians.find(g => g.navn === (reg.foresatt1_navn || ''));
+    const guardianId = existingGuardian ? existingGuardian.id : '';
+    return computeSoskenPrice(program, guardianId, null, reg.erMedlem);
+  }
+
+  function opFolderCounts(){
+    const ekte = (cache.registrations || []).filter(r => r.erTestdata !== true);
+    const test = (cache.registrations || []).filter(r => r.erTestdata === true);
+    const counts = { '': ekte.length, Ny: 0, Venteliste: 0, Godkjent: 0, Avslått: 0, __test__: test.length };
+    ekte.forEach(r => { const s = r.status || 'Ny'; if(counts[s] !== undefined) counts[s]++; });
+    return counts;
+  }
+
+  window.opVelgFolder = function(status){
+    opFolder = status;
+    opSelectedId = null;
+    renderOpptak();
+  };
+
+  window.opVelgSoknad = function(id){
+    opSelectedId = id;
+    renderOpptak();
+  };
+
+  window.opSettKlasse = function(id, klasseId){
+    if(klasseId) opKlasseValg[id] = klasseId;
+    else delete opKlasseValg[id];
+    renderOpptak();
+  };
+
+  window.opSok = function(q){
+    opSearchQuery = q;
+    renderOpptak();
+  };
+
+  window.renderOpptak = function(){
+    const root = document.getElementById('opRoot');
+    if(!root) return;
+    const liste = opFilteredList();
+    if(opSelectedId && !liste.some(r => r.id === opSelectedId)){
+      opSelectedId = liste.length ? liste[0].id : null;
+    } else if(!opSelectedId && liste.length) opSelectedId = liste[0].id;
+
+    const counts = opFolderCounts();
+    const kanBehandle = isOpptaksansvarlig();
+
+    let ftabs = '';
+    ['Ny', 'Venteliste', 'Godkjent', 'Avslått', '', '__test__'].forEach(st => {
+      const lbl = OP_FOLDER_LABELS[st];
+      const n = counts[st] || 0;
+      ftabs += '<button type="button" class="op-ftab' + (opFolder === st ? ' on' : '') +
+        '" onclick="opVelgFolder(\'' + st + '\')">' + escapeHtml(lbl) + ' (' + n + ')</button>';
+    });
+
+    let listHtml = '';
+    if(liste.length === 0){
+      listHtml = '<div class="op-empty">Ingen søknader i denne mappen.</div>';
+    } else {
+      liste.forEach(r => {
+        const prog = kfProgramNavn(r) || '—';
+        const alder = kfAlder(r.elev_fdato);
+        const status = r.status || 'Ny';
+        const krav = apentVippsKrav('registrations', r.id);
+        listHtml += '<div class="op-item' + (r.id === opSelectedId ? ' sel' : '') +
+          '" onclick="opVelgSoknad(\'' + escapeHtml(r.id) + '\')">' +
+          '<div class="navn">' + escapeHtml(r.elev_navn || '—') + '</div>' +
+          '<div class="meta">' + escapeHtml(prog) +
+          (alder != null ? ' · ' + alder + ' år' : '') +
+          (r.foresatt1_navn ? ' · ' + escapeHtml(r.foresatt1_navn) : '') + '</div>' +
+          (status === 'Ny' ? '<span class="op-pill ny">Ny</span>' : '') +
+          (krav ? '<span class="op-pill vipps">⏳ Vipps</span>' : '') +
+          '</div>';
+      });
+    }
+
+    const venstre = '<div class="op-panel">' +
+      '<div class="op-ph"><h2>Søknader</h2><p>Velg én fra køen</p></div>' +
+      '<div class="op-ftabs">' + ftabs + '</div>' +
+      '<input class="op-search" type="search" placeholder="Søk navn, foresatt, program…" ' +
+        'value="' + escapeHtml(opSearchQuery) + '" oninput="opSok(this.value)" aria-label="Søk">' +
+      '<div class="op-list">' + listHtml + '</div></div>';
+
+    let midt = '<div class="op-panel"><div class="op-ph"><h2>Detaljer og handlinger</h2>' +
+      '<p>Samme beslutninger som i Søknader-fanen</p></div>';
+    let hoyre = '<div class="op-panel"><div class="op-ph"><h2>Klasse og betaling</h2>' +
+      '<p>Forslag fra Klasseforslag — du bekrefter</p></div>';
+
+    const reg = opSelectedId ? cache.registrations.find(r => r.id === opSelectedId) : null;
+    if(!reg){
+      midt += '<div class="op-empty">Velg en søknad fra listen til venstre.</div></div>';
+      hoyre += '<div class="op-empty">Klasse og pris vises når du velger en søknad.</div></div>';
+    } else {
+      const prog = kfProgramNavn(reg) || '—';
+      const alder = kfAlder(reg.elev_fdato);
+      const koran = kfKoran(reg);
+      const pris = opPrisForReg(reg);
+      const krav = apentVippsKrav('registrations', reg.id);
+      const status = reg.status || 'Ny';
+
+      midt += '<div class="op-body">' +
+        '<h3>' + escapeHtml(reg.elev_navn || '—') + '</h3>' +
+        '<div class="op-kv">' +
+          '<span class="k">Program</span><span>' + escapeHtml(prog) + '</span>' +
+          '<span class="k">Status</span><span>' + escapeHtml(status) + '</span>' +
+          (alder != null ? '<span class="k">Alder (1. sept)</span><span>' + alder + ' år</span>' : '') +
+          '<span class="k">Koranferdighet</span><span>' + escapeHtml(kfKoranNavn(koran)) + '</span>' +
+          '<span class="k">Foresatt</span><span>' + escapeHtml(reg.foresatt1_navn || '—') +
+            (reg.foresatt1_tlf ? '<br><small>' + escapeHtml(reg.foresatt1_tlf) + '</small>' : '') + '</span>' +
+          '<span class="k">Årspris</span><span>' + sfKr(pris.price) +
+            (pris.pos > 1 ? ' <small>(søsken ' + pris.pos + '.)</small>' : '') + '</span>' +
+        '</div>';
+
+      if(kanBehandle && (status === 'Ny' || status === 'Venteliste')){
+        midt += '<div class="op-acts">' +
+          '<button class="btn" style="background:#4a7c59; color:#fff;" onclick="approveRegistration(\'' + escapeHtml(reg.id) + '\')">✅ Godkjenn</button>' +
+          '<button class="btn btn-ghost" onclick="waitlistRegistration(\'' + escapeHtml(reg.id) + '\')">⏳ Venteliste</button>' +
+          '<button class="btn btn-ghost" onclick="rejectRegistration(\'' + escapeHtml(reg.id) + '\')">❌ Avslå</button>';
+        if(!krav){
+          midt += '<button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendRealVippsRequest(\'' + escapeHtml(reg.id) + '\')">⚡ Send Vipps-krav</button>' +
+            '<button class="btn btn-ghost" onclick="sendVippsPaymentLink(\'' + escapeHtml(reg.id) + '\')">📤 Vipps-lenke (manuell)</button>';
+        }
+        midt += '<button class="btn btn-ghost" onclick="editEntry(\'registrations\',\'' + escapeHtml(reg.id) + '\')">✏️ Rediger</button>' +
+          '<button class="btn btn-ghost" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Alle detaljer</button>' +
+          '</div>';
+        if(krav){
+          const sendt = (krav.createdAt || krav.opprettet || '').slice(0, 16).replace('T', ' ');
+          midt += '<div class="op-wait">⏳ Vipps-krav sendt' + (sendt ? ' ' + escapeHtml(sendt) : '') +
+            ' — venter på betaling. Betaling godkjenner søknaden automatisk.</div>';
+        }
+        midt += '<p class="hint">💡 Ved godkjenning opprettes elev og foresatt. Klassen settes fra kolonnen til høyre.</p>';
+      } else if(!kanBehandle){
+        midt += '<p class="hint">Kun opptaksansvarlig kan behandle søknader.</p>' +
+          '<button class="btn btn-ghost" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Vis alle detaljer</button>';
+      } else {
+        midt += '<p class="hint">Søknaden er allerede behandlet (' + escapeHtml(status) + ').</p>' +
+          '<button class="btn btn-ghost" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Vis alle detaljer</button>';
+      }
+      midt += '</div></div>';
+
+      const gruppe = opFinnGruppeInfo(reg);
+      const klasser = opKlasserForReg(reg);
+      const valgtKlasse = opKlasseValg[reg.id] || '';
+
+      hoyre += '<div class="op-body">';
+      if(gruppe){
+        hoyre += '<div class="op-forslag"><h4>🧩 Forslag (Klasseforslag-logikk)</h4>' +
+          '<div>Gruppe ' + gruppe.gruppeNr + ': ' + gruppe.antall + ' elever · alder ' +
+          gruppe.alderMin + '–' + gruppe.alderMax + ' · spriker ' + gruppe.koranSprik + ' i korannivå</div>' +
+          '<div style="margin-top:8px; font-size:11.5px; color:#6b7787;">' +
+          escapeHtml(gruppe.medlemmer.map(m => m.navn).join(' · ')) + '</div></div>';
+      } else if(alder == null){
+        hoyre += '<div class="op-forslag"><h4>🧩 Forslag</h4><div>Mangler fødselsdato — kan ikke foreslå gruppe.</div></div>';
+      }
+
+      hoyre += '<label class="op-lbl">Klasse ved godkjenning</label>' +
+        '<select style="width:100%; margin-top:6px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-family:\'Jost\',sans-serif; font-size:13px;" ' +
+        'onchange="opSettKlasse(\'' + escapeHtml(reg.id) + '\', this.value)"' +
+        (kanBehandle && (status === 'Ny' || status === 'Venteliste') ? '' : ' disabled') + '>' +
+        '<option value="">— Ikke tildelt ennå —</option>' +
+        klasser.map(c => '<option value="' + escapeHtml(c.id) + '"' +
+          (c.id === valgtKlasse ? ' selected' : '') + '>' + escapeHtml(c.navn || c.id) + '</option>').join('') +
+        '</select>';
+
+      const dep = prisOppsett.depositum || 0;
+      hoyre += '<div class="op-kpi">' +
+        '<div><span>Programpris</span><span class="v">' + sfKr(pris.price) + '</span></div>' +
+        (dep > 0 ? '<div><span>Depositum</span><span class="v">' + sfKr(dep) + '</span></div>' : '') +
+        '<div><span>Søskenplass</span><span class="v">' + pris.pos + '.</span></div>' +
+        '</div>';
+      if(klasser.length === 0){
+        hoyre += '<p class="hint" style="margin-top:12px;">Ingen klasser for dette programmet ennå. Opprett under <b>Klasser</b> eller <b>Arbeidsflate</b>.</p>';
+      }
+      hoyre += '</div></div>';
+    }
+
+    const flow = '<div class="op-flow" aria-hidden="true">' +
+      '<span class="on">① Søknad i kø</span><span>→</span>' +
+      '<span class="on">② Vipps-krav</span><span>→</span>' +
+      '<span>③ Betaling = godkjent</span><span>→</span>' +
+      '<span class="on">④ Klasse tildelt</span></div>';
+
+    root.innerHTML = flow + '<div class="op-wrap"><div>' + venstre + '</div><div>' + midt + '</div><div>' + hoyre + '</div></div>';
+  };
+
+  window.__opMaybeRerender = function(){
+    const p = document.getElementById('panel-opptak');
+    if(p && p.classList.contains('active') && typeof renderOpptak === 'function') renderOpptak();
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
   // FELLESTIME FOR ALLE KLASSER
   //
   // Hele skolen samles. Hver klasse får likevel sin EGEN rad, ikke én
@@ -12398,10 +12728,10 @@
     const tasksEl = document.getElementById('dashTasksList');
     if(tasksEl){
       const taskDefs = [
-        { key:'registrations', ic:'📝', label:'Nye søknader', count: cache.registrations.filter(r => r.status === 'Ny').length, side:'registrering', tab:null },
+        { key:'registrations', ic:'📝', label:'Nye søknader', count: cache.registrations.filter(r => r.status === 'Ny').length, side:'admin', tab:'opptak' },
         { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
         { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
-        { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'paymentRequests' }
+        { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => r.status === 'Ny').length, side:'okonomi', tab:'paymentRequests' }
       ];
       const anyTasks = taskDefs.some(t => t.count > 0);
       tasksEl.innerHTML = anyTasks
@@ -12416,8 +12746,13 @@
   }
 
   window.goToTask = function(side, tab){
-    if(side === 'registrering' || side === 'oversikt'){
-      promptPasswordAndSelectSide(side);
+    if(side === 'registrering'){
+      selectSide('admin');
+      selectSubTab('opptak');
+      return;
+    }
+    if(side === 'oversikt'){
+      promptPasswordAndSelectSide('oversikt');
       return;
     }
     selectSide(side);
@@ -12540,6 +12875,11 @@
       showToast('Denne seksjonen er kun tilgjengelig for øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder).');
       return;
     }
+    if(side === 'oversikt'){
+      selectSide('system');
+      selectSubTab('overview');
+      return;
+    }
     selectSide(side);
   };
 
@@ -12579,6 +12919,7 @@
     reports: 'Statistikk og tilpassede rapporter',
     overview: 'Eksempeldata, sikkerhetskopi, brukere og faresone',
     registrations: 'Nye søknader — godkjenn, avslå eller sett på venteliste',
+    opptak: 'Samlet arbeidsflate for opptak — søknad, Vipps og klasse på én skjerm',
     meldingssenter: 'Send meldinger til enkeltpersoner eller grupper (foresatte, lærere, ledelse)'
   };
 
@@ -12588,7 +12929,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📔', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
-    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', registrations: '📝', meldingssenter: '📤',
+    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', opptak: '🎯', registrations: '📝', meldingssenter: '📤',
     klasseforslag: '🧩', fagplan: '📖', arsplan: '🗓️', laereplanregler: '⚖️', fagplanImport: '⬆️',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
@@ -12611,6 +12952,7 @@
     programs:       { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     schoolCalendar: { hvem: 'ledelse', tekst: 'skoleleder eller eier' },
     registrations:  { hvem: 'eier',    tekst: 'Opptaksansvarlig eller eier' },
+    opptak:         { hvem: 'eier',    tekst: 'Opptaksansvarlig eller eier' },
     overview:       { hvem: 'ledelse', tekst: 'øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder)' },
     utvikler:       { hvem: 'eier',    tekst: 'eier' },
     roller:         { hvem: 'eier',    tekst: 'eier' },
@@ -20353,7 +20695,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       // Eleven havner derfor i «Uten klasse», der noen tar avgjørelsen
       // bevisst. Den tomme fanen i foreldreportalen er en påminnelse om
       // at noe gjenstår — ikke en feil å automatisere bort.
-      studentRecord.klasse = '';
+      studentRecord.klasse = (window.opKlasseValg && opKlasseValg[id]) ? opKlasseValg[id] : '';
       studentRecord.foresatt = guardianId;
       studentRecord.foresatt2 = guardianId2;
       studentRecord.betalt = 'Nei';
@@ -20398,6 +20740,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         melding += ' ' + (res1.endret + res2.endret) + ' søsken fikk nytt beløp etter søskenrabatt.';
       }
       showToast(melding);
+      if(window.opKlasseValg) delete opKlasseValg[id];
+      opSelectedId = null;
+      if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
       if(hoppet.length){
         melding('ADM-PRI-04', '⚠️ Noen beløp ble stående',
               'Beløpet ble IKKE endret for: ' + hoppet.join(', ') + '\n\n' +
@@ -20425,6 +20770,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     try{
       await updateDoc(doc(db, 'registrations', id), { status: 'Avslått', behandletAv: currentUserEmail || 'ukjent', behandletAv: currentUserEmail || 'ukjent', behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ') });
       showToast('Søknaden er avslått.');
+      if(window.opKlasseValg) delete opKlasseValg[id];
+      opSelectedId = null;
+      if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt.');
@@ -20644,6 +20992,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     try{
       await updateDoc(doc(db, 'registrations', id), { status: 'Venteliste', behandletAv: currentUserEmail || 'ukjent', behandletAv: currentUserEmail || 'ukjent', behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ') });
       showToast('Søknaden er satt på venteliste.');
+      if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt.');
@@ -21063,6 +21412,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(tab.dataset.tab === 'arsplan') apRender();
     if(tab.dataset.tab === 'laereplanregler') lrRender();
     if(tab.dataset.tab === 'klasseforslag') kfRender();
+    if(tab.dataset.tab === 'opptak' && typeof renderOpptak === 'function') renderOpptak();
+    if(tab.dataset.tab === 'registrations') ensureRegFolderDefault();
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
