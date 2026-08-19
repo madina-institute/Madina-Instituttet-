@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 03:48:00 -->
+<!-- SIST-ENDRET: 2026-08-20 04:00:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Madina Skole — Database</title>
 <link rel="manifest" href="manifest-admin.json">
 <meta name="theme-color" content="#1f4a3a">
@@ -168,21 +171,25 @@
   .app-rail button.active{ background:var(--emerald); color:#fff; box-shadow:inset 0 0 0 1px var(--emerald); }
   .app-rail button.active .lbl{ color:#fff; }
   @media (max-width:900px){
-    .app-body{ flex-direction:column; gap:10px; padding:12px 12px 88px; }
+    .app-body{
+      flex-direction:column; gap:10px;
+      padding:12px 12px 88px; width:100%; box-sizing:border-box;
+    }
+    .app-workspace, #sideChooseView, #sideChooseView .wrap{
+      width:100%; max-width:100%; box-sizing:border-box;
+    }
     .app-rail{
-      display:grid; grid-template-columns:repeat(3, 1fr);
-      gap:6px; width:100%; max-height:none;
+      display:grid !important;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:8px 6px; width:100%; max-height:none;
       overflow:visible; position:static; margin-inline-start:0;
-      padding:10px 8px;
+      padding:12px 10px; box-sizing:border-box;
     }
     .app-rail button{
       flex:none; flex-direction:column; width:100%; min-width:0;
-      min-height:52px; padding:6px 4px;
+      min-height:54px; padding:8px 4px; box-sizing:border-box;
     }
-    .app-rail button .lbl{ font-size:8.5px; max-width:none; }
-  }
-  @media (max-width:900px) and (min-width:520px){
-    .app-rail{ grid-template-columns:repeat(5, 1fr); }
+    .app-rail button .lbl{ font-size:9px; max-width:none; line-height:1.2; }
   }
   #sideChooseView, #subChooseView, .content-layout{ flex:1; min-width:0; }
   /* Weekly timeplan grid — real schedule table (times × classes), styled
