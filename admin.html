@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-19 20:35:13 -->
+<!-- SIST-ENDRET: 2026-08-19 20:55:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3009,6 +3009,25 @@
     #panel-opptak .op-kpi div{ display:flex; justify-content:space-between; font-family:'Jost',sans-serif; font-size:13px; padding:5px 0; }
     #panel-opptak .op-kpi .v{ font-weight:700; color:var(--emerald-d); }
     #panel-opptak .op-empty{ padding:24px 18px; font-family:'Jost',sans-serif; font-size:13px; color:#6b7787; text-align:center; }
+    /* Egne knapper — arver ikke .btn (uppercase) fra admin */
+    #panel-opptak .op-btn{
+      font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600;
+      padding:10px 14px; border-radius:8px; border:1px solid var(--line);
+      cursor:pointer; background:#fff; text-transform:none; letter-spacing:0;
+      width:auto; display:inline-block;
+    }
+    #panel-opptak .op-btn-go{ background:#2e6b53; color:#fff; border-color:#2e6b53; }
+    #panel-opptak .op-btn-no{ background:#a83c3c; color:#fff; border-color:#a83c3c; }
+    #panel-opptak .op-btn-vipps{ background:#ff5b24; color:#fff; border-color:#ff5b24; }
+    #panel-opptak .op-btn-full{ width:100%; margin-top:14px; }
+    #panel-opptak .op-hint{ font-family:'Jost',sans-serif; font-size:12px; color:#6b7787; margin-top:14px; line-height:1.5; }
+    #panel-opptak .op-select{
+      width:100%; margin-top:6px; padding:9px 10px; border:1px solid var(--line);
+      border-radius:8px; font-family:'Jost',sans-serif; font-size:13px; background:#fff;
+    }
+    #panel-opptak .op-chip{ cursor:pointer; }
+    #panel-opptak .op-chip:hover{ border-color:var(--emerald-l); }
+    #panel-opptak .op-kpi .v.total{ font-size:15px; }
   </style>
   <div class="panel" id="panel-skoleflate">
     <div id="sfRoot"></div>
@@ -11979,7 +11998,25 @@
   let opSearchQuery = '';
   window.opKlasseValg = {};
 
-  const OP_FOLDER_LABELS = { '':'Alle', Ny:'Nye', Venteliste:'Venteliste', Godkjent:'Godkjent', Avslått:'Avslått', __test__:'Testsøknader' };
+  const OP_FOLDER_LABELS = {
+    Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent',
+    Avslått:'❌ Avslått', '':'📋 Alle', __test__:'🧪 Test'
+  };
+  const OP_FOLDER_ORDER = ['Ny', 'Venteliste', 'Godkjent', 'Avslått', '', '__test__'];
+
+  function opKoranVisning(koran){
+    return koran > 0 ? 'Nivå ' + koran : kfKoranNavn(koran);
+  }
+
+  function opForslagTekst(reg, gruppe){
+    const alder = kfAlder(reg.elev_fdato);
+    const koran = kfKoran(reg);
+    const deler = [];
+    if(alder != null) deler.push('Alder ' + alder);
+    deler.push('Koran nivå ' + koran);
+    if(gruppe) deler.push(gruppe.antall + ' i gruppen');
+    return deler.join(' · ');
+  }
 
   function opFilteredList(){
     let data = (cache.registrations || []).slice();
@@ -12077,6 +12114,20 @@
     renderOpptak();
   };
 
+  window.opVelgKlasseChip = function(id, klasseId){
+    opSettKlasse(id, klasseId);
+  };
+
+  window.opLagreKlassevalg = function(id){
+    const valgt = opKlasseValg[id];
+    if(!valgt){
+      showToast('Velg en klasse først.', true);
+      return;
+    }
+    const navn = resolveDynName('classes', valgt) || valgt;
+    showToast('✓ Klassevalg lagret: ' + navn);
+  };
+
   window.opSok = function(q){
     opSearchQuery = q;
     renderOpptak();
@@ -12094,7 +12145,7 @@
     const kanBehandle = isOpptaksansvarlig();
 
     let ftabs = '';
-    ['Ny', 'Venteliste', 'Godkjent', 'Avslått', '', '__test__'].forEach(st => {
+    OP_FOLDER_ORDER.forEach(st => {
       const lbl = OP_FOLDER_LABELS[st];
       const n = counts[st] || 0;
       ftabs += '<button type="button" class="op-ftab' + (opFolder === st ? ' on' : '') +
@@ -12117,20 +12168,20 @@
           (alder != null ? ' · ' + alder + ' år' : '') +
           (r.foresatt1_navn ? ' · ' + escapeHtml(r.foresatt1_navn) : '') + '</div>' +
           (status === 'Ny' ? '<span class="op-pill ny">Ny</span>' : '') +
-          (krav ? '<span class="op-pill vipps">⏳ Vipps</span>' : '') +
+          (krav ? '<span class="op-pill vipps">⏳ Vipps sendt</span>' : '') +
           '</div>';
       });
     }
 
     const venstre = '<div class="op-panel">' +
-      '<div class="op-ph"><h2>Søknader</h2><p>Velg én fra køen</p></div>' +
+      '<div class="op-ph"><h2>Søknader</h2><p>Mapper + liste — «Nye» åpnes automatisk</p></div>' +
       '<div class="op-ftabs">' + ftabs + '</div>' +
       '<input class="op-search" type="search" placeholder="Søk navn, foresatt, program…" ' +
         'value="' + escapeHtml(opSearchQuery) + '" oninput="opSok(this.value)" aria-label="Søk">' +
       '<div class="op-list">' + listHtml + '</div></div>';
 
     let midt = '<div class="op-panel"><div class="op-ph"><h2>Detaljer og handlinger</h2>' +
-      '<p>Samme beslutninger som i Søknader-fanen</p></div>';
+      '<p>Samme knapper som i dag — samlet her</p></div>';
     let hoyre = '<div class="op-panel"><div class="op-ph"><h2>Klasse og betaling</h2>' +
       '<p>Forslag fra Klasseforslag — du bekrefter</p></div>';
 
@@ -12152,7 +12203,7 @@
           '<span class="k">Program</span><span>' + escapeHtml(prog) + '</span>' +
           '<span class="k">Status</span><span>' + escapeHtml(status) + '</span>' +
           (alder != null ? '<span class="k">Alder (1. sept)</span><span>' + alder + ' år</span>' : '') +
-          '<span class="k">Koranferdighet</span><span>' + escapeHtml(kfKoranNavn(koran)) + '</span>' +
+          '<span class="k">Koranferdighet</span><span>' + escapeHtml(opKoranVisning(koran)) + '</span>' +
           '<span class="k">Foresatt</span><span>' + escapeHtml(reg.foresatt1_navn || '—') +
             (reg.foresatt1_tlf ? '<br><small>' + escapeHtml(reg.foresatt1_tlf) + '</small>' : '') + '</span>' +
           '<span class="k">Årspris</span><span>' + sfKr(pris.price) +
@@ -12161,63 +12212,73 @@
 
       if(kanBehandle && (status === 'Ny' || status === 'Venteliste')){
         midt += '<div class="op-acts">' +
-          '<button class="btn" style="background:#4a7c59; color:#fff;" onclick="approveRegistration(\'' + escapeHtml(reg.id) + '\')">✅ Godkjenn</button>' +
-          '<button class="btn btn-ghost" onclick="waitlistRegistration(\'' + escapeHtml(reg.id) + '\')">⏳ Venteliste</button>' +
-          '<button class="btn btn-ghost" onclick="rejectRegistration(\'' + escapeHtml(reg.id) + '\')">❌ Avslå</button>';
+          '<button type="button" class="op-btn op-btn-go" onclick="approveRegistration(\'' + escapeHtml(reg.id) + '\')">✅ Godkjenn</button>' +
+          '<button type="button" class="op-btn" onclick="waitlistRegistration(\'' + escapeHtml(reg.id) + '\')">⏳ Venteliste</button>' +
+          '<button type="button" class="op-btn op-btn-no" onclick="rejectRegistration(\'' + escapeHtml(reg.id) + '\')">❌ Avslå</button>';
         if(!krav){
-          midt += '<button class="btn" style="background:#ff5b24; color:#fff;" onclick="sendRealVippsRequest(\'' + escapeHtml(reg.id) + '\')">⚡ Send Vipps-krav</button>' +
-            '<button class="btn btn-ghost" onclick="sendVippsPaymentLink(\'' + escapeHtml(reg.id) + '\')">📤 Vipps-lenke (manuell)</button>';
+          midt += '<button type="button" class="op-btn op-btn-vipps" onclick="sendRealVippsRequest(\'' + escapeHtml(reg.id) + '\')">⚡ Send Vipps-krav</button>';
         }
-        midt += '<button class="btn btn-ghost" onclick="editEntry(\'registrations\',\'' + escapeHtml(reg.id) + '\')">✏️ Rediger</button>' +
-          '<button class="btn btn-ghost" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Alle detaljer</button>' +
+        midt += '<button type="button" class="op-btn" onclick="editEntry(\'registrations\',\'' + escapeHtml(reg.id) + '\')">✏️ Rediger</button>' +
           '</div>';
         if(krav){
           const sendt = (krav.createdAt || krav.opprettet || '').slice(0, 16).replace('T', ' ');
           midt += '<div class="op-wait">⏳ Vipps-krav sendt' + (sendt ? ' ' + escapeHtml(sendt) : '') +
             ' — venter på betaling. Betaling godkjenner søknaden automatisk.</div>';
         }
-        midt += '<p class="hint">💡 Ved godkjenning opprettes elev og foresatt. Klassen settes fra kolonnen til høyre.</p>';
+        midt += '<p class="op-hint">💡 Etter godkjenning: elev + foresatt opprettes, klasse settes fra høyre kolonne.</p>';
       } else if(!kanBehandle){
-        midt += '<p class="hint">Kun opptaksansvarlig kan behandle søknader.</p>' +
-          '<button class="btn btn-ghost" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Vis alle detaljer</button>';
+        midt += '<p class="op-hint">Kun opptaksansvarlig kan behandle søknader.</p>' +
+          '<button type="button" class="op-btn" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Alle detaljer</button>';
       } else {
-        midt += '<p class="hint">Søknaden er allerede behandlet (' + escapeHtml(status) + ').</p>' +
-          '<button class="btn btn-ghost" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Vis alle detaljer</button>';
+        midt += '<p class="op-hint">Søknaden er allerede behandlet (' + escapeHtml(status) + ').</p>' +
+          '<button type="button" class="op-btn" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Alle detaljer</button>';
       }
       midt += '</div></div>';
 
       const gruppe = opFinnGruppeInfo(reg);
       const klasser = opKlasserForReg(reg);
       const valgtKlasse = opKlasseValg[reg.id] || '';
+      const dep = prisOppsett.depositum || 0;
+      const totalKrav = (parseFloat(String(pris.price || 0).replace(/[^\d.-]/g, '')) || 0) + dep;
 
       hoyre += '<div class="op-body">';
-      if(gruppe){
+      if(gruppe || alder != null){
         hoyre += '<div class="op-forslag"><h4>🧩 Forslag (Klasseforslag-logikk)</h4>' +
-          '<div>Gruppe ' + gruppe.gruppeNr + ': ' + gruppe.antall + ' elever · alder ' +
-          gruppe.alderMin + '–' + gruppe.alderMax + ' · spriker ' + gruppe.koranSprik + ' i korannivå</div>' +
-          '<div style="margin-top:8px; font-size:11.5px; color:#6b7787;">' +
-          escapeHtml(gruppe.medlemmer.map(m => m.navn).join(' · ')) + '</div></div>';
-      } else if(alder == null){
+          '<div>' + escapeHtml(opForslagTekst(reg, gruppe)) + '</div>';
+        if(klasser.length){
+          hoyre += '<div style="margin-top:10px">';
+          klasser.slice(0, 3).forEach((c, i) => {
+            const erValgt = c.id === valgtKlasse || (!valgtKlasse && i === 0);
+            hoyre += '<span class="op-chip' + (erValgt ? ' rec' : '') +
+              '" onclick="opVelgKlasseChip(\'' + escapeHtml(reg.id) + '\', \'' + escapeHtml(c.id) + '\')">' +
+              escapeHtml(c.navn || c.id) + (erValgt ? ' ✓' : '') + '</span>';
+          });
+          hoyre += '</div>';
+        }
+        hoyre += '</div>';
+      } else {
         hoyre += '<div class="op-forslag"><h4>🧩 Forslag</h4><div>Mangler fødselsdato — kan ikke foreslå gruppe.</div></div>';
       }
 
       hoyre += '<label class="op-lbl">Klasse ved godkjenning</label>' +
-        '<select style="width:100%; margin-top:6px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-family:\'Jost\',sans-serif; font-size:13px;" ' +
-        'onchange="opSettKlasse(\'' + escapeHtml(reg.id) + '\', this.value)"' +
+        '<select class="op-select" onchange="opSettKlasse(\'' + escapeHtml(reg.id) + '\', this.value)"' +
         (kanBehandle && (status === 'Ny' || status === 'Venteliste') ? '' : ' disabled') + '>' +
         '<option value="">— Ikke tildelt ennå —</option>' +
         klasser.map(c => '<option value="' + escapeHtml(c.id) + '"' +
           (c.id === valgtKlasse ? ' selected' : '') + '>' + escapeHtml(c.navn || c.id) + '</option>').join('') +
         '</select>';
 
-      const dep = prisOppsett.depositum || 0;
       hoyre += '<div class="op-kpi">' +
         '<div><span>Programpris</span><span class="v">' + sfKr(pris.price) + '</span></div>' +
         (dep > 0 ? '<div><span>Depositum</span><span class="v">' + sfKr(dep) + '</span></div>' : '') +
-        '<div><span>Søskenplass</span><span class="v">' + pris.pos + '.</span></div>' +
+        (dep > 0 ? '<div><span>Totalt krav</span><span class="v total">' + sfKr(totalKrav) + '</span></div>' : '') +
         '</div>';
+
+      if(kanBehandle && (status === 'Ny' || status === 'Venteliste')){
+        hoyre += '<button type="button" class="op-btn op-btn-go op-btn-full" onclick="opLagreKlassevalg(\'' + escapeHtml(reg.id) + '\')">Lagre klassevalg</button>';
+      }
       if(klasser.length === 0){
-        hoyre += '<p class="hint" style="margin-top:12px;">Ingen klasser for dette programmet ennå. Opprett under <b>Klasser</b> eller <b>Arbeidsflate</b>.</p>';
+        hoyre += '<p class="op-hint">Ingen klasser for dette programmet ennå. Opprett under <b>Klasser</b> eller <b>Arbeidsflate</b>.</p>';
       }
       hoyre += '</div></div>';
     }
