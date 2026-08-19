@@ -4243,6 +4243,18 @@
       </div>
       <button class="btn btn-primary" style="width:auto;" onclick="saveBetalingSettings()">Lagre</button>
     </div>
+    <div class="report-card" style="margin-top:14px; border-left:4px solid var(--vipps);">
+      <h3>Push-varsler i Vipps</h3>
+      <div class="sub" style="line-height:1.65;">
+        Når skolen sender et Vipps-krav fra panelet, brukes <strong>PUSH_MESSAGE</strong> — et varsel rett i Vipps-appen til foresatt 1.
+        E-post med betalingslenke sendes alltid i tillegg som backup.
+      </div>
+      <ul style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65; margin:12px 0 0 18px; padding:0;">
+        <li><strong>Test-miljø:</strong> Vipps sier at push-varsler ofte er ustabile eller uteblir. Betalingen ligger likevel under <em>Betalinger</em> — dra ned for å oppdatere. Bruk den oransje test-appen med testnummeret dere fikk fra Vipps.</li>
+        <li><strong>Produksjon:</strong> MSN må være godkjent for PUSH_MESSAGE hos Vipps. Uten godkjenning faller systemet automatisk tilbake til betalingslenke i e-post.</li>
+        <li><strong>Telefonnummer:</strong> Må være registrert i Vipps på foresatt 1 sitt nummer (8 siffer uten landkode).</li>
+      </ul>
+    </div>
     </div>
 
     <div class="innst-seksjon" data-seksjon="priser">
@@ -8728,6 +8740,30 @@
       return { ok: false, error: 'Utløpt innlogging' };
     }
     return await res.json();
+  }
+
+  function visVippsSendtResultat(data, opts){
+    opts = opts || {};
+    const link = data.redirectUrl || '';
+    const note = data.pushNote || '';
+    const testBadge = data.vippsEnv === 'test'
+      ? '<span style="display:inline-block;background:#fff3e0;color:#b33a00;padding:2px 8px;border-radius:999px;font-size:11px;margin-bottom:8px;">Test-miljø</span>'
+      : '';
+    const fallback = data.usedFallback
+      ? '<p style="margin:8px 0;color:#b33a00;"><strong>Merk:</strong> PUSH_MESSAGE er ikke godkjent for MSN — betalingslenke i e-post brukes i stedet.</p>'
+      : '';
+    const linkHtml = link
+      ? '<p style="margin:10px 0 6px;"><a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" style="word-break:break-all;">' + escapeHtml(link) + '</a></p>' +
+        '<button type="button" class="btn" style="width:auto;margin-top:4px;" onclick="navigator.clipboard.writeText(' + JSON.stringify(link) + ').then(function(){showToast(\'Lenke kopiert\');}).catch(function(){prompt(\'Kopier lenken:\', ' + JSON.stringify(link) + ');})">📋 Kopier betalingslenke</button>'
+      : '<p style="margin:8px 0;color:#5a6860;">Ingen betalingslenke — foresatt finner kravet under <em>Betalinger</em> i Vipps-appen.</p>';
+    melding('ADM-VIP-OK', '✓ Vipps-krav opprettet',
+      testBadge +
+      '<p style="margin:0 0 8px;line-height:1.6;">' + escapeHtml(note) + '</p>' +
+      fallback +
+      linkHtml +
+      (opts.epostAntall > 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til ' + opts.epostAntall + ' foresatte.</p>' : '') +
+      (opts.epostAntall === 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til foresatt.</p>' : ''),
+      'vipps · userFlow=' + (data.userFlow || '—') + ' · env=' + (data.vippsEnv || '—'));
   }
 
   const CANCEL_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/cancelVippsPayment';
@@ -21913,8 +21949,10 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         const epostTekst = 'Hei,\n\nFor å bekrefte skoleplassen til ' + (reg.elev_navn || 'ditt barn') +
           ', vennligst betal depositum på ' + dep + ' kr via Vipps innen ' + frist + ' dager.\n\n' +
           'Vipps-varsel (push) er sendt til foresatt 1 (' + (reg.foresatt1_navn || 'primær foresatt') + '). ' +
-          'Denne e-posten er sendt til alle registrerte foresatte.\n\nDu kan også bruke denne lenken:\n' + data.redirectUrl +
-          '\n\nBetalingen trekkes fra totalbeløpet for skoleåret. Så snart betalingen er gjennomført, oppdateres status automatisk.\n\nMed vennlig hilsen,\nMadina Skole';
+          'Denne e-posten er sendt til alle registrerte foresatte.\n\n' +
+          (data.pushNote ? data.pushNote + '\n\n' : '') +
+          (data.redirectUrl ? 'Du kan også bruke denne lenken:\n' + data.redirectUrl + '\n\n' : '') +
+          'Betalingen trekkes fra totalbeløpet for skoleåret. Så snart betalingen er gjennomført, oppdateres status automatisk.\n\nMed vennlig hilsen,\nMadina Skole';
         await addDoc(collection(db, 'mail'), {
           from: MAIL_FROM,
           to: eposter,
@@ -21925,6 +21963,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         });
       }
       showToast('✓ Vipps-krav sendt til foresatt 1' + (eposter.length > 1 ? ' — e-post til ' + eposter.length + ' foresatte' : '') + '.');
+      visVippsSendtResultat(data, { epostAntall: eposter.length });
       if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
     } catch(err){
       console.error(err);
@@ -21979,12 +22018,14 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
           message: {
             subject: '[Madina Skole] Betaling for ' + (student.navn || 'ditt barn'),
             text: 'Hei,\n\nDu har et utestående beløp på ' + remainingKr + ' kr for ' + (student.navn || 'ditt barn') +
-              '. Du har fått et betalingsvarsel i Vipps-appen din, eller kan bruke denne lenken:\n\n' + data.redirectUrl +
-              '\n\nMed vennlig hilsen,\nMadina Skole'
+              '.\n\n' + (data.pushNote ? data.pushNote + '\n\n' : '') +
+              (data.redirectUrl ? 'Betalingslenke:\n' + data.redirectUrl + '\n\n' : '') +
+              'Med vennlig hilsen,\nMadina Skole'
           }
         });
       }
       showToast('✓ Ekte Vipps-krav sendt! Beløpet registreres automatisk når foresatte betaler.');
+      visVippsSendtResultat(data, { epostAntall: guardianEmail ? 1 : 0 });
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);

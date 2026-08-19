@@ -3795,14 +3795,29 @@
       if(!entered) return;
       phone = entered.replace(/\D/g, '');
     }
+    const bruker = auth.currentUser;
+    if(!bruker){
+      notify(currentLang === 'ar' ? 'يجب تسجيل الدخول أولاً.' : 'Du må være innlogget.');
+      return;
+    }
     const btn = document.getElementById('paymentLink');
     if(btn) btn.style.pointerEvents = 'none';
     showToast(currentLang === 'ar' ? 'جارٍ تجهيز الدفع...' : 'Forbereder betaling...');
     try{
+      const token = await bruker.getIdToken();
       const res = await fetch(VIPPS_CREATE_PAYMENT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'balance', targetId: child.id, amountKr: amountToPay, phoneNumber: phone })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({
+          type: 'balance',
+          targetId: child.id,
+          amountKr: amountToPay,
+          phoneNumber: phone,
+          initiatedBy: 'guardian'
+        })
       });
       const data = await res.json();
       if(!data.ok){
@@ -3810,7 +3825,14 @@
         if(btn) btn.style.pointerEvents = '';
         return;
       }
-      window.location.href = data.redirectUrl;
+      if(data.redirectUrl){
+        window.location.href = data.redirectUrl;
+      } else {
+        notify(currentLang === 'ar'
+          ? 'تم إنشاء الدفع. افتح تطبيق Vipps تحت «المدفوعات».'
+          : 'Betaling opprettet. Åpne Vipps-appen under Betalinger.');
+        if(btn) btn.style.pointerEvents = '';
+      }
     } catch(err){
       console.error(err);
       notify('Feil: ' + err.message);
