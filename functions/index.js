@@ -76,6 +76,7 @@ async function hentPrisoppsett() {
     antallManeder: 9,           // 4 mnd høst + 5 mnd vår
     materiellAvgift: 0,         // 0 er synlig feil; et gjettet beløp blir fakturert
     terminer: 1,
+    depositum: 500,
   };
 
   // Prisene: samme kilde som panelet bruker.
@@ -122,6 +123,8 @@ async function hentPrisoppsett() {
       if (!isNaN(mat) && mat >= 0) oppsett.materiellAvgift = mat;
       const ter = parseFloat(d.terminer);
       if (!isNaN(ter) && ter >= 1 && ter <= 12) oppsett.terminer = ter;
+      const dep = parseFloat(d.depositum);
+      if (!isNaN(dep) && dep >= 0) oppsett.depositum = dep;
       // Teller barn registrert på foresatt2 som søsken? Står som false
       // fordi det er dagens oppførsel — se merknaden i computeSoskenPrice.
       oppsett.tellForesatt2 = d.tellForesatt2 === true;
@@ -307,10 +310,10 @@ async function getVippsAccessToken() {
 
 // =======================================================================
 // 1) createVippsPayment
-//    POST { type: 'registration'|'balance', targetId, amountKr, phoneNumber }
-//    - type 'registration': targetId er en registrations-dokument-ID
-//      (depositum ved en ny søknad — webhooken oppretter elev+foresatt).
-//    - type 'balance': targetId er en students-dokument-ID (en allerede
+    //    POST { type: 'registration'|'balance', targetId, amountKr, phoneNumber }
+    //    - type 'registration': targetId er en registrations-dokument-ID
+    //      (depositum etter manuell godkjenning — webhooken krediterer eksisterende elev).
+    //    - type 'balance': targetId er en students-dokument-ID (en allerede
 //      godkjent elev som betaler ned på restbeløpet — webhooken oppdaterer
 //      bare belopBetalt, oppretter INGEN ny elev).
 //    Returnerer { ok:true, redirectUrl } eller { ok:false, error }
@@ -380,6 +383,88 @@ async function krevInnlogget(req, res) {
   }
 }
 
+// Foresatt som betaler fra egen telefon (Foreldreportalen) — ikke admin.
+async function krevForesattTilgang(bruker, type, targetId, res) {
+  if (!bruker.epost) {
+    res.status(403).json({ ok: false, error: "Kontoen mangler e-post." });
+    return false;
+  }
+  if (type !== "balance") {
+    res.status(403).json({ ok: false, error: "Depositum betales via lenke fra skolen." });
+    return false;
+  }
+  const guardianSnap = await db.collection("guardians")
+    .where("epost", "==", bruker.epost)
+    .limit(1)
+    .get();
+  if (guardianSnap.empty) {
+    res.status(403).json({ ok: false, error: "Fant ingen foresatt-konto for denne brukeren." });
+    return false;
+  }
+  const guardianId = guardianSnap.docs[0].id;
+  const studentSnap = await db.collection("students").doc(targetId).get();
+  if (!studentSnap.exists) {
+    res.status(404).json({ ok: false, error: "Fant ikke eleven." });
+    return false;
+  }
+  const student = studentSnap.data();
+  if (student.foresatt !== guardianId && student.foresatt2 !== guardianId) {
+    res.status(403).json({ ok: false, error: "Du har ikke tilgang til denne eleven." });
+    return false;
+  }
+  return true;
+}
+
+const VIPPS_RETURN_URL = "https://madinaskole.no/foreldre?vipps=return";
+
+function vippsPushNote(userFlow) {
+  if (VIPPS_ENV.value() !== "test") {
+    if (userFlow === "PUSH_MESSAGE") {
+      return "Push-varsel er sendt til Vipps-appen. Foresatt kan også bruke betalingslenken i e-posten.";
+    }
+    return "Betalingslenke er klar. Foresatt åpner lenken på mobilen for å betale i Vipps.";
+  }
+  if (userFlow === "PUSH_MESSAGE") {
+    return "Test-miljø: push-varsler er ofte ustabile hos Vipps. Be foresatt åpne Vipps test-appen → Betalinger → dra ned for å oppdatere. Betalingslenken i e-posten fungerer alltid som backup.";
+  }
+  return "Test-miljø: betalingslenken åpner Vipps test-appen direkte på mobilen.";
+}
+
+async function postVippsPayment(accessToken, { reference, normalizedPhone, amountKr, paymentDescription, userFlow, returnUrl }) {
+  const payload = {
+    amount: { currency: "NOK", value: Math.round(Number(amountKr) * 100) },
+    paymentMethod: { type: "WALLET" },
+    customer: { phoneNumber: normalizedPhone },
+    reference,
+    userFlow,
+    paymentDescription,
+  };
+  if (userFlow === "WEB_REDIRECT") {
+    payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
+  }
+
+  const paymentRes = await fetch(`${vippsApiBase()}/epayment/v1/payments`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Ocp-Apim-Subscription-Key": VIPPS_SUBSCRIPTION_KEY.value(),
+      "Merchant-Serial-Number": VIPPS_MSN.value(),
+      "Content-Type": "application/json",
+      "Idempotency-Key": reference,
+      "Vipps-System-Name": "madina-skole",
+      "Vipps-System-Version": "1.0.0",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const bodyText = await paymentRes.text();
+  let paymentData = null;
+  if (paymentRes.ok) {
+    try { paymentData = JSON.parse(bodyText); } catch (_) { paymentData = {}; }
+  }
+  return { ok: paymentRes.ok, status: paymentRes.status, bodyText, paymentData };
+}
+
 exports.createVippsPayment = onRequest(
   { secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY], cors: true },
   async (req, res) => {
@@ -391,10 +476,17 @@ exports.createVippsPayment = onRequest(
 
     const bruker = await krevInnlogget(req, res);
     if (!bruker) return;
-    if (!(await krevOpptaksrolle(bruker, res))) return;
 
     try {
-      const { type, targetId, amountKr, phoneNumber } = req.body || {};
+      const { type, targetId, amountKr, phoneNumber, initiatedBy } = req.body || {};
+      const erForesatt = initiatedBy === "guardian";
+
+      if (erForesatt) {
+        if (!(await krevForesattTilgang(bruker, type, targetId, res))) return;
+      } else if (!(await krevOpptaksrolle(bruker, res))) {
+        return;
+      }
+
       if (!type || !targetId || !amountKr || !phoneNumber) {
         res.status(400).json({ ok: false, error: "Mangler type, targetId, amountKr eller phoneNumber." });
         return;
@@ -404,9 +496,6 @@ exports.createVippsPayment = onRequest(
         return;
       }
 
-      // Henter riktig dokument avhengig av betalingstype, kun for å hente
-      // et navn til betalingsbeskrivelsen i Vipps-appen — selve
-      // godkjenningslogikken skjer i webhooken.
       const sourceCollection = type === "registration" ? "registrations" : "students";
       const sourceRef = db.collection(sourceCollection).doc(targetId);
       const sourceSnap = await sourceRef.get();
@@ -419,17 +508,9 @@ exports.createVippsPayment = onRequest(
 
       const accessToken = await getVippsAccessToken();
 
-      // "reference" må være unik per salgsenhet (MSN) hos Vipps, og Vipps
-      // krever at Idempotency-Key (som vi setter lik denne) er MAKS 50
-      // tegn. Vi bruker derfor korte kode-forkortelser ("reg"/"bal") i
-      // stedet for de fulle ordene "registration"/"balance" — ellers blir
-      // strengen for lang og Vipps avviser betalingen med en 400-feil.
       const typeCode = type === "registration" ? "reg" : "bal";
       const reference = `madina-${typeCode}-${targetId}-${Date.now()}`;
 
-      // Vipps forventer telefonnummeret i MSISDN-format MED landkode
-      // (f.eks. 4791507350), ikke bare de 8 sifrene nordmenn er vant til å
-      // skrive. Legger på "47" foran automatisk hvis det mangler.
       let normalizedPhone = String(phoneNumber).replace(/\D/g, "");
       if (normalizedPhone.length === 8) normalizedPhone = "47" + normalizedPhone;
 
@@ -437,55 +518,50 @@ exports.createVippsPayment = onRequest(
         ? `Depositum — ${elevNavn} (Madina Skole)`
         : `Skolepenger — ${elevNavn} (Madina Skole)`;
 
-      const paymentRes = await fetch(`${vippsApiBase()}/epayment/v1/payments`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Ocp-Apim-Subscription-Key": VIPPS_SUBSCRIPTION_KEY.value(),
-          "Merchant-Serial-Number": VIPPS_MSN.value(),
-          "Content-Type": "application/json",
-          "Idempotency-Key": reference,
-          "Vipps-System-Name": "madina-skole",
-          "Vipps-System-Version": "1.0.0",
-        },
-        body: JSON.stringify({
-          amount: { currency: "NOK", value: Math.round(Number(amountKr) * 100) },
-          paymentMethod: { type: "WALLET" },
-          customer: { phoneNumber: normalizedPhone },
-          reference,
-          // PUSH_MESSAGE sender et ekte push-varsel rett inn i Vipps-appen
-          // til foresatte (siden administrasjonen — ikke foresatte selv —
-          // starter betalingen på en enhet foresatte ikke sitter ved), i
-          // stedet for WEB_REDIRECT som bare gir en lenke vi må sende på
-          // e-post. E-posten sendes fortsatt i tillegg, som en backup.
-          userFlow: "PUSH_MESSAGE",
-          paymentDescription,
-        }),
+      // Admin sender fra kontor → PUSH_MESSAGE (krever MSN-godkjenning hos Vipps).
+      // Foresatt betaler fra egen telefon → WEB_REDIRECT (anbefalt av Vipps).
+      let userFlow = erForesatt ? "WEB_REDIRECT" : "PUSH_MESSAGE";
+      let attempt = await postVippsPayment(accessToken, {
+        reference,
+        normalizedPhone,
+        amountKr,
+        paymentDescription,
+        userFlow,
+        returnUrl: VIPPS_RETURN_URL,
       });
 
-      if (!paymentRes.ok) {
-        const body = await paymentRes.text();
-        logger.error("Vipps create payment failed", body);
-        // Sender det faktiske Vipps-feilsvaret tilbake til admin-panelet
-        // (i stedet for en generisk melding) — gjør det mulig å se nøyaktig
-        // hva Vipps klager på, uten å måtte lete i Cloud Functions-loggene.
-        res.status(502).json({ ok: false, error: "Vipps avviste betalingen: " + body });
+      // MSN uten PUSH_MESSAGE-godkjenning: fall tilbake til lenke i e-post.
+      if (!attempt.ok && !erForesatt && userFlow === "PUSH_MESSAGE") {
+        const pushAvvist = /PUSH_MESSAGE/i.test(attempt.bodyText);
+        if (pushAvvist) {
+          logger.warn("PUSH_MESSAGE avvist — prøver WEB_REDIRECT", { reference, body: attempt.bodyText });
+          userFlow = "WEB_REDIRECT";
+          attempt = await postVippsPayment(accessToken, {
+            reference,
+            normalizedPhone,
+            amountKr,
+            paymentDescription,
+            userFlow,
+            returnUrl: VIPPS_RETURN_URL,
+          });
+        }
+      }
+
+      if (!attempt.ok) {
+        logger.error("Vipps create payment failed", attempt.bodyText);
+        res.status(502).json({ ok: false, error: "Vipps avviste betalingen: " + attempt.bodyText });
         return;
       }
-      const paymentData = await paymentRes.json();
 
-      // Lagrer referansen på selve kilde-dokumentet, slik at man kan se i
-      // Firestore at en betaling er igangsatt (nyttig for feilsøking), selv
-      // om webhooken selv finner alt den trenger fra reference-strengen.
+      const paymentData = attempt.paymentData || {};
+
       await sourceRef.update({
         vippsReference: reference,
         vippsStatus: "CREATED",
         vippsCreatedAt: new Date().toISOString(),
+        vippsUserFlow: userFlow,
       });
 
-      // Egen "utestående forespørsel"-logg — kun Kasserer (Ledelse) bruker
-      // denne, til å vise/avbryte krav som er sendt men ikke betalt ennå.
-      // Vanlig Kasserer trenger den ikke og skriver ikke til den.
       await db.collection("pendingVippsPayments").add({
         reference,
         type,
@@ -494,17 +570,23 @@ exports.createVippsPayment = onRequest(
         elevNavn,
         amountKr: Number(amountKr),
         phoneNumber: normalizedPhone,
+        userFlow,
         status: "pending",
         createdAt: new Date().toISOString(),
-        // Hvem som sendte kravet. Betales det, er DET personen som i
-        // praksis tok opptaksbeslutningen — webhooken godkjenner bare
-        // automatisk det et menneske allerede satte i gang. Uten dette sto
-        // det bare «Vipps-betaling (automatisk)» i søknaden, og ingen kunne
-        // se hvem som faktisk hadde ansvaret.
         createdBy: bruker.epost || null,
+        initiatedBy: erForesatt ? "guardian" : "admin",
       });
 
-      res.status(200).json({ ok: true, redirectUrl: paymentData.redirectUrl, reference });
+      const vippsEnv = VIPPS_ENV.value() === "prod" ? "prod" : "test";
+      res.status(200).json({
+        ok: true,
+        redirectUrl: paymentData.redirectUrl || null,
+        reference,
+        userFlow,
+        vippsEnv,
+        pushNote: vippsPushNote(userFlow),
+        usedFallback: userFlow === "WEB_REDIRECT" && !erForesatt,
+      });
     } catch (err) {
       logger.error("createVippsPayment error", err);
       res.status(500).json({ ok: false, error: String(err.message || err) });
@@ -683,14 +765,69 @@ exports.vippsWebhook = onRequest(
     }
     const reg = regSnap.data();
 
-    // Unngår dobbel-godkjenning hvis Vipps skulle sende samme hendelse
-    // flere ganger (dette skjer i praksis av og til — helt normalt).
+    // ---- Manuell-først-flyt: søknaden er allerede godkjent, krediter depositum ----
     if (reg.status === "Godkjent") {
-      res.status(200).send("OK (allerede godkjent)");
+      const oppsett = await hentPrisoppsett();
+      const paidAmount = paidAmountKr || oppsett.depositum || 500;
+      const studentSnap = await db.collection("students")
+        .where("fraSoknadId", "==", targetId).limit(1).get();
+      if (studentSnap.empty) {
+        logger.warn("Godkjent søknad uten tilknyttet elev for Vipps-depositum", targetId);
+        res.status(200).send("OK (ingen elev)");
+        return;
+      }
+      const studentRef = studentSnap.docs[0].ref;
+      const student = studentSnap.docs[0].data();
+      const prevPaid = parseFloat(String(student.belopBetalt || "0").replace(/[^\d.-]/g, "")) || 0;
+      const total = parseFloat(String(student.belop || "0").replace(/[^\d.-]/g, "")) || 0;
+      const newPaid = prevPaid + paidAmount;
+
+      await studentRef.update({
+        belopBetalt: String(newPaid),
+        betalt: newPaid >= total ? "Ja" : (newPaid > 0 ? "Delvis" : "Nei"),
+        depositumBetalt: "Ja",
+        betalingsdato: new Date().toISOString().slice(0, 10),
+        sistEndretAv: "vipps-webhook",
+        sistEndretDato: new Date().toISOString().slice(0, 10),
+      });
+
+      await db.collection("studentPayments").add({
+        studentId: studentRef.id,
+        belop: paidAmount,
+        dato: new Date().toISOString(),
+        kilde: "Vipps — depositum",
+        reference,
+      });
+
+      let pendingRef = null;
+      try {
+        const pendSnap = await db.collection("pendingVippsPayments")
+          .where("reference", "==", reference).limit(1).get();
+        if (!pendSnap.empty) pendingRef = pendSnap.docs[0].ref;
+      } catch (e) {
+        logger.warn("Fant ikke pending Vipps-krav for depositum", e);
+      }
+
+      await regDoc.update({
+        depositumBetalt: "Ja",
+        vippsStatus: "AUTHORIZED",
+        vippsBetaltDato: new Date().toISOString(),
+      });
+
+      if (pendingRef) {
+        try {
+          await pendingRef.update({ status: "completed", completedAt: new Date().toISOString() });
+        } catch (e) {
+          logger.error("Kunne ikke merke Vipps-kravet som betalt", e);
+        }
+      }
+
+      logger.info(`Depositum registrert for ${reg.elev_navn} (manuell-først-flyt).`);
+      res.status(200).send("OK");
       return;
     }
 
-    // ---- Oppretter foresatt (hvis den ikke finnes fra før) ----
+    // ---- Legacy: betaling på NY søknad — oppretter elev+foresatt (gammel flyt) ----
     let guardianId = "";
     const guardianName = reg.foresatt1_navn || "";
     const guardianPhone = reg.foresatt1_tlf || "";

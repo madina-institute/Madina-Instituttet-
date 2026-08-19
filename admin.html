@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 02:35:00 -->
+<!-- SIST-ENDRET: 2026-08-20 03:10:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2031,12 +2031,8 @@
   <div class="tab" data-tab="betaling" data-side="okonomi">Innstillinger</div>
   <!-- Skjult — eier-verktøy er nå innebygd i Kasserer når du er eier -->
   <div class="tab" data-tab="cashierLedelse" data-side="okonomi" data-nav-hidden="1" id="tabCashierLedelse" style="display:none;">Kasserer (ledelse)</div>
-  <!-- Fagplan hører til TO seksjoner. data-side matches med ~= , som
-       treffer ett ord i en mellomromsdelt liste — samme grep som Lønn
-       bruker for å ligge både under Økonomi og Personale. Alternativet
-       var to paneler med samme innhold, og de ville kommet ut av takt.
-       Den står FØRST under Undervisning med vilje: pensumet er det
-       alt det andre i seksjonen viser til. -->
+  <!-- Fagplan og læreplan ligger under Undervisning. Læreplan-seksjonen i
+       sidefeltet er fjernet — alt pensum og plan finnes her. -->
   <div class="tab" data-tab="fagplan" data-side="pedagogisk">Fagplan</div>
   <div class="tab" data-tab="arsplan" data-side="pedagogisk">Årsplan</div>
   <div class="tab" data-tab="laereplanregler" data-side="pedagogisk">Læreplanregler</div>
@@ -3092,6 +3088,13 @@
     #wsListSlot .op-pill.vipps,
     #opListSlot .op-pill.vipps,
     #panel-opptak .op-pill.vipps{ background:#ffe8de; color:#b33a00; }
+    #wsListSlot .op-pill.dep,
+    #opListSlot .op-pill.dep,
+    #panel-opptak .op-pill.dep{ background:#fde8e8; color:var(--red); }
+    #wsListSlot .op-item.dep-ubetalt .navn,
+    #opListSlot .op-item.dep-ubetalt .navn,
+    #panel-opptak .op-item.dep-ubetalt .navn{ color:var(--red); font-weight:700; }
+    #panel-opptak .op-ok{ font-family:'Jost',sans-serif; font-size:12px; color:#4a7c59; background:#eef6f0; border:1px solid #c8e0cc; border-radius:8px; padding:10px 12px; margin-top:8px; }
     #wsListSlot .op-empty,
     #opListSlot .op-empty,
     #panel-opptak .op-empty{ padding:24px 18px; font-family:'Jost',sans-serif; font-size:13px; color:#6b7787; text-align:center; }
@@ -4239,6 +4242,18 @@
         <input type="text" id="vippsLinkInput" placeholder="https://vipps.no/...">
       </div>
       <button class="btn btn-primary" style="width:auto;" onclick="saveBetalingSettings()">Lagre</button>
+    </div>
+    <div class="report-card" style="margin-top:14px; border-left:4px solid var(--vipps);">
+      <h3>Push-varsler i Vipps</h3>
+      <div class="sub" style="line-height:1.65;">
+        Når skolen sender et Vipps-krav fra panelet, brukes <strong>PUSH_MESSAGE</strong> — et varsel rett i Vipps-appen til foresatt 1.
+        E-post med betalingslenke sendes alltid i tillegg som backup.
+      </div>
+      <ul style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; line-height:1.65; margin:12px 0 0 18px; padding:0;">
+        <li><strong>Test-miljø:</strong> Vipps sier at push-varsler ofte er ustabile eller uteblir. Betalingen ligger likevel under <em>Betalinger</em> — dra ned for å oppdatere. Bruk den oransje test-appen med testnummeret dere fikk fra Vipps.</li>
+        <li><strong>Produksjon:</strong> MSN må være godkjent for PUSH_MESSAGE hos Vipps. Uten godkjenning faller systemet automatisk tilbake til betalingslenke i e-post.</li>
+        <li><strong>Telefonnummer:</strong> Må være registrert i Vipps på foresatt 1 sitt nummer (8 siffer uten landkode).</li>
+      </ul>
     </div>
     </div>
 
@@ -5711,6 +5726,7 @@
         {key:'spesialprisGrunn', label:'Begrunnelse for spesialpris', type:'text', placeholder:'f.eks. vedtak om redusert sats'},
         {key:'belop', label:'Beløp totalt (kr)', type:'text'},
         {key:'belopBetalt', label:'Beløp betalt så langt (kr)', type:'text'},
+        {key:'depositumBetalt', label:'Depositum betalt', type:'select', options:['Ja','Nei']},
         {key:'betalingsdato', label:'Betalingsdato', type:'text'},
         {key:'soskenrekkefolge', label:'Søskenrekkefølge (auto)', type:'text'},
 
@@ -6027,6 +6043,8 @@
       label: 'søknad', collectionName: 'registrations',
       fields: [
         {key:'status', label:'Status', type:'select', options:['Ny','Venteliste','Godkjent','Avslått']},
+        {key:'klasseValg', label:'Valgt klasse (planlagt)', type:'dynamic-select', source:'classes'},
+        {key:'depositumBetalt', label:'Depositum betalt', type:'select', options:['Ja','Nei']},
         {key:'innsendtDato', label:'Innsendt dato', type:'text'},
         {key:'elev_navn', label:'Elevens fulle navn', type:'text'},
         {key:'elev_fdato', label:'Fødselsdato', type:'text'},
@@ -7536,12 +7554,16 @@
       const currentPaid = cashierKr(student.belopBetalt);
       const belopTotal = cashierKr(student.belop);
       const newPaid = currentPaid + amount;
-      await updateDoc(doc(db, 'students', id), {
+      const dep = prisOppsett.depositum || 0;
+      const depositumOk = dep <= 0 || newPaid >= dep || (student.depositumBetalt === 'Ja');
+      const studentUpdate = {
         belopBetalt: String(newPaid),
         betalt: newPaid >= belopTotal ? 'Ja' : 'Delvis',
         sistEndretAv: currentUserEmail || 'ukjent',
         sistEndretDato: new Date().toISOString().slice(0, 10)
-      });
+      };
+      if(depositumOk && dep > 0) studentUpdate.depositumBetalt = 'Ja';
+      await updateDoc(doc(db, 'students', id), studentUpdate);
       await addDoc(collection(db, 'studentPayments'), {
         studentId: id,
         belop: amount,
@@ -8718,6 +8740,30 @@
       return { ok: false, error: 'Utløpt innlogging' };
     }
     return await res.json();
+  }
+
+  function visVippsSendtResultat(data, opts){
+    opts = opts || {};
+    const link = data.redirectUrl || '';
+    const note = data.pushNote || '';
+    const testBadge = data.vippsEnv === 'test'
+      ? '<span style="display:inline-block;background:#fff3e0;color:#b33a00;padding:2px 8px;border-radius:999px;font-size:11px;margin-bottom:8px;">Test-miljø</span>'
+      : '';
+    const fallback = data.usedFallback
+      ? '<p style="margin:8px 0;color:#b33a00;"><strong>Merk:</strong> PUSH_MESSAGE er ikke godkjent for MSN — betalingslenke i e-post brukes i stedet.</p>'
+      : '';
+    const linkHtml = link
+      ? '<p style="margin:10px 0 6px;"><a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" style="word-break:break-all;">' + escapeHtml(link) + '</a></p>' +
+        '<button type="button" class="btn" style="width:auto;margin-top:4px;" onclick="navigator.clipboard.writeText(' + JSON.stringify(link) + ').then(function(){showToast(\'Lenke kopiert\');}).catch(function(){prompt(\'Kopier lenken:\', ' + JSON.stringify(link) + ');})">📋 Kopier betalingslenke</button>'
+      : '<p style="margin:8px 0;color:#5a6860;">Ingen betalingslenke — foresatt finner kravet under <em>Betalinger</em> i Vipps-appen.</p>';
+    melding('ADM-VIP-OK', '✓ Vipps-krav opprettet',
+      testBadge +
+      '<p style="margin:0 0 8px;line-height:1.6;">' + escapeHtml(note) + '</p>' +
+      fallback +
+      linkHtml +
+      (opts.epostAntall > 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til ' + opts.epostAntall + ' foresatte.</p>' : '') +
+      (opts.epostAntall === 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til foresatt.</p>' : ''),
+      'vipps · userFlow=' + (data.userFlow || '—') + ' · env=' + (data.vippsEnv || '—'));
   }
 
   const CANCEL_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/cancelVippsPayment';
@@ -12179,6 +12225,23 @@
   let opMobileDetail = false;
   window.opKlasseValg = {};
 
+  function elevForSoknad(regId){
+    return (cache.students || []).find(s => s.fraSoknadId === regId);
+  }
+
+  function manglerDepositumForElev(row){
+    const dep = prisOppsett.depositum || 0;
+    if(dep <= 0) return false;
+    return (row.depositumBetalt || 'Nei') !== 'Ja';
+  }
+
+  function manglerDepositumForSoknad(reg){
+    const elev = elevForSoknad(reg.id);
+    if(elev) return manglerDepositumForElev(elev);
+    if((reg.status || '') === 'Godkjent') return (reg.depositumBetalt || 'Nei') !== 'Ja';
+    return false;
+  }
+
   function opErMobil(){
     return window.matchMedia('(max-width:900px)').matches;
   }
@@ -12327,14 +12390,33 @@
     opSettKlasse(id, klasseId);
   };
 
-  window.opLagreKlassevalg = function(id){
+  window.opLagreKlassevalg = async function(id){
     const valgt = opKlasseValg[id];
     if(!valgt){
       showToast('Velg en klasse først.', true);
       return;
     }
     const navn = resolveDynName('classes', valgt) || valgt;
-    showToast('✓ Klassevalg lagret: ' + navn);
+    try{
+      await updateDoc(doc(db, 'registrations', id), {
+        klasseValg: valgt,
+        sistEndretAv: currentUserEmail || 'ukjent',
+        sistEndretDato: new Date().toISOString().slice(0, 10)
+      });
+      const elev = elevForSoknad(id);
+      if(elev){
+        await updateDoc(doc(db, 'students', elev.id), {
+          klasse: valgt,
+          sistEndretAv: currentUserEmail || 'ukjent',
+          sistEndretDato: new Date().toISOString().slice(0, 10)
+        });
+      }
+      showToast('✓ Klassevalg lagret: ' + navn);
+      if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke lagre klassevalg: ' + (err.message || 'ukjent feil'), true);
+    }
   };
 
   window.opSok = function(q){
@@ -12384,13 +12466,16 @@
         const alder = kfAlder(r.elev_fdato);
         const status = r.status || 'Ny';
         const krav = apentVippsKrav('registrations', r.id);
+        const depMangler = manglerDepositumForSoknad(r);
         listHtml += '<div class="op-item' + (r.id === opSelectedId ? ' sel' : '') +
+          (depMangler ? ' dep-ubetalt' : '') +
           '" onclick="opVelgSoknad(\'' + escapeHtml(r.id) + '\')">' +
           '<div class="navn">' + escapeHtml(r.elev_navn || '—') + '</div>' +
           '<div class="meta">' + escapeHtml(prog) +
           (alder != null ? ' · ' + alder + ' år' : '') +
           (r.foresatt1_navn ? ' · ' + escapeHtml(r.foresatt1_navn) : '') + '</div>' +
           (status === 'Ny' ? '<span class="op-pill ny">Ny</span>' : '') +
+          (depMangler ? '<span class="op-pill dep">Depositum ubetalt</span>' : '') +
           (krav ? '<span class="op-pill vipps">⏳ Vipps sendt</span>' : '') +
           '</div>';
       });
@@ -12403,10 +12488,9 @@
       '<div class="op-list">' + listHtml + '</div></div>';
 
     let detail = '<div class="ws-shell"><div class="op-flow" aria-hidden="true">' +
-      '<span class="on">① Søknad i kø</span><span>→</span>' +
-      '<span class="on">② Vipps-krav</span><span>→</span>' +
-      '<span>③ Betaling = godkjent</span><span>→</span>' +
-      '<span class="on">④ Klasse tildelt</span></div>' +
+      '<span class="on">① Godkjenn</span><span>→</span>' +
+      '<span class="on">② Depositum (Vipps)</span><span>→</span>' +
+      '<span class="on">③ Klasse</span></div>' +
       '<button type="button" class="op-mob-back" onclick="opTilbakeListe()">← Tilbake til listen</button>' +
       '<div class="op-panel"><div class="op-ph"><h2>Detaljer og handlinger</h2>' +
       '<p>Samme knapper som i dag — samlet her</p></div>';
@@ -12439,18 +12523,32 @@
         detail += '<div class="op-acts">' +
           '<button type="button" class="btn btn-success" onclick="approveRegistration(\'' + escapeHtml(reg.id) + '\')">✅ Godkjenn</button>' +
           '<button type="button" class="btn btn-ghost" onclick="waitlistRegistration(\'' + escapeHtml(reg.id) + '\')">⏳ Venteliste</button>' +
-          '<button type="button" class="btn btn-danger" onclick="rejectRegistration(\'' + escapeHtml(reg.id) + '\')">❌ Avslå</button>';
-        if(!krav){
-          detail += '<button type="button" class="btn btn-vipps" onclick="sendRealVippsRequest(\'' + escapeHtml(reg.id) + '\')">⚡ Send Vipps-krav</button>';
+          '<button type="button" class="btn btn-danger" onclick="rejectRegistration(\'' + escapeHtml(reg.id) + '\')">❌ Avslå</button>' +
+          '<button type="button" class="btn btn-ghost" onclick="editEntry(\'registrations\',\'' + escapeHtml(reg.id) + '\')">✏️ Rediger</button>' +
+          '</div>';
+        detail += '<p class="op-hint">💡 Flyt: godkjenn manuelt først → send depositum via Vipps → tildel klasse. Vipps-push går til foresatt 1; e-post kan gå til begge.</p>';
+      } else if(kanBehandle && status === 'Godkjent'){
+        const elev = elevForSoknad(reg.id);
+        const dep = prisOppsett.depositum || 0;
+        const depBetalt = !manglerDepositumForSoknad(reg);
+        detail += '<div class="op-acts">';
+        if(dep > 0 && !depBetalt && !krav){
+          detail += '<button type="button" class="btn btn-vipps" onclick="sendRealVippsRequest(\'' + escapeHtml(reg.id) + '\')">⚡ Send depositum via Vipps</button>';
         }
-        detail += '<button type="button" class="btn btn-ghost" onclick="editEntry(\'registrations\',\'' + escapeHtml(reg.id) + '\')">✏️ Rediger</button>' +
+        detail += '<button type="button" class="btn btn-ghost" onclick="showPersonDetail(\'students\',\'' + escapeHtml(elev ? elev.id : '') + '\')"' +
+          (elev ? '' : ' disabled') + '>👁 Se elev</button>' +
+          '<button type="button" class="btn btn-ghost" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">📄 Søknad</button>' +
           '</div>';
         if(krav){
           const sendt = (krav.createdAt || krav.opprettet || '').slice(0, 16).replace('T', ' ');
           detail += '<div class="op-wait">⏳ Vipps-krav sendt' + (sendt ? ' ' + escapeHtml(sendt) : '') +
-            ' — venter på betaling. Betaling godkjenner søknaden automatisk.</div>';
+            ' — venter på depositum. Push-varsel i Vipps går til foresatt 1.</div>';
         }
-        detail += '<p class="op-hint">💡 Etter godkjenning: elev + foresatt opprettes, klasse settes fra klassedelen under.</p>';
+        if(depBetalt && dep > 0){
+          detail += '<div class="op-ok">✓ Depositum mottatt</div>';
+        } else if(dep > 0 && manglerDepositumForSoknad(reg)){
+          detail += '<div class="op-wait">🔴 Depositum ikke betalt ennå — eleven vises med rød markering i klasselisten.</div>';
+        }
       } else if(!kanBehandle){
         detail += '<p class="op-hint">Kun opptaksansvarlig kan behandle søknader.</p>' +
           '<button type="button" class="op-btn" onclick="showPersonDetail(\'registrations\',\'' + escapeHtml(reg.id) + '\')">👁 Alle detaljer</button>';
@@ -12461,7 +12559,8 @@
 
       const gruppe = opFinnGruppeInfo(reg);
       const klasser = opKlasserForReg(reg);
-      const valgtKlasse = opKlasseValg[reg.id] || '';
+      const elev = elevForSoknad(reg.id);
+      const valgtKlasse = opKlasseValg[reg.id] || reg.klasseValg || (elev && elev.klasse) || '';
       const dep = prisOppsett.depositum || 0;
       const programPris = parseFloat(String(pris.price || 0).replace(/[^\d.-]/g, '')) || 0;
       const gjenstår = Math.max(0, programPris - dep);
@@ -12484,9 +12583,9 @@
         detail += '<div class="op-forslag"><div>Mangler fødselsdato — kan ikke foreslå gruppe.</div></div>';
       }
 
-      detail += '<label class="op-lbl">Klasse ved godkjenning</label>' +
+      detail += '<label class="op-lbl">Klasse</label>' +
         '<select class="op-select" onchange="opSettKlasse(\'' + escapeHtml(reg.id) + '\', this.value)"' +
-        (kanBehandle && (status === 'Ny' || status === 'Venteliste') ? '' : ' disabled') + '>' +
+        (kanBehandle && (status === 'Ny' || status === 'Venteliste' || status === 'Godkjent') ? '' : ' disabled') + '>' +
         '<option value="">— Ikke tildelt ennå —</option>' +
         klasser.map(c => '<option value="' + escapeHtml(c.id) + '"' +
           (c.id === valgtKlasse ? ' selected' : '') + '>' + escapeHtml(c.navn || c.id) + '</option>').join('') +
@@ -12499,7 +12598,7 @@
         '</div>' +
         (dep > 0 ? '<p class="op-hint">Depositum trekkes fra totalbeløpet — det er ikke et tillegg.</p>' : '');
 
-      if(kanBehandle && (status === 'Ny' || status === 'Venteliste')){
+      if(kanBehandle && (status === 'Ny' || status === 'Venteliste' || status === 'Godkjent')){
         detail += '<div class="op-sticky-foot"><button type="button" class="btn btn-success op-btn-full" style="width:100%;" onclick="opLagreKlassevalg(\'' + escapeHtml(reg.id) + '\')">Lagre klassevalg</button></div>';
       }
       if(klasser.length === 0){
@@ -13329,7 +13428,7 @@
 
   const SIDE_LABELS = {
     personale:'Personale', admin:'Elever og familier', okonomi:'Økonomi',
-    pedagogisk:'Undervisning', laereplan:'Læreplan', kommunikasjon:'Kommunikasjon',
+    pedagogisk:'Undervisning og læreplan', kommunikasjon:'Kommunikasjon',
     skoleoppsett:'Skole', system:'System', portaler:'Portaler'
   };
 
@@ -13640,11 +13739,13 @@
     } else {
       data.forEach(row => {
         const title = wsColDisplay(type, row, titleKey) || '—';
-        listHtml += '<div class="op-item' + (row.id === selId ? ' sel' : '') +
+        const depCls = (type === 'students' && manglerDepositumForElev(row)) ? ' dep-ubetalt' : '';
+        listHtml += '<div class="op-item' + (row.id === selId ? ' sel' : '') + depCls +
           '" onclick="wsVelgRad(\'' + escapeHtml(tabName) + '\',\'' + escapeHtml(row.id) + '\')">' +
           '<div class="navn">' + escapeHtml(title) + '</div>' +
           '<div class="meta">' + escapeHtml(wsListItemMeta(type, row)) + '</div>' +
           wsListItemPill(type, row) +
+          (depCls ? '<span class="op-pill dep">Depositum ubetalt</span>' : '') +
           '</div>';
       });
     }
@@ -21628,6 +21729,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       studentRecord.betalt = 'Nei';
       studentRecord.belop = String(discountedPrice);
       studentRecord.belopBetalt = '0';
+      studentRecord.depositumBetalt = (prisOppsett.depositum || 0) > 0 ? 'Nei' : 'Ja';
       studentRecord.betalingsdato = '';
       studentRecord.soskenrekkefolge = String(soskenPos);
       studentRecord.sistEndretAv = currentUserEmail || 'ukjent';
@@ -21643,6 +21745,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       const nyElevRef = await addDoc(collection(db, 'students'), studentRecord);
       await updateDoc(doc(db, 'registrations', id), {
         status: 'Godkjent',
+        depositumBetalt: (prisOppsett.depositum || 0) > 0 ? 'Nei' : 'Ja',
+        klasseValg: (window.opKlasseValg && opKlasseValg[id]) ? opKlasseValg[id] : (reg.klasseValg || ''),
         behandletAv: currentUserEmail || 'ukjent',
         behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
       });
@@ -21798,50 +21902,69 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   }
 
   window.sendRealVippsRequest = async function(id){
-    // Et betalt Vipps-krav godkjenner søknaden automatisk via webhooken.
-    // Derfor er denne knappen i praksis en opptaksbeslutning, og må ha
-    // samme sperre som Godkjenn-knappen — OG sperren for pengekrav.
     if(!kanSendePengekrav('ADM-VIP-06')) return;
     if(!krevOpptaksrolle()) return;
 
-    // Knappen skjules når det finnes et åpent krav, men et kort som ikke er
-    // tegnet på nytt kan fortsatt ha den gamle knappen liggende.
-    const apent = apentVippsKrav('registrations', id);
-    if(apent && !confirm('Det er allerede sendt et Vipps-krav på denne søknaden som ikke er betalt.\n\nSende et nytt krav likevel? Foresatte vil da få to betalingsvarsler.')) return;
     const reg = cache.registrations.find(r => r.id === id);
     if(!reg){ showToast('Fant ikke søknaden.'); return; }
+    const status = reg.status || 'Ny';
+    if(status !== 'Godkjent'){
+      showToast('Godkjenn søknaden manuelt først — deretter sendes depositum via Vipps.', true);
+      return;
+    }
+    const dep = prisOppsett.depositum || 0;
+    if(dep <= 0){
+      showToast('Depositum er satt til 0 — ingen Vipps-krav nødvendig.', true);
+      return;
+    }
+    if(!manglerDepositumForSoknad(reg)){
+      showToast('Depositum er allerede registrert som betalt.', true);
+      return;
+    }
+
+    const apent = apentVippsKrav('registrations', id);
+    if(apent && !confirm('Det er allerede sendt et Vipps-krav på denne søknaden som ikke er betalt.\n\nSende et nytt krav likevel? Foresatt 1 vil få to betalingsvarsler i Vipps.')) return;
+
     const guardianPhone = reg.foresatt1_tlf || '';
-    const phone = prompt('Telefonnummer for Vipps (8 siffer, uten landkode):', guardianPhone.replace(/\D/g,'').slice(-8));
+    const phone = prompt('Telefonnummer for Vipps-push til foresatt 1 (8 siffer, uten landkode):', guardianPhone.replace(/\D/g,'').slice(-8));
     if(phone === null) return;
     if(!/^\d{8}$/.test(phone.trim())){
       showToast('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).', true);
       return;
     }
+    const frist = prisOppsett.depositumFrist || 5;
     showToast('Oppretter Vipps-betaling...');
     try{
       const data = await kallVippsFunksjon(VIPPS_CREATE_PAYMENT_URL, {
-        type: 'registration', targetId: id, amountKr: 500, phoneNumber: phone.trim()
+        type: 'registration', targetId: id, amountKr: dep, phoneNumber: phone.trim()
       });
       if(!data.ok){
         showToast('Vipps-feil: ' + (data.error || 'Ukjent feil'));
         return;
       }
-      // Sender også betalingslenken på e-post automatisk, i tillegg til at
-      // foresatte får push-varsel direkte i Vipps-appen sin.
-      const guardianEmail = reg.foresatt1_epost || '';
-      if(guardianEmail){
+      const eposter = [...new Set([reg.foresatt1_epost, reg.foresatt2_epost]
+        .filter(e => e && String(e).includes('@'))
+        .map(e => String(e).trim()))];
+      if(eposter.length){
+        const epostTekst = 'Hei,\n\nFor å bekrefte skoleplassen til ' + (reg.elev_navn || 'ditt barn') +
+          ', vennligst betal depositum på ' + dep + ' kr via Vipps innen ' + frist + ' dager.\n\n' +
+          'Vipps-varsel (push) er sendt til foresatt 1 (' + (reg.foresatt1_navn || 'primær foresatt') + '). ' +
+          'Denne e-posten er sendt til alle registrerte foresatte.\n\n' +
+          (data.pushNote ? data.pushNote + '\n\n' : '') +
+          (data.redirectUrl ? 'Du kan også bruke denne lenken:\n' + data.redirectUrl + '\n\n' : '') +
+          'Betalingen trekkes fra totalbeløpet for skoleåret. Så snart betalingen er gjennomført, oppdateres status automatisk.\n\nMed vennlig hilsen,\nMadina Skole';
         await addDoc(collection(db, 'mail'), {
           from: MAIL_FROM,
-          to: [guardianEmail],
+          to: eposter,
           message: {
             subject: '[Madina Skole] Betal depositum for ' + (reg.elev_navn || 'ditt barn'),
-            text: 'Hei,\n\nFor å bekrefte skoleplassen til ' + (reg.elev_navn || 'ditt barn') +
-              ', vennligst betal depositum på 500 kr via Vipps innen 5 dager. Du har fått et betalingsvarsel i Vipps-appen din, eller kan bruke denne lenken:\n\n' + data.redirectUrl +
-              '\n\nBetalingen trekkes fra totalbeløpet for skoleåret. Så snart betalingen er gjennomført, er plassen automatisk bekreftet.\n\nMed vennlig hilsen,\nMadina Skole'
+            text: epostTekst
           }
         });
       }
-      showToast('✓ Ekte Vipps-krav sendt! Plassen godkjennes automatisk når foresatte betaler.');
+      showToast('✓ Vipps-krav sendt til foresatt 1' + (eposter.length > 1 ? ' — e-post til ' + eposter.length + ' foresatte' : '') + '.');
+      visVippsSendtResultat(data, { epostAntall: eposter.length });
+      if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
@@ -21895,12 +22018,14 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
           message: {
             subject: '[Madina Skole] Betaling for ' + (student.navn || 'ditt barn'),
             text: 'Hei,\n\nDu har et utestående beløp på ' + remainingKr + ' kr for ' + (student.navn || 'ditt barn') +
-              '. Du har fått et betalingsvarsel i Vipps-appen din, eller kan bruke denne lenken:\n\n' + data.redirectUrl +
-              '\n\nMed vennlig hilsen,\nMadina Skole'
+              '.\n\n' + (data.pushNote ? data.pushNote + '\n\n' : '') +
+              (data.redirectUrl ? 'Betalingslenke:\n' + data.redirectUrl + '\n\n' : '') +
+              'Med vennlig hilsen,\nMadina Skole'
           }
         });
       }
       showToast('✓ Ekte Vipps-krav sendt! Beløpet registreres automatisk når foresatte betaler.');
+      visVippsSendtResultat(data, { epostAntall: guardianEmail ? 1 : 0 });
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
