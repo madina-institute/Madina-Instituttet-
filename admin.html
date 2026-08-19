@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-19 21:15:00 -->
+<!-- SIST-ENDRET: 2026-08-19 22:45:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -124,12 +124,9 @@
   .side-grid{ display:flex; flex-direction:column; gap:18px; }
   @media (min-width:640px){ .side-grid{ flex-direction:row; flex-wrap:wrap; } .side-grid .side-card{ flex:1 1 calc(50% - 9px); min-width:220px; } }
 
-  /* Persistent left rail for the 5 main sections — visible on every screen
-     size (compact icon rail on mobile, full labeled sidebar on desktop).
-     Lives inside .app-body (a flex row below the header), so it starts
-     right where the header ends and never overlaps the header banner. */
+  /* Horisontal hovedmeny — samme stil overalt (prototype). Ingen venstre
+     sidestolpe lenger: seksjon + underfaner er to vannrette rader. */
   .app-body{
-    /* Mobil: alt i én kolonne, menyen over innholdet. */
     display:flex; flex-direction:column; align-items:stretch;
     max-width:1400px; margin:0 auto;
     padding:14px 14px 28px; gap:0;
@@ -138,66 +135,31 @@
   @media (min-width:900px){ .app-body{ padding:20px 32px 40px; } }
   @media (min-width:1280px){ .app-body{ padding:22px 40px 48px; } }
   .app-sidebar{
-    /* Mobil: vannrett rad som ruller sidelengs, festet under toppfeltet. */
     display:flex; position:sticky; top:92px; z-index:300;
     background:#fff; border:1px solid var(--line);
-    flex-direction:row; align-items:stretch; gap:4px;
-    padding:8px; margin-bottom:14px;
+    flex-direction:row; align-items:stretch; flex-wrap:nowrap; gap:6px;
+    padding:10px 12px; margin-bottom:12px;
     width:100%; flex:0 0 auto;
     overflow-x:auto; overflow-y:hidden;
-    border-radius:14px; box-shadow:var(--shadow);
+    border-radius:var(--radius-card); box-shadow:var(--shadow);
     scrollbar-width:none;
   }
   .app-sidebar::-webkit-scrollbar{ display:none; }
   .app-sidebar .sb-logo{display:none;}
   .app-sidebar button{
-    /* Knappene ligger vannrett — ikon, så etikett. Tidligere sto etiketten
-       under ikonet i én smal kolonne; teksten måtte brytes, og menyen ble
-       høyere enn innholdet ved siden av. */
-    /* I den vannrette raden står ikon og etikett under hverandre, slik at
-       hver knapp blir smal nok til at flere får plass samtidig. */
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; flex:0 0 auto; min-width:76px;
-    background:transparent; border:none; color:#3a4450;
-    /* Gruppenavnene settes i husets display-skrift; fanene under beholder
-       Jost. De to nivaaene sto foer i noeyaktig samme skrift, stoerrelse og
-       vekt — da leses menyen som en lang liste i stedet for som gruppe og
-       fane. Forskjellen i skrift baerer hierarkiet, uten at noe maa gjoeres
-       stoerre eller sterkere farget. */
-    font-family:'Cormorant Garamond',serif; font-weight:700;
-    font-size:12.5px; line-height:1.25; padding:9px 8px;
-    border-radius:10px; cursor:pointer; gap:5px;
+    display:flex; flex-direction:row; align-items:center; justify-content:center;
+    text-align:center; flex:0 0 auto;
+    background:#fff; border:1px solid var(--line); color:var(--ink);
+    font-family:'Jost',sans-serif; font-weight:600;
+    font-size:11.5px; line-height:1.2; padding:6px 11px;
+    border-radius:999px; cursor:pointer; gap:6px; white-space:nowrap;
   }
   html[dir="rtl"] .app-sidebar button{font-family:'Tajawal',sans-serif;}
-  .app-sidebar button .ic{font-size:19px; flex:none;}
+  .app-sidebar button .ic{font-size:14px; flex:none;}
   .app-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
-  .app-sidebar button.active{background:var(--emerald); color:#fff;}
+  .app-sidebar button.active{background:var(--emerald); color:#fff; border-color:var(--emerald);}
   #sideChooseView, #subChooseView, .content-layout{ flex:1; min-width:0; }
-  @media (min-width:900px){
-    /* Fra 900 px er det plass til en ekte sidemeny igjen. */
-    .app-body{ flex-direction:row; align-items:flex-start; gap:20px; }
-    .app-sidebar{
-      flex:0 0 214px; width:214px; flex-direction:column; align-items:stretch;
-      padding:16px 12px; gap:3px; margin-bottom:0;
-      max-height:calc(100vh - 112px); overflow-y:auto; overflow-x:hidden;
-      border-radius:18px;
-    }
-    .app-sidebar button{
-      flex-direction:row; align-items:center; justify-content:flex-start;
-      text-align:start; width:100%; min-width:0;
-      font-size:16px; padding:11px 12px; gap:11px;
-    }
-    .app-sidebar button .ic{ width:22px; text-align:center; }
-    .app-sidebar .sb-logo{display:flex; align-items:center; gap:10px; padding:6px 10px 18px;}
-    .app-sidebar .sb-logo img{height:34px; width:auto; border-radius:5px;}
-    .app-sidebar .sb-logo span{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:15.5px; color:var(--ink);}
-    html[dir="rtl"] .app-sidebar .sb-logo span{font-family:'Tajawal',sans-serif; font-size:14px;}
-    .app-sidebar button{
-      flex-direction:row; align-items:center; text-align:start; justify-content:flex-start;
-      font-size:16.5px; padding:14px 14px; gap:10px;
-    }
-    .app-sidebar button .ic{font-size:17px;}
-  }
+  .app-body.in-section .app-sidebar{ margin-bottom:8px; }
   /* Weekly timeplan grid — real schedule table (times × classes), styled
      with the site's own palette but structured like the reference design:
      colored subject badges, shaded break rows, a merged "felles" row. */
@@ -476,18 +438,19 @@
   .side-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
   .side-card .ic{ font-size:30px; margin-bottom:10px; }
 
-  /* Persistent vertical sub-section nav: a real side column next to the
-     content on every screen size — narrow on mobile, wider on desktop.
-     Always visible while inside a side — no more "choose a card" screen. */
-  .content-layout{ display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:14px 10px; }
+  /* Arbeidsflate-layout: horisontal undermeny + innhold — samme mønster overalt */
+  .content-layout{
+    display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:0;
+  }
   .sub-sidebar{
-    display:flex; flex-direction:row; gap:6px; background:#fff; border:1px solid var(--line);
-    border-radius:16px; padding:8px; box-shadow:var(--shadow);
+    display:flex; flex-direction:row; flex-wrap:wrap; gap:6px;
+    background:#fff; border:1px solid var(--line);
+    border-radius:var(--radius-card); padding:10px 12px; box-shadow:var(--shadow);
     width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;
   }
   .sub-sidebar button{
-    display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; flex:0 0 auto; min-width:64px;
-    background:#fff; border:1px solid var(--line); color:#3a4450; font-family:'Jost',sans-serif;
+    display:flex; flex-direction:row; align-items:center; gap:6px; text-align:center; flex:0 0 auto;
+    background:#fff; border:1px solid var(--line); color:var(--ink); font-family:'Jost',sans-serif;
     font-weight:600; font-size:11.5px; line-height:1.2; padding:6px 11px;
     border-radius:999px; cursor:pointer; white-space:nowrap;
   }
@@ -495,20 +458,13 @@
   .sub-sidebar button .ic{font-size:14px;}
   .sub-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
   .sub-sidebar button.active{background:var(--emerald); color:#fff; border-color:var(--emerald); font-weight:600;}
-  #mainContent{ min-width:0; flex:1; width:100%; }
-  @media (min-width:640px){
-    .content-layout{ flex-direction:row; align-items:flex-start; }
-    .sub-sidebar{
-      flex:0 0 150px; width:auto; flex-direction:column; position:sticky; top:10px;
-      max-height:calc(100vh - 20px); overflow-y:auto; overflow-x:visible;
-    }
-    .sub-sidebar button{ flex-direction:row; text-align:start; font-size:12px; padding:7px 12px; width:auto; white-space:nowrap; min-width:0; }
-    .sub-sidebar button .ic{font-size:14px;}
+  #mainContent{
+    min-width:0; flex:1; width:100%;
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius-card);
+    box-shadow:var(--shadow); overflow:auto;
   }
-  @media (min-width:900px){
-    .content-layout{ padding:20px; gap:16px; }
-    .sub-sidebar{ flex-basis:210px; top:20px; }
-  }
+  .content-layout.ws-mode #mainContent > .panel.active{ padding:16px 18px 28px; }
+  .content-layout.ws-mode main, .content-layout.ws-mode #mainContent{ padding:0; }
 
   /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
   .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
@@ -1801,6 +1757,7 @@
     <img src="logo-bla.png" alt="Madina Institute">
     <span>Madina Skole</span>
   </div>
+  <button data-sb-side="home" onclick="showSideChoice()"><span class="ic">🏠</span> Hjem</button>
   <button data-sb-side="personale" onclick="sidebarSelectSide('personale')"><span class="ic">👥</span> Personale</button>
   <button data-sb-side="admin" onclick="sidebarSelectSide('admin')"><span class="ic">🎓</span> Elever og familier</button>
   <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')"><span class="ic">💰</span> Økonomi</button>
@@ -3037,7 +2994,7 @@
 
     /* ══ Arbeidsflate-design (prototype-stil) — én flate, horisontal undermeny ══ */
     .content-layout.ws-mode{
-      flex-direction:column; align-items:stretch; gap:12px; padding:0;
+      flex-direction:column; align-items:stretch; gap:8px; padding:0;
     }
     .content-layout.ws-mode .sub-sidebar{
       flex:0 0 auto; flex-basis:auto; width:100%; max-width:none; position:static;
@@ -3061,18 +3018,30 @@
 
     /* Opptak: én samlet hvit flate — tre kolonner INNI, ikke tre løse kort */
     #panel-opptak .ws-shell{
-      background:#fff; border:1px solid var(--line); border-radius:var(--radius-card);
-      box-shadow:var(--shadow); overflow:hidden;
+      background:transparent; border:none; border-radius:0;
+      box-shadow:none; overflow:visible; margin:0;
     }
     #panel-opptak .op-flow{ margin:0; padding:14px 16px 0; background:#fff; }
     #panel-opptak .ws-grid{
       display:grid; grid-template-columns:minmax(240px,280px) 1fr minmax(260px,300px);
       align-items:stretch; min-height:480px;
     }
+    #panel-opptak .op-mob-back{
+      display:none; font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600;
+      color:var(--emerald-d); background:none; border:none; padding:0 0 10px;
+      cursor:pointer; text-align:start;
+    }
     @media(max-width:1100px){
-      #panel-opptak .ws-grid{ grid-template-columns:1fr; }
+      #panel-opptak .ws-grid{ grid-template-columns:1fr; min-height:0; }
       #panel-opptak .ws-col{ border-inline-end:none !important; border-bottom:1px solid var(--line); }
       #panel-opptak .ws-col:last-child{ border-bottom:none; }
+      /* Master-detail på mobil: liste ELLER detalj — aldri stablet utenfor skjermen */
+      #panel-opptak .ws-grid:not(.op-mobile-detail) .ws-col-detail,
+      #panel-opptak .ws-grid:not(.op-mobile-detail) .ws-col-extra{ display:none; }
+      #panel-opptak .ws-grid.op-mobile-detail .ws-col-list{ display:none; }
+      #panel-opptak .ws-grid.op-mobile-detail .op-mob-back{ display:block; }
+      #panel-opptak .ws-grid.op-mobile-detail .ws-col-detail,
+      #panel-opptak .ws-grid.op-mobile-detail .ws-col-extra{ display:block; }
     }
     #panel-opptak .ws-col{ border-inline-end:1px solid var(--line); min-width:0; }
     #panel-opptak .ws-col:last-child{ border-inline-end:none; }
@@ -12045,7 +12014,12 @@
   let opFolder = 'Ny';
   let opSelectedId = null;
   let opSearchQuery = '';
+  let opMobileDetail = false;
   window.opKlasseValg = {};
+
+  function opErMobil(){
+    return window.matchMedia('(max-width:1100px)').matches;
+  }
 
   const OP_FOLDER_LABELS = {
     Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent',
@@ -12149,12 +12123,30 @@
   window.opVelgFolder = function(status){
     opFolder = status;
     opSelectedId = null;
+    opMobileDetail = false;
     renderOpptak();
   };
 
   window.opVelgSoknad = function(id){
     opSelectedId = id;
+    if(opErMobil()) opMobileDetail = true;
     renderOpptak();
+    if(opErMobil()){
+      requestAnimationFrame(function(){
+        const root = document.getElementById('opRoot');
+        if(root) root.scrollIntoView({ behavior:'smooth', block:'start' });
+        window.scrollTo({ top:0, behavior:'smooth' });
+      });
+    }
+  };
+
+  window.opTilbakeListe = function(){
+    opMobileDetail = false;
+    renderOpptak();
+    requestAnimationFrame(function(){
+      const root = document.getElementById('opRoot');
+      if(root) root.scrollIntoView({ behavior:'smooth', block:'start' });
+    });
   };
 
   window.opSettKlasse = function(id, klasseId){
@@ -12186,9 +12178,18 @@
     const root = document.getElementById('opRoot');
     if(!root) return;
     const liste = opFilteredList();
-    if(opSelectedId && !liste.some(r => r.id === opSelectedId)){
-      opSelectedId = liste.length ? liste[0].id : null;
-    } else if(!opSelectedId && liste.length) opSelectedId = liste[0].id;
+    const mobil = opErMobil();
+    if(mobil){
+      if(opMobileDetail && opSelectedId && !liste.some(r => r.id === opSelectedId)){
+        opSelectedId = liste.length ? liste[0].id : null;
+        if(!opSelectedId) opMobileDetail = false;
+      }
+    } else {
+      opMobileDetail = false;
+      if(opSelectedId && !liste.some(r => r.id === opSelectedId)){
+        opSelectedId = liste.length ? liste[0].id : null;
+      } else if(!opSelectedId && liste.length) opSelectedId = liste[0].id;
+    }
 
     const counts = opFolderCounts();
     const kanBehandle = isOpptaksansvarlig();
@@ -12229,7 +12230,8 @@
         'value="' + escapeHtml(opSearchQuery) + '" oninput="opSok(this.value)" aria-label="Søk">' +
       '<div class="op-list">' + listHtml + '</div></div>';
 
-    let midt = '<div class="op-panel"><div class="op-ph"><h2>Detaljer og handlinger</h2>' +
+    let midt = '<div class="op-panel"><button type="button" class="op-mob-back" onclick="opTilbakeListe()">← Tilbake til listen</button>' +
+      '<div class="op-ph"><h2>Detaljer og handlinger</h2>' +
       '<p>Samme knapper som i dag — samlet her</p></div>';
     let hoyre = '<div class="op-panel"><div class="op-ph"><h2>Klasse og betaling</h2>' +
       '<p>Forslag fra Klasseforslag — du bekrefter</p></div>';
@@ -12339,14 +12341,21 @@
       '<span class="on">④ Klasse tildelt</span></div>';
 
     root.innerHTML = '<div class="ws-shell">' + flow +
-      '<div class="ws-grid"><div class="ws-col">' + venstre + '</div><div class="ws-col">' + midt +
-      '</div><div class="ws-col">' + hoyre + '</div></div></div>';
+      '<div class="ws-grid' + (mobil && opMobileDetail ? ' op-mobile-detail' : '') + '">' +
+      '<div class="ws-col ws-col-list">' + venstre + '</div><div class="ws-col ws-col-detail">' + midt +
+      '</div><div class="ws-col ws-col-extra">' + hoyre + '</div></div></div>';
   };
 
   window.__opMaybeRerender = function(){
     const p = document.getElementById('panel-opptak');
     if(p && p.classList.contains('active') && typeof renderOpptak === 'function') renderOpptak();
   };
+
+  window.addEventListener('resize', function(){
+    if(typeof renderOpptak !== 'function') return;
+    const p = document.getElementById('panel-opptak');
+    if(p && p.classList.contains('active')) renderOpptak();
+  });
 
   // ═══════════════════════════════════════════════════════════════════
   // FELLESTIME FOR ALLE KLASSER
@@ -13096,28 +13105,33 @@
   window.showPortalLinks = function(){
     currentSideForBack = 'portaler';
     highlightSidebar('portaler');
+    document.getElementById('appBody').classList.remove('in-section');
     document.getElementById('sideChooseView').style.display = 'none';
     document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
     document.getElementById('contentLayout').style.display = 'none';
+    document.getElementById('contentLayout').classList.remove('ws-mode');
     document.getElementById('portalLinksView').style.display = 'block';
     document.getElementById('sideSwitchBtn').style.display = 'inline-block';
   };
 
   function highlightSidebar(side){
     document.querySelectorAll('.app-sidebar button').forEach(b => {
-      b.classList.toggle('active', b.dataset.sbSide === side);
+      const sb = b.dataset.sbSide;
+      b.classList.toggle('active', side ? sb === side : sb === 'home');
     });
   }
 
   window.selectSide = function(side){
     currentSideForBack = side;
     highlightSidebar(side);
+    document.getElementById('appBody').classList.add('in-section');
     document.getElementById('sideChooseView').style.display = 'none';
     document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('portalLinksView').style.display = 'none';
     document.getElementById('sideSwitchBtn').style.display = 'inline-block';
     document.getElementById('contentLayout').style.display = 'flex';
+    document.getElementById('contentLayout').classList.add('ws-mode');
 
     const subSidebar = document.getElementById('subSidebar');
     // ~= matcher ETT ord i en mellomromsdelt liste. Da kan én fane høre
@@ -13174,11 +13188,13 @@
 
   window.showSideChoice = function(){
     highlightSidebar(null);
+    document.getElementById('appBody').classList.remove('in-section');
     document.getElementById('sideChooseView').style.display = 'block';
     document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('portalLinksView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
     document.getElementById('contentLayout').style.display = 'none';
+    document.getElementById('contentLayout').classList.remove('ws-mode');
     document.getElementById('sideSwitchBtn').style.display = 'none';
   };
 
@@ -21501,14 +21517,12 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   // på startfanen ved hver oppdatering — og en oppdatering er nettopp det
   // man gjør når noe ser rart ut, altså akkurat når man IKKE vil miste
   // plassen sin. Nå virker også nettleserens tilbakeknapp mellom faner.
-  // Faner som er «arbeidsflater» — full bredde, horisontal undermeny, prototype-stil.
-  const WS_TABS = new Set(['opptak', 'skoleflate']);
+  // Arbeidsflate-stil (prototype) gjelder alle faner når man er inne i en seksjon.
 
   function oppdaterWorkspaceModus(tabNavn){
     const layout = document.getElementById('contentLayout');
     if(!layout) return;
-    if(WS_TABS.has(tabNavn)) layout.classList.add('ws-mode');
-    else layout.classList.remove('ws-mode');
+    if(layout.style.display !== 'none') layout.classList.add('ws-mode');
   }
 
   function aktiverFane(tab, oppdaterUrl){
