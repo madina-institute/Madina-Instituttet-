@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 01:45:00 -->
+<!-- SIST-ENDRET: 2026-08-20 02:15:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1869,12 +1869,12 @@
     <span>Madina Skole</span>
   </div>
   <button data-sb-side="home" onclick="showSideChoice()" title="Hjem"><span class="ic">🏠</span><span class="lbl">Hjem</span></button>
-  <button data-sb-side="personale" onclick="sidebarSelectSide('personale')" title="Personale"><span class="ic">👥</span><span class="lbl">Personale</span></button>
   <button data-sb-side="admin" onclick="sidebarSelectSide('admin')" title="Elever og familier"><span class="ic">🎓</span><span class="lbl">Elever</span></button>
-  <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')" title="Økonomi"><span class="ic">💰</span><span class="lbl">Økonomi</span></button>
   <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')" title="Undervisning"><span class="ic">📚</span><span class="lbl">Undervisning</span></button>
-  <button data-sb-side="laereplan" onclick="sidebarSelectSide('laereplan')" title="Læreplan"><span class="ic">📖</span><span class="lbl">Læreplan</span></button>
   <button data-sb-side="kommunikasjon" onclick="sidebarSelectSide('kommunikasjon')" title="Kommunikasjon"><span class="ic">✉️</span><span class="lbl">Melding</span></button>
+  <button data-sb-side="personale" onclick="sidebarSelectSide('personale')" title="Personale"><span class="ic">👥</span><span class="lbl">Personale</span></button>
+  <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')" title="Økonomi"><span class="ic">💰</span><span class="lbl">Økonomi</span></button>
+  <button data-sb-side="laereplan" onclick="sidebarSelectSide('laereplan')" title="Læreplan"><span class="ic">📖</span><span class="lbl">Læreplan</span></button>
   <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')" title="Skoleoppsett"><span class="ic">🏫</span><span class="lbl">Skole</span></button>
   <button data-sb-side="system" onclick="sidebarSelectSide('system')" title="System"><span class="ic">⚙️</span><span class="lbl">System</span></button>
   <button data-sb-side="portaler" onclick="sidebarSelectSide('portaler')" title="Portaler"><span class="ic">🔗</span><span class="lbl">Portaler</span></button>
@@ -2009,25 +2009,27 @@
 <div id="subChooseView" style="display:none;"></div>
 
 <div class="tabs" id="tabsBar" style="display:none;">
-  <div class="tab" data-tab="allePersoner" data-side="personale">Alle personer</div>
-  <div class="tab active" data-tab="teachers" data-side="personale">Lærere</div>
-  <div class="tab" data-tab="ledelse" data-side="personale">Ledelse</div>
-  <div class="tab" data-tab="paalogget" data-side="personale">Pålogget nå</div>
-  <div class="tab" data-tab="roller" data-side="personale">Roller og tilganger</div>
+  <div class="tab" data-tab="opptak" data-side="admin">Opptak</div>
   <div class="tab" data-tab="students" data-side="admin">Elever</div>
   <div class="tab" data-tab="guardians" data-side="admin">Foresatte</div>
-  <div class="tab" data-tab="opptak" data-side="admin">Opptak</div>
-  <div class="tab" data-tab="registrations" data-side="admin">Søknader</div>
-  <div class="tab" data-tab="klasseforslag" data-side="admin pedagogisk">Klasseforslag</div>
   <div class="tab" data-tab="contactUpdateRequests" data-side="admin">Kontaktendringer</div>
-  <div class="tab" data-tab="okonomiHub" data-side="okonomi">Oversikt</div>
+  <div class="tab" data-tab="klasseforslag" data-side="admin pedagogisk">Klasseforslag</div>
+  <!-- Søknader (registrations) — skjult fra menyen; Opptak erstatter den gamle
+       listevisningen. Panelet finnes fortsatt for gamle lenker og CSV. -->
+  <div class="tab" data-tab="registrations" data-side="admin" data-nav-hidden="1" style="display:none;">Søknader</div>
+  <div class="tab" data-tab="teachers" data-side="personale">Lærere</div>
+  <div class="tab" data-tab="ledelse" data-side="personale">Ledelse</div>
+  <div class="tab" data-tab="allePersoner" data-side="personale">Alle personer</div>
+  <div class="tab" data-tab="paalogget" data-side="personale">Pålogget nå</div>
+  <div class="tab" data-tab="roller" data-side="personale">Roller og tilganger</div>
+  <div class="tab" data-tab="okonomiHub" data-side="okonomi">Økonomioversikt</div>
   <div class="tab" data-tab="cashier" data-side="okonomi">Elevbetalinger</div>
-  <div class="tab" data-tab="cashierLedelse" data-side="okonomi" id="tabCashierLedelse">Elevbetalinger (ledelse)</div>
   <div class="tab" data-tab="paymentRequests" data-side="okonomi">Betalingsforespørsler</div>
   <div class="tab" data-tab="finances" data-side="okonomi">Kasse</div>
   <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
   <div class="tab" data-tab="lonn" data-side="okonomi personale">Lønn</div>
   <div class="tab" data-tab="betaling" data-side="okonomi">Innstillinger</div>
+  <div class="tab" data-tab="cashierLedelse" data-side="okonomi" id="tabCashierLedelse">Elevbetalinger (ledelse)</div>
   <!-- Fagplan hører til TO seksjoner. data-side matches med ~= , som
        treffer ett ord i en mellomromsdelt liste — samme grep som Lønn
        bruker for å ligge både under Økonomi og Personale. Alternativet
@@ -2056,11 +2058,11 @@
   <div class="tab" data-tab="schoolCalendar" data-side="skoleoppsett">Skolekalender</div>
   <div class="tab" data-tab="meetings" data-side="skoleoppsett">Møtereferater</div>
   <div class="tab" data-tab="reports" data-side="skoleoppsett">Rapporter</div>
-  <div class="tab" data-tab="overview" data-side="system">Oversikt</div>
+  <div class="tab" data-tab="veiledning" data-side="system">Veiledning</div>
+  <div class="tab" data-tab="overview" data-side="system">Systemadmin</div>
   <div class="tab" data-tab="endringslogg" data-side="system">Endringslogg</div>
   <div class="tab" data-tab="helsesjekk" data-side="system">Helsesjekk</div>
   <div class="tab" data-tab="utvikler" data-side="system">Verktøy og sider</div>
-  <div class="tab" data-tab="veiledning" data-side="system">Veiledning</div>
 </div>
 
 <div class="content-layout" id="contentLayout">
@@ -13215,7 +13217,8 @@
     messages: 'Arkiv over kommunikasjon mellom foresatte og lærere',
     betaling: 'Betalingslenke som vises i Foreldreportalen',
     reports: 'Statistikk og tilpassede rapporter',
-    overview: 'Eksempeldata, sikkerhetskopi, brukere og faresone',
+    overview: 'Eksempeldata, sikkerhetskopi, brukere og faresone — kun ledelse',
+    skoleflate: 'Daglig skoleoversikt — programmer, klasser og timeplan på én skjerm',
     registrations: 'Nye søknader — godkjenn, avslå eller sett på venteliste',
     opptak: 'Samlet arbeidsflate for opptak — søknad, Vipps og klasse på én skjerm',
     meldingssenter: 'Send meldinger til enkeltpersoner eller grupper (foresatte, lærere, ledelse)'
@@ -13227,7 +13230,7 @@
     attendance: '✅', absenceRequests: '🚫', lessonPlans: '📔', planmaler: '🗂️', planArkiv: '🗃️', homework: '📚',
     announcements: '📢', studentNotes: '✍️',
     contactUpdateRequests: '✏️', paymentRequests: '📥', messages: '📩',
-    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', opptak: '🎯', registrations: '📝', meldingssenter: '📤',
+    okonomiHub: '📊', eiere: '👑', paalogget: '🟢', allePersoner: '👤', endringslogg: '🕘', helsesjekk: '🩺', personalePorten: '🚪', betaling: '🎚️', reports: '📈', overview: '⚙️', opptak: '🎯', registrations: '📝', meldingssenter: '📤', skoleflate: '🏫',
     klasseforslag: '🧩', fagplan: '📖', arsplan: '🗓️', laereplanregler: '⚖️', fagplanImport: '⬆️',
     lonn: '💵', cashier: '💳', cashierLedelse: '🛡️', programs: '📅', schoolCalendar: '🗓️', utvikler: '🛠️', veiledning: '📖', roller: '🔑', financeLog: '📒'
   };
@@ -13304,6 +13307,31 @@
     pedagogisk:'Undervisning', laereplan:'Læreplan', kommunikasjon:'Kommunikasjon',
     skoleoppsett:'Skole', system:'System', portaler:'Portaler'
   };
+
+  // Menyrekkefølge per seksjon — daglig arbeid først, oppsett sist.
+  // Én fane kan stå i flere seksjoner (fagplan, lønn, klasseforslag)
+  // uten dupliserte paneler; rekkefølgen gjelder bare der den vises.
+  const TAB_ORDER = {
+    admin: ['opptak','students','guardians','contactUpdateRequests','klasseforslag'],
+    personale: ['teachers','ledelse','allePersoner','paalogget','roller','lonn'],
+    okonomi: ['okonomiHub','cashier','paymentRequests','finances','financeLog','lonn','betaling','cashierLedelse'],
+    pedagogisk: ['fagplan','arsplan','classes','hours','klasseoppsett','attendance','absenceRequests','lessonPlans','planmaler','planArkiv','homework','studentNotes','klasseforslag'],
+    laereplan: ['fagplan','arsplan','laereplanregler','fagplanImport'],
+    kommunikasjon: ['messages','meldingssenter','announcements'],
+    skoleoppsett: ['skoleflate','programs','schoolCalendar','meetings','reports'],
+    system: ['veiledning','overview','endringslogg','helsesjekk','utvikler']
+  };
+
+  function sortTabsForSide(side, tabs){
+    const order = TAB_ORDER[side];
+    if(!order) return tabs;
+    const rank = Object.fromEntries(order.map((t, i) => [t, i]));
+    return tabs.slice().sort((a, b) => {
+      const ra = rank[a.dataset.tab] ?? 999;
+      const rb = rank[b.dataset.tab] ?? 999;
+      return ra - rb || a.textContent.localeCompare(b.textContent, 'no');
+    });
+  }
 
   // ═══════════════════════════════════════════════════════════════════
   // FELLES ARBEIDSFLATE (Forslag B) — liste i venstre panel, detalj høyre
@@ -13869,7 +13897,10 @@
     // til to grupper (Lønn er både økonomi og personale) uten at panelet
     // må finnes i to eksemplarer — to kopier ville før eller siden
     // kommet ut av takt med hverandre.
-    const tabsForSide = Array.from(document.querySelectorAll('.tab[data-side~="' + side + '"]'));
+    const tabsForSide = sortTabsForSide(side,
+      Array.from(document.querySelectorAll('.tab[data-side~="' + side + '"]'))
+        .filter(tab => !tab.dataset.navHidden)
+    );
     subSidebar.innerHTML = tabsForSide.map(tab => {
       const laast = faneLast(tab.dataset.tab);
       return `
@@ -13885,6 +13916,10 @@
   };
 
   window.selectSubTab = function(tabName){
+    if(tabName === 'registrations'){
+      selectSubTab('opptak');
+      return;
+    }
     document.getElementById('subChooseView').style.display = 'none';
     document.getElementById('tabsBar').style.display = 'none';
     document.getElementById('contentLayout').style.display = 'flex';
