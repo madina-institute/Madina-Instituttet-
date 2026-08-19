@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-19 23:18:00 -->
+<!-- SIST-ENDRET: 2026-08-19 23:45:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -491,8 +491,8 @@
   .sub-sidebar button .ic{font-size:14px; flex:none;}
   .sub-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
   .sub-sidebar button.active{background:var(--emerald); color:#fff; border-color:var(--emerald); font-weight:600;}
-  #opListSlot{ flex:1 1 auto; min-height:0; overflow-y:auto; display:none; }
-  #opListSlot.op-active{ display:block; }
+  #wsListSlot, #opListSlot{ flex:1 1 auto; min-height:0; overflow-y:auto; display:none; }
+  #wsListSlot.ws-active, #opListSlot.op-active{ display:block; }
   #mainContent{
     flex:1 1 auto; min-width:0; width:auto;
     background:#fff; border:1px solid var(--line); border-radius:var(--radius-card);
@@ -504,10 +504,30 @@
   @media (max-width:900px){
     .content-layout{ flex-direction:column; min-height:0; }
     .list-pane{ flex:0 0 auto; max-height:none; }
-    /* Master-detail kun for Opptak på mobil */
+    /* Master-detail for alle faner med liste+detailj (Forslag B) */
+    .content-layout.ws-list-active:not(.mob-detail) #mainContent{ display:none; }
+    .content-layout.ws-list-active.mob-detail .list-pane{ display:none; }
+    .content-layout.ws-list-active.mob-detail #mainContent{ display:flex; }
     .content-layout.opptak-active:not(.mob-detail) #mainContent{ display:none; }
     .content-layout.opptak-active.mob-detail .list-pane{ display:none; }
     .content-layout.opptak-active.mob-detail #mainContent{ display:flex; }
+  }
+  .panel.ws-split-panel.ws-has-selection > :not(.ws-detail-wrap){ display:none !important; }
+  .panel.ws-split-panel:not(.ws-has-selection) .ws-detail-wrap{ display:none; }
+  .ws-detail-wrap .ws-mob-back{
+    display:none; font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600;
+    color:var(--emerald-d); background:none; border:none; padding:0 0 10px;
+    cursor:pointer; text-align:start;
+  }
+  @media(max-width:900px){ .ws-detail-wrap .ws-mob-back{ display:block; } }
+  .ws-detail-root{ padding:0; }
+  .ws-detail-root .ws-shell{ background:transparent; border:none; box-shadow:none; margin:0; }
+  .ws-detail-root .ws-person-detail{ padding:4px 0 20px; }
+  .ws-detail-root .pd-seksjon-body{ display:block !important; }
+  .ws-detail-root .pd-seksjon-head .pd-caret{ transform:rotate(90deg); }
+  .ws-detail-empty{
+    padding:32px 20px; text-align:center; font-family:'Jost',sans-serif;
+    font-size:13.5px; color:#6b7787; line-height:1.55;
   }
 
   /* Custom calendar — only Saturday/Sunday are ever selectable, all year */
@@ -2021,7 +2041,7 @@
       <h2 id="listPaneTitle">Faner</h2>
     </div>
     <nav class="sub-sidebar" id="subSidebar" aria-label="Underfaner"></nav>
-    <div id="opListSlot"></div>
+    <div id="wsListSlot"></div>
   </aside>
   <main id="mainContent">
   <!-- REPORTS -->
@@ -2994,36 +3014,50 @@
     #panel-opptak .op-ph{ padding:14px 16px; border-bottom:1px solid var(--line); }
     #panel-opptak .op-ph h2{ margin:0; font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--emerald-d); }
     #panel-opptak .op-ph p{ margin:4px 0 0; font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7787; }
-    /* Liste ligger i #opListSlot (Forslag B) — samme stil som prototype */
+    /* Liste ligger i #wsListSlot (Forslag B) — samme stil som prototype */
+    #wsListSlot .op-ftabs,
     #opListSlot .op-ftabs,
     #panel-opptak .op-ftabs{ display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); background:#fff; }
+    #wsListSlot .op-ftab,
     #opListSlot .op-ftab,
     #panel-opptak .op-ftab{ font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+    #wsListSlot .op-ftab.on,
     #opListSlot .op-ftab.on,
     #panel-opptak .op-ftab.on{ background:var(--emerald); color:#fff; border-color:var(--emerald); }
+    #wsListSlot .op-search,
     #opListSlot .op-search,
     #panel-opptak .op-search{ margin:10px 12px; width:calc(100% - 24px); padding:9px 11px; border:1px solid var(--line); border-radius:8px; font-family:'Jost',sans-serif; font-size:13px; background:#fff; }
+    #wsListSlot .op-list,
     #opListSlot .op-list,
     #panel-opptak .op-list{ overflow-y:auto; background:#fff; }
+    #wsListSlot .op-item,
     #opListSlot .op-item,
     #panel-opptak .op-item{
       padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer;
       font-family:'Jost',sans-serif; background:#fff; transition:background .12s;
     }
+    #wsListSlot .op-item:hover,
     #opListSlot .op-item:hover,
     #panel-opptak .op-item:hover{ background:var(--paper-2); }
+    #wsListSlot .op-item.sel,
     #opListSlot .op-item.sel,
     #panel-opptak .op-item.sel{ background:var(--stat-blue-bg); box-shadow:inset 3px 0 0 var(--emerald); }
+    #wsListSlot .op-item .navn,
     #opListSlot .op-item .navn,
     #panel-opptak .op-item .navn{ font-weight:600; font-size:14px; color:var(--ink); line-height:1.3; }
+    #wsListSlot .op-item .meta,
     #opListSlot .op-item .meta,
     #panel-opptak .op-item .meta{ font-size:11px; color:#6b7787; margin-top:4px; line-height:1.4; }
+    #wsListSlot .op-pill,
     #opListSlot .op-pill,
     #panel-opptak .op-pill{ display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-top:6px; margin-right:4px; }
+    #wsListSlot .op-pill.ny,
     #opListSlot .op-pill.ny,
     #panel-opptak .op-pill.ny{ background:var(--stat-yellow-bg); color:var(--stat-yellow-fg); }
+    #wsListSlot .op-pill.vipps,
     #opListSlot .op-pill.vipps,
     #panel-opptak .op-pill.vipps{ background:#ffe8de; color:#b33a00; }
+    #wsListSlot .op-empty,
     #opListSlot .op-empty,
     #panel-opptak .op-empty{ padding:24px 18px; font-family:'Jost',sans-serif; font-size:13px; color:#6b7787; text-align:center; }
     #panel-opptak .op-body{ padding:16px 18px 20px; }
@@ -8131,7 +8165,8 @@
     return Array.isArray(v) ? v.join(', ') : (v || '');
   }
 
-  window.showPersonDetail = function(type, id){
+  window.showPersonDetail = function(type, id, opts){
+    opts = opts || {};
     const schema = SCHEMAS[type];
     const row = cache[type].find(r => r.id === id);
     if(!row) return;
@@ -8481,6 +8516,28 @@
                 onclick="slettMedBekreftelse('${type}','${row.id}')">🗑 Slett</button>`;
     }
     document.getElementById('pdToggleBtn').textContent = '▾ Vis flere detaljer';
+
+    if(opts.inlineRoot){
+      const root = typeof opts.inlineRoot === 'string' ? document.getElementById(opts.inlineRoot) : opts.inlineRoot;
+      if(root){
+        root.innerHTML = '<div class="ws-shell">' +
+          '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
+          '<div class="ws-person-detail">' +
+          '<div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">' +
+          '<img src="' + escapeHtml(personAvatarUrl(row)) + '" alt="" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid var(--line); flex:none;">' +
+          '<div style="flex:1 1 320px; min-width:260px;">' +
+          '<h3 style="margin:0 0 10px; font-family:\'Cormorant Garamond\',serif; font-size:26px;">' + escapeHtml(row.navn || row.elev_navn || '—') + '</h3>' +
+          '<div>' + (document.getElementById('pdRelasjoner') ? document.getElementById('pdRelasjoner').innerHTML : '') + '</div>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:10px 22px;">' + document.getElementById('pdEssentialRow').innerHTML + '</div>' +
+          '</div></div>' +
+          '<div style="margin-top:16px;">' + extraGrid.innerHTML + '</div>' +
+          '<div style="display:flex; gap:9px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--line);">' +
+          (handl ? handl.innerHTML : '') +
+          '<button class="btn btn-ghost" onclick="showPersonDetail(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">⤢ Åpne som modal</button>' +
+          '<button class="btn btn-primary" onclick="openPersonPrintModal()">🖨️ Skriv ut</button></div></div></div>';
+        return;
+      }
+    }
 
     openCashierOverlay('personDetailOverlay');
   };
@@ -8958,6 +9015,10 @@
     if(['students','guardians'].includes(type)) skrivForeldreIndeks();
     if(['registrations','students','guardians','teachers','classes'].includes(type)) visTestdataStatus();
     if(type === 'registrations' && typeof __opMaybeRerender === 'function') __opMaybeRerender();
+    if(typeof renderWsTab === 'function' && wsActiveTab){
+      const cfg = wsGetConfig(wsActiveTab);
+      if(cfg && (cfg.type === type || (wsActiveTab === 'messages' && type === 'messages'))) renderWsTab(wsActiveTab);
+    }
     if(['teachers','guardians','classes'].includes(type) && document.getElementById('msIndividualSelect')){
       populateMsSelectors();
       updateMsRecipientCount();
@@ -12064,12 +12125,7 @@
   }
 
   function oppdaterOpMobLayout(){
-    const layout = document.getElementById('contentLayout');
-    const opActive = document.getElementById('panel-opptak') && document.getElementById('panel-opptak').classList.contains('active');
-    if(!layout) return;
-    layout.classList.toggle('opptak-active', !!opActive);
-    if(opActive) layout.classList.toggle('mob-detail', opErMobil() && opMobileDetail);
-    else layout.classList.remove('mob-detail');
+    oppdaterWsMobLayout();
   }
 
   const OP_FOLDER_LABELS = {
@@ -12180,7 +12236,7 @@
 
   window.opVelgSoknad = function(id){
     opSelectedId = id;
-    if(opErMobil()) opMobileDetail = true;
+    if(opErMobil()){ opMobileDetail = true; wsMobileDetail = true; }
     renderOpptak();
     if(opErMobil()){
       requestAnimationFrame(function(){
@@ -12193,6 +12249,7 @@
 
   window.opTilbakeListe = function(){
     opMobileDetail = false;
+    wsMobileDetail = false;
     renderOpptak();
     oppdaterOpMobLayout();
     requestAnimationFrame(function(){
@@ -12227,10 +12284,10 @@
   };
 
   window.renderOpptak = function(){
-    const listSlot = document.getElementById('opListSlot');
+    const listSlot = document.getElementById('wsListSlot');
     const root = document.getElementById('opRoot');
     if(!listSlot || !root) return;
-    listSlot.classList.add('op-active');
+    listSlot.classList.add('ws-active');
     const listTitle = document.getElementById('listPaneTitle');
     if(listTitle) listTitle.textContent = 'Søknader';
 
@@ -12392,7 +12449,8 @@
 
     listSlot.innerHTML = venstre;
     root.innerHTML = detail;
-    oppdaterOpMobLayout();
+    wsActiveTab = 'opptak';
+    oppdaterWsMobLayout();
   };
 
   window.__opMaybeRerender = function(){
@@ -13177,24 +13235,530 @@
     skoleoppsett:'Skole', system:'System', portaler:'Portaler'
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // FELLES ARBEIDSFLATE (Forslag B) — liste i venstre panel, detalj høyre
+  // Gjelder alle faner med oppføringslister, ikke bare Opptak.
+  // ═══════════════════════════════════════════════════════════════════
+  let wsActiveTab = null;
+  let wsSelectedByTab = {};
+  let wsSearchByTab = {};
+  let wsMobileDetail = false;
+  let wsMsgSelectedKey = null;
+
+  const WS_TAB_MAP = {
+    opptak: { mode:'custom' },
+    students: { type:'students', listTitle:'Elever', folderKind:'student', detail:'person' },
+    guardians: { type:'guardians', listTitle:'Foresatte', folderKind:'guardian', detail:'person' },
+    ledelse: { type:'teachers', listTitle:'Ledelse', detail:'person', filter:'ledelse' },
+    classes: { type:'classes', listTitle:'Klasser', detail:'class' },
+    programs: { type:'programs', listTitle:'Programmer', detail:'record' },
+    registrations: { type:'registrations', listTitle:'Søknader', folderKind:'reg', detail:'person' },
+    meetings: { type:'meetings', listTitle:'Møtereferater', detail:'record' },
+    finances: { type:'finances', listTitle:'Kasse', detail:'record' },
+    teacherAttendance: { type:'teacherAttendance', listTitle:'Timelister', detail:'record' },
+    hours: { type:'hours', listTitle:'Timeplan', detail:'record' },
+    attendance: { type:'attendance', listTitle:'Oppmøte', detail:'record' },
+    lessonPlans: { type:'lessonPlans', listTitle:'Forberedelser', detail:'record' },
+    homework: { type:'homework', listTitle:'Lekser', detail:'record' },
+    homeworkSubmissions: { type:'homeworkSubmissions', listTitle:'Leksesvar', detail:'record' },
+    absenceRequests: { type:'absenceRequests', listTitle:'Fraværsmeldinger', detail:'record' },
+    announcements: { type:'announcements', listTitle:'Kunngjøringer', detail:'record' },
+    studentNotes: { type:'studentNotes', listTitle:'Elevnotater', detail:'record' },
+    contactUpdateRequests: { type:'contactUpdateRequests', listTitle:'Kontaktendringer', detail:'record' },
+    paymentRequests: { type:'paymentRequests', listTitle:'Forespørsler', detail:'record' },
+    schoolCalendar: { type:'schoolCalendar', listTitle:'Skoledager', detail:'record' },
+    messages: { mode:'custom', listTitle:'Samtaler' }
+  };
+
+  function wsErMobil(){
+    return window.matchMedia('(max-width:900px)').matches;
+  }
+
+  function wsGetConfig(tabName){
+    return WS_TAB_MAP[tabName] || null;
+  }
+
+  function wsIsListTab(tabName){
+    const cfg = wsGetConfig(tabName);
+    return !!(cfg && cfg.mode !== 'dashboard');
+  }
+
+  function oppdaterWsMobLayout(){
+    const layout = document.getElementById('contentLayout');
+    if(!layout) return;
+    const listTab = wsIsListTab(wsActiveTab);
+    layout.classList.toggle('ws-list-active', listTab);
+    layout.classList.toggle('opptak-active', wsActiveTab === 'opptak');
+    if(listTab){
+      const mobDetail = wsActiveTab === 'opptak' ? opMobileDetail : wsMobileDetail;
+      layout.classList.toggle('mob-detail', wsErMobil() && mobDetail);
+    } else layout.classList.remove('mob-detail');
+  }
+
+  window.wsTilbakeListe = function(){
+    wsMobileDetail = false;
+    oppdaterWsMobLayout();
+  };
+
+  function ensureWsDetailWrap(panel){
+    if(!panel || panel.querySelector('.ws-detail-wrap')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'ws-detail-wrap';
+    wrap.innerHTML = '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button><div class="ws-detail-root"></div>';
+    panel.insertBefore(wrap, panel.firstChild);
+    panel.classList.add('ws-split-panel');
+  }
+
+  function wsDetailRoot(tabName){
+    const panel = document.getElementById('panel-' + tabName);
+    if(!panel) return null;
+    ensureWsDetailWrap(panel);
+    return panel.querySelector('.ws-detail-root');
+  }
+
+  function wsColDisplay(type, row, key){
+    const schema = SCHEMAS[type];
+    const field = schema.fields.find(f => f.key === key);
+    if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[key]);
+    const v = row[key];
+    return Array.isArray(v) ? v.join(', ') : (v || '');
+  }
+
+  function wsFilterData(tabName, cfg){
+    const type = cfg.type;
+    const schema = SCHEMAS[type];
+    if(!schema) return [];
+    const searchEl = document.getElementById('search' + capitalize(type));
+    const query = (wsSearchByTab[tabName] != null ? wsSearchByTab[tabName] : (searchEl ? searchEl.value : '')).toLowerCase();
+    let data = (cache[type] || []).slice();
+
+    if(cfg.filter === 'ledelse'){
+      data = data.filter(t => (t.roller || '').trim() !== '');
+    }
+
+    if(query){
+      data = data.filter(row => schema.cols.some(c => wsColDisplay(type, row, c).toLowerCase().includes(query)));
+    }
+
+    if(type === 'registrations' || cfg.folderKind === 'reg'){
+      updateRegFolderCounts(cache.registrations || []);
+      if(regSelectedFolder === null) data = [];
+      else if(regSelectedFolder === '__test__') data = data.filter(row => row.erTestdata === true);
+      else if(regSelectedFolder) data = data.filter(row =>
+        row.erTestdata !== true && (row.status || 'Ny') === regSelectedFolder);
+      else data = data.filter(row => row.erTestdata !== true);
+    }
+    if(cfg.folderKind === 'teacher' || (type === 'teachers' && cfg.filter !== 'ledelse')){
+      if(teacherSelectedFolder === null) data = [];
+      else if(teacherSelectedFolder === '__nofag__') data = data.filter(row => !(row.fag||'').trim());
+      else if(teacherSelectedFolder) data = data.filter(row => (row.fag||'').trim() === teacherSelectedFolder);
+    }
+    if(cfg.folderKind === 'guardian'){
+      if(guardianSelectedFolder === null) data = [];
+      else if(guardianSelectedFolder === '__nobarn__') data = data.filter(row => klasserForForesatt(row.id).length === 0);
+      else if(guardianSelectedFolder) data = data.filter(row => klasserForForesatt(row.id).includes(guardianSelectedFolder));
+    }
+    if(cfg.folderKind === 'student'){
+      if(studentSelectedFolder === null) data = [];
+      else if(studentSelectedFolder === '__none__') data = data.filter(row => !row.klasse && row.elevStatus !== 'Sluttet/trukket');
+      else if(studentSelectedFolder === '__withdrawn__') data = data.filter(row => row.elevStatus === 'Sluttet/trukket');
+      else if(studentSelectedFolder) data = data.filter(row => row.klasse === studentSelectedFolder && row.elevStatus !== 'Sluttet/trukket');
+    }
+
+    if(cfg.filter === 'ledelse'){
+      data.sort((a,b) => {
+        const aSenior = isSeniorLeadershipRow(a, 'roller') ? 0 : 1;
+        const bSenior = isSeniorLeadershipRow(b, 'roller') ? 0 : 1;
+        return aSenior - bSenior || String(a.navn||'').localeCompare(String(b.navn||''));
+      });
+    }
+
+    return data;
+  }
+
+  function wsFolderHtml(tabName, cfg){
+    if(cfg.folderKind === 'reg'){
+      const counts = { '':0, Ny:0, Venteliste:0, Godkjent:0, Avslått:0, __test__:0 };
+      (cache.registrations || []).forEach(r => {
+        if(r.erTestdata){ counts.__test__++; return; }
+        counts['']++;
+        const s = r.status || 'Ny';
+        if(counts[s] !== undefined) counts[s]++;
+      });
+      const order = ['Ny','Venteliste','Godkjent','Avslått','','__test__'];
+      const labels = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått', '':'📋 Alle', __test__:'🧪 Test' };
+      return '<div class="op-ftabs">' + order.map(st =>
+        '<button type="button" class="op-ftab' + (regSelectedFolder === st ? ' on' : '') +
+        '" onclick="wsVelgFolder(\'' + tabName + '\',\'reg\',\'' + st + '\')">' +
+        escapeHtml(labels[st] || st) + ' (' + (counts[st]||0) + ')</button>'
+      ).join('') + '</div>';
+    }
+    if(cfg.folderKind === 'student'){
+      renderStudentFolders();
+      const cards = document.querySelectorAll('#studentFolderRow .folder-card, #studentFolderRow .choice-card');
+      if(!cards.length) return '';
+      let html = '<div class="op-ftabs">';
+      cards.forEach(card => {
+        const key = card.dataset.status || card.getAttribute('data-status') || '';
+        const title = (card.querySelector('h3') || card).textContent.trim().replace(/\d+$/, '').trim();
+        html += '<button type="button" class="op-ftab' + (studentSelectedFolder === key ? ' on' : '') +
+          '" onclick="wsVelgFolder(\'' + tabName + '\',\'student\',\'' + escapeHtml(key) + '\')">' +
+          escapeHtml(title) + '</button>';
+      });
+      return html + '</div>';
+    }
+    if(cfg.folderKind === 'guardian'){
+      renderGuardianFolders();
+      const cards = document.querySelectorAll('#guardianFolderRow .folder-card, #guardianFolderRow .choice-card');
+      if(!cards.length) return '';
+      let html = '<div class="op-ftabs">';
+      cards.forEach(card => {
+        const key = card.dataset.status || card.getAttribute('data-status') || '';
+        const title = (card.querySelector('h3') || card).textContent.trim().replace(/\d+$/, '').trim();
+        html += '<button type="button" class="op-ftab' + (guardianSelectedFolder === key ? ' on' : '') +
+          '" onclick="wsVelgFolder(\'' + tabName + '\',\'guardian\',\'' + escapeHtml(key) + '\')">' +
+          escapeHtml(title) + '</button>';
+      });
+      return html + '</div>';
+    }
+    if(cfg.folderKind === 'teacher'){
+      renderTeacherFolders();
+      const cards = document.querySelectorAll('#teacherFolderRow .folder-card, #teacherFolderRow .choice-card');
+      if(!cards.length) return '';
+      let html = '<div class="op-ftabs">';
+      cards.forEach(card => {
+        const key = card.dataset.status || card.getAttribute('data-status') || '';
+        const title = (card.querySelector('h3') || card).textContent.trim().replace(/\d+$/, '').trim();
+        html += '<button type="button" class="op-ftab' + (teacherSelectedFolder === key ? ' on' : '') +
+          '" onclick="wsVelgFolder(\'' + tabName + '\',\'teacher\',\'' + escapeHtml(key) + '\')">' +
+          escapeHtml(title) + '</button>';
+      });
+      return html + '</div>';
+    }
+    return '';
+  }
+
+  window.wsVelgFolder = function(tabName, kind, key){
+    wsSelectedByTab[tabName] = null;
+    if(kind === 'reg') setRegFolder(key);
+    else if(kind === 'student') setStudentFolder(key);
+    else if(kind === 'guardian') setGuardianFolder(key);
+    else if(kind === 'teacher') setTeacherFolder(key);
+  };
+
+  window.wsSok = function(tabName, q){
+    wsSearchByTab[tabName] = q;
+    renderWsTab(tabName);
+  };
+
+  function wsListItemMeta(type, row){
+    const schema = SCHEMAS[type];
+    const cfg = CARD_CONFIG[type] || {};
+    const titleKey = cfg.title || schema.cols[0];
+    const parts = schema.cols.filter(c => c !== titleKey && c !== cfg.pill).slice(0, 3).map(c => {
+      const v = wsColDisplay(type, row, c);
+      return v ? String(v) : '';
+    }).filter(Boolean);
+    return parts.join(' · ');
+  }
+
+  function wsListItemPill(type, row){
+    const cfg = CARD_CONFIG[type] || {};
+    const pillKey = cfg.pill;
+    if(!pillKey) return '';
+    const val = wsColDisplay(type, row, pillKey);
+    if(!val) return '';
+    if(type === 'registrations' && pillKey === 'status'){
+      const cls = { Ny:'ny', Venteliste:'', Godkjent:'', Avslått:'' }[val] || 'ny';
+      return '<span class="op-pill ' + cls + '">' + escapeHtml(val) + '</span>';
+    }
+    return '<span class="op-pill">' + escapeHtml(String(val).slice(0, 24)) + '</span>';
+  }
+
+  function wsBuildListHtml(tabName, cfg, data){
+    const type = cfg.type;
+    const schema = SCHEMAS[type];
+    const cardCfg = CARD_CONFIG[type] || {};
+    const titleKey = cardCfg.title || schema.cols[0];
+    const selId = wsSelectedByTab[tabName];
+    const searchVal = wsSearchByTab[tabName] != null ? wsSearchByTab[tabName] : '';
+    const placeholders = {
+      students:'Søk navn, klasse, foresatt…', guardians:'Søk navn, telefon…',
+      teachers:'Søk navn, fag…', ledelse:'Søk navn, rolle…',
+      classes:'Søk klassenavn…', programs:'Søk program…',
+      registrations:'Søk elev, foresatt, program…', meetings:'Søk tema, dato…',
+      finances:'Søk beskrivelse…', messages:'Søk samtale…'
+    };
+
+    let listHtml = '';
+    if(data.length === 0){
+      listHtml = '<div class="op-empty">Ingen oppføringer i denne visningen.</div>';
+    } else {
+      data.forEach(row => {
+        const title = wsColDisplay(type, row, titleKey) || '—';
+        listHtml += '<div class="op-item' + (row.id === selId ? ' sel' : '') +
+          '" onclick="wsVelgRad(\'' + escapeHtml(tabName) + '\',\'' + escapeHtml(row.id) + '\')">' +
+          '<div class="navn">' + escapeHtml(title) + '</div>' +
+          '<div class="meta">' + escapeHtml(wsListItemMeta(type, row)) + '</div>' +
+          wsListItemPill(type, row) +
+          '</div>';
+      });
+    }
+
+    const folders = wsFolderHtml(tabName, cfg);
+    const needsFolderPick = cfg.folderKind && (
+      (cfg.folderKind === 'reg' && regSelectedFolder === null) ||
+      (cfg.folderKind === 'student' && studentSelectedFolder === null) ||
+      (cfg.folderKind === 'guardian' && guardianSelectedFolder === null) ||
+      (cfg.folderKind === 'teacher' && teacherSelectedFolder === null)
+    );
+
+    if(needsFolderPick){
+      listHtml = '<div class="op-empty">Velg en mappe over for å se listen.</div>';
+    }
+
+    return '<div class="op-list-host">' + folders +
+      '<input class="op-search" type="search" placeholder="' + escapeHtml(placeholders[tabName] || placeholders[type] || 'Søk…') +
+      '" value="' + escapeHtml(searchVal) + '" oninput="wsSok(\'' + escapeHtml(tabName) + '\', this.value)" aria-label="Søk">' +
+      '<div class="op-list">' + listHtml + '</div></div>';
+  }
+
+  window.wsVelgRad = function(tabName, id){
+    wsSelectedByTab[tabName] = id;
+    if(wsErMobil()) wsMobileDetail = true;
+    renderWsTab(tabName);
+  };
+
+  function wsRenderClassDetail(id, root){
+    const k = (cache.classes || []).find(c => c.id === id);
+    if(!k){ root.innerHTML = '<div class="ws-detail-empty">Klassen finnes ikke.</div>'; return; }
+    const elever = (cache.students || []).filter(s => s.klasse === id && s.elevStatus !== 'Sluttet/trukket');
+    root.innerHTML = '<div class="ws-shell">' +
+      '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
+      '<div class="ws-person-detail">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif; font-size:26px; margin:0 0 12px;">' + escapeHtml(k.navn || '—') + '</h3>' +
+      '<p style="font-family:\'Jost\',sans-serif; font-size:13px; color:#6b7787; margin:0 0 16px;">' +
+      escapeHtml(k.program || '') + (k.trinn ? ' · Trinn ' + escapeHtml(k.trinn) : '') + ' · ' + elever.length + ' elever</p>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">' +
+      '<button class="btn btn-ghost" onclick="visKlassekort(\'' + escapeHtml(id) + '\')">👁 Fullt klassekort</button>' +
+      '<button class="btn btn-ghost" onclick="editEntry(\'classes\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button></div>' +
+      (elever.length ? '<div style="font-family:\'Jost\',sans-serif; font-size:13px; line-height:1.8;">' +
+        elever.sort((a,b)=>(a.navn||'').localeCompare(b.navn||'')).map(s =>
+          '<div class="record-link" onclick="wsVelgRad(\'students\',\'' + escapeHtml(s.id) + '\'); selectSubTab(\'students\')">' +
+          escapeHtml(s.navn||'—') + '</div>').join('') + '</div>' :
+        '<div class="ws-detail-empty">Ingen elever i klassen ennå.</div>') +
+      '</div></div>';
+  }
+
+  function wsRenderRecordDetail(type, id, root, tabName){
+    const schema = SCHEMAS[type];
+    const row = (cache[type] || []).find(r => r.id === id);
+    if(!row){ root.innerHTML = '<div class="ws-detail-empty">Oppføringen finnes ikke.</div>'; return; }
+    const cardCfg = CARD_CONFIG[type] || {};
+    const titleKey = cardCfg.title || schema.cols[0];
+    const title = wsColDisplay(type, row, titleKey) || '—';
+    let fields = schema.cols.map(c => {
+      const val = wsColDisplay(type, row, c);
+      if(!val) return '';
+      const field = schema.fields.find(f => f.key === c);
+      return '<div class="op-kv" style="display:grid; grid-template-columns:118px 1fr; gap:6px 12px; font-family:\'Jost\',sans-serif; font-size:13px; margin-bottom:8px;">' +
+        '<span style="color:#6b7787; font-size:11.5px;">' + escapeHtml(field ? field.label : c) + '</span>' +
+        '<span>' + escapeHtml(String(val)) + '</span></div>';
+    }).join('');
+    const personTypes = ['students','teachers','guardians','registrations'];
+    const visBtn = personTypes.includes(type)
+      ? '<button class="btn btn-primary" onclick="showPersonDetail(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">👁 Fullt kort</button>'
+      : (type === 'classes'
+          ? '<button class="btn btn-primary" onclick="visKlassekort(\'' + escapeHtml(id) + '\')">👁 Vis</button>'
+          : '<button class="btn btn-primary" onclick="editEntry(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button>');
+    root.innerHTML = '<div class="ws-shell">' +
+      '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
+      '<div class="ws-person-detail"><h3 style="font-family:\'Cormorant Garamond\',serif; font-size:26px; margin:0 0 16px;">' + escapeHtml(title) + '</h3>' +
+      fields +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--line);">' +
+      visBtn +
+      (personTypes.includes(type) ? '<button class="btn btn-ghost" onclick="editEntry(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button>' : '') +
+      '</div></div></div>';
+  }
+
+  function wsRenderPersonDetail(type, id, root){
+    showPersonDetail(type, id, { inlineRoot: root });
+  }
+
+  function wsRenderDetail(tabName, cfg, id){
+    const root = wsDetailRoot(tabName);
+    const panel = document.getElementById('panel-' + tabName);
+    if(!root || !panel) return;
+    if(!id){
+      panel.classList.remove('ws-has-selection');
+      root.innerHTML = '<div class="ws-detail-empty">Velg en oppføring fra listen til venstre.</div>';
+      return;
+    }
+    panel.classList.add('ws-has-selection');
+    if(cfg.detail === 'person') wsRenderPersonDetail(cfg.type, id, root);
+    else if(cfg.detail === 'class') wsRenderClassDetail(id, root);
+    else wsRenderRecordDetail(cfg.type, id, root, tabName);
+  }
+
+  function wsEnsureDefaultFolder(tabName, cfg){
+    if(cfg.folderKind === 'reg' && regSelectedFolder === null){
+      ensureRegFolderDefault();
+    }
+    if(cfg.folderKind === 'student' && studentSelectedFolder === null){
+      /* mapper starter lukket — bruker velger mappe */
+    }
+  }
+
+  function wsRenderMessagesList(){
+    const listSlot = document.getElementById('wsListSlot');
+    if(!listSlot) return;
+    const query = (wsSearchByTab.messages || '').toLowerCase();
+    const groups = {};
+    (cache.messages || []).forEach(m => {
+      const key = m.threadId || ('legacy_' + m.klasse + '_' + (m.guardianId || m.guardianNavn || ''));
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(m);
+    });
+    let rows = Object.keys(groups).map(key => {
+      const msgs = groups[key].sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+      const last = msgs[msgs.length - 1];
+      const th = messageThreadsCache.find(t => t.id === key);
+      const studentName = th && th.studentId ? resolveDynName('students', th.studentId) : '';
+      const className = resolveDynName('classes', last.klasse);
+      const title = th ? (th.title || 'Uten tittel') : 'Uten tittel';
+      const displayName = studentName || last.guardianNavn || 'Ukjent';
+      return { key, msgs, last, title, displayName, className, lastActivityAt: last.dato || '' };
+    });
+    if(query){
+      rows = rows.filter(r =>
+        r.displayName.toLowerCase().includes(query) ||
+        r.title.toLowerCase().includes(query) ||
+        r.className.toLowerCase().includes(query) ||
+        r.msgs.some(m => (m.tekst||'').toLowerCase().includes(query))
+      );
+    }
+    rows.sort((a,b) => (b.lastActivityAt||'').localeCompare(a.lastActivityAt||''));
+    const sel = wsMsgSelectedKey;
+    let listHtml = rows.length ? rows.map(r =>
+      '<div class="op-item' + (r.key === sel ? ' sel' : '') + '" onclick="wsVelgMsg(\'' + escapeHtml(r.key) + '\')">' +
+      '<div class="navn">' + escapeHtml(r.displayName) + '</div>' +
+      '<div class="meta">' + escapeHtml(r.title) + (r.className ? ' · ' + escapeHtml(r.className) : '') + '</div></div>'
+    ).join('') : '<div class="op-empty">Ingen meldinger ennå.</div>';
+    listSlot.innerHTML = '<div class="op-list-host">' +
+      '<input class="op-search" type="search" placeholder="Søk samtale…" value="' + escapeHtml(wsSearchByTab.messages || '') +
+      '" oninput="wsSok(\'messages\', this.value)">' +
+      '<div class="op-list">' + listHtml + '</div></div>';
+    wsRenderMessagesDetail(sel);
+  }
+
+  window.wsVelgMsg = function(key){
+    wsMsgSelectedKey = key;
+    if(wsErMobil()) wsMobileDetail = true;
+    renderWsTab('messages');
+  };
+
+  function wsRenderMessagesDetail(key){
+    const root = wsDetailRoot('messages');
+    const panel = document.getElementById('panel-messages');
+    if(!root || !panel) return;
+    if(!key){
+      panel.classList.remove('ws-has-selection');
+      root.innerHTML = '<div class="ws-detail-empty">Velg en samtale fra listen.</div>';
+      return;
+    }
+    const groups = {};
+    (cache.messages || []).forEach(m => {
+      const k = m.threadId || ('legacy_' + m.klasse + '_' + (m.guardianId || m.guardianNavn || ''));
+      if(!groups[k]) groups[k] = [];
+      groups[k].push(m);
+    });
+    const msgs = (groups[key] || []).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
+    if(!msgs.length){
+      root.innerHTML = '<div class="ws-detail-empty">Samtalen finnes ikke.</div>';
+      return;
+    }
+    panel.classList.add('ws-has-selection');
+    const th = messageThreadsCache.find(t => t.id === key);
+    root.innerHTML = '<div class="ws-shell"><button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif; font-size:22px; margin:0 0 14px;">' + escapeHtml(th ? (th.title || 'Samtale') : 'Samtale') + '</h3>' +
+      msgs.map(m => '<div style="background:' + (m.fra === 'Lærer' ? 'var(--paper-2)' : '#fff') +
+        '; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px;">' +
+        '<div style="font-family:\'Jost\',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:4px;">' +
+        escapeHtml(m.fra === 'Lærer' ? (m.avsenderNavn || 'Lærer') : (m.guardianNavn || 'Foresatt')) +
+        ' <span style="font-weight:400; color:#8a9a90;">— ' + escapeHtml(inboxTimeLabelAdmin(m.dato)) + '</span></div>' +
+        '<div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">' + escapeHtml(m.tekst||'') + '</div></div>').join('') +
+      '</div>';
+  }
+
+  window.renderWsTab = function(tabName){
+    const cfg = wsGetConfig(tabName);
+    const listSlot = document.getElementById('wsListSlot');
+    const layout = document.getElementById('contentLayout');
+    if(!listSlot || !layout) return;
+
+    wsActiveTab = tabName;
+
+    if(!cfg){
+      listSlot.classList.remove('ws-active');
+      listSlot.innerHTML = '';
+      wsMobileDetail = false;
+      oppdaterWsMobLayout();
+      document.querySelectorAll('.panel.ws-split-panel').forEach(p => p.classList.remove('ws-has-selection'));
+      return;
+    }
+
+    if(cfg.mode === 'custom'){
+      if(tabName === 'opptak'){ renderOpptak(); oppdaterWsMobLayout(); return; }
+      if(tabName === 'messages'){
+        listSlot.classList.add('ws-active');
+        layout.classList.add('ws-list-active');
+        const title = document.getElementById('listPaneTitle');
+        if(title) title.textContent = cfg.listTitle || 'Samtaler';
+        wsRenderMessagesList();
+        oppdaterWsMobLayout();
+        return;
+      }
+      return;
+    }
+
+    wsEnsureDefaultFolder(tabName, cfg);
+    listSlot.classList.add('ws-active');
+    layout.classList.add('ws-list-active');
+
+    const titleEl = document.getElementById('listPaneTitle');
+    if(titleEl) titleEl.textContent = cfg.listTitle || tabName;
+
+    const data = wsFilterData(tabName, cfg);
+    const mobil = wsErMobil();
+    let selId = wsSelectedByTab[tabName];
+
+    if(mobil){
+      if(wsMobileDetail && selId && !data.some(r => r.id === selId)){
+        selId = data.length ? data[0].id : null;
+        wsSelectedByTab[tabName] = selId;
+        if(!selId) wsMobileDetail = false;
+      }
+    } else {
+      wsMobileDetail = false;
+      if(selId && !data.some(r => r.id === selId)) selId = data.length ? data[0].id : null;
+      else if(!selId && data.length) selId = data[0].id;
+      wsSelectedByTab[tabName] = selId;
+    }
+
+    listSlot.innerHTML = wsBuildListHtml(tabName, cfg, data);
+    wsRenderDetail(tabName, cfg, selId);
+    oppdaterWsMobLayout();
+  };
+
   function oppdaterWsChrome(tabName){
     const crumb = document.getElementById('wsBreadcrumb');
     const title = document.getElementById('listPaneTitle');
-    const listSlot = document.getElementById('opListSlot');
     const tab = document.querySelector('.tab[data-tab="' + tabName + '"]');
     const sideLbl = SIDE_LABELS[currentSideForBack] || currentSideForBack || '';
     const tabLbl = tab ? tab.textContent : tabName;
     if(crumb) crumb.textContent = sideLbl ? (sideLbl + ' › ' + tabLbl) : tabLbl;
-    if(title && tabName !== 'opptak') title.textContent = tabLbl;
-    if(listSlot && tabName !== 'opptak'){
-      listSlot.classList.remove('op-active');
-      listSlot.innerHTML = '';
-    }
-    const layout = document.getElementById('contentLayout');
-    if(layout){
-      layout.classList.toggle('opptak-active', tabName === 'opptak');
-      if(tabName !== 'opptak') layout.classList.remove('mob-detail');
-    }
+    if(title && !wsGetConfig(tabName)) title.textContent = tabLbl;
+    renderWsTab(tabName);
   }
 
   window.selectSide = function(side){
@@ -21627,6 +22191,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(tab.dataset.tab === 'laereplanregler') lrRender();
     if(tab.dataset.tab === 'klasseforslag') kfRender();
     if(tab.dataset.tab === 'opptak' && typeof renderOpptak === 'function') renderOpptak();
+    else if(typeof renderWsTab === 'function') renderWsTab(tab.dataset.tab);
     else oppdaterOpMobLayout();
     if(tab.dataset.tab === 'registrations') ensureRegFolderDefault();
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
