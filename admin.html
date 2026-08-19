@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-19 23:55:00 -->
+<!-- SIST-ENDRET: 2026-08-20 00:05:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -549,8 +549,9 @@
   .ws-detail-root .op-kv .k{ color:#6b7787; font-size:11.5px; }
   .ws-detail-root .op-acts{ display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
   .ws-detail-root .ws-person-detail{ padding:0; }
-  .ws-detail-root .pd-seksjon-body{ display:block !important; }
-  .ws-detail-root .pd-seksjon-head .pd-caret{ transform:rotate(90deg); }
+  .ws-detail-root .pd-seksjon-body{ display:none; }
+  .ws-detail-root .pd-seksjon.open .pd-seksjon-body{ display:block; }
+  .ws-detail-root .pd-seksjon.open .pd-seksjon-head .pd-caret{ transform:rotate(90deg); }
   .ws-detail-empty{
     padding:32px 20px; text-align:center; font-family:'Jost',sans-serif;
     font-size:13.5px; color:#6b7787; line-height:1.55;
@@ -7972,10 +7973,20 @@
     ]
   };
 
-  window.togglePdSeksjon = function(idx){
-    const el = document.querySelector(`.pd-seksjon[data-seksjon="${idx}"]`);
+  window.togglePdSeksjon = function(idx, btn){
+    let el = null;
+    if(btn && btn.closest){
+      const scope = btn.closest('.ws-detail-root, .pd-modal, #personDetailOverlay');
+      if(scope) el = scope.querySelector('.pd-seksjon[data-seksjon="' + idx + '"]');
+    }
+    if(!el) el = document.querySelector('.pd-seksjon[data-seksjon="' + idx + '"]');
     if(el) el.classList.toggle('open');
   };
+
+  function wsResetPdSeksjoner(root){
+    if(!root) return;
+    root.querySelectorAll('.pd-seksjon.open').forEach(s => s.classList.remove('open'));
+  }
 
   // Bygger forslagsboksene som vises øverst i et kort. Ingen av dem endrer
   // noe av seg selv — hver av dem er en knapp noen må trykke på.
@@ -8402,7 +8413,7 @@
       if(felter.length === 0) return;
       html += `
         <div class="pd-seksjon" data-seksjon="${idx}">
-          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx}, this)">
             <span class="pd-caret">▶</span>
             <span class="pd-seksjon-tittel">${escapeHtml(sek.tittel)}</span>
             <span class="pd-seksjon-antall">${felter.length}</span>
@@ -8417,7 +8428,7 @@
       const idx = seksjoner.length;
       html += `
         <div class="pd-seksjon" data-seksjon="${idx}">
-          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx}, this)">
             <span class="pd-caret">▶</span>
             <span class="pd-seksjon-tittel">📋 Annet</span>
             <span class="pd-seksjon-antall">${resterende.length}</span>
@@ -8459,7 +8470,7 @@
       const idx = seksjoner.length + 2;
       html += `
         <div class="pd-seksjon" data-seksjon="${idx}">
-          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx}, this)">
             <span class="pd-caret">▶</span>
             <span class="pd-seksjon-tittel">🔎 Sendt inn, men ikke kjent av panelet</span>
             <span class="pd-seksjon-antall">${ukjente.length}</span>
@@ -8484,7 +8495,7 @@
       const idx = seksjoner.length + 1;
       html += `
         <div class="pd-seksjon" data-seksjon="${idx}">
-          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx})">
+          <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx}, this)">
             <span class="pd-caret">▶</span>
             <span class="pd-seksjon-tittel">🕓 Historikk</span>
             <span class="pd-seksjon-antall">${sporing.length}</span>
@@ -13527,6 +13538,7 @@
     const selId = wsSelectedByTab[tabName];
     const searchVal = wsSearchByTab[tabName] != null ? wsSearchByTab[tabName] : '';
     const placeholders = {
+      teachers:'Søk navn, fag, telefon…',
       students:'Søk navn, klasse, foresatt…', guardians:'Søk navn, telefon…',
       teachers:'Søk navn, fag…', ledelse:'Søk navn, rolle…',
       classes:'Søk klassenavn…', programs:'Søk program…',
