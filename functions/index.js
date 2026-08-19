@@ -76,6 +76,7 @@ async function hentPrisoppsett() {
     antallManeder: 9,           // 4 mnd høst + 5 mnd vår
     materiellAvgift: 0,         // 0 er synlig feil; et gjettet beløp blir fakturert
     terminer: 1,
+    depositum: 500,
   };
 
   // Prisene: samme kilde som panelet bruker.
@@ -122,6 +123,8 @@ async function hentPrisoppsett() {
       if (!isNaN(mat) && mat >= 0) oppsett.materiellAvgift = mat;
       const ter = parseFloat(d.terminer);
       if (!isNaN(ter) && ter >= 1 && ter <= 12) oppsett.terminer = ter;
+      const dep = parseFloat(d.depositum);
+      if (!isNaN(dep) && dep >= 0) oppsett.depositum = dep;
       // Teller barn registrert på foresatt2 som søsken? Står som false
       // fordi det er dagens oppførsel — se merknaden i computeSoskenPrice.
       oppsett.tellForesatt2 = d.tellForesatt2 === true;
@@ -307,10 +310,10 @@ async function getVippsAccessToken() {
 
 // =======================================================================
 // 1) createVippsPayment
-//    POST { type: 'registration'|'balance', targetId, amountKr, phoneNumber }
-//    - type 'registration': targetId er en registrations-dokument-ID
-//      (depositum ved en ny søknad — webhooken oppretter elev+foresatt).
-//    - type 'balance': targetId er en students-dokument-ID (en allerede
+    //    POST { type: 'registration'|'balance', targetId, amountKr, phoneNumber }
+    //    - type 'registration': targetId er en registrations-dokument-ID
+    //      (depositum etter manuell godkjenning — webhooken krediterer eksisterende elev).
+    //    - type 'balance': targetId er en students-dokument-ID (en allerede
 //      godkjent elev som betaler ned på restbeløpet — webhooken oppdaterer
 //      bare belopBetalt, oppretter INGEN ny elev).
 //    Returnerer { ok:true, redirectUrl } eller { ok:false, error }
@@ -683,14 +686,69 @@ exports.vippsWebhook = onRequest(
     }
     const reg = regSnap.data();
 
-    // Unngår dobbel-godkjenning hvis Vipps skulle sende samme hendelse
-    // flere ganger (dette skjer i praksis av og til — helt normalt).
+    // ---- Manuell-først-flyt: søknaden er allerede godkjent, krediter depositum ----
     if (reg.status === "Godkjent") {
-      res.status(200).send("OK (allerede godkjent)");
+      const oppsett = await hentPrisoppsett();
+      const paidAmount = paidAmountKr || oppsett.depositum || 500;
+      const studentSnap = await db.collection("students")
+        .where("fraSoknadId", "==", targetId).limit(1).get();
+      if (studentSnap.empty) {
+        logger.warn("Godkjent søknad uten tilknyttet elev for Vipps-depositum", targetId);
+        res.status(200).send("OK (ingen elev)");
+        return;
+      }
+      const studentRef = studentSnap.docs[0].ref;
+      const student = studentSnap.docs[0].data();
+      const prevPaid = parseFloat(String(student.belopBetalt || "0").replace(/[^\d.-]/g, "")) || 0;
+      const total = parseFloat(String(student.belop || "0").replace(/[^\d.-]/g, "")) || 0;
+      const newPaid = prevPaid + paidAmount;
+
+      await studentRef.update({
+        belopBetalt: String(newPaid),
+        betalt: newPaid >= total ? "Ja" : (newPaid > 0 ? "Delvis" : "Nei"),
+        depositumBetalt: "Ja",
+        betalingsdato: new Date().toISOString().slice(0, 10),
+        sistEndretAv: "vipps-webhook",
+        sistEndretDato: new Date().toISOString().slice(0, 10),
+      });
+
+      await db.collection("studentPayments").add({
+        studentId: studentRef.id,
+        belop: paidAmount,
+        dato: new Date().toISOString(),
+        kilde: "Vipps — depositum",
+        reference,
+      });
+
+      let pendingRef = null;
+      try {
+        const pendSnap = await db.collection("pendingVippsPayments")
+          .where("reference", "==", reference).limit(1).get();
+        if (!pendSnap.empty) pendingRef = pendSnap.docs[0].ref;
+      } catch (e) {
+        logger.warn("Fant ikke pending Vipps-krav for depositum", e);
+      }
+
+      await regDoc.update({
+        depositumBetalt: "Ja",
+        vippsStatus: "AUTHORIZED",
+        vippsBetaltDato: new Date().toISOString(),
+      });
+
+      if (pendingRef) {
+        try {
+          await pendingRef.update({ status: "completed", completedAt: new Date().toISOString() });
+        } catch (e) {
+          logger.error("Kunne ikke merke Vipps-kravet som betalt", e);
+        }
+      }
+
+      logger.info(`Depositum registrert for ${reg.elev_navn} (manuell-først-flyt).`);
+      res.status(200).send("OK");
       return;
     }
 
-    // ---- Oppretter foresatt (hvis den ikke finnes fra før) ----
+    // ---- Legacy: betaling på NY søknad — oppretter elev+foresatt (gammel flyt) ----
     let guardianId = "";
     const guardianName = reg.foresatt1_navn || "";
     const guardianPhone = reg.foresatt1_tlf || "";
