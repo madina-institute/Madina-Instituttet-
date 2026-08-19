@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 20:19:55 -->
+<!-- SIST-ENDRET: 2026-08-19 20:19:32 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1813,7 +1813,7 @@
       <div class="stat-card stat-purple" style="cursor:pointer;" onclick="goToTask('admin','students')"><span class="stat-ikon">🎓</span><div class="n" id="dashStatStudents">0</div><div class="l">Elever</div></div>
       <div class="stat-card stat-yellow alert" id="dashCardRegs" style="cursor:pointer;" onclick="goToTask('admin','registrations')"><span class="alert-dot"></span><span class="stat-ikon">📝</span><div class="n" id="dashStatRegs">0</div><div class="l">Nye søknader</div></div>
       <div class="stat-card stat-pink alert" id="dashCardRequests" style="cursor:pointer;" onclick="goToTask('pedagogisk','absenceRequests')"><span class="alert-dot"></span><span class="stat-ikon">🔔</span><div class="n" id="dashStatRequests">0</div><div class="l">Ventende forespørsler</div></div>
-      <div class="stat-card stat-blue alert" id="dashCardUnpaid" style="cursor:pointer;" onclick="goToTask('admin','students')"><span class="alert-dot"></span><span class="stat-ikon">💳</span><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
+      <div class="stat-card stat-blue alert" id="dashCardUnpaid" style="cursor:pointer;" onclick="goToTask('okonomi','cashier')"><span class="alert-dot"></span><span class="stat-ikon">💳</span><div class="n" id="dashStatUnpaid">0</div><div class="l">Ubetalte elever</div></div>
     </div>
 
     <div class="dash-widgets" id="dashWidgets">
@@ -1840,7 +1840,7 @@
 
     <h3 class="shortcuts-title">Snarveier</h3>
     <div class="side-grid">
-      <div class="side-card" onclick="selectSide('eier')">
+      <div class="side-card" onclick="goToTask('okonomi','okonomiHub')">
         <div class="ic">🏛️</div>
         <h2>Eier / Ledelsen</h2>
         <p>Ledelse · Møtereferater · Kasse/Økonomi</p>
@@ -1870,7 +1870,7 @@
         <h2>Læreplan</h2>
         <p>Pensum per fag og trinn — kapitler, vekt, mål og ferdigskrevne økter. Uten datoer: de hører til klassen, ikke til planen</p>
       </div>
-      <div class="side-card" onclick="promptPasswordAndSelectSide('registrering')">
+      <div class="side-card" onclick="goToTask('admin','registrations')">
         <div class="ic">📝</div>
         <h2>Registrering</h2>
         <p>Søknader — godkjenn, avslå eller sett på venteliste</p>
@@ -1880,12 +1880,12 @@
         <h2>Oversikt</h2>
         <p>Eksempeldata, sikkerhetskopi, brukere og faresone</p>
       </div>
-      <div class="side-card" onclick="selectSide('veiledning')">
+      <div class="side-card" onclick="goToTask('system','veiledning')">
         <div class="ic">📖</div>
         <h2>Veiledning</h2>
         <p>Bruksanvisning for panelet — seksjoner, roller, priser, eksport og hva man gjør når noe ikke virker</p>
       </div>
-      <div class="side-card" onclick="selectSide('verktoy')">
+      <div class="side-card" onclick="goToTask('system','utvikler')">
         <div class="ic">🛠️</div>
         <h2>Verktøy og sider</h2>
         <p>Helsesjekk · App Check · Publiseringsverktøy · innsynssider · alle portaler og konsoller</p>
@@ -7467,7 +7467,23 @@
   }
 
   let regSelectedFolder = null;
+  let regFolderInited = false;
   const REG_FOLDER_LABELS = { Ny:'🆕 Nye', Venteliste:'⏳ Venteliste', Godkjent:'✅ Godkjent', Avslått:'❌ Avslått', __test__:'🧪 Testsøknader' };
+
+  function ensureRegFolderDefault(){
+    if(regFolderInited) return;
+    regFolderInited = true;
+    regSelectedFolder = 'Ny';
+    visMappeInnhold('regToolbar', 'tableRegistrations', true);
+    document.querySelectorAll('#regFolderRow .folder-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.status === 'Ny');
+    });
+    const label = document.getElementById('regFolderActiveLabel');
+    if(label){
+      label.textContent = '📂 Viser: ' + REG_FOLDER_LABELS.Ny + ' — trykk igjen for å lukke';
+    }
+    render('registrations');
+  }
 
   window.setRegFolder = function(status){
     // Klikk på samme mappe igjen lukker den, i stedet for å vise alt.
@@ -12398,10 +12414,10 @@
     const tasksEl = document.getElementById('dashTasksList');
     if(tasksEl){
       const taskDefs = [
-        { key:'registrations', ic:'📝', label:'Nye søknader', count: cache.registrations.filter(r => r.status === 'Ny').length, side:'registrering', tab:null },
+        { key:'registrations', ic:'📝', label:'Nye søknader', count: cache.registrations.filter(r => r.status === 'Ny').length, side:'admin', tab:'registrations' },
         { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
         { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
-        { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'paymentRequests' }
+        { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => r.status === 'Ny').length, side:'okonomi', tab:'paymentRequests' }
       ];
       const anyTasks = taskDefs.some(t => t.count > 0);
       tasksEl.innerHTML = anyTasks
@@ -12416,8 +12432,13 @@
   }
 
   window.goToTask = function(side, tab){
-    if(side === 'registrering' || side === 'oversikt'){
-      promptPasswordAndSelectSide(side);
+    if(side === 'registrering'){
+      selectSide('admin');
+      selectSubTab('registrations');
+      return;
+    }
+    if(side === 'oversikt'){
+      promptPasswordAndSelectSide('oversikt');
       return;
     }
     selectSide(side);
@@ -12538,6 +12559,11 @@
   window.promptPasswordAndSelectSide = function(side){
     if(!currentUserHasSeniorRole()){
       showToast('Denne seksjonen er kun tilgjengelig for øvre ledelse (Eier, Skoleleder, Daglig leder, Faglig/pedagogisk leder).');
+      return;
+    }
+    if(side === 'oversikt'){
+      selectSide('system');
+      selectSubTab('overview');
       return;
     }
     selectSide(side);
@@ -21063,6 +21089,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(tab.dataset.tab === 'arsplan') apRender();
     if(tab.dataset.tab === 'laereplanregler') lrRender();
     if(tab.dataset.tab === 'klasseforslag') kfRender();
+    if(tab.dataset.tab === 'registrations') ensureRegFolderDefault();
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
