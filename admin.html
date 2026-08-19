@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-19 23:45:00 -->
+<!-- SIST-ENDRET: 2026-08-19 23:55:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -512,17 +512,43 @@
     .content-layout.opptak-active.mob-detail .list-pane{ display:none; }
     .content-layout.opptak-active.mob-detail #mainContent{ display:flex; }
   }
-  .panel.ws-split-panel.ws-has-selection > :not(.ws-detail-wrap){ display:none !important; }
-  .panel.ws-split-panel:not(.ws-has-selection) .ws-detail-wrap{ display:none; }
+  .panel.ws-list-mode > :not(.ws-detail-wrap){ display:none !important; }
+  .panel.ws-list-mode .ws-detail-wrap{
+    display:flex; flex-direction:column; flex:1; min-height:0; width:100%;
+  }
+  .panel.ws-split-panel:not(.ws-list-mode) .ws-detail-wrap{ display:none; }
   .ws-detail-wrap .ws-mob-back{
     display:none; font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600;
     color:var(--emerald-d); background:none; border:none; padding:0 0 10px;
     cursor:pointer; text-align:start;
   }
   @media(max-width:900px){ .ws-detail-wrap .ws-mob-back{ display:block; } }
-  .ws-detail-root{ padding:0; }
+  .ws-detail-root{ padding:0; flex:1; overflow-y:auto; }
   .ws-detail-root .ws-shell{ background:transparent; border:none; box-shadow:none; margin:0; }
-  .ws-detail-root .ws-person-detail{ padding:4px 0 20px; }
+  .ws-detail-root .op-panel{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .ws-detail-root .op-ph{
+    padding:14px 18px; border-bottom:1px solid var(--line);
+  }
+  .ws-detail-root .op-ph h2{
+    margin:0; font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--emerald-d);
+  }
+  .ws-detail-root .op-ph p{
+    margin:4px 0 0; font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7787;
+  }
+  .ws-detail-root .op-body{ padding:16px 18px 20px; }
+  .ws-detail-root .op-body h3{
+    font-family:'Cormorant Garamond',serif; font-size:26px; margin:0 0 14px;
+  }
+  .ws-detail-root .op-kv{
+    display:grid; grid-template-columns:118px 1fr; gap:6px 12px;
+    font-family:'Jost',sans-serif; font-size:13px; margin-bottom:16px;
+  }
+  .ws-detail-root .op-kv .k{ color:#6b7787; font-size:11.5px; }
+  .ws-detail-root .op-acts{ display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+  .ws-detail-root .ws-person-detail{ padding:0; }
   .ws-detail-root .pd-seksjon-body{ display:block !important; }
   .ws-detail-root .pd-seksjon-head .pd-caret{ transform:rotate(90deg); }
   .ws-detail-empty{
@@ -8520,21 +8546,18 @@
     if(opts.inlineRoot){
       const root = typeof opts.inlineRoot === 'string' ? document.getElementById(opts.inlineRoot) : opts.inlineRoot;
       if(root){
-        root.innerHTML = '<div class="ws-shell">' +
-          '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
-          '<div class="ws-person-detail">' +
+        root.innerHTML = wsDetailShell('Detaljer og handlinger', 'Personkort — samme stil som Opptak',
           '<div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">' +
           '<img src="' + escapeHtml(personAvatarUrl(row)) + '" alt="" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid var(--line); flex:none;">' +
           '<div style="flex:1 1 320px; min-width:260px;">' +
-          '<h3 style="margin:0 0 10px; font-family:\'Cormorant Garamond\',serif; font-size:26px;">' + escapeHtml(row.navn || row.elev_navn || '—') + '</h3>' +
+          '<h3>' + escapeHtml(row.navn || row.elev_navn || '—') + '</h3>' +
           '<div>' + (document.getElementById('pdRelasjoner') ? document.getElementById('pdRelasjoner').innerHTML : '') + '</div>' +
-          '<div style="display:flex; flex-wrap:wrap; gap:10px 22px;">' + document.getElementById('pdEssentialRow').innerHTML + '</div>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:10px 22px; margin-top:10px;">' + document.getElementById('pdEssentialRow').innerHTML + '</div>' +
           '</div></div>' +
           '<div style="margin-top:16px;">' + extraGrid.innerHTML + '</div>' +
-          '<div style="display:flex; gap:9px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--line);">' +
-          (handl ? handl.innerHTML : '') +
+          '<div class="op-acts">' + (handl ? handl.innerHTML : '') +
           '<button class="btn btn-ghost" onclick="showPersonDetail(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">⤢ Åpne som modal</button>' +
-          '<button class="btn btn-primary" onclick="openPersonPrintModal()">🖨️ Skriv ut</button></div></div></div>';
+          '<button class="btn btn-primary" onclick="openPersonPrintModal()">🖨️ Skriv ut</button></div>');
         return;
       }
     }
@@ -13247,6 +13270,7 @@
 
   const WS_TAB_MAP = {
     opptak: { mode:'custom' },
+    teachers: { type:'teachers', listTitle:'Lærere', folderKind:'teacher', detail:'person' },
     students: { type:'students', listTitle:'Elever', folderKind:'student', detail:'person' },
     guardians: { type:'guardians', listTitle:'Foresatte', folderKind:'guardian', detail:'person' },
     ledelse: { type:'teachers', listTitle:'Ledelse', detail:'person', filter:'ledelse' },
@@ -13307,6 +13331,26 @@
     wrap.innerHTML = '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button><div class="ws-detail-root"></div>';
     panel.insertBefore(wrap, panel.firstChild);
     panel.classList.add('ws-split-panel');
+  }
+
+  function wsSyncPanelMode(tabName){
+    document.querySelectorAll('.panel.ws-list-mode').forEach(p => p.classList.remove('ws-list-mode'));
+    const cfg = wsGetConfig(tabName);
+    if(!cfg) return;
+    if(tabName === 'opptak') return;
+    const panel = document.getElementById('panel-' + tabName);
+    if(!panel) return;
+    ensureWsDetailWrap(panel);
+    panel.classList.add('ws-list-mode');
+  }
+
+  function wsDetailShell(title, subtitle, bodyHtml){
+    return '<div class="ws-shell">' +
+      '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
+      '<div class="op-panel">' +
+      '<div class="op-ph"><h2>' + escapeHtml(title) + '</h2>' +
+      (subtitle ? '<p>' + escapeHtml(subtitle) + '</p>' : '') +
+      '</div><div class="op-body">' + bodyHtml + '</div></div></div>';
   }
 
   function wsDetailRoot(tabName){
@@ -13531,54 +13575,50 @@
 
   function wsRenderClassDetail(id, root){
     const k = (cache.classes || []).find(c => c.id === id);
-    if(!k){ root.innerHTML = '<div class="ws-detail-empty">Klassen finnes ikke.</div>'; return; }
+    if(!k){ root.innerHTML = wsDetailShell('Detaljer', 'Klasse', '<div class="op-empty">Klassen finnes ikke.</div>'); return; }
     const elever = (cache.students || []).filter(s => s.klasse === id && s.elevStatus !== 'Sluttet/trukket');
-    root.innerHTML = '<div class="ws-shell">' +
-      '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
-      '<div class="ws-person-detail">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif; font-size:26px; margin:0 0 12px;">' + escapeHtml(k.navn || '—') + '</h3>' +
-      '<p style="font-family:\'Jost\',sans-serif; font-size:13px; color:#6b7787; margin:0 0 16px;">' +
-      escapeHtml(k.program || '') + (k.trinn ? ' · Trinn ' + escapeHtml(k.trinn) : '') + ' · ' + elever.length + ' elever</p>' +
-      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">' +
+    const body = '<h3>' + escapeHtml(k.navn || '—') + '</h3>' +
+      '<div class="op-kv">' +
+      '<span class="k">Program</span><span>' + escapeHtml(k.program || '—') + '</span>' +
+      (k.trinn ? '<span class="k">Trinn</span><span>' + escapeHtml(k.trinn) + '</span>' : '') +
+      '<span class="k">Elever</span><span>' + elever.length + '</span></div>' +
+      '<div class="op-acts">' +
       '<button class="btn btn-ghost" onclick="visKlassekort(\'' + escapeHtml(id) + '\')">👁 Fullt klassekort</button>' +
       '<button class="btn btn-ghost" onclick="editEntry(\'classes\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button></div>' +
       (elever.length ? '<div style="font-family:\'Jost\',sans-serif; font-size:13px; line-height:1.8;">' +
         elever.sort((a,b)=>(a.navn||'').localeCompare(b.navn||'')).map(s =>
-          '<div class="record-link" onclick="wsVelgRad(\'students\',\'' + escapeHtml(s.id) + '\'); selectSubTab(\'students\')">' +
+          '<div class="record-link" style="padding:6px 0; border-bottom:1px solid var(--line);" onclick="wsVelgRad(\'students\',\'' + escapeHtml(s.id) + '\'); selectSubTab(\'students\')">' +
           escapeHtml(s.navn||'—') + '</div>').join('') + '</div>' :
-        '<div class="ws-detail-empty">Ingen elever i klassen ennå.</div>') +
-      '</div></div>';
+        '<div class="op-empty">Ingen elever i klassen ennå.</div>');
+    root.innerHTML = wsDetailShell('Detaljer', 'Klasse og elever', body);
   }
 
-  function wsRenderRecordDetail(type, id, root, tabName){
+  function wsRenderRecordDetail(type, id, root){
     const schema = SCHEMAS[type];
     const row = (cache[type] || []).find(r => r.id === id);
-    if(!row){ root.innerHTML = '<div class="ws-detail-empty">Oppføringen finnes ikke.</div>'; return; }
+    if(!row){ root.innerHTML = wsDetailShell('Detaljer', schema ? schema.label : type, '<div class="op-empty">Oppføringen finnes ikke.</div>'); return; }
     const cardCfg = CARD_CONFIG[type] || {};
     const titleKey = cardCfg.title || schema.cols[0];
     const title = wsColDisplay(type, row, titleKey) || '—';
-    let fields = schema.cols.map(c => {
+    let kv = '';
+    schema.cols.forEach(c => {
       const val = wsColDisplay(type, row, c);
-      if(!val) return '';
+      if(!val) return;
       const field = schema.fields.find(f => f.key === c);
-      return '<div class="op-kv" style="display:grid; grid-template-columns:118px 1fr; gap:6px 12px; font-family:\'Jost\',sans-serif; font-size:13px; margin-bottom:8px;">' +
-        '<span style="color:#6b7787; font-size:11.5px;">' + escapeHtml(field ? field.label : c) + '</span>' +
-        '<span>' + escapeHtml(String(val)) + '</span></div>';
-    }).join('');
+      kv += '<span class="k">' + escapeHtml(field ? field.label : c) + '</span><span>' + escapeHtml(String(val)) + '</span>';
+    });
     const personTypes = ['students','teachers','guardians','registrations'];
-    const visBtn = personTypes.includes(type)
-      ? '<button class="btn btn-primary" onclick="showPersonDetail(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">👁 Fullt kort</button>'
+    const acts = personTypes.includes(type)
+      ? '<button class="btn btn-success" onclick="showPersonDetail(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">👁 Fullt kort</button>' +
+        '<button class="btn btn-ghost" onclick="editEntry(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button>'
       : (type === 'classes'
-          ? '<button class="btn btn-primary" onclick="visKlassekort(\'' + escapeHtml(id) + '\')">👁 Vis</button>'
-          : '<button class="btn btn-primary" onclick="editEntry(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button>');
-    root.innerHTML = '<div class="ws-shell">' +
-      '<button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
-      '<div class="ws-person-detail"><h3 style="font-family:\'Cormorant Garamond\',serif; font-size:26px; margin:0 0 16px;">' + escapeHtml(title) + '</h3>' +
-      fields +
-      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--line);">' +
-      visBtn +
-      (personTypes.includes(type) ? '<button class="btn btn-ghost" onclick="editEntry(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button>' : '') +
-      '</div></div></div>';
+          ? '<button class="btn btn-success" onclick="visKlassekort(\'' + escapeHtml(id) + '\')">👁 Vis</button>'
+          : '<button class="btn btn-success" onclick="editEntry(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">✏️ Rediger</button>') +
+        '<button class="btn btn-ghost" onclick="deleteEntry(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">🗑 Slett</button>';
+    root.innerHTML = wsDetailShell('Detaljer og handlinger', 'Samme visning som Opptak — velg fra listen', 
+      '<h3>' + escapeHtml(title) + '</h3>' +
+      (kv ? '<div class="op-kv">' + kv + '</div>' : '') +
+      '<div class="op-acts">' + acts + '</div>');
   }
 
   function wsRenderPersonDetail(type, id, root){
@@ -13587,25 +13627,30 @@
 
   function wsRenderDetail(tabName, cfg, id){
     const root = wsDetailRoot(tabName);
-    const panel = document.getElementById('panel-' + tabName);
-    if(!root || !panel) return;
+    if(!root) return;
     if(!id){
-      panel.classList.remove('ws-has-selection');
-      root.innerHTML = '<div class="ws-detail-empty">Velg en oppføring fra listen til venstre.</div>';
+      root.innerHTML = wsDetailShell('Detaljer og handlinger', 'Velg en oppføring fra listen til venstre',
+        '<div class="op-empty">Ingen oppføring valgt ennå.</div>');
       return;
     }
-    panel.classList.add('ws-has-selection');
     if(cfg.detail === 'person') wsRenderPersonDetail(cfg.type, id, root);
     else if(cfg.detail === 'class') wsRenderClassDetail(id, root);
-    else wsRenderRecordDetail(cfg.type, id, root, tabName);
+    else wsRenderRecordDetail(cfg.type, id, root);
   }
 
   function wsEnsureDefaultFolder(tabName, cfg){
-    if(cfg.folderKind === 'reg' && regSelectedFolder === null){
-      ensureRegFolderDefault();
+    if(cfg.folderKind === 'reg' && regSelectedFolder === null) ensureRegFolderDefault();
+    if(cfg.folderKind === 'teacher' && teacherSelectedFolder === null){
+      teacherSelectedFolder = '';
+      visMappeInnhold('teacherToolbar', 'tableTeachers', true);
     }
     if(cfg.folderKind === 'student' && studentSelectedFolder === null){
-      /* mapper starter lukket — bruker velger mappe */
+      studentSelectedFolder = '';
+      visMappeInnhold('studentToolbar', 'tableStudents', true);
+    }
+    if(cfg.folderKind === 'guardian' && guardianSelectedFolder === null){
+      guardianSelectedFolder = '';
+      visMappeInnhold('guardianToolbar', 'tableGuardians', true);
     }
   }
 
@@ -13659,11 +13704,10 @@
 
   function wsRenderMessagesDetail(key){
     const root = wsDetailRoot('messages');
-    const panel = document.getElementById('panel-messages');
-    if(!root || !panel) return;
+    if(!root) return;
     if(!key){
-      panel.classList.remove('ws-has-selection');
-      root.innerHTML = '<div class="ws-detail-empty">Velg en samtale fra listen.</div>';
+      root.innerHTML = wsDetailShell('Samtale', 'Velg en tråd fra listen til venstre',
+        '<div class="op-empty">Ingen samtale valgt ennå.</div>');
       return;
     }
     const groups = {};
@@ -13674,20 +13718,17 @@
     });
     const msgs = (groups[key] || []).sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     if(!msgs.length){
-      root.innerHTML = '<div class="ws-detail-empty">Samtalen finnes ikke.</div>';
+      root.innerHTML = wsDetailShell('Samtale', '', '<div class="op-empty">Samtalen finnes ikke.</div>');
       return;
     }
-    panel.classList.add('ws-has-selection');
     const th = messageThreadsCache.find(t => t.id === key);
-    root.innerHTML = '<div class="ws-shell"><button type="button" class="ws-mob-back" onclick="wsTilbakeListe()">← Tilbake til listen</button>' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif; font-size:22px; margin:0 0 14px;">' + escapeHtml(th ? (th.title || 'Samtale') : 'Samtale') + '</h3>' +
-      msgs.map(m => '<div style="background:' + (m.fra === 'Lærer' ? 'var(--paper-2)' : '#fff') +
-        '; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px;">' +
-        '<div style="font-family:\'Jost\',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:4px;">' +
-        escapeHtml(m.fra === 'Lærer' ? (m.avsenderNavn || 'Lærer') : (m.guardianNavn || 'Foresatt')) +
-        ' <span style="font-weight:400; color:#8a9a90;">— ' + escapeHtml(inboxTimeLabelAdmin(m.dato)) + '</span></div>' +
-        '<div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">' + escapeHtml(m.tekst||'') + '</div></div>').join('') +
-      '</div>';
+    const body = msgs.map(m => '<div style="background:' + (m.fra === 'Lærer' ? 'var(--paper-2)' : '#fff') +
+      '; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px;">' +
+      '<div style="font-family:\'Jost\',sans-serif; font-size:11px; font-weight:700; color:var(--emerald-d); margin-bottom:4px;">' +
+      escapeHtml(m.fra === 'Lærer' ? (m.avsenderNavn || 'Lærer') : (m.guardianNavn || 'Foresatt')) +
+      ' <span style="font-weight:400; color:#8a9a90;">— ' + escapeHtml(inboxTimeLabelAdmin(m.dato)) + '</span></div>' +
+      '<div style="font-size:13px; white-space:pre-wrap; line-height:1.5;">' + escapeHtml(m.tekst||'') + '</div></div>').join('');
+    root.innerHTML = wsDetailShell(th ? (th.title || 'Samtale') : 'Samtale', 'Meldinger i tråden', body);
   }
 
   window.renderWsTab = function(tabName){
@@ -13702,10 +13743,12 @@
       listSlot.classList.remove('ws-active');
       listSlot.innerHTML = '';
       wsMobileDetail = false;
+      wsSyncPanelMode(null);
       oppdaterWsMobLayout();
-      document.querySelectorAll('.panel.ws-split-panel').forEach(p => p.classList.remove('ws-has-selection'));
       return;
     }
+
+    wsSyncPanelMode(tabName);
 
     if(cfg.mode === 'custom'){
       if(tabName === 'opptak'){ renderOpptak(); oppdaterWsMobLayout(); return; }
