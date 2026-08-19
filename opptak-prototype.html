@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-19 20:19:32 -->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opptak — UX-prototype (Madina Admin)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=Jost:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0;
+    --gold:#b7924a; --paper:#EEF0FB; --paper-2:#E4E7F7;
+    --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08);
+    --red:#a83c3c; --green:#2e6b53; --vipps:#ff5b24;
+    --stat-yellow-bg:#FDF3C7; --stat-yellow-fg:#8A6D1D;
+    --stat-blue-bg:#DCEFFB; --stat-blue-fg:#1E6E8C;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Lora',serif; }
+
+  .banner{
+    background:linear-gradient(90deg,#1f4a3a 0%,var(--emerald-d) 100%);
+    color:#fff; padding:16px 22px; border-bottom:3px solid var(--gold);
+    font-family:'Jost',sans-serif;
+  }
+  .banner h1{ margin:0 0 4px; font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:700; }
+  .banner p{ margin:0; font-size:13px; opacity:.95; line-height:1.5; }
+  .banner .ar{ direction:rtl; text-align:right; font-size:12px; opacity:.9; margin-top:8px; }
+
+  .wrap{ max-width:1400px; margin:0 auto; padding:20px 20px 48px; }
+  .flow{
+    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;
+    font-family:'Jost',sans-serif; font-size:12px; color:#5a6672;
+  }
+  .flow span{ background:#fff; border:1px solid var(--line); padding:6px 12px; border-radius:999px; }
+  .flow span.on{ background:var(--emerald); color:#fff; border-color:var(--emerald); font-weight:600; }
+
+  .op{
+    display:grid; grid-template-columns:minmax(240px,280px) 1fr minmax(260px,300px);
+    gap:16px; align-items:start;
+  }
+  @media(max-width:1100px){ .op{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .ph{ padding:14px 16px; border-bottom:1px solid var(--line); }
+  .ph h2{ margin:0; font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--emerald-d); }
+  .ph p{ margin:4px 0 0; font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7787; }
+
+  .ftabs{ display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); }
+  .ftab{
+    font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+    padding:6px 11px; border-radius:999px; border:1px solid var(--line);
+    background:#fff; cursor:pointer;
+  }
+  .ftab.on{ background:var(--emerald); color:#fff; border-color:var(--emerald); }
+
+  .search{
+    margin:10px 12px; width:calc(100% - 24px); padding:9px 11px;
+    border:1px solid var(--line); border-radius:8px; font-family:'Jost',sans-serif; font-size:13px;
+  }
+
+  .list{ max-height:560px; overflow-y:auto; }
+  .item{
+    padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer;
+    font-family:'Jost',sans-serif;
+  }
+  .item:hover{ background:var(--paper-2); }
+  .item.sel{ background:var(--stat-blue-bg); box-shadow:inset 3px 0 0 var(--emerald); }
+  .item .navn{ font-weight:600; font-size:14px; }
+  .item .meta{ font-size:11px; color:#6b7787; margin-top:3px; }
+  .pill{ display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-top:5px; margin-right:4px; }
+  .pill.ny{ background:var(--stat-yellow-bg); color:var(--stat-yellow-fg); }
+  .pill.vipps{ background:#ffe8de; color:#b33a00; }
+
+  .body{ padding:16px 18px 20px; }
+  .body h3{ font-family:'Cormorant Garamond',serif; font-size:26px; margin:0 0 14px; }
+  .kv{
+    display:grid; grid-template-columns:118px 1fr; gap:6px 12px;
+    font-family:'Jost',sans-serif; font-size:13px; margin-bottom:16px;
+  }
+  .kv .k{ color:#6b7787; font-size:11.5px; }
+
+  .acts{ display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+  .btn{
+    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600;
+    padding:10px 14px; border-radius:8px; border:1px solid var(--line);
+    cursor:pointer; background:#fff;
+  }
+  .btn-go{ background:var(--green); color:#fff; border-color:var(--green); }
+  .btn-vipps{ background:var(--vipps); color:#fff; border-color:var(--vipps); }
+  .btn-no{ background:var(--red); color:#fff; border-color:var(--red); }
+
+  .wait{
+    font-family:'Jost',sans-serif; font-size:12px; color:#b33a00;
+    background:#fff4ef; border:1px solid #ffc9b0; border-radius:8px;
+    padding:10px 12px; margin-top:8px;
+  }
+  .hint{ font-family:'Jost',sans-serif; font-size:12px; color:#6b7787; margin-top:14px; line-height:1.5; }
+
+  .forslag{
+    background:var(--paper-2); border-radius:10px; padding:12px; margin-bottom:14px;
+    font-family:'Jost',sans-serif; font-size:12.5px;
+  }
+  .forslag h4{ margin:0 0 8px; font-size:13px; color:var(--emerald-d); }
+  .chip{
+    display:inline-block; background:#fff; border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; margin:0 6px 6px 0; font-size:12px; cursor:pointer;
+  }
+  .chip.rec{ border-color:var(--emerald); background:var(--stat-blue-bg); font-weight:600; }
+
+  label.lbl{ font-family:'Jost',sans-serif; font-size:12px; font-weight:600; display:block; margin-top:10px; }
+  select{
+    width:100%; margin-top:6px; padding:9px 10px; border:1px solid var(--line);
+    border-radius:8px; font-family:'Jost',sans-serif; font-size:13px;
+  }
+  .kpi{ border-top:1px dashed var(--line); margin-top:14px; padding-top:12px; }
+  .kpi div{ display:flex; justify-content:space-between; font-family:'Jost',sans-serif; font-size:13px; padding:5px 0; }
+  .kpi .v{ font-weight:700; color:var(--emerald-d); }
+
+  .foot{
+    margin-top:24px; padding:14px 16px; background:#fff; border:1px dashed var(--gold);
+    border-radius:10px; font-family:'Jost',sans-serif; font-size:12.5px; color:#5a5240;
+  }
+</style>
+</head>
+<body>
+
+<header class="banner">
+  <h1>Opptak — samlet arbeidsflate (prototype)</h1>
+  <p>Statisk mockup. Ingenting lagres. Godkjenn layout og flyt før vi bygger fanen i admin.html.</p>
+  <p class="ar">نموذج ثابت لشاشة الاستقبال الموحّدة — للموافقة على الشكل قبل البرمجة</p>
+</header>
+
+<div class="wrap">
+  <div class="flow" aria-hidden="true">
+    <span class="on">① Søknad i kø</span>
+    <span>→</span>
+    <span class="on">② Vipps-krav</span>
+    <span>→</span>
+    <span>③ Betaling = godkjent</span>
+    <span>→</span>
+    <span class="on">④ Klasse tildelt</span>
+  </div>
+
+  <div class="op">
+    <!-- Kolonne 1: kø -->
+    <section class="panel">
+      <div class="ph">
+        <h2>Søknader</h2>
+        <p>Mapper + liste — «Nye» åpnes automatisk</p>
+      </div>
+      <div class="ftabs">
+        <button type="button" class="ftab on">🆕 Nye (4)</button>
+        <button type="button" class="ftab">⏳ Venteliste (1)</button>
+        <button type="button" class="ftab">✅ Godkjent</button>
+        <button type="button" class="ftab">🧪 Test</button>
+      </div>
+      <input class="search" type="search" placeholder="Søk navn, foresatt, program…" aria-label="Søk">
+      <div class="list" id="list"></div>
+    </section>
+
+    <!-- Kolonne 2: detalj + handling -->
+    <section class="panel">
+      <div class="ph">
+        <h2>Detaljer og handlinger</h2>
+        <p>Samme knapper som i dag — samlet her</p>
+      </div>
+      <div class="body" id="detail"></div>
+    </section>
+
+    <!-- Kolonne 3: klasse + pris -->
+    <section class="panel">
+      <div class="ph">
+        <h2>Klasse og betaling</h2>
+        <p>Forslag fra Klasseforslag — du bekrefter</p>
+      </div>
+      <div class="body" id="klass"></div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <strong>Tilbakemelding?</strong> Skriv f.eks. om Opptak skal erstatte «Søknader»-fanen, eller ligge som egen fane under «Elever og familier».
+    Kolonner, knapper, og om Vipps-status skal stå i midten eller høyre — alt kan justeres før koding.
+  </div>
+</div>
+
+<script>
+(function(){
+  const rows = [
+    { id:1, navn:'Amina Hassan', alder:8, program:'Madinabarn', koran:2, foresatt:'Fatima Hassan', tlf:'900 11 001', vipps:false },
+    { id:2, navn:'Omar Ali', alder:9, program:'Madinabarn', koran:3, foresatt:'Sara Ali', tlf:'900 22 002', vipps:true },
+    { id:3, navn:'Yusuf Ahmed', alder:7, program:'Koran', koran:1, foresatt:'Ahmed Yusuf', tlf:'900 33 003', vipps:false },
+    { id:4, navn:'Maryam Karim', alder:10, program:'Islam', koran:4, foresatt:'Layla Karim', tlf:'900 44 004', vipps:false },
+  ];
+  const klass = {
+    1:{ navn:'1A Madinabarn', txt:'Alder 8 · Koran nivå 2 · 6 i gruppen' },
+    2:{ navn:'2B Madinabarn', txt:'Alder 9 · Koran nivå 3' },
+    3:{ navn:'KB Koran begynner', txt:'Alder 7 · Koran nivå 1' },
+    4:{ navn:'3A Islam', txt:'Alder 10 · Koran nivå 4' },
+  };
+  const pris = { Madinabarn:4200, Koran:2800, Islam:3500 };
+  let valgt = 1;
+
+  function tegn(){
+    document.getElementById('list').innerHTML = rows.map(r => `
+      <div class="item${r.id===valgt?' sel':''}" data-id="${r.id}">
+        <div class="navn">${r.navn}</div>
+        <div class="meta">${r.program} · ${r.alder} år · ${r.foresatt}</div>
+        <span class="pill ny">Ny</span>
+        ${r.vipps ? '<span class="pill vipps">⏳ Vipps sendt</span>' : ''}
+      </div>`).join('');
+
+    document.querySelectorAll('.item').forEach(el => el.addEventListener('click', () => {
+      valgt = +el.dataset.id; tegn();
+    }));
+
+    const s = rows.find(x => x.id === valgt);
+    const p = pris[s.program] || 0;
+    const k = klass[s.id];
+
+    document.getElementById('detail').innerHTML = `
+      <h3>${s.navn}</h3>
+      <div class="kv">
+        <span class="k">Program</span><span>${s.program}</span>
+        <span class="k">Alder (1. sept)</span><span>${s.alder} år</span>
+        <span class="k">Koranferdighet</span><span>Nivå ${s.koran}</span>
+        <span class="k">Foresatt</span><span>${s.foresatt}<br><small>${s.tlf}</small></span>
+        <span class="k">Årspris</span><span>${p.toLocaleString('nb-NO')} kr</span>
+      </div>
+      <div class="acts">
+        <button type="button" class="btn btn-go">✅ Godkjenn</button>
+        <button type="button" class="btn">⏳ Venteliste</button>
+        <button type="button" class="btn btn-no">❌ Avslå</button>
+        ${s.vipps ? '' : '<button type="button" class="btn btn-vipps">⚡ Send Vipps-krav</button>'}
+        <button type="button" class="btn">✏️ Rediger</button>
+      </div>
+      ${s.vipps ? '<div class="wait">⏳ Vipps-krav sendt — venter på betaling. Betaling godkjenner søknaden automatisk.</div>' : ''}
+      <p class="hint">💡 Etter godkjenning: elev + foresatt opprettes, klasse settes fra høyre kolonne.</p>`;
+
+    document.getElementById('klass').innerHTML = `
+      <div class="forslag">
+        <h4>🧩 Forslag (Klasseforslag-logikk)</h4>
+        <div>${k.txt}</div>
+        <div style="margin-top:10px">
+          <span class="chip rec">${k.navn} ✓</span>
+          <span class="chip">Alternativ B</span>
+        </div>
+      </div>
+      <label class="lbl">Klasse ved godkjenning</label>
+      <select><option selected>${k.navn}</option><option>Ikke tildelt ennå</option></select>
+      <div class="kpi">
+        <div><span>Programpris</span><span class="v">${p.toLocaleString('nb-NO')} kr</span></div>
+        <div><span>Depositum</span><span class="v">500 kr</span></div>
+        <div><span>Totalt krav</span><span class="v">${(p+500).toLocaleString('nb-NO')} kr</span></div>
+      </div>
+      <button type="button" class="btn btn-go" style="width:100%;margin-top:14px">Lagre klassevalg</button>`;
+  }
+  tegn();
+})();
+</script>
+</body>
+</html>
