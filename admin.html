@@ -12229,6 +12229,12 @@
     return (cache.students || []).find(s => s.fraSoknadId === regId);
   }
 
+  function opHentValgtKlasse(regId){
+    const reg = (cache.registrations || []).find(r => r.id === regId);
+    const elev = elevForSoknad(regId);
+    return (window.opKlasseValg && opKlasseValg[regId]) || (reg && reg.klasseValg) || (elev && elev.klasse) || '';
+  }
+
   function manglerDepositumForElev(row){
     const dep = prisOppsett.depositum || 0;
     if(dep <= 0) return false;
@@ -12391,7 +12397,7 @@
   };
 
   window.opLagreKlassevalg = async function(id){
-    const valgt = opKlasseValg[id];
+    const valgt = opHentValgtKlasse(id);
     if(!valgt){
       showToast('Velg en klasse først.', true);
       return;
@@ -12412,6 +12418,7 @@
         });
       }
       showToast('✓ Klassevalg lagret: ' + navn);
+      if(window.opKlasseValg) opKlasseValg[id] = valgt;
       if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
     } catch(err){
       console.error(err);
@@ -12505,6 +12512,9 @@
       const pris = opPrisForReg(reg);
       const krav = apentVippsKrav('registrations', reg.id);
       const status = reg.status || 'Ny';
+      const elev = elevForSoknad(reg.id);
+      const valgtKlasse = opHentValgtKlasse(reg.id);
+      if(valgtKlasse && window.opKlasseValg) opKlasseValg[reg.id] = valgtKlasse;
 
       detail += '<div class="op-body">' +
         '<h3>' + escapeHtml(reg.elev_navn || '—') + '</h3>' +
@@ -12528,7 +12538,6 @@
           '</div>';
         detail += '<p class="op-hint">💡 Flyt: godkjenn manuelt først → send depositum via Vipps → tildel klasse. Vipps-push går til foresatt 1; e-post kan gå til begge.</p>';
       } else if(kanBehandle && status === 'Godkjent'){
-        const elev = elevForSoknad(reg.id);
         const dep = prisOppsett.depositum || 0;
         const depBetalt = !manglerDepositumForSoknad(reg);
         detail += '<div class="op-acts">';
@@ -12546,6 +12555,11 @@
         }
         if(depBetalt && dep > 0){
           detail += '<div class="op-ok">✓ Depositum mottatt</div>';
+          if(elev && !elev.klasse && valgtKlasse){
+            detail += '<div class="op-wait">⚠️ Klasse er valgt men ikke lagret på eleven — trykk «Lagre klassevalg».</div>';
+          } else if(elev && !elev.klasse){
+            detail += '<div class="op-wait">⚠️ Depositum betalt — velg klasse og trykk «Lagre klassevalg» for å plassere eleven.</div>';
+          }
         } else if(dep > 0 && manglerDepositumForSoknad(reg)){
           detail += '<div class="op-wait">🔴 Depositum ikke betalt ennå — eleven vises med rød markering i klasselisten.</div>';
         }
@@ -12559,8 +12573,6 @@
 
       const gruppe = opFinnGruppeInfo(reg);
       const klasser = opKlasserForReg(reg);
-      const elev = elevForSoknad(reg.id);
-      const valgtKlasse = opKlasseValg[reg.id] || reg.klasseValg || (elev && elev.klasse) || '';
       const dep = prisOppsett.depositum || 0;
       const programPris = parseFloat(String(pris.price || 0).replace(/[^\d.-]/g, '')) || 0;
       const gjenstår = Math.max(0, programPris - dep);
@@ -12570,8 +12582,8 @@
         detail += '<div class="op-forslag"><div>' + escapeHtml(opForslagTekst(reg, gruppe)) + '</div>';
         if(klasser.length){
           detail += '<div style="margin-top:10px">';
-          klasser.slice(0, 3).forEach((c, i) => {
-            const erValgt = c.id === valgtKlasse || (!valgtKlasse && i === 0);
+          klasser.slice(0, 3).forEach((c) => {
+            const erValgt = c.id === valgtKlasse;
             detail += '<span class="op-chip' + (erValgt ? ' rec' : '') +
               '" onclick="opVelgKlasseChip(\'' + escapeHtml(reg.id) + '\', \'' + escapeHtml(c.id) + '\')">' +
               escapeHtml(c.navn || c.id) + (erValgt ? ' ✓' : '') + '</span>';
@@ -21723,7 +21735,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       // Eleven havner derfor i «Uten klasse», der noen tar avgjørelsen
       // bevisst. Den tomme fanen i foreldreportalen er en påminnelse om
       // at noe gjenstår — ikke en feil å automatisere bort.
-      studentRecord.klasse = (window.opKlasseValg && opKlasseValg[id]) ? opKlasseValg[id] : '';
+      studentRecord.klasse = opHentValgtKlasse(id);
       studentRecord.foresatt = guardianId;
       studentRecord.foresatt2 = guardianId2;
       studentRecord.betalt = 'Nei';
@@ -21746,7 +21758,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       await updateDoc(doc(db, 'registrations', id), {
         status: 'Godkjent',
         depositumBetalt: (prisOppsett.depositum || 0) > 0 ? 'Nei' : 'Ja',
-        klasseValg: (window.opKlasseValg && opKlasseValg[id]) ? opKlasseValg[id] : (reg.klasseValg || ''),
+        klasseValg: opHentValgtKlasse(id),
         behandletAv: currentUserEmail || 'ukjent',
         behandletDato: new Date().toISOString().slice(0, 16).replace('T', ' ')
       });
