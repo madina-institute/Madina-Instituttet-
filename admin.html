@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 00:05:00 -->
+<!-- SIST-ENDRET: 2026-08-20 00:12:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8569,11 +8569,13 @@
           '<div class="op-acts">' + (handl ? handl.innerHTML : '') +
           '<button class="btn btn-ghost" onclick="showPersonDetail(\'' + escapeHtml(type) + '\',\'' + escapeHtml(id) + '\')">⤢ Åpne som modal</button>' +
           '<button class="btn btn-primary" onclick="openPersonPrintModal()">🖨️ Skriv ut</button></div>');
+        wsResetPdSeksjoner(root);
         return;
       }
     }
 
     openCashierOverlay('personDetailOverlay');
+    wsResetPdSeksjoner(document.getElementById('personDetailOverlay'));
   };
 
   window.togglePersonDetailExtra = function(){
@@ -12438,7 +12440,8 @@
       const klasser = opKlasserForReg(reg);
       const valgtKlasse = opKlasseValg[reg.id] || '';
       const dep = prisOppsett.depositum || 0;
-      const totalKrav = (parseFloat(String(pris.price || 0).replace(/[^\d.-]/g, '')) || 0) + dep;
+      const programPris = parseFloat(String(pris.price || 0).replace(/[^\d.-]/g, '')) || 0;
+      const gjenstår = Math.max(0, programPris - dep);
 
       detail += '<div class="op-section"><h4>🧩 Klasse og betaling</h4>';
       if(gruppe || alder != null){
@@ -12467,10 +12470,11 @@
         '</select>';
 
       detail += '<div class="op-kpi">' +
-        '<div><span>Programpris</span><span class="v">' + sfKr(pris.price) + '</span></div>' +
-        (dep > 0 ? '<div><span>Depositum</span><span class="v">' + sfKr(dep) + '</span></div>' : '') +
-        (dep > 0 ? '<div><span>Totalt krav</span><span class="v total">' + sfKr(totalKrav) + '</span></div>' : '') +
-        '</div>';
+        '<div><span>Programpris (årspris)</span><span class="v">' + sfKr(pris.price) + '</span></div>' +
+        (dep > 0 ? '<div><span>Depositum</span><span class="v">− ' + sfKr(dep) + '</span></div>' : '') +
+        (dep > 0 ? '<div><span>Gjenstår etter depositum</span><span class="v total">' + sfKr(gjenstår) + '</span></div>' : '') +
+        '</div>' +
+        (dep > 0 ? '<p class="op-hint">Depositum trekkes fra totalbeløpet — det er ikke et tillegg.</p>' : '');
 
       if(kanBehandle && (status === 'Ny' || status === 'Venteliste')){
         detail += '<div class="op-sticky-foot"><button type="button" class="btn btn-success op-btn-full" style="width:100%;" onclick="opLagreKlassevalg(\'' + escapeHtml(reg.id) + '\')">Lagre klassevalg</button></div>';

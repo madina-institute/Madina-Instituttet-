@@ -253,9 +253,9 @@
       <label class="lbl">Klasse ved godkjenning</label>
       <select><option selected>${k.navn}</option><option>Ikke tildelt ennå</option></select>
       <div class="kpi">
-        <div><span>Programpris</span><span class="v">${p.toLocaleString('nb-NO')} kr</span></div>
-        <div><span>Depositum</span><span class="v">500 kr</span></div>
-        <div><span>Totalt krav</span><span class="v">${(p+500).toLocaleString('nb-NO')} kr</span></div>
+        <div><span>Programpris (årspris)</span><span class="v">${p.toLocaleString('nb-NO')} kr</span></div>
+        <div><span>Depositum</span><span class="v">− 500 kr</span></div>
+        <div><span>Gjenstår etter depositum</span><span class="v">${Math.max(0, p - 500).toLocaleString('nb-NO')} kr</span></div>
       </div>
       <button type="button" class="btn btn-go" style="width:100%;margin-top:14px">Lagre klassevalg</button>`;
   }
