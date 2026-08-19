@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madina Admin — Forslag B (mockup)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&family=Lora&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#17232e;--emerald:#4A8FCB;--emerald-d:#2F6CA0;--gold:#b7924a;--paper:#EEF0FB;--paper-2:#E4E7F7;--line:rgba(40,40,90,.1);--shadow:0 10px 26px rgba(40,40,90,.08);--green:#2e6b53;--red:#a83c3c;--vipps:#ff5b24;--stat-yellow-bg:#FDF3C7;--stat-blue-bg:#DCEFFB;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Lora,serif}
+.proto-banner{background:linear-gradient(90deg,#2F6CA0,#4A8FCB);color:#fff;padding:12px 18px;font-family:Jost,sans-serif;font-size:12.5px;border-bottom:3px solid var(--gold)}
+.proto-banner b{font-family:'Cormorant Garamond',serif;font-size:18px;display:block;margin-bottom:4px}
+.proto-banner .ar{direction:rtl;text-align:right;opacity:.9;margin-top:6px}
+.top{max-width:1400px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+.top h1{margin:0;font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--emerald-d)}
+.layout{max-width:1400px;margin:0 auto;padding:0 18px 40px;display:flex;gap:12px;align-items:flex-start}
+.rail{flex:0 0 56px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 6px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;position:sticky;top:12px}
+.rail button{width:44px;height:44px;border:none;background:transparent;border-radius:10px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rail button.on{background:var(--emerald);box-shadow:inset 0 0 0 1px var(--emerald)}
+.rail button:hover{background:var(--paper-2)}
+.main{flex:1;min-width:0;display:flex;gap:12px;min-height:70vh}
+.list-pane{flex:0 0 min(320px,38%);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.detail-pane{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.ph{padding:14px 16px;border-bottom:1px solid var(--line)}
+.ph h2{margin:0;font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--emerald-d)}
+.ph p{margin:4px 0 0;font-family:Jost,sans-serif;font-size:11px;color:#6b7787}
+.breadcrumb{font-family:Jost,sans-serif;font-size:11px;color:#6b7787;margin-bottom:8px}
+.ftabs{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.ftab{font-family:Jost,sans-serif;font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer}
+.ftab.on{background:var(--emerald);color:#fff;border-color:var(--emerald)}
+.search{margin:10px 12px;width:calc(100% - 24px);padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:Jost,sans-serif;font-size:13px}
+.list{flex:1;overflow-y:auto}
+.item{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;font-family:Jost,sans-serif}
+.item:hover{background:var(--paper-2)}.item.sel{background:var(--stat-blue-bg);box-shadow:inset 3px 0 0 var(--emerald)}
+.item .navn{font-weight:600;font-size:14px}.item .meta{font-size:11px;color:#6b7787;margin-top:3px}
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;margin-top:5px}
+.pill.ny{background:var(--stat-yellow-bg);color:#8A6D1D}
+.body{padding:16px 18px 20px;overflow-y:auto;flex:1}
+.body h3{font-family:'Cormorant Garamond',serif;font-size:26px;margin:0 0 12px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-family:Jost,sans-serif;font-size:13px;margin-bottom:14px}
+.kv .k{color:#6b7787;font-size:11px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.btn{font-family:Jost,sans-serif;font-size:12px;font-weight:600;padding:9px 13px;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:#fff}
+.btn-go{background:var(--green);color:#fff;border-color:var(--green)}.btn-no{background:var(--red);color:#fff;border-color:var(--red)}.btn-vipps{background:var(--vipps);color:#fff;border-color:var(--vipps)}
+.section{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.section h4{margin:0 0 10px;font-family:Jost,sans-serif;font-size:13px;color:var(--emerald-d)}
+.forslag{background:var(--paper-2);border-radius:10px;padding:12px;font-family:Jost,sans-serif;font-size:12px;margin-bottom:10px}
+.chip{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 9px;margin:0 5px 5px 0;font-size:11.5px}
+.chip.rec{border-color:var(--emerald);background:var(--stat-blue-bg);font-weight:600}
+.kpi{font-family:Jost,sans-serif;font-size:13px}.kpi div{display:flex;justify-content:space-between;padding:4px 0}
+.sticky-foot{padding:12px 16px;border-top:1px solid var(--line);background:var(--paper-2)}
+.mob-back{display:none;font-family:Jost,sans-serif;font-size:12px;font-weight:600;color:var(--emerald-d);background:none;border:none;padding:0 0 10px;cursor:pointer}
+.switch-links{margin-top:16px;font-family:Jost,sans-serif;font-size:12px;text-align:center}
+.switch-links a{color:var(--emerald-d);font-weight:600}
+.home-pane{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:var(--shadow);display:none}
+.home-pane.show{display:block}
+.home-pane h2{font-family:'Cormorant Garamond',serif;color:var(--emerald-d);margin:0 0 12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:16px}
+.tile{background:var(--paper-2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;font-family:Jost,sans-serif;font-size:12px}
+.tile:hover{background:#dce4f7}
+@media(max-width:900px){
+  .layout{flex-direction:column;padding:0 12px 32px}
+  .rail{flex-direction:row;width:100%;flex:0 0 auto;overflow-x:auto;position:static}
+  .main{flex-direction:column;min-height:0}
+  .list-pane{flex:0 0 auto;max-height:none}
+  .main:not(.mob-detail) .detail-pane{display:none}
+  .main.mob-detail .list-pane{display:none}
+  .main.mob-detail .mob-back{display:block}
+}
+</style>
+</head>
+<body>
+<div class="proto-banner">
+  <b>Forslag B — Mockup (interaktiv)</b>
+  Smal ikon-skinne + liste + stor detaljflate (klasse/betaling under i samme panel).
+  <div class="ar">المقترح B — شريط أيقونات + قائمة + لوحة تفاصيل كبيرة</div>
+</div>
+<div class="top"><h1>Madina Skole · Forslag B</h1><span style="font-family:Jost,sans-serif;font-size:11px;color:#6b7787">Mockup</span></div>
+<div class="layout">
+  <nav class="rail" id="rail"></nav>
+  <div class="main" id="mainArea">
+    <div class="home-pane show" id="homePane">
+      <h2>🏠 Hjem</h2>
+      <p style="font-family:Jost,sans-serif;font-size:13px;color:#6b7787">I forslag B er hjemskjermen en enkel oversikt. Velg et ikon i skinnen for å jobbe.</p>
+      <div class="tiles">
+        <div class="tile" onclick="pickRail('admin')">📝 Opptak</div>
+        <div class="tile" onclick="pickRail('okonomi')">💰 Økonomi</div>
+        <div class="tile" onclick="pickRail('pedagogisk')">📚 Undervisning</div>
+      </div>
+    </div>
+    <div class="list-pane" id="listPane" style="display:none">
+      <div class="ph"><div class="breadcrumb" id="crumb">Elever og familier › Opptak</div><h2>Søknader</h2><p>Nye (4)</p></div>
+      <div class="ftabs"><span class="ftab on">Nye</span><span class="ftab">Venteliste</span><span class="ftab">Godkjent</span></div>
+      <input class="search" placeholder="Søk…" readonly>
+      <div class="list" id="studentList"></div>
+    </div>
+    <div class="detail-pane" id="detailPane" style="display:none">
+      <div class="ph">
+        <button type="button" class="mob-back" id="mobBack">← Tilbake til listen</button>
+        <h2 id="detailTitle">Detaljer</h2><p id="detailSub">Velg en søknad</p>
+      </div>
+      <div class="body" id="detailBody"><p style="font-family:Jost,sans-serif;color:#6b7787">Velg en elev fra listen.</p></div>
+      <div class="sticky-foot" id="stickyFoot" style="display:none">
+        <button class="btn btn-go" style="width:100%">Lagre klassevalg</button>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="switch-links">Sammenlign: <a href="proposal-a-mockup.html">→ Forslag A mockup</a></p>
+<script>
+const RAIL=[
+  {id:'home',ic:'🏠',title:'Hjem'},
+  {id:'personale',ic:'👥',title:'Personale'},
+  {id:'admin',ic:'🎓',title:'Elever'},
+  {id:'okonomi',ic:'💰',title:'Økonomi'},
+  {id:'pedagogisk',ic:'📚',title:'Undervisning'},
+  {id:'skoleoppsett',ic:'🏫',title:'Skole'},
+  {id:'system',ic:'⚙️',title:'System'}
+];
+const STUDENTS=[
+  {id:'1',navn:'Amina Hassan',meta:'Madinabarn · 8 år',prog:'Madinabarn',alder:8,koran:2,foresatt:'Fatima Hassan',pris:'4 500',klasse:'2A Madinabarn'},
+  {id:'2',navn:'Omar Ali',meta:'Skolen · 10 år',prog:'Skolen',alder:10,koran:4,foresatt:'Ahmed Ali',pris:'3 500',klasse:'3A Islam'},
+  {id:'3',navn:'Yusuf Ahmed',meta:'Madinabarn · 7 år',prog:'Madinabarn',alder:7,koran:1,foresatt:'Sara Ahmed',pris:'4 500',klasse:'1B Madinabarn'},
+  {id:'4',navn:'Maryam Karim',meta:'Skolen · 10 år',prog:'Skolen',alder:10,koran:4,foresatt:'Layla Karim',pris:'3 500',klasse:'3A Islam'}
+];
+let rail='home',selId=null,mobDetail=false;
+const isMob=()=>matchMedia('(max-width:900px)').matches;
+function renderRail(){
+  document.getElementById('rail').innerHTML=RAIL.map(r=>`<button type="button" title="${r.title}" class="${rail===r.id?'on':''}" data-id="${r.id}">${r.ic}</button>`).join('');
+  document.querySelectorAll('#rail button').forEach(b=>b.onclick=()=>pickRail(b.dataset.id));
+}
+function pickRail(id){
+  rail=id; selId=null; mobDetail=false; renderRail(); updateLayout();
+}
+function updateLayout(){
+  const home=rail==='home';
+  document.getElementById('homePane').classList.toggle('show',home);
+  document.getElementById('listPane').style.display=home?'none':'flex';
+  document.getElementById('detailPane').style.display=home?'none':'flex';
+  document.getElementById('mainArea').classList.toggle('mob-detail',!home&&isMob()&&mobDetail);
+  if(home)return;
+  const labels={admin:'Elever og familier › Opptak',okonomi:'Økonomi › Kasse',pedagogisk:'Undervisning › Oppmøte',personale:'Personale › Lærere',skoleoppsett:'Skole › Programmer',system:'System › Veiledning'};
+  document.getElementById('crumb').textContent=labels[rail]||rail;
+  if(rail!=='admin'){
+    document.getElementById('detailTitle').textContent='Innhold for '+rail;
+    document.getElementById('detailSub').textContent='Mockup — kun Opptak er fullt utformet';
+    document.getElementById('detailBody').innerHTML='<p style="font-family:Jost,sans-serif;color:#6b7787">Her ville fanens innhold ligge i høyre panel.</p>';
+    document.getElementById('stickyFoot').style.display='none';
+    document.getElementById('studentList').innerHTML='';
+    return;
+  }
+  if(!selId&&!isMob())selId=STUDENTS[0].id;
+  if(isMob()&&!mobDetail)selId=null;
+  renderList(); renderDetail();
+}
+function renderList(){
+  document.getElementById('studentList').innerHTML=STUDENTS.map(s=>`
+    <div class="item${s.id===selId?' sel':''}" data-id="${s.id}">
+      <div class="navn">${s.navn}</div><div class="meta">${s.meta}</div><span class="pill ny">Ny</span>
+    </div>`).join('');
+  document.querySelectorAll('#studentList .item').forEach(el=>el.onclick=()=>{
+    selId=el.dataset.id; if(isMob())mobDetail=true; updateLayout();
+  });
+}
+function renderDetail(){
+  const s=STUDENTS.find(x=>x.id===selId);
+  if(!s){
+    document.getElementById('detailTitle').textContent='Detaljer';
+    document.getElementById('detailSub').textContent='Velg en søknad';
+    document.getElementById('detailBody').innerHTML='<p style="font-family:Jost,sans-serif;color:#6b7787">Velg en elev fra listen til venstre.</p>';
+    document.getElementById('stickyFoot').style.display='none'; return;
+  }
+  document.getElementById('detailTitle').textContent=s.navn;
+  document.getElementById('detailSub').textContent=s.prog+' · Ny søknad';
+  document.getElementById('detailBody').innerHTML=`
+    <div class="kv"><span class="k">Program</span><span>${s.prog}</span>
+    <span class="k">Alder</span><span>${s.alder} år</span>
+    <span class="k">Koran</span><span>Nivå ${s.koran}</span>
+    <span class="k">Foresatt</span><span>${s.foresatt}</span>
+    <span class="k">Årspris</span><span>${s.pris} kr</span></div>
+    <div class="acts"><button class="btn btn-go">✅ Godkjenn</button><button class="btn">⏳ Venteliste</button><button class="btn btn-no">❌ Avslå</button><button class="btn btn-vipps">⚡ Vipps</button></div>
+    <div class="section"><h4>🧩 Klasse og betaling (i samme panel)</h4>
+    <div class="forslag">Forslag: Alder ${s.alder} · Koran ${s.koran}<br><span class="chip rec">${s.klasse} ✓</span></div>
+    <label style="font-family:Jost,sans-serif;font-size:12px;font-weight:600">Klasse ved godkjenning</label>
+    <select style="width:100%;margin:8px 0;padding:8px;border:1px solid var(--line);border-radius:8px;font-family:Jost,sans-serif"><option>${s.klasse}</option></select>
+    <div class="kpi"><div><span>Programpris</span><span>${s.pris} kr</span></div><div><span>Depositum</span><span>500 kr</span></div><div><span><b>Totalt</b></span><span><b>4 000 kr</b></span></div></div></div>`;
+  document.getElementById('stickyFoot').style.display='block';
+}
+document.getElementById('mobBack').onclick=()=>{mobDetail=false;updateLayout();};
+addEventListener('resize',updateLayout);
+renderRail(); updateLayout();
+</script>
+</body>
+</html>
