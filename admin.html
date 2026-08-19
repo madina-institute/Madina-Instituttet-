@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-19 23:05:00 -->
+<!-- SIST-ENDRET: 2026-08-19 23:18:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -124,45 +124,56 @@
   .side-grid{ display:flex; flex-direction:column; gap:18px; }
   @media (min-width:640px){ .side-grid{ flex-direction:row; flex-wrap:wrap; } .side-grid .side-card{ flex:1 1 calc(50% - 9px); min-width:220px; } }
 
-  /* Forslag B — smal ikon-skinne + liste + detaljflate */
+  /* Forslag B — ikon-skinne (med etikett) + liste + detaljflate */
   .app-body{
     display:flex; flex-direction:row; align-items:flex-start;
-    max-width:1400px; margin:0 auto;
-    padding:14px 14px 28px; gap:12px;
+    max-width:1420px; margin:0 auto;
+    padding:14px 14px 28px 8px; gap:10px;
   }
-  @media (min-width:640px){ .app-body{ padding:16px 24px 32px; } }
-  @media (min-width:900px){ .app-body{ padding:20px 32px 40px; } }
-  @media (min-width:1280px){ .app-body{ padding:22px 40px 48px; } }
+  @media (min-width:640px){ .app-body{ padding:16px 24px 32px 10px; } }
+  @media (min-width:900px){ .app-body{ padding:20px 32px 40px 12px; } }
+  @media (min-width:1280px){ .app-body{ padding:22px 40px 48px 14px; } }
   .app-workspace{ flex:1; min-width:0; }
   .app-rail{
     display:flex; position:sticky; top:92px; z-index:300;
-    flex:0 0 56px; flex-direction:column; align-items:stretch; gap:4px;
+    flex:0 0 84px; flex-direction:column; align-items:stretch; gap:3px;
     background:#fff; border:1px solid var(--line);
-    padding:8px 6px; border-radius:var(--radius-card); box-shadow:var(--shadow);
+    padding:8px 5px; border-radius:var(--radius-card); box-shadow:var(--shadow);
     max-height:calc(100vh - 110px); overflow-y:auto; overflow-x:hidden;
     scrollbar-width:none;
+    /* Vokser litt ut i venstre marg — tar ikke plass fra arbeidsflaten */
+    margin-inline-start:-6px;
   }
+  @media (min-width:900px){ .app-rail{ margin-inline-start:-14px; flex-basis:88px; } }
   .app-rail::-webkit-scrollbar{ display:none; }
   .app-rail .sb-logo{ display:none; }
   .app-rail button{
-    display:flex; align-items:center; justify-content:center;
-    width:44px; height:44px; flex:0 0 auto;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    width:100%; min-height:52px; flex:0 0 auto;
     background:transparent; border:none; border-radius:10px;
-    font-size:20px; cursor:pointer; color:var(--ink);
+    cursor:pointer; color:var(--ink); padding:5px 3px; gap:3px;
   }
   .app-rail button .lbl{
-    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
-    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+    position:static; width:auto; height:auto; margin:0; overflow:visible; clip:auto;
+    font-family:'Jost',sans-serif; font-size:9px; font-weight:600; line-height:1.15;
+    text-align:center; white-space:normal; max-width:76px;
   }
-  .app-rail button .ic{ font-size:20px; line-height:1; }
+  html[dir="rtl"] .app-rail button .lbl{ font-family:'Tajawal',sans-serif; font-size:8.5px; }
+  .app-rail button .ic{ font-size:19px; line-height:1; flex:none; }
   .app-rail button:hover{ background:var(--paper-2); }
-  .app-rail button.active{ background:var(--emerald); box-shadow:inset 0 0 0 1px var(--emerald); }
+  .app-rail button.active{ background:var(--emerald); color:#fff; box-shadow:inset 0 0 0 1px var(--emerald); }
+  .app-rail button.active .lbl{ color:#fff; }
   @media (max-width:900px){
-    .app-body{ flex-direction:column; gap:10px; }
+    .app-body{ flex-direction:column; gap:10px; padding-inline:14px; }
     .app-rail{
       flex:0 0 auto; flex-direction:row; width:100%; max-height:none;
-      overflow-x:auto; overflow-y:hidden; position:static;
+      overflow-x:auto; overflow-y:hidden; position:static; margin-inline-start:0;
+      padding:8px;
     }
+    .app-rail button{
+      flex-direction:column; min-width:64px; width:auto; min-height:48px;
+    }
+    .app-rail button .lbl{ font-size:8.5px; max-width:58px; }
   }
   #sideChooseView, #subChooseView, .content-layout{ flex:1; min-width:0; }
   /* Weekly timeplan grid — real schedule table (times × classes), styled
@@ -1792,12 +1803,12 @@
   </div>
   <button data-sb-side="home" onclick="showSideChoice()" title="Hjem"><span class="ic">🏠</span><span class="lbl">Hjem</span></button>
   <button data-sb-side="personale" onclick="sidebarSelectSide('personale')" title="Personale"><span class="ic">👥</span><span class="lbl">Personale</span></button>
-  <button data-sb-side="admin" onclick="sidebarSelectSide('admin')" title="Elever og familier"><span class="ic">🎓</span><span class="lbl">Elever og familier</span></button>
+  <button data-sb-side="admin" onclick="sidebarSelectSide('admin')" title="Elever og familier"><span class="ic">🎓</span><span class="lbl">Elever</span></button>
   <button data-sb-side="okonomi" onclick="sidebarSelectSide('okonomi')" title="Økonomi"><span class="ic">💰</span><span class="lbl">Økonomi</span></button>
   <button data-sb-side="pedagogisk" onclick="sidebarSelectSide('pedagogisk')" title="Undervisning"><span class="ic">📚</span><span class="lbl">Undervisning</span></button>
   <button data-sb-side="laereplan" onclick="sidebarSelectSide('laereplan')" title="Læreplan"><span class="ic">📖</span><span class="lbl">Læreplan</span></button>
-  <button data-sb-side="kommunikasjon" onclick="sidebarSelectSide('kommunikasjon')" title="Kommunikasjon"><span class="ic">✉️</span><span class="lbl">Kommunikasjon</span></button>
-  <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')" title="Skole"><span class="ic">🏫</span><span class="lbl">Skole</span></button>
+  <button data-sb-side="kommunikasjon" onclick="sidebarSelectSide('kommunikasjon')" title="Kommunikasjon"><span class="ic">✉️</span><span class="lbl">Melding</span></button>
+  <button data-sb-side="skoleoppsett" onclick="sidebarSelectSide('skoleoppsett')" title="Skoleoppsett"><span class="ic">🏫</span><span class="lbl">Skole</span></button>
   <button data-sb-side="system" onclick="sidebarSelectSide('system')" title="System"><span class="ic">⚙️</span><span class="lbl">System</span></button>
   <button data-sb-side="portaler" onclick="sidebarSelectSide('portaler')" title="Portaler"><span class="ic">🔗</span><span class="lbl">Portaler</span></button>
 </nav>
@@ -2983,19 +2994,38 @@
     #panel-opptak .op-ph{ padding:14px 16px; border-bottom:1px solid var(--line); }
     #panel-opptak .op-ph h2{ margin:0; font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--emerald-d); }
     #panel-opptak .op-ph p{ margin:4px 0 0; font-family:'Jost',sans-serif; font-size:11.5px; color:#6b7787; }
-    #panel-opptak .op-ftabs{ display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); }
+    /* Liste ligger i #opListSlot (Forslag B) — samme stil som prototype */
+    #opListSlot .op-ftabs,
+    #panel-opptak .op-ftabs{ display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); background:#fff; }
+    #opListSlot .op-ftab,
     #panel-opptak .op-ftab{ font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+    #opListSlot .op-ftab.on,
     #panel-opptak .op-ftab.on{ background:var(--emerald); color:#fff; border-color:var(--emerald); }
-    #panel-opptak .op-search{ margin:10px 12px; width:calc(100% - 24px); padding:9px 11px; border:1px solid var(--line); border-radius:8px; font-family:'Jost',sans-serif; font-size:13px; }
-    #panel-opptak .op-list{ max-height:560px; overflow-y:auto; }
-    #panel-opptak .op-item{ padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer; font-family:'Jost',sans-serif; }
+    #opListSlot .op-search,
+    #panel-opptak .op-search{ margin:10px 12px; width:calc(100% - 24px); padding:9px 11px; border:1px solid var(--line); border-radius:8px; font-family:'Jost',sans-serif; font-size:13px; background:#fff; }
+    #opListSlot .op-list,
+    #panel-opptak .op-list{ overflow-y:auto; background:#fff; }
+    #opListSlot .op-item,
+    #panel-opptak .op-item{
+      padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer;
+      font-family:'Jost',sans-serif; background:#fff; transition:background .12s;
+    }
+    #opListSlot .op-item:hover,
     #panel-opptak .op-item:hover{ background:var(--paper-2); }
+    #opListSlot .op-item.sel,
     #panel-opptak .op-item.sel{ background:var(--stat-blue-bg); box-shadow:inset 3px 0 0 var(--emerald); }
-    #panel-opptak .op-item .navn{ font-weight:600; font-size:14px; }
-    #panel-opptak .op-item .meta{ font-size:11px; color:#6b7787; margin-top:3px; }
-    #panel-opptak .op-pill{ display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-top:5px; margin-right:4px; }
+    #opListSlot .op-item .navn,
+    #panel-opptak .op-item .navn{ font-weight:600; font-size:14px; color:var(--ink); line-height:1.3; }
+    #opListSlot .op-item .meta,
+    #panel-opptak .op-item .meta{ font-size:11px; color:#6b7787; margin-top:4px; line-height:1.4; }
+    #opListSlot .op-pill,
+    #panel-opptak .op-pill{ display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-top:6px; margin-right:4px; }
+    #opListSlot .op-pill.ny,
     #panel-opptak .op-pill.ny{ background:var(--stat-yellow-bg); color:var(--stat-yellow-fg); }
+    #opListSlot .op-pill.vipps,
     #panel-opptak .op-pill.vipps{ background:#ffe8de; color:#b33a00; }
+    #opListSlot .op-empty,
+    #panel-opptak .op-empty{ padding:24px 18px; font-family:'Jost',sans-serif; font-size:13px; color:#6b7787; text-align:center; }
     #panel-opptak .op-body{ padding:16px 18px 20px; }
     #panel-opptak .op-body h3{ font-family:'Cormorant Garamond',serif; font-size:26px; margin:0 0 14px; }
     #panel-opptak .op-kv{ display:grid; grid-template-columns:118px 1fr; gap:6px 12px; font-family:'Jost',sans-serif; font-size:13px; margin-bottom:16px; }
@@ -3010,7 +3040,6 @@
     #panel-opptak .op-kpi{ border-top:1px dashed var(--line); margin-top:14px; padding-top:12px; }
     #panel-opptak .op-kpi div{ display:flex; justify-content:space-between; font-family:'Jost',sans-serif; font-size:13px; padding:5px 0; }
     #panel-opptak .op-kpi .v{ font-weight:700; color:var(--emerald-d); }
-    #panel-opptak .op-empty{ padding:24px 18px; font-family:'Jost',sans-serif; font-size:13px; color:#6b7787; text-align:center; }
     /* Egne knapper — arver ikke .btn (uppercase) fra admin */
     #panel-opptak .op-btn{
       font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600;
@@ -3037,9 +3066,6 @@
       margin:0 0 12px; padding:10px 12px; background:var(--paper-2);
       border-radius:10px; font-family:'Jost',sans-serif; font-size:12px;
     }
-    #panel-opptak .op-list-host .op-ftabs{ display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); }
-    #panel-opptak .op-list-host .op-search{ margin:10px 12px; width:calc(100% - 24px); }
-    #panel-opptak .op-list-host .op-list{ max-height:none; }
     #panel-opptak .op-mob-back{
       display:none; font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600;
       color:var(--emerald-d); background:none; border:none; padding:0 0 10px;
