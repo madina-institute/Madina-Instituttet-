@@ -781,15 +781,22 @@ exports.vippsWebhook = onRequest(
       const prevPaid = parseFloat(String(student.belopBetalt || "0").replace(/[^\d.-]/g, "")) || 0;
       const total = parseFloat(String(student.belop || "0").replace(/[^\d.-]/g, "")) || 0;
       const newPaid = prevPaid + paidAmount;
-
-      await studentRef.update({
+      const klasseFraSoknad = reg.klasseValg || "";
+      const elevOppdatering = {
         belopBetalt: String(newPaid),
         betalt: newPaid >= total ? "Ja" : (newPaid > 0 ? "Delvis" : "Nei"),
         depositumBetalt: "Ja",
         betalingsdato: new Date().toISOString().slice(0, 10),
         sistEndretAv: "vipps-webhook",
         sistEndretDato: new Date().toISOString().slice(0, 10),
-      });
+      };
+      // Klassevalg kan være lagret på søknaden før betaling — bruk det
+      // hvis eleven fortsatt står uten klasse etter manuell godkjenning.
+      if (klasseFraSoknad && !student.klasse) {
+        elevOppdatering.klasse = klasseFraSoknad;
+      }
+
+      await studentRef.update(elevOppdatering);
 
       await db.collection("studentPayments").add({
         studentId: studentRef.id,
