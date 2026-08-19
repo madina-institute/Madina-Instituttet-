@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-19 20:55:40 -->
+<!-- SIST-ENDRET: 2026-08-19 21:15:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -26,6 +26,8 @@
     --stat-yellow-bg:#FDF3C7; --stat-yellow-fg:#8A6D1D;
     --stat-pink-bg:#FCE7EE; --stat-pink-fg:#A23B60;
     --stat-blue-bg:#DCEFFB; --stat-blue-fg:#1E6E8C;
+    --green:#2e6b53; --vipps:#ff5b24;
+    --radius-card:14px; --radius-btn:8px;
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--paper); font-family:'Lora',serif; color:var(--ink);}
@@ -485,14 +487,14 @@
   }
   .sub-sidebar button{
     display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; flex:0 0 auto; min-width:64px;
-    background:transparent; border:none; color:#78808f; font-family:'Jost',sans-serif;
-    font-weight:500; font-size:10.5px; line-height:1.2; padding:10px 6px;
-    border-radius:10px; cursor:pointer; white-space:nowrap;
+    background:#fff; border:1px solid var(--line); color:#3a4450; font-family:'Jost',sans-serif;
+    font-weight:600; font-size:11.5px; line-height:1.2; padding:6px 11px;
+    border-radius:999px; cursor:pointer; white-space:nowrap;
   }
   html[dir="rtl"] .sub-sidebar button{font-family:'Tajawal',sans-serif;}
-  .sub-sidebar button .ic{font-size:17px;}
+  .sub-sidebar button .ic{font-size:14px;}
   .sub-sidebar button:hover{background:var(--paper-2); color:var(--ink);}
-  .sub-sidebar button.active{background:var(--stat-blue-bg); color:var(--stat-blue-fg); font-weight:600;}
+  .sub-sidebar button.active{background:var(--emerald); color:#fff; border-color:var(--emerald); font-weight:600;}
   #mainContent{ min-width:0; flex:1; width:100%; }
   @media (min-width:640px){
     .content-layout{ flex-direction:row; align-items:flex-start; }
@@ -500,8 +502,8 @@
       flex:0 0 150px; width:auto; flex-direction:column; position:sticky; top:10px;
       max-height:calc(100vh - 20px); overflow-y:auto; overflow-x:visible;
     }
-    .sub-sidebar button{ flex-direction:row; text-align:start; font-size:12.5px; padding:13px 12px; width:100%; white-space:normal; min-width:0; }
-    .sub-sidebar button .ic{font-size:16px;}
+    .sub-sidebar button{ flex-direction:row; text-align:start; font-size:12px; padding:7px 12px; width:auto; white-space:nowrap; min-width:0; }
+    .sub-sidebar button .ic{font-size:14px;}
   }
   @media (min-width:900px){
     .content-layout{ padding:20px; gap:16px; }
@@ -561,16 +563,20 @@
 
   .toolbar{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:18px;}
   .search{
-    flex:1; min-width:180px; padding:10px 14px; border:1px solid var(--line); border-radius:6px;
-    font-family:'Lora',serif; font-size:16px; background:#fff;
+    flex:1; min-width:180px; padding:9px 11px; border:1px solid var(--line); border-radius:var(--radius-btn);
+    font-family:'Jost',sans-serif; font-size:13px; background:#fff;
   }
   .btn{
-    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0.03em;
-    padding:10px 18px; border-radius:6px; border:none; cursor:pointer; text-transform:uppercase;
+    font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0;
+    padding:10px 14px; border-radius:var(--radius-btn); border:1px solid var(--line);
+    cursor:pointer; text-transform:none; background:#fff; color:var(--ink); width:auto;
   }
-  .btn-primary{background:var(--emerald); color:#fff;}
+  .btn-primary{background:var(--emerald); color:#fff; border-color:var(--emerald);}
   .btn-primary:hover{background:var(--emerald-l);}
-  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink);}
+  .btn-success{background:var(--green); color:#fff; border-color:var(--green);}
+  .btn-danger{background:var(--red); color:#fff; border-color:var(--red);}
+  .btn-vipps{background:var(--vipps); color:#fff; border-color:var(--vipps);}
+  .btn-ghost{background:#fff; border:1px solid var(--line); color:var(--ink);}
   .btn-danger{background:transparent; color:var(--red); border:1px solid rgba(168,60,60,0.3); padding:6px 10px; font-size:11px;}
   .btn-edit{background:transparent; color:var(--emerald); border:1px solid rgba(31,74,58,0.25); padding:6px 10px; font-size:11px; margin-right:6px;}
 
@@ -1010,7 +1016,7 @@
   .btn-reject{background:transparent; border:1px solid rgba(168,60,60,0.3); color:var(--red); border-radius:6px; padding:6px 10px; font-size:11px; font-family:'Jost',sans-serif; cursor:pointer;}
 
   .choice-card{
-    background:#fff; border:1px solid var(--line); border-radius:10px; padding:26px 22px;
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius-card); padding:26px 22px;
     box-shadow:var(--shadow); cursor:pointer; transition:border-color .2s;
   }
   .choice-card:hover{border-color:var(--gold);}
@@ -1258,7 +1264,7 @@
   .folder-row-dynamic .folder-card{flex:1 1 150px; padding:16px 14px; min-width:150px;}
   .folder-row-dynamic .folder-card h3{font-size:15.5px; margin:0 0 4px;}
   .folder-row-dynamic .folder-card .sub{font-size:11px;}
-  .report-card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 22px; box-shadow:var(--shadow);}
+  .report-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius-card); padding:16px 18px 20px; box-shadow:var(--shadow);}
 
   /* ════════ ØKONOMI — OVERSIKT ════════
      Båndet er sidens tese: hvor mye av årets forventede inntekt som
@@ -3028,6 +3034,49 @@
     #panel-opptak .op-chip{ cursor:pointer; }
     #panel-opptak .op-chip:hover{ border-color:var(--emerald-l); }
     #panel-opptak .op-kpi .v.total{ font-size:15px; }
+
+    /* ══ Arbeidsflate-design (prototype-stil) — én flate, horisontal undermeny ══ */
+    .content-layout.ws-mode{
+      flex-direction:column; align-items:stretch; gap:12px; padding:0;
+    }
+    .content-layout.ws-mode .sub-sidebar{
+      flex:0 0 auto; flex-basis:auto; width:100%; max-width:none; position:static;
+      flex-direction:row; flex-wrap:wrap; gap:6px;
+      padding:10px 12px; border-radius:var(--radius-card);
+      max-height:none; overflow:visible;
+    }
+    .content-layout.ws-mode .sub-sidebar button{
+      flex:0 0 auto; min-width:0; width:auto;
+      flex-direction:row; font-size:11.5px; font-weight:600;
+      padding:6px 11px; border-radius:999px;
+      border:1px solid var(--line); background:#fff; color:var(--ink);
+      white-space:nowrap;
+    }
+    .content-layout.ws-mode .sub-sidebar button .ic{ font-size:14px; }
+    .content-layout.ws-mode .sub-sidebar button:hover{ background:var(--paper-2); }
+    .content-layout.ws-mode .sub-sidebar button.active{
+      background:var(--emerald); color:#fff; border-color:var(--emerald); font-weight:600;
+    }
+    .content-layout.ws-mode #mainContent{ width:100%; flex:1 1 auto; min-width:0; }
+
+    /* Opptak: én samlet hvit flate — tre kolonner INNI, ikke tre løse kort */
+    #panel-opptak .ws-shell{
+      background:#fff; border:1px solid var(--line); border-radius:var(--radius-card);
+      box-shadow:var(--shadow); overflow:hidden;
+    }
+    #panel-opptak .op-flow{ margin:0; padding:14px 16px 0; background:#fff; }
+    #panel-opptak .ws-grid{
+      display:grid; grid-template-columns:minmax(240px,280px) 1fr minmax(260px,300px);
+      align-items:stretch; min-height:480px;
+    }
+    @media(max-width:1100px){
+      #panel-opptak .ws-grid{ grid-template-columns:1fr; }
+      #panel-opptak .ws-col{ border-inline-end:none !important; border-bottom:1px solid var(--line); }
+      #panel-opptak .ws-col:last-child{ border-bottom:none; }
+    }
+    #panel-opptak .ws-col{ border-inline-end:1px solid var(--line); min-width:0; }
+    #panel-opptak .ws-col:last-child{ border-inline-end:none; }
+    #panel-opptak .op-panel{ border:none; border-radius:0; box-shadow:none; background:transparent; }
   </style>
   <div class="panel" id="panel-skoleflate">
     <div id="sfRoot"></div>
@@ -12212,13 +12261,13 @@
 
       if(kanBehandle && (status === 'Ny' || status === 'Venteliste')){
         midt += '<div class="op-acts">' +
-          '<button type="button" class="op-btn op-btn-go" onclick="approveRegistration(\'' + escapeHtml(reg.id) + '\')">✅ Godkjenn</button>' +
-          '<button type="button" class="op-btn" onclick="waitlistRegistration(\'' + escapeHtml(reg.id) + '\')">⏳ Venteliste</button>' +
-          '<button type="button" class="op-btn op-btn-no" onclick="rejectRegistration(\'' + escapeHtml(reg.id) + '\')">❌ Avslå</button>';
+          '<button type="button" class="btn btn-success" onclick="approveRegistration(\'' + escapeHtml(reg.id) + '\')">✅ Godkjenn</button>' +
+          '<button type="button" class="btn btn-ghost" onclick="waitlistRegistration(\'' + escapeHtml(reg.id) + '\')">⏳ Venteliste</button>' +
+          '<button type="button" class="btn btn-danger" onclick="rejectRegistration(\'' + escapeHtml(reg.id) + '\')">❌ Avslå</button>';
         if(!krav){
-          midt += '<button type="button" class="op-btn op-btn-vipps" onclick="sendRealVippsRequest(\'' + escapeHtml(reg.id) + '\')">⚡ Send Vipps-krav</button>';
+          midt += '<button type="button" class="btn btn-vipps" onclick="sendRealVippsRequest(\'' + escapeHtml(reg.id) + '\')">⚡ Send Vipps-krav</button>';
         }
-        midt += '<button type="button" class="op-btn" onclick="editEntry(\'registrations\',\'' + escapeHtml(reg.id) + '\')">✏️ Rediger</button>' +
+        midt += '<button type="button" class="btn btn-ghost" onclick="editEntry(\'registrations\',\'' + escapeHtml(reg.id) + '\')">✏️ Rediger</button>' +
           '</div>';
         if(krav){
           const sendt = (krav.createdAt || krav.opprettet || '').slice(0, 16).replace('T', ' ');
@@ -12275,7 +12324,7 @@
         '</div>';
 
       if(kanBehandle && (status === 'Ny' || status === 'Venteliste')){
-        hoyre += '<button type="button" class="op-btn op-btn-go op-btn-full" onclick="opLagreKlassevalg(\'' + escapeHtml(reg.id) + '\')">Lagre klassevalg</button>';
+        hoyre += '<button type="button" class="btn btn-success op-btn-full" style="width:100%;margin-top:14px;" onclick="opLagreKlassevalg(\'' + escapeHtml(reg.id) + '\')">Lagre klassevalg</button>';
       }
       if(klasser.length === 0){
         hoyre += '<p class="op-hint">Ingen klasser for dette programmet ennå. Opprett under <b>Klasser</b> eller <b>Arbeidsflate</b>.</p>';
@@ -12289,7 +12338,9 @@
       '<span>③ Betaling = godkjent</span><span>→</span>' +
       '<span class="on">④ Klasse tildelt</span></div>';
 
-    root.innerHTML = flow + '<div class="op-wrap"><div>' + venstre + '</div><div>' + midt + '</div><div>' + hoyre + '</div></div>';
+    root.innerHTML = '<div class="ws-shell">' + flow +
+      '<div class="ws-grid"><div class="ws-col">' + venstre + '</div><div class="ws-col">' + midt +
+      '</div><div class="ws-col">' + hoyre + '</div></div></div>';
   };
 
   window.__opMaybeRerender = function(){
@@ -21450,10 +21501,21 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   // på startfanen ved hver oppdatering — og en oppdatering er nettopp det
   // man gjør når noe ser rart ut, altså akkurat når man IKKE vil miste
   // plassen sin. Nå virker også nettleserens tilbakeknapp mellom faner.
+  // Faner som er «arbeidsflater» — full bredde, horisontal undermeny, prototype-stil.
+  const WS_TABS = new Set(['opptak', 'skoleflate']);
+
+  function oppdaterWorkspaceModus(tabNavn){
+    const layout = document.getElementById('contentLayout');
+    if(!layout) return;
+    if(WS_TABS.has(tabNavn)) layout.classList.add('ws-mode');
+    else layout.classList.remove('ws-mode');
+  }
+
   function aktiverFane(tab, oppdaterUrl){
     if(!tab) return;
     const panel = document.getElementById('panel-' + tab.dataset.tab);
     if(!panel) return;
+    oppdaterWorkspaceModus(tab.dataset.tab);
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
