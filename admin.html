@@ -1,12 +1,9 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 04:00:00 -->
+<!-- SIST-ENDRET: 2026-08-20 05:30:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>Madina Skole — Database</title>
 <link rel="manifest" href="manifest-admin.json">
 <meta name="theme-color" content="#1f4a3a">
@@ -5391,26 +5388,9 @@
 
   onAuthStateChanged(auth, async (user) => {
     if(user){
-      // Hent rolletabellen først. Tilgangssjekken under trenger den, og
-      // lytteren som holder den oppdatert starter først lenger nede.
-      try{
-        const rs = await getDocs(collection(db, 'roller'));
-        const ny = {};
-        rs.forEach(d => {
-          const r = d.data() || {};
-          ny[d.id] = {
-            niva: Number(r.niva) || 99,
-            panel: r.panel === true, ledelse: r.ledelse === true,
-            opptak: r.opptak === true, helse: r.helse === true,
-            opprett: Array.isArray(r.opprett) ? r.opprett : []
-          };
-        });
-        if(Object.keys(ny).length > 0) rolleTabell = ny;
-      } catch(err){
-        // Reserven i rolleDef() overtar. Ingen blir stengt ute av at
-        // nettet var tregt i akkurat det sekundet.
-        console.warn('Kunne ikke hente rolletabellen — bruker reserven', err);
-      }
+      // Rolletabellen hentes av onSnapshot lenger nede — ikke blokker
+      // innloggingen med et ekstra nettverkskall. Tilgangssjekken bruker
+      // reserven i rolleDef() mens tabellen lastes i bakgrunnen.
       // SECURITY: signing in with a valid Firebase account is NOT enough by
       // itself — teacher and guardian accounts share the same Firebase Auth
       // pool now that all portals use real e-post/passord login. We must
@@ -5510,15 +5490,17 @@
         // modulen, ble de avvist for godt ved første innlogging, og
         // panelet viste «ikke tilkoblet» til man oppdaterte siden.
         startOkt();
-        startAlleDatalyttere();
-        // Nå er panelet synlig og fanene har en plassering — først da kan
-        // adressen gjenopprettes. Uten forsinkelsen rekker ikke visningen
-        // å bli tegnet før vi spør om den.
-        setTimeout(gjenopprettFane, 0);
-        startOvrigeLyttere();
-        attachListener('meetings');
-        attachListener('finances');
-        attachAuthGatedCashierListeners();
+        // La nettleseren tegne panelet før 20+ Firestore-lyttere og
+        // render()-kall starter — ellers føles innloggingen tung selv om
+        // tilgangen allerede er bekreftet.
+        requestAnimationFrame(() => {
+          startAlleDatalyttere();
+          startOvrigeLyttere();
+          attachListener('meetings');
+          attachListener('finances');
+          attachAuthGatedCashierListeners();
+          setTimeout(gjenopprettFane, 0);
+        });
       }
     } else {
       currentUserEmail = null;
@@ -7453,11 +7435,7 @@
     onSnapshot(colRef, (snapshot) => {
       cache[type] = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
       if(type === 'programs' || type === 'schoolCalendar') matSkoledager();
-      try{
-        render(type);
-      } catch(renderErr){
-        console.error('render(' + type + ') feilet:', renderErr);
-      }
+      scheduleRender(type);
       readyCollections.add(type);
       const allTypes = Object.keys(SCHEMAS);
       if(readyCollections.size >= allTypes.length){
@@ -7474,6 +7452,33 @@
       const textEl = document.getElementById('syncText');
       if(textEl) textEl.textContent = 'Feil: ' + type + ' (' + err.code + ')';
     });
+  }
+
+  // Samler render()-kall fra mange samtidige Firestore-snapshots til én
+  // runde — ellers kjører updateStats() og 20+ fulle DOM-tegninger etter
+  // hverandre og innloggingen føles tung.
+  const renderKoe = new Set();
+  let renderKoeTimer = null;
+  function scheduleRender(type){
+    renderKoe.add(type);
+    if(renderKoeTimer != null) return;
+    const kjør = () => {
+      renderKoeTimer = null;
+      const typer = [...renderKoe];
+      renderKoe.clear();
+      for(const t of typer){
+        try{
+          render(t);
+        } catch(renderErr){
+          console.error('render(' + t + ') feilet:', renderErr);
+        }
+      }
+    };
+    if(typeof requestIdleCallback === 'function'){
+      renderKoeTimer = requestIdleCallback(kjør, { timeout: 150 });
+    } else {
+      renderKoeTimer = setTimeout(kjør, 32);
+    }
   }
 
   // ===================================================================
@@ -9244,7 +9249,7 @@
       if(document.getElementById('planArkivUnifiedView') && document.getElementById('planArkivUnifiedView').style.display !== 'none') renderPlanArkivUnified();
       if(document.getElementById('planArkivByClassView') && document.getElementById('planArkivByClassView').style.display !== 'none') renderPlanArkivByClass();
     }
-    updateStats();
+    scheduleUpdateStats();
   }
 
   // Ledelse is a filtered VIEW over 'teachers' (anyone with at least one
@@ -13165,6 +13170,15 @@
       showToast('Noe gikk galt under lagring av oppmøte.');
     }
   };
+
+  let updateStatsTimer = null;
+  function scheduleUpdateStats(){
+    if(updateStatsTimer != null) clearTimeout(updateStatsTimer);
+    updateStatsTimer = setTimeout(() => {
+      updateStatsTimer = null;
+      updateStats();
+    }, 60);
+  }
 
   function updateStats(){
     document.getElementById('statTeachers') && (document.getElementById('statTeachers').textContent = cache.teachers.length);
@@ -22603,6 +22617,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(tab.dataset.tab === 'skoleflate' && typeof renderSkoleflate === 'function') renderSkoleflate();
     if(tab.dataset.tab === 'utvikler') renderVerktoy();
     if(tab.dataset.tab === 'veiledning') renderVeiledning();
+    if(tab.dataset.tab === 'cashier'){ populateCashierClassSelect(); renderCashierPanel(); }
+    if(tab.dataset.tab === 'cashierLedelse'){ populateCashierLedelseClassSelect(); renderCashierLedelsePanel(); }
     if(tab.dataset.tab === 'roller') renderRoller();
     if(oppdaterUrl){
       // Både seksjon OG fane skrives i adressen. Sto bare fanen der, visste
