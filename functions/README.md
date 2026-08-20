@@ -22,6 +22,11 @@ firebase deploy --only functions --project madina-instituttet
 3. Registrer webhook-URL hos Vipps mot `vippsWebhook`.
 4. Test én liten betaling i prod før skolestart.
 
+## CI (GitHub Actions)
+
+Workflow `Deploy Cloud Functions` lager `functions/.env` automatisk ved deploy
+(`VIPPS_ENV`, `VIPPS_MSN`, `SITE_BASE_URL`). Hemmeligheter hentes fra Secret Manager.
+
 ## Sikkerhetskopi
 
 - Automatisk: søndag kl. 03:00 (Cloud Scheduler).
