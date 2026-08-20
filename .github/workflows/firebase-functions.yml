@@ -21,6 +21,19 @@ jobs:
         working-directory: functions
         run: npm ci
 
+      # defineString() i index.js krever .env ved ikke-interaktiv deploy.
+      # Hemmeligheter (VIPPS_CLIENT_ID osv.) ligger i Secret Manager —
+      # dette er bare ikke-hemmelige driftsverdier som før lå i
+      # .env.madina-instituttet.
+      - name: Create functions .env for deploy
+        working-directory: functions
+        run: |
+          cat > .env <<'EOF'
+          VIPPS_ENV=test
+          VIPPS_MSN=465281
+          SITE_BASE_URL=https://madinaskole.no
+          EOF
+
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
