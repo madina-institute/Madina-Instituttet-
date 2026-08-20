@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:05:00 -->
+<!-- SIST-ENDRET: 2026-08-20 23:15:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1235,6 +1235,7 @@
         <input type="date" id="hwFrist">
       </div>
       <button class="btn btn-primary" id="hwSubmitBtn" onclick="submitHomework()">Legg ut lekse</button>
+      <button type="button" class="btn btn-ghost" id="hwCancelEditBtn" style="display:none; margin-top:10px;" onclick="cancelHomeworkEdit()">Avbryt redigering</button>
     </div>
 
     <!-- HOMEWORK ARCHIVE -->
@@ -1735,6 +1736,10 @@
       homeworkArchiveLink: 'Se tidligere lekser',
       homeworkArchiveTitle: 'Tidligere lekser',
       homeworkArchiveSub: 'Alt du har lagt ut, nyeste først — trykk for å redigere',
+      homeworkDeleteBtn: 'Slett lekse',
+      homeworkDeleteConfirm: 'Slette denne leksen? Foresatte som allerede har sett den, mister den fra listen.',
+      homeworkDeleted: 'Leksen er slettet.',
+      homeworkCancelEdit: 'Avbryt redigering',
       fagLabel: 'Fag',
       dateForLesson: 'Dato for timen',
       emneLabel: 'Emne / tema for timen',
@@ -1872,6 +1877,10 @@
       homeworkArchiveLink: 'عرض الواجبات السابقة',
       homeworkArchiveTitle: 'الواجبات السابقة',
       homeworkArchiveSub: 'كل الواجبات اللي نشرتها، الأحدث أولًا — اضغط للتعديل',
+      homeworkDeleteBtn: 'حذف الواجب',
+      homeworkDeleteConfirm: 'حذف هذا الواجب؟ سيختفي من قائمة أولياء الأمور.',
+      homeworkDeleted: 'تم حذف الواجب.',
+      homeworkCancelEdit: 'إلغاء التعديل',
       fagLabel: 'المادة',
       dateForLesson: 'تاريخ الحصة',
       emneLabel: 'عنوان / موضوع الدرس',
@@ -1924,6 +1933,7 @@
     applyStaticTranslations();
     populateFagSelect();
     if(document.getElementById('laereplanreglerView')?.style.display !== 'none') lpLrRender();
+    if(document.getElementById('homeworkView')?.style.display !== 'none') syncHomeworkEditUI();
     if(currentTeacher){
       document.getElementById('classSub').textContent =
         (lang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
@@ -3556,6 +3566,15 @@
 
   let editingHomeworkId = null;
 
+  function syncHomeworkEditUI(){
+    const editing = !!editingHomeworkId;
+    const cancelBtn = document.getElementById('hwCancelEditBtn');
+    if(cancelBtn){
+      cancelBtn.style.display = editing ? 'block' : 'none';
+      cancelBtn.textContent = t('homeworkCancelEdit');
+    }
+  }
+
   window.showHomework = function(){
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'block';
@@ -3568,6 +3587,7 @@
     document.getElementById('hwTittel').value = '';
     document.getElementById('hwBeskrivelse').value = '';
     document.getElementById('hwFrist').value = '';
+    syncHomeworkEditUI();
     pushAppView('homework');
   };
 
@@ -3602,7 +3622,10 @@
           </summary>
           <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);">
             <div style="font-size:13.5px; white-space:pre-wrap; line-height:1.6; margin-bottom:12px;">${escapeHtml(h.beskrivelse||'—')}</div>
-            <button type="button" class="btn btn-ghost" onclick="editHomeworkEntry('${h.id}')">✏️ ${currentLang === 'ar' ? 'تعديل' : 'Rediger'}</button>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <button type="button" class="btn btn-ghost" onclick="editHomeworkEntry('${escapeHtml(h.id)}')">✏️ ${currentLang === 'ar' ? 'تعديل' : 'Rediger'}</button>
+              <button type="button" class="btn btn-ghost" style="color:var(--red);" onclick="deleteHomeworkEntry('${escapeHtml(h.id)}')">🗑️ ${currentLang === 'ar' ? 'حذف' : 'Slett'}</button>
+            </div>
           </div>
         </details>
       </div>`).join('');
@@ -3610,18 +3633,45 @@
 
   window.editHomeworkEntry = function(id){
     const hw = homework.find(h => h.id === id);
-    if(!hw) return;
+    if(!hw || hw.larer !== currentTeacher.id){
+      notify(currentLang === 'ar' ? 'لا يمكن تعديل هذا الواجب.' : 'Du kan ikke redigere denne leksen.');
+      return;
+    }
     editingHomeworkId = id;
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'block';
     document.getElementById('homeworkClassSub').textContent =
-      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
+      (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(hw.klasse || valgtKlasse);
     document.getElementById('homeworkFormTitle').textContent = currentLang === 'ar' ? 'تعديل الواجب' : 'Rediger lekse';
     document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'حفظ التعديل' : 'Lagre endring';
     document.getElementById('hwTittel').value = hw.tittel || '';
     document.getElementById('hwBeskrivelse').value = hw.beskrivelse || '';
     document.getElementById('hwFrist').value = hw.frist || '';
+    syncHomeworkEditUI();
     pushAppView('homework');
+  };
+
+  window.cancelHomeworkEdit = function(){
+    editingHomeworkId = null;
+    showHomeworkArchive();
+  };
+
+  window.deleteHomeworkEntry = async function(id){
+    const hw = homework.find(h => h.id === id);
+    if(!hw || hw.larer !== currentTeacher.id){
+      notify(currentLang === 'ar' ? 'لا يمكن حذف هذا الواجب.' : 'Du kan ikke slette denne leksen.');
+      return;
+    }
+    if(!confirm(t('homeworkDeleteConfirm'))) return;
+    try{
+      await deleteDoc(doc(db, 'homework', id));
+      if(editingHomeworkId === id) editingHomeworkId = null;
+      showToast(t('homeworkDeleted'));
+      showHomeworkArchive();
+    } catch(err){
+      console.error(err);
+      notify((currentLang === 'ar' ? 'تعذّر الحذف: ' : 'Kunne ikke slette: ') + err.message);
+    }
   };
 
   window.showAbsenceReview = function(){
@@ -4096,9 +4146,17 @@
     if(!editingHomeworkId && !bekreftMal(tittel)) return;
     try{
       if(editingHomeworkId){
-        await updateDoc(doc(db, 'homework', editingHomeworkId), { tittel, beskrivelse, frist });
+        const hw = homework.find(h => h.id === editingHomeworkId);
+        await updateDoc(doc(db, 'homework', editingHomeworkId), {
+          tittel, beskrivelse, frist,
+          klasse: (hw && hw.klasse) || valgtKlasse,
+          larer: (hw && hw.larer) || currentTeacher.id
+        });
         showToast(currentLang === 'ar' ? 'تم حفظ التعديل.' : 'Endringen er lagret.');
         editingHomeworkId = null;
+        syncHomeworkEditUI();
+        showHomeworkArchive();
+        return;
       } else {
         await addDoc(collection(db, 'homework'), {
           klasse: valgtKlasse,
@@ -4121,6 +4179,7 @@
       document.getElementById('hwFrist').value = '';
       document.getElementById('homeworkFormTitle').textContent = currentLang === 'ar' ? 'انشر واجبًا' : 'Legg ut lekse';
       document.getElementById('hwSubmitBtn').textContent = currentLang === 'ar' ? 'نشر الواجب' : 'Legg ut lekse';
+      syncHomeworkEditUI();
     } catch(err){
       console.error(err);
       notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
