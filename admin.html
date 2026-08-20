@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 11:56:08 -->
+<!-- SIST-ENDRET: 2026-08-20 12:04:04 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9019,7 +9019,7 @@
   async function sendVippsBetalingEpost(eposter, data, opts){
     opts = opts || {};
     if(!eposter.length) return { sent: false, reason: 'ingen-epost' };
-    if(!data.redirectUrl && data.userFlow !== 'PUSH_MESSAGE'){
+    if(!data.redirectUrl && data.userFlow !== 'PUSH_MESSAGE' && !data.dualPayment){
       return { sent: false, reason: 'mangler-lenke', eposter: eposter };
     }
     const intro = opts.intro || '';
@@ -9052,6 +9052,8 @@
     if(data.pushNote) linjer.push(data.pushNote);
     if(data.usedFallback){
       linjer.push('Push er ikke godkjent for MSN — betalingslenke i e-post brukes i stedet.');
+    } else if(data.dualPayment){
+      linjer.push('Push-varsel sendt til Vipps-appen + betalingslenke på e-post.');
     } else if(data.userFlow === 'PUSH_MESSAGE'){
       linjer.push('Push-varsel er sendt til Vipps-appen.');
     }
