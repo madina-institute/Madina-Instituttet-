@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:15:00 -->
+<!-- SIST-ENDRET: 2026-08-20 23:25:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -3782,8 +3782,7 @@
 
   function countUnreadTeacherMessages(){
     if(!currentTeacher) return 0;
-    const keys = [...new Set(myClassMessages().map(threadKey))];
-    let n = keys.filter(k => isThreadUnread(k)).length;
+    let n = buildThreadRows().filter(r => r.unread).length;
     myAdminMsgThreads().forEach(th => {
       const seen = localStorage.getItem('adminmsg_seen_' + th.id);
       const unread = broadcastMessages.some(m =>
@@ -3803,8 +3802,8 @@
   function updateTeacherBadges(){
     const pending = countPendingAbsence();
     const unread = countUnreadTeacherMessages();
-    const keys = [...new Set(myClassMessages().map(threadKey))];
-    const parentUnread = keys.some(k => isThreadUnread(k));
+    const threadRows = buildThreadRows();
+    const parentUnread = threadRows.some(r => r.unread);
     const adminUnread = myAdminMsgThreads().some(th => {
       const seen = localStorage.getItem('adminmsg_seen_' + th.id);
       return broadcastMessages.some(m => m.threadId === th.id && m.fra === 'Administrasjon' && (!seen || (m.dato||'') > seen));
@@ -4395,6 +4394,42 @@
     return messages.filter(m => m.klasse === valgtKlasse && !erSkjultForMeg(m));
   }
 
+  // Privat lærer↔foresatt-samtale hører til ÉN lærer. Klassemeldinger
+  // (classPosts) filtreres ikke her — de er felles for hele klassen.
+  function erLaererMelding(m){
+    return m && (m.fra === 'Lærer' || m.fra === 'Assistent');
+  }
+  function meldingFraDenneLaerer(m){
+    if(!currentTeacher || !erLaererMelding(m)) return false;
+    if(m.teacherId) return m.teacherId === currentTeacher.id;
+    return String(m.avsenderNavn || '').trim() === String(currentTeacher.navn || '').trim();
+  }
+  function meldingFraAnnenLaerer(m){
+    if(!currentTeacher || !erLaererMelding(m)) return false;
+    if(m.teacherId) return m.teacherId !== currentTeacher.id;
+    const avsender = String(m.avsenderNavn || '').trim();
+    if(!avsender) return false;
+    return avsender !== String(currentTeacher.navn || '').trim();
+  }
+  function tradTilhorerMeg(msgs){
+    const liste = Array.isArray(msgs) ? msgs : [];
+    const laererMs = liste.filter(erLaererMelding);
+    if(laererMs.some(meldingFraAnnenLaerer)) return false;
+    if(laererMs.some(meldingFraDenneLaerer)) return true;
+    // Kun foresatte har skrevet — ny lærer kan ta samtalen
+    return true;
+  }
+  function tradTilhorerTråd(th){
+    if(!th || !currentTeacher) return false;
+    if(th.teacherId) return th.teacherId === currentTeacher.id;
+    const threadMsgs = myClassMessages().filter(m => m.threadId === th.id);
+    return tradTilhorerMeg(threadMsgs);
+  }
+  function legacyTradTilhorerMeg(key){
+    const threadMsgs = myClassMessages().filter(m => !m.threadId && threadKey(m) === key);
+    return tradTilhorerMeg(threadMsgs);
+  }
+
   function msgSeenKey(){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.id : ''); }
   function threadSeenKey(key){ return 'lp_msg_seen_' + (currentTeacher ? currentTeacher.id : '') + '_' + key; }
   function isThreadUnread(key){
@@ -4527,20 +4562,10 @@
     if(!currentTeacher) return [];
     const mine = myClassMessages();
     const rows = [];
-    // Real, titled threads for this class.
-    // 🔴 Tråden hører til ÉN lærer, ikke til klassen.
-    //
-    // Filteret sto på klasse alene. Da leste alle lærerne i klassen alle
-    // samtalene: en forelder skriver til koranlæreren om noe personlig
-    // ved barnet, og arabisklæreren i samme klasse ser det.
-    //
-    // teacherId har ligget på tråden hele tiden — den ble bare ikke brukt.
-    //
-    // Tråder uten teacherId er fra før feltet ble tatt i bruk. De vises
-    // fortsatt, ellers ville gamle samtaler forsvunnet for alle; de er
-    // merket i listen så det er tydelig at mottakeren er ukjent.
+    // Tråden hører til ÉN lærer — ikke hele klassen. Uten filter så en ny
+    // lærer i samme klasse alle samtalene til forgjengeren.
     messageThreads.filter(th => th.klasse === valgtKlasse && !erSkjultForMeg(th)
-        && (!th.teacherId || th.teacherId === currentTeacher.id)).forEach(th => {
+        && tradTilhorerTråd(th)).forEach(th => {
       const threadMsgs = mine.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       const student = th.studentId ? students.find(s => s.id === th.studentId) : null;
       const lastMsg = threadMsgs[0];
@@ -4548,8 +4573,7 @@
       const guardianLabel = student ? student.navn : (th.guardianId ? resolveGuardianLabel(th.guardianId) : '');
       rows.push({
         key: th.id, isLegacy: false, status: th.status || 'open',
-        title: (th.title || t('untitledThread')) +
-               (th.teacherId ? '' : (currentLang === 'ar' ? '  ⚠️ بدون مستلم' : '  ⚠️ uten mottaker')),
+        title: th.title || t('untitledThread'),
         guardianLabel,
         lastActivityAt: th.lastActivityAt || th.createdAt || '',
         lastPreview: lastMsg ? (lastMsg.tekst || '') : '',
@@ -4560,6 +4584,7 @@
     // Legacy (untitled, always-open) per-guardian conversations from before this feature.
     const legacyKeys = [...new Set(mine.filter(m => !m.threadId && !erSkjultForMeg(m)).map(threadKey))];
     legacyKeys.forEach(k => {
+      if(!legacyTradTilhorerMeg(k)) return;
       const threadMsgs = mine.filter(m => threadKey(m) === k).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
       rows.push({
         key: k, isLegacy: true, status: 'open',
@@ -4720,6 +4745,11 @@
   }
 
   window.openMessageThread = function(key, isLegacy){
+    const mine = buildThreadRows().find(r => r.key === key);
+    if(!mine){
+      notify(currentLang === 'ar' ? 'هذه المحادثة لا تخصّك.' : 'Denne samtalen tilhører ikke deg.');
+      return;
+    }
     currentThreadGuardian = key;
     currentThreadDoc = isLegacy ? null : messageThreads.find(th => th.id === key) || null;
     if(!isLegacy && currentThreadDoc){
@@ -4840,6 +4870,7 @@
         klasse: valgtKlasse, guardianId: currentThreadGuardianId || '',
         guardianNavn: resolveGuardianName(currentThreadGuardianId) || currentThreadGuardianName,
         threadId: currentThreadDoc ? currentThreadDoc.id : null,
+        teacherId: currentTeacher.id,
         fra: minPortalRolle(), avsenderNavn: currentTeacher.navn, avsenderRolle: minPortalRolle(), tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
