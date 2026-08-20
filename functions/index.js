@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 11:30:13 */
+/* SIST-ENDRET: 2026-08-20 11:56:08 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -406,6 +406,7 @@ function vippsTerminalPendingStatus(invalidState) {
   const map = {
     EXPIRED: "expired",
     TERMINATED: "expired",
+    ABORTED: "cancelled",
     CANCELLED: "cancelled",
     AUTHORIZED: "completed",
     CAPTURED: "completed",
@@ -418,7 +419,7 @@ function vippsCleanupMessage(invalidState) {
   if (invalidState === "EXPIRED" || invalidState === "TERMINATED") {
     return "Kravet hadde allerede utløpt hos Vipps — fjernet fra listen.";
   }
-  if (invalidState === "CANCELLED") {
+  if (invalidState === "CANCELLED" || invalidState === "ABORTED") {
     return "Kravet var allerede avbrutt hos Vipps — fjernet fra listen.";
   }
   if (invalidState === "AUTHORIZED" || invalidState === "CAPTURED") {
@@ -878,11 +879,12 @@ exports.createVippsPayment = onRequest(
         ? `Depositum — ${elevNavn} (Madina Skole)`
         : `Skolepenger — ${elevNavn} (Madina Skole)`;
 
-      // Admin sender fra kontor → WEB_REDIRECT (gir alltid redirectUrl til e-post).
+      // Admin sender fra kontor → PUSH_MESSAGE (push i Vipps-appen).
       // Foresatt betaler fra egen telefon → WEB_REDIRECT (anbefalt av Vipps).
-      // PUSH_MESSAGE gir push uten redirectUrl — e-posten mangler da betalingslenke.
+      // returnUrl sendes alltid; redirectUrl hentes via GET for e-post-lenke.
       // CARD = freestanding kort (Visa/Mastercard) uten Vipps-app.
-      let userFlow = "WEB_REDIRECT";
+      let userFlow = method === "CARD" ? "WEB_REDIRECT" : (erForesatt ? "WEB_REDIRECT" : "PUSH_MESSAGE");
+      let usedFallback = false;
       let attempt = await postVippsPayment(accessToken, {
         reference,
         normalizedPhone,
@@ -898,6 +900,7 @@ exports.createVippsPayment = onRequest(
         const pushAvvist = /PUSH_MESSAGE/i.test(attempt.bodyText);
         if (pushAvvist) {
           logger.warn("PUSH_MESSAGE avvist — prøver WEB_REDIRECT", { reference, body: attempt.bodyText });
+          usedFallback = true;
           userFlow = "WEB_REDIRECT";
           attempt = await postVippsPayment(accessToken, {
             reference,
@@ -950,7 +953,7 @@ exports.createVippsPayment = onRequest(
         userFlow,
         vippsEnv,
         pushNote: vippsPushNote(userFlow, Boolean(redirectUrl)),
-        usedFallback: userFlow === "WEB_REDIRECT" && !erForesatt,
+        usedFallback,
       });
     } catch (err) {
       logger.error("createVippsPayment error", err);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 11:41:58 -->
+<!-- SIST-ENDRET: 2026-08-20 11:56:08 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8994,6 +8994,9 @@
         ? 'Du kan også bruke denne betalingslenken:\n'
         : 'Betalingslenke:\n') + data.redirectUrl + '\n\n';
     }
+    if(data.userFlow === 'PUSH_MESSAGE'){
+      return 'Du finner betalingskravet under Betalinger i Vipps-appen (dra ned for å oppdatere i test-miljø).\n\n';
+    }
     return '';
   }
 
@@ -9016,13 +9019,13 @@
   async function sendVippsBetalingEpost(eposter, data, opts){
     opts = opts || {};
     if(!eposter.length) return { sent: false, reason: 'ingen-epost' };
-    if(!data.redirectUrl){
+    if(!data.redirectUrl && data.userFlow !== 'PUSH_MESSAGE'){
       return { sent: false, reason: 'mangler-lenke', eposter: eposter };
     }
     const intro = opts.intro || '';
     const outro = opts.outro || '';
     const subject = opts.subject || '[Madina Skole] Vipps-betaling';
-    const note = (data.pushNote && data.redirectUrl) ? data.pushNote + '\n\n' : '';
+    const note = data.pushNote ? data.pushNote + '\n\n' : '';
     const text = intro + vippsEpostVarselLinje(data, opts) + note + vippsEpostLenkeTekst(data) + outro;
     const htmlIntro = escapeHtml(intro).replace(/\n/g, '<br>');
     const htmlOutro = escapeHtml(outro).replace(/\n/g, '<br>');
@@ -9044,25 +9047,30 @@
   function visVippsSendtResultat(data, opts){
     opts = opts || {};
     const link = data.redirectUrl || '';
-    const note = data.pushNote || '';
-    const testBadge = data.vippsEnv === 'test'
-      ? '<span style="display:inline-block;background:#fff3e0;color:#b33a00;padding:2px 8px;border-radius:999px;font-size:11px;margin-bottom:8px;">Test-miljø</span>'
-      : '';
-    const fallback = data.usedFallback
-      ? '<p style="margin:8px 0;color:#b33a00;"><strong>Merk:</strong> PUSH_MESSAGE er ikke godkjent for MSN — betalingslenke i e-post brukes i stedet.</p>'
-      : '';
-    const linkHtml = link
-      ? '<p style="margin:10px 0 6px;"><a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" style="word-break:break-all;">' + escapeHtml(link) + '</a></p>' +
-        '<button type="button" class="btn" style="width:auto;margin-top:4px;" onclick="navigator.clipboard.writeText(' + JSON.stringify(link) + ').then(function(){showToast(\'Lenke kopiert\');}).catch(function(){prompt(\'Kopier lenken:\', ' + JSON.stringify(link) + ');})">📋 Kopier betalingslenke</button>'
-      : '<p style="margin:8px 0;color:#5a6860;">Ingen betalingslenke — foresatt finner kravet under <em>Betalinger</em> i Vipps-appen.</p>';
-    melding('ADM-VIP-OK', '✓ Vipps-krav opprettet',
-      testBadge +
-      '<p style="margin:0 0 8px;line-height:1.6;">' + escapeHtml(note) + '</p>' +
-      fallback +
-      linkHtml +
-      (opts.epostAntall > 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til ' + opts.epostAntall + ' adresser (samme innhold og lenke til alle).</p>' : '') +
-      (opts.epostAntall === 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til foresatt.</p>' : '') +
-      (opts.eposter && opts.eposter.length ? '<p style="margin-top:6px;font-size:12px;color:#8a9690;">Mottakere: ' + opts.eposter.map(e => escapeHtml(e)).join(', ') + '</p>' : ''),
+    const linjer = [];
+    if(data.vippsEnv === 'test') linjer.push('Test-miljø.');
+    if(data.pushNote) linjer.push(data.pushNote);
+    if(data.usedFallback){
+      linjer.push('Push er ikke godkjent for MSN — betalingslenke i e-post brukes i stedet.');
+    } else if(data.userFlow === 'PUSH_MESSAGE'){
+      linjer.push('Push-varsel er sendt til Vipps-appen.');
+    }
+    if(link){
+      linjer.push('Betalingslenke er sendt på e-post til foresatte.');
+      const kort = link.length > 64 ? link.slice(0, 48) + '…' + link.slice(-12) : link;
+      linjer.push(kort);
+    } else if(data.userFlow === 'PUSH_MESSAGE'){
+      linjer.push('Ingen e-post-lenke — foresatt betaler via Vipps-appen → Betalinger.');
+    } else {
+      linjer.push('Ingen betalingslenke — kontakt support.');
+    }
+    if(opts.epostAntall > 0){
+      linjer.push('E-post sendt til ' + opts.epostAntall + ' adresse(r) (samme innhold til alle).');
+      if(opts.eposter && opts.eposter.length){
+        linjer.push('Mottakere: ' + opts.eposter.join(', '));
+      }
+    }
+    melding('ADM-VIP-OK', '✓ Vipps-krav opprettet', linjer.join('\n\n'),
       'vipps · userFlow=' + (data.userFlow || '—') + ' · env=' + (data.vippsEnv || '—'));
   }
 
