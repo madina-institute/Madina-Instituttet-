@@ -4791,20 +4791,17 @@
     });
   })();
 
-  // Persist the login session for the browser tab/window only (sessionStorage-
-  // backed): a page refresh keeps the user logged in, but closing the tab or
-  // the browser clears the session and requires a real email+password login again.
-  // UNNTAK: kontoene i PERSISTENT_SESSION_EMAILS forblir innlogget også etter
-  // at nettleseren lukkes, og omfattes ikke av inaktivitetslåsen. Dette er et
-  // bevisst valg for eierens egen maskin — enheten MÅ da være beskyttet med
-  // skjermlås/passord, siden panelet gir full tilgang til alle persondata.
+  // Admin-panelet bruker vedvarende innlogging (localStorage/IndexedDB):
+  // oppdatering av siden og tilbakekomst i samme nettleser beholder sesjonen.
+  // Passord kreves fortsatt ved utlogging og etter 20 min uten aktivitet
+  // (inaktivitetslås) — unntatt kontoer i PERSISTENT_SESSION_EMAILS som
+  // heller ikke låses ved inaktivitet.
   const PERSISTENT_SESSION_EMAILS = ['yasser.m.s.abdelrahim@gmail.com'];
   function hasPersistentSession(email){
     return PERSISTENT_SESSION_EMAILS.includes((email || '').trim().toLowerCase());
   }
-  setPersistence(auth, hasPersistentSession(localStorage.getItem('madinaAdminEmail'))
-    ? browserLocalPersistence
-    : browserSessionPersistence).catch(err => console.error('setPersistence failed:', err));
+  const persistenceReady = setPersistence(auth, browserLocalPersistence)
+    .catch(err => console.error('setPersistence failed:', err));
 
   const MAX_FILE_MB = 10;
   async function uploadAttachment(file, folder){
@@ -4958,11 +4955,8 @@
       return;
     }
     try{
-      // Velg riktig varighet for sesjonen ut fra hvem som logger inn, FØR
-      // selve innloggingen — Firebase krever at persistence settes først.
-      await setPersistence(auth, hasPersistentSession(email)
-        ? browserLocalPersistence
-        : browserSessionPersistence);
+      await persistenceReady;
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, pw);
       localStorage.setItem('madinaAdminEmail', email);
     } catch(err){
@@ -5398,6 +5392,7 @@
   }, 8000);
 
   onAuthStateChanged(auth, async (user) => {
+    await persistenceReady.catch(()=>{});
     if(user){
       // Rolletabellen hentes av onSnapshot lenger nede — ikke blokker
       // innloggingen med et ekstra nettverkskall. Tilgangssjekken bruker
