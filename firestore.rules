@@ -246,6 +246,10 @@ service cloud.firestore {
       return harLaererListe()
         && get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data.teacherId == larerId;
     }
+    function erAssistentStaff() {
+      return harLaererListe()
+        && get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data.get('erAssistent', false) == true;
+    }
 
     // ---------- ENDRINGSLOGG ----------
     // Hvem endret hva, fra hva til hva, og når.
@@ -427,7 +431,11 @@ service cloud.firestore {
     match /teachers/{id} {
       allow read: if erAdmin()
         || (minEpost() != '' && resource.data.epost.lower() == minEpost());
-      allow write: if erAdmin();
+      allow update: if erAdmin()
+        || (minEpost() != '' && resource.data.epost.lower() == minEpost()
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['telefon','fag','kjonn','lonnStatus','kontonummer','profilFullfort','sisteInnlogging']));
+      allow create, delete: if erAdmin();
     }
 
     match /classes/{id} {
@@ -531,7 +539,7 @@ service cloud.firestore {
       allow read: if erAdmin()
         || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
       allow create, update: if erAdmin()
-        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse) && !erAssistentStaff());
       allow delete: if erAdmin();
     }
     match /homework/{id} {
@@ -570,14 +578,14 @@ service cloud.firestore {
       allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
         || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
       allow create, update: if erAdmin()
-        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse) && !erAssistentStaff());
       allow delete: if erAdmin();
     }
     match /semesterPlans/{id} {
       allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
         || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
       allow create, update: if erAdmin()
-        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse) && !erAssistentStaff());
       allow delete: if erAdmin();
     }
     match /hours/{id} {
