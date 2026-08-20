@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 03:17:13 -->
+<!-- SIST-ENDRET: 2026-08-20 03:40:12 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4188,9 +4188,9 @@
           Bygg begge tilgangs-indeksene nå
         </button>
         <div class="sub" style="margin-top:8px;">
-          Skriver <code>foreldreTilgang</code> og <code>laererTilgang</code> for alle på én gang.
-          Normalt skjer dette automatisk når data lastes inn — bruk knappen etter
-          sikkerhetsoppdateringer, eller hvis en portal står tom uten feilmelding.
+          Normalt bygges indeksene automatisk når data lastes inn eller når
+          e-post endres. Knappen er en nødutgang hvis en portal står tom uten
+          feilmelding — ikke noe man skal huske etter hver endring.
         </div>
       </div>
     </div>
@@ -9242,8 +9242,8 @@
     if(['students','teachers','teacherAttendance','finances','programs',
         'paymentRequests','guardians','studentPayments'].includes(type)) renderOkonomiHub();
     if(['teachers','ledelse'].includes(type)) renderAllePersoner();
-    // Foreldre-indeksen avhenger av begge kildene. skrivForeldreIndeks()
-    // sammenligner mot forrige resultat og skriver bare ved faktisk endring.
+    // Foreldre- og lærer-indeksene vedlikeholdes automatisk. Knappen er
+    // nødutgang — ikke noe man skal huske manuelt.
     if(['students','guardians'].includes(type)) skrivForeldreIndeks();
     if(['students','guardians','teachers','hours'].includes(type)) skrivLaererIndeks();
     if(['registrations','students','guardians','teachers','classes'].includes(type)) visTestdataStatus();
@@ -15481,6 +15481,7 @@
       const isRoleDrivenType = editingType === 'teachers';
       const rollerArr = isRoleDrivenType ? (entry.roller || '').split(',').map(s=>s.trim()).filter(Boolean) : [];
       const isNewRolePerson = !editingId && isRoleDrivenType && entry.epost && rollerArr.length > 0;
+      let forrige = null;
 
       // Stopp før lagring hvis e-posten alt tilhører en annen person.
       if(entry.epost && !sjekkDuplikatEpost(editingType, entry.epost, editingId)) return;
@@ -15495,7 +15496,7 @@
       if(editingId){
         // Den gamle raden må leses FØR skrivingen — etterpå finnes den
         // ikke lenger noe sted.
-        const forrige = (cache[editingType] || []).find(r => r.id === editingId);
+        forrige = (cache[editingType] || []).find(r => r.id === editingId);
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
         await loggEndring(editingType, editingId, entry.navn || (forrige && forrige.navn), forrige, entry);
       } else {
@@ -15503,6 +15504,14 @@
       }
       if(financeLogSummary) logFinanceChange(financeLogSummary);
       closeModal(true);
+
+      // 🔴 E-post er nøkkelen i foreldreTilgang/laererTilgang. Endres den,
+      // må indeksraden skrives på nytt med en gang — ellers peker den gamle
+      // raden på feil person og den nye e-posten har ingen rad i det hele tatt.
+      if(['guardians','teachers','students'].includes(editingType)){
+        const epostEndret = !!(forrige && normEpost(forrige.epost||'') !== normEpost(entry.epost||''));
+        await oppdaterTilgangsIndekserNa({ force: epostEndret || !editingId });
+      }
 
       if(isRoleDrivenType && entry.epost && rollerArr.length > 0){
         // Whether this teacher card was just created OR edited (e.g. an
@@ -15696,9 +15705,13 @@
   }
 
   let foreldreIndeksSkrevet = '';
+  async function oppdaterTilgangsIndekserNa(opts){
+    await skrivForeldreIndeks(opts);
+    await skrivLaererIndeks(opts);
+  }
+
   async function skrivForeldreIndeks(opts){
     const force = !!(opts && opts.force);
-    if(!force && !erOversteLeder() && !currentUserHasSeniorRole()) return;
     if(!(cache.guardians || []).length || !(cache.students || []).length) return;
 
     const kart = byggForeldreIndeks();
@@ -15830,8 +15843,7 @@
     try{
       foreldreIndeksSkrevet = '';
       laererIndeksSkrevet = '';
-      await skrivForeldreIndeks({ force: true });
-      await skrivLaererIndeks({ force: true });
+      await oppdaterTilgangsIndekserNa({ force: true });
       showToast('foreldreTilgang og laererTilgang er bygget for alle.');
     } catch(err){
       showToast('Kunne ikke bygge indeksene: ' + (err.message || err), true);

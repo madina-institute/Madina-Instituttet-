@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 02:44:00 -->
+<!-- SIST-ENDRET: 2026-08-20 03:40:12 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1272,6 +1272,8 @@
       wrongPin: 'Feil PIN-kode. Prøv igjen, eller kontakt administrasjonen.',
       fillEmailAndPassword: 'Fyll ut e-post og passord.',
       noAccountForEmail: 'Fant ingen lærerkonto med denne e-posten.',
+      teacherCardMissing: 'Innloggingen fungerte, men vi finner ikke lærerkortet for denne e-posten. Ta kontakt med skolen — ikke opprett ny konto.',
+      indexLinkMissing: 'Kontoen din finnes, men tilgangen er ikke koblet ennå. Ta kontakt med skolen — ikke registrer deg på nytt.',
       wrongPassword: 'Feil e-post eller passord.',
       enterEmailFirst: 'Skriv inn e-posten din først.',
       resetEmailSent: 'E-post for å tilbakestille passord er sendt.',
@@ -1396,6 +1398,8 @@
       wrongPin: 'رمز الدخول غير صحيح. حاول مرة أخرى أو تواصل مع الإدارة.',
       fillEmailAndPassword: 'من فضلك اكتب البريد الإلكتروني وكلمة المرور.',
       noAccountForEmail: 'لا يوجد حساب معلم بهذا البريد الإلكتروني.',
+      teacherCardMissing: 'تم تسجيل الدخول، لكننا لا نجد بطاقة المعلّم لهذا البريد. تواصل مع المدرسة — لا تُنشئ حساباً جديداً.',
+      indexLinkMissing: 'حسابك موجود، لكن صلاحية الوصول غير مربوطة بعد. تواصل مع المدرسة — لا تُسجّل من جديد.',
       wrongPassword: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
       enterEmailFirst: 'اكتب بريدك الإلكتروني أولاً.',
       resetEmailSent: 'تم إرسال بريد لإعادة تعيين كلمة المرور.',
@@ -1982,8 +1986,21 @@
     const startBtn = document.getElementById('vkStart');
     const fagSeksjon = document.getElementById('vkFagSeksjon');
 
-    // Ingen klasser: si hvorfor, og hva som må gjøres. En tom skjerm
-    // uten forklaring ville sett ut som en feil i systemet.
+    // Ingen klasser ELLER manglende tilgangs-indeks: si hvorfor, og hva
+    // som må gjøres. En tom skjerm uten forklaring ville sett ut som en
+    // feil i systemet.
+    if(laererTilgangMangler){
+      document.getElementById('vkKlasser').innerHTML = '';
+      if(fagSeksjon) fagSeksjon.style.display = 'none';
+      if(tomEl){
+        tomEl.style.display = 'block';
+        tomEl.textContent = ar
+          ? 'حسابك موجود، لكن الربط بالصفوف غير مُعدّ بعد. تواصل مع الإدارة — لا تُنشئ حساباً جديداً.'
+          : t('indexLinkMissing');
+      }
+      if(startBtn) startBtn.disabled = true;
+      return;
+    }
     if(klasser.length === 0){
       document.getElementById('vkKlasser').innerHTML = '';
       if(fagSeksjon) fagSeksjon.style.display = 'none';
@@ -2065,6 +2082,13 @@
         hours = snap.docs.map(d => ({ ...d.data(), id: d.id }));
         if(currentTeacher){
           settValgFraTimeplan();
+          if(laererTilgangMangler && minEpost){
+            sjekkLaererIndeks(minEpost).then(st => {
+              laererTilgangMangler = st;
+              const vk = document.getElementById('velkomstView');
+              if(vk && vk.style.display !== 'none') tegnVelkomst();
+            });
+          }
           const vk = document.getElementById('velkomstView');
           if(vk && vk.style.display !== 'none'){
             if(!vkKlasse) vkKlasse = valgtKlasse;
@@ -2428,6 +2452,23 @@
     }
   };
 
+  let laererTilgangMangler = null;   // 'missing' | 'empty' | null
+
+  async function sjekkLaererIndeks(epost){
+    const e = String(epost || '').trim().toLowerCase();
+    if(!e) return 'missing';
+    try{
+      const snap = await getDoc(doc(db, 'laererTilgang', e));
+      if(!snap.exists()) return 'missing';
+      const klasser = snap.data().klasser;
+      if(!Array.isArray(klasser) || klasser.length === 0) return 'empty';
+      return null;
+    } catch(err){
+      console.error('laererTilgang', err);
+      return 'missing';
+    }
+  }
+
   window.doLogin = async function(){
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
@@ -2451,16 +2492,21 @@
       return;
     }
     let teacher = null;
+    const authEpost = String(auth.currentUser?.email || email).trim().toLowerCase();
     try{
-      const snap = await getDocs(query(collection(db, 'teachers'), where('epost', '==', email)));
-      teacher = snap.docs.map(d => ({ id: d.id, ...d.data() }))[0] || null;
+      const epostKandidater = [...new Set([authEpost, email.trim(), email.trim().toLowerCase()].filter(Boolean))];
+      for(const e of epostKandidater){
+        const snap = await getDocs(query(collection(db, 'teachers'), where('epost', '==', e)));
+        const treff = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if(treff.length){ teacher = treff[0]; break; }
+      }
       if(teacher) teachers = [teacher];
     } catch(err){
       console.error('teachers-oppslag', err);
     }
     if(!teacher){
       await signOut(auth).catch(()=>{});
-      errEl.textContent = t('noAccountForEmail');
+      errEl.textContent = t('teacherCardMissing');
       errEl.style.display = 'block';
       return;
     }
@@ -2468,7 +2514,8 @@
     // En lærer kan ha timer i flere klasser uten at feltet er satt — da
     // er det timeplanen som gjelder. Har læreren verken kort-klasse
     // eller timer, står velgeren tom og sier fra der.
-    minEpost = String(auth.currentUser?.email || teacher.epost || '').trim().toLowerCase();
+    minEpost = authEpost || String(teacher.epost || '').trim().toLowerCase();
+    laererTilgangMangler = await sjekkLaererIndeks(minEpost);
     startDataListeners();
     currentTeacher = teacher;
     updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});

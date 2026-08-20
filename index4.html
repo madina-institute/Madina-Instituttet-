@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 02:44:00 -->
+<!-- SIST-ENDRET: 2026-08-20 03:40:12 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1391,6 +1391,10 @@
       phoneLabel: 'Telefonnummer', codeLabel: 'Tilgangskode', loginBtn: 'Logg inn', logout: 'Logg ut',
       emailLabel: 'E-post', passwordLabel: 'Passord', forgotPassword: 'Glemt passord?',
       noAccountForEmail: 'Fant ingen foresatt-konto med denne e-posten.',
+      guardianCardMissing: 'Innloggingen fungerte, men vi finner ikke foresatt-kortet for denne e-posten. Ta kontakt med skolen — ikke opprett ny konto.',
+      indexLinkMissing: 'Kontoen din finnes, men koblingen til barna dine er ikke satt opp ennå. Ta kontakt med skolen — ikke registrer deg på nytt.',
+      indexEmptyChildren: 'Kontoen din er koblet, men ingen barn er knyttet til den ennå. Ta kontakt med skolen.',
+      indexStaleChildren: 'Koblingen finnes, men vi får ikke lastet barna dine. Ta kontakt med skolen — prøv ikke å registrere deg på nytt.',
       enterEmailFirst: 'Skriv inn e-posten din først.',
       resetEmailSent: 'E-post for å tilbakestille passord er sendt.',
       resetEmailFailed: 'Kunne ikke sende e-post. Sjekk at e-posten er riktig.',
@@ -1472,6 +1476,10 @@
       phoneLabel: 'رقم الهاتف', codeLabel: 'رمز الدخول', loginBtn: 'دخول', logout: 'تسجيل خروج',
       emailLabel: 'البريد الإلكتروني', passwordLabel: 'كلمة المرور', forgotPassword: 'نسيت كلمة المرور؟',
       noAccountForEmail: 'لا يوجد حساب ولي أمر بهذا البريد الإلكتروني.',
+      guardianCardMissing: 'تم تسجيل الدخول، لكننا لا نجد بطاقة ولي الأمر لهذا البريد. تواصل مع المدرسة — لا تُنشئ حساباً جديداً.',
+      indexLinkMissing: 'حسابك موجود، لكن الربط بأبنائك غير مُعدّ بعد. تواصل مع المدرسة — لا تُسجّل من جديد.',
+      indexEmptyChildren: 'حسابك مربوط، لكن لا يوجد أبناء مرتبطون به بعد. تواصل مع المدرسة.',
+      indexStaleChildren: 'الربط موجود، لكننا لا نستطيع تحميل بيانات أبنائك. تواصل مع المدرسة — لا تُسجّل من جديد.',
       enterEmailFirst: 'اكتب بريدك الإلكتروني أولاً.',
       resetEmailSent: 'تم إرسال بريد لإعادة تعيين كلمة المرور.',
       resetEmailFailed: 'تعذر إرسال البريد. تأكد إن البريد الإلكتروني صحيح.',
@@ -1553,6 +1561,10 @@
       phoneLabel: 'فون نمبر', codeLabel: 'رسائی کوڈ', loginBtn: 'لاگ ان', logout: 'لاگ آؤٹ',
       emailLabel: 'ای میل', passwordLabel: 'پاس ورڈ', forgotPassword: 'پاس ورڈ بھول گئے؟',
       noAccountForEmail: 'اس ای میل کے ساتھ کوئی سرپرست اکاؤنٹ نہیں ملا۔',
+      guardianCardMissing: 'لاگ اِن کامیاب، لیکن اس ای میل کے لیے سرپرست کارڈ نہیں ملا۔ اسکول سے رابطہ کریں — نیا اکاؤنٹ نہ بنائیں۔',
+      indexLinkMissing: 'آپ کا اکاؤنٹ موجود ہے، لیکن بچوں سے ربط ابھی نہیں بنا۔ اسکول سے رابطہ کریں — دوبارہ رجسٹر نہ کریں۔',
+      indexEmptyChildren: 'اکاؤنٹ منسلک ہے، لیکن ابھی کوئی بچہ منسلک نہیں۔ اسکول سے رابطہ کریں۔',
+      indexStaleChildren: 'ربط موجود ہے، لیکن بچوں کا ڈیٹا لوڈ نہیں ہو رہا۔ اسکول سے رابطہ کریں — دوبارہ رجسٹر نہ کریں۔',
       enterEmailFirst: 'پہلے اپنی ای میل درج کریں۔',
       resetEmailSent: 'پاس ورڈ ری سیٹ کرنے کے لیے ای میل بھیج دی گئی ہے۔',
       resetEmailFailed: 'ای میل بھیجی نہیں جا سکی۔ یقینی بنائیں کہ ای میل درست ہے۔',
@@ -1956,29 +1968,23 @@
       return;
     }
     let guardian = null;
+    const authEpost = String(auth.currentUser?.email || email).trim().toLowerCase();
     try{
-      // Spør på e-posten i stedet for å hente hele listen. Før lastet
-      // innloggingen ned samtlige foresatte — navn, telefon og adresse —
-      // for å finne én rad. Formen her er også den regelen kan bevise:
-      // «epost == min epost».
-      const snap = await getDocs(query(collection(db, 'guardians'),
-        where('epost', '==', email)));
-      const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-      guardian = treff[0] || null;
-      // Reserve for adresser som ble lagret med store bokstaver før
-      // feltet ble normalisert. Uten den ville en gammel konto plutselig
-      // ikke funnet seg selv.
-      if(!guardian && email !== email.toLowerCase()){
-        const snap2 = await getDocs(query(collection(db, 'guardians'),
-          where('epost', '==', email.toLowerCase())));
-        guardian = snap2.docs.map(d => ({ ...d.data(), id: d.id }))[0] || null;
+      // Spør på e-posten fra innloggingen — den som reglene og indeksen
+      // kjenner. Kortet kan ha annen skrivemåte; prøv også det brukeren
+      // skrev inn.
+      const epostKandidater = [...new Set([authEpost, email.trim(), email.trim().toLowerCase()].filter(Boolean))];
+      for(const e of epostKandidater){
+        const snap = await getDocs(query(collection(db, 'guardians'), where('epost', '==', e)));
+        const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        if(treff.length){ guardian = treff[0]; break; }
       }
     } catch(err){
       console.error('guardians-oppslag', err);
     }
     if(!guardian){
       await signOut(auth).catch(()=>{});
-      errEl.textContent = t('noAccountForEmail');
+      errEl.textContent = t('guardianCardMissing');
       errEl.style.display = 'block';
       return;
     }
@@ -1988,18 +1994,20 @@
     // ser ut til å virke, men ikke viser noen barn.
     let barn = null;
     try{
-      barn = await hentMineBarnIder(guardian.epost);
+      barn = await hentMineBarnIder(authEpost || String(guardian.epost || '').trim().toLowerCase());
     } catch(err){
       console.error('foreldreTilgang', err);
     }
     if(barn === null){
-      // Ingen kobling funnet. Å la portalen stå tom uten et ord er den
-      // feilen som er dyrest å finne igjen — foreldre ville trodd at
-      // barnet ikke var registrert.
       await signOut(auth).catch(()=>{});
-      errEl.textContent = currentLang === 'ar'
-        ? 'لم نعثر على الربط بين حسابك وأبنائك. تواصل مع المدرسة.'
-        : 'Vi finner ingen kobling mellom kontoen din og barna dine. Ta kontakt med skolen.';
+      errEl.textContent = t('indexLinkMissing');
+      errEl.style.display = 'block';
+      currentGuardian = null;
+      return;
+    }
+    if(barn.length === 0){
+      await signOut(auth).catch(()=>{});
+      errEl.textContent = t('indexEmptyChildren');
       errEl.style.display = 'block';
       currentGuardian = null;
       return;
@@ -2357,7 +2365,8 @@
     const under = document.getElementById('fvUnder');
     if(under){
       under.textContent = myChildren.length === 0
-        ? (ar ? 'مفيش أبناء مسجّلين بعد.' : 'Ingen barn registrert ennå.')
+        ? (mineBarnIder.length > 0 ? t('indexStaleChildren')
+          : (ar ? 'مفيش أبناء مسجّلين بعد.' : 'Ingen barn registrert ennå.'))
         : (ar ? ('عندك ' + myChildren.length + ' ' + (myChildren.length === 1 ? 'ابن' : 'أبناء') + ' في المدرسة')
               : (myChildren.length === 1 ? 'Du har ett barn på skolen' : 'Du har ' + myChildren.length + ' barn på skolen'));
     }
