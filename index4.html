@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 10:38:39 -->
+<!-- SIST-ENDRET: 2026-08-20 12:15:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -251,6 +251,31 @@
   .vipps-pay-zone .btn-vipps-confirm{
     background:var(--vipps); color:#fff; border:none; margin-top:10px;
   }
+  .admin-vipps-pending{
+    margin-bottom:16px; padding:16px; border-radius:12px;
+    background:#fff8f4; border:2px solid var(--vipps);
+  }
+  .admin-vipps-pending .pending-amt{
+    font-family:'Jost',sans-serif; font-size:22px; font-weight:800; color:#b33a00;
+    margin:8px 0 4px;
+  }
+  html[dir="rtl"] .admin-vipps-pending .pending-amt{font-family:'Tajawal',sans-serif;}
+  .admin-vipps-pending .pending-meta{
+    font-size:12.5px; color:#8a4a30; margin-bottom:12px;
+  }
+  .payment-history-wrap{margin-top:20px;}
+  .payment-history-wrap h3{
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:700; margin:0 0 10px;
+  }
+  html[dir="rtl"] .payment-history-wrap h3{font-family:'Tajawal',sans-serif;}
+  .payment-history-table{width:100%; border-collapse:collapse; font-size:13px;}
+  .payment-history-table th,.payment-history-table td{
+    padding:8px 6px; border-bottom:1px solid var(--line); text-align:left;
+  }
+  html[dir="rtl"] .payment-history-table th,
+  html[dir="rtl"] .payment-history-table td{text-align:right;}
+  .payment-history-table .amt-pos{color:var(--emerald); font-weight:700;}
+  .payment-history-table .amt-neg{color:var(--red); font-weight:700;}
 
   .error-msg{font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); margin-top:10px; display:none;}
   html[dir="rtl"] .error-msg{font-family:'Tajawal',sans-serif;}
@@ -1206,6 +1231,7 @@
       <div class="card">
         <h2 data-i18n="menuPayment">Betaling</h2>
         <div id="paymentInfo"></div>
+        <div id="adminVippsPendingZone" style="display:none;"></div>
 
         <div class="vipps-pay-zone" id="vippsPayZone" style="display:none;">
           <div class="vipps-zone-head">
@@ -1237,6 +1263,10 @@
         </div>
         <div class="payment-paid-msg" id="paymentAllPaidMsg" style="display:none;" data-i18n="paymentAllPaid">Ingen utestående beløp — betaling via Vipps vises når det gjenstår noe å betale.</div>
         <div class="empty-msg" id="paymentComingSoon" style="display:none;" data-i18n="paymentComingSoon">Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.</div>
+        <div class="payment-history-wrap" id="paymentHistoryWrap" style="display:none;">
+          <h3 data-i18n="paymentHistoryTitle">Betalingshistorikk</h3>
+          <div id="paymentHistoryList"></div>
+        </div>
       </div>
     </div>
 
@@ -1643,6 +1673,19 @@
       invalidAmount: 'Skriv inn et gyldig beløp.', noRemaining: 'Det er ikke noe utestående beløp for dette barnet.',
       paymentAllPaid: 'Ingen utestående beløp — betaling via Vipps vises når det gjenstår noe å betale.',
       homePayCtaTitle: 'Betal gjenstående beløp', homePayCtaSub: 'Trykk her for å betale med Vipps',
+      adminVippsPendingTitle: 'Betalingskrav fra skolen',
+      adminVippsPendingSub: 'Administrasjonen har sendt et Vipps-krav. Betal beløpet nedenfor.',
+      adminVippsPendingDate: 'Sendt',
+      adminVippsPayBtn: 'Betal kravet med Vipps',
+      adminVippsCardBtn: 'Betal kravet med bankkort',
+      adminVippsPushNote: 'Du har også fått varsel i Vipps-appen på telefonen skolen har registrert.',
+      paymentHistoryTitle: 'Betalingshistorikk',
+      paymentHistoryDate: 'Dato',
+      paymentHistoryAmount: 'Beløp',
+      paymentHistorySource: 'Kilde',
+      paymentHistoryEmpty: 'Ingen registrerte betalinger ennå.',
+      homeAdminVippsCtaTitle: 'Skolen venter på betaling',
+      homeAdminVippsCtaSub: 'Trykk for å betale Vipps-kravet',
       contactSub: 'Sendes til administrasjonen for godkjenning', newPhone: 'Ny telefon (valgfritt)', newEmail: 'Ny e-post (valgfritt)',
       messageLabel: 'Melding (valgfritt)', sendContactUpdate: 'Send forespørsel',
       menuTeacherMsg: 'Kontakt lærer', menuTeacherMsgDesc: 'Send og motta meldinger',
@@ -1744,6 +1787,19 @@
       invalidAmount: 'أدخل مبلغًا صحيحًا.', noRemaining: 'لا يوجد مبلغ مستحق لهذا الطالب.',
       paymentAllPaid: 'لا يوجد مبلغ مستحق — يظهر الدفع عبر Vipps عندما يتبقى مبلغ للدفع.',
       homePayCtaTitle: 'ادفع المبلغ المتبقي', homePayCtaSub: 'اضغط هنا للدفع عبر Vipps',
+      adminVippsPendingTitle: 'طلب دفع من المدرسة',
+      adminVippsPendingSub: 'أرسلت الإدارة طلب دفع عبر Vipps. ادفع المبلغ أدناه.',
+      adminVippsPendingDate: 'تاريخ الإرسال',
+      adminVippsPayBtn: 'ادفع الطلب عبر Vipps',
+      adminVippsCardBtn: 'ادفع الطلب ببطاقة بنكية',
+      adminVippsPushNote: 'ستجد أيضًا إشعارًا في تطبيق Vipps على الهاتف المسجّل لدى المدرسة.',
+      paymentHistoryTitle: 'سجل المدفوعات',
+      paymentHistoryDate: 'التاريخ',
+      paymentHistoryAmount: 'المبلغ',
+      paymentHistorySource: 'المصدر',
+      paymentHistoryEmpty: 'لا توجد مدفوعات مسجّلة بعد.',
+      homeAdminVippsCtaTitle: 'المدرسة تنتظر الدفع',
+      homeAdminVippsCtaSub: 'اضغط لدفع طلب Vipps',
       contactSub: 'يُرسل إلى الإدارة للموافقة', newPhone: 'رقم هاتف جديد (اختياري)', newEmail: 'بريد إلكتروني جديد (اختياري)',
       messageLabel: 'رسالة (اختياري)', sendContactUpdate: 'إرسال الطلب',
       menuTeacherMsg: 'التواصل مع المعلم', menuTeacherMsgDesc: 'إرسال واستقبال الرسائل',
@@ -1845,6 +1901,19 @@
       invalidAmount: 'ایک درست رقم درج کریں۔', noRemaining: 'اس بچے کے لیے کوئی باقی رقم نہیں ہے۔',
       paymentAllPaid: 'کوئی باقی رقم نہیں — Vipps ادائیگی تب ظاہر ہوتی ہے جب ادائیگی باقی ہو۔',
       homePayCtaTitle: 'باقی رقم ادا کریں', homePayCtaSub: 'Vipps سے ادائیگی کے لیے یہاں دبائیں',
+      adminVippsPendingTitle: 'اسکول کی طرف سے ادائیگی کی درخواست',
+      adminVippsPendingSub: 'انتظامیہ نے Vipps ادائیگی کی درخواست بھیجی ہے۔ نیچے رقم ادا کریں۔',
+      adminVippsPendingDate: 'بھیجنے کی تاریخ',
+      adminVippsPayBtn: 'Vipps سے درخواست ادا کریں',
+      adminVippsCardBtn: 'بینک کارڈ سے درخواست ادا کریں',
+      adminVippsPushNote: 'آپ کو اسکول کے رجسٹرڈ فون پر Vipps ایپ میں بھی نوٹیفکیشن ملا ہوگا۔',
+      paymentHistoryTitle: 'ادائیگی کی تاریخ',
+      paymentHistoryDate: 'تاریخ',
+      paymentHistoryAmount: 'رقم',
+      paymentHistorySource: 'ذریعہ',
+      paymentHistoryEmpty: 'ابھی تک کوئی ادائیگی درج نہیں۔',
+      homeAdminVippsCtaTitle: 'اسکول ادائیگی کا منتظر ہے',
+      homeAdminVippsCtaSub: 'Vipps درخواست ادا کرنے کے لیے دبائیں',
       contactSub: 'منظوری کے لیے انتظامیہ کو بھیجا جائے گا', newPhone: 'نیا فون نمبر (اختیاری)', newEmail: 'نیا ای میل (اختیاری)',
       messageLabel: 'پیغام (اختیاری)', sendContactUpdate: 'درخواست بھیجیں',
       menuTeacherMsg: 'استاد سے رابطہ کریں', menuTeacherMsgDesc: 'پیغامات بھیجیں اور وصول کریں',
@@ -2412,6 +2481,16 @@
   watchQuery('students', sporrBarnaMine, (rader) => {
     students = rader;
     if(currentGuardian) refreshMyChildren();
+  });
+  let pendingVippsPayments = [];
+  let studentPayments = [];
+  watchQuery('pendingVippsPayments', sporrPerBarn('pendingVippsPayments', 'studentId'), (rader) => {
+    pendingVippsPayments = rader;
+    if(currentGuardian){ renderPaymentDetail(); renderHomeDash(); }
+  });
+  watchQuery('studentPayments', sporrPerBarn('studentPayments', 'studentId'), (rader) => {
+    studentPayments = rader.sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
+    if(currentGuardian) renderPaymentDetail();
   });
   watchQuery('attendance', sporrPerBarn('attendance', 'studentId'), (rader) => {
     attendance = rader;
@@ -3482,9 +3561,21 @@
     const homeRemaining = Math.max(0, total - paid);
     const vippsCta = document.getElementById('homeVippsCta');
     const vippsAmt = document.getElementById('homeVippsAmt');
+    const vippsCtaTitle = vippsCta ? vippsCta.querySelector('.vipps-zone-title') : null;
+    const vippsCtaSub = vippsCta ? vippsCta.querySelector('.sub') : null;
+    const adminKrav = myChildren.length > 0 ? aktivAdminVippsKrav(myChildren[currentChildIndex].id) : null;
     if(vippsCta){
-      vippsCta.style.display = homeRemaining > 0 ? 'block' : 'none';
-      if(vippsAmt) vippsAmt.textContent = homeRemaining.toLocaleString('no-NO') + ' kr';
+      if(adminKrav){
+        vippsCta.style.display = 'block';
+        if(vippsAmt) vippsAmt.textContent = adminKrav.amountKr.toLocaleString('no-NO') + ' kr';
+        if(vippsCtaTitle) vippsCtaTitle.textContent = t('homeAdminVippsCtaTitle');
+        if(vippsCtaSub) vippsCtaSub.textContent = t('homeAdminVippsCtaSub');
+      } else {
+        vippsCta.style.display = homeRemaining > 0 ? 'block' : 'none';
+        if(vippsAmt) vippsAmt.textContent = homeRemaining.toLocaleString('no-NO') + ' kr';
+        if(vippsCtaTitle) vippsCtaTitle.textContent = t('homePayCtaTitle');
+        if(vippsCtaSub) vippsCtaSub.textContent = t('homePayCtaSub');
+      }
     }
     const payCardLbl = document.querySelector('#homeCardPay .l');
     if(payCardLbl) payCardLbl.textContent = homeRemaining > 0 ? t('payNowBtn') : t('sumRemainingLbl');
@@ -3535,6 +3626,113 @@
     hwEl.textContent = tekst;
   }
 
+  function betalingsDatoTekst(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    const loc = currentLang === 'ar' ? 'ar' : (currentLang === 'ur' ? 'ur' : 'no-NO');
+    return d.toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })
+      + ' · ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function grupperPendingVipps(studentId){
+    const mine = pendingVippsPayments.filter(p => p.studentId === studentId && p.status === 'pending');
+    const grupper = new Map();
+    mine.forEach(p => {
+      const gid = p.paymentGroupId || p.reference;
+      if(!grupper.has(gid)) grupper.set(gid, []);
+      grupper.get(gid).push(p);
+    });
+    return [...grupper.values()].map(items => {
+      const wallet = items.find(i => i.paymentRole === 'email_link')
+        || items.find(i => i.redirectUrl && i.paymentRole !== 'email_card')
+        || items.find(i => i.paymentRole === 'push')
+        || items[0];
+      const card = items.find(i => i.paymentRole === 'email_card');
+      const push = items.find(i => i.paymentRole === 'push');
+      const createdAt = items.reduce((a, b) => ((a.createdAt || '') < (b.createdAt || '') ? a : b)).createdAt;
+      return {
+        amountKr: Number(wallet?.amountKr || card?.amountKr || items[0]?.amountKr || 0),
+        createdAt,
+        walletUrl: wallet?.redirectUrl || null,
+        cardUrl: card?.redirectUrl || null,
+        hasPush: Boolean(push),
+        fromAdmin: items.some(i => i.initiatedBy === 'admin'),
+      };
+    }).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  }
+
+  function aktivAdminVippsKrav(studentId){
+    return grupperPendingVipps(studentId).filter(g => g.fromAdmin)[0] || null;
+  }
+
+  function renderAdminVippsPending(){
+    const zone = document.getElementById('adminVippsPendingZone');
+    if(!zone || myChildren.length === 0){ if(zone) zone.style.display = 'none'; return; }
+    const child = myChildren[currentChildIndex];
+    const krav = aktivAdminVippsKrav(child.id);
+    if(!krav){
+      zone.style.display = 'none';
+      zone.innerHTML = '';
+      return;
+    }
+    zone.style.display = 'block';
+    const cardSynlig = prisOppsett.vippsKortAktiv === true && krav.cardUrl;
+    zone.innerHTML = `
+      <div class="admin-vipps-pending">
+        <div class="vipps-zone-head">
+          <span class="vipps-badge">Vipps</span>
+          <span class="vipps-zone-title">${escapeHtml(t('adminVippsPendingTitle'))}</span>
+        </div>
+        <div class="sub">${escapeHtml(t('adminVippsPendingSub'))}</div>
+        <div class="pending-amt">${krav.amountKr.toLocaleString('no-NO')} kr</div>
+        <div class="pending-meta">${escapeHtml(t('adminVippsPendingDate'))}: ${escapeHtml(betalingsDatoTekst(krav.createdAt))}</div>
+        ${krav.hasPush ? `<div class="sub" style="margin-bottom:10px;">${escapeHtml(t('adminVippsPushNote'))}</div>` : ''}
+        ${krav.walletUrl ? `<button type="button" class="btn btn-vipps" onclick="openPendingVippsUrl(${JSON.stringify(krav.walletUrl)})"><span class="vipps-mark">Vipps</span><span>${escapeHtml(t('adminVippsPayBtn'))}</span></button>` : ''}
+        ${cardSynlig ? `<button type="button" class="btn btn-vipps-outline" onclick="openPendingVippsUrl(${JSON.stringify(krav.cardUrl)})">${escapeHtml(t('adminVippsCardBtn'))}</button>` : ''}
+      </div>`;
+  }
+
+  function renderPaymentHistory(){
+    const wrap = document.getElementById('paymentHistoryWrap');
+    const list = document.getElementById('paymentHistoryList');
+    if(!wrap || !list || myChildren.length === 0){
+      if(wrap) wrap.style.display = 'none';
+      return;
+    }
+    const child = myChildren[currentChildIndex];
+    const history = studentPayments.filter(p => p.studentId === child.id);
+    if(history.length === 0){
+      wrap.style.display = 'block';
+      list.innerHTML = `<div class="empty-msg">${escapeHtml(t('paymentHistoryEmpty'))}</div>`;
+      return;
+    }
+    wrap.style.display = 'block';
+    list.innerHTML = `
+      <table class="payment-history-table">
+        <thead><tr>
+          <th>${escapeHtml(t('paymentHistoryDate'))}</th>
+          <th>${escapeHtml(t('paymentHistoryAmount'))}</th>
+          <th>${escapeHtml(t('paymentHistorySource'))}</th>
+        </tr></thead>
+        <tbody>${history.map(p => {
+          const belop = toNum(p.belop);
+          const cls = belop < 0 ? 'amt-neg' : 'amt-pos';
+          const tekst = (belop < 0 ? '−' : '+') + Math.abs(belop).toLocaleString('no-NO') + ' kr';
+          return `<tr>
+            <td>${escapeHtml(betalingsDatoTekst(p.dato))}</td>
+            <td class="${cls}">${tekst}</td>
+            <td>${escapeHtml(p.kilde || '—')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  }
+
+  window.openPendingVippsUrl = function(url){
+    if(!url) return;
+    window.location.href = url;
+  };
+
   function renderPaymentChild(){
     const payInfo = document.getElementById('paymentInfo');
     if(!payInfo || myChildren.length === 0) return;
@@ -3565,6 +3763,8 @@
       if(paidMsg) paidMsg.style.display = 'block';
       if(comingSoon) comingSoon.style.display = 'none';
     }
+    renderAdminVippsPending();
+    renderPaymentHistory();
   }
 
   function renderPaymentDetail(){
