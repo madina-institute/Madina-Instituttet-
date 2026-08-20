@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 13:10:00 -->
+<!-- SIST-ENDRET: 2026-08-20 13:25:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8999,6 +8999,50 @@
   }
 
   const FORELDRE_PORTAL_BETALING_URL = 'https://madinaskole.no/foreldre#del=payment';
+  let vippsSendBusy = false;
+
+  function sporVippsSendSkjema(opts){
+    opts = opts || {};
+    return new Promise(resolve => {
+      const bakgrunn = document.createElement('div');
+      bakgrunn.className = 'pw-overlay';
+      const tlf = String(opts.telefon || '').replace(/\D/g, '').slice(-8);
+      bakgrunn.innerHTML = `
+        <div class="pw-boks">
+          <h3>${escapeHtml(opts.tittel || 'Send Vipps-krav')}</h3>
+          ${opts.undertittel ? `<p>${escapeHtml(opts.undertittel)}</p>` : ''}
+          <label for="vippsSendBelop">Beløp (kr)</label>
+          <input type="number" id="vippsSendBelop" min="1" step="1" value="${escapeHtml(String(opts.belop ?? ''))}" ${opts.belopLåst ? 'disabled style="background:#eef1f6;color:#5a6860;"' : ''}>
+          <label for="vippsSendTlf">Telefon foresatt 1 (8 siffer, for Vipps-push)</label>
+          <input type="tel" id="vippsSendTlf" inputmode="numeric" maxlength="8" value="${escapeHtml(tlf)}" placeholder="12345678" autocomplete="off">
+          <p style="font-size:12px;color:#8a9a90;margin-top:8px;">E-post med betalingslenke sendes til alle registrerte foresatte. Push går til nummeret over.</p>
+          <div class="pw-knapper">
+            <button type="button" class="btn btn-ghost" data-vs="avbryt">Avbryt</button>
+            <button type="button" class="btn" style="background:#ff5b24;color:#fff;" data-vs="ok">Send krav</button>
+          </div>
+        </div>`;
+      document.body.appendChild(bakgrunn);
+      const belopEl = bakgrunn.querySelector('#vippsSendBelop');
+      const tlfEl = bakgrunn.querySelector('#vippsSendTlf');
+      const lukk = (v) => { bakgrunn.remove(); resolve(v); };
+      bakgrunn.querySelector('[data-vs="avbryt"]').onclick = () => lukk(null);
+      bakgrunn.querySelector('[data-vs="ok"]').onclick = () => {
+        const belop = parseFloat(String(belopEl.value || '').replace(',', '.'));
+        const phone = String(tlfEl.value || '').replace(/\D/g, '');
+        if(!belop || belop <= 0){ showToast('Skriv inn et gyldig beløp større enn 0.', true); return; }
+        if(!/^\d{8}$/.test(phone)){ showToast('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).', true); return; }
+        lukk({ amountKr: belop, phoneNumber: phone });
+      };
+      bakgrunn.addEventListener('click', e => { if(e.target === bakgrunn) lukk(null); });
+      const onKey = e => {
+        if(e.key === 'Escape') lukk(null);
+        if(e.key === 'Enter') bakgrunn.querySelector('[data-vs="ok"]').click();
+      };
+      tlfEl.addEventListener('keydown', onKey);
+      belopEl.addEventListener('keydown', onKey);
+      setTimeout(() => (opts.belopLåst ? tlfEl : belopEl).focus(), 50);
+    });
+  }
 
   function vippsEpostLenkeTekst(data){
     let out = '';
@@ -9044,7 +9088,10 @@
     }
     html += '<p style="margin:14px 0 0;font-size:13px;color:#5a6860;">Eller <a href="' + portalUrl + '">logg inn i Foreldreportalen → Betaling</a> for å velge Vipps eller bankkort.</p>';
     if(data.vippsEnv === 'test' && !data.cardRedirectUrl){
-      html += '<p style="margin:8px 0 0;font-size:12px;color:#8a9690;">Bankkort er kun tilgjengelig i produksjon.</p>';
+      html += '<p style="margin:12px 0 0;"><a href="' + portalUrl + '" style="display:inline-block;background:#1f4a3a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med bankkort i Foreldreportalen</a></p>';
+      html += '<p style="margin:8px 0 0;font-size:12px;color:#8a9690;">Bankkort-knapp i e-post er kun tilgjengelig i produksjon (Vipps test støtter ikke kort). I test-miljø: bruk lenken over.</p>';
+    } else if(data.vippsEnv === 'test'){
+      html += '<p style="margin:8px 0 0;font-size:12px;color:#8a9690;">Test-miljø: push-varsel er sendt til Vipps-appen. Betalingslenken i e-posten er backup.</p>';
     }
     return html;
   }
@@ -16764,6 +16811,8 @@
   window.lukkMelding = function(){
     const o = document.getElementById('meldingOverlay');
     if(o) o.remove();
+    document.body.style.pointerEvents = 'none';
+    setTimeout(() => { document.body.style.pointerEvents = ''; }, 400);
   };
 
   window.kopierMelding = function(){
@@ -22588,18 +22637,22 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     const apent = apentVippsKrav('registrations', id);
     if(apent && !confirm('Det er allerede sendt et Vipps-krav på denne søknaden som ikke er betalt.\n\nSende et nytt krav likevel? Foresatt 1 vil få to betalingsvarsler i Vipps.')) return;
 
-    const guardianPhone = reg.foresatt1_tlf || '';
-    const phone = prompt('Telefonnummer for Vipps-push til foresatt 1 (8 siffer, uten landkode):', guardianPhone.replace(/\D/g,'').slice(-8));
-    if(phone === null) return;
-    if(!/^\d{8}$/.test(phone.trim())){
-      showToast('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).', true);
-      return;
-    }
+    const skjema = await sporVippsSendSkjema({
+      tittel: 'Send depositum via Vipps',
+      undertittel: 'For ' + (reg.elev_navn || 'søknaden') + ' — depositum ' + dep + ' kr',
+      belop: dep,
+      belopLåst: true,
+      telefon: reg.foresatt1_tlf || ''
+    });
+    if(!skjema) return;
+    if(vippsSendBusy){ showToast('Et Vipps-krav sendes allerede — vent litt.', true); return; }
+    vippsSendBusy = true;
+    const phone = skjema.phoneNumber;
     const frist = prisOppsett.depositumFrist || 5;
     showToast('Oppretter Vipps-betaling...');
     try{
       const data = await kallVippsFunksjon(VIPPS_CREATE_PAYMENT_URL, {
-        type: 'registration', targetId: id, amountKr: dep, phoneNumber: phone.trim()
+        type: 'registration', targetId: id, amountKr: dep, phoneNumber: phone
       });
       if(!data.ok){
         showToast('Vipps-feil: ' + (data.error || 'Ukjent feil'));
@@ -22626,6 +22679,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
+    } finally {
+      vippsSendBusy = false;
     }
   };
 
@@ -22635,32 +22690,29 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     // går utenom Firestore, fanget verken lesemodus eller forhåndsvisning
     // den opp.
     if(!kanSendePengekrav('ADM-VIP-07')) return;
+    if(vippsSendBusy){ showToast('Et Vipps-krav sendes allerede — vent litt.', true); return; }
     const student = cache.students.find(s => s.id === id);
     if(!student){ showToast('Fant ikke eleven.'); return; }
+    const apent = apentVippsKrav('students', id);
+    if(apent && !confirm('Det er allerede sendt et Vipps-krav for denne eleven som ikke er betalt.\n\nSende et nytt krav likevel? Foresatt 1 vil få to betalingsvarsler i Vipps.')) return;
     const computedRemaining = (parseFloat((student.belop||'0').replace(/[^\d.-]/g,'')) || 0)
       - (parseFloat((student.belopBetalt||'0').replace(/[^\d.-]/g,'')) || 0);
-    // Foreslår restbeløpet som standardverdi, men lar administratoren alltid
-    // overstyre det og skrive inn et annet beløp (f.eks. en delbetaling),
-    // ikke bare når restbeløpet er 0.
-    const promptLabel = 'Beløp (kr) å kreve inn via Vipps for ' + (student.navn || 'eleven')
-      + (computedRemaining > 0 ? ' (restbeløp: ' + computedRemaining + ' kr):' : ':');
-    const manual = prompt(promptLabel, computedRemaining > 0 ? String(computedRemaining) : '');
-    if(manual === null) return;
-    const manualNum = parseFloat(manual.replace(',', '.'));
-    if(!manualNum || manualNum <= 0){ showToast('Skriv inn et gyldig beløp større enn 0.', true); return; }
-    const remainingKr = manualNum;
     const guardian = cache.guardians.find(g => g.id === student.foresatt);
     const guardianPhone = (guardian && guardian.telefon) || student.foresatt1_tlf || '';
-    const phone = prompt('Telefonnummer for Vipps (8 siffer, uten landkode) — beløp: ' + remainingKr + ' kr:', guardianPhone.replace(/\D/g,'').slice(-8));
-    if(phone === null) return;
-    if(!/^\d{8}$/.test(phone.trim())){
-      showToast('Telefonnummeret må være 8 siffer (norsk mobilnummer, uten landkode).', true);
-      return;
-    }
+    const skjema = await sporVippsSendSkjema({
+      tittel: 'Send Vipps-krav',
+      undertittel: 'For ' + (student.navn || 'eleven') + (computedRemaining > 0 ? ' — foreslått restbeløp: ' + computedRemaining + ' kr' : ''),
+      belop: computedRemaining > 0 ? computedRemaining : '',
+      telefon: guardianPhone
+    });
+    if(!skjema) return;
+    vippsSendBusy = true;
+    const remainingKr = skjema.amountKr;
+    const phone = skjema.phoneNumber;
     showToast('Oppretter Vipps-betaling...');
     try{
       const data = await kallVippsFunksjon(VIPPS_CREATE_PAYMENT_URL, {
-        type: 'balance', targetId: id, amountKr: remainingKr, phoneNumber: phone.trim()
+        type: 'balance', targetId: id, amountKr: remainingKr, phoneNumber: phone
       });
       if(!data.ok){
         showToast('Vipps-feil: ' + (data.error || 'Ukjent feil'));
@@ -22683,6 +22735,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
+    } finally {
+      vippsSendBusy = false;
     }
   };
 
