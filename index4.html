@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:42:00 -->
+<!-- SIST-ENDRET: 2026-08-20 22:45:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1384,7 +1384,7 @@
     getDoc, query, where, documentId
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
+    getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -2647,35 +2647,24 @@
   }, (err) => console.error('settings/betaling', err));
 
 
-  window.doParentLogin = async function(){
-    const errEl = document.getElementById('loginError');
-    errEl.style.display = 'none';
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if(!email || !password){
-      errEl.textContent = t('fillLogin');
-      errEl.style.display = 'block';
-      return;
+  let innloggingPaagaar = false;
+  let foreldreSesjonGjenopprettet = false;
+
+  function fullforForeldreInnlogging(guardian){
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('whoText').textContent = guardian.navn;
+    document.getElementById('absDate').value = nearestSchoolDate();
+    refreshMyChildren();
+    if(!provGjenopprettForeldreSeksjon()){
+      // Velkomstskjermen først — portalen åpnes når et barn er valgt.
+      visForeldreVelkomst();
     }
-    // Logg inn FØRST. Reglene krever innlogging for å lese 'guardians', så
-    // oppslaget må skje etterpå. Tidligere ble listen slått opp før
-    // innlogging — var den tom (f.eks. fordi lytterne aldri fikk lest),
-    // svarte skjemaet "fant ingen konto" selv om kontoen fantes.
-    // Dette hindrer også at skjemaet røper hvilke e-poster som er registrert.
-    try{
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch(err){
-      console.error(err);
-      errEl.textContent = t('wrongLogin');
-      errEl.style.display = 'block';
-      return;
-    }
+  }
+
+  async function etterVellykketForeldreAuth(authEpost, emailFallback){
     let guardian = null;
     let idxData = null;
-    const authEpost = String(auth.currentUser?.email || email).trim().toLowerCase();
     try{
-      // foreldreTilgang kan alltid leses av eieren — bruk den FØRST.
-      // Spørring på guardians feilet stille etter trinn 5-reglene.
       const idxSnap = await getDoc(doc(db, 'foreldreTilgang', authEpost));
       if(idxSnap.exists()) idxData = idxSnap.data() || null;
     } catch(err){
@@ -2691,7 +2680,7 @@
     }
     if(!guardian){
       try{
-        const epostKandidater = [...new Set([authEpost, email.trim(), email.trim().toLowerCase()].filter(Boolean))];
+        const epostKandidater = [...new Set([authEpost, emailFallback, String(emailFallback || '').trim().toLowerCase()].filter(Boolean))];
         for(const e of epostKandidater){
           const snap = await getDocs(query(collection(db, 'guardians'), where('epost', '==', e)));
           const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
@@ -2710,14 +2699,9 @@
     }
     if(!guardian && !idxData){
       await signOut(auth).catch(()=>{});
-      errEl.textContent = t('guardianCardMissing');
-      errEl.style.display = 'block';
-      return;
+      return { ok: false, reason: 'guardianCardMissing' };
     }
     currentGuardian = guardian;
-    // 🔴 Må skje FØR startDataListeners(). Lytterne bygger spørringene
-    // sine i det de starter, og en tom liste her ville gitt en portal som
-    // ser ut til å virke, men ikke viser noen barn.
     let barn = null;
     try{
       if(idxData && Array.isArray(idxData.barn)){
@@ -2730,17 +2714,13 @@
     }
     if(barn === null){
       await signOut(auth).catch(()=>{});
-      errEl.textContent = t('indexLinkMissing');
-      errEl.style.display = 'block';
       currentGuardian = null;
-      return;
+      return { ok: false, reason: 'indexLinkMissing' };
     }
     if(barn.length === 0){
       await signOut(auth).catch(()=>{});
-      errEl.textContent = t('indexEmptyChildren');
-      errEl.style.display = 'block';
       currentGuardian = null;
-      return;
+      return { ok: false, reason: 'indexEmptyChildren' };
     }
     mineBarnIder = barn;
     minEpost = String(auth.currentUser?.email || guardian.epost || '').trim().toLowerCase();
@@ -2749,17 +2729,92 @@
       updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
       addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
     }
-    document.getElementById('loginView').style.display = 'none';
-    // Velkomstskjermen først — portalen åpnes når et barn er valgt.
-    visForeldreVelkomst();
-    document.getElementById('whoText').textContent = guardian.navn;
-    // Åpner seksjonen fra adresselinjen hvis den finnes — ellers står
-    // startsiden som før.
-    setTimeout(gjenopprettSeksjon, 0);
-    document.getElementById('absDate').value = nearestSchoolDate();
-    closeSection();
-    refreshMyChildren();
+    foreldreSesjonGjenopprettet = true;
+    fullforForeldreInnlogging(guardian);
+    return { ok: true };
+  }
+
+  window.doParentLogin = async function(){
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if(!email || !password){
+      errEl.textContent = t('fillLogin');
+      errEl.style.display = 'block';
+      return;
+    }
+    innloggingPaagaar = true;
+    try{
+    // Logg inn FØRST. Reglene krever innlogging for å lese 'guardians', så
+    // oppslaget må skje etterpå. Tidligere ble listen slått opp før
+    // innlogging — var den tom (f.eks. fordi lytterne aldri fikk lest),
+    // svarte skjemaet "fant ingen konto" selv om kontoen fantes.
+    // Dette hindrer også at skjemaet røper hvilke e-poster som er registrert.
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch(err){
+      console.error(err);
+      errEl.textContent = t('wrongLogin');
+      errEl.style.display = 'block';
+      return;
+    }
+    const authEpost = String(auth.currentUser?.email || email).trim().toLowerCase();
+    const result = await etterVellykketForeldreAuth(authEpost, email);
+    if(!result.ok){
+      const melding = result.reason === 'indexLinkMissing' ? t('indexLinkMissing')
+        : result.reason === 'indexEmptyChildren' ? t('indexEmptyChildren')
+        : t('guardianCardMissing');
+      errEl.textContent = melding;
+      errEl.style.display = 'block';
+    }
+    } finally {
+      innloggingPaagaar = false;
+    }
   };
+
+  function ventPaaAuthRestore(maksMs = 12000){
+    const MIN_NULL_MS = 1500;
+    return new Promise(resolve => {
+      const start = Date.now();
+      let unsub = () => {};
+      let ferdig = false;
+      const finish = () => {
+        if(ferdig) return;
+        ferdig = true;
+        try{ unsub(); }catch(e){}
+        resolve();
+      };
+      const pollEtterNull = () => {
+        const poll = () => {
+          if(auth.currentUser) return finish();
+          if(Date.now() - start >= maksMs) return finish();
+          setTimeout(poll, 150);
+        };
+        setTimeout(poll, MIN_NULL_MS);
+      };
+      unsub = onAuthStateChanged(auth, user => {
+        if(user) finish();
+        else pollEtterNull();
+      });
+      setTimeout(finish, maksMs);
+    });
+  }
+
+  let authBehandling = 0;
+  onAuthStateChanged(auth, async (user) => {
+    const denne = ++authBehandling;
+    await ventPaaAuthRestore();
+    if(denne !== authBehandling) return;
+    user = auth.currentUser || user;
+    if(user){
+      if(currentGuardian || foreldreSesjonGjenopprettet || innloggingPaagaar) return;
+      const authEpost = String(user.email || '').trim().toLowerCase();
+      await etterVellykketForeldreAuth(authEpost, user.email || '');
+    } else {
+      foreldreSesjonGjenopprettet = false;
+    }
+  });
 
   window.doForgotPassword = async function(){
     const errEl = document.getElementById('loginError');
@@ -3052,22 +3107,30 @@
     plasserStempler();
   };
 
-  window.aapneBarn = function(i){
+  window.aapneBarn = function(i, opts){
+    opts = opts || {};
     currentChildIndex = i;
     document.getElementById('fvelkomst').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     updateParentHdr();
     renderChildTabs();
     renderChild();
-    closeSection();
+    if(!opts.beholdSeksjon) closeSection();
     plasserStempler();
-    // 🔴 Uten dette var det ingen vei tilbake til familieskjermen med
-    // telefonens egen tilbake-knapp. Skjermbytte skjer i JavaScript, så
-    // nettleseren vet ikke at man «gikk» noe sted — tilbake tok deg ut
-    // av portalen i stedet, og innloggingen måtte gjøres på nytt.
-    //
-    // Én oppføring legges inn ved åpning; popstate under fanger den.
-    try{ history.pushState({ fvBarn: i }, ''); }catch(e){}
+    try{
+      if(currentGuardian && currentGuardian.id){
+        sessionStorage.setItem('ps_barn_' + currentGuardian.id, String(i));
+      }
+    }catch(e){}
+    if(!opts.beholdSeksjon){
+      // 🔴 Uten dette var det ingen vei tilbake til familieskjermen med
+      // telefonens egen tilbake-knapp. Skjermbytte skjer i JavaScript, så
+      // nettleseren vet ikke at man «gikk» noe sted — tilbake tok deg ut
+      // av portalen i stedet, og innloggingen måtte gjøres på nytt.
+      //
+      // Én oppføring legges inn ved åpning; popstate under fanger den.
+      try{ history.pushState({ fvBarn: i }, ''); }catch(e){}
+    }
   };
 
   window.aapneValgtBarn = function(){ aapneBarn(fvValgt); };
@@ -3458,6 +3521,7 @@
     // Elevene kommer inn etter innlogging. Står velkomstskjermen åpen,
     // må den fylles ut når de er lest — ellers står den tom for en
     // familie som har barn.
+    if(provGjenopprettForeldreSeksjon()) return;
     const fv = document.getElementById('fvelkomst');
     if(fv && fv.style.display !== 'none') tegnVelkomstForelder();
     renderPaymentDetail();
@@ -3852,11 +3916,41 @@
   }
   function gjenopprettSeksjon(){
     const m = (location.hash || '').match(/del=([A-Za-z]+)/);
-    if(!m) return;
-    if(m[1] === 'home'){ openSection('home'); return; }
+    if(!m) return false;
+    if(m[1] === 'home'){ openSection('home'); return true; }
     const mål = document.getElementById('view-' + m[1]);
-    if(mål) openSection(m[1]);
+    if(mål){ openSection(m[1]); return true; }
+    return false;
   }
+
+  function hentLagretBarnIndeks(){
+    if(!currentGuardian || !currentGuardian.id) return 0;
+    try{
+      const lagret = sessionStorage.getItem('ps_barn_' + currentGuardian.id);
+      if(lagret != null) return parseInt(lagret, 10) || 0;
+    }catch(e){}
+    return 0;
+  }
+
+  function provGjenopprettForeldreSeksjon(){
+    if(!currentGuardian) return false;
+    const m = (location.hash || '').match(/del=([A-Za-z]+)/);
+    if(!m) return false;
+    if(myChildren.length === 0) return false;
+    const app = document.getElementById('appView');
+    if(app && app.style.display === 'none'){
+      let barnIdx = hentLagretBarnIndeks();
+      if(barnIdx >= myChildren.length) barnIdx = 0;
+      aapneBarn(barnIdx, { beholdSeksjon: true });
+    }
+    return gjenopprettSeksjon();
+  }
+
+  window.addEventListener('hashchange', () => {
+    if(!currentGuardian) return;
+    const app = document.getElementById('appView');
+    if(app && app.style.display !== 'none') gjenopprettSeksjon();
+  });
 
   window.openSection = function(name){
     try{ history.replaceState(null, '', '#del=' + name); }catch(e){}
