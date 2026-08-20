@@ -3,7 +3,7 @@
 > **الغرض:** توثيق كل ما نفّذه الوكيل السحابي (Cloud Agent) — أعمال، أخطاء، إصلاحات، نصائح، ومهام متبقية.  
 > **المستودع:** `madina-institute/Madina-Instituttet-`  
 > **آخر تحديث يدوي:** 2026-08-20 11:30 (Oslo)  
-> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-20T09:26:24.030Z -->
+> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-20T11:03:49.873Z -->
 
 ---
 
@@ -190,6 +190,19 @@
 ## 6. سجل التحديثات الآلية (commits)
 
 <!-- AUTO-LOG-ENTRIES-BEGIN -->
+- `2026-08-20T12:51:46+02:00` · `00c3b38` · Fix admin panel logout and red sync badge after rules change (#59)
+- `2026-08-20T12:43:28+02:00` · `ce73c8e` · Sync admin Vipps requests, cancel, and refunds in parent portal (#58)
+- `2026-08-20T10:32:44Z` · `49db831` · Merge pull request #57 from madina-institute/cursor/vipps-email-card-buttons-c9a0
+- `2026-08-20T10:32:23Z` · `04d73e0` · Add Vipps + card payment buttons in parent payment emails
+- `2026-08-20T10:05:44Z` · `965d0cd` · Merge pull request #56 from madina-institute/cursor/vipps-dual-push-email-c9a0
+- `2026-08-20T10:05:11Z` · `4bda70a` · Dual Vipps payment: PUSH for app + WEB for email link
+- `2026-08-20T09:57:01Z` · `c4f2f14` · Merge pull request #55 from madina-institute/cursor/vipps-push-and-dialog-fix-c9a0
+- `2026-08-20T09:56:42Z` · `dcc12cd` · Restore Vipps push, fix ABORTED cancel, shorten admin dialog
+- `2026-08-20T09:44:48Z` · `9927036` · Merge pull request #54 from madina-institute/cursor/vipps-email-link-guard-c9a0
+- `2026-08-20T09:42:38Z` · `7b38c5d` · Block Vipps parent email when payment link is missing
+- `2026-08-20T11:33:39+02:00` · `eb591b9` · Fix missing Vipps payment link in parent emails (#53)
+- `2026-08-20T09:26:58Z` · `6bfb834` · Merge pull request #52 from madina-institute/cursor/cloud-agent-log-c9a0
+- `2026-08-20T09:26:31Z` · `88189bf` · Add CLOUD-AGENT-LOG with 10h auto-update via GitHub Actions
 _يُملأ تلقائياً كل 10 ساعات من GitHub Actions._
 <!-- AUTO-LOG-ENTRIES-END -->
 
