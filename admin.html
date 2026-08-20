@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 02:20:00 -->
+<!-- SIST-ENDRET: 2026-08-20 02:44:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9234,6 +9234,7 @@
     // Foreldre-indeksen avhenger av begge kildene. skrivForeldreIndeks()
     // sammenligner mot forrige resultat og skriver bare ved faktisk endring.
     if(['students','guardians'].includes(type)) skrivForeldreIndeks();
+    if(['students','guardians','teachers','hours'].includes(type)) skrivLaererIndeks();
     if(['registrations','students','guardians','teachers','classes'].includes(type)) visTestdataStatus();
     if(type === 'registrations' && typeof __opMaybeRerender === 'function') __opMaybeRerender();
     if(typeof renderWsTab === 'function' && wsActiveTab){
@@ -15653,13 +15654,14 @@
   // En e-post uten navn er en kopiert rute, ikke en person.
   // ═══════════════════════════════════════════════════════════════════
   function byggForeldreIndeks(){
-    const kart = new Map();   // epost → { barn:Set, navn }
-    const leggTil = (epost, navn, elevId) => {
+    const kart = new Map();   // epost → { barn:Set, klasser:Set, navn }
+    const leggTil = (epost, navn, elevId, klasse) => {
       const e = normEpost(epost);
       if(!e || e.indexOf('@') < 1) return;
-      if(!kart.has(e)) kart.set(e, { barn: new Set(), navn: navn || '' });
+      if(!kart.has(e)) kart.set(e, { barn: new Set(), klasser: new Set(), navn: navn || '' });
       const r = kart.get(e);
       if(elevId) r.barn.add(elevId);
+      if(klasse) r.klasser.add(klasse);
       if(!r.navn && navn) r.navn = navn;
     };
 
@@ -15670,19 +15672,14 @@
       if(!el.id) return;
       [el.foresatt, el.foresatt2].forEach(id => {
         const g = id ? foresattePerId.get(id) : null;
-        if(g) leggTil(g.epost, g.navn, el.id);
+        if(g) leggTil(g.epost, g.navn, el.id, el.klasse || '');
       });
-      // Reserve: andre foresatt uten eget kort. Krever navn — ellers er
-      // det en tom rute som har fått en e-post kopiert inn.
       if(!el.foresatt2 && String(el.foresatt2_navn || '').trim()){
-        leggTil(el.foresatt2_epost, el.foresatt2_navn, el.id);
+        leggTil(el.foresatt2_epost, el.foresatt2_navn, el.id, el.klasse || '');
       }
     });
 
-    // Foresatte uten barn skal også stå der, med tom liste. Uten raden
-    // ville reglene svart «finnes ikke» i stedet for «ingen barn», og
-    // de to feilene ser like ut fra portalen.
-    (cache.guardians || []).forEach(g => leggTil(g.epost, g.navn, null));
+    (cache.guardians || []).forEach(g => leggTil(g.epost, g.navn, null, ''));
 
     return kart;
   }
@@ -15697,7 +15694,7 @@
     // ville hver eneste elevendring skrevet hele indeksen på nytt —
     // og skrivekvoten er det som gikk galt 9. august.
     const fingeravtrykk = JSON.stringify([...kart.entries()]
-      .map(([e, r]) => [e, [...r.barn].sort()]).sort());
+      .map(([e, r]) => [e, [...r.barn].sort(), [...r.klasser].sort()]).sort());
     if(fingeravtrykk === foreldreIndeksSkrevet) return;
 
     try{
@@ -15705,6 +15702,7 @@
         await setDoc(doc(db, 'foreldreTilgang', epost), {
           epost, navn: r.navn || '',
           barn: [...r.barn],
+          klasser: [...r.klasser],
           oppdatert: new Date().toISOString()
         }, { merge: true });
       }
@@ -15719,6 +15717,78 @@
     } catch(err){
       console.error('foreldreTilgang', err);
       foreldreIndeksSkrevet = '';   // prøv igjen ved neste endring
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LÆRER-INDEKS — hvilke klasser og foresatte hver lærer kan se
+  //
+  // Reglene kan ikke gjøre spørringer. Lærerportalen henter per klasse,
+  // men reglene må vite hvilke klasser som er «mine». Timeplanen er
+  // kilden: laererTilgang/{e-post} → { klasser, foresatte, teacherId }.
+  // ═══════════════════════════════════════════════════════════════════
+  function byggLaererIndeks(){
+    const kart = new Map();
+    const teacherById = new Map((cache.teachers || []).map(t => [t.id, t]));
+
+    (cache.hours || []).forEach(h => {
+      if(!h.klasse || !h.larer) return;
+      const t = teacherById.get(h.larer);
+      if(!t || !t.epost) return;
+      const e = normEpost(t.epost);
+      if(!kart.has(e)) kart.set(e, { klasser: new Set(), foresatte: new Set(), navn: t.navn || '', teacherId: t.id });
+      kart.get(e).klasser.add(h.klasse);
+    });
+
+    (cache.teachers || []).forEach(t => {
+      if(!t.epost || !t.tildeltKlasse) return;
+      const e = normEpost(t.epost);
+      if(!kart.has(e)) kart.set(e, { klasser: new Set(), foresatte: new Set(), navn: t.navn || '', teacherId: t.id });
+      kart.get(e).klasser.add(t.tildeltKlasse);
+    });
+
+    (cache.students || []).forEach(s => {
+      if(!s.klasse) return;
+      kart.forEach(r => {
+        if(r.klasser.has(s.klasse)){
+          if(s.foresatt) r.foresatte.add(s.foresatt);
+          if(s.foresatt2) r.foresatte.add(s.foresatt2);
+        }
+      });
+    });
+
+    return kart;
+  }
+
+  let laererIndeksSkrevet = '';
+  async function skrivLaererIndeks(){
+    if(!currentUserEmail) return;
+    if(!(cache.teachers || []).length) return;
+
+    const kart = byggLaererIndeks();
+    const fingeravtrykk = JSON.stringify([...kart.entries()]
+      .map(([e, r]) => [e, [...r.klasser].sort(), [...r.foresatte].sort(), r.teacherId || '']).sort());
+    if(fingeravtrykk === laererIndeksSkrevet) return;
+
+    try{
+      for(const [epost, r] of kart){
+        await setDoc(doc(db, 'laererTilgang', epost), {
+          epost,
+          navn: r.navn || '',
+          teacherId: r.teacherId || '',
+          klasser: [...r.klasser],
+          foresatte: [...r.foresatte],
+          oppdatert: new Date().toISOString()
+        }, { merge: true });
+      }
+      const finnes = await getDocs(collection(db, 'laererTilgang'));
+      for(const d of finnes.docs){
+        if(!kart.has(normEpost(d.id))) await deleteDoc(d.ref).catch(()=>{});
+      }
+      laererIndeksSkrevet = fingeravtrykk;
+    } catch(err){
+      console.error('laererTilgang', err);
+      laererIndeksSkrevet = '';
     }
   }
 

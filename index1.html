@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-18 01:34:27 -->
+<!-- SIST-ENDRET: 2026-08-20 02:44:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1612,7 +1612,7 @@
     // Også her: mister læreren klassene sine, skal lytterne kobles fra —
     // ellers ville de blitt stående og hentet data for en klasse som
     // ikke lenger er hennes.
-    if(klasser.length === 0){ valgtKlasse = ''; valgtFag = ''; tegnKlasseFagVelger(); startKlasselyttere(); startKlasseDocLyttere(); return; }
+    if(klasser.length === 0){ valgtKlasse = ''; valgtFag = ''; tegnKlasseFagVelger(); startKlasselyttere(); startKlasseDocLyttere(); startPerKlasseLyttere(); return; }
     if(!valgtKlasse || !klasser.includes(valgtKlasse)){
       // Hjemmeklassen er foerstevalget: det er gruppen laereren hoerer
       // til til daglig. Finnes den ikke i timeplanen, tas den foerste.
@@ -1623,6 +1623,7 @@
     tegnKlasseFagVelger();
     startKlasselyttere();
     startKlasseDocLyttere();
+    startPerKlasseLyttere();
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -2054,34 +2055,38 @@
     if(window.Skoledager) window.Skoledager.settData({ programmer: programs, skolekalender: schoolCalendar, skolear: skolear });
   }
 
+  let hoursLytter = null;
+  function startHoursLytter(){
+    if(hoursLytter){ try{ hoursLytter(); }catch(err){ console.error('avmeld hours', err); } hoursLytter = null; }
+    if(!currentTeacher) return;
+    hoursLytter = onSnapshot(
+      query(collection(db, 'hours'), where('larer', '==', currentTeacher.id)),
+      (snap) => {
+        hours = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        if(currentTeacher){
+          settValgFraTimeplan();
+          const vk = document.getElementById('velkomstView');
+          if(vk && vk.style.display !== 'none'){
+            if(!vkKlasse) vkKlasse = valgtKlasse;
+            if(!vkFag) vkFag = valgtFag;
+            tegnVelkomst();
+          }
+        }
+        renderHome();
+      },
+      (err) => console.error('hours', err)
+    );
+  }
+
   watch('programs', (snap) => {
     programs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     materSkoledager();
     refreshSchoolCalendars();
   }, (err) => console.error('programs', err));
 
-  watch('hours', (snap) => {
-    hours = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    // Klassene mine utledes herfra. Kommer timeplanen inn etter
-    // innlogging — som den som regel gjør — må valget settes på nytt,
-    // ellers står velgeren tom for en lærer som har timer.
-    if(currentTeacher){
-      settValgFraTimeplan();
-      // Står velkomstskjermen åpen mens timeplanen lastes, må knappene
-      // dukke opp der uten at læreren må gjøre noe.
-      const vk = document.getElementById('velkomstView');
-      if(vk && vk.style.display !== 'none'){
-        if(!vkKlasse) vkKlasse = valgtKlasse;
-        if(!vkFag) vkFag = valgtFag;
-        tegnVelkomst();
-      }
-    }
-    renderHome();
-  }, (err) => console.error('hours', err));
+  // hours hentes per lærer — se startHoursLytter() etter innlogging.
 
-  // Skoleåret: startdato, terminskifte og slutt. Uten det kan
-  // velkomstskjermen ikke telle ned til skolestart, og ikke vite at
-  // dagene før den ikke er undervisningsdager i det hele tatt.
+  // Skoleåret: startdato, terminskifte og slutt.
   onSnapshot(doc(db, 'settings', 'skolear'), (snap) => {
     const d = snap.exists() ? (snap.data() || {}) : {};
     skolear = {
@@ -2166,12 +2171,87 @@
     });
   }
 
-  // Titled 1-1 conversation threads (title, open/closed lifecycle, archive).
-  // Older messages sent before this feature exists have no matching thread
-  // doc — those are still shown as an untitled "legacy" conversation per
-  // guardian that never auto-closes, so nothing old is lost or surprises anyone.
+  let perKlasseLyttere = [];
+  let perKlasseNokkel = null;
+
+  function bindPerKlasse(samling, felt, setter, etter){
+    const klasser = mineKlasser();
+    if(klasser.length === 0){ setter([]); if(etter) etter(); return; }
+    const biter = delOpp(klasser, 30);
+    const deler = biter.map(() => []);
+    biter.forEach((bit, i) => {
+      const av = onSnapshot(
+        query(collection(db, samling), where(felt, 'in', bit)),
+        (snap) => {
+          deler[i] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setter(deler.flat());
+          if(etter) etter();
+        },
+        (err) => console.error(samling, err)
+      );
+      perKlasseLyttere.push(av);
+    });
+  }
+
+  function startPerKlasseLyttere(){
+    if(!currentTeacher) return;
+    const nokkel = mineKlasser().slice().sort().join('|');
+    if(nokkel === perKlasseNokkel) return;
+    perKlasseLyttere.forEach(avmeld => { try{ avmeld(); }catch(err){ console.error('avmeld perKlasse', err); } });
+    perKlasseLyttere = [];
+    perKlasseNokkel = nokkel;
+
+    bindPerKlasse('messages', 'klasse', r => { messages = r; }, () => {
+      if(!currentTeacher) return;
+      updateMsgDot();
+      if(document.getElementById('messagesListView').style.display !== 'none') renderMessageThreads();
+      if(currentThreadGuardian) renderMessageThreadHistory();
+    });
+    bindPerKlasse('messageThreads', 'klasse', r => { messageThreads = r; autoCloseStaleThreads(); }, () => {
+      if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') renderMessageThreads();
+    });
+    bindPerKlasse('absenceRequests', 'klasse', r => { absenceRequests = r; }, () => {
+      if(currentTeacher) renderAbsenceReviewList();
+    });
+    bindPerKlasse('lessonPlans', 'klasse', r => { lessonPlans = r; }, () => {
+      if(currentTeacher && document.getElementById('lessonArchiveView').style.display !== 'none') renderLessonArchive();
+    });
+    bindPerKlasse('homework', 'klasse', r => { homework = r; }, () => {
+      if(currentTeacher && document.getElementById('homeworkArchiveView').style.display !== 'none') renderHomeworkArchive();
+    });
+    bindPerKlasse('classPosts', 'klasse', r => { classPosts = r; }, () => {
+      if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+    });
+    bindPerKlasse('classPostComments', 'klasse', r => { classPostComments = r; }, () => {
+      if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+    });
+    bindPerKlasse('classPollVotes', 'klasse', r => { classPollVotes = r; }, () => {
+      if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+    });
+    bindPerKlasse('eventRSVPs', 'klasse', r => { eventRSVPs = r; }, () => {
+      if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
+    });
+    bindPerKlasse('monthlyPlans', 'klasse', r => { monthlyPlans = r; }, () => {
+      if(currentTeacher && document.getElementById('monthlyPlanView') && document.getElementById('monthlyPlanView').style.display !== 'none') renderMonthlyPlanList();
+    });
+    bindPerKlasse('semesterPlans', 'klasse', r => { semesterPlans = r; }, () => {
+      if(currentTeacher && document.getElementById('semesterPlanView') && document.getElementById('semesterPlanView').style.display !== 'none') renderSemesterPlanList();
+    });
+  }
+
   const AUTO_CLOSE_DAYS = 14;
   let messageThreads = [];
+  let absenceRequests = [];
+  let lessonPlans = [];
+  let homework = [];
+  let classPosts = [];
+  let classPostComments = [];
+  let classPollVotes = [];
+  let eventRSVPs = [];
+  let messages = [];
+  let monthlyPlans = [], semesterPlans = [];
+  let dailyPlanTemplates = [], monthlyPlanTemplates = [], semesterPlanTemplates = [];
+
   function autoCloseStaleThreads(){
     const cutoffTime = Date.now() - AUTO_CLOSE_DAYS * 24 * 60 * 60 * 1000;
     messageThreads.forEach(th => {
@@ -2180,31 +2260,10 @@
       }
     });
   }
-  watch('messageThreads', (snap) => {
-    messageThreads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    autoCloseStaleThreads();
-    if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') renderMessageThreads();
-  });
 
-  // students og attendance lastes ikke lenger som hele samlinger — se
-  // startKlasselyttere(). De fylles derfra, med lærerens egne klasser.
-
-  let absenceRequests = [];
-  watch('absenceRequests', (snap) => {
-    absenceRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher) renderAbsenceReviewList();
-  });
-
-  // studentNotes: samme — fylles av startKlasselyttere().
+  // students, attendance og studentNotes — startKlasselyttere().
   let studentNotes = [];
 
-  let lessonPlans = [];
-  watch('lessonPlans', (snap) => {
-    lessonPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('lessonArchiveView').style.display !== 'none') renderLessonArchive();
-  });
-
-  let dailyPlanTemplates = [], monthlyPlanTemplates = [], semesterPlanTemplates = [];
   // ═══════════════════════════════════════════════════════════════
   // MELDINGER FRA ADMINISTRASJONEN
   //
@@ -2234,7 +2293,6 @@
       if(currentAdminMsgThreadId) renderAdminMsgsThreadHistory();
     }
   });
-  let monthlyPlans = [], semesterPlans = [];
   watch('dailyPlanTemplates', (snap) => {
     dailyPlanTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   });
@@ -2244,51 +2302,8 @@
   watch('semesterPlanTemplates', (snap) => {
     semesterPlanTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   });
-  watch('monthlyPlans', (snap) => {
-    monthlyPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('monthlyPlanView') && document.getElementById('monthlyPlanView').style.display !== 'none') renderMonthlyPlanList();
-  });
-  watch('semesterPlans', (snap) => {
-    semesterPlans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('semesterPlanView') && document.getElementById('semesterPlanView').style.display !== 'none') renderSemesterPlanList();
-  });
 
-  let homework = [];
-  watch('homework', (snap) => {
-    homework = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('homeworkArchiveView').style.display !== 'none') renderHomeworkArchive();
-  });
-
-  let classPosts = [];
-  watch('classPosts', (snap) => {
-    classPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
-  });
-  let classPostComments = [];
-  watch('classPostComments', (snap) => {
-    classPostComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
-  });
-  let classPollVotes = [];
-  watch('classPollVotes', (snap) => {
-    classPollVotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
-  });
-  let eventRSVPs = [];
-  watch('eventRSVPs', (snap) => {
-    eventRSVPs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('classPostsView').style.display !== 'none') renderClassPosts();
-  });
-
-  let messages = [];
-  watch('messages', (snap) => {
-    messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher){
-      updateMsgDot();
-      if(document.getElementById('messagesListView').style.display !== 'none') renderMessageThreads();
-      if(currentThreadGuardian) renderMessageThreadHistory();
-    }
-  });
+  // classPollVotes og eventRSVPs — startPerKlasseLyttere().
 
   // ═══════════════════════════════════════════════════════════════════
   // FØRSTEGANGSUTFYLLING
@@ -2474,6 +2489,7 @@
   // førstegangsutfyllingen er lagret.
   function fullforInnlogging(teacher){
     document.getElementById('loginView').style.display = 'none';
+    startHoursLytter();
     settValgFraTimeplan();
     // Velkomstskjermen først. Panelet åpnes når klasse og fag er valgt —
     // se startArbeid(). Grunnen står ved markupen: alt læreren skriver
@@ -3013,8 +3029,10 @@
     if(dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
     if(!myAttendanceListenerAttached){
       myAttendanceListenerAttached = true;
-      watch('teacherAttendance', (snap) => {
-        myAttendanceCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      watchQuery('teacherAttendance', () => currentTeacher
+        ? [query(collection(db, 'teacherAttendance'), where('larer', '==', currentTeacher.id))]
+        : [], (rader) => {
+        myAttendanceCache = rader;
         renderMyAttendanceList();
       }, (err) => console.error('teacherAttendance', err));
     } else {
@@ -4232,7 +4250,7 @@
     if(!tekst) return;
     try{
       await addDoc(collection(db, 'classPostComments'), {
-        postId, fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst,
+        postId, klasse: valgtKlasse, fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst,
         dato: new Date().toISOString()
       });
       input.value = '';

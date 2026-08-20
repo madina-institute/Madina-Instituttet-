@@ -1223,7 +1223,7 @@ const BACKUP_COLLECTIONS = [
   // Tilgangsindeksene. Uten dem i kopien ville en gjenoppretting gitt
   // tilbake elevene, men ikke koblingen som lar foreldrene se dem —
   // og portalene ville stått tomme uten at noe så ødelagt ut.
-  "roller", "tilgang", "foreldreTilgang", "endringslogg"
+  "roller", "tilgang", "foreldreTilgang", "laererTilgang", "endringslogg"
 ];
 
 const BACKUP_EMAIL = "post@madinaskole.no";
