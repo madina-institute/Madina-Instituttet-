@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 12:04:04 */
+/* SIST-ENDRET: 2026-08-20 12:31:04 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -135,6 +135,7 @@ async function hentPrisoppsett() {
       // Teller barn registrert på foresatt2 som søsken? Står som false
       // fordi det er dagens oppførsel — se merknaden i computeSoskenPrice.
       oppsett.tellForesatt2 = d.tellForesatt2 === true;
+      oppsett.vippsKortAktiv = d.vippsKortAktiv === true;
     }
   } catch (err) {
     logger.warn("Kunne ikke lese settings/priser — bruker reservesatsene", err);
@@ -1013,6 +1014,52 @@ exports.createVippsPayment = onRequest(
         }
       }
 
+      let cardRedirectUrl = null;
+      const prisOppsett = await hentPrisoppsett();
+      const cardAktiv = prisOppsett.vippsKortAktiv === true && VIPPS_ENV.value() === "prod";
+      if (cardAktiv && !erForesatt && method === "WALLET" && redirectUrl) {
+        const cardReference = `${paymentGroupId}c`;
+        logger.info("Oppretter CARD-ledd for e-post-lenke", { paymentGroupId, cardReference });
+        const cardAttempt = await postVippsPayment(accessToken, {
+          reference: cardReference,
+          normalizedPhone,
+          amountKr,
+          paymentDescription,
+          userFlow: "WEB_REDIRECT",
+          returnUrl: VIPPS_RETURN_URL,
+          paymentMethodType: "CARD",
+        });
+        if (cardAttempt.ok) {
+          cardRedirectUrl = await resolveVippsRedirectUrl(
+            cardReference, accessToken, cardAttempt.paymentData || {}, "WEB_REDIRECT"
+          );
+          if (cardRedirectUrl) {
+            await db.collection("pendingVippsPayments").add({
+              reference: cardReference,
+              linkedReference: reference,
+              paymentGroupId,
+              paymentRole: "email_card",
+              type,
+              targetId,
+              studentId: type === "balance" ? targetId : null,
+              elevNavn,
+              amountKr: Number(amountKr),
+              phoneNumber: normalizedPhone,
+              userFlow: "WEB_REDIRECT",
+              redirectUrl: cardRedirectUrl,
+              status: "pending",
+              createdAt: new Date().toISOString(),
+              createdBy: bruker.epost || null,
+              initiatedBy: "admin",
+            });
+          } else {
+            logger.warn("CARD-ledd uten redirectUrl", { cardReference });
+          }
+        } else {
+          logger.warn("CARD-ledd for e-post feilet", cardAttempt.bodyText);
+        }
+      }
+
       await sourceRef.update({
         vippsReference: reference,
         vippsStatus: "CREATED",
@@ -1043,6 +1090,9 @@ exports.createVippsPayment = onRequest(
       res.status(200).json({
         ok: true,
         redirectUrl: redirectUrl || null,
+        cardRedirectUrl: cardRedirectUrl || null,
+        cardPaymentAvailable: cardAktiv && Boolean(cardRedirectUrl),
+        portalPaymentUrl: "https://madinaskole.no/foreldre#del=payment",
         reference,
         emailReference,
         dualPayment,

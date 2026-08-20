@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 12:04:04 -->
+<!-- SIST-ENDRET: 2026-08-20 12:31:04 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8988,23 +8988,55 @@
     return await res.json();
   }
 
+  const FORELDRE_PORTAL_BETALING_URL = 'https://madinaskole.no/foreldre#del=payment';
+
   function vippsEpostLenkeTekst(data){
+    let out = '';
     if(data.redirectUrl){
-      return (data.userFlow === 'PUSH_MESSAGE'
-        ? 'Du kan også bruke denne betalingslenken:\n'
-        : 'Betalingslenke:\n') + data.redirectUrl + '\n\n';
+      out += (data.userFlow === 'PUSH_MESSAGE' || data.dualPayment
+        ? 'Betal med Vipps-app:\n'
+        : 'Betalingslenke (Vipps):\n') + data.redirectUrl + '\n\n';
     }
-    if(data.userFlow === 'PUSH_MESSAGE'){
-      return 'Du finner betalingskravet under Betalinger i Vipps-appen (dra ned for å oppdatere i test-miljø).\n\n';
+    if(data.cardRedirectUrl){
+      out += 'Betal med bankkort (Visa/Mastercard):\n' + data.cardRedirectUrl + '\n\n';
     }
-    return '';
+    if(!data.redirectUrl && data.userFlow === 'PUSH_MESSAGE'){
+      out += 'Du finner betalingskravet under Betalinger i Vipps-appen (dra ned for å oppdatere i test-miljø).\n\n';
+    }
+    out += 'Eller logg inn i Foreldreportalen og velg Betaling:\n' + (data.portalPaymentUrl || FORELDRE_PORTAL_BETALING_URL) + '\n\n';
+    if(data.vippsEnv === 'test' && !data.cardRedirectUrl){
+      out += 'Bankkort er kun tilgjengelig i produksjon — bruk Vipps-appen eller Foreldreportalen i test-miljø.\n\n';
+    }
+    return out;
   }
 
   function vippsEpostLenkeHtml(data){
-    if(!data.redirectUrl) return '';
-    const url = escapeHtml(data.redirectUrl);
-    return '<p style="margin:16px 0;"><a href="' + url + '" style="display:inline-block;background:#ff5b24;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med Vipps</a></p>' +
-      '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Eller kopier lenken: <a href="' + url + '">' + url + '</a></p>';
+    const portalUrl = escapeHtml(data.portalPaymentUrl || FORELDRE_PORTAL_BETALING_URL);
+    let html = '';
+    if(data.redirectUrl){
+      const url = escapeHtml(data.redirectUrl);
+      html += '<p style="margin:16px 0 8px;"><a href="' + url + '" style="display:inline-block;background:#ff5b24;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;margin-right:8px;">Betal med Vipps</a>';
+      if(data.cardRedirectUrl){
+        const cardUrl = escapeHtml(data.cardRedirectUrl);
+        html += '<a href="' + cardUrl + '" style="display:inline-block;background:#1f4a3a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med bankkort</a>';
+      }
+      html += '</p>';
+    }
+    if(data.cardRedirectUrl && !data.redirectUrl){
+      const cardUrl = escapeHtml(data.cardRedirectUrl);
+      html += '<p style="margin:16px 0;"><a href="' + cardUrl + '" style="display:inline-block;background:#1f4a3a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med bankkort</a></p>';
+    }
+    if(data.redirectUrl){
+      html += '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Vipps-lenke: <a href="' + escapeHtml(data.redirectUrl) + '">' + escapeHtml(data.redirectUrl) + '</a></p>';
+    }
+    if(data.cardRedirectUrl){
+      html += '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Kort-lenke: <a href="' + escapeHtml(data.cardRedirectUrl) + '">' + escapeHtml(data.cardRedirectUrl) + '</a></p>';
+    }
+    html += '<p style="margin:14px 0 0;font-size:13px;color:#5a6860;">Eller <a href="' + portalUrl + '">logg inn i Foreldreportalen → Betaling</a> for å velge Vipps eller bankkort.</p>';
+    if(data.vippsEnv === 'test' && !data.cardRedirectUrl){
+      html += '<p style="margin:8px 0 0;font-size:12px;color:#8a9690;">Bankkort er kun tilgjengelig i produksjon.</p>';
+    }
+    return html;
   }
 
   function vippsEpostVarselLinje(data, opts){
@@ -9013,7 +9045,7 @@
       const navn = opts.foresatt1Navn ? ' (' + opts.foresatt1Navn + ')' : '';
       return 'Vipps-varsel (push) er sendt til foresatt 1' + navn + '. Denne e-posten er sendt til alle registrerte foresatte.\n\n';
     }
-    return 'Betal via lenken under (åpnes best på mobil med Vipps-appen installert). Denne e-posten er sendt til alle registrerte foresatte.\n\n';
+    return 'Betal via lenkene under (Vipps-app eller bankkort der tilgjengelig). Denne e-posten er sendt til alle registrerte foresatte.\n\n';
   }
 
   async function sendVippsBetalingEpost(eposter, data, opts){
@@ -9058,9 +9090,16 @@
       linjer.push('Push-varsel er sendt til Vipps-appen.');
     }
     if(link){
-      linjer.push('Betalingslenke er sendt på e-post til foresatte.');
+      linjer.push('Betalingslenke(r) sendt på e-post til foresatte.');
+      if(data.cardRedirectUrl) linjer.push('Inkluderer Vipps + bankkort.');
       const kort = link.length > 64 ? link.slice(0, 48) + '…' + link.slice(-12) : link;
-      linjer.push(kort);
+      linjer.push('Vipps: ' + kort);
+      if(data.cardRedirectUrl){
+        const cardKort = data.cardRedirectUrl.length > 64
+          ? data.cardRedirectUrl.slice(0, 48) + '…' + data.cardRedirectUrl.slice(-12)
+          : data.cardRedirectUrl;
+        linjer.push('Kort: ' + cardKort);
+      }
     } else if(data.userFlow === 'PUSH_MESSAGE'){
       linjer.push('Ingen e-post-lenke — foresatt betaler via Vipps-appen → Betalinger.');
     } else {
