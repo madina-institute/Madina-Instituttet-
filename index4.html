@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 08:35:00 -->
+<!-- SIST-ENDRET: 2026-08-20 13:30:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -670,6 +670,23 @@
   }
   .menu-card.has-new .dot{display:block;}
 
+  .subject-card .d.teacher-name{font-weight:600; color:var(--emerald-d);}
+  .subject-card .subject-preview{font-size:10px; color:#8a9a90; margin-top:6px; line-height:1.35;}
+  html[dir="rtl"] .subject-card .subject-preview{font-family:'Tajawal',sans-serif;}
+  .subject-card .msg-count{
+    display:inline-block; font-family:'Jost',sans-serif; font-size:9px; font-weight:700;
+    background:rgba(168,60,60,0.12); color:var(--red); border-radius:10px; padding:2px 7px; margin-top:5px;
+  }
+  .hub-section-label{
+    font-family:'Jost',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--gold); margin:0 0 10px;
+  }
+  html[dir="rtl"] .hub-section-label{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none; font-size:11px;}
+  .subject-header .sh-fag{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; color:var(--emerald-d); margin:0;}
+  html[dir="rtl"] .subject-header .sh-fag{font-family:'Tajawal',sans-serif; font-size:19px;}
+  .subject-header .sh-larer{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-top:4px;}
+  html[dir="rtl"] .subject-header .sh-larer{font-family:'Tajawal',sans-serif;}
+
   .menu-card .msg-badge{
     display:none; font-family:'Jost',sans-serif; font-size:9.5px; font-weight:700; padding:3px 9px;
     border-radius:12px; text-transform:uppercase; letter-spacing:0.03em; margin-top:6px;
@@ -904,7 +921,8 @@
     <!-- HJEM — dash-kort og snarveier vises bare her -->
     <div id="homeView" class="sub-view" style="display:none;">
       <div id="homeDash">
-        <div class="dash-strip">
+        <div id="homeFagDash" class="dash-strip" style="display:none;"></div>
+        <div class="dash-strip" id="homeMainDash">
           <div class="stat-card stat-purple stat-click" id="homeCardHw" onclick="openSection('homework')"><span class="stat-ikon">📚</span><div class="n stat-text" id="homeHwText">—</div><div class="l" data-i18n="homeNextHwLbl">Lekse neste gang</div></div>
           <div class="stat-card stat-yellow stat-click" id="homeCardPay" onclick="openSection('payment')"><span class="stat-ikon">💳</span><div class="n stat-num" id="homeRemaining">0 kr</div><div class="l" data-i18n="sumRemainingLbl">Gjenstår</div></div>
           <div class="stat-card stat-blue stat-click" id="homeCardMsg" onclick="openSection('melding')"><span class="stat-ikon">✉️</span><div class="n stat-num" id="homeUnread">0</div><div class="l" data-i18n="homeUnreadLbl">Uleste meldinger</div></div>
@@ -915,19 +933,27 @@
     <!-- UNDERVISNING (hub) -->
     <div class="sub-view" id="view-undervisning" style="display:none;">
       <button class="back-link" onclick="openSection('home')" data-i18n="back">← Tilbake</button>
-      <div class="menu-grid">
-        <div class="menu-card" onclick="openSection('homework')"><span class="dot" id="dotHomework"></span><div class="ic">📚</div><div class="t" data-i18n="menuHomework">Lekser</div></div>
-        <div class="menu-card" onclick="openSection('lessonPlans')"><div class="ic">📖</div><div class="t" data-i18n="menuLessonPlans">Undervisningsplan</div></div>
-        <div class="menu-card" onclick="openSection('videos')"><div class="ic">🎥</div><div class="t" data-i18n="menuVideos">Treningsvideoer</div></div>
-        <div class="menu-card" onclick="openSection('notes')"><span class="dot" id="dotNotes"></span><div class="ic">📝</div><div class="t" data-i18n="menuNotes">Notater</div></div>
-      </div>
+      <div id="undervisningHubContent"></div>
+    </div>
+
+    <!-- FAG-MENY (per subject — flerfag-program) -->
+    <div class="sub-view" id="view-subject" style="display:none;">
+      <button class="back-link" onclick="openSection('undervisning')" data-i18n="back">← Tilbake</button>
+      <div class="card subject-header" id="subjectMenuHeader"></div>
+      <div class="menu-grid" id="subjectMenuGrid"></div>
     </div>
 
     <!-- MELDING (hub) -->
     <div class="sub-view" id="view-melding" style="display:none;">
       <button class="back-link" onclick="openSection('home')" data-i18n="back">← Tilbake</button>
+      <div id="meldingTeacherHub"></div>
+      <div id="meldingFlatTeacher">
+        <div class="menu-grid" style="margin-bottom:18px;">
+          <div class="menu-card" onclick="openSection('teacherMsg')"><div class="ic">📩</div><div class="t" data-i18n="menuTeacherMsg">Kontakt lærer</div><span class="msg-badge" id="teacherMsgBadge"></span></div>
+        </div>
+      </div>
+      <div class="hub-section-label" data-i18n="meldingOtherLbl">Skolen og klassen</div>
       <div class="menu-grid">
-        <div class="menu-card" onclick="openSection('teacherMsg')"><div class="ic">📩</div><div class="t" data-i18n="menuTeacherMsg">Kontakt lærer</div><span class="msg-badge" id="teacherMsgBadge"></span></div>
         <div class="menu-card" onclick="openSection('adminMsg')"><div class="ic">📢</div><div class="t" data-i18n="menuAdminMsg">Fra administrasjonen</div><span class="msg-badge" id="adminMsgBadge"></span></div>
         <div class="menu-card" onclick="openSection('announcements')"><span class="dot" id="dotAnnouncements"></span><div class="ic">📣</div><div class="t" data-i18n="menuAnnouncements">Kunngjøringer</div></div>
         <div class="menu-card" onclick="openSection('classPosts')"><div class="ic">📣</div><div class="t" data-i18n="menuClassPosts">Klassemeldinger</div></div>
@@ -1588,7 +1614,10 @@
       fillAbsFields: 'Fyll ut dato og årsak.', absSent: 'Fraværsmeldingen er sendt til læreren.',
       contactSent: 'Forespørselen er sendt til administrasjonen.',
       wrongLogin: 'Feil e-post eller passord.', fillLogin: 'Fyll ut e-post og passord.',
-      errorOccurred: 'En feil oppstod: '
+      errorOccurred: 'En feil oppstod: ',
+      fagLabels: { Koran:'Koran', Islam:'Islam', Arabisk:'Arabisk', Urdu:'Urdu', Madinabarn:'Madinabarn', Annet:'Annet' },
+      undervisningSubjectsLbl: 'Velg fag', meldingTeachersLbl: 'Kontakt lærer per fag',
+      meldingOtherLbl: 'Skolen og klassen', unreadShort: 'ulest'
     },
     ar: {
       headerTitle: 'مدرسة المدينة — بوابة أولياء الأمور', headerSub: 'خاص بأولياء الأمور فقط',
@@ -1681,7 +1710,10 @@
       fillAbsFields: 'يرجى تعبئة التاريخ والسبب.', absSent: 'تم إرسال إشعار الغياب إلى المعلم.',
       contactSent: 'تم إرسال الطلب إلى الإدارة.',
       wrongLogin: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.', fillLogin: 'يرجى تعبئة البريد الإلكتروني وكلمة المرور.',
-      errorOccurred: 'حدث خطأ: '
+      errorOccurred: 'حدث خطأ: ',
+      fagLabels: { Koran:'القرآن', Islam:'الإسلام', Arabisk:'العربية', Urdu:'الأردية', Madinabarn:'أطفال المدينة', Annet:'أخرى' },
+      undervisningSubjectsLbl: 'اختر المادة', meldingTeachersLbl: 'تواصل مع معلم كل مادة',
+      meldingOtherLbl: 'المدرسة والصف', unreadShort: 'غير مقروء'
     },
     ur: {
       headerTitle: 'مدینہ سکول — والدین کا پورٹل', headerSub: 'صرف سرپرستوں کے لیے',
@@ -1774,7 +1806,10 @@
       fillAbsFields: 'براہ کرم تاریخ اور وجہ درج کریں۔', absSent: 'غیر حاضری کی اطلاع استاد کو بھیج دی گئی ہے۔',
       contactSent: 'درخواست انتظامیہ کو بھیج دی گئی ہے۔',
       wrongLogin: 'غلط ای میل یا پاس ورڈ۔', fillLogin: 'براہ کرم ای میل اور پاس ورڈ درج کریں۔',
-      errorOccurred: 'ایک خرابی پیش آئی: '
+      errorOccurred: 'ایک خرابی پیش آئی: ',
+      fagLabels: { Koran:'قرآن', Islam:'اسلام', Arabisk:'عربی', Urdu:'اردو', Madinabarn:'مدینہ بچے', Annet:'دیگر' },
+      undervisningSubjectsLbl: 'مضمون منتخب کریں', meldingTeachersLbl: 'ہر مضمون کے استاد سے رابطہ',
+      meldingOtherLbl: 'اسکول اور کلاس', unreadShort: 'نہ پڑھا'
     }
   };
 
@@ -1874,6 +1909,208 @@
     if(!teacherId) return '';
     const t = teachers.find(x => x.id === teacherId);
     return t ? (t.fag || '') : '';
+  }
+
+  const FAG_IKON = { Koran:'📖', Islam:'🕌', Arabisk:'🔤', Urdu:'🔤', Madinabarn:'📚', Annet:'📚', Fellestime:'👥' };
+  let activeFagFilter = null;
+  let subjectMenuFag = null;
+
+  function fagLabel(fag){
+    const labels = I18N[currentLang] && I18N[currentLang].fagLabels;
+    return (labels && labels[fag]) ? labels[fag] : fag;
+  }
+
+  function erMadinabarnProgram(child){
+    const p = (child && child.program) || '';
+    return p.includes('Madinabarn') || (p.includes('Søndag') && !p.includes('Lørdag'));
+  }
+
+  function buildFagEntry(fag, larerId){
+    const tc = teachers.find(x => x.id === larerId);
+    return {
+      fag,
+      ikon: FAG_IKON[fag] || '📚',
+      larerId: larerId || '',
+      larerNavn: tc ? (tc.navn || '') : '',
+      fagLabel: fagLabel(fag)
+    };
+  }
+
+  function fagForElev(child){
+    if(!child || !child.klasse) return [];
+    const utelukk = ['Fellestime', 'Felles oppstart', 'Felles avslutning'];
+    const timer = hours.filter(h => h.klasse === child.klasse && h.fag && !utelukk.includes(h.fag));
+    if(timer.length === 0) return [];
+
+    if(erMadinabarnProgram(child)){
+      const mb = timer.find(h => h.fag === 'Madinabarn') || timer[0];
+      return [buildFagEntry(mb.fag, mb.larer)];
+    }
+
+    const ordered = [];
+    const seen = new Set();
+    const add = (fag, larerId) => {
+      if(!fag || seen.has(fag)) return;
+      seen.add(fag);
+      ordered.push(buildFagEntry(fag, larerId));
+    };
+
+    ['Koran', 'Islam'].forEach(f => {
+      const h = timer.find(x => x.fag === f);
+      if(h) add(f, h.larer);
+    });
+
+    const sprak = child.sprakvalg;
+    if(sprak === 'Arabisk' || sprak === 'Urdu'){
+      const h = timer.find(x => x.fag === sprak);
+      if(h) add(sprak, h.larer);
+    } else {
+      ['Arabisk', 'Urdu'].forEach(f => {
+        const h = timer.find(x => x.fag === f);
+        if(h) add(f, h.larer);
+      });
+    }
+
+    timer.forEach(h => {
+      if(['Arabisk', 'Urdu'].includes(h.fag) && (sprak === 'Arabisk' || sprak === 'Urdu') && h.fag !== sprak){
+        return;
+      }
+      add(h.fag, h.larer);
+    });
+    return ordered;
+  }
+
+  function erFlerfagProgram(child){
+    if(erMadinabarnProgram(child)) return false;
+    return fagForElev(child).length > 1;
+  }
+
+  function resolveContentFag(item){
+    if(item && item.fag) return item.fag;
+    if(!item || !item.larer) return '';
+    const child = myChildren[currentChildIndex];
+    if(!child) return resolveTeacherFag(item.larer);
+    const matches = hours.filter(h => h.klasse === child.klasse && h.larer === item.larer);
+    if(matches.length === 1) return matches[0].fag || '';
+    return resolveTeacherFag(item.larer);
+  }
+
+  function matchesFagFilter(item, fag){
+    if(!fag) return true;
+    return resolveContentFag(item) === fag;
+  }
+
+  function larerForFag(child, fag){
+    const entry = fagForElev(child).find(x => x.fag === fag);
+    return entry || null;
+  }
+
+  function subjectHwPreview(child, fag){
+    const hw = homework.filter(h => h.klasse === child.klasse && matchesFagFilter(h, fag))
+      .sort((a, b) => (b.dato || '').localeCompare(a.dato || ''))[0];
+    if(hw) return (hw.tittel || hw.beskrivelse || t('homeNoHw')).slice(0, 42);
+    return t('homeNoHw');
+  }
+
+  function countUnreadForTeacher(teacherId){
+    if(!teacherId || !currentGuardian || myChildren.length === 0) return 0;
+    const child = myChildren[currentChildIndex];
+    return buildGuardianThreadRows(child).filter(r => r.teacherId === teacherId && r.unread).length;
+  }
+
+  function flatUndervisningMenuHtml(){
+    return `<div class="menu-grid">
+      <div class="menu-card" onclick="openSection('homework')"><span class="dot" id="dotHomework"></span><div class="ic">📚</div><div class="t" data-i18n="menuHomework">Lekser</div></div>
+      <div class="menu-card" onclick="openSection('lessonPlans')"><div class="ic">📖</div><div class="t" data-i18n="menuLessonPlans">Undervisningsplan</div></div>
+      <div class="menu-card" onclick="openSection('videos')"><div class="ic">🎥</div><div class="t" data-i18n="menuVideos">Treningsvideoer</div></div>
+      <div class="menu-card" onclick="openSection('notes')"><span class="dot" id="dotNotes"></span><div class="ic">📝</div><div class="t" data-i18n="menuNotes">Notater</div></div>
+    </div>`;
+  }
+
+  function renderSubjectCards(container, child, mode){
+    const fagList = fagForElev(child);
+    container.innerHTML = `<div class="hub-section-label">${mode === 'melding' ? t('meldingTeachersLbl') : t('undervisningSubjectsLbl')}</div>
+      <div class="menu-grid">${fagList.map(f => {
+        const preview = mode === 'undervisning' ? subjectHwPreview(child, f.fag) : '';
+        const unread = mode === 'melding' ? countUnreadForTeacher(f.larerId) : 0;
+        const onclick = mode === 'undervisning'
+          ? `openSubjectMenu('${f.fag.replace(/'/g, "\\'")}')`
+          : `openTeacherMsgForFag('${f.fag.replace(/'/g, "\\'")}')`;
+        return `<div class="menu-card subject-card${unread ? ' has-new' : ''}" onclick="${onclick}">
+          ${unread ? '<span class="dot"></span>' : ''}
+          <div class="ic">${f.ikon}</div>
+          <div class="t">${escapeHtml(f.fagLabel)}</div>
+          <div class="d teacher-name">${escapeHtml(f.larerNavn)}</div>
+          ${preview ? `<div class="subject-preview">${escapeHtml(preview)}</div>` : ''}
+          ${unread ? `<span class="msg-count">${unread} ${escapeHtml(t('unreadShort'))}</span>` : ''}
+        </div>`;
+      }).join('')}</div>`;
+  }
+
+  function renderUndervisningHub(){
+    const el = document.getElementById('undervisningHubContent');
+    if(!el || myChildren.length === 0) return;
+    const child = myChildren[currentChildIndex];
+    if(erFlerfagProgram(child)){
+      renderSubjectCards(el, child, 'undervisning');
+    } else {
+      el.innerHTML = flatUndervisningMenuHtml();
+      applyStaticTranslations();
+    }
+  }
+
+  function renderMeldingHub(){
+    const teacherHub = document.getElementById('meldingTeacherHub');
+    const flatWrap = document.getElementById('meldingFlatTeacher');
+    if(!teacherHub || myChildren.length === 0) return;
+    const child = myChildren[currentChildIndex];
+    if(erFlerfagProgram(child)){
+      teacherHub.style.display = 'block';
+      if(flatWrap) flatWrap.style.display = 'none';
+      renderSubjectCards(teacherHub, child, 'melding');
+    } else {
+      teacherHub.style.display = 'none';
+      if(flatWrap) flatWrap.style.display = 'block';
+    }
+  }
+
+  window.openSubjectMenu = function(fag){
+    subjectMenuFag = fag;
+    activeFagFilter = fag;
+    openSection('subject');
+  };
+
+  function renderSubjectMenuView(){
+    const hdr = document.getElementById('subjectMenuHeader');
+    const grid = document.getElementById('subjectMenuGrid');
+    if(!hdr || !grid || myChildren.length === 0 || !subjectMenuFag) return;
+    const child = myChildren[currentChildIndex];
+    const info = fagForElev(child).find(x => x.fag === subjectMenuFag);
+    if(!info) return;
+    hdr.innerHTML = `<div class="sh-fag">${info.ikon} ${escapeHtml(info.fagLabel)}</div>
+      <div class="sh-larer">${escapeHtml(info.larerNavn)}</div>`;
+    grid.innerHTML = `
+      <div class="menu-card" onclick="openSubjectContent('homework')"><div class="ic">📚</div><div class="t" data-i18n="menuHomework">Lekser</div></div>
+      <div class="menu-card" onclick="openSubjectContent('lessonPlans')"><div class="ic">📖</div><div class="t" data-i18n="menuLessonPlans">Undervisningsplan</div></div>
+      <div class="menu-card" onclick="openSubjectContent('videos')"><div class="ic">🎥</div><div class="t" data-i18n="menuVideos">Treningsvideoer</div></div>
+      <div class="menu-card" onclick="openSubjectContent('notes')"><div class="ic">📝</div><div class="t" data-i18n="menuNotes">Notater</div></div>`;
+    applyStaticTranslations();
+  }
+
+  window.openSubjectContent = function(section){
+    if(subjectMenuFag) activeFagFilter = subjectMenuFag;
+    openSection(section);
+  };
+
+  window.openTeacherMsgForFag = function(fag){
+    activeFagFilter = fag;
+    subjectMenuFag = null;
+    openSection('teacherMsg');
+  };
+
+  function fagSuffixHtml(){
+    if(!activeFagFilter) return '';
+    return ` <span class="subject-tag">${escapeHtml(fagLabel(activeFagFilter))}</span>`;
   }
 
   // Sends an email via the "mail" collection (watched by the Firebase Trigger
@@ -2515,6 +2752,12 @@
     if(fv && fv.style.display !== 'none'){ tegnVelkomstForelder(); return; }
     renderChild();
     renderHomeDash();
+    const undView = document.getElementById('view-undervisning');
+    if(undView && undView.style.display !== 'none') renderUndervisningHub();
+    const melView = document.getElementById('view-melding');
+    if(melView && melView.style.display !== 'none') renderMeldingHub();
+    const subView = document.getElementById('view-subject');
+    if(subView && subView.style.display !== 'none') renderSubjectMenuView();
   }
 
   // Hvilket barn familieskjermen viser. Ikke det samme som
@@ -2963,16 +3206,39 @@
     const hwEl = document.getElementById('homeHwText');
     const remEl = document.getElementById('homeRemaining');
     const unreadEl = document.getElementById('homeUnread');
-    if(!hwEl || !remEl || !unreadEl) return;
+    const fagDash = document.getElementById('homeFagDash');
+    const mainDash = document.getElementById('homeMainDash');
+    const singleHw = document.getElementById('homeCardHw');
+    if(!remEl || !unreadEl) return;
     const total = myChildren.reduce((s, c) => s + toNum(c.belop), 0);
     const paid = myChildren.reduce((s, c) => s + toNum(c.belopBetalt), 0);
     remEl.textContent = Math.max(0, total - paid).toLocaleString('no-NO') + ' kr';
     unreadEl.textContent = String(countUnreadMessages());
     if(myChildren.length === 0){
-      hwEl.textContent = '—';
+      if(hwEl) hwEl.textContent = '—';
+      if(fagDash) fagDash.style.display = 'none';
+      if(mainDash) mainDash.style.display = 'grid';
       return;
     }
     const child = myChildren[currentChildIndex];
+    if(erFlerfagProgram(child) && fagDash){
+      if(singleHw) singleHw.style.display = 'none';
+      if(mainDash){
+        mainDash.style.gridTemplateColumns = 'repeat(2,1fr)';
+      }
+      fagDash.style.display = 'grid';
+      fagDash.innerHTML = fagForElev(child).map(f => `
+        <div class="stat-card stat-purple stat-click" onclick="openSubjectMenu('${f.fag.replace(/'/g, "\\'")}')">
+          <span class="stat-ikon">${f.ikon}</span>
+          <div class="n stat-text">${escapeHtml(subjectHwPreview(child, f.fag))}</div>
+          <div class="l">${escapeHtml(f.fagLabel)}</div>
+        </div>`).join('');
+      return;
+    }
+    if(fagDash) fagDash.style.display = 'none';
+    if(singleHw) singleHw.style.display = '';
+    if(mainDash) mainDash.style.gridTemplateColumns = '';
+    if(!hwEl) return;
     const neste = finnNesteArsplanOkter(child.klasse);
     if(!neste){
       const hw = homework.filter(h => h.klasse === child.klasse)
@@ -3040,6 +3306,9 @@
 
   window.selectChild = function(i){
     currentChildIndex = i;
+    activeFagFilter = null;
+    subjectMenuFag = null;
+    homeworkSubjectFilter = '__ALL__';
     renderChildTabs();
     renderChild();
     renderHomeDash();
@@ -3047,6 +3316,7 @@
 
   const SIDEBAR_PARENT = {
     homework: 'undervisning', lessonPlans: 'undervisning', videos: 'undervisning', notes: 'undervisning',
+    subject: 'undervisning',
     teacherMsg: 'melding', adminMsg: 'melding', announcements: 'melding', classPosts: 'melding',
     attendance: 'skolehverdag', absence: 'skolehverdag',
     contact: 'info'
@@ -3075,10 +3345,17 @@
     if(name === 'home'){
       document.getElementById('homeView').style.display = 'block';
       if(homeDash) homeDash.style.display = 'block';
+      activeFagFilter = null;
+      subjectMenuFag = null;
       renderHomeDash();
       setActiveSidebarParent('home');
       pushAppView(name);
       return;
+    }
+
+    if(name === 'undervisning'){
+      activeFagFilter = null;
+      subjectMenuFag = null;
     }
 
     if(homeDash) homeDash.style.display = 'none';
@@ -3086,6 +3363,9 @@
     if(!view) return;
     view.style.display = 'block';
 
+    if(name === 'undervisning') renderUndervisningHub();
+    if(name === 'melding') renderMeldingHub();
+    if(name === 'subject') renderSubjectMenuView();
     if(name === 'schedule') closeScheduleDay();
     if(name === 'payment'){ resetPaymentChoiceUI(); renderPaymentDetail(); }
     if(name === 'teacherMsg') openTeacherMsg();
@@ -3404,11 +3684,18 @@
   function renderGuardianThreadList(){
     if(myChildren.length === 0 || !currentGuardian) return;
     const child = myChildren[currentChildIndex];
-    const rows = buildGuardianThreadRows(child);
+    let rows = buildGuardianThreadRows(child);
+    if(activeFagFilter){
+      const fi = larerForFag(child, activeFagFilter);
+      if(fi && fi.larerId){
+        rows = rows.filter(r => !r.teacherId || r.teacherId === fi.larerId);
+      }
+    }
     const openRows = rows.filter(r => r.status !== 'closed');
     const archRows = rows.filter(r => r.status === 'closed');
     const rowHtml = r => {
-      const subjectTag = r.teacherId && resolveTeacherFag(r.teacherId) ? resolveTeacherFag(r.teacherId) : '';
+      const fi = r.teacherId ? fagForElev(child).find(f => f.larerId === r.teacherId) : null;
+      const subjectTag = fi ? fi.fagLabel : (r.teacherId ? resolveTeacherFag(r.teacherId) : '');
       return `
       <div class="inbox-row ${r.unread ? 'unread' : ''}" onclick="openGuardianThread('${r.key.replace(/'/g,"\\'")}', ${r.isLegacy})">
         <div class="inbox-avatar">${escapeHtml(initialsFor(subjectTag || r.title))}</div>
@@ -3453,7 +3740,13 @@
     document.getElementById('teacherMsgListInner').style.display = 'block';
     document.getElementById('teacherMsgDetailInner').style.display = 'none';
     const child = myChildren[currentChildIndex];
-    const classTeachers = larereForKlasse(child.klasse);
+    let classTeachers = larereForKlasse(child.klasse);
+    if(activeFagFilter){
+      const fi = larerForFag(child, activeFagFilter);
+      if(fi && fi.larerId){
+        classTeachers = classTeachers.filter(x => x.id === fi.larerId);
+      }
+    }
     const wrap = document.getElementById('newMsgTeacherWrap');
     const sel = document.getElementById('guardianNewMsgTeacher');
     if(classTeachers.length > 1){
@@ -3499,7 +3792,12 @@
     document.getElementById('teacherMsgDetailInner').style.display = 'block';
     const child = myChildren[currentChildIndex];
     document.getElementById('teacherMsgTitle').textContent = currentThreadDoc ? (currentThreadDoc.title || t('untitledThread')) : t('untitledThread');
-    document.getElementById('teacherMsgSub').textContent = (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + (resolveClassName(child.klasse) || '—');
+    const fi = currentThreadDoc && currentThreadDoc.teacherId
+      ? fagForElev(child).find(f => f.larerId === currentThreadDoc.teacherId) : null;
+    const klasseTxt = (currentLang === 'ar' ? 'الصف: ' : 'Klasse: ') + (resolveClassName(child.klasse) || '—');
+    document.getElementById('teacherMsgSub').textContent = fi
+      ? klasseTxt + ' · ' + fi.fagLabel + ' — ' + fi.larerNavn
+      : klasseTxt;
     const isClosed = currentThreadDoc && currentThreadDoc.status === 'closed';
     const closeBtn = document.getElementById('guardianThreadCloseBtn');
     closeBtn.style.display = currentThreadDoc ? 'inline-block' : 'none';
@@ -3710,6 +4008,7 @@
       <div class="info-row"><span class="lbl">Navn</span><span>${escapeHtml(child.navn)}</span></div>
       <div class="info-row"><span class="lbl">Program</span><span>${escapeHtml(child.program||'—')}</span></div>
       <div class="info-row"><span class="lbl">Klasse</span><span>${escapeHtml(resolveClassName(child.klasse)||'—')}</span></div>
+      ${child.sprakvalg ? `<div class="info-row"><span class="lbl">${currentLang === 'ar' ? 'اختيار اللغة' : 'Språkvalg'}</span><span>${escapeHtml(fagLabel(child.sprakvalg))}</span></div>` : ''}
       <div class="info-row"><span class="lbl">Totalt beløp</span><span>${toNum(child.belop).toLocaleString('no-NO')} kr</span></div>
       <div class="info-row"><span class="lbl">Betalt</span><span>${toNum(child.belopBetalt).toLocaleString('no-NO')} kr</span></div>
       <div class="info-row"><span class="lbl">Gjenstår</span><span>${(toNum(child.belop)-toNum(child.belopBetalt)).toLocaleString('no-NO')} kr</span></div>
@@ -3740,40 +4039,46 @@
       `).join('');
     }
 
-    const allMyHomework = homework.filter(h => h.klasse === child.klasse).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
-    const hwSubjects = [...new Set(allMyHomework.map(h => resolveTeacherFag(h.larer)).filter(Boolean))];
+    const allMyHomework = homework.filter(h => h.klasse === child.klasse)
+      .filter(h => matchesFagFilter(h, activeFagFilter))
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const hwSubjects = [...new Set(allMyHomework.map(h => resolveContentFag(h)).filter(Boolean))];
     const filterEl = document.getElementById('homeworkSubjectFilter');
     if(filterEl){
-      if(hwSubjects.length <= 1){
-        filterEl.innerHTML = '';
+      if(activeFagFilter || hwSubjects.length <= 1){
+        filterEl.innerHTML = activeFagFilter ? `<div class="sub" style="margin-bottom:12px;">${fagSuffixHtml()}</div>` : '';
       } else {
         const chips = ['__ALL__', ...hwSubjects];
         filterEl.innerHTML = chips.map(s => `
           <button type="button" class="subject-chip ${homeworkSubjectFilter === s ? 'active' : ''}" onclick="setHomeworkFilter('${escapeHtml(s)}')">
-            ${s === '__ALL__' ? (t('allSubjects')||'Alle') : escapeHtml(s)}
+            ${s === '__ALL__' ? (t('allSubjects')||'Alle') : escapeHtml(fagLabel(s))}
           </button>`).join('');
       }
     }
-    const myHomework = homeworkSubjectFilter === '__ALL__'
-      ? allMyHomework
-      : allMyHomework.filter(h => resolveTeacherFag(h.larer) === homeworkSubjectFilter);
+    const myHomework = (!activeFagFilter && homeworkSubjectFilter !== '__ALL__')
+      ? allMyHomework.filter(h => resolveContentFag(h) === homeworkSubjectFilter)
+      : allMyHomework;
     if(myHomework.length === 0){
       document.getElementById('homeworkList').innerHTML = `<div class="empty-msg">${t('noHomework')}</div>`;
     } else {
-      document.getElementById('homeworkList').innerHTML = myHomework.map(h => `
+      document.getElementById('homeworkList').innerHTML = myHomework.map(h => {
+        const cfag = resolveContentFag(h);
+        return `
         <div class="hw-item">
-          <div class="t">${resolveTeacherFag(h.larer) ? `<span class="subject-tag">${escapeHtml(resolveTeacherFag(h.larer))}</span>` : ''}${escapeHtml(h.tittel)}</div>
+          <div class="t">${cfag ? `<span class="subject-tag">${escapeHtml(fagLabel(cfag))}</span>` : ''}${escapeHtml(h.tittel)}</div>
           <div class="d">${escapeHtml(h.beskrivelse)}</div>
           <div class="meta">${escapeHtml(h.dato)}${h.frist ? ' · Frist: ' + escapeHtml(h.frist) : ''} · ${escapeHtml(resolveTeacherName(h.larer))}</div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
     const submitSelect = document.getElementById('hwSubmitTitle');
     submitSelect.innerHTML = myHomework.map(h => `<option value="${escapeHtml(h.tittel)}">${escapeHtml(h.tittel)} (${escapeHtml(h.dato)})</option>`).join('')
       || `<option value="">${t('noHwOptions')}</option>`;
 
     // Undervisningsplan (lesson plans — read-only for parents)
-    const myLessonPlans = lessonPlans.filter(p => p.klasse === child.klasse).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const myLessonPlans = lessonPlans.filter(p => p.klasse === child.klasse)
+      .filter(p => matchesFagFilter(p, activeFagFilter))
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     const lpListEl = document.getElementById('lessonPlansList');
     if(lpListEl){
       if(myLessonPlans.length === 0){
@@ -3784,7 +4089,7 @@
             <details>
               <summary style="cursor:pointer;">
                 <span class="t" style="display:inline;">${escapeHtml(p.emne||'—')}</span>
-                <span class="meta">${escapeHtml(p.dato||'—')} · ${escapeHtml(p.fag||'—')} · ${escapeHtml(resolveTeacherName(p.larer))}</span>
+                <span class="meta">${escapeHtml(p.dato||'—')} · ${escapeHtml(fagLabel(p.fag||resolveContentFag(p))||'—')} · ${escapeHtml(resolveTeacherName(p.larer))}</span>
               </summary>
               <div style="margin-top:10px; padding-top:10px; border-top:1px dotted var(--line);">
                 <div class="d" style="margin-bottom:8px;"><strong>${escapeHtml(t('malLabel')||'Mål')}:</strong> ${escapeHtml(p.mal||'—')}</div>
@@ -3798,7 +4103,8 @@
     }
 
     // Treningsvideoer (practice videos — read-only for parents)
-    const myVideos = practiceVideos.filter(v => v.klasse === child.klasse);
+    const myVideos = practiceVideos.filter(v => v.klasse === child.klasse)
+      .filter(v => matchesFagFilter(v, activeFagFilter));
     const vidListEl = document.getElementById('videosList');
     if(vidListEl){
       if(myVideos.length === 0){
@@ -3811,7 +4117,7 @@
             : `<a href="${escapeHtml(v.url)}" target="_blank" rel="noopener">${escapeHtml(v.url)}</a>`;
           return `
             <div class="hw-item">
-              <div class="t">${escapeHtml(v.tittel)}</div>
+              <div class="t">${resolveContentFag(v) ? `<span class="subject-tag">${escapeHtml(fagLabel(resolveContentFag(v)))}</span>` : ''}${escapeHtml(v.tittel)}</div>
               ${v.beskrivelse ? `<div class="meta" style="margin-bottom:6px;">${escapeHtml(v.beskrivelse)}</div>` : ''}
               ${player}
             </div>`;
@@ -3871,16 +4177,21 @@
     }
 
     // Notater
-    const myNotes = studentNotes.filter(n => n.studentId === child.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const myNotes = studentNotes.filter(n => n.studentId === child.id)
+      .filter(n => matchesFagFilter(n, activeFagFilter))
+      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(myNotes.length === 0){
       document.getElementById('notesList').innerHTML = `<div class="empty-msg">${t('noNotes')}</div>`;
     } else {
-      document.getElementById('notesList').innerHTML = myNotes.map(n => `
+      document.getElementById('notesList').innerHTML = myNotes.map(n => {
+        const cfag = resolveContentFag(n);
+        return `
         <div class="note-item">
+          ${cfag ? `<div class="meta" style="margin-bottom:4px;"><span class="subject-tag">${escapeHtml(fagLabel(cfag))}</span></div>` : ''}
           <div class="d">${escapeHtml(n.tekst)}</div>
           <div class="meta">${escapeHtml(n.dato)} · ${escapeHtml(resolveTeacherName(n.larer))}</div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
 
     // Kunngjøringer
