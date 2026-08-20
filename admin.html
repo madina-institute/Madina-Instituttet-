@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 02:44:00 -->
+<!-- SIST-ENDRET: 2026-08-20 03:17:13 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4182,6 +4182,17 @@
         ikke fra feltene elevkortet arvet fra søknaden.
       </div>
       <div id="foreldreIndeksStatus" style="margin-top:12px;"></div>
+      <div id="laererIndeksStatus" style="margin-top:12px;"></div>
+      <div style="margin-top:14px;">
+        <button type="button" class="btn btn-primary" id="btnByggIndekser" onclick="byggBeggeIndekserNa()">
+          Bygg begge tilgangs-indeksene nå
+        </button>
+        <div class="sub" style="margin-top:8px;">
+          Skriver <code>foreldreTilgang</code> og <code>laererTilgang</code> for alle på én gang.
+          Normalt skjer dette automatisk når data lastes inn — bruk knappen etter
+          sikkerhetsoppdateringer, eller hvis en portal står tom uten feilmelding.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -15685,8 +15696,9 @@
   }
 
   let foreldreIndeksSkrevet = '';
-  async function skrivForeldreIndeks(){
-    if(!erOversteLeder() && !currentUserHasSeniorRole()) return;
+  async function skrivForeldreIndeks(opts){
+    const force = !!(opts && opts.force);
+    if(!force && !erOversteLeder() && !currentUserHasSeniorRole()) return;
     if(!(cache.guardians || []).length || !(cache.students || []).length) return;
 
     const kart = byggForeldreIndeks();
@@ -15695,7 +15707,7 @@
     // og skrivekvoten er det som gikk galt 9. august.
     const fingeravtrykk = JSON.stringify([...kart.entries()]
       .map(([e, r]) => [e, [...r.barn].sort(), [...r.klasser].sort()]).sort());
-    if(fingeravtrykk === foreldreIndeksSkrevet) return;
+    if(!force && fingeravtrykk === foreldreIndeksSkrevet) return;
 
     try{
       for(const [epost, r] of kart){
@@ -15714,9 +15726,12 @@
       }
       foreldreIndeksSkrevet = fingeravtrykk;
       renderForeldreIndeksStatus(kart);
+      renderLaererIndeksStatus();
+      return kart;
     } catch(err){
       console.error('foreldreTilgang', err);
       foreldreIndeksSkrevet = '';   // prøv igjen ved neste endring
+      throw err;
     }
   }
 
@@ -15761,14 +15776,15 @@
   }
 
   let laererIndeksSkrevet = '';
-  async function skrivLaererIndeks(){
+  async function skrivLaererIndeks(opts){
+    const force = !!(opts && opts.force);
     if(!currentUserEmail) return;
     if(!(cache.teachers || []).length) return;
 
     const kart = byggLaererIndeks();
     const fingeravtrykk = JSON.stringify([...kart.entries()]
       .map(([e, r]) => [e, [...r.klasser].sort(), [...r.foresatte].sort(), r.teacherId || '']).sort());
-    if(fingeravtrykk === laererIndeksSkrevet) return;
+    if(!force && fingeravtrykk === laererIndeksSkrevet) return;
 
     try{
       for(const [epost, r] of kart){
@@ -15786,11 +15802,46 @@
         if(!kart.has(normEpost(d.id))) await deleteDoc(d.ref).catch(()=>{});
       }
       laererIndeksSkrevet = fingeravtrykk;
+      renderLaererIndeksStatus(kart);
+      return kart;
     } catch(err){
       console.error('laererTilgang', err);
       laererIndeksSkrevet = '';
+      throw err;
     }
   }
+
+  // Én knapp som tvinger begge indeksene på plass — uten å redigere hver
+  // enkeltperson. Krever at cache er fylt (skjer automatisk etter innlogging).
+  window.byggBeggeIndekserNa = async function(){
+    const btn = document.getElementById('btnByggIndekser');
+    if(!(cache.students || []).length || !(cache.guardians || []).length){
+      showToast('Elever og foresatte er ikke lastet inn ennå — vent noen sekunder og prøv igjen.', true);
+      return;
+    }
+    if(!(cache.teachers || []).length){
+      showToast('Lærerlisten er ikke lastet inn ennå — vent noen sekunder og prøv igjen.', true);
+      return;
+    }
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = 'Bygger indeksene …';
+    }
+    try{
+      foreldreIndeksSkrevet = '';
+      laererIndeksSkrevet = '';
+      await skrivForeldreIndeks({ force: true });
+      await skrivLaererIndeks({ force: true });
+      showToast('foreldreTilgang og laererTilgang er bygget for alle.');
+    } catch(err){
+      showToast('Kunne ikke bygge indeksene: ' + (err.message || err), true);
+    } finally{
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = 'Bygg begge tilgangs-indeksene nå';
+      }
+    }
+  };
 
   // Elever ingen foresatt kan nå. Etter at portalen begynner å filtrere,
   // vil disse familiene få en TOM portal — og ingen måte å forstå hvorfor.
@@ -15826,6 +15877,15 @@
         '</small></div><button onclick="goToTask(\'admin\',\'students\')">Se elever</button></div>');
     }
     el.innerHTML = deler.join('');
+  }
+
+  function renderLaererIndeksStatus(kart){
+    const el = document.getElementById('laererIndeksStatus');
+    if(!el) return;
+    const k = kart || byggLaererIndeks();
+    const medKlasser = [...k.values()].filter(r => r.klasser.size > 0).length;
+    el.innerHTML = '<div class="ok-rolig">✓ ' + medKlasser +
+      ' lærere er koblet til minst én klasse i laererTilgang.</div>';
   }
 
   // ═══════════════════════════════════════════════════════════════════
