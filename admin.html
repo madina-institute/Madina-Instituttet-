@@ -7692,7 +7692,7 @@
         ? `${cashierFormatDatoTid(last.dato)}<br><span class="tag-pill">${escapeHtml(last.kilde || '')}</span>`
         : '<span style="color:#8a9a90;">Ingen ennå</span>';
       const checked = cashierSelectedIds.has(s.id) ? 'checked' : '';
-      const pending = (cache.pendingVippsPayments || []).filter(p => p.studentId === s.id);
+      const pending = (cache.pendingVippsPayments || []).filter(p => p.studentId === s.id && p.status === 'pending');
       const lastVippsPayment = history
         .filter(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0)
         .sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
@@ -13521,7 +13521,7 @@
       { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
       { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
       { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => !r.status || r.status === 'Venter' || r.status === 'Ny').length, side:'okonomi', tab:'paymentRequests' },
-      { key:'vippsPending', ic:'📲', label:'Vipps-krav som venter', count: (cache.pendingVippsPayments || []).length, side:'okonomi', tab:'cashier' },
+      { key:'vippsPending', ic:'📲', label:'Vipps-krav som venter', count: (cache.pendingVippsPayments || []).filter(p => p.status === 'pending').length, side:'okonomi', tab:'cashier' },
       { key:'teacherAttendance', ic:'⏱️', label:'Timelister til godkjenning', count: cache.teacherAttendance.filter(t => (t.godkjenningsstatus || 'Venter godkjenning') === 'Venter godkjenning').length, side:'okonomi', tab:'lonn' },
       { key:'unpaidStudents', ic:'💰', label:'Ubetalte elever', count: activeStudents.filter(s => s.betalt === 'Nei').length, side:'okonomi', tab:'cashier' },
       { key:'noClassStudents', ic:'📭', label:'Elever uten klasse', count: activeStudents.filter(s => !s.klasse).length, side:'admin', tab:'students', folder:'__none__' }
