@@ -2611,8 +2611,8 @@
         <button class="btn btn-danger-solid" onclick="clearAllData()">Slett alt</button>
       </div>
       <div class="danger-row">
-        <span><strong>Nullstill testdata</strong> (alt ovenfor UNNTATT søknader — søknader beholdes)</span>
-        <button class="btn btn-danger-solid" onclick="clearTestDataKeepRegistrations()">Slett testdata (behold søknader)</button>
+        <span><strong>Nullstill alt unntatt søknader</strong> — elever, lærere, klasser, timeplan, betalinger, meldinger osv. Søknader (registrations) beholdes.</span>
+        <button class="btn btn-danger-solid" onclick="clearTestDataKeepRegistrations()">Nullstill (behold søknader)</button>
       </div>
     </div>
   </div>
@@ -7433,31 +7433,103 @@
     }
   };
 
+  // Samlinger som aldri røres ved «nullstill unntatt søknader».
+  const NULLSTILL_BEHOLD = new Set(['registrations', 'settings', 'roller', 'adminUsers', 'tilgang']);
+
+  // Finnes utenfor SCHEMAS / egne lyttere — må slettes eksplisitt.
+  const NULLSTILL_SLETT_EKSTRA = [
+    'messageThreads', 'broadcastThreads', 'broadcastMessages',
+    'studentPayments', 'pendingVippsPayments', 'salaryPayments',
+    'financeLog', 'foreldreTilgang', 'laererTilgang',
+    'practiceVideos', 'classPosts', 'classPostComments', 'classPollVotes', 'eventRSVPs',
+    'mail', 'loginEvents', 'formAnalytics', 'stotteSoknader', 'kafalaFond', 'arsplan',
+  ];
+
+  async function slettAlleIDokumenter(collectionName){
+    const snap = await getDocs(collection(db, collectionName));
+    let n = 0;
+    for(const d of snap.docs){
+      await deleteDoc(d.ref);
+      n++;
+    }
+    return n;
+  }
+
+  async function slettFagplanMedOkter(){
+    const snap = await getDocs(collection(db, 'fagplan'));
+    let n = 0;
+    for(const plan of snap.docs){
+      const okter = await getDocs(collection(db, 'fagplan', plan.id, 'okter'));
+      for(const o of okter.docs){
+        await deleteDoc(o.ref);
+        n++;
+      }
+      await deleteDoc(plan.ref);
+      n++;
+    }
+    return n;
+  }
+
   window.clearTestDataKeepRegistrations = async function(){
     if(!krevEier('ADM-FAR-03', 'Å nullstille data')) return;
-    const typesToClear = Object.keys(SCHEMAS).filter(t => t !== 'registrations');
-    const totalCount = typesToClear.reduce((sum, t) => sum + cache[t].length, 0);
-    if(totalCount === 0){
-      showToast('Det er allerede ingenting å slette (utenom søknader).');
-      return;
-    }
+
+    const schemaTypes = Object.keys(SCHEMAS).filter(t => !NULLSTILL_BEHOLD.has(SCHEMAS[t].collectionName));
+    const ekstra = NULLSTILL_SLETT_EKSTRA.filter(c => !NULLSTILL_BEHOLD.has(c));
+    const soknader = (cache.registrations || []).length;
+
     if(!(await checkAdminPassword('Å nullstille alt unntatt søknadene'))) return;
-    const typed = prompt(`ADVARSEL: Dette sletter PERMANENT alle ${totalCount} oppføringer i databasen UNNTATT søknader (Søknader/registrations beholdes urørt).\n\nSkriv "SLETT TESTDATA" (med store bokstaver) for å bekrefte:`);
+
+    const typed = prompt(
+      'ADVARSEL: Dette sletter PERMANENT alle data i databasen UNNTATT:\n' +
+      '  • søknader (registrations) — ' + soknader + ' stk beholdes\n' +
+      '  • innstillinger (settings), roller, admin-brukere og tilgang\n\n' +
+      'Elever, lærere, klasser, timeplan, betalinger, meldinger, indekser m.m. slettes.\n\n' +
+      'Ta sikkerhetskopi først hvis du er usikker.\n\n' +
+      'Skriv «SLETT TESTDATA» (med store bokstaver) for å bekrefte:'
+    );
     if(typed !== 'SLETT TESTDATA'){
       showToast('Sletting avbrutt.');
       return;
     }
+
+    const rapport = [];
+    let total = 0;
     try{
-      for(const type of typesToClear){
-        for(const row of cache[type]){
-          await logDeletion(type, row);
-          await deleteDoc(doc(db, SCHEMAS[type].collectionName, row.id));
+      for(const type of schemaTypes){
+        const navn = SCHEMAS[type].collectionName;
+        const snap = await getDocs(collection(db, navn));
+        let n = 0;
+        for(const d of snap.docs){
+          await logDeletion(type, { id: d.id, ...d.data() });
+          await deleteDoc(d.ref);
+          n++;
         }
+        if(n > 0) rapport.push(navn + ': ' + n);
+        total += n;
       }
-      showToast('Testdata nullstilt — søknader er beholdt.');
+      for(const navn of ekstra){
+        const n = await slettAlleIDokumenter(navn);
+        if(n > 0) rapport.push(navn + ': ' + n);
+        total += n;
+      }
+      const fagN = await slettFagplanMedOkter();
+      if(fagN > 0){ rapport.push('fagplan (+ okter): ' + fagN); total += fagN; }
+
+      console.info('Nullstilling fullført', rapport);
+      showToast('Nullstilt — ' + total + ' dokumenter slettet. ' + soknader + ' søknader beholdt. Bygg tilgangs-indeks på nytt etterpå.');
+      melding('ADM-FAR-03-OK', '✓ Nullstilling fullført',
+        total + ' dokumenter slettet.\n\n' +
+        (rapport.length ? rapport.join('\n') : '(ingen dokumenter funnet)') +
+        '\n\n' + soknader + ' søknader er beholdt.\n\n' +
+        'Gå til Oversikt → Verktøy og trykk «Bygg begge tilgangs-indeksene nå» ' +
+        'når du har lagt inn lærere og elever på nytt.',
+        'clearTestDataKeepRegistrations · total=' + total);
     } catch(err){
       console.error(err);
-      showToast('Noe gikk galt under nullstilling.');
+      showToast('Noe gikk galt under nullstilling — se konsollen.', true);
+      melding('ADM-FAR-03-FEIL', '⛔ Nullstilling avbrutt',
+        (err.message || String(err)) + '\n\nNoe kan være delvis slettet. Sjekk basen før du fortsetter.',
+        'clearTestDataKeepRegistrations · ' + (err.code || ''));
     }
   };
 
