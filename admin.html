@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:42:00 -->
+<!-- SIST-ENDRET: 2026-08-20 23:30:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -14816,7 +14816,8 @@
     renderWsTab(tabName);
   }
 
-  window.selectSide = function(side){
+  window.selectSide = function(side, opts){
+    opts = opts || {};
     currentSideForBack = side;
     highlightSidebar(side);
     document.getElementById('appBody').classList.add('in-section');
@@ -14850,6 +14851,7 @@
         <span class="ic">${laast ? '🔒' : (TAB_ICONS[tab.dataset.tab] || '📄')}</span> ${tab.textContent}
       </button>`;
     }).join('');
+    if(opts.skipAutoTab) return;
     const forste = tabsForSide.find(t => !faneLast(t.dataset.tab));
     if(forste) selectSubTab(forste.dataset.tab);
     else if(tabsForSide.length) selectSubTab(tabsForSide[0].dataset.tab);
@@ -14921,7 +14923,7 @@
     appNavigating = true;
     const state = e.state;
     if(state && state.appView === 'tab'){
-      selectSide(state.side);
+      selectSide(state.side, { skipAutoTab: true });
       selectSubTab(state.tab);
     } else if(state && state.appView === 'sub'){
       selectSide(state.side);
@@ -14930,18 +14932,7 @@
       // Etter en oppdatering finnes ikke state-objektet lenger — det er
       // bundet til økten, ikke til adressen — og tilbake-knappen kastet
       // en derfor helt ut selv om adressen visste hvor man var.
-      const hash = location.hash || '';
-      const mFane = hash.match(/fane=([A-Za-z]+)/);
-      const mSide = hash.match(/side=([A-Za-z]+)/);
-      if(mFane){
-        const tab = document.querySelector('.tab[data-tab="' + mFane[1] + '"]');
-        if(tab && tab.offsetParent !== null){
-          if(mSide) { try{ selectSide(mSide[1]); }catch(err){} }
-          aktiverFane(tab, false);
-          appNavigating = false;
-          return;
-        }
-      }
+      if(gjenopprettFane()){ appNavigating = false; return; }
       showSideChoice();
     }
     appNavigating = false;
@@ -23653,22 +23644,26 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     const hash = location.hash || '';
     const mFane = hash.match(/fane=([A-Za-z]+)/);
     const mSide = hash.match(/side=([A-Za-z]+)/);
-    if(!mFane) return;
-    const tab = document.querySelector('.tab[data-tab="' + mFane[1] + '"]');
-    // Fanen gjenopprettes bare hvis den finnes OG brukeren har tilgang til
-    // den — ellers ville en gammel lenke kunne åpne en fane man ikke skal se.
-    if(!tab || tab.offsetParent === null) return;
-
-    // Åpne seksjonen FØRST. Uten dette ble panelet aktivert mens forsiden
-    // fortsatt lå over — og en oppdatering så ut som om man ble kastet ut
-    // til forsiden, enda fanen egentlig var valgt.
-    const side = mSide ? mSide[1] : tab.dataset.side;
-    if(side && typeof selectSide === 'function'){
-      appNavigating = true;
-      try{ selectSide(side); }catch(e){}
+    if(!mFane) return false;
+    const tabName = mFane[1];
+    const tab = document.querySelector('.tab[data-tab="' + tabName + '"]');
+    // Fanene ligger skjult i DOM (.tab { display:none !important }) etter
+    // arbeidsflaten kom — offsetParent var derfor alltid null, og
+    // gjenopprettingen ga opp stille ved hver oppdatering.
+    if(!tab || faneLast(tabName)) return false;
+    const side = mSide ? mSide[1] : String(tab.dataset.side || '').trim().split(/\s+/)[0];
+    if(!side) return false;
+    appNavigating = true;
+    try{
+      selectSide(side, { skipAutoTab: true });
+      selectSubTab(tabName);
+    } catch(err){
+      console.error('gjenopprettFane', err);
       appNavigating = false;
+      return false;
     }
-    aktiverFane(tab, false);
+    appNavigating = false;
+    return true;
   }
   window.addEventListener('hashchange', gjenopprettFane);
 
