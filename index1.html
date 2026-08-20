@@ -3922,8 +3922,7 @@
       }
     }
 
-    const keys = [...new Set(myClassMessages().map(threadKey))];
-    const nyeMeldinger = keys.filter(k => isThreadUnread(k)).length;
+    const nyeMeldinger = buildThreadRows().filter(r => r.unread).length;
     if(nyeMeldinger){
       tasks.push({
         ic: '📩',
