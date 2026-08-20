@@ -26,3 +26,9 @@ Cloud Agent publiserer via git push, ikke via publish-tool — derfor må stempe
 
 - Kjør relevante endringer end-to-end (terminal og/eller nettleser) før du pusher.
 - For UI-endringer i `.html`: verifiser i nettleser når mulig.
+
+## Driftslogg (CLOUD-AGENT-LOG.md)
+
+Etter større endringer: oppdater `CLOUD-AGENT-LOG.md` (seksjon 1–4) med arbeid, feil, tips og gjenstående oppgaver.
+
+Filen oppdateres også **automatisk hver 10. time** via GitHub Actions (`cloud-agent-log.yml`) med nye commits.
