@@ -687,6 +687,53 @@
   .subject-header .sh-larer{font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-top:4px;}
   html[dir="rtl"] .subject-header .sh-larer{font-family:'Tajawal',sans-serif;}
 
+  /* Flat fag-layout — én skjerm, direkte snarveier per fag */
+  .fag-flat-hint{
+    font-family:'Jost',sans-serif; font-size:12px; color:#5a6860; margin:-4px 0 14px; line-height:1.45;
+  }
+  html[dir="rtl"] .fag-flat-hint{font-family:'Tajawal',sans-serif;}
+  .fag-flat-section{margin-bottom:12px; padding:14px 16px;}
+  .fag-flat-hdr{display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;}
+  .fag-flat-ikon{font-size:28px; line-height:1;}
+  .fag-flat-navn{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:18px; color:var(--emerald-d); line-height:1.2;}
+  html[dir="rtl"] .fag-flat-navn{font-family:'Tajawal',sans-serif; font-size:16px;}
+  .fag-flat-larer{font-family:'Jost',sans-serif; font-size:11.5px; color:#5a6860; margin-top:2px;}
+  html[dir="rtl"] .fag-flat-larer{font-family:'Tajawal',sans-serif;}
+  .fag-flat-preview{font-family:'Jost',sans-serif; font-size:10.5px; color:#8a9a90; margin-top:5px; line-height:1.35;}
+  html[dir="rtl"] .fag-flat-preview{font-family:'Tajawal',sans-serif;}
+  .fag-quick-row{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  @media (min-width:480px){ .fag-quick-row{ grid-template-columns:repeat(4,1fr); } }
+  .fag-quick-btn{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    font-family:'Jost',sans-serif; font-size:11px; font-weight:600; color:var(--emerald-d);
+    background:var(--paper-2); border:1px solid var(--line); border-radius:10px;
+    padding:10px 8px; cursor:pointer; transition:background .15s, border-color .15s, transform .15s;
+    min-height:58px;
+  }
+  html[dir="rtl"] .fag-quick-btn{font-family:'Tajawal',sans-serif; font-size:10.5px;}
+  .fag-quick-btn:hover{background:#fff; border-color:var(--gold); transform:translateY(-1px);}
+  .fag-quick-btn .fq-ic{font-size:18px; line-height:1;}
+  .fag-msg-btn{
+    width:100%; margin-top:10px; font-family:'Jost',sans-serif; font-size:12px; font-weight:600;
+    color:#fff; background:var(--emerald); border:none; border-radius:8px; padding:10px 14px; cursor:pointer;
+  }
+  html[dir="rtl"] .fag-msg-btn{font-family:'Tajawal',sans-serif;}
+  .fag-msg-btn:hover{background:var(--emerald-d);}
+  .fag-tab-bar-wrap{margin-bottom:12px;}
+  .fag-tab-bar{
+    display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .fag-tab-bar::-webkit-scrollbar{display:none;}
+  .fag-tab{
+    flex:0 0 auto; font-family:'Jost',sans-serif; font-size:12px; font-weight:600;
+    color:var(--emerald-d); background:#fff; border:1px solid var(--line); border-radius:999px;
+    padding:8px 14px; cursor:pointer; white-space:nowrap; transition:background .15s, color .15s, border-color .15s;
+  }
+  html[dir="rtl"] .fag-tab{font-family:'Tajawal',sans-serif;}
+  .fag-tab.active{background:var(--emerald); color:#fff; border-color:var(--emerald);}
+  .fag-tab:hover:not(.active){border-color:var(--gold);}
+
   .menu-card .msg-badge{
     display:none; font-family:'Jost',sans-serif; font-size:9.5px; font-weight:700; padding:3px 9px;
     border-radius:12px; text-transform:uppercase; letter-spacing:0.03em; margin-top:6px;
@@ -917,6 +964,9 @@
     <div class="child-select-wrap" id="childSelectWrap" style="display:none;">
       <select class="child-select" id="childSelect" onchange="selectChild(this.selectedIndex)"></select>
     </div>
+    <div id="fagTabBarWrap" class="fag-tab-bar-wrap" style="display:none;">
+      <div id="fagTabBar" class="fag-tab-bar"></div>
+    </div>
 
     <!-- HJEM — dash-kort og snarveier vises bare her -->
     <div id="homeView" class="sub-view" style="display:none;">
@@ -1022,7 +1072,7 @@
 
     <!-- LEKSER -->
     <div class="sub-view" id="view-homework">
-      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="contentBack()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuHomework">Lekser</h2>
         <div class="subject-filter-row" id="homeworkSubjectFilter" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;"></div>
@@ -1048,7 +1098,7 @@
 
     <!-- LESSON PLANS (read-only) -->
     <div class="sub-view" id="view-lessonPlans">
-      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="contentBack()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuLessonPlans">Undervisningsplan</h2>
         <div class="sub" data-i18n="lessonPlansSub">Det læreren har forberedt for klassen, nyeste først</div>
@@ -1057,7 +1107,7 @@
     </div>
 
     <div class="sub-view" id="view-videos">
-      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="contentBack()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuVideos">Treningsvideoer</h2>
         <div class="sub" data-i18n="videosSub">Videoer læreren har lagt til for klassen å øve på</div>
@@ -1095,7 +1145,7 @@
 
     <!-- NOTATER -->
     <div class="sub-view" id="view-notes">
-      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <button class="back-link" onclick="contentBack()" data-i18n="back">← Tilbake</button>
       <div class="card">
         <h2 data-i18n="menuNotes">Notater fra læreren</h2>
         <div class="sub" data-i18n="notesSub">Fremgangsnotater om barnet ditt</div>
@@ -1618,6 +1668,9 @@
       errorOccurred: 'En feil oppstod: ',
       fagLabels: { Koran:'Koran', Islam:'Islam', Arabisk:'Arabisk', Urdu:'Urdu', Madinabarn:'Madinabarn', Annet:'Annet' },
       undervisningSubjectsLbl: 'Velg fag', meldingTeachersLbl: 'Kontakt lærer per fag',
+      undervisningFlatHint: 'Trykk direkte på det du vil se — du trenger ikke gå inn og ut for hvert fag.',
+      meldingFlatHint: 'Send melding til riktig lærer med ett trykk.',
+      sendMsgToTeacher: 'Send melding',
       meldingOtherLbl: 'Skolen og klassen', unreadShort: 'ulest'
     },
     ar: {
@@ -1714,6 +1767,9 @@
       errorOccurred: 'حدث خطأ: ',
       fagLabels: { Koran:'القرآن', Islam:'الإسلام', Arabisk:'العربية', Urdu:'الأردية', Madinabarn:'أطفال المدينة', Annet:'أخرى' },
       undervisningSubjectsLbl: 'اختر المادة', meldingTeachersLbl: 'تواصل مع معلم كل مادة',
+      undervisningFlatHint: 'اضغط مباشرة على ما تريد — لا حاجة للدخول والخروج لكل مادة.',
+      meldingFlatHint: 'أرسل رسالة للمعلم المناسب بضغطة واحدة.',
+      sendMsgToTeacher: 'إرسال رسالة',
       meldingOtherLbl: 'المدرسة والصف', unreadShort: 'غير مقروء'
     },
     ur: {
@@ -1810,6 +1866,9 @@
       errorOccurred: 'ایک خرابی پیش آئی: ',
       fagLabels: { Koran:'قرآن', Islam:'اسلام', Arabisk:'عربی', Urdu:'اردو', Madinabarn:'مدینہ بچے', Annet:'دیگر' },
       undervisningSubjectsLbl: 'مضمون منتخب کریں', meldingTeachersLbl: 'ہر مضمون کے استاد سے رابطہ',
+      undervisningFlatHint: 'براہِ راست وہ دبائیں جو دیکھنا ہے — ہر مضمون کے لیے اندر باہر جانے کی ضرورت نہیں.',
+      meldingFlatHint: 'ایک کلک میں درست استاد کو پیغام بھیجیں.',
+      sendMsgToTeacher: 'پیغام بھیجیں',
       meldingOtherLbl: 'اسکول اور کلاس', unreadShort: 'نہ پڑھا'
     }
   };
@@ -2112,12 +2171,60 @@
       }).join('')}</div>`;
   }
 
+  function renderUndervisningFlat(container, child){
+    const fagList = fagForElev(child);
+    container.innerHTML = `<div class="hub-section-label">${t('undervisningSubjectsLbl')}</div>
+      <div class="sub fag-flat-hint">${t('undervisningFlatHint')}</div>
+      ${fagList.map(f => {
+        const preview = subjectHwPreview(child, f.fag);
+        const esc = f.fag.replace(/'/g, "\\'");
+        const showPreview = preview && preview !== t('homeNoHw');
+        return `<div class="card fag-flat-section">
+          <div class="fag-flat-hdr">
+            <span class="fag-flat-ikon">${f.ikon}</span>
+            <div class="fag-flat-meta">
+              <div class="fag-flat-navn">${escapeHtml(f.fagLabel)}</div>
+              <div class="fag-flat-larer">${escapeHtml(f.larerNavn)}</div>
+              ${showPreview ? `<div class="fag-flat-preview">${escapeHtml(preview)}</div>` : ''}
+            </div>
+          </div>
+          <div class="fag-quick-row">
+            <button type="button" class="fag-quick-btn" onclick="openSubjectContentDirect('${esc}', 'homework')"><span class="fq-ic">📚</span><span>${escapeHtml(t('menuHomework'))}</span></button>
+            <button type="button" class="fag-quick-btn" onclick="openSubjectContentDirect('${esc}', 'lessonPlans')"><span class="fq-ic">📖</span><span>${escapeHtml(t('menuLessonPlans'))}</span></button>
+            <button type="button" class="fag-quick-btn" onclick="openSubjectContentDirect('${esc}', 'videos')"><span class="fq-ic">🎥</span><span>${escapeHtml(t('menuVideos'))}</span></button>
+            <button type="button" class="fag-quick-btn" onclick="openSubjectContentDirect('${esc}', 'notes')"><span class="fq-ic">📝</span><span>${escapeHtml(t('menuNotes'))}</span></button>
+          </div>
+        </div>`;
+      }).join('')}`;
+  }
+
+  function renderMeldingFlat(container, child){
+    const fagList = fagForElev(child);
+    container.innerHTML = `<div class="hub-section-label">${t('meldingTeachersLbl')}</div>
+      <div class="sub fag-flat-hint">${t('meldingFlatHint')}</div>
+      ${fagList.map(f => {
+        const unread = countUnreadForTeacher(f.larerId);
+        const esc = f.fag.replace(/'/g, "\\'");
+        return `<div class="card fag-flat-section">
+          <div class="fag-flat-hdr">
+            <span class="fag-flat-ikon">${f.ikon}</span>
+            <div class="fag-flat-meta">
+              <div class="fag-flat-navn">${escapeHtml(f.fagLabel)}</div>
+              <div class="fag-flat-larer">${escapeHtml(f.larerNavn)}</div>
+              ${unread ? `<div class="fag-flat-preview"><span class="msg-count">${unread} ${escapeHtml(t('unreadShort'))}</span></div>` : ''}
+            </div>
+          </div>
+          <button type="button" class="fag-msg-btn" onclick="openTeacherMsgForFag('${esc}')">${escapeHtml(t('sendMsgToTeacher'))}</button>
+        </div>`;
+      }).join('')}`;
+  }
+
   function renderUndervisningHub(){
     const el = document.getElementById('undervisningHubContent');
     if(!el || myChildren.length === 0) return;
     const child = myChildren[currentChildIndex];
     if(erFlerfagProgram(child)){
-      renderSubjectCards(el, child, 'undervisning');
+      renderUndervisningFlat(el, child);
     } else {
       el.innerHTML = flatUndervisningMenuHtml();
       applyStaticTranslations();
@@ -2132,17 +2239,58 @@
     if(erFlerfagProgram(child)){
       teacherHub.style.display = 'block';
       if(flatWrap) flatWrap.style.display = 'none';
-      renderSubjectCards(teacherHub, child, 'melding');
+      renderMeldingFlat(teacherHub, child);
     } else {
       teacherHub.style.display = 'none';
       if(flatWrap) flatWrap.style.display = 'block';
     }
   }
 
-  window.openSubjectMenu = function(fag){
-    subjectMenuFag = fag;
+  let currentContentSection = null;
+  const FAG_CONTENT_SECTIONS = ['homework', 'lessonPlans', 'videos', 'notes'];
+
+  function renderFagTabBar(section){
+    const wrap = document.getElementById('fagTabBarWrap');
+    const bar = document.getElementById('fagTabBar');
+    if(!wrap || !bar) return;
+    const child = myChildren[currentChildIndex];
+    if(!child || !erFlerfagProgram(child) || !FAG_CONTENT_SECTIONS.includes(section)){
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = 'block';
+    currentContentSection = section;
+    const fagList = fagForElev(child);
+    bar.innerHTML = fagList.map(f => {
+      const esc = f.fag.replace(/'/g, "\\'");
+      return `<button type="button" class="fag-tab${activeFagFilter === f.fag ? ' active' : ''}" onclick="switchFagTab('${esc}')">${f.ikon} ${escapeHtml(f.fagLabel)}</button>`;
+    }).join('');
+  }
+
+  window.switchFagTab = function(fag){
     activeFagFilter = fag;
-    openSection('subject');
+    subjectMenuFag = fag;
+    if(currentContentSection) openSection(currentContentSection);
+    else renderChild();
+  };
+
+  window.contentBack = function(){
+    const child = myChildren[currentChildIndex];
+    if(activeFagFilter && child && erFlerfagProgram(child)){
+      openSection('undervisning');
+      return;
+    }
+    history.back();
+  };
+
+  window.openSubjectContentDirect = function(fag, section){
+    activeFagFilter = fag;
+    subjectMenuFag = fag;
+    openSection(section);
+  };
+
+  window.openSubjectMenu = function(fag){
+    openSubjectContentDirect(fag, 'homework');
   };
 
   function renderSubjectMenuView(){
@@ -3427,13 +3575,16 @@
   window.openSection = function(name){
     try{ history.replaceState(null, '', '#del=' + name); }catch(e){}
     const homeDash = document.getElementById('homeDash');
+    const fagTabWrap = document.getElementById('fagTabBarWrap');
     document.querySelectorAll('.sub-view').forEach(v => v.style.display = 'none');
 
     if(name === 'home'){
       document.getElementById('homeView').style.display = 'block';
       if(homeDash) homeDash.style.display = 'block';
+      if(fagTabWrap) fagTabWrap.style.display = 'none';
       activeFagFilter = null;
       subjectMenuFag = null;
+      currentContentSection = null;
       renderHomeDash();
       setActiveSidebarParent('home');
       pushAppView(name);
@@ -3441,8 +3592,13 @@
     }
 
     if(name === 'undervisning'){
+      if(fagTabWrap) fagTabWrap.style.display = 'none';
+      currentContentSection = null;
       activeFagFilter = null;
       subjectMenuFag = null;
+    } else if(!FAG_CONTENT_SECTIONS.includes(name)){
+      if(fagTabWrap) fagTabWrap.style.display = 'none';
+      if(name !== 'subject') currentContentSection = null;
     }
 
     if(homeDash) homeDash.style.display = 'none';
@@ -3453,6 +3609,10 @@
     if(name === 'undervisning') renderUndervisningHub();
     if(name === 'melding') renderMeldingHub();
     if(name === 'subject') renderSubjectMenuView();
+    if(FAG_CONTENT_SECTIONS.includes(name)){
+      renderFagTabBar(name);
+      renderChild();
+    }
     if(name === 'schedule') closeScheduleDay();
     if(name === 'payment'){ resetPaymentChoiceUI(); renderPaymentDetail(); }
     if(name === 'teacherMsg') openTeacherMsg();
