@@ -170,10 +170,10 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot
+    getFirestore, collection, onSnapshot, getDocs, query, where
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, setPersistence, inMemoryPersistence
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     initializeAppCheck, ReCaptchaV3Provider
@@ -245,10 +245,33 @@
     }
   };
 
-  onAuthStateChanged(auth, (user) => {
-    document.getElementById('loginScreen').style.display = user ? 'none' : 'flex';
-    document.getElementById('appRoot').style.display = user ? 'block' : 'none';
-    if(user) startDataListeners();
+  onAuthStateChanged(auth, async (user) => {
+    if(user){
+      let erAdmin = false;
+      try{
+        const snap = await getDocs(query(collection(db, 'adminUsers'), where('epost', '==', user.email)));
+        erAdmin = !snap.empty;
+      } catch(err){
+        console.error('adminUsers-oppslag', err);
+      }
+      if(!erAdmin){
+        await signOut(auth);
+        const errEl = document.getElementById('loginError');
+        if(errEl){
+          errEl.textContent = 'Denne siden er kun for administrativt panel.';
+          errEl.style.display = 'block';
+        }
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appRoot').style.display = 'none';
+        return;
+      }
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+      startDataListeners();
+    } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('appRoot').style.display = 'none';
+    }
   });
 
   // ===== Fargepalett (samme som resten av systemet) =====
