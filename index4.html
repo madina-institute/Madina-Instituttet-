@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 12:15:00 -->
+<!-- SIST-ENDRET: 2026-08-20 22:23:20 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -840,6 +840,8 @@
   .chat-bubble .chat-attach{display:inline-block; margin-top:6px; font-family:'Jost',sans-serif; font-size:12px; text-decoration:underline;}
   .chat-row.me .chat-bubble .chat-attach{color:#fff;}
   .chat-row:not(.me) .chat-bubble .chat-attach{color:var(--emerald);}
+  .msg-slett-btn{ float:right; border:none; background:transparent; cursor:pointer; font-size:12px; opacity:.55; padding:0 2px; margin-inline-start:6px; }
+  .msg-slett-btn:hover{ opacity:1; }
 
   .msg-badge{display:inline-block; font-family:'Jost',sans-serif; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:12px; text-transform:uppercase; letter-spacing:0.03em;}
   html[dir="rtl"] .msg-badge{font-family:'Tajawal',sans-serif; text-transform:none; letter-spacing:0;}
@@ -1321,6 +1323,7 @@
             <div class="sub" id="teacherMsgSub"></div>
           </div>
           <button type="button" class="btn btn-ghost" id="guardianThreadCloseBtn" style="white-space:nowrap; font-size:11.5px; padding:6px 12px;" onclick="toggleGuardianThreadClosed()"></button>
+          <button type="button" class="btn btn-ghost" style="white-space:nowrap; font-size:11.5px; padding:6px 12px; color:var(--red);" onclick="slettSamtaleForMeg()">🗑️ <span data-i18n="deleteThread">Slett</span></button>
         </div>
         <div class="empty-msg" id="teacherThreadClosedNote" style="display:none;" data-i18n="threadClosedNote">Denne samtalen er lukket. Send en melding for å gjenåpne den.</div>
         <div class="chat-scroll" id="teacherMsgHistory"></div>
@@ -1351,6 +1354,7 @@
       <div class="card" id="adminMsgDetailInner" style="display:none;">
         <button class="back-link" onclick="backToAdminMsgList()">← Tilbake</button>
         <h2 id="guardianAdminMsgTitle"></h2>
+        <button type="button" class="btn btn-ghost" style="width:auto; margin-bottom:10px; color:var(--red); font-size:12px;" onclick="slettAdminMsgTradForMeg()">🗑️ <span data-i18n="deleteThread">Slett melding</span></button>
         <div class="chat-scroll" id="guardianAdminMsgHistory"></div>
         <hr style="border:none; border-top:1px dotted var(--line); margin:16px 0;">
         <div class="field">
@@ -1376,7 +1380,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, getDocs,
+    getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs,
     getDoc, query, where, documentId
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
@@ -1696,6 +1700,7 @@
       openThreadsLabel: 'Åpne samtaler',
       archivedThreadsLabel: 'Arkiverte samtaler',
       closeThread: 'Lukk samtale',
+      deleteThread: 'Slett',
       reopenThread: 'Gjenåpne samtale',
       threadClosedNote: 'Denne samtalen er lukket. Send en melding for å gjenåpne den.',
       untitledThread: 'Samtale',
@@ -1810,6 +1815,7 @@
       openThreadsLabel: 'المحادثات المفتوحة',
       archivedThreadsLabel: 'المحادثات المؤرشفة',
       closeThread: 'إغلاق المحادثة',
+      deleteThread: 'حذف',
       reopenThread: 'إعادة فتح المحادثة',
       threadClosedNote: 'هذي المحادثة مغلقة. أرسل رسالة عشان تفتحها من جديد.',
       untitledThread: 'محادثة',
@@ -1924,6 +1930,7 @@
       openThreadsLabel: 'کھلی بات چیت',
       archivedThreadsLabel: 'محفوظ شدہ بات چیت',
       closeThread: 'بات چیت بند کریں',
+      deleteThread: 'حذف',
       reopenThread: 'بات چیت دوبارہ کھولیں',
       threadClosedNote: 'یہ بات چیت بند ہے۔ اسے دوبارہ کھولنے کے لیے ایک پیغام بھیجیں۔',
       untitledThread: 'بات چیت',
@@ -4029,9 +4036,97 @@
 
   function msgSeenKey(klasse){ return 'ps_seen_messages_' + (currentGuardian ? currentGuardian.id : '') + '_' + klasse; }
   function threadSeenKey(key){ return 'ps_msg_seen_' + (currentGuardian ? currentGuardian.id : '') + '_' + key; }
+  function erSkjultForMeg(doc){
+    const ep = (minEpost || '').trim().toLowerCase();
+    if(!ep || !doc) return false;
+    return Array.isArray(doc.skjultFor) && doc.skjultFor.some(e => String(e).trim().toLowerCase() === ep);
+  }
+
+  async function leggTilSkjultFor(samling, docId, eksisterende){
+    const ep = minEpost.trim().toLowerCase();
+    const liste = Array.isArray(eksisterende) ? [...eksisterende] : [];
+    if(!liste.some(e => String(e).trim().toLowerCase() === ep)) liste.push(ep);
+    await updateDoc(doc(db, samling, docId), { skjultFor: liste });
+  }
+
+  window.slettSamtaleForMeg = async function(){
+    const bekreft = currentLang === 'ar'
+      ? 'إخفاء هذه المحادثة من صندوقك؟ (تبقى عند الطرف الآخر)'
+      : 'Skjule denne samtalen fra innboksen din? (Den blir stående hos den andre parten.)';
+    if(!confirm(bekreft)) return;
+    try{
+      if(currentThreadDoc){
+        await leggTilSkjultFor('messageThreads', currentThreadDoc.id, currentThreadDoc.skjultFor);
+      } else if(currentThreadKey){
+        const child = myChildren[currentChildIndex];
+        const mine = messages.filter(m => m.klasse === child.klasse && threadKey(m) === currentThreadKey);
+        for(const m of mine){
+          await leggTilSkjultFor('messages', m.id, m.skjultFor);
+        }
+      }
+      showToast(currentLang === 'ar' ? 'تم إخفاء المحادثة.' : 'Samtalen er skjult.');
+      history.back();
+      renderGuardianThreadList();
+    } catch(err){
+      console.error(err);
+      notify(currentLang === 'ar' ? 'تعذّر الإخفاء.' : 'Kunne ikke skjule samtalen.');
+    }
+  };
+
+  window.slettEnkeltMeldingForMeg = async function(msgId){
+    const m = messages.find(x => x.id === msgId);
+    if(!m) return;
+    const bekreft = currentLang === 'ar' ? 'إخفاء هذه الرسالة؟' : 'Skjule denne meldingen?';
+    if(!confirm(bekreft)) return;
+    try{
+      await leggTilSkjultFor('messages', msgId, m.skjultFor);
+      renderTeacherMsgHistory();
+    } catch(err){
+      console.error(err);
+      notify(currentLang === 'ar' ? 'تعذّر الإخفاء.' : 'Kunne ikke skjule meldingen.');
+    }
+  };
+
+  window.slettAdminMsgTradForMeg = async function(){
+    if(!currentAdminMsgThreadId) return;
+    const bekreft = currentLang === 'ar'
+      ? 'حذف هذه الرسالة من الإدارة نهائياً من صندوقك؟'
+      : 'Slette denne meldingen fra administrasjonen permanent fra innboksen din?';
+    if(!confirm(bekreft)) return;
+    try{
+      const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId);
+      for(const m of msgs) await deleteDoc(doc(db, 'broadcastMessages', m.id));
+      await deleteDoc(doc(db, 'broadcastThreads', currentAdminMsgThreadId));
+      currentAdminMsgThreadId = null;
+      showToast(currentLang === 'ar' ? 'تم الحذف.' : 'Meldingen er slettet.');
+      history.back();
+      renderGuardianAdminMsgsList();
+    } catch(err){
+      console.error(err);
+      notify(currentLang === 'ar' ? 'تعذّر الحذف.' : 'Kunne ikke slette.');
+    }
+  };
+
+  window.skjulAdminEnkeltMelding = async function(msgId){
+    const m = broadcastMessages.find(x => x.id === msgId);
+    if(!m) return;
+    if(!confirm(currentLang === 'ar' ? 'إخفاء هذه الرسالة؟' : 'Skjule denne meldingen?')) return;
+    try{
+      if(m.fra !== 'Administrasjon'){
+        await deleteDoc(doc(db, 'broadcastMessages', msgId));
+      } else {
+        await leggTilSkjultFor('broadcastMessages', msgId, m.skjultFor);
+      }
+      renderGuardianAdminMsgHistory();
+    } catch(err){
+      console.error(err);
+      notify(currentLang === 'ar' ? 'تعذّر.' : 'Kunne ikke skjule.');
+    }
+  };
+
   function isThreadUnread(key){
     const seen = localStorage.getItem(threadSeenKey(key));
-    return messages.some(m => threadKey(m) === key && m.fra === 'Lærer' && (!seen || (m.dato||'') > seen));
+    return messages.some(m => threadKey(m) === key && !erSkjultForMeg(m) && m.fra === 'Lærer' && (!seen || (m.dato||'') > seen));
   }
   function threadKey(m){
     if(m.threadId) return m.threadId;
@@ -4050,15 +4145,16 @@
     // guardians of the same child see the exact same conversation. Falls
     // back to the old guardianId match for threads created before this
     // (or for a lone guardian with no studentId set on the thread yet).
-    messageThreads.filter(th => th.klasse === child.klasse &&
+    messageThreads.filter(th => th.klasse === child.klasse && !erSkjultForMeg(th) &&
       (th.studentId ? th.studentId === child.id : th.guardianId === currentGuardian.id)
     ).forEach(th => {
-      const threadMsgs = messages.filter(m => m.threadId === th.id).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      const threadMsgs = messages.filter(m => m.threadId === th.id && !erSkjultForMeg(m)).sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+      if(threadMsgs.length === 0) return;
       rows.push({ key: th.id, isLegacy: false, status: th.status || 'open', title: th.title || t('untitledThread'),
         lastActivityAt: th.lastActivityAt || th.createdAt || '', lastPreview: threadMsgs[0] ? (threadMsgs[0].tekst||'') : '',
         unread: isThreadUnread(th.id), teacherId: th.teacherId || '' });
     });
-    const legacyMsgs = messages.filter(m => m.klasse === child.klasse && !m.threadId &&
+    const legacyMsgs = messages.filter(m => m.klasse === child.klasse && !m.threadId && !erSkjultForMeg(m) &&
       (m.guardianId ? m.guardianId === currentGuardian.id : m.guardianNavn === currentGuardian.navn));
     const legacyKeys = [...new Set(legacyMsgs.map(threadKey))];
     legacyKeys.forEach(k => {
@@ -4089,7 +4185,7 @@
   // og et filter på skjermen er en visning, ikke en sperre.
   function myAdminMsgThreads(){
     if(!currentGuardian) return [];
-    return broadcastThreads.slice();
+    return broadcastThreads.filter(th => !erSkjultForMeg(th));
   }
 
   function updateAdminMsgBadge(){
@@ -4113,7 +4209,7 @@
     const el = document.getElementById('guardianAdminMsgsList');
     if(!el || !currentGuardian) return;
     const rows = myAdminMsgThreads().map(th => {
-      const msgs = broadcastMessages.filter(m => m.threadId === th.id)
+      const msgs = broadcastMessages.filter(m => m.threadId === th.id && !erSkjultForMeg(m))
         .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
       const last = msgs[msgs.length - 1];
       const seen = localStorage.getItem('adminmsg_seen_' + currentGuardian.id + '_' + th.id);
@@ -4161,7 +4257,7 @@
     if(!el || !currentAdminMsgThreadId) return;
     // Samtalen er min alene — den går mellom meg og administrasjonen.
     // 'visibility' er derfor borte: det fantes ingen «alle» å svare til.
-    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId)
+    const msgs = broadcastMessages.filter(m => m.threadId === currentAdminMsgThreadId && !erSkjultForMeg(m))
       .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     el.innerHTML = msgs.map(m => {
       const isMe = m.fra !== 'Administrasjon';
@@ -4173,6 +4269,7 @@
           <span class="chat-sender">${escapeHtml(senderName)}</span>
           ${escapeHtml(m.tekst||'')}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
+          <button type="button" class="msg-slett-btn" onclick="event.stopPropagation(); skjulAdminEnkeltMelding('${escapeHtml(m.id)}')" title="${currentLang === 'ar' ? 'حذف/إخفاء' : 'Slett/skjul'}">🗑️</button>
         </div>
       </div>`;
     }).join('');
@@ -4439,7 +4536,7 @@
   function renderTeacherMsgHistory(){
     const el = document.getElementById('teacherMsgHistory');
     if(!el || myChildren.length === 0 || !currentGuardian || !currentThreadKey) return;
-    const thread = messages.filter(m => threadKey(m) === currentThreadKey)
+    const thread = messages.filter(m => threadKey(m) === currentThreadKey && !erSkjultForMeg(m))
       .sort((a,b) => (a.dato||'').localeCompare(b.dato||''));
     if(thread.length === 0){
       el.innerHTML = `<div class="empty-msg">${t('noMessages')}</div>`;
@@ -4456,6 +4553,7 @@
           ${escapeHtml(m.tekst||'')}
           ${m.vedleggLenke ? `<a class="chat-attach" href="${escapeHtml(m.vedleggLenke)}" target="_blank">${currentLang === 'ar' ? '📎 مرفق' : '📎 Vedlegg'}</a>` : ''}
           <span class="chat-time">${escapeHtml(formatChatTime(m.dato))}</span>
+          <button type="button" class="msg-slett-btn" onclick="event.stopPropagation(); slettEnkeltMeldingForMeg('${escapeHtml(m.id)}')" title="${currentLang === 'ar' ? 'إخفاء' : 'Skjul'}">🗑️</button>
         </div>
       </div>`;
     }).join('');

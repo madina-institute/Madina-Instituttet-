@@ -50,6 +50,15 @@
 | #50 | إيميل admin عند AUTHORIZED + تحديد Foresatt 1/2 + `profile.scope` |
 | #51 | إصلاح صيغة `profile.scope` (string وليس array) |
 
+### الرسائل — حذف/إخفاء (قيد الدمج)
+
+| المكان | السلوك |
+|--------|--------|
+| بوابة المعلم (`index1.html`) | إخفاء محادثة/رسالة للمستخدم (`skjultFor`)؛ حذف نهائي لرسائل الإدارة من صندوق المستخدم |
+| بوابة الأولياء (`index4.html`) | نفس المنطق للمحادثات مع المعلم ورسائل الإدارة |
+| لوحة الإدارة (`admin.html`) | حذف دائم لأرشيف lærer↔foresatt + Meldingssenter (مجموعة أو م recipient) مع `logDeletion` |
+| `firestore.rules` | قواعد `skjultFor` + حذف broadcast للمستلم |
+
 ### بنية تحتية / عمليات
 
 | PR | العمل |

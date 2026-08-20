@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 13:10:00 -->
+<!-- SIST-ENDRET: 2026-08-20 22:23:20 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9873,6 +9873,73 @@
   }
 
   // ===== MELDINGER (read-only Outlook-style archive of all guardian↔teacher messages) =====
+  window.slettLaererTradPermanent = async function(key){
+    if(!confirm('Slette denne samtalen permanent? Alle meldinger fjernes for alle parter. Dette kan ikke angres.')) return;
+    try{
+      const msgs = cache.messages.filter(m => {
+        const k = m.threadId || ('legacy_' + m.klasse + '_' + (m.guardianId || m.guardianNavn || ''));
+        return k === key;
+      });
+      for(const m of msgs){
+        await logDeletion('messages', m);
+        await deleteDoc(doc(db, 'messages', m.id));
+      }
+      const th = messageThreadsCache.find(t => t.id === key);
+      if(th){
+        await logDeletion('messageThreads', th);
+        await deleteDoc(doc(db, 'messageThreads', th.id));
+      }
+      showToast('Samtalen er slettet permanent.');
+      renderMessagesInbox();
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke slette samtalen.');
+    }
+  };
+
+  window.slettBroadcastTradPermanent = async function(threadId){
+    if(!confirm('Slette denne meldingstråden permanent? Dette kan ikke angres.')) return;
+    try{
+      const msgs = broadcastMessagesCache.filter(m => m.threadId === threadId);
+      for(const m of msgs){
+        await logDeletion('broadcastMessages', m);
+        await deleteDoc(doc(db, 'broadcastMessages', m.id));
+      }
+      const th = broadcastThreadsCache.find(t => t.id === threadId);
+      if(th){
+        await logDeletion('broadcastThreads', th);
+        await deleteDoc(doc(db, 'broadcastThreads', th.id));
+      }
+      showToast('Meldingstråden er slettet permanent.');
+      renderBroadcastInbox();
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke slette.');
+    }
+  };
+
+  window.slettBroadcastGruppePermanent = async function(gruppeNokkel){
+    const traader = broadcastThreadsCache.filter(t => (t.gruppeId || t.id) === gruppeNokkel);
+    if(!traader.length) return;
+    if(!confirm('Slette alle ' + traader.length + ' meldingstråd(er) i denne utsendelsen permanent? Dette kan ikke angres.')) return;
+    try{
+      for(const th of traader){
+        const msgs = broadcastMessagesCache.filter(m => m.threadId === th.id);
+        for(const m of msgs){
+          await logDeletion('broadcastMessages', m);
+          await deleteDoc(doc(db, 'broadcastMessages', m.id));
+        }
+        await logDeletion('broadcastThreads', th);
+        await deleteDoc(doc(db, 'broadcastThreads', th.id));
+      }
+      showToast('Utsendelsen er slettet permanent.');
+      renderBroadcastInbox();
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke slette.');
+    }
+  };
+
   function renderMessagesInbox(){
     const listEl = document.getElementById('messagesInboxList');
     if(!listEl) return;
@@ -9925,7 +9992,7 @@
     listEl.innerHTML = rows.map(r => `
       <details style="margin-bottom:8px;">
         <summary style="cursor:pointer; list-style:none;">
-          <div class="inbox-row">
+          <div class="inbox-row" style="position:relative;">
             <div class="inbox-avatar">${escapeHtml((r.displayName[0]||'?').toUpperCase())}</div>
             <div class="inbox-body">
               <div class="inbox-top-line">
@@ -9935,6 +10002,7 @@
               <div class="inbox-subject">${escapeHtml(r.title)}${r.className ? ' · ' + escapeHtml(r.className) : ''}${r.teacherName ? ' · ' + escapeHtml(r.teacherName) : ''}</div>
               <div class="inbox-preview">${escapeHtml((r.last.fra === 'Lærer' ? 'Lærer: ' : (r.last.guardianNavn ? r.last.guardianNavn + ': ' : '')) + (r.last.tekst||'').slice(0,70))}</div>
             </div>
+            <button type="button" title="Slett permanent" onclick="event.preventDefault(); event.stopPropagation(); slettLaererTradPermanent('${escapeHtml(r.key).replace(/'/g, "\\'")}')" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; font-size:14px; opacity:.5; padding:4px 8px;">🗑️</button>
           </div>
         </summary>
         <div style="padding:12px 16px 16px 66px; display:flex; flex-direction:column; gap:10px;">
@@ -10474,7 +10542,7 @@
       return `
       <details style="margin-bottom:8px;">
         <summary style="cursor:pointer;">
-          <div class="inbox-row">
+          <div class="inbox-row" style="position:relative;">
             <div class="inbox-avatar">${n}</div>
             <div class="inbox-body">
               <div class="inbox-top-line">
@@ -10484,12 +10552,16 @@
               <div class="inbox-subject">${n} mottaker${n===1?'':'e'}: ${escapeHtml(recipientSummary)} · <span style="color:#8a9a90;">${escapeHtml(r.th.groupLabel||'')}</span></div>
               <div class="inbox-preview">${escapeHtml(lastSenderLabel + (r.last.tekst||'').slice(0,70))}</div>
             </div>
+            <button type="button" title="Slett hele utsendelsen permanent" onclick="event.preventDefault(); event.stopPropagation(); slettBroadcastGruppePermanent('${escapeHtml(r.th.gruppeId || r.th.id).replace(/'/g, "\\'")}')" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; font-size:14px; opacity:.5; padding:4px 8px;">🗑️</button>
           </div>
         </summary>
         <div style="padding:12px 16px 16px 66px; display:flex; flex-direction:column; gap:14px;">
           ${r.deler.map(d => `
             <div>
-              ${r.deler.length > 1 ? `<div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:#8a9a90; margin-bottom:5px;">${escapeHtml(d.navn)}${d.msgs.some(m => m.fra !== 'Administrasjon') ? ' <span style="color:var(--emerald-d);">· har svart</span>' : ''}</div>` : ''}
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px;">
+                ${r.deler.length > 1 ? `<div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:700; color:#8a9a90;">${escapeHtml(d.navn)}${d.msgs.some(m => m.fra !== 'Administrasjon') ? ' <span style="color:var(--emerald-d);">· har svart</span>' : ''}</div>` : '<div></div>'}
+                <button type="button" class="btn btn-ghost" style="font-size:11px; padding:4px 10px; color:var(--red);" onclick="slettBroadcastTradPermanent('${escapeHtml(d.th.id).replace(/'/g, "\\'")}')">🗑️ Slett</button>
+              </div>
               <div style="display:flex; flex-direction:column; gap:10px;">
                 ${d.msgs.map(m => `
                   <div style="background:${m.fra === 'Administrasjon' ? 'var(--paper-2)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:9px 12px;">

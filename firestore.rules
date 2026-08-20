@@ -600,13 +600,43 @@ service cloud.firestore {
       allow delete: if erAdmin();
     }
 
-    match /messages/{id} {
-      allow read: if erAdmin()
+    function erMinLaererTrad() {
+      return harLaererListe()
+        && 'teacherId' in resource.data
+        && get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data.teacherId == resource.data.teacherId;
+    }
+    function erMinGuardianTrad() {
+      return 'guardianId' in resource.data && erMinGuardianDoc(resource.data.guardianId);
+    }
+    function erTradDeltaker() {
+      return erAdmin()
+        || erMinLaererTrad()
+        || erMinGuardianTrad()
+        || (resource.data.studentId != null && erMittBarn(resource.data.studentId));
+    }
+    function oppdatererBareSkjultFor() {
+      return minEpost() != ''
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['skjultFor'])
+        && minEpost() in request.resource.data.skjultFor;
+    }
+    function oppdatererTradStatus() {
+      return erTradDeltaker()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'closedAt', 'lastActivityAt']);
+    }
+    function kanLeseMelding() {
+      return erAdmin()
         || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse))
         || (resource.data.studentId != null && erMittBarn(resource.data.studentId))
         || (resource.data.guardianId != null && erMinGuardianDoc(resource.data.guardianId));
+    }
+
+    match /messages/{id} {
+      allow read: if kanLeseMelding();
       allow create: if loggedIn();
-      allow update, delete: if erAdmin();
+      allow update: if erAdmin()
+        || (kanLeseMelding() && oppdatererBareSkjultFor());
+      allow delete: if erAdmin();
     }
     match /messageThreads/{id} {
       allow read: if erAdmin()
@@ -614,7 +644,8 @@ service cloud.firestore {
         || (resource.data.studentId != null && erMittBarn(resource.data.studentId))
         || (resource.data.guardianId != null && erMinGuardianDoc(resource.data.guardianId));
       allow create: if loggedIn();
-      allow update, delete: if erAdmin();
+      allow update: if erAdmin() || oppdatererBareSkjultFor() || oppdatererTradStatus();
+      allow delete: if erAdmin();
     }
     // ---------- MELDINGER FRA ADMINISTRASJONEN ----------
     // 🔴 Sto på loggedIn(). Portalene lastet hele samlingen og filtrerte i
@@ -646,25 +677,28 @@ service cloud.firestore {
 
     match /broadcastThreads/{id} {
       allow read: if erAdmin() || erMinTrad();
-      allow create, delete: if erAdmin();
-      // Mottakeren oppdaterer 'lastActivityAt' når hun svarer — og bare
-      // den. Uten begrensningen kunne hun skrevet om tittel, avsender,
-      // eller flyttet tråden til en annen mottaker.
+      allow create: if erAdmin();
+      allow delete: if erAdmin() || erMinTrad();
       allow update: if erAdmin()
         || (erMinTrad()
             && request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['lastActivityAt']));
+                 .hasOnly(['lastActivityAt']))
+        || (erMinTrad() && oppdatererBareSkjultFor());
     }
 
     match /broadcastMessages/{id} {
       allow read: if erAdmin() || erMinTrad();
-      // Et svar kan bare legges i MIN egen samtale. 'allow write:
-      // if loggedIn()' lot enhver innlogget endre og slette hvem som
-      // helst sine meldinger — også administrasjonens.
       allow create: if erAdmin()
         || (minEpost() != ''
             && request.resource.data.mottakerEpost == minEpost());
-      allow update, delete: if erAdmin();
+      allow update: if erAdmin()
+        || (minEpost() != ''
+            && resource.data.mottakerEpost == minEpost()
+            && oppdatererBareSkjultFor());
+      allow delete: if erAdmin()
+        || (minEpost() != ''
+            && resource.data.mottakerEpost == minEpost()
+            && resource.data.fra != 'Administrasjon');
     }
     match /classPosts/{id} {
       allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
