@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 12:31:04 -->
+<!-- SIST-ENDRET: 2026-08-20 13:10:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4780,10 +4780,9 @@
           if(auth.currentUser) return finish();
           const elapsed = Date.now() - start;
           if(elapsed >= maksMs) return finish();
-          if(elapsed >= MIN_NULL_MS) return finish();
           setTimeout(poll, 150);
         };
-        poll();
+        setTimeout(poll, MIN_NULL_MS);
       };
       unsub = onAuthStateChanged(auth, user => {
         if(user) finish();
@@ -4934,15 +4933,24 @@
     return { ok: false, transient };
   }
 
-  async function bekreftAdminTilgangMedRetry(user){
-    for(let forsok = 0; forsok < 4; forsok++){
-      await klargjoerFirestoreAuth(user);
-      const svar = await bekreftAdminTilgang(user);
-      if(svar.ok) return svar;
-      if(!svar.transient) return svar;
-      if(forsok < 3) await new Promise(resolve => setTimeout(resolve, 700 * (forsok + 1)));
+  async function provAdminInnloggingPaNytt(user, forsok = 0){
+    const maks = 4;
+    const vente = document.getElementById('venteSkjerm');
+    const venteTekst = document.getElementById('venteTekst');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'none';
+    if(vente) vente.style.display = 'flex';
+    if(venteTekst){
+      venteTekst.textContent = forsok > 0
+        ? ('Henter tilgangen din — prøver igjen (' + (forsok + 1) + '/' + maks + ')…')
+        : 'Henter tilgangen din…';
     }
-    return { ok: false, transient: true };
+    await klargjoerFirestoreAuth(user);
+    const tilgang = await bekreftAdminTilgang(user);
+    if(tilgang.ok) return tilgang;
+    if(!tilgang.transient || forsok >= maks - 1) return tilgang;
+    await new Promise(resolve => setTimeout(resolve, 1200 * (forsok + 1)));
+    return provAdminInnloggingPaNytt(user, forsok + 1);
   }
 
   const MAX_FILE_MB = 10;
@@ -5536,12 +5544,12 @@
       currentUserEmail = user.email;
       authHarSvart = true;
       document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('venteSkjerm').style.display = 'none';
-      document.getElementById('appRoot').style.display = 'block';
+      document.getElementById('appRoot').style.display = 'none';
+      document.getElementById('venteSkjerm').style.display = 'flex';
 
       let tilgang = { ok: false, transient: true };
       try{
-        tilgang = await bekreftAdminTilgangMedRetry(user);
+        tilgang = await provAdminInnloggingPaNytt(user);
       } catch(err){
         console.error('Kunne ikke bekrefte admin-tilgang:', err);
         tilgang = { ok: false, transient: true };
@@ -5555,7 +5563,7 @@
           const errEl = document.getElementById('loginError');
           if(errEl){
             errEl.style.color = 'var(--red)';
-            errEl.textContent = 'Kunne ikke bekrefte tilgangen akkurat nå. Prøv å logge inn på nytt.';
+            errEl.textContent = 'Kunne ikke bekrefte tilgangen akkurat nå. Nettverket eller databasen svarer tregt — prøv å logge inn på nytt om et øyeblikk.';
             errEl.style.display = 'block';
           }
           return;
@@ -5586,6 +5594,8 @@
         }
         return;
       }
+      document.getElementById('venteSkjerm').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
       try{ lyttPaaMinTilgang(); }
       catch(err){ console.error('lyttPaaMinTilgang', err); }
       const who = document.getElementById('loggedInAs');
@@ -7682,7 +7692,7 @@
         ? `${cashierFormatDatoTid(last.dato)}<br><span class="tag-pill">${escapeHtml(last.kilde || '')}</span>`
         : '<span style="color:#8a9a90;">Ingen ennå</span>';
       const checked = cashierSelectedIds.has(s.id) ? 'checked' : '';
-      const pending = (cache.pendingVippsPayments || []).filter(p => p.studentId === s.id);
+      const pending = (cache.pendingVippsPayments || []).filter(p => p.studentId === s.id && p.status === 'pending');
       const lastVippsPayment = history
         .filter(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0)
         .sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
@@ -13511,7 +13521,7 @@
       { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
       { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
       { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => !r.status || r.status === 'Venter' || r.status === 'Ny').length, side:'okonomi', tab:'paymentRequests' },
-      { key:'vippsPending', ic:'📲', label:'Vipps-krav som venter', count: (cache.pendingVippsPayments || []).length, side:'okonomi', tab:'cashier' },
+      { key:'vippsPending', ic:'📲', label:'Vipps-krav som venter', count: (cache.pendingVippsPayments || []).filter(p => p.status === 'pending').length, side:'okonomi', tab:'cashier' },
       { key:'teacherAttendance', ic:'⏱️', label:'Timelister til godkjenning', count: cache.teacherAttendance.filter(t => (t.godkjenningsstatus || 'Venter godkjenning') === 'Venter godkjenning').length, side:'okonomi', tab:'lonn' },
       { key:'unpaidStudents', ic:'💰', label:'Ubetalte elever', count: activeStudents.filter(s => s.betalt === 'Nei').length, side:'okonomi', tab:'cashier' },
       { key:'noClassStudents', ic:'📭', label:'Elever uten klasse', count: activeStudents.filter(s => !s.klasse).length, side:'admin', tab:'students', folder:'__none__' }
