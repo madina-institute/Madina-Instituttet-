@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 03:57:18 -->
+<!-- SIST-ENDRET: 2026-08-20 04:25:51 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -1896,6 +1896,10 @@
   <div class="mlogin-inner">
     <img class="mlogin-logo" src="logo-hvit.png" alt="Madina Skole">
     <div class="mlogin-hello" style="margin-top:14px;" id="venteTekst">Henter økten din…</div>
+    <p id="venteSafariHint" style="display:none; margin-top:18px; max-width:320px; font-size:13px; line-height:1.45; opacity:0.88; text-align:center;">
+      Tar det lang tid? I Safari kan «Avansert personvernbeskyttelse» blokkere økten.
+      Prøv «Reduser beskyttelse» i banneret over, eller logg inn på nytt.
+    </p>
   </div>
 </div>
 
@@ -4607,7 +4611,8 @@
     addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, setDoc as _setDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
+    initializeAuth, getAuth, browserLocalPersistence, onAuthStateChanged,
+    signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
     authStateReady, sendPasswordResetEmail,
     EmailAuthProvider, reauthenticateWithCredential
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
@@ -4715,13 +4720,19 @@
   // lesemodus» i stedet for å feile før vi vet hva som skulle skjedd.
   const batchCommit = (b) => { sperrIForhandsvisning(); return b.commit(); };
   const storage = getStorage(app);
-  const auth = getAuth(app);
-  // Vent til Firebase har gjenopprettet økten fra nettleseren. Uten dette
-  // kan onAuthStateChanged fyre med null før brukeren er lastet inn —
-  // da vises innloggingsskjermen ved hver F5 selv om økten finnes.
-  const authReady = authStateReady(auth).catch(err => {
-    console.error('authStateReady failed:', err);
-  });
+  // Sett LOCAL persistence ved init — ikke setPersistence() ved hver F5.
+  // Safari med avansert personvernbeskyttelse kan blokkere IndexedDB; da
+  // henger authStateReady() for alltid. Derfor bruker vi waitForAuthReady()
+  // med tidsavbrudd i stedet for å vente uten grense.
+  const auth = initializeAuth(app, { persistence: browserLocalPersistence });
+  function waitForAuthReady(ms = 10000){
+    return Promise.race([
+      authStateReady(auth).catch(err => {
+        console.error('authStateReady failed:', err);
+      }),
+      new Promise(resolve => setTimeout(resolve, ms))
+    ]);
+  }
 
   // ═════════════════════════════════════════════════════════════════
   // FEILLOGG — gjør stille feil synlige
@@ -5399,15 +5410,20 @@
   // Etter åtte sekunder gir vi opp å vente og viser innloggingen med en
   // forklaring. Svarer Firebase likevel etterpå, overtar den som normalt.
   let authHarSvart = false;
+  setTimeout(() => {
+    if(authHarSvart) return;
+    const hint = document.getElementById('venteSafariHint');
+    if(hint) hint.style.display = 'block';
+  }, 5000);
   setTimeout(async () => {
     if(authHarSvart) return;
-    await authReady;
+    // Ikke vent på authStateReady uten grense — den henger i Safari.
+    await waitForAuthReady(1500);
     if(authHarSvart) return;
     const vente = document.getElementById('venteSkjerm');
     if(!vente || vente.style.display === 'none') return;
 
-    const tekst = document.querySelector('#venteSkjerm .vente-tekst')
-               || document.querySelector('#venteSkjerm p');
+    const tekst = document.getElementById('venteTekst');
     if(auth.currentUser){
       if(tekst) tekst.textContent = 'Henter tilgangen din — det tar lengre tid enn vanlig...';
       return;
@@ -5416,13 +5432,13 @@
     document.getElementById('loginScreen').style.display = 'flex';
     const err = document.getElementById('loginError');
     if(err){
-      err.textContent = 'Fikk ikke bekreftet økten din. Sjekk nettforbindelsen og logg inn på nytt.';
+      err.textContent = 'Fikk ikke gjenopprettet økten. Sjekk nettet — i Safari kan personvernbeskyttelse blokkere økten. Logg inn på nytt.';
       err.style.display = 'block';
     }
-  }, 15000);
+  }, 8000);
 
   onAuthStateChanged(auth, async (user) => {
-    await authReady;
+    await waitForAuthReady(10000);
     user = auth.currentUser || user;
     if(user){
       currentUserEmail = user.email;
