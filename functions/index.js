@@ -543,6 +543,16 @@ exports.createVippsPayment = onRequest(
         res.status(400).json({ ok: false, error: "Mangler phoneNumber for Vipps-betaling." });
         return;
       }
+      // Vipps MT/UAT støtter ikke freestanding CARD — cards-mt.vipps.no viser
+      // «ikke tilgjengelig». Kort virker først i produksjon (VIPPS_ENV=prod).
+      if (method === "CARD" && VIPPS_ENV.value() !== "prod") {
+        res.status(400).json({
+          ok: false,
+          error: "Kortbetaling er ikke tilgjengelig i Vipps test-miljø. Bruk «Betal med Vipps», eller aktiver kort i produksjon.",
+          cardNotInTest: true,
+        });
+        return;
+      }
       if (type !== "registration" && type !== "balance") {
         res.status(400).json({ ok: false, error: "Ugyldig type — må være 'registration' eller 'balance'." });
         return;
