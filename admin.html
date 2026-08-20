@@ -7145,6 +7145,7 @@
       cache.pendingVippsPayments = snap.docs.map(d => ({ ...d.data(), id: d.id }))
         .filter(p => p.status === 'pending')
         .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      renderCashierPanel();
       renderCashierLedelsePanel();
     }, (err) => {
       console.error('pendingVippsPayments', err);
@@ -9210,8 +9211,9 @@
     showToast('Avbryter Vipps-kravet...');
     try{
       const data = await kallVippsFunksjon(CANCEL_VIPPS_URL, { reference });
-      if(data.ok) showToast('✓ Kravet er avbrutt.');
-      else melding('ADM-VIP-03', '⛔ Avbrytelse feilet',
+      if(data.ok){
+        showToast(data.cleanedUp ? ('✓ ' + (data.message || 'Kravet er fjernet fra listen.')) : '✓ Kravet er avbrutt.');
+      } else melding('ADM-VIP-03', '⛔ Avbrytelse feilet',
         'Kravet ble ikke avbrutt. Er det allerede betalt, kan det ikke avbrytes.',
         'avbryt · ' + (data.error || 'ukjent feil'));
     } catch(err){

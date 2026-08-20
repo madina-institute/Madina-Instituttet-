@@ -368,10 +368,63 @@ function formatVippsApiError(bodyText) {
     }
     if (code === "6180") return "Betalingen er allerede refundert hos Vipps.";
     if (code === "6020") return "Betalingen er ikke reservert hos Vipps — kan ikke refundere ennå.";
+    if (code === "6190" || /cannot be cancelled/i.test(String(detail))) {
+      const stateMatch = String(detail).match(/Invalid state:\s*(\w+)/i);
+      const state = stateMatch ? stateMatch[1].toUpperCase() : "";
+      if (state === "EXPIRED") return "Kravet har utløpt hos Vipps og kan ikke avbrytes.";
+      if (state) return `Kravet kan ikke avbrytes — status hos Vipps: ${state}.`;
+      return "Kravet kan ikke avbrytes hos Vipps.";
+    }
     return detail;
   } catch (_) {
     return bodyText;
   }
+}
+
+function parseVippsInvalidState(bodyText) {
+  try {
+    const err = JSON.parse(bodyText);
+    const m = String(err.detail || "").match(/Invalid state:\s*(\w+)/i);
+    return m ? m[1].toUpperCase() : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function closePendingVippsByReference(reference, newStatus, extra = {}) {
+  const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
+  if (!pendingSnap.empty) {
+    await pendingSnap.docs[0].ref.update({
+      status: newStatus,
+      closedAt: new Date().toISOString(),
+      ...extra,
+    });
+  }
+}
+
+function vippsTerminalPendingStatus(invalidState) {
+  const map = {
+    EXPIRED: "expired",
+    TERMINATED: "expired",
+    CANCELLED: "cancelled",
+    AUTHORIZED: "completed",
+    CAPTURED: "completed",
+    REFUNDED: "completed",
+  };
+  return map[invalidState] || null;
+}
+
+function vippsCleanupMessage(invalidState) {
+  if (invalidState === "EXPIRED" || invalidState === "TERMINATED") {
+    return "Kravet hadde allerede utløpt hos Vipps — fjernet fra listen.";
+  }
+  if (invalidState === "CANCELLED") {
+    return "Kravet var allerede avbrutt hos Vipps — fjernet fra listen.";
+  }
+  if (invalidState === "AUTHORIZED" || invalidState === "CAPTURED") {
+    return "Kravet er allerede betalt hos Vipps — fjernet fra utestående-listen.";
+  }
+  return `Kravet er ${invalidState.toLowerCase()} hos Vipps — fjernet fra listen.`;
 }
 
 async function captureVippsPayment(reference, amountOre, accessToken) {
@@ -1256,13 +1309,22 @@ exports.cancelVippsPayment = onRequest(
       if (!cancelRes.ok) {
         const body = await cancelRes.text();
         logger.error("Vipps cancel failed", body);
-        res.status(502).json({ ok: false, error: "Vipps avviste avbrytelsen (kanskje allerede betalt?): " + body });
+        const invalidState = parseVippsInvalidState(body);
+        const terminalStatus = invalidState ? vippsTerminalPendingStatus(invalidState) : null;
+        if (terminalStatus) {
+          await closePendingVippsByReference(reference, terminalStatus, { vippsState: invalidState });
+          res.status(200).json({
+            ok: true,
+            cleanedUp: true,
+            vippsState: invalidState,
+            message: vippsCleanupMessage(invalidState),
+          });
+          return;
+        }
+        res.status(502).json({ ok: false, error: "Vipps avviste avbrytelsen: " + formatVippsApiError(body) });
         return;
       }
-      const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
-      if (!pendingSnap.empty) {
-        await pendingSnap.docs[0].ref.update({ status: "cancelled", cancelledAt: new Date().toISOString() });
-      }
+      await closePendingVippsByReference(reference, "cancelled", { vippsState: "CANCELLED" });
       res.status(200).json({ ok: true });
     } catch (err) {
       logger.error("cancelVippsPayment error", err);
