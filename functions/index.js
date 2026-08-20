@@ -770,7 +770,7 @@ async function postVippsPayment(accessToken, { reference, normalizedPhone, amoun
   if (userFlow === "WEB_REDIRECT") {
     payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
   }
-  payload.profile = { scope: ["phoneNumber", "name"] };
+  payload.profile = { scope: "phoneNumber name" };
 
   const paymentRes = await fetch(`${vippsApiBase()}/epayment/v1/payments`, {
     method: "POST",
