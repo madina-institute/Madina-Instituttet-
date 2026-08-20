@@ -1,5 +1,5 @@
 rules_version = '2';
-/* SIST-ENDRET: 2026-08-20 03:57:18 */
+/* SIST-ENDRET: 2026-08-20 04:49:05 */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -65,11 +65,23 @@ service cloud.firestore {
     // Reglene kan ikke gjøre spørringer — bare slå opp én kjent sti.
     // 'adminUsers' er indeksert på tilfeldig id, så den kan ikke brukes.
     // Panelet vedlikeholder derfor 'tilgang', med e-posten som id.
+    //
+    // erAdmin() slår opp tilgang/{min e-post} via exists/get. Den raden
+    // MÅ kunne leses uten å allerede være admin — ellers er det en
+    // sirkel: panelet leser tilgang for å vite hvem du er, men reglene
+    // krever admin for å lese tilgang. foreldreTilgang løser dette med
+    // epost == minEpost(); tilgang gjør det samme nå.
     function erAdmin() {
       return erNodkonto()
-        || (loggedIn()
-            && minEpost() != ''
+        || (minEpost() != ''
             && exists(/databases/$(database)/documents/tilgang/$(minEpost())));
+    }
+
+    // Leser sin egen tilgangsrad — matcher dokument-id mot innlogget
+    // e-post, uten get() på andre dokumenter. Panelet trenger dette ved
+    // innlogging og F5, før den vet hva du har lov til.
+    function erMinTilgangRad(epost) {
+      return minEpost() != '' && epost.lower() == minEpost();
     }
 
     // Mitt eget nivå. Lavere tall = mer myndighet.
@@ -145,7 +157,11 @@ service cloud.firestore {
     // skjuler knappene hjelper ikke: hvem som helst kan åpne konsollen
     // og skrive direkte. Hierarkiet må stå HER for å bety noe.
     match /tilgang/{epost} {
-      allow read: if loggedIn();
+      // Egen rad først — uten erAdmin(), uten get() på andre docs.
+      // Deretter nødkonto og admins som trenger lese andres rader.
+      allow read: if erMinTilgangRad(epost)
+                  || erNodkonto()
+                  || (minEpost() != '' && !erMinTilgangRad(epost) && erAdmin());
 
       allow create, update: if loggedIn()
         && request.resource.data.niva is int
@@ -180,14 +196,18 @@ service cloud.firestore {
     // Motsatt rekkefølge gir avviste skrivinger som bare havner i
     // feilloggen — indeksen ville stått tom, og alt sett normalt ut.
     match /foreldreTilgang/{epost} {
-      allow read: if erAdmin() || (minEpost() != '' && epost == minEpost());
+      allow read: if erMinTilgangRad(epost)
+                  || erNodkonto()
+                  || (minEpost() != '' && !erMinTilgangRad(epost) && erAdmin());
       allow write: if erAdmin();
     }
 
     // Lærerportalen spør per klasse. Reglene trenger hvilke klasser og
     // foresatte som hører til hver lærer — vedlikeholdes av panelet.
     match /laererTilgang/{epost} {
-      allow read: if erAdmin() || (minEpost() != '' && epost == minEpost());
+      allow read: if erMinTilgangRad(epost)
+                  || erNodkonto()
+                  || (minEpost() != '' && !erMinTilgangRad(epost) && erAdmin());
       allow write: if erAdmin();
     }
 
