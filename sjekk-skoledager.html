@@ -91,6 +91,10 @@ lastes modulen, og regner den riktig?</p>
   var c = window.Skoledager.schoolDayInfo('2026-10-10', LOR, PROGRAMNAVN);
   rad('10. okt (vanlig lørdag)', c.ok ? 'ÅPEN — riktig' : 'STENGT — feil', c.ok);
 
+  var e = window.Skoledager.schoolDayInfo('2026-08-22', LOR, PROGRAMNAVN);
+  rad('22. aug (lørdag før skolestart)',
+      e.ok ? 'ÅPEN — feil' : 'STENGT · ' + (e.status || ''), !e.ok);
+
   var d = window.Skoledager.schoolDayInfo('2026-10-03', LOR, '');
   rad('3. okt UTEN program',
       d.ok ? 'ÅPEN' : 'STENGT',  true);

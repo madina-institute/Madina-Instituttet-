@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 22:42:00 */
+/* SIST-ENDRET: 2026-08-20 23:45:00 */
 /* ═══════════════════════════════════════════════════════════════════
    skoledager.js — ÉN kilde for spørsmålet «er dette en skoledag?»
 
@@ -247,16 +247,30 @@ window.Skoledager = (function () {
      stedet, ville en klasse uten programpost stått igjen med null
      undervisningsdager — en tom skjerm, uten feilmelding.
 
-     Skoleårets grenser holdes også utenfor. index1 bruker denne til å
-     validere datofelter, og en lærer kan ha grunn til å føre noe
-     utenfor terminen. Vil du ha grensene med, kall dagStatus(). */
+     Skoleårets grenser følger samme rekkefølge som dagStatus(): ekstra
+     vinner, deretter utenfor-skolear, ferie, ukedag. Uten det kunne
+     læreren registrere oppmøte og timer på lørdager før skolestart. */
   function schoolDayInfo(datoIso, allowed, program) {
     var treff = kalenderTreff(datoIso, program || '');
     var ok = Array.isArray(allowed) && allowed.indexOf(lesDato(datoIso).getDay()) !== -1;
     var label = '';
     var status = ok ? 'undervisningsdag' : 'ikke-undervisningsdag';
-    if (treff.fri) { ok = false; label = treff.fri.beskrivelse || 'Fri'; status = 'ferie'; }
-    if (treff.ekstra) { ok = true; label = treff.ekstra.beskrivelse || 'Ekstra undervisningsdag'; status = 'ekstradag'; }
+    if (treff.ekstra) {
+      return {
+        ok: true,
+        label: treff.ekstra.beskrivelse || 'Ekstra undervisningsdag',
+        status: 'ekstradag'
+      };
+    }
+    if (utenforSkolear(datoIso)) {
+      label = (treff.fri && treff.fri.beskrivelse) || '';
+      return { ok: false, label: label, status: 'utenfor-skolear' };
+    }
+    if (treff.fri) {
+      ok = false;
+      label = treff.fri.beskrivelse || 'Fri';
+      status = 'ferie';
+    }
     return { ok: ok, label: label, status: status };
   }
 
