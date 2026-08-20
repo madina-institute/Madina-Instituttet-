@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:25:00 -->
+<!-- SIST-ENDRET: 2026-08-20 23:55:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -285,6 +285,50 @@
     flex:0 0 auto;
   }
   html[dir="rtl"] .student-row select{font-family:'Tajawal','Lora',serif;}
+
+  /* Elevliste — rolig, vertikal plan, én indikator per rad */
+  .elev-roster{display:flex; flex-direction:column; gap:0; margin-top:8px;}
+  .elev-roster-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 4px; border-bottom:1px solid var(--line); cursor:pointer;
+    transition:background .15s;
+  }
+  .elev-roster-row:last-child{border-bottom:none;}
+  .elev-roster-row:hover{background:var(--paper-2);}
+  .elev-roster-name{
+    font-family:'Jost',sans-serif; font-size:15px; font-weight:600; color:var(--ink);
+    flex:1 1 auto; min-width:0;
+  }
+  html[dir="rtl"] .elev-roster-name{font-family:'Tajawal',sans-serif;}
+  .elev-att-pill{
+    flex:0 0 auto; font-family:'Jost',sans-serif; font-size:11px; font-weight:700;
+    padding:4px 10px; border-radius:999px; letter-spacing:.02em; white-space:nowrap;
+  }
+  html[dir="rtl"] .elev-att-pill{font-family:'Tajawal',sans-serif;}
+  .elev-att-pill.att-ok{background:#e6f4ec; color:#1f6b42;}
+  .elev-att-pill.att-no{background:#fdecea; color:#a83c3c;}
+  .elev-att-pill.att-syk{background:#fff4e5; color:#9a5b00;}
+  .elev-att-pill.att-perm{background:#eef2fb; color:#2b3f8f;}
+  .elev-att-pill.att-none{background:#f0f2f1; color:#8a9a90;}
+  .elev-parent-block{
+    background:var(--paper-2); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; margin-bottom:12px;
+  }
+  .elev-parent-role{
+    font-family:'Jost',sans-serif; font-size:10.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.08em; color:#8a9a90; margin-bottom:8px;
+  }
+  html[dir="rtl"] .elev-parent-role{font-family:'Tajawal',sans-serif;}
+  .elev-parent-navn{font-family:'Jost',sans-serif; font-size:16px; font-weight:700; color:var(--ink); margin-bottom:10px;}
+  html[dir="rtl"] .elev-parent-navn{font-family:'Tajawal',sans-serif;}
+  .elev-parent-row{
+    display:flex; justify-content:space-between; gap:12px; font-size:13.5px;
+    padding:6px 0; border-top:1px dashed var(--line);
+  }
+  .elev-parent-row:first-of-type{border-top:none; padding-top:0;}
+  .elev-parent-row span:first-child{color:#8a9a90; flex:0 0 auto;}
+  .elev-parent-row span:last-child{color:var(--ink); text-align:end; word-break:break-word;}
+  html[dir="rtl"] .elev-parent-row span:last-child{font-family:'Tajawal',sans-serif;}
 
   .empty-msg{font-family:'Jost',sans-serif; font-size:13px; color:#8a9a90; text-align:center; padding:20px 0;}
   .tag-pill{
@@ -956,6 +1000,7 @@
       <button class="back-link" onclick="navTo('home', showHome)" data-i18n="back">← Tilbake</button>
       <div class="menu-grid">
         <div class="menu-card" onclick="navTo('attendance', showAttendance)"><div class="ic">✅</div><div class="t" data-i18n="menuTakeAttendance">Ta oppmøte</div></div>
+        <div class="menu-card" onclick="navTo('classStudents', showClassStudents)"><div class="ic">👥</div><div class="t" data-i18n="menuClassStudents">Elever i klassen</div></div>
         <div class="menu-card" onclick="navTo('myAttendance', showMyAttendance)"><div class="ic">⏰</div><div class="t" data-i18n="menuMyHours">Mitt oppmøte/timer</div></div>
         <div class="menu-card" id="menuCardAbsence" onclick="navTo('absenceReview', showAbsenceReview)"><span class="dot" id="dotAbsenceReview"></span><div class="ic">🚫</div><div class="t" data-i18n="menuAbsenceReview">Fraværsmeldinger</div></div>
       </div>
@@ -1236,6 +1281,7 @@
       </div>
       <button class="btn btn-primary" id="hwSubmitBtn" onclick="submitHomework()">Legg ut lekse</button>
       <button type="button" class="btn btn-ghost" id="hwCancelEditBtn" style="display:none; margin-top:10px;" onclick="cancelHomeworkEdit()">Avbryt redigering</button>
+      <button type="button" class="btn btn-ghost" id="hwDeleteEditBtn" style="display:none; margin-top:10px; color:var(--red);" onclick="deleteEditingHomework()">🗑️ <span data-i18n="homeworkDeleteBtn">Slett lekse</span></button>
     </div>
 
     <!-- HOMEWORK ARCHIVE -->
@@ -1252,6 +1298,22 @@
       <h2>Fraværsmeldinger</h2>
       <div class="sub">Ubehandlede meldinger fra foresatte for din klasse</div>
       <div id="absenceReviewList"></div>
+    </div>
+
+    <!-- CLASS STUDENTS VIEW -->
+    <div class="card" id="classStudentsView" style="display:none;">
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <div id="classStudentsListPanel">
+        <h2 data-i18n="classStudentsTitle">Elever i klassen</h2>
+        <div class="sub" id="classStudentsSub" data-i18n="classStudentsSub">Trykk på en elev for å se foresattes kontaktinfo.</div>
+        <div id="classStudentsRoster" class="elev-roster"></div>
+      </div>
+      <div id="classStudentsDetailPanel" style="display:none;">
+        <button type="button" class="back-link" onclick="closeClassStudentDetail()" data-i18n="classStudentsBack">← Tilbake til listen</button>
+        <h2 id="classStudentDetailName"></h2>
+        <div class="sub" data-i18n="classStudentsParentSub">Kontaktinfo til foresatte — ingenting annet vises her.</div>
+        <div id="classStudentDetailBody"></div>
+      </div>
     </div>
 
     <!-- MY ATTENDANCE / HOURS VIEW -->
@@ -1768,7 +1830,15 @@
       statusLabels: { 'Til stede':'Til stede', 'Fraværende':'Fraværende', 'Syk':'Syk', 'Permisjon':'Permisjon' },
       fagLabels: { Koran:'Koran', Islam:'Islam', Arabisk:'Arabisk', Urdu:'Urdu', Madinabarn:'Madinabarn', Annet:'Annet' },
       menuHome: 'Hjem', menuAttendanceHub: 'Oppmøte', menuTeaching: 'Undervisning', menuMessages: 'Melding',
-      menuTakeAttendance: 'Ta oppmøte', menuMyHours: 'Mitt oppmøte/timer', menuAbsenceReview: 'Fraværsmeldinger',
+      menuTakeAttendance: 'Ta oppmøte', menuMyHours: 'Mitt oppmøte/timer',
+      menuClassStudents: 'Elever i klassen',
+      classStudentsTitle: 'Elever i klassen',
+      classStudentsSub: 'Trykk på en elev for å se foresattes kontaktinfo.',
+      classStudentsBack: '← Tilbake til listen',
+      classStudentsParentSub: 'Kontaktinfo til foresatte — ingenting annet vises her.',
+      parentLabel: 'Foresatt',
+      parent2Label: 'Foresatt 2',
+      phoneLabel: 'Telefon', menuAbsenceReview: 'Fraværsmeldinger',
       menuLessonPrep: 'Timeforberedelse', menuMonthlyPlan: 'Månedsplan', menuSemesterPlan: 'Semesterplan',
       menuFagplan: 'Fagplan', menuArsplan: 'Årsplan', menuLaereplanregler: 'Læreplanregler',
       fagplanSub: 'Pensum for alle fag — kun lesing', arsplanSub: 'Skoleårets plan per klasse — kun lesing',
@@ -1910,6 +1980,14 @@
       fagLabels: { Koran:'القرآن', Islam:'الإسلام', Arabisk:'العربية', Urdu:'الأردية', Madinabarn:'أطفال المدينة', Annet:'أخرى' },
       menuHome: 'الرئيسية', menuAttendanceHub: 'الحضور', menuTeaching: 'التدريس', menuMessages: 'الرسائل',
       menuTakeAttendance: 'تسجيل الحضور', menuMyHours: 'حضوري/ساعاتي', menuAbsenceReview: 'بلاغات الغياب',
+      menuClassStudents: 'طلاب القسم',
+      classStudentsTitle: 'طلاب القسم',
+      classStudentsSub: 'اضغط على اسم الطالب لعرض بيانات ولي الأمر.',
+      classStudentsBack: '← العودة إلى القائمة',
+      classStudentsParentSub: 'بيانات التواصل مع ولي الأمر فقط — لا معلومات أخرى.',
+      parentLabel: 'ولي الأمر',
+      parent2Label: 'ولي أمر ثانٍ',
+      phoneLabel: 'الهاتف',
       menuLessonPrep: 'تحضير الحصة', menuMonthlyPlan: 'خطة شهرية', menuSemesterPlan: 'خطة فصلية',
       menuFagplan: 'خطة المادة', menuArsplan: 'الخطة السنوية', menuLaereplanregler: 'قواعد الخطة الدراسية',
       fagplanSub: 'مناهج جميع المواد — للقراءة فقط', arsplanSub: 'خطة السنة لكل صف — للقراءة فقط',
@@ -1938,6 +2016,7 @@
       document.getElementById('classSub').textContent =
         (lang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
       renderStudentList();
+      renderClassStudents();
       updateTeacherBadges();
     }
   };
@@ -2124,8 +2203,8 @@
       });
     };
 
-    lyttPerKlasse('students',     (r) => { students = r; startForesattLyttere(); }, renderStudentList);
-    lyttPerKlasse('attendance',   (r) => { attendance = r; },   renderStudentList);
+    lyttPerKlasse('students',     (r) => { students = r; startForesattLyttere(); }, () => { renderStudentList(); renderClassStudents(); });
+    lyttPerKlasse('attendance',   (r) => { attendance = r; },   () => { renderStudentList(); renderClassStudents(); });
     lyttPerKlasse('studentNotes', (r) => { studentNotes = r; }, renderStudentNotesList);
   }
 
@@ -2652,7 +2731,10 @@
         (snap) => {
           deler[i] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           guardians = deler.flat();
-          if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') populateNewMessagePicker();
+          if(currentTeacher){
+            if(document.getElementById('messagesListView').style.display !== 'none') populateNewMessagePicker();
+            renderClassStudents();
+          }
         },
         (err) => console.error('guardians', err)
       );
@@ -3188,6 +3270,7 @@
       else if(view === 'homework') navTo('homework', showHomework);
       else if(view === 'homeworkArchive') showHomeworkArchive();
       else if(view === 'absenceReview') navTo('absenceReview', showAbsenceReview);
+      else if(view === 'classStudents') navTo('classStudents', showClassStudents);
       else if(view === 'myAttendance') navTo('myAttendance', showMyAttendance);
       else if(view === 'studentNotes') navTo('studentNotes', showStudentNotes);
       else if(view === 'messages') navTo('messages', showMessages);
@@ -3230,6 +3313,7 @@
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
     document.getElementById('myAttendanceView').style.display = 'none';
+    document.getElementById('classStudentsView').style.display = 'none';
     document.getElementById('studentNotesView').style.display = 'none';
     document.getElementById('messagesListView').style.display = 'none';
     document.getElementById('messageThreadView').style.display = 'none';
@@ -3238,7 +3322,7 @@
   };
 
   const SIDEBAR_TEACHER = {
-    attendance: 'oppmote', myAttendance: 'oppmote', absenceReview: 'oppmote',
+    attendance: 'oppmote', myAttendance: 'oppmote', absenceReview: 'oppmote', classStudents: 'oppmote',
     lesson: 'undervisning', monthlyPlan: 'undervisning', semesterPlan: 'undervisning',
     fagplan: 'undervisning', arsplan: 'undervisning', laereplanregler: 'undervisning',
     homework: 'undervisning', videos: 'undervisning', studentNotes: 'undervisning',
@@ -3569,11 +3653,17 @@
   function syncHomeworkEditUI(){
     const editing = !!editingHomeworkId;
     const cancelBtn = document.getElementById('hwCancelEditBtn');
+    const deleteBtn = document.getElementById('hwDeleteEditBtn');
     if(cancelBtn){
       cancelBtn.style.display = editing ? 'block' : 'none';
       cancelBtn.textContent = t('homeworkCancelEdit');
     }
+    if(deleteBtn) deleteBtn.style.display = editing ? 'block' : 'none';
   }
+
+  window.deleteEditingHomework = function(){
+    if(editingHomeworkId) deleteHomeworkEntry(editingHomeworkId);
+  };
 
   window.showHomework = function(){
     document.getElementById('chooseView').style.display = 'none';
@@ -3680,6 +3770,119 @@
     renderAbsenceReviewList();
     pushAppView('absenceReview');
   };
+
+  // ---------- Elever i klassen (roster + foresatt-kontakt) ----------
+  let valgtElevId = null;
+
+  function elevAttendanceSummary(studentId){
+    const records = attendance.filter(a => a.studentId === studentId)
+      .sort((a, b) => (b.dato || '').localeCompare(a.dato || ''));
+    const latest = records[0] || null;
+    let present = 0, absent = 0;
+    records.forEach(r => {
+      if(r.status === 'Til stede') present++;
+      else absent++;
+    });
+    return { latest, present, absent, total: records.length };
+  }
+
+  function elevAttPillHtml(summary){
+    const labels = t('statusLabels');
+    if(!summary.latest){
+      return `<span class="elev-att-pill att-none">${currentLang === 'ar' ? '—' : 'Ingen data'}</span>`;
+    }
+    const st = summary.latest.status || 'Til stede';
+    const cls = st === 'Til stede' ? 'att-ok'
+      : st === 'Syk' ? 'att-syk'
+      : st === 'Permisjon' ? 'att-perm'
+      : 'att-no';
+    return `<span class="elev-att-pill ${cls}">${escapeHtml(labels[st] || st)}</span>`;
+  }
+
+  function renderGuardianContactBlock(gId, roleLabel){
+    const g = guardians.find(x => x.id === gId);
+    if(!g){
+      return `<div class="elev-parent-block"><div class="elev-parent-role">${escapeHtml(roleLabel)}</div><div class="elev-parent-navn">—</div></div>`;
+    }
+    return `<div class="elev-parent-block">
+      <div class="elev-parent-role">${escapeHtml(roleLabel)}</div>
+      <div class="elev-parent-navn">${escapeHtml(g.navn || '—')}</div>
+      <div class="elev-parent-row"><span>${escapeHtml(t('phoneLabel'))}</span><span>${escapeHtml(g.telefon || '—')}</span></div>
+      <div class="elev-parent-row"><span>${escapeHtml(t('emailLabel'))}</span><span>${escapeHtml(g.epost || '—')}</span></div>
+    </div>`;
+  }
+
+  function renderClassStudents(){
+    const view = document.getElementById('classStudentsView');
+    if(!view || view.style.display === 'none' || !currentTeacher) return;
+    if(valgtElevId){
+      renderClassStudentDetail(valgtElevId);
+      return;
+    }
+    const el = document.getElementById('classStudentsRoster');
+    const sub = document.getElementById('classStudentsSub');
+    if(!el) return;
+    const mine = students.filter(s => s.klasse === valgtKlasse)
+      .sort((a, b) => String(a.navn || '').localeCompare(String(b.navn || ''), currentLang === 'ar' ? 'ar' : 'nb'));
+    if(sub){
+      sub.textContent = t('classStudentsSub') + (mine.length
+        ? (currentLang === 'ar' ? ` (${mine.length})` : ` (${mine.length})`)
+        : '');
+    }
+    if(mine.length === 0){
+      el.innerHTML = `<div class="empty-msg">${t('noStudentsInClass')}</div>`;
+      return;
+    }
+    el.innerHTML = mine.map(s => {
+      const sum = elevAttendanceSummary(s.id);
+      return `<div class="elev-roster-row" data-student-id="${escapeHtml(s.id)}" onclick="openClassStudentDetail(this.dataset.studentId)">
+        <span class="elev-roster-name">${escapeHtml(s.navn || '—')}</span>
+        ${elevAttPillHtml(sum)}
+      </div>`;
+    }).join('');
+  }
+
+  window.showClassStudents = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('classStudentsView').style.display = 'block';
+    valgtElevId = null;
+    document.getElementById('classStudentsListPanel').style.display = 'block';
+    document.getElementById('classStudentsDetailPanel').style.display = 'none';
+    renderClassStudents();
+    pushAppView('classStudents');
+  };
+
+  window.openClassStudentDetail = function(studentId){
+    valgtElevId = studentId;
+    document.getElementById('classStudentsListPanel').style.display = 'none';
+    document.getElementById('classStudentsDetailPanel').style.display = 'block';
+    renderClassStudentDetail(studentId);
+  };
+
+  function renderClassStudentDetail(studentId){
+    const student = students.find(s => s.id === studentId);
+    const nameEl = document.getElementById('classStudentDetailName');
+    const bodyEl = document.getElementById('classStudentDetailBody');
+    if(!student || !nameEl || !bodyEl) return;
+    nameEl.textContent = student.navn || '—';
+    const blocks = [];
+    if(student.foresatt) blocks.push(renderGuardianContactBlock(student.foresatt, t('parentLabel')));
+    if(student.foresatt2) blocks.push(renderGuardianContactBlock(student.foresatt2, t('parent2Label')));
+    if(blocks.length === 0){
+      bodyEl.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد بيانات ولي أمر مسجّلة.' : 'Ingen foresatt registrert for denne eleven.'}</div>`;
+    } else {
+      bodyEl.innerHTML = blocks.join('');
+    }
+  }
+
+  window.closeClassStudentDetail = function(){
+    valgtElevId = null;
+    document.getElementById('classStudentsListPanel').style.display = 'block';
+    document.getElementById('classStudentsDetailPanel').style.display = 'none';
+    renderClassStudents();
+  };
+
+  // ---------- Mitt oppmøte/timer (lærerens egen registrering) ----------
 
   // ---------- Mitt oppmøte/timer (lærerens egen registrering) ----------
   let myAttendanceCache = [];
