@@ -36,6 +36,21 @@ Freestanding kort (`paymentMethod.type = CARD`) **virker ikke i Vipps test/MT**.
 Workflow `Deploy Cloud Functions` lager `functions/.env` automatisk ved deploy
 (`VIPPS_ENV`, `VIPPS_MSN`, `SITE_BASE_URL`). Hemmeligheter hentes fra Secret Manager.
 
+**GitHub repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Verdi |
+|--------|--------|
+| `VIPPS_MSN` | Produksjons-MSN fra Vipps (påkrevd) |
+| `VIPPS_ENV` | `prod` (valgfri — standard er prod) |
+| `FIREBASE_TOKEN` | Deploy-token (finnes allerede) |
+
+Engangs-oppsett av Firebase-hemmeligheter lokalt:
+
+```bash
+chmod +x functions/setup-vipps-prod.sh
+./functions/setup-vipps-prod.sh
+```
+
 ## Sikkerhetskopi
 
 - Automatisk: søndag kl. 03:00 (Cloud Scheduler).
