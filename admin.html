@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 03:17:13 -->
+<!-- SIST-ENDRET: 2026-08-20 03:44:57 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4188,9 +4188,9 @@
           Bygg begge tilgangs-indeksene nå
         </button>
         <div class="sub" style="margin-top:8px;">
-          Skriver <code>foreldreTilgang</code> og <code>laererTilgang</code> for alle på én gang.
-          Normalt skjer dette automatisk når data lastes inn — bruk knappen etter
-          sikkerhetsoppdateringer, eller hvis en portal står tom uten feilmelding.
+          Normalt bygges indeksene automatisk når data lastes inn eller når
+          e-post endres. Knappen er en nødutgang hvis en portal står tom uten
+          feilmelding — ikke noe man skal huske etter hver endring.
         </div>
       </div>
     </div>
@@ -5820,10 +5820,11 @@
          options:['', 'Ja', 'Nei']},
         {key:'sprakvalg', label:'Språkvalg (Arabisk/Urdu)', type:'select', essential:true, options:['','Arabisk','Urdu']},
         {key:'klasse', label:'Klasse', type:'dynamic-select', source:'classes', essential:true},
-        {key:'foresatt', label:'Foresatt', type:'dynamic-select', source:'guardians', essential:true},
+        {key:'foresatt', label:'Foresatt — konto (portal)', type:'dynamic-select', source:'guardians', essential:true},
         {key:'foresatt1_tlf', label:'Foresatt 1 — telefon', type:'text', essential:true},
+        {key:'foresatt1_epost', label:'Foresatt 1 — e-post (kopi, ikke portal)', type:'text'},
         {key:'elevStatus', label:'Elevstatus', type:'select', essential:true, options:['Aktiv','Sluttet/trukket']},
-        {key:'foresatt2', label:'Foresatt 2 (om registrert som egen konto)', type:'dynamic-select', source:'guardians'},
+        {key:'foresatt2', label:'Foresatt 2 — konto (portal, valgfritt)', type:'dynamic-select', source:'guardians'},
 
         {key:'betalt', label:'Betalt', type:'select', options:['Ja','Nei']},
         {key:'spesialpris', label:'Spesialpris (kr) — la stå tom for vanlig pris', type:'text', placeholder:'settes kun i særskilte tilfeller'},
@@ -5842,7 +5843,7 @@
         {key:'foresatt2_navn', label:'Foresatt 2 — navn', type:'text'},
         {key:'foresatt2_relasjon', label:'Foresatt 2 — relasjon', type:'select', options:['','Mor','Far','Annen']},
         {key:'foresatt2_tlf', label:'Foresatt 2 — telefon', type:'text'},
-        {key:'foresatt2_epost', label:'Foresatt 2 — e-post', type:'text'},
+        {key:'foresatt2_epost', label:'Foresatt 2 — e-post (kopi, ikke portal)', type:'text'},
         {key:'nod_navn', label:'Nødkontakt — navn', type:'text'},
         {key:'nod_tlf', label:'Nødkontakt — telefon', type:'text'},
         {key:'nod_relasjon', label:'Nødkontakt — relasjon', type:'text'},
@@ -8085,7 +8086,7 @@
       { tittel: '👤 Om eleven', ikon: '👤', keys: [
         'kjonn','elev_fdato','adresse','postnr_sted','grunnskole','klassetrinn','sprak_hjemme'] },
       { tittel: '👨‍👩‍👧 Foresatt 1', keys: [
-        'foresatt','foresatt1_tlf'] },
+        'foresatt','foresatt1_tlf','foresatt1_epost'] },
       { tittel: '👨‍👩‍👦 Foresatt 2', keys: [
         'foresatt2','foresatt2_navn','foresatt2_relasjon','foresatt2_tlf','foresatt2_epost'] },
       { tittel: '🚨 Nødkontakt', keys: [
@@ -8580,17 +8581,24 @@
         .filter(Boolean)
         .map(feltHtml)
         .filter(Boolean);
+      let portalBlokk = '';
+      if(type === 'students'){
+        if(sek.tittel.includes('Foresatt 1')) portalBlokk = byggForesattPortalBlokk(row, 1);
+        else if(sek.tittel.includes('Foresatt 2')) portalBlokk = byggForesattPortalBlokk(row, 2);
+      }
       // En seksjon uten utfylte felter vises ikke — en tom «Helse»-knapp
-      // som åpner ingenting er bare støy.
-      if(felter.length === 0) return;
+      // som åpner ingenting er bare støy. Foresatt-seksjoner vises likevel
+      // når portal-koblingen eller e-postkopien trenger forklaring.
+      if(felter.length === 0 && !portalBlokk) return;
+      const antall = felter.length + (portalBlokk ? 1 : 0);
       html += `
         <div class="pd-seksjon" data-seksjon="${idx}">
           <button class="pd-seksjon-head" onclick="togglePdSeksjon(${idx}, this)">
             <span class="pd-caret">▶</span>
             <span class="pd-seksjon-tittel">${escapeHtml(sek.tittel)}</span>
-            <span class="pd-seksjon-antall">${felter.length}</span>
+            <span class="pd-seksjon-antall">${antall}</span>
           </button>
-          <div class="pd-seksjon-body">${felter.join('')}</div>
+          <div class="pd-seksjon-body">${felter.join('')}${portalBlokk}</div>
         </div>`;
     });
 
@@ -9242,8 +9250,8 @@
     if(['students','teachers','teacherAttendance','finances','programs',
         'paymentRequests','guardians','studentPayments'].includes(type)) renderOkonomiHub();
     if(['teachers','ledelse'].includes(type)) renderAllePersoner();
-    // Foreldre-indeksen avhenger av begge kildene. skrivForeldreIndeks()
-    // sammenligner mot forrige resultat og skriver bare ved faktisk endring.
+    // Foreldre- og lærer-indeksene vedlikeholdes automatisk. Knappen er
+    // nødutgang — ikke noe man skal huske manuelt.
     if(['students','guardians'].includes(type)) skrivForeldreIndeks();
     if(['students','guardians','teachers','hours'].includes(type)) skrivLaererIndeks();
     if(['registrations','students','guardians','teachers','classes'].includes(type)) visTestdataStatus();
@@ -14787,6 +14795,91 @@
   function normTlf(v){ return String(v || '').replace(/\D/g, '').slice(-8); }
   function normEpost(v){ return String(v || '').trim().toLowerCase(); }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // FORESATT E-POST — to steder, ett som gjelder portalen
+  //
+  // Elevkortet kan ha fritekst-e-post arvet fra søknaden (foresatt2_epost
+  // o.l.). Portalen logger inn mot guardians-kontoen valgt i «Foresatt —
+  // konto». Endrer man kopien, endres ikke innloggingen — og tvert om.
+  // ═══════════════════════════════════════════════════════════════════
+  function finnGuardianMedEpost(epost){
+    const e = normEpost(epost);
+    if(!e || e.indexOf('@') < 1) return null;
+    return (cache.guardians || []).find(g => normEpost(g.epost) === e) || null;
+  }
+
+  function foresattKontoStatusHtml(guardianId, tittel){
+    const style = 'font-family:\'Jost\',sans-serif; font-size:12px; line-height:1.5; margin-top:6px; padding:8px 10px; border-radius:8px; background:#f4f8f5; border:1px solid #d4e5da;';
+    if(!guardianId){
+      return `<div class="foresatt-portal-hint" style="${style} color:#a83c3c;"><b>${escapeHtml(tittel)}:</b> Ingen konto valgt — Foreldreportalen virker ikke for denne foresatte.</div>`;
+    }
+    const g = (cache.guardians || []).find(x => x.id === guardianId);
+    if(!g){
+      return `<div class="foresatt-portal-hint" style="${style} color:#a83c3c;"><b>${escapeHtml(tittel)}:</b> Valgt konto finnes ikke lenger i registeret.</div>`;
+    }
+    if(!normEpost(g.epost)){
+      return `<div class="foresatt-portal-hint" style="${style} color:#a83c3c;"><b>${escapeHtml(tittel)}:</b> «${escapeHtml(g.navn || '—')}» har ingen e-post — portal virker ikke.</div>`;
+    }
+    return `<div class="foresatt-portal-hint" style="${style}"><b>${escapeHtml(tittel)} — portal-innlogging:</b> ` +
+      `<span class="record-link" onclick="openRelatedRecord('guardians','${escapeHtml(g.id)}')">${escapeHtml(g.epost)}</span>` +
+      ` (${escapeHtml(g.navn || '—')})</div>`;
+  }
+
+  function epostKopiStatusHtml(epost, kobletGuardianId){
+    const e = String(epost || '').trim();
+    if(!e) return '';
+    const warnStyle = 'font-family:\'Jost\',sans-serif; font-size:12px; line-height:1.5; margin-top:6px; padding:8px 10px; border-radius:8px; background:#fff8ed; border:1px solid #e8d4a8;';
+    const koblet = kobletGuardianId ? (cache.guardians || []).find(g => g.id === kobletGuardianId) : null;
+    const viaEpost = finnGuardianMedEpost(e);
+    let extra = '';
+    if(koblet && normEpost(koblet.epost) === normEpost(e)){
+      extra = ' Stemmer med valgt portal-konto.';
+    } else if(koblet && normEpost(koblet.epost)){
+      extra = ` Valgt portal-konto bruker <b>${escapeHtml(koblet.epost)}</b> — ikke denne adressen.`;
+    } else if(viaEpost){
+      extra = ` Finnes som egen konto (<span class="record-link" onclick="openRelatedRecord('guardians','${escapeHtml(viaEpost.id)}')">${escapeHtml(viaEpost.navn || '—')}</span>), men er <b>ikke</b> valgt som «Foresatt — konto» her.`;
+    } else {
+      extra = ' <span style="color:#a83c3c;">Ingen foresatt-konto med denne e-posten — endring her påvirker <b>ikke</b> portalen.</span>';
+    }
+    return `<div class="foresatt-epost-kopi" style="${warnStyle}">⚠️ Dette er en <b>kopi</b> på elevkortet — <b>ikke</b> innloggingen i Foreldreportalen.${extra}</div>`;
+  }
+
+  function settForesattHint(id, html){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = html || '';
+  }
+
+  function wireForesattPortalHint(container, row){
+    if(editingType !== 'students') return;
+    const oppdater = () => {
+      const f1 = document.getElementById('field_foresatt');
+      const f2 = document.getElementById('field_foresatt2');
+      const e1 = document.getElementById('field_foresatt1_epost');
+      const e2 = document.getElementById('field_foresatt2_epost');
+      settForesattHint('hint_foresatt', foresattKontoStatusHtml(f1 ? f1.value : '', 'Foresatt 1'));
+      settForesattHint('hint_foresatt2', foresattKontoStatusHtml(f2 ? f2.value : '', 'Foresatt 2'));
+      if(e1) settForesattHint('hint_foresatt1_epost', epostKopiStatusHtml(e1.value, f1 ? f1.value : ''));
+      if(e2) settForesattHint('hint_foresatt2_epost', epostKopiStatusHtml(e2.value, f2 ? f2.value : ''));
+    };
+    ['field_foresatt','field_foresatt2','field_foresatt1_epost','field_foresatt2_epost'].forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('change', oppdater);
+      if(id.includes('_epost')) el.addEventListener('input', oppdater);
+    });
+    oppdater();
+  }
+
+  function byggForesattPortalBlokk(row, slot){
+    const gid = slot === 1 ? row.foresatt : row.foresatt2;
+    const tittel = slot === 1 ? 'Foresatt 1' : 'Foresatt 2';
+    let html = foresattKontoStatusHtml(gid, tittel);
+    const kopi = slot === 1 ? row.foresatt1_epost : row.foresatt2_epost;
+    if(kopi) html += epostKopiStatusHtml(kopi, gid);
+    return html ? `<div class="pd-felt" style="grid-column:1/-1;">${html}</div>` : '';
+  }
+
   // Returnerer treff i en samling, med begrunnelse for hvert treff.
   function finnPersonTreff(kolleksjon, tlf, epost, ekskluderId){
     const t = normTlf(tlf), e = normEpost(epost);
@@ -15328,6 +15421,12 @@
         input.addEventListener('input', () => applyStudentDiscountPricing());
       }
       wrap.appendChild(input);
+      if(type === 'students' && (f.key === 'foresatt' || f.key === 'foresatt2' ||
+          f.key === 'foresatt1_epost' || f.key === 'foresatt2_epost')){
+        const hint = document.createElement('div');
+        hint.id = 'hint_' + f.key;
+        wrap.appendChild(hint);
+      }
       if(f.subjectGroup) wrap.dataset.subjectGroup = f.subjectGroup;
       const hasEssentialFields = schema.fields.some(ff => ff.essential);
       if(hasEssentialFields && !f.essential){
@@ -15378,6 +15477,7 @@
       };
       container.appendChild(toggleBtn);
     }
+    if(type === 'students') wireForesattPortalHint(container, existing);
     document.getElementById('overlay').classList.add('open');
   };
 
@@ -15481,6 +15581,7 @@
       const isRoleDrivenType = editingType === 'teachers';
       const rollerArr = isRoleDrivenType ? (entry.roller || '').split(',').map(s=>s.trim()).filter(Boolean) : [];
       const isNewRolePerson = !editingId && isRoleDrivenType && entry.epost && rollerArr.length > 0;
+      let forrige = null;
 
       // Stopp før lagring hvis e-posten alt tilhører en annen person.
       if(entry.epost && !sjekkDuplikatEpost(editingType, entry.epost, editingId)) return;
@@ -15495,7 +15596,7 @@
       if(editingId){
         // Den gamle raden må leses FØR skrivingen — etterpå finnes den
         // ikke lenger noe sted.
-        const forrige = (cache[editingType] || []).find(r => r.id === editingId);
+        forrige = (cache[editingType] || []).find(r => r.id === editingId);
         await updateDoc(doc(db, schema.collectionName, editingId), entry);
         await loggEndring(editingType, editingId, entry.navn || (forrige && forrige.navn), forrige, entry);
       } else {
@@ -15503,6 +15604,14 @@
       }
       if(financeLogSummary) logFinanceChange(financeLogSummary);
       closeModal(true);
+
+      // 🔴 E-post er nøkkelen i foreldreTilgang/laererTilgang. Endres den,
+      // må indeksraden skrives på nytt med en gang — ellers peker den gamle
+      // raden på feil person og den nye e-posten har ingen rad i det hele tatt.
+      if(['guardians','teachers','students'].includes(editingType)){
+        const epostEndret = !!(forrige && normEpost(forrige.epost||'') !== normEpost(entry.epost||''));
+        await oppdaterTilgangsIndekserNa({ force: epostEndret || !editingId });
+      }
 
       if(isRoleDrivenType && entry.epost && rollerArr.length > 0){
         // Whether this teacher card was just created OR edited (e.g. an
@@ -15696,9 +15805,13 @@
   }
 
   let foreldreIndeksSkrevet = '';
+  async function oppdaterTilgangsIndekserNa(opts){
+    await skrivForeldreIndeks(opts);
+    await skrivLaererIndeks(opts);
+  }
+
   async function skrivForeldreIndeks(opts){
     const force = !!(opts && opts.force);
-    if(!force && !erOversteLeder() && !currentUserHasSeniorRole()) return;
     if(!(cache.guardians || []).length || !(cache.students || []).length) return;
 
     const kart = byggForeldreIndeks();
@@ -15830,8 +15943,7 @@
     try{
       foreldreIndeksSkrevet = '';
       laererIndeksSkrevet = '';
-      await skrivForeldreIndeks({ force: true });
-      await skrivLaererIndeks({ force: true });
+      await oppdaterTilgangsIndekserNa({ force: true });
       showToast('foreldreTilgang og laererTilgang er bygget for alle.');
     } catch(err){
       showToast('Kunne ikke bygge indeksene: ' + (err.message || err), true);
