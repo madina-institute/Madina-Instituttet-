@@ -66,13 +66,19 @@
 | `index1.html` | Fagplan + Årsplan للقراءة فقط — نفس محتوى الإدارة، بدون تعديل أو حذف |
 | Undervisning hub | بطاقتا Fagplan و Årsplan — كل المعلمين يرون كل خطط المواد |
 
-### عطلات متعددة البرامج (قيد الدمج)
+### عطلات متعددة البرامج (مدمج — PR #69)
 
 | المكان | السلوك |
 |--------|--------|
 | `admin.html` | حقل **Gjelder programmer** — checklist مع «Alle programmer» أو اختيار عدة برامج |
 | `skoledager.js` | `programmer[]` — قائمة فارغة = كل البرامج؛ دعم `program` القديم |
 | `index1.html` / `index4.html` | قراءة `programmer[]` في تقويم العطلات |
+
+### إصلاح تسجيل دخول بوابة المعلم (PR #70)
+
+| المشكلة | الحل |
+|---------|------|
+| زر «Logg inn» لا يعمل ولا يظهر خطأ | قوس `}` زائد بعد `finishLessonPlanSubmission` (من PR #68) منع تحميل ES-module بالكامل — `doLogin` لم يُعرَّف |
 
 ### بنية تحتية / عمليات
 
