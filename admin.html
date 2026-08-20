@@ -4608,7 +4608,7 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-    setPersistence, browserSessionPersistence, browserLocalPersistence, sendPasswordResetEmail,
+    authStateReady, sendPasswordResetEmail,
     EmailAuthProvider, reauthenticateWithCredential
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
@@ -4716,6 +4716,12 @@
   const batchCommit = (b) => { sperrIForhandsvisning(); return b.commit(); };
   const storage = getStorage(app);
   const auth = getAuth(app);
+  // Vent til Firebase har gjenopprettet økten fra nettleseren. Uten dette
+  // kan onAuthStateChanged fyre med null før brukeren er lastet inn —
+  // da vises innloggingsskjermen ved hver F5 selv om økten finnes.
+  const authReady = authStateReady(auth).catch(err => {
+    console.error('authStateReady failed:', err);
+  });
 
   // ═════════════════════════════════════════════════════════════════
   // FEILLOGG — gjør stille feil synlige
@@ -4791,17 +4797,51 @@
     });
   })();
 
-  // Admin-panelet bruker vedvarende innlogging (localStorage/IndexedDB):
-  // oppdatering av siden og tilbakekomst i samme nettleser beholder sesjonen.
-  // Passord kreves fortsatt ved utlogging og etter 20 min uten aktivitet
-  // (inaktivitetslås) — unntatt kontoer i PERSISTENT_SESSION_EMAILS som
-  // heller ikke låses ved inaktivitet.
+  // Admin-panelet: Firebase lagrer økten i nettleseren (standard LOCAL).
+  // Ikke kall setPersistence ved hver sideoppdatering — det kan forstyrre
+  // gjenopprettingen. Passord kreves ved utlogging og etter 20 min uten
+  // aktivitet (inaktivitetslås) — unntatt PERSISTENT_SESSION_EMAILS.
   const PERSISTENT_SESSION_EMAILS = ['yasser.m.s.abdelrahim@gmail.com'];
   function hasPersistentSession(email){
     return PERSISTENT_SESSION_EMAILS.includes((email || '').trim().toLowerCase());
   }
-  const persistenceReady = setPersistence(auth, browserLocalPersistence)
-    .catch(err => console.error('setPersistence failed:', err));
+
+  async function bekreftAdminTilgang(user){
+    const e = (user.email || '').trim().toLowerCase();
+    if(e === NODKONTO.toLowerCase()) return true;
+    try{
+      const tilgangSnap = await getDoc(doc(db, 'tilgang', e));
+      if(tilgangSnap.exists()){
+        minTilgangRad = tilgangSnap.data() || null;
+        currentUserRoles = (minTilgangRad.roller || '').split(',')
+          .map(s => s.trim()).filter(Boolean);
+        if(minTilgang().panel) return true;
+      }
+    } catch(err){
+      console.error('tilgang/oppslag', err);
+    }
+    try{
+      const kandidater = [...new Set([user.email, e].filter(Boolean))];
+      for(const ep of kandidater){
+        const snap = await getDocs(query(collection(db, 'adminUsers'), where('epost', '==', ep)));
+        if(snap.empty) continue;
+        const alleRoller = new Set();
+        snap.docs.forEach(d => {
+          (d.data().roller || d.data().rolle || '').split(',')
+            .map(x => x.trim()).filter(Boolean)
+            .forEach(r => alleRoller.add(r));
+        });
+        currentUserRoles = [...alleRoller];
+        if(snap.docs.length > 1){
+          console.warn('Flere adminUsers-poster på samme e-post:', user.email);
+        }
+        return currentUserRoles.length === 0 || minTilgang().panel;
+      }
+    } catch(err){
+      console.error('adminUsers-oppslag', err);
+    }
+    return false;
+  }
 
   const MAX_FILE_MB = 10;
   async function uploadAttachment(file, folder){
@@ -4955,8 +4995,6 @@
       return;
     }
     try{
-      await persistenceReady;
-      await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, pw);
       localStorage.setItem('madinaAdminEmail', email);
     } catch(err){
@@ -5361,21 +5399,13 @@
   // Etter åtte sekunder gir vi opp å vente og viser innloggingen med en
   // forklaring. Svarer Firebase likevel etterpå, overtar den som normalt.
   let authHarSvart = false;
-  setTimeout(() => {
+  setTimeout(async () => {
+    if(authHarSvart) return;
+    await authReady;
     if(authHarSvart) return;
     const vente = document.getElementById('venteSkjerm');
     if(!vente || vente.style.display === 'none') return;
 
-    // 🔴 To helt ulike situasjoner så like ut fra utsiden.
-    //
-    // Er auth.currentUser satt, HAR Firebase svart — det er våre egne
-    // oppslag (roller, adminUsers) som drøyer. Å kaste brukeren ut til
-    // innloggingen da er feil: han er innlogget, og et nytt forsøk gir
-    // nøyaktig samme venting. Meldingen «sjekk nettforbindelsen» sendte
-    // folk på leting etter en nettfeil som ikke fantes.
-    //
-    // Er currentUser tom, har Firebase virkelig ikke svart, og
-    // innloggingsskjermen er riktig sted å havne.
     const tekst = document.querySelector('#venteSkjerm .vente-tekst')
                || document.querySelector('#venteSkjerm p');
     if(auth.currentUser){
@@ -5389,44 +5419,23 @@
       err.textContent = 'Fikk ikke bekreftet økten din. Sjekk nettforbindelsen og logg inn på nytt.';
       err.style.display = 'block';
     }
-  }, 8000);
+  }, 15000);
 
   onAuthStateChanged(auth, async (user) => {
-    await persistenceReady.catch(()=>{});
+    await authReady;
+    user = auth.currentUser || user;
     if(user){
-      // Rolletabellen hentes av onSnapshot lenger nede — ikke blokker
-      // innloggingen med et ekstra nettverkskall. Tilgangssjekken bruker
-      // reserven i rolleDef() mens tabellen lastes i bakgrunnen.
-      // SECURITY: signing in with a valid Firebase account is NOT enough by
-      // itself — teacher and guardian accounts share the same Firebase Auth
-      // pool now that all portals use real e-post/passord login. We must
-      // verify this specific e-post is actually registered in 'adminUsers'
-      // before granting access to the admin panel. If not, sign them back
-      // out immediately and show an error instead of the panel.
+      currentUserEmail = user.email;
+      // Slipp panelet med én gang Firebase har gjenopprettet økten —
+      // tilgangssjekken kan ta tid uten at brukeren tror sesjonen er borte.
+      authHarSvart = true;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('venteSkjerm').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+
       let isAuthorizedAdmin = false;
       try{
-        const q = query(collection(db, 'adminUsers'), where('epost', '==', user.email));
-        const snap = await getDocs(q);
-
-        // Finnes det flere poster på samme e-post (gammel data, eller en
-        // gjenoppretting fra sletteloggen), slår vi sammen rollene fra alle
-        // i stedet for å lese bare den første. Ellers kunne en «Eier»-rolle
-        // i én post bli usynlig fordi en annen post kom først i listen.
-        const alleRoller = new Set();
-        snap.docs.forEach(d => {
-          const data = d.data();
-          (data.roller || data.rolle || '').split(',')
-            .map(x => x.trim()).filter(Boolean)
-            .forEach(r => alleRoller.add(r));
-        });
-        currentUserRoles = [...alleRoller];
-        if(snap.docs.length > 1){
-          console.warn('Flere adminUsers-poster på samme e-post:', user.email,
-                       '— ryddes ved neste lagring av personkortet.');
-        }
-        isAuthorizedAdmin = snap.docs.length > 0 &&
-          (currentUserRoles.length === 0 ||
-           minTilgang().panel);
+        isAuthorizedAdmin = await bekreftAdminTilgang(user);
       } catch(err){
         console.error('Kunne ikke bekrefte admin-tilgang:', err);
         isAuthorizedAdmin = false;
@@ -5441,7 +5450,11 @@
           const tsnap = await getDocs(tq);
           isKnownTeacher = !tsnap.empty;
         } catch(err){ console.error('Kunne ikke sjekke lærerstatus:', err); }
+        document.getElementById('appRoot').style.display = 'none';
         await signOut(auth);
+        authHarSvart = true;
+        document.getElementById('venteSkjerm').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
         const errEl = document.getElementById('loginError');
         if(errEl){
           errEl.style.color = 'var(--red)';
@@ -5455,21 +5468,6 @@
         }
         return;
       }
-      currentUserEmail = user.email;
-      // 🔴 Venteflaten slippes FØR noe annet gjøres.
-      //
-      // lyttPaaMinTilgang() sto her, rett foran denne linjen. Kastet den,
-      // ble authHarSvart aldri satt — og etter åtte sekunder viste
-      // panelet «Fikk ikke bekreftet økten din», som om nettet var nede.
-      // Innloggingen virket, men kunne ikke fullføres.
-      //
-      // Ingenting som legges til senere skal kunne holde innloggingen
-      // igjen. Derfor: slipp skjermen først, gjør resten etterpå, og la
-      // resten feile for seg selv hvis den må.
-      authHarSvart = true;
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('venteSkjerm').style.display = 'none';
-      document.getElementById('appRoot').style.display = 'block';
       try{ lyttPaaMinTilgang(); }
       catch(err){ console.error('lyttPaaMinTilgang', err); }
       const who = document.getElementById('loggedInAs');
