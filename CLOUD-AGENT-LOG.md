@@ -3,7 +3,7 @@
 > **الغرض:** توثيق كل ما نفّذه الوكيل السحابي (Cloud Agent) — أعمال، أخطاء، إصلاحات، نصائح، ومهام متبقية.  
 > **المستودع:** `madina-institute/Madina-Instituttet-`  
 > **آخر تحديث يدوي:** 2026-08-20 11:30 (Oslo)  
-> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-20T11:03:49.873Z -->
+> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-20T21:03:37.029Z -->
 
 ---
 
@@ -220,6 +220,32 @@
 ## 6. سجل التحديثات الآلية (commits)
 
 <!-- AUTO-LOG-ENTRIES-BEGIN -->
+- `2026-08-20T20:59:07Z` · `1c00a67` · docs: logg lærerportal innloggingsfix i CLOUD-AGENT-LOG
+- `2026-08-20T20:59:01Z` · `0925f54` · Merge pull request #70 from madina-institute/cursor/teacher-login-fix-c9a0
+- `2026-08-20T20:58:38Z` · `07d563a` · fix(teacher): reparer syntaksfeil som blokkerte innlogging
+- `2026-08-20T20:43:16Z` · `239be95` · Merge pull request #69 from madina-institute/cursor/holiday-multi-program-c9a0
+- `2026-08-20T20:42:42Z` · `eb6054c` · docs: logg ferie flere programmer i CLOUD-AGENT-LOG
+- `2026-08-20T20:42:36Z` · `1e20579` · feat: velg flere programmer for skolekalender-ferier
+- `2026-08-20T20:37:44Z` · `7b50351` · Merge pull request #68 from madina-institute/cursor/teacher-fagplan-arsplan-c9a0
+- `2026-08-20T20:37:16Z` · `ef7bb82` · Add read-only fagplan and årsplan to teacher portal
+- `2026-08-20T20:24:04Z` · `0e7a1d9` · Merge pull request #67 from madina-institute/cursor/message-delete-c9a0
+- `2026-08-20T20:23:46Z` · `8f0ec8a` · Update CLOUD-AGENT-LOG with message delete feature notes
+- `2026-08-20T20:23:39Z` · `a06dd49` · Add message delete/hide in teacher, parent, and admin portals
+- `2026-08-20T20:05:16Z` · `664690c` · Merge pull request #66 from madina-institute/cursor/assistent-portal-c9a0
+- `2026-08-20T20:05:13Z` · `cce1671` · Merge pull request #65 from madina-institute/cursor/reset-data-ux-fix-c9a0
+- `2026-08-20T19:58:49Z` · `85b858e` · Add Assistent role: multi-class assignment, read-only plans, own identity
+- `2026-08-20T19:36:11Z` · `0ce7a66` · Use single two-step modal for reset: password then SLETT TESTDATA
+- `2026-08-20T19:32:59Z` · `c1b0ef7` · Add danger zone hint for owner password and confirmation text
+- `2026-08-20T19:32:50Z` · `1616cf0` · Fix reset UX: clarify owner password and SLETT TESTDATA step
+- `2026-08-20T17:57:42+02:00` · `53c3afb` · feat(admin): complete reset keeping registrations only (#64)
+- `2026-08-20T17:07:03+02:00` · `c8031ad` · Merge pull request #63 from madina-institute/cursor/teacher-portal-ui-polish-c9a0
+- `2026-08-20T15:04:07Z` · `340b2b5` · style(teacher): polish UI without changing portal flow
+- `2026-08-20T16:55:31+02:00` · `05d3748` · prototype: interactive teacher portal fag-UX variants A/B/C (#62)
+- `2026-08-20T14:17:48Z` · `22700d2` · Merge pull request #61 from madina-institute/cursor/vipps-prod-setup-c9a0
+- `2026-08-20T14:14:26+02:00` · `e55a668` · Oppdater salgsvilkar.html via publiseringsverktøy
+- `2026-08-20T11:22:54Z` · `54f5a97` · docs(functions): document GitHub secrets for Vipps prod deploy
+- `2026-08-20T11:22:45Z` · `3d3d810` · feat(vipps): prod CI secrets, admin card toggle, setup script
+- `2026-08-20T11:03:49Z` · `0cf76ed` · chore: auto-update CLOUD-AGENT-LOG (10h sync)
 - `2026-08-20T12:51:46+02:00` · `00c3b38` · Fix admin panel logout and red sync badge after rules change (#59)
 - `2026-08-20T12:43:28+02:00` · `ce73c8e` · Sync admin Vipps requests, cancel, and refunds in parent portal (#58)
 - `2026-08-20T10:32:44Z` · `49db831` · Merge pull request #57 from madina-institute/cursor/vipps-email-card-buttons-c9a0
