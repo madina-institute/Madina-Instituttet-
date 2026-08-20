@@ -1086,7 +1086,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
     getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc, deleteDoc, getDocs,
-    query, where
+    query, where, documentId
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
@@ -1612,7 +1612,7 @@
     // Også her: mister læreren klassene sine, skal lytterne kobles fra —
     // ellers ville de blitt stående og hentet data for en klasse som
     // ikke lenger er hennes.
-    if(klasser.length === 0){ valgtKlasse = ''; valgtFag = ''; tegnKlasseFagVelger(); startKlasselyttere(); return; }
+    if(klasser.length === 0){ valgtKlasse = ''; valgtFag = ''; tegnKlasseFagVelger(); startKlasselyttere(); startKlasseDocLyttere(); return; }
     if(!valgtKlasse || !klasser.includes(valgtKlasse)){
       // Hjemmeklassen er foerstevalget: det er gruppen laereren hoerer
       // til til daglig. Finnes den ikke i timeplanen, tas den foerste.
@@ -1622,6 +1622,7 @@
     if(!valgtFag || !fag.includes(valgtFag)) valgtFag = fag[0] || '';
     tegnKlasseFagVelger();
     startKlasselyttere();
+    startKlasseDocLyttere();
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -1661,6 +1662,7 @@
     if(klasser.length === 0){
       renderStudentList();
       renderStudentNotesList();
+      startForesattLyttere();
       return;
     }
 
@@ -1681,7 +1683,7 @@
       });
     };
 
-    lyttPerKlasse('students',     (r) => { students = r; },     renderStudentList);
+    lyttPerKlasse('students',     (r) => { students = r; startForesattLyttere(); }, renderStudentList);
     lyttPerKlasse('attendance',   (r) => { attendance = r; },   renderStudentList);
     lyttPerKlasse('studentNotes', (r) => { studentNotes = r; }, renderStudentNotesList);
   }
@@ -2044,9 +2046,7 @@
     const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
   }
 
-  watch('teachers', (snap) => {
-    teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  });
+  // teachers lastes ved innlogging (query på e-post) — ikke hele samlingen.
 
   // Modulen abonnerer ikke selv — den ville blitt en fjerde måte å
   // lese basen på. Den mates herfra, ved hvert snapshot.
@@ -2100,21 +2100,71 @@
     if(currentTeacher) tegnVelkomst();
   }, (err) => console.error('schoolCalendar', err));
 
-  watch('classes', (snap) => {
-    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Navnene kommer etter timeplanen. Uten denne sto velkomstskjermen
-    // igjen med id-er til noe annet tilfeldigvis tegnet den på nytt.
-    if(currentTeacher){
-      const vk = document.getElementById('velkomstView');
-      if(vk && vk.style.display !== 'none') tegnVelkomst();
-      renderHome();
-    }
-  });
+  let klasseDocLyttere = [];
+  let klasseDocNokkel = null;
+  let foresattLyttere = [];
+  let foresattNokkel = null;
 
-  watch('guardians', (snap) => {
-    guardians = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') populateNewMessagePicker();
-  });
+  function startKlasseDocLyttere(){
+    if(!currentTeacher) return;
+    const klasser = mineKlasser();
+    const nokkel = klasser.slice().sort().join('|');
+    if(nokkel === klasseDocNokkel) return;
+    klasseDocLyttere.forEach(avmeld => { try{ avmeld(); }catch(err){ console.error('avmeld klasseDoc', err); } });
+    klasseDocLyttere = [];
+    klasseDocNokkel = nokkel;
+    classes = [];
+    if(klasser.length === 0) return;
+    const biter = delOpp(klasser, 30);
+    const deler = biter.map(() => []);
+    biter.forEach((bit, i) => {
+      const av = onSnapshot(
+        query(collection(db, 'classes'), where(documentId(), 'in', bit)),
+        (snap) => {
+          deler[i] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          classes = deler.flat();
+          if(currentTeacher){
+            const vk = document.getElementById('velkomstView');
+            if(vk && vk.style.display !== 'none') tegnVelkomst();
+            renderHome();
+          }
+        },
+        (err) => console.error('classes', err)
+      );
+      klasseDocLyttere.push(av);
+    });
+  }
+
+  function startForesattLyttere(){
+    if(!currentTeacher) return;
+    const ids = new Set();
+    students.forEach(s => {
+      if(s.foresatt) ids.add(s.foresatt);
+      if(s.foresatt2) ids.add(s.foresatt2);
+    });
+    const liste = [...ids].sort();
+    const nokkel = liste.join('|');
+    if(nokkel === foresattNokkel) return;
+    foresattLyttere.forEach(avmeld => { try{ avmeld(); }catch(err){ console.error('avmeld foresatt', err); } });
+    foresattLyttere = [];
+    foresattNokkel = nokkel;
+    guardians = [];
+    if(liste.length === 0) return;
+    const biter = delOpp(liste, 30);
+    const deler = biter.map(() => []);
+    biter.forEach((bit, i) => {
+      const av = onSnapshot(
+        query(collection(db, 'guardians'), where(documentId(), 'in', bit)),
+        (snap) => {
+          deler[i] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          guardians = deler.flat();
+          if(currentTeacher && document.getElementById('messagesListView').style.display !== 'none') populateNewMessagePicker();
+        },
+        (err) => console.error('guardians', err)
+      );
+      foresattLyttere.push(av);
+    });
+  }
 
   // Titled 1-1 conversation threads (title, open/closed lifecycle, archive).
   // Older messages sent before this feature exists have no matching thread
@@ -2387,9 +2437,9 @@
     }
     let teacher = null;
     try{
-      const snap = await getDocs(collection(db, 'teachers'));
-      teachers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      teacher = teachers.find(tc => (tc.epost || '').trim().toLowerCase() === email.toLowerCase());
+      const snap = await getDocs(query(collection(db, 'teachers'), where('epost', '==', email)));
+      teacher = snap.docs.map(d => ({ id: d.id, ...d.data() }))[0] || null;
+      if(teacher) teachers = [teacher];
     } catch(err){
       console.error('teachers-oppslag', err);
     }
