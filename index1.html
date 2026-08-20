@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:52:00 -->
+<!-- SIST-ENDRET: 2026-08-20 23:05:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -417,6 +417,22 @@
   .fp-noekkel .e{display:block; font-family:'Jost',sans-serif; font-size:10.5px; color:#8a9a90;}
   .fp-fot{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin:8px 0 0;}
   .fp-lest{background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-family:'Jost',sans-serif; font-size:12.5px; color:#3c5a4a; white-space:pre-wrap; line-height:1.55;}
+  .lr-liste{display:flex; flex-direction:column; gap:10px;}
+  .lr-regel{display:flex; gap:14px; background:#fff; border:1px solid var(--line);
+    border-radius:11px; padding:15px 17px;}
+  .lr-nr{flex:none; width:30px; height:30px; border-radius:8px; display:flex;
+    align-items:center; justify-content:center; background:var(--paper-2); color:var(--gold);
+    font-family:'Jost',sans-serif; font-weight:700; font-size:13.5px;
+    font-variant-numeric:lining-nums tabular-nums;}
+  .lr-tekst{flex:1 1 auto; min-width:0;}
+  .lr-tekst h4{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px;
+    color:var(--emerald-d); margin:0 0 5px;}
+  .lr-tekst p{font-family:'Jost',sans-serif; font-size:12.5px; color:#3c5a4a;
+    line-height:1.6; margin:0 0 8px;}
+  .lr-opphav{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90;
+    border-inline-start:2px solid var(--gold-l, var(--line)); padding-inline-start:9px;
+    margin-bottom:7px;}
+  .lr-kontroll{font-family:'Jost',sans-serif; font-size:11px; color:#5a6860;}
   .bar-track{background:var(--paper-2); border-radius:6px; height:9px; overflow:hidden;}
   .bar-fill{background:linear-gradient(90deg,var(--emerald),var(--gold)); height:100%; border-radius:6px;}
   .ap-tab{border-collapse:collapse; width:100%; font-family:'Jost',sans-serif; font-size:12.5px;}
@@ -954,6 +970,7 @@
         <div class="menu-card" onclick="navTo('semesterPlan', showSemesterPlan)"><div class="ic">🗃️</div><div class="t" data-i18n="menuSemesterPlan">Semesterplan</div></div>
         <div class="menu-card" onclick="navTo('fagplan', showFagplan)"><div class="ic">📖</div><div class="t" data-i18n="menuFagplan">Fagplan</div></div>
         <div class="menu-card" onclick="navTo('arsplan', showArsplan)"><div class="ic">📆</div><div class="t" data-i18n="menuArsplan">Årsplan</div></div>
+        <div class="menu-card" onclick="navTo('laereplanregler', showLaereplanregler)"><div class="ic">⚖️</div><div class="t" data-i18n="menuLaereplanregler">Læreplanregler</div></div>
         <div class="menu-card" onclick="navTo('homework', showHomework)"><div class="ic">📚</div><div class="t" data-i18n="menuHomework">Lekser</div></div>
         <div class="menu-card" onclick="navTo('videos', showVideos)"><div class="ic">🎥</div><div class="t" data-i18n="videosLbl">Treningsvideoer</div></div>
         <div class="menu-card" onclick="navTo('studentNotes', showStudentNotes)"><div class="ic">✍️</div><div class="t" data-i18n="menuStudentNotes">Elevnotater</div></div>
@@ -1186,6 +1203,17 @@
         <select id="lpApKlasse" onchange="lpApVelgKlasse(this.value)"></select>
       </div>
       <div id="lpApInnhold"></div>
+    </div>
+
+    <!-- LÆREPLANREGLER (read-only) -->
+    <div class="card" id="laereplanreglerView" style="display:none;">
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <h2 data-i18n="menuLaereplanregler">Læreplanregler</h2>
+      <div class="sub" data-i18n="laereplanreglerSub">Leses før en økt skrives — gjelder alle fag og trinn</div>
+      <div class="plan-les-kort" style="margin-bottom:14px;">
+        <p class="fp-fot" style="margin:0;" data-i18n="laereplanreglerIntro">Reglene er ikke prinsipper noen fant på. Hver av dem kom ut av et sted i teksten der en formulering kunne ha landet feil hos et barn, og ble rettet.</p>
+      </div>
+      <div id="lpLrInnhold"></div>
     </div>
 
     <!-- HOMEWORK VIEW -->
@@ -1737,8 +1765,10 @@
       menuHome: 'Hjem', menuAttendanceHub: 'Oppmøte', menuTeaching: 'Undervisning', menuMessages: 'Melding',
       menuTakeAttendance: 'Ta oppmøte', menuMyHours: 'Mitt oppmøte/timer', menuAbsenceReview: 'Fraværsmeldinger',
       menuLessonPrep: 'Timeforberedelse', menuMonthlyPlan: 'Månedsplan', menuSemesterPlan: 'Semesterplan',
-      menuFagplan: 'Fagplan', menuArsplan: 'Årsplan',
+      menuFagplan: 'Fagplan', menuArsplan: 'Årsplan', menuLaereplanregler: 'Læreplanregler',
       fagplanSub: 'Pensum for alle fag — kun lesing', arsplanSub: 'Skoleårets plan per klasse — kun lesing',
+      laereplanreglerSub: 'Leses før en økt skrives — gjelder alle fag og trinn',
+      laereplanreglerIntro: 'Reglene er ikke prinsipper noen fant på. Hver av dem kom ut av et sted i teksten der en formulering kunne ha landet feil hos et barn, og ble rettet.',
       fagplanSelectLabel: 'Velg fagplan', arsplanSelectLabel: 'Velg klasse',
       menuHomework: 'Lekser', menuStudentNotes: 'Elevnotater', menuParentMsg: 'Meldinger', menuAdminMsg: 'Fra administrasjonen',
       menuClassPosts: 'Klassemelding', homeAbsenceLbl: 'Fravær til behandling', homeUnreadLbl: 'Uleste meldinger',
@@ -1872,8 +1902,10 @@
       menuHome: 'الرئيسية', menuAttendanceHub: 'الحضور', menuTeaching: 'التدريس', menuMessages: 'الرسائل',
       menuTakeAttendance: 'تسجيل الحضور', menuMyHours: 'حضوري/ساعاتي', menuAbsenceReview: 'بلاغات الغياب',
       menuLessonPrep: 'تحضير الحصة', menuMonthlyPlan: 'خطة شهرية', menuSemesterPlan: 'خطة فصلية',
-      menuFagplan: 'خطة المادة', menuArsplan: 'الخطة السنوية',
+      menuFagplan: 'خطة المادة', menuArsplan: 'الخطة السنوية', menuLaereplanregler: 'قواعد الخطة الدراسية',
       fagplanSub: 'مناهج جميع المواد — للقراءة فقط', arsplanSub: 'خطة السنة لكل صف — للقراءة فقط',
+      laereplanreglerSub: 'تُقرأ قبل كتابة أي حصة — تنطبق على جميع المواد والمراحل',
+      laereplanreglerIntro: 'هذه القواعد ليست مبادئ اختُلقت. كل واحدة منها خرجت من موضع في النص كان يمكن أن يُفهم خطأً عند الطفل، فتم تصحيحه.',
       fagplanSelectLabel: 'اختر خطة المادة', arsplanSelectLabel: 'اختر الصف',
       menuHomework: 'الواجبات', menuStudentNotes: 'ملاحظات الطلاب', menuParentMsg: 'رسائل', menuAdminMsg: 'من الإدارة',
       menuClassPosts: 'رسالة الصف', homeAbsenceLbl: 'غياب بانتظار المعالجة', homeUnreadLbl: 'رسائل غير مقروءة',
@@ -2537,6 +2569,13 @@
     if(document.getElementById('arsplanView') && document.getElementById('arsplanView').style.display !== 'none') lpApRender();
   }, (err) => console.error('arsplan', err));
 
+  let laereplanreglerCache = [];
+  watchDoc('settings', 'laereplanregler', (snap) => {
+    const d = snap.exists() ? (snap.data() || {}) : {};
+    laereplanreglerCache = Array.isArray(d.regler) ? d.regler : [];
+    if(document.getElementById('laereplanreglerView') && document.getElementById('laereplanreglerView').style.display !== 'none') lpLrRender();
+  }, (err) => console.error('settings/laereplanregler', err));
+
   watch('schoolCalendar', (snap) => {
     schoolCalendar = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     materSkoledager();
@@ -3134,6 +3173,7 @@
       else if(view === 'semesterPlan') navTo('semesterPlan', showSemesterPlan);
       else if(view === 'fagplan') navTo('fagplan', showFagplan);
       else if(view === 'arsplan') navTo('arsplan', showArsplan);
+      else if(view === 'laereplanregler') navTo('laereplanregler', showLaereplanregler);
       else if(view === 'homework') navTo('homework', showHomework);
       else if(view === 'homeworkArchive') showHomeworkArchive();
       else if(view === 'absenceReview') navTo('absenceReview', showAbsenceReview);
@@ -3174,6 +3214,7 @@
     document.getElementById('semesterPlanView').style.display = 'none';
     document.getElementById('fagplanView').style.display = 'none';
     document.getElementById('arsplanView').style.display = 'none';
+    document.getElementById('laereplanreglerView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'none';
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
@@ -3188,6 +3229,7 @@
   const SIDEBAR_TEACHER = {
     attendance: 'oppmote', myAttendance: 'oppmote', absenceReview: 'oppmote',
     lesson: 'undervisning', monthlyPlan: 'undervisning', semesterPlan: 'undervisning',
+    fagplan: 'undervisning', arsplan: 'undervisning', laereplanregler: 'undervisning',
     homework: 'undervisning', videos: 'undervisning', studentNotes: 'undervisning',
     lessonArchive: 'undervisning', homeworkArchive: 'undervisning',
     messages: 'melding', adminMsgs: 'melding', classPosts: 'melding'
@@ -5843,6 +5885,38 @@ ${extraScript || ''}
     lpApRender();
     pushAppView('arsplan');
   };
+
+  window.showLaereplanregler = function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('laereplanreglerView').style.display = 'block';
+    lpLrRender();
+    pushAppView('laereplanregler');
+  };
+
+  function lpLrRender(){
+    const el = document.getElementById('lpLrInnhold');
+    if(!el) return;
+    if(laereplanreglerCache.length === 0){
+      el.innerHTML = '<div class="plan-les-kort"><div class="fp-lest">' +
+        (currentLang === 'ar'
+          ? 'لم تُدخل أي قواعد بعد. تواصل مع الإدارة.'
+          : 'Ingen regler er lagt inn ennå.') + '</div></div>';
+      return;
+    }
+    el.innerHTML = '<div class="lr-liste">' + [...laereplanreglerCache]
+      .sort((a, b) => (a.nr || 0) - (b.nr || 0)).map(r => `
+      <div class="lr-regel">
+        <div class="lr-nr">${r.nr}</div>
+        <div class="lr-tekst">
+          <h4>${escapeHtml(r.tittel || '')}</h4>
+          <p>${escapeHtml(r.regel || '')}</p>
+          ${r.hvorfra ? `<div class="lr-opphav">${currentLang === 'ar' ? 'مصدرها: ' : 'Kom fra: '}${escapeHtml(r.hvorfra)}</div>` : ''}
+          <div class="lr-kontroll">${r.kontroll
+            ? (currentLang === 'ar' ? '🩺 فحص الصحة يحسب هذه — ' : '🩺 Helsesjekk teller denne — kode ') + escapeHtml(r.kontroll)
+            : (currentLang === 'ar' ? '👤 لا يمكن قياسها آلياً. تعتمد على من يكتب الحصة.' : '👤 Kan ikke telles. Den hviler på den som skriver økten.')}</div>
+        </div>
+      </div>`).join('') + '</div>';
+  }
 
   window.lpFpVelg = async function(planId){
     lpFpValgt = planId || '';
