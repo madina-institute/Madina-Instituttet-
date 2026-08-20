@@ -1923,6 +1923,7 @@
     document.getElementById('btnLangAr').classList.toggle('active', lang === 'ar');
     applyStaticTranslations();
     populateFagSelect();
+    if(document.getElementById('laereplanreglerView')?.style.display !== 'none') lpLrRender();
     if(currentTeacher){
       document.getElementById('classSub').textContent =
         (lang === 'ar' ? 'الصف: ' : 'Klasse: ') + resolveClassName(valgtKlasse);
