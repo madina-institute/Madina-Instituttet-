@@ -32,6 +32,7 @@ on:
     branches: [ main ]
     paths:
       - 'firestore.rules'
+      - 'storage.rules'
       - 'firebase.json'
   workflow_dispatch:
 
@@ -57,24 +58,33 @@ jobs:
       - name: Kontroller reglene
         run: |
           node -e "
-            const s = require('fs').readFileSync('firestore.rules','utf8');
-            if(!/^\s*rules_version\s*=/m.test(s)){
-              console.error('firestore.rules ser ikke ut som regler — mangler rules_version.');
-              process.exit(1);
+            const fs = require('fs');
+            for (const fil of ['firestore.rules', 'storage.rules']) {
+              const s = fs.readFileSync(fil,'utf8');
+              if(!/^\s*rules_version\s*=/m.test(s)){
+                console.error(fil + ' ser ikke ut som regler — mangler rules_version.');
+                process.exit(1);
+              }
             }
-            if(!/service\s+cloud\.firestore/.test(s)){
+            const firestore = fs.readFileSync('firestore.rules','utf8');
+            if(!/service\s+cloud\.firestore/.test(firestore)){
               console.error('firestore.rules mangler «service cloud.firestore».');
               process.exit(1);
             }
             const apen = /match\s*\/\{document=\*\*\}[\s\S]{0,120}allow\s+read,\s*write:\s*if\s+true/;
-            if(apen.test(s)){
-              console.error('🔴 STOPP: reglene åpner HELE basen for alle. Publisering avbrutt.');
+            if(apen.test(firestore)){
+              console.error('🔴 STOPP: Firestore-reglene åpner HELE basen for alle. Publisering avbrutt.');
+              process.exit(1);
+            }
+            const storage = fs.readFileSync('storage.rules','utf8');
+            if(!/service firebase\.storage/.test(storage)){
+              console.error('storage.rules mangler «service firebase.storage».');
               process.exit(1);
             }
             console.log('Reglene ser strukturelt riktige ut.');
           "
 
       - name: Deploy
-        run: firebase deploy --only firestore:rules --project madina-instituttet --non-interactive
+        run: firebase deploy --only firestore:rules,storage --project madina-instituttet --non-interactive
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

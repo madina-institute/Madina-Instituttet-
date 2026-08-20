@@ -273,7 +273,7 @@ const VIPPS_SUBSCRIPTION_KEY = defineSecret("VIPPS_SUBSCRIPTION_KEY");
 const VIPPS_MSN = defineString("VIPPS_MSN"); // Merchant Serial Number (sales unit ID)
 const VIPPS_WEBHOOK_SECRET = defineSecret("VIPPS_WEBHOOK_SECRET"); // fra webhook-registreringen
 const SITE_BASE_URL = defineString("SITE_BASE_URL", {
-  default: "https://madina-institute.github.io/Madina-Instituttet-",
+  default: "https://madinaskole.no",
 });
 
 function vippsApiBase() {
@@ -340,6 +340,50 @@ async function getVippsAccessToken() {
 // et Vipps-krav kan ikke opprettes uten at serveren har slått opp brukeren
 // i 'adminUsers' og funnet en av disse rollene.
 const OPPTAK_ROLLER = ["Eier", "Opptaksansvarlig"];
+const NODKONTO = "post@madinaskole.no";
+const KASSERER_LEDELSE_ROLLER = ["Øverste leder", "Eier"];
+
+async function krevAdminPanel(bruker, res) {
+  const epost = (bruker.epost || "").trim().toLowerCase();
+  if (!epost) {
+    res.status(403).json({ ok: false, error: "Kontoen mangler e-post." });
+    return false;
+  }
+  if (epost === NODKONTO) return true;
+  const tilgangSnap = await db.collection("tilgang").doc(epost).get();
+  if (tilgangSnap.exists) {
+    const t = tilgangSnap.data() || {};
+    if (t.panel === true || Number(t.niva) <= 2) return true;
+  }
+  const adminSnap = await db.collection("adminUsers").where("epost", "==", bruker.epost).get();
+  if (!adminSnap.empty) return true;
+  logger.warn("Admin-kall avvist", { epost });
+  res.status(403).json({ ok: false, error: "Kun for administrativt panel." });
+  return false;
+}
+
+async function krevKassererLedelse(bruker, res) {
+  const epost = (bruker.epost || "").trim().toLowerCase();
+  if (!epost) {
+    res.status(403).json({ ok: false, error: "Kontoen mangler e-post." });
+    return false;
+  }
+  if (epost === NODKONTO) return true;
+  const tilgangSnap = await db.collection("tilgang").doc(epost).get();
+  if (tilgangSnap.exists && Number(tilgangSnap.data().niva) <= 1) return true;
+  const adminSnap = await db.collection("adminUsers").where("epost", "==", bruker.epost).get();
+  const harRolle = adminSnap.docs.some((d) => {
+    const roller = String((d.data().roller || d.data().rolle || ""))
+      .split(",").map((r) => r.trim());
+    return roller.some((r) => KASSERER_LEDELSE_ROLLER.includes(r));
+  });
+  if (!harRolle) {
+    logger.warn("Kasserer (Ledelse)-kall avvist", { epost });
+    res.status(403).json({ ok: false, error: "Kun for øverste ledelse." });
+    return false;
+  }
+  return true;
+}
 
 async function krevOpptaksrolle(bruker, res) {
   if (!bruker.epost) {
@@ -1010,6 +1054,7 @@ exports.cancelVippsPayment = onRequest(
 
     const bruker = await krevInnlogget(req, res);
     if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
 
     try {
       const { reference } = req.body || {};
@@ -1065,6 +1110,7 @@ exports.refundVippsPayment = onRequest(
 
     const bruker = await krevInnlogget(req, res);
     if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
 
     try {
       const { reference, studentId, amountKr } = req.body || {};
@@ -1172,6 +1218,8 @@ const BACKUP_COLLECTIONS = [
   "finances", "financeLog", "paymentRequests", "studentPayments",
   "pendingVippsPayments", "salaryPayments", "teacherAttendance",
   "meetings", "settings", "deletionLog", "loginEvents",
+  "stotteSoknader", "kafalaFond", "fagplan", "arsplan",
+  "mail", "feillogg", "formAnalytics",
   // Tilgangsindeksene. Uten dem i kopien ville en gjenoppretting gitt
   // tilbake elevene, men ikke koblingen som lar foreldrene se dem —
   // og portalene ville stått tomme uten at noe så ødelagt ut.
@@ -1309,8 +1357,12 @@ exports.ukentligSikkerhetskopi = onSchedule(
 // Manuell kjøring — nyttig for å teste uten å vente til søndag, og for å
 // ta en ekstra kopi før noe stort skal endres.
 exports.taSikkerhetskopiNa = onRequest(
-  { timeoutSeconds: 540, memory: "512MiB" },
+  { timeoutSeconds: 540, memory: "512MiB", cors: true },
   async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+    if (!(await krevAdminPanel(bruker, res))) return;
     try {
       const result = await lagSikkerhetskopi();
       res.status(200).json({ ok: true, ...result });

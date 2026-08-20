@@ -7,6 +7,9 @@
   "firestore": {
     "rules": "firestore.rules"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "functions": [
     {
       "source": "functions",
@@ -29,7 +32,15 @@
       "**/node_modules/**",
       "functions/**",
       "*.md",
-      "sjekk-sider.mjs"
+      "sjekk-sider.mjs",
+      "admin 164.html",
+      "publish-tool 34.html",
+      "publish-tool 54.html",
+      "opptak-prototype.html",
+      "index-homepage-final.html",
+      "index3.html",
+      "test_opptak_mobile.html",
+      "appcheck-test.html"
     ],
     "headers": [
       {
