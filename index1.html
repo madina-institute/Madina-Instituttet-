@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:58:00 -->
+<!-- SIST-ENDRET: 2026-08-20 22:45:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1536,7 +1536,7 @@
     query, where, documentId
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail
+    getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getStorage, ref as storageRef, uploadBytes, getDownloadURL
@@ -3018,6 +3018,9 @@
     }
   }
 
+  let innloggingPaagaar = false;
+  let laererSesjonGjenopprettet = false;
+
   window.doLogin = async function(){
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
@@ -3029,6 +3032,8 @@
       errEl.style.display = 'block';
       return;
     }
+    innloggingPaagaar = true;
+    try{
     // Logg inn FØRST. Reglene krever innlogging for å lese 'teachers', så
     // oppslaget må skje etterpå. Dette hindrer også at skjemaet røper
     // hvilke e-postadresser som finnes i systemet.
@@ -3077,8 +3082,87 @@
       visProfilUtfylling(teacher);
       return;
     }
+    laererSesjonGjenopprettet = true;
     fullforInnlogging(teacher);
+    } finally {
+      innloggingPaagaar = false;
+    }
   };
+
+  function ventPaaAuthRestore(maksMs = 12000){
+    const MIN_NULL_MS = 1500;
+    return new Promise(resolve => {
+      const start = Date.now();
+      let unsub = () => {};
+      let ferdig = false;
+      const finish = () => {
+        if(ferdig) return;
+        ferdig = true;
+        try{ unsub(); }catch(e){}
+        resolve();
+      };
+      const pollEtterNull = () => {
+        const poll = () => {
+          if(auth.currentUser) return finish();
+          if(Date.now() - start >= maksMs) return finish();
+          setTimeout(poll, 150);
+        };
+        setTimeout(poll, MIN_NULL_MS);
+      };
+      unsub = onAuthStateChanged(auth, user => {
+        if(user) finish();
+        else pollEtterNull();
+      });
+      setTimeout(finish, maksMs);
+    });
+  }
+
+  async function gjenopprettLaererSesjon(user){
+    if(!user || currentTeacher || laererSesjonGjenopprettet || innloggingPaagaar) return;
+    laererSesjonGjenopprettet = true;
+    const authEpost = String(user.email || '').trim().toLowerCase();
+    let teacher = null;
+    try{
+      const epostKandidater = [...new Set([authEpost, user.email].filter(Boolean))];
+      for(const e of epostKandidater){
+        const snap = await getDocs(query(collection(db, 'teachers'), where('epost', '==', e)));
+        const treff = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if(treff.length){ teacher = treff[0]; break; }
+      }
+      if(teacher) teachers = [teacher];
+    } catch(err){
+      console.error('teachers-oppslag (gjenopprett)', err);
+      laererSesjonGjenopprettet = false;
+      return;
+    }
+    if(!teacher){
+      laererSesjonGjenopprettet = false;
+      return;
+    }
+    minEpost = authEpost || String(teacher.epost || '').trim().toLowerCase();
+    laererTilgangMangler = await sjekkLaererIndeks(minEpost);
+    startDataListeners();
+    currentTeacher = teacher;
+    if(profilMangler(teacher).length > 0){
+      laererSesjonGjenopprettet = false;
+      visProfilUtfylling(teacher);
+      return;
+    }
+    fullforInnlogging(teacher);
+  }
+
+  let authBehandling = 0;
+  onAuthStateChanged(auth, async (user) => {
+    const denne = ++authBehandling;
+    await ventPaaAuthRestore();
+    if(denne !== authBehandling) return;
+    user = auth.currentUser || user;
+    if(user){
+      await gjenopprettLaererSesjon(user);
+    } else {
+      laererSesjonGjenopprettet = false;
+    }
+  });
 
   function applyPortalRolleUI(){
     const ast = erAssistent();
@@ -3119,11 +3203,6 @@
     startHoursLytter();
     settValgFraTimeplan();
     applyPortalRolleUI();
-    // Velkomstskjermen først. Panelet åpnes når klasse og fag er valgt —
-    // se startArbeid(). Grunnen står ved markupen: alt læreren skriver
-    // havner i én bestemt klasse og ett bestemt fag, og det valget skal
-    // tas bevisst før arbeidet, ikke oppdages midt i det.
-    visVelkomst();
     const hdrKonto = document.getElementById('teacherHdrKonto');
     if(hdrKonto) hdrKonto.style.display = 'flex';
     document.getElementById('whoText').textContent = teacher.navn +
@@ -3139,10 +3218,27 @@
     const myAtt = document.getElementById('myAttDato');
     if(myAtt) myAtt.value = nearestValidDate(allowedDays);
     populateFagSelect();
-    showChoice();
     updateMsgDot();
     updateTeacherBadges();
     resetInactivityTimer();
+    // Har brukeren en seksjon i adresselinjen, hopper vi velkomstskjermen
+    // og åpner arbeidsflaten direkte — ellers havner man på startsiden etter
+    // hver oppdatering selv om økten fortsatt er gyldig.
+    const hashHarSeksjon = /del=/.test(location.hash || '');
+    if(hashHarSeksjon && valgtKlasse){
+      document.getElementById('velkomstView').style.display = 'none';
+      document.getElementById('appView').style.display = 'block';
+      tegnKlasseFagVelger();
+      tegnAltPaaNytt();
+      gjenopprettSeksjon();
+    } else {
+      // Velkomstskjermen først. Panelet åpnes når klasse og fag er valgt —
+      // se startArbeid(). Grunnen står ved markupen: alt læreren skriver
+      // havner i én bestemt klasse og ett bestemt fag, og det valget skal
+      // tas bevisst før arbeidet, ikke oppdages midt i det.
+      visVelkomst();
+      showChoice();
+    }
   }
 
   window.doForgotPassword = async function(){
@@ -3391,6 +3487,12 @@
     if(gjenopprettSeksjon()) return;
     navTo('home', showHome);
   };
+
+  window.addEventListener('hashchange', () => {
+    if(!currentTeacher) return;
+    const app = document.getElementById('appView');
+    if(app && app.style.display !== 'none') gjenopprettSeksjon();
+  });
 
   window.showAttendance = function(){
     document.getElementById('chooseView').style.display = 'none';
