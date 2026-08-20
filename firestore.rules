@@ -1,5 +1,5 @@
 rules_version = '2';
-/* SIST-ENDRET: 2026-08-20 13:10:00 */
+/* SIST-ENDRET: 2026-08-20 23:15:00 */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -245,6 +245,9 @@ service cloud.firestore {
     function erLaererForTime(larerId) {
       return harLaererListe()
         && get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data.teacherId == larerId;
+    }
+    function erEierAvLekse() {
+      return resource.data.larer != null && erLaererForTime(resource.data.larer);
     }
     function erAssistentStaff() {
       return harLaererListe()
@@ -545,9 +548,15 @@ service cloud.firestore {
     match /homework/{id} {
       allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
         || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
-      allow create, update: if erAdmin()
-        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
-      allow delete: if erAdmin();
+      allow create: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse)
+            && request.resource.data.larer != null && erLaererForTime(request.resource.data.larer)
+            && !erAssistentStaff());
+      allow update: if erAdmin()
+        || (erEierAvLekse() && !erAssistentStaff()
+            && request.resource.data.klasse == resource.data.klasse
+            && request.resource.data.larer == resource.data.larer);
+      allow delete: if erAdmin() || (erEierAvLekse() && !erAssistentStaff());
     }
     match /homeworkSubmissions/{id} {
       allow read: if erAdmin() || erMittBarn(resource.data.studentId)
