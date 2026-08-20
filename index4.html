@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 12:15:00 -->
+<!-- SIST-ENDRET: 2026-08-20 13:25:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -950,7 +950,7 @@
         <label>Passord</label>
         <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
       </div>
-      <button class="mlogin-btn" onclick="doParentLogin()">Logg inn</button>
+      <button type="button" class="mlogin-btn" id="loginBtn" onclick="doParentLogin()">Logg inn</button>
       <div class="mlogin-err" id="loginError"></div>
       <a class="mlogin-forgot" href="#" onclick="doForgotPassword(); return false;">Glemt passord?</a>
     </div>
@@ -1629,7 +1629,7 @@
     no: {
       headerTitle: 'Madina Skole — Foreldreportal', headerSub: 'Kun for foresatte',
       loginTitle: 'Logg inn', loginSub: 'Logg inn med e-posten og passordet ditt.',
-      phoneLabel: 'Telefonnummer', codeLabel: 'Tilgangskode', loginBtn: 'Logg inn', logout: 'Logg ut',
+      phoneLabel: 'Telefonnummer', codeLabel: 'Tilgangskode', loginBtn: 'Logg inn', loggingIn: 'Logger inn…', logout: 'Logg ut',
       emailLabel: 'E-post', passwordLabel: 'Passord', forgotPassword: 'Glemt passord?',
       noAccountForEmail: 'Fant ingen foresatt-konto med denne e-posten.',
       guardianCardMissing: 'Innloggingen fungerte, men vi finner ikke foresatt-kortet for denne e-posten. Ta kontakt med skolen — ikke opprett ny konto.',
@@ -1743,7 +1743,7 @@
     ar: {
       headerTitle: 'مدرسة المدينة — بوابة أولياء الأمور', headerSub: 'خاص بأولياء الأمور فقط',
       loginTitle: 'تسجيل الدخول', loginSub: 'سجّل الدخول ببريدك الإلكتروني وكلمة المرور.',
-      phoneLabel: 'رقم الهاتف', codeLabel: 'رمز الدخول', loginBtn: 'دخول', logout: 'تسجيل خروج',
+      phoneLabel: 'رقم الهاتف', codeLabel: 'رمز الدخول', loginBtn: 'دخول', loggingIn: 'جارٍ تسجيل الدخول…', logout: 'تسجيل خروج',
       emailLabel: 'البريد الإلكتروني', passwordLabel: 'كلمة المرور', forgotPassword: 'نسيت كلمة المرور؟',
       noAccountForEmail: 'لا يوجد حساب ولي أمر بهذا البريد الإلكتروني.',
       guardianCardMissing: 'تم تسجيل الدخول، لكننا لا نجد بطاقة ولي الأمر لهذا البريد. تواصل مع المدرسة — لا تُنشئ حساباً جديداً.',
@@ -1857,7 +1857,7 @@
     ur: {
       headerTitle: 'مدینہ سکول — والدین کا پورٹل', headerSub: 'صرف سرپرستوں کے لیے',
       loginTitle: 'لاگ ان', loginSub: 'اپنی ای میل اور پاس ورڈ سے لاگ ان کریں۔',
-      phoneLabel: 'فون نمبر', codeLabel: 'رسائی کوڈ', loginBtn: 'لاگ ان', logout: 'لاگ آؤٹ',
+      phoneLabel: 'فون نمبر', codeLabel: 'رسائی کوڈ', loginBtn: 'لاگ ان', loggingIn: 'لاگ اِن ہو رہا ہے…', logout: 'لاگ آؤٹ',
       emailLabel: 'ای میل', passwordLabel: 'پاس ورڈ', forgotPassword: 'پاس ورڈ بھول گئے؟',
       noAccountForEmail: 'اس ای میل کے ساتھ کوئی سرپرست اکاؤنٹ نہیں ملا۔',
       guardianCardMissing: 'لاگ اِن کامیاب، لیکن اس ای میل کے لیے سرپرست کارڈ نہیں ملا۔ اسکول سے رابطہ کریں — نیا اکاؤنٹ نہ بنائیں۔',
@@ -2642,7 +2642,10 @@
 
   window.doParentLogin = async function(){
     const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+    if(!errEl) return;
     errEl.style.display = 'none';
+    errEl.style.color = '';
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     if(!email || !password){
@@ -2650,108 +2653,108 @@
       errEl.style.display = 'block';
       return;
     }
-    // Logg inn FØRST. Reglene krever innlogging for å lese 'guardians', så
-    // oppslaget må skje etterpå. Tidligere ble listen slått opp før
-    // innlogging — var den tom (f.eks. fordi lytterne aldri fikk lest),
-    // svarte skjemaet "fant ingen konto" selv om kontoen fantes.
-    // Dette hindrer også at skjemaet røper hvilke e-poster som er registrert.
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = t('loggingIn');
+    }
     try{
       await signInWithEmailAndPassword(auth, email, password);
-    } catch(err){
-      console.error(err);
-      errEl.textContent = t('wrongLogin');
-      errEl.style.display = 'block';
-      return;
-    }
-    let guardian = null;
-    let idxData = null;
-    const authEpost = String(auth.currentUser?.email || email).trim().toLowerCase();
-    try{
-      // foreldreTilgang kan alltid leses av eieren — bruk den FØRST.
-      // Spørring på guardians feilet stille etter trinn 5-reglene.
-      const idxSnap = await getDoc(doc(db, 'foreldreTilgang', authEpost));
-      if(idxSnap.exists()) idxData = idxSnap.data() || null;
-    } catch(err){
-      console.error('foreldreTilgang', err);
-    }
-    if(idxData && idxData.guardianId){
+
+      let guardian = null;
+      let idxData = null;
+      const authEpost = String(auth.currentUser?.email || email).trim().toLowerCase();
       try{
-        const gSnap = await getDoc(doc(db, 'guardians', idxData.guardianId));
-        if(gSnap.exists()) guardian = { ...gSnap.data(), id: gSnap.id };
+        const idxSnap = await getDoc(doc(db, 'foreldreTilgang', authEpost));
+        if(idxSnap.exists()) idxData = idxSnap.data() || null;
       } catch(err){
-        console.error('guardians/id', err);
+        console.error('foreldreTilgang', err);
       }
-    }
-    if(!guardian){
+      if(idxData && idxData.guardianId){
+        try{
+          const gSnap = await getDoc(doc(db, 'guardians', idxData.guardianId));
+          if(gSnap.exists()) guardian = { ...gSnap.data(), id: gSnap.id };
+        } catch(err){
+          console.error('guardians/id', err);
+        }
+      }
+      if(!guardian){
+        try{
+          const epostKandidater = [...new Set([authEpost, email.trim(), email.trim().toLowerCase()].filter(Boolean))];
+          for(const e of epostKandidater){
+            const snap = await getDocs(query(collection(db, 'guardians'), where('epost', '==', e)));
+            const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+            if(treff.length){ guardian = treff[0]; break; }
+          }
+        } catch(err){
+          console.error('guardians-oppslag', err);
+        }
+      }
+      if(!guardian && idxData && (idxData.navn || idxData.guardianId)){
+        guardian = {
+          id: idxData.guardianId || '',
+          navn: idxData.navn || '',
+          epost: authEpost
+        };
+      }
+      if(!guardian && !idxData){
+        await signOut(auth).catch(()=>{});
+        errEl.textContent = t('guardianCardMissing');
+        errEl.style.display = 'block';
+        return;
+      }
+      currentGuardian = guardian;
+      let barn = null;
       try{
-        const epostKandidater = [...new Set([authEpost, email.trim(), email.trim().toLowerCase()].filter(Boolean))];
-        for(const e of epostKandidater){
-          const snap = await getDocs(query(collection(db, 'guardians'), where('epost', '==', e)));
-          const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-          if(treff.length){ guardian = treff[0]; break; }
+        if(idxData && Array.isArray(idxData.barn)){
+          barn = idxData.barn.filter(Boolean);
+        } else {
+          barn = await hentMineBarnIder(authEpost || String(guardian.epost || '').trim().toLowerCase());
         }
       } catch(err){
-        console.error('guardians-oppslag', err);
+        console.error('foreldreTilgang/barn', err);
       }
-    }
-    if(!guardian && idxData && (idxData.navn || idxData.guardianId)){
-      guardian = {
-        id: idxData.guardianId || '',
-        navn: idxData.navn || '',
-        epost: authEpost
-      };
-    }
-    if(!guardian && !idxData){
-      await signOut(auth).catch(()=>{});
-      errEl.textContent = t('guardianCardMissing');
-      errEl.style.display = 'block';
-      return;
-    }
-    currentGuardian = guardian;
-    // 🔴 Må skje FØR startDataListeners(). Lytterne bygger spørringene
-    // sine i det de starter, og en tom liste her ville gitt en portal som
-    // ser ut til å virke, men ikke viser noen barn.
-    let barn = null;
-    try{
-      if(idxData && Array.isArray(idxData.barn)){
-        barn = idxData.barn.filter(Boolean);
-      } else {
-        barn = await hentMineBarnIder(authEpost || String(guardian.epost || '').trim().toLowerCase());
+      if(barn === null){
+        await signOut(auth).catch(()=>{});
+        errEl.textContent = t('indexLinkMissing');
+        errEl.style.display = 'block';
+        currentGuardian = null;
+        return;
       }
+      if(barn.length === 0){
+        await signOut(auth).catch(()=>{});
+        errEl.textContent = t('indexEmptyChildren');
+        errEl.style.display = 'block';
+        currentGuardian = null;
+        return;
+      }
+      mineBarnIder = barn;
+      minEpost = String(auth.currentUser?.email || guardian.epost || '').trim().toLowerCase();
+      startDataListeners();
+      if(guardian.id){
+        updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
+        addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
+      }
+      document.getElementById('loginView').style.display = 'none';
+      visForeldreVelkomst();
+      document.getElementById('whoText').textContent = guardian.navn;
+      setTimeout(gjenopprettSeksjon, 0);
+      document.getElementById('absDate').value = nearestSchoolDate();
+      closeSection();
+      refreshMyChildren();
     } catch(err){
-      console.error('foreldreTilgang/barn', err);
-    }
-    if(barn === null){
-      await signOut(auth).catch(()=>{});
-      errEl.textContent = t('indexLinkMissing');
-      errEl.style.display = 'block';
+      console.error('doParentLogin', err);
+      await signOut(auth).catch(() => {});
       currentGuardian = null;
-      return;
-    }
-    if(barn.length === 0){
-      await signOut(auth).catch(()=>{});
-      errEl.textContent = t('indexEmptyChildren');
+      errEl.style.color = '';
+      const authFeil = err && (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found');
+      errEl.textContent = authFeil ? t('wrongLogin') : (t('errorOccurred') + (err && err.message ? err.message : String(err)));
       errEl.style.display = 'block';
-      currentGuardian = null;
-      return;
+    } finally {
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = t('loginBtn');
+      }
     }
-    mineBarnIder = barn;
-    minEpost = String(auth.currentUser?.email || guardian.epost || '').trim().toLowerCase();
-    startDataListeners();
-    if(guardian.id){
-      updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
-      addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
-    }
-    document.getElementById('loginView').style.display = 'none';
-    // Velkomstskjermen først — portalen åpnes når et barn er valgt.
-    visForeldreVelkomst();
-    document.getElementById('whoText').textContent = guardian.navn;
-    // Åpner seksjonen fra adresselinjen hvis den finnes — ellers står
-    // startsiden som før.
-    setTimeout(gjenopprettSeksjon, 0);
-    document.getElementById('absDate').value = nearestSchoolDate();
-    closeSection();
-    refreshMyChildren();
   };
 
   window.doForgotPassword = async function(){
@@ -5117,6 +5120,11 @@
   }
 
   createSchoolCalendar(document.getElementById('absDate'), () => SCHOOL_WEEKDAYS);
+
+  const loginPw = document.getElementById('loginPassword');
+  const loginEm = document.getElementById('loginEmail');
+  if(loginPw) loginPw.addEventListener('keydown', e => { if(e.key === 'Enter') doParentLogin(); });
+  if(loginEm) loginEm.addEventListener('keydown', e => { if(e.key === 'Enter') doParentLogin(); });
 
   applyStaticTranslations();
 </script>
