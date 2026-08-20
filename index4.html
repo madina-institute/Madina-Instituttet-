@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 03:57:18 -->
+<!-- SIST-ENDRET: 2026-08-20 04:22:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -18,6 +18,7 @@
     --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --emerald-l:#6FA8DC;
     --gold:#b7924a; --gold-l:#d9bd7c; --paper:#EEF0FB; --paper-2:#E4E7F7;
     --line:rgba(40,40,90,0.10); --shadow:0 10px 26px rgba(40,40,90,0.08); --red:#a83c3c;
+    --vipps:#ff5b24; --vipps-dark:#e04e1a; --vipps-bg:#fff6f2;
   }
   *{box-sizing:border-box;}
   /* Shown only when the page detects it's running inside an app's built-in
@@ -137,6 +138,58 @@
   html[dir="rtl"] .btn{font-family:'Tajawal',sans-serif; letter-spacing:0; text-transform:none;}
   .btn-primary{background:var(--emerald); color:#fff;}
   .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink); margin-top:10px;}
+
+  /* ── Vipps betalingsområde ── */
+  .vipps-pay-zone{
+    margin-top:18px; padding:18px 16px 16px; border-radius:12px;
+    background:var(--vipps-bg); border:2px solid var(--vipps);
+    box-shadow:0 4px 16px rgba(255,91,36,0.12);
+  }
+  .vipps-zone-head{
+    display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .vipps-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    background:var(--vipps); color:#fff; font-family:'Jost',sans-serif;
+    font-weight:800; font-size:15px; letter-spacing:0.02em;
+    padding:5px 14px; border-radius:999px; line-height:1;
+  }
+  html[dir="rtl"] .vipps-badge{font-family:'Tajawal',sans-serif;}
+  .vipps-zone-title{
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:600; color:#b33a00;
+  }
+  html[dir="rtl"] .vipps-zone-title{font-family:'Tajawal',sans-serif;}
+  .vipps-pay-zone .sub{color:#8a4a30;}
+  .vipps-pay-zone .btn-ghost{
+    margin-top:0; border-color:rgba(255,91,36,0.35); color:#b33a00;
+  }
+  .vipps-pay-zone .btn-ghost.vipps-selected{
+    background:var(--vipps); color:#fff; border-color:var(--vipps);
+  }
+  .btn-vipps{
+    background:var(--vipps); color:#fff; border:none;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin-top:10px;
+  }
+  .btn-vipps:hover{background:var(--vipps-dark);}
+  .btn-vipps .vipps-mark{
+    background:#fff; color:var(--vipps); font-weight:800;
+    padding:2px 8px; border-radius:999px; font-size:12px;
+  }
+  html[dir="rtl"] .btn-vipps .vipps-mark{font-family:'Tajawal',sans-serif;}
+  .btn-vipps-outline{
+    background:#fff; color:var(--vipps); border:2px solid var(--vipps);
+    margin-top:8px;
+  }
+  .btn-vipps-outline:hover{background:#fff5f0;}
+  .vipps-card-note{
+    font-family:'Jost',sans-serif; font-size:11.5px; color:#8a4a30;
+    margin-top:8px; line-height:1.45; text-align:center;
+  }
+  html[dir="rtl"] .vipps-card-note{font-family:'Tajawal',sans-serif;}
+  .vipps-pay-zone .btn-vipps-confirm{
+    background:var(--vipps); color:#fff; border:none; margin-top:10px;
+  }
 
   .error-msg{font-family:'Jost',sans-serif; font-size:12.5px; color:var(--red); margin-top:10px; display:none;}
   html[dir="rtl"] .error-msg{font-family:'Tajawal',sans-serif;}
@@ -1010,21 +1063,33 @@
         <h2 data-i18n="menuPayment">Betaling</h2>
         <div id="paymentInfo"></div>
 
-        <hr style="border:none; border-top:1px dotted var(--line); margin:18px 0;">
-        <div class="sub" style="margin-bottom:10px;" data-i18n="howMuchSub">Hvor mye ønsker du å betale?</div>
-        <div class="field" style="display:flex; gap:8px; margin-bottom:10px;">
-          <button class="btn btn-ghost" id="payChoiceAllBtn" style="margin-top:0;" onclick="choosePayAmount('Alt')" data-i18n="payAllBtn">Alt gjenstående</button>
-          <button class="btn btn-ghost" id="payChoicePartialBtn" style="margin-top:0;" onclick="choosePayAmount('Delvis')" data-i18n="payPartialBtn">Annet beløp</button>
-        </div>
-        <div class="field" id="payAmountFieldWrap" style="display:none;">
-          <label data-i18n="amountLabel">Beløp (kr)</label>
-          <input type="number" id="payAmountInput" min="1">
-        </div>
-        <button class="btn btn-primary" id="payChoiceSubmitBtn" style="display:none;" onclick="submitPaymentChoice()" data-i18n="confirmAmountBtn">Bekreft beløp</button>
-        <div class="empty-msg" id="payChoiceSentMsg" style="display:none;" data-i18n="payChoiceSent">Takk! Beløpet er registrert. Fullfør betalingen under.</div>
+        <div class="vipps-pay-zone" id="vippsPayZone" style="display:none;">
+          <div class="vipps-zone-head">
+            <span class="vipps-badge">Vipps</span>
+            <span class="vipps-zone-title" data-i18n="vippsZoneTitle">Trygg betaling via Vipps</span>
+          </div>
+          <div class="sub" style="margin-bottom:10px;" data-i18n="howMuchSub">Hvor mye ønsker du å betale?</div>
+          <div class="field" style="display:flex; gap:8px; margin-bottom:10px;">
+            <button class="btn btn-ghost" id="payChoiceAllBtn" style="margin-top:0;" onclick="choosePayAmount('Alt')" data-i18n="payAllBtn">Alt gjenstående</button>
+            <button class="btn btn-ghost" id="payChoicePartialBtn" style="margin-top:0;" onclick="choosePayAmount('Delvis')" data-i18n="payPartialBtn">Annet beløp</button>
+          </div>
+          <div class="field" id="payAmountFieldWrap" style="display:none;">
+            <label data-i18n="amountLabel">Beløp (kr)</label>
+            <input type="number" id="payAmountInput" min="1">
+          </div>
+          <button class="btn btn-vipps-confirm" id="payChoiceSubmitBtn" style="display:none;" onclick="submitPaymentChoice()" data-i18n="confirmAmountBtn">Bekreft beløp</button>
+          <div class="empty-msg" id="payChoiceSentMsg" style="display:none;" data-i18n="payChoiceSent">Takk! Beløpet er registrert. Fullfør betalingen under.</div>
 
-        <div id="paymentBtnWrap" style="margin-top:16px; display:none;">
-          <button class="btn btn-primary" id="paymentLink" onclick="payViaVippsNow()" data-i18n="payNowBtn">Betal nå</button>
+          <div id="paymentBtnWrap" style="margin-top:14px; display:none;">
+            <button class="btn btn-vipps" id="paymentLinkVipps" onclick="payViaVippsNow('WALLET')">
+              <span class="vipps-mark">Vipps</span>
+              <span data-i18n="payVippsBtn">Betal med Vipps</span>
+            </button>
+            <button class="btn btn-vipps-outline" id="paymentLinkCard" onclick="payViaVippsNow('CARD')">
+              <span data-i18n="payCardBtn">💳 Betal med bankkort</span>
+            </button>
+            <div class="vipps-card-note" data-i18n="payCardNote">Visa, Mastercard og andre kort — via Vipps betalingsside.</div>
+          </div>
         </div>
         <div class="empty-msg" id="paymentComingSoon" style="display:none;" data-i18n="paymentComingSoon">Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.</div>
       </div>
@@ -1419,6 +1484,9 @@
       absenceSub: 'Send en melding til læreren om barnets fravær', dateLabel: 'Dato', reasonLabel: 'Årsak', sendAbsence: 'Send fraværsmelding',
       notesSub: 'Fremgangsnotater om barnet ditt',
       payNowBtn: 'Betal nå', paymentComingSoon: 'Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.',
+      vippsZoneTitle: 'Trygg betaling via Vipps',
+      payVippsBtn: 'Betal med Vipps', payCardBtn: '💳 Betal med bankkort',
+      payCardNote: 'Visa, Mastercard og andre kort — via Vipps betalingsside.',
       howMuchSub: 'Hvor mye ønsker du å betale?', payAllBtn: 'Alt gjenstående', payPartialBtn: 'Annet beløp',
       amountLabel: 'Beløp (kr)', confirmAmountBtn: 'Bekreft beløp', payChoiceSent: 'Takk! Beløpet er registrert. Fullfør betalingen under.',
       invalidAmount: 'Skriv inn et gyldig beløp.', noRemaining: 'Det er ikke noe utestående beløp for dette barnet.',
@@ -1504,6 +1572,9 @@
       absenceSub: 'أرسل رسالة إلى المعلم بخصوص غياب الطالب', dateLabel: 'التاريخ', reasonLabel: 'السبب', sendAbsence: 'إرسال إشعار الغياب',
       notesSub: 'ملاحظات تقدّم عن طالبك',
       payNowBtn: 'ادفع الآن', paymentComingSoon: 'وسيلة الدفع الإلكتروني قادمة قريبًا. تواصل مع المدرسة لمعرفة طريقة الدفع.',
+      vippsZoneTitle: 'دفع آمن عبر Vipps',
+      payVippsBtn: 'ادفع عبر Vipps', payCardBtn: '💳 ادفع بالبطاقة البنكية',
+      payCardNote: 'Visa وMastercard وبطاقات أخرى — عبر صفحة Vipps للدفع.',
       howMuchSub: 'كم تريد أن تدفع؟', payAllBtn: 'كل المبلغ المتبقي', payPartialBtn: 'مبلغ آخر',
       amountLabel: 'المبلغ (كرونة)', confirmAmountBtn: 'تأكيد المبلغ', payChoiceSent: 'شكرًا! تم تسجيل المبلغ. أكمل الدفع بالأسفل.',
       invalidAmount: 'أدخل مبلغًا صحيحًا.', noRemaining: 'لا يوجد مبلغ مستحق لهذا الطالب.',
@@ -1589,6 +1660,9 @@
       absenceSub: 'بچے کی غیر حاضری کے بارے میں استاد کو پیغام بھیجیں', dateLabel: 'تاریخ', reasonLabel: 'وجہ', sendAbsence: 'غیر حاضری کی اطلاع بھیجیں',
       notesSub: 'آپ کے بچے کے بارے میں پیش رفت کے نوٹس',
       payNowBtn: 'ابھی ادائیگی کریں', paymentComingSoon: 'آن لائن ادائیگی جلد آ رہی ہے۔ ادائیگی کی معلومات کے لیے سکول سے رابطہ کریں۔',
+      vippsZoneTitle: 'Vipps کے ذریعے محفوظ ادائیگی',
+      payVippsBtn: 'Vipps سے ادائیگی کریں', payCardBtn: '💳 بینک کارڈ سے ادائیگی',
+      payCardNote: 'Visa، Mastercard اور دیگر کارڈ — Vipps ادائیگی صفحے کے ذریعے۔',
       howMuchSub: 'آپ کتنی رقم ادا کرنا چاہتے ہیں؟', payAllBtn: 'تمام باقی رقم', payPartialBtn: 'دوسری رقم',
       amountLabel: 'رقم (کرون)', confirmAmountBtn: 'رقم کی تصدیق کریں', payChoiceSent: 'شکریہ! رقم درج کر لی گئی ہے۔ نیچے ادائیگی مکمل کریں۔',
       invalidAmount: 'ایک درست رقم درج کریں۔', noRemaining: 'اس بچے کے لیے کوئی باقی رقم نہیں ہے۔',
@@ -3657,10 +3731,11 @@
       lastPaymentChildId = child.id;
     }
     if(remainingKr > 0){
+      document.getElementById('vippsPayZone').style.display = 'block';
       document.getElementById('paymentBtnWrap').style.display = 'block';
       document.getElementById('paymentComingSoon').style.display = 'none';
     } else {
-      document.getElementById('paymentBtnWrap').style.display = 'none';
+      document.getElementById('vippsPayZone').style.display = 'none';
       document.getElementById('paymentComingSoon').style.display = 'none';
     }
 
@@ -3777,11 +3852,15 @@
     document.getElementById('payAmountFieldWrap').style.display = 'none';
     document.getElementById('payChoiceSubmitBtn').style.display = 'none';
     document.getElementById('payChoiceSentMsg').style.display = 'none';
+    document.getElementById('payChoiceAllBtn')?.classList.remove('vipps-selected');
+    document.getElementById('payChoicePartialBtn')?.classList.remove('vipps-selected');
   }
   window.choosePayAmount = function(payType){
     selectedPayType = payType;
     document.getElementById('payChoiceSentMsg').style.display = 'none';
     document.getElementById('payChoiceSubmitBtn').style.display = 'block';
+    document.getElementById('payChoiceAllBtn')?.classList.toggle('vipps-selected', payType === 'Alt');
+    document.getElementById('payChoicePartialBtn')?.classList.toggle('vipps-selected', payType === 'Delvis');
     if(payType === 'Delvis'){
       document.getElementById('payAmountFieldWrap').style.display = 'block';
       document.getElementById('payAmountInput').value = '';
@@ -3832,7 +3911,8 @@
   // uten å opprette noen ny elev.
   const VIPPS_CREATE_PAYMENT_URL = 'https://createvippspayment-qgyf6x4aba-uc.a.run.app';
 
-  window.payViaVippsNow = async function(){
+  window.payViaVippsNow = async function(paymentMethodType){
+    paymentMethodType = paymentMethodType === 'CARD' ? 'CARD' : 'WALLET';
     if(myChildren.length === 0 || !currentGuardian) return;
     const child = myChildren[currentChildIndex];
     const remaining = toNum(child.belop) - toNum(child.belopBetalt);
@@ -3842,7 +3922,7 @@
       return;
     }
     let phone = (currentGuardian.telefon || '').replace(/\D/g, '');
-    if(phone.length !== 8){
+    if(paymentMethodType === 'WALLET' && phone.length !== 8){
       const entered = prompt(currentLang === 'ar' ? 'رقم موبايلك (٨ أرقام، Vipps):' : 'Ditt mobilnummer (8 sifre, for Vipps):', phone);
       if(!entered) return;
       phone = entered.replace(/\D/g, '');
@@ -3852,8 +3932,10 @@
       notify(currentLang === 'ar' ? 'يجب تسجيل الدخول أولاً.' : 'Du må være innlogget.');
       return;
     }
-    const btn = document.getElementById('paymentLink');
-    if(btn) btn.style.pointerEvents = 'none';
+    const btnV = document.getElementById('paymentLinkVipps');
+    const btnC = document.getElementById('paymentLinkCard');
+    if(btnV) btnV.style.pointerEvents = 'none';
+    if(btnC) btnC.style.pointerEvents = 'none';
     showToast(currentLang === 'ar' ? 'جارٍ تجهيز الدفع...' : 'Forbereder betaling...');
     try{
       const token = await bruker.getIdToken();
@@ -3867,14 +3949,16 @@
           type: 'balance',
           targetId: child.id,
           amountKr: amountToPay,
-          phoneNumber: phone,
+          phoneNumber: phone || '00000000',
+          paymentMethodType,
           initiatedBy: 'guardian'
         })
       });
       const data = await res.json();
       if(!data.ok){
         notify('Vipps-feil: ' + (data.error || 'Ukjent feil'));
-        if(btn) btn.style.pointerEvents = '';
+        if(btnV) btnV.style.pointerEvents = '';
+        if(btnC) btnC.style.pointerEvents = '';
         return;
       }
       if(data.redirectUrl){
@@ -3883,12 +3967,14 @@
         notify(currentLang === 'ar'
           ? 'تم إنشاء الدفع. افتح تطبيق Vipps تحت «المدفوعات».'
           : 'Betaling opprettet. Åpne Vipps-appen under Betalinger.');
-        if(btn) btn.style.pointerEvents = '';
+        if(btnV) btnV.style.pointerEvents = '';
+        if(btnC) btnC.style.pointerEvents = '';
       }
     } catch(err){
       console.error(err);
       notify('Feil: ' + err.message);
-      if(btn) btn.style.pointerEvents = '';
+      if(btnV) btnV.style.pointerEvents = '';
+      if(btnC) btnC.style.pointerEvents = '';
     }
   };
 
