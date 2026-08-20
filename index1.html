@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:55:00 -->
+<!-- SIST-ENDRET: 2026-08-20 23:58:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -973,6 +973,7 @@
   <div class="app-body">
     <nav class="app-rail" id="portalSidebar" aria-label="Lærerportal">
       <button data-sidebar="home" onclick="navTo('home', showHome)"><span class="ic">🏠</span><span class="lbl" data-i18n="menuHome">Hjem</span></button>
+      <button data-sidebar="elever" onclick="navTo('classStudents', showClassStudents)"><span class="ic">👥</span><span class="lbl" data-i18n="menuClassStudents">Elever i klassen</span></button>
       <button data-sidebar="oppmote" onclick="openHub('oppmote')"><span class="ic">✅</span><span class="lbl" data-i18n="menuAttendanceHub">Oppmøte</span><span class="dot" id="dotOppmote"></span></button>
       <button data-sidebar="undervisning" onclick="openHub('undervisning')"><span class="ic">📚</span><span class="lbl" data-i18n="menuTeaching">Undervisning</span></button>
       <button data-sidebar="melding" onclick="openHub('melding')"><span class="ic">✉️</span><span class="lbl" data-i18n="menuMessages">Melding</span><span class="dot" id="dotMelding"></span><span class="msg-badge" id="meldingBadge"></span></button>
@@ -1000,7 +1001,6 @@
       <button class="back-link" onclick="navTo('home', showHome)" data-i18n="back">← Tilbake</button>
       <div class="menu-grid">
         <div class="menu-card" onclick="navTo('attendance', showAttendance)"><div class="ic">✅</div><div class="t" data-i18n="menuTakeAttendance">Ta oppmøte</div></div>
-        <div class="menu-card" onclick="navTo('classStudents', showClassStudents)"><div class="ic">👥</div><div class="t" data-i18n="menuClassStudents">Elever i klassen</div></div>
         <div class="menu-card" onclick="navTo('myAttendance', showMyAttendance)"><div class="ic">⏰</div><div class="t" data-i18n="menuMyHours">Mitt oppmøte/timer</div></div>
         <div class="menu-card" id="menuCardAbsence" onclick="navTo('absenceReview', showAbsenceReview)"><span class="dot" id="dotAbsenceReview"></span><div class="ic">🚫</div><div class="t" data-i18n="menuAbsenceReview">Fraværsmeldinger</div></div>
       </div>
@@ -2226,7 +2226,7 @@
   function tegnAltPaaNytt(){
     const f = ['showStudentNotes','showHomework','showLessonPlans','showAttendance',
                'showTimeplan','showClassPosts','showPracticeVideos','showMessages',
-               'renderStudentList','showForberedelser'];
+               'renderStudentList','renderClassStudents','showForberedelser'];
     f.forEach(navn => { try{ if(typeof window[navn] === 'function') window[navn](); }catch(e){} });
   }
 
@@ -3322,7 +3322,8 @@
   };
 
   const SIDEBAR_TEACHER = {
-    attendance: 'oppmote', myAttendance: 'oppmote', absenceReview: 'oppmote', classStudents: 'oppmote',
+    attendance: 'oppmote', myAttendance: 'oppmote', absenceReview: 'oppmote',
+    classStudents: 'elever',
     lesson: 'undervisning', monthlyPlan: 'undervisning', semesterPlan: 'undervisning',
     fagplan: 'undervisning', arsplan: 'undervisning', laereplanregler: 'undervisning',
     homework: 'undervisning', videos: 'undervisning', studentNotes: 'undervisning',
@@ -3822,7 +3823,7 @@
     const el = document.getElementById('classStudentsRoster');
     const sub = document.getElementById('classStudentsSub');
     if(!el) return;
-    const mine = students.filter(s => s.klasse === valgtKlasse)
+    const mine = eleverForValgtKlasse()
       .sort((a, b) => String(a.navn || '').localeCompare(String(b.navn || ''), currentLang === 'ar' ? 'ar' : 'nb'));
     if(sub){
       sub.textContent = t('classStudentsSub') + (mine.length
@@ -3848,6 +3849,7 @@
     valgtElevId = null;
     document.getElementById('classStudentsListPanel').style.display = 'block';
     document.getElementById('classStudentsDetailPanel').style.display = 'none';
+    startForesattLyttere();
     renderClassStudents();
     pushAppView('classStudents');
   };
@@ -5445,6 +5447,20 @@
       return currentLang === 'ar' ? '(صف محذوف)' : '(slettet klasse)';
     }
     return classId;                              // gammel fritekst
+  }
+
+  // Elevens klasse kan stå som id eller gammelt klassenavn — samme
+  // problem som resolveClassName løser for visning.
+  function elevTilhorerKlasse(s, klasseRef){
+    if(!s || !klasseRef) return false;
+    if(s.klasse === klasseRef) return true;
+    const cls = classes.find(c => c.id === klasseRef || c.navn === klasseRef || c.klassenavn === klasseRef);
+    if(!cls) return false;
+    return s.klasse === cls.id || s.klasse === cls.navn || s.klasse === cls.klassenavn;
+  }
+
+  function eleverForValgtKlasse(){
+    return students.filter(s => elevTilhorerKlasse(s, valgtKlasse));
   }
 
   // Undervisningsdagene styres nå fra fanen "Programmer" i admin.html
