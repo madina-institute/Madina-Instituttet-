@@ -380,7 +380,10 @@
   .school-date-input{ cursor:pointer; background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f4a3a' stroke-width='1.6'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:16px; }
   /* Brede tabeller får egen scroll i stedet for å dra hele siden sidelengs. */
   .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  table{ max-width:100%; }
+  .assistent-modus .plan-skriv{ display:none !important; }
+  .assistent-modus .plan-les-hint{ display:block !important; }
+  .assistent-modus #monthlyPlanView .sub:first-of-type,
+  .assistent-modus #semesterPlanView .sub:first-of-type{ display:none; }
   img, video, canvas{ max-width:100%; height:auto; }
   .home-greeting h2{ margin:0 0 4px; }
   .home-greeting .date{ color:#6b7a72; font-size:14.5px; text-transform:capitalize; }
@@ -994,6 +997,8 @@
       <button class="back-link" onclick="history.back()">← Tilbake</button>
       <h2>Månedsplan</h2>
       <div class="sub">Bygget på skolens mal for faget og klassen din — rediger og send inn</div>
+      <div class="sub plan-les-hint" style="display:none; color:#8a6d1d;">Kun lesing — assistenter kan ikke sende inn planer.</div>
+      <div class="plan-skriv">
       <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="applyMonthlyPlanTemplate()">🗂️ Bruk mal fra administrasjonen</button>
       <div class="field">
         <label>Måned</label>
@@ -1028,6 +1033,7 @@
         <input type="text" id="mpBok">
       </div>
       <button class="btn btn-primary" onclick="submitMonthlyPlan()">Send inn månedsplan</button>
+      </div>
 
       <hr class="divider">
       <h3 style="margin-top:0;">Tidligere innsendte månedsplaner</h3>
@@ -1039,6 +1045,8 @@
       <button class="back-link" onclick="history.back()">← Tilbake</button>
       <h2>Semesterplan</h2>
       <div class="sub">Bygget på skolens mal for faget og klassen din — rediger og send inn</div>
+      <div class="sub plan-les-hint" style="display:none; color:#8a6d1d;">Kun lesing — assistenter kan ikke sende inn planer.</div>
+      <div class="plan-skriv">
       <button type="button" class="btn btn-ghost" style="margin-bottom:16px;" onclick="applySemesterPlanTemplate()">🗂️ Bruk mal fra administrasjonen</button>
       <div class="field">
         <label>Semester</label>
@@ -1069,6 +1077,7 @@
         <input type="text" id="spBok">
       </div>
       <button class="btn btn-primary" onclick="submitSemesterPlan()">Send inn semesterplan</button>
+      </div>
 
       <hr class="divider">
       <h3 style="margin-top:0;">Tidligere innsendte semesterplaner</h3>
@@ -1813,6 +1822,19 @@
   let guardians = [];
   let currentTeacher = null;
 
+  const LAERER_FAG_ROLLER = ['Koran lærer','Islam lærer','Arabisk lærer','Urdu lærer'];
+
+  function erAssistent(){
+    if(!currentTeacher) return false;
+    const roller = (currentTeacher.roller || '').split(',').map(s => s.trim()).filter(Boolean);
+    return roller.includes('Assistent') && !roller.some(r => LAERER_FAG_ROLLER.includes(r));
+  }
+  function minPortalRolle(){ return erAssistent() ? 'Assistent' : 'Lærer'; }
+  function assistentTildeling(){
+    const t = currentTeacher || {};
+    return Array.isArray(t.assistentTildeling) ? t.assistentTildeling : [];
+  }
+
   // ═══════════════════════════════════════════════════════════════════
   // VALGT KLASSE OG FAG
   //
@@ -1849,15 +1871,20 @@
   }
   function mineKlasser(){
     const fraTimeplan = [...new Set(mineTimer().map(h => h.klasse).filter(Boolean))];
-    // Er timeplanen ikke satt opp ennå, faller vi tilbake på kortet —
-    // ellers ville portalen stått tom for en lærer som har en klasse,
-    // men ingen timer registrert.
-    if(fraTimeplan.length === 0 && kortetsKlasse()){
+    const fraAssistent = erAssistent()
+      ? [...new Set(assistentTildeling().map(x => x.klasse).filter(Boolean))]
+      : [];
+    const kombinert = [...new Set([...fraTimeplan, ...fraAssistent])];
+    if(kombinert.length === 0 && !erAssistent() && kortetsKlasse()){
       return [kortetsKlasse()];
     }
-    return fraTimeplan;
+    return kombinert;
   }
   function mineFagFor(klasse){
+    if(erAssistent()){
+      const fag = [...new Set(assistentTildeling().filter(x => x.klasse === klasse).map(x => x.fag).filter(Boolean))];
+      if(fag.length) return fag;
+    }
     const fag = [...new Set(mineTimer().filter(h => h.klasse === klasse)
       .map(h => h.fag).filter(Boolean))];
     if(fag.length === 0 && kortetsFag()) return [kortetsFag()];
@@ -2230,7 +2257,8 @@
   function tegnVelkomst(){
     const ar = currentLang === 'ar';
     const navnEl = document.getElementById('vkNavn');
-    if(navnEl) navnEl.textContent = currentTeacher ? (currentTeacher.navn || '') : '';
+    if(navnEl) navnEl.textContent = (currentTeacher ? (currentTeacher.navn || '') : '') +
+      (currentTeacher ? (ar ? (erAssistent() ? ' · مساعد' : ' · معلم') : (erAssistent() ? ' · Assistent' : ' · Lærer')) : '');
     const hilsen = document.getElementById('vkHilsen');
     if(hilsen) hilsen.textContent = ar ? 'أهلاً وسهلاً' : 'Velkommen';
     const under = document.getElementById('vkUnder');
@@ -2784,7 +2812,7 @@
     startDataListeners();
     currentTeacher = teacher;
     updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
-    addDoc(collection(db, 'loginEvents'), { role: 'teacher', personId: teacher.id, timestamp: new Date().toISOString() }).catch(()=>{});
+    addDoc(collection(db, 'loginEvents'), { role: erAssistent() ? 'assistent' : 'teacher', personId: teacher.id, timestamp: new Date().toISOString() }).catch(()=>{});
 
     // Mangler opplysninger på kortet, må de fylles ut før portalen åpnes.
     // Innloggingen er allerede godkjent — dette er ikke en ny sperre, men
@@ -2796,6 +2824,37 @@
     fullforInnlogging(teacher);
   };
 
+  function applyPortalRolleUI(){
+    const ast = erAssistent();
+    document.body.classList.toggle('assistent-modus', ast);
+    document.querySelectorAll('.plan-les-hint').forEach(el => { el.style.display = ast ? 'block' : 'none'; });
+    const railLbl = document.querySelector('#portalSidebar [data-sidebar="undervisning"] .lbl');
+    if(railLbl) railLbl.textContent = ast
+      ? (currentLang === 'ar' ? 'الخطط والواجبات' : 'Planer og lekser')
+      : (I18N[currentLang].menuTeaching || 'Undervisning');
+    const prepCard = document.getElementById('homeCardPrep');
+    if(prepCard){
+      const lbl = prepCard.querySelector('.l');
+      if(lbl) lbl.textContent = ast
+        ? (currentLang === 'ar' ? 'قراءة التحضيرات' : 'Les forberedelser')
+        : t('homePrepLbl');
+    }
+    const lessonMenu = document.querySelector('#view-undervisning .menu-card[onclick*="showLesson"]');
+    if(lessonMenu){
+      const tEl = lessonMenu.querySelector('.t');
+      if(tEl) tEl.textContent = ast
+        ? (currentLang === 'ar' ? 'قراءة التحضيرات' : 'Les forberedelser')
+        : t('menuLessonPrep');
+    }
+    const msgMenu = document.querySelector('#view-melding .menu-card[onclick*="showMessages"]');
+    if(msgMenu){
+      const tEl = msgMenu.querySelector('.t');
+      if(tEl) tEl.textContent = ast
+        ? (currentLang === 'ar' ? 'رسائلي' : 'Mine meldinger')
+        : t('menuParentMsg');
+    }
+  }
+
   // Alt som skjer når portalen faktisk åpnes. Skilt ut fordi det nå kan
   // skje på to tidspunkter: rett etter innlogging, eller etter at
   // førstegangsutfyllingen er lagret.
@@ -2803,6 +2862,7 @@
     document.getElementById('loginView').style.display = 'none';
     startHoursLytter();
     settValgFraTimeplan();
+    applyPortalRolleUI();
     // Velkomstskjermen først. Panelet åpnes når klasse og fag er valgt —
     // se startArbeid(). Grunnen står ved markupen: alt læreren skriver
     // havner i én bestemt klasse og ett bestemt fag, og det valget skal
@@ -3077,6 +3137,17 @@
   };
 
   window.showLesson = function(){
+    if(erAssistent()){
+      document.getElementById('chooseView').style.display = 'none';
+      document.getElementById('attendanceView').style.display = 'none';
+      document.getElementById('lessonView').style.display = 'none';
+      document.getElementById('lessonArchiveView').style.display = 'block';
+      const h2 = document.querySelector('#lessonArchiveView h2');
+      if(h2) h2.textContent = currentLang === 'ar' ? 'قراءة التحضيرات (للصف)' : 'Les forberedelser (for klassen)';
+      renderLessonArchive();
+      pushAppView('lessonArchive');
+      return;
+    }
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('attendanceView').style.display = 'none';
     document.getElementById('lessonView').style.display = 'block';
@@ -3104,10 +3175,14 @@
   function renderLessonArchive(){
     const el = document.getElementById('lessonArchiveList');
     if(!el || !currentTeacher) return;
-    const mine = lessonPlans.filter(p => p.larer === currentTeacher.id)
-      .sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
+    const liste = erAssistent()
+      ? lessonPlans.filter(p => p.klasse === valgtKlasse && (!valgtFag || p.fag === valgtFag))
+      : lessonPlans.filter(p => p.larer === currentTeacher.id);
+    const mine = liste.sort((a,b) => (b.dato||'').localeCompare(a.dato||''));
     if(mine.length === 0){
-      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد تحضيرات مرسلة بعد.' : 'Ingen forberedelser sendt inn ennå.'}</div>`;
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar'
+        ? (erAssistent() ? 'لا توجد تحضيرات لهذا الصف/المادة بعد.' : 'لا توجد تحضيرات مرسلة بعد.')
+        : (erAssistent() ? 'Ingen forberedelser for denne klassen/faget ennå.' : 'Ingen forberedelser sendt inn ennå.')}</div>`;
       return;
     }
     const detailRow = (label, value) => `
@@ -3181,6 +3256,10 @@
 
   window.submitMonthlyPlan = async function(){
     if(!currentTeacher) return;
+    if(erAssistent()){
+      notify(currentLang === 'ar' ? 'المساعد يقرأ الخطط فقط — لا يمكن الإرسال.' : 'Assistenter kan bare lese planer — ikke sende inn.');
+      return;
+    }
     const record = {
       larer: currentTeacher.id, klasse: valgtKlasse, fag: valgtFag,
       maaned: document.getElementById('mpMaaned').value.trim(),
@@ -3206,9 +3285,14 @@
   function renderMonthlyPlanList(){
     const el = document.getElementById('monthlyPlanList');
     if(!el || !currentTeacher) return;
-    const mine = monthlyPlans.filter(p => p.larer === currentTeacher.id).sort((a,b) => (b.maaned||'').localeCompare(a.maaned||''));
+    const liste = erAssistent()
+      ? monthlyPlans.filter(p => p.klasse === valgtKlasse && (!valgtFag || p.fag === valgtFag))
+      : monthlyPlans.filter(p => p.larer === currentTeacher.id);
+    const mine = liste.sort((a,b) => (b.maaned||'').localeCompare(a.maaned||''));
     if(mine.length === 0){
-      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد خطط شهرية مرسلة بعد.' : 'Ingen månedsplaner sendt inn ennå.'}</div>`;
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar'
+        ? (erAssistent() ? 'لا توجد خطط شهرية لهذا الصف.' : 'لا توجد خطط شهرية مرسلة بعد.')
+        : (erAssistent() ? 'Ingen månedsplaner for denne klassen ennå.' : 'Ingen månedsplaner sendt inn ennå.')}</div>`;
       return;
     }
     el.innerHTML = mine.map(p => `
@@ -3248,6 +3332,10 @@
 
   window.submitSemesterPlan = async function(){
     if(!currentTeacher) return;
+    if(erAssistent()){
+      notify(currentLang === 'ar' ? 'المساعد يقرأ الخطط فقط — لا يمكن الإرسال.' : 'Assistenter kan bare lese planer — ikke sende inn.');
+      return;
+    }
     const record = {
       larer: currentTeacher.id, klasse: valgtKlasse, fag: valgtFag,
       semester: document.getElementById('spSemester').value,
@@ -3271,9 +3359,14 @@
   function renderSemesterPlanList(){
     const el = document.getElementById('semesterPlanList');
     if(!el || !currentTeacher) return;
-    const mine = semesterPlans.filter(p => p.larer === currentTeacher.id).sort((a,b) => (b.semester||'').localeCompare(a.semester||''));
+    const liste = erAssistent()
+      ? semesterPlans.filter(p => p.klasse === valgtKlasse && (!valgtFag || p.fag === valgtFag))
+      : semesterPlans.filter(p => p.larer === currentTeacher.id);
+    const mine = liste.sort((a,b) => (b.semester||'').localeCompare(a.semester||''));
     if(mine.length === 0){
-      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar' ? 'لا توجد خطط نصف سنوية مرسلة بعد.' : 'Ingen semesterplaner sendt inn ennå.'}</div>`;
+      el.innerHTML = `<div class="empty-msg">${currentLang === 'ar'
+        ? (erAssistent() ? 'لا توجد خطط نصف سنوية لهذا الصف.' : 'لا توجد خطط نصف سنوية مرسلة بعد.')
+        : (erAssistent() ? 'Ingen semesterplaner for denne klassen ennå.' : 'Ingen semesterplaner sendt inn ennå.')}</div>`;
       return;
     }
     el.innerHTML = mine.map(p => `
@@ -3844,6 +3937,7 @@
           fag: valgtFag || '',
           tittel, beskrivelse, frist,
           larer: currentTeacher.id,
+          opprettetAvRolle: minPortalRolle(),
           dato: todayISO()
         });
         showToast(currentLang === 'ar' ? 'تم إرسال الواجب.' : 'Leksen er lagt ut.');
@@ -4269,7 +4363,7 @@
         // 🔴 Uten mottakerEpost treffer svaret ingen spørring: det ville
         // blitt lagret, kvittert for, og aldri vist igjen.
         threadId: currentAdminMsgThreadId, mottakerEpost: minEpost,
-        fra: 'Lærer', avsenderNavn: currentTeacher.navn, avsenderId: currentTeacher.id,
+        fra: minPortalRolle(), avsenderNavn: currentTeacher.navn, avsenderId: currentTeacher.id, avsenderRolle: minPortalRolle(),
         tekst, dato: new Date().toISOString()
       });
       await updateDoc(doc(db, 'broadcastThreads', currentAdminMsgThreadId), { lastActivityAt: new Date().toISOString() });
@@ -4428,7 +4522,7 @@
         klasse: valgtKlasse, guardianId: currentThreadGuardianId || '',
         guardianNavn: resolveGuardianName(currentThreadGuardianId) || currentThreadGuardianName,
         threadId: currentThreadDoc ? currentThreadDoc.id : null,
-        fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst, vedleggLenke,
+        fra: minPortalRolle(), avsenderNavn: currentTeacher.navn, avsenderRolle: minPortalRolle(), tekst, vedleggLenke,
         dato: new Date().toISOString()
       });
       if(currentThreadDoc){
@@ -4668,7 +4762,7 @@
     if(!tekst) return;
     try{
       await addDoc(collection(db, 'classPostComments'), {
-        postId, klasse: valgtKlasse, fra: 'Lærer', avsenderNavn: currentTeacher.navn, tekst,
+        postId, klasse: valgtKlasse, fra: minPortalRolle(), avsenderRolle: minPortalRolle(), avsenderNavn: currentTeacher.navn, tekst,
         dato: new Date().toISOString()
       });
       input.value = '';
@@ -5143,7 +5237,10 @@
         const status = row.querySelector('.att-status').value;
         const safeId = date + '_' + studentId;
         await setDoc(doc(db, 'attendance', safeId), {
-          dato: date, studentId, klasse: valgtKlasse, status
+          dato: date, studentId, klasse: valgtKlasse, status,
+          registrertAv: currentTeacher.id,
+          registrertAvNavn: currentTeacher.navn || '',
+          registrertAvRolle: minPortalRolle()
         });
         summaryLines.push(studentName + ': ' + status);
       }
@@ -5160,9 +5257,9 @@
       await addDoc(collection(db, 'mail'), {
         to: ['madina.institute.norway@gmail.com'],
         message: {
-          subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' – ' + resolveClassName(valgtKlasse) + ' – ' + date,
+          subject: 'Oppmøte registrert – ' + currentTeacher.navn + ' (' + minPortalRolle() + ') – ' + resolveClassName(valgtKlasse) + ' – ' + date,
           text:
-            'Lærer: ' + currentTeacher.navn + '\n' +
+            minPortalRolle() + ': ' + currentTeacher.navn + '\n' +
             'Klasse: ' + resolveClassName(valgtKlasse) + '\n' +
             'Dato: ' + date + '\n\n' +
             summaryLines.join('\n')
@@ -5407,6 +5504,10 @@ ${extraScript || ''}
   };
 
   window.finishLessonPlanSubmission = async function(fields){
+    if(erAssistent()){
+      notify(currentLang === 'ar' ? 'المساعد يقرأ التحضيرات فقط.' : 'Assistenter kan bare lese forberedelser.');
+      return;
+    }
     // Planen sendes også på e-post til foresatte i klassen. Målet må
     // stemme med det som er valgt — ikke med det som sto der i går.
     if(!bekreftMal((fields && fields.emne) || 'undervisningsplan')) return;

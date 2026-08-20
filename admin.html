@@ -2497,25 +2497,38 @@
         <div class="field"><label>E-post</label><input type="email" id="newStaffEmail"></div>
       </div>
       <div class="field">
-        <label>Roller (velg alle som passer)</label>
-        <div id="newStaffRoles" style="display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--paper);">
+        <label>Type person og roller</label>
+        <p class="hint" style="font-family:'Jost',sans-serif; font-size:11.5px; color:#5a6860; margin:0 0 10px; line-height:1.55;">
+          Velg <strong>enten</strong> lærerroller <strong>eller</strong> Assistent — de har ulike rettigheter i Lærerportalen.
+        </p>
+        <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:600; color:var(--emerald-d); margin:0 0 6px;">👨‍🏫 Lærer (underviser — lager planer)</div>
+        <div id="newStaffRolesLaerer" style="display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--paper); margin-bottom:12px;">
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Koran lærer"> Koran lærer</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Islam lærer"> Islam lærer</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Arabisk lærer"> Arabisk lærer</label>
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Urdu lærer"> Urdu lærer</label>
+        </div>
+        <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:600; color:var(--emerald-d); margin:0 0 6px;">🤝 Assistent (hjelper i klasse — leser planer, tar oppmøte som seg selv)</div>
+        <div id="newStaffRolesAssistent" style="display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; border:1px solid #e8d3ae; border-radius:6px; background:#fdf8ef; margin-bottom:12px;">
+          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Assistent"> Assistent</label>
+        </div>
+        <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:600; color:var(--emerald-d); margin:0 0 6px;">🏫 Ledelse / administrasjon</div>
+        <div id="newStaffRolesLedelse" style="display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--paper); margin-bottom:12px;">
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Eier"> Eier</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Skoleleder"> Skoleleder</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Daglig leder"> Daglig leder</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Faglig / pedagogisk leder"> Faglig / pedagogisk leder</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Fagkoordinator"> Fagkoordinator</label>
-          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Koran lærer"> Koran lærer</label>
-          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Islam lærer"> Islam lærer</label>
-          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Arabisk lærer"> Arabisk lærer</label>
-          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Urdu lærer"> Urdu lærer</label>
-          <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Assistent"> Assistent</label>
+        </div>
+        <div style="font-family:'Jost',sans-serif; font-size:11px; font-weight:600; color:#8a9a90; margin:0 0 6px;">Annet</div>
+        <div id="newStaffRolesAnnet" style="display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--paper);">
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Frivillig"> Frivillig</label>
           <label style="display:flex; align-items:center; gap:5px; font-family:'Jost',sans-serif; font-size:12.5px; white-space:nowrap;"><input type="checkbox" value="Annet"> Annet</label>
         </div>
-        <p class="hint" style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:6px;">
-          Roller merket <strong>Eier / Skoleleder / Faglig / pedagogisk leder / Fagkoordinator</strong> gir tilgang til dette Administrative panelet.<br>
-          Roller merket <strong>Koran / Islam / Arabisk / Urdu lærer</strong> oppretter automatisk en ekte lærer-konto (klasse tildeles etterpå under "Lærere").<br>
-          Assistent / Frivillig / Annet er kun merkelapper — ingen automatisk tilgang.
+        <p class="hint" style="font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90; margin-top:8px;">
+          <strong>Lærer:</strong> tildeles klasse under Lærere + timeplan.<br>
+          <strong>Assistent:</strong> tildeles klasse(r) og fag under Lærere → «Assistent-tildeling» (kan være flere).<br>
+          <strong>Ledelse:</strong> gir tilgang til dette panelet.
         </p>
       </div>
       <button class="btn btn-primary" onclick="createNewStaffAccount()">Opprett konto</button>
@@ -5684,6 +5697,67 @@
   // that no matter which door someone comes in through, all three stay
   // consistent and nothing has to be re-entered by hand a second time.
   // Matching an existing person is done by e-post (case-insensitive).
+  function erAssistentRolle(rollerStr){
+    const roller = String(rollerStr || '').split(',').map(s => s.trim()).filter(Boolean);
+    const erFagl = roller.some(r => TEACHER_ROLE_TO_FAG[r]);
+    return roller.includes('Assistent') && !erFagl;
+  }
+
+  const ASSISTENT_FAG_VALG = ['Koran','Islam','Arabisk','Urdu','Madinabarn','Fellestime'];
+
+  function lesAssistentTildelingFraSkjema(){
+    const liste = document.getElementById('assistentTildelingListe');
+    if(!liste) return null;
+    return [...liste.querySelectorAll('.at-rad')].map(rad => ({
+      klasse: rad.querySelector('.at-klasse')?.value || '',
+      fag: rad.querySelector('.at-fag')?.value || ''
+    })).filter(x => x.klasse && x.fag);
+  }
+
+  function wireAssistentTildelingUI(container, existing){
+    const eksisterende = Array.isArray(existing.assistentTildeling) ? existing.assistentTildeling : [];
+    const wrap = document.createElement('div');
+    wrap.id = 'assistentTildelingWrap';
+    wrap.className = 'field';
+    wrap.style.marginTop = '14px';
+    wrap.innerHTML = `
+      <label>Assistent-tildeling (klasse + fag)</label>
+      <div class="sub" style="margin-bottom:8px;">Kun for assistenter. Legg til én rad per klasse og fag — kan være flere.</div>
+      <div id="assistentTildelingListe"></div>
+      <button type="button" class="btn btn-ghost" id="assistentTildelingLeggTil" style="width:auto; margin-top:8px;">+ Legg til klasse/fag</button>`;
+    container.appendChild(wrap);
+    const liste = wrap.querySelector('#assistentTildelingListe');
+    const klasser = [...(cache.classes || [])].filter(c => c.navn).sort((a,b) => (a.navn||'').localeCompare(b.navn||''));
+
+    function tegnRad(data){
+      const rad = document.createElement('div');
+      rad.className = 'at-rad';
+      rad.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; margin-bottom:8px;';
+      const kOpts = '<option value="">— velg klasse —</option>' +
+        klasser.map(k => `<option value="${escapeHtml(k.id)}"${data.klasse === k.id ? ' selected' : ''}>${escapeHtml(k.navn)}</option>`).join('');
+      const fOpts = '<option value="">— velg fag —</option>' +
+        ASSISTENT_FAG_VALG.map(f => `<option value="${escapeHtml(f)}"${data.fag === f ? ' selected' : ''}>${escapeHtml(f)}</option>`).join('');
+      rad.innerHTML = `
+        <div style="flex:1 1 160px;"><label style="font-size:11px;">Klasse</label><select class="at-klasse" style="width:100%;">${kOpts}</select></div>
+        <div style="flex:1 1 120px;"><label style="font-size:11px;">Fag</label><select class="at-fag" style="width:100%;">${fOpts}</select></div>
+        <button type="button" class="btn btn-ghost" style="width:auto; flex:0 0 auto; padding:8px 10px;" title="Fjern">✕</button>`;
+      rad.querySelector('button').onclick = () => { rad.remove(); if(!liste.querySelector('.at-rad')) tegnRad({ klasse:'', fag:'' }); };
+      liste.appendChild(rad);
+    }
+
+    (eksisterende.length ? eksisterende : [{ klasse:'', fag:'' }]).forEach(tegnRad);
+    wrap.querySelector('#assistentTildelingLeggTil').onclick = () => tegnRad({ klasse:'', fag:'' });
+
+    function oppdaterSynlighet(){
+      const rollerFelt = document.getElementById('field_roller');
+      const valgt = rollerFelt ? [...rollerFelt.querySelectorAll('input:checked')].map(cb => cb.value) : [];
+      wrap.style.display = valgt.includes('Assistent') ? '' : 'none';
+    }
+    oppdaterSynlighet();
+    const rollerFelt = document.getElementById('field_roller');
+    if(rollerFelt) rollerFelt.addEventListener('change', oppdaterSynlighet);
+  }
+
   async function syncStaffRoles(navn, epost, rollerArray, opts){
     opts = opts || {};
     if(!epost || rollerArray.length === 0) return { ok:false, reason:'missing-data' };
@@ -5797,7 +5871,9 @@
           navn, epost, fag: grantsTeacher ? TEACHER_ROLE_TO_FAG[teacherRoles[0]] : '',
           roller: rollerStr, dager: '', telefon: '', tildeltKlasse: ''
         });
-        parts.push(grantsTeacher ? 'lærerkonto opprettet (husk å tildele klasse under "Lærere")' : 'personkort opprettet');
+        const erAssistentKonto = rollerArray.includes('Assistent') && !grantsTeacher;
+        parts.push(grantsTeacher ? 'lærerkonto opprettet (husk å tildele klasse under "Lærere")'
+          : (erAssistentKonto ? 'assistent-konto opprettet (tildel klasse(r) og fag under Lærere → Assistent-tildeling)' : 'personkort opprettet'));
       }
     } else {
       parts.push('personkort oppdatert');
@@ -5809,7 +5885,7 @@
   window.createNewStaffAccount = async function(){
     const navn = document.getElementById('newStaffName').value.trim();
     const email = document.getElementById('newStaffEmail').value.trim();
-    const checkedBoxes = [...document.querySelectorAll('#newStaffRoles input:checked')];
+    const checkedBoxes = [...document.querySelectorAll('#newStaffRolesLaerer input:checked, #newStaffRolesAssistent input:checked, #newStaffRolesLedelse input:checked, #newStaffRolesAnnet input:checked')];
     const roller = checkedBoxes.map(cb => cb.value);
     const msgEl = document.getElementById('newAdminMsg');
     msgEl.style.display = 'none';
@@ -5842,7 +5918,7 @@
       msgEl.style.display = 'block';
       document.getElementById('newStaffName').value = '';
       document.getElementById('newStaffEmail').value = '';
-      document.querySelectorAll('#newStaffRoles input:checked').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#newStaffRolesLaerer input:checked, #newStaffRolesAssistent input:checked, #newStaffRolesLedelse input:checked, #newStaffRolesAnnet input:checked').forEach(cb => cb.checked = false);
     } catch(err){
       console.error(err);
       msgEl.style.color = 'var(--red)';
@@ -15979,6 +16055,7 @@
       container.appendChild(toggleBtn);
     }
     if(type === 'students') wireForesattPortalHint(container, existing);
+    if(type === 'teachers') wireAssistentTildelingUI(container, existing);
     document.getElementById('overlay').classList.add('open');
   };
 
@@ -16027,6 +16104,10 @@
         entry[f.key] = document.getElementById('field_' + f.key).value.trim();
       }
     });
+    if(editingType === 'teachers'){
+      const at = lesAssistentTildelingFraSkjema();
+      if(at !== null) entry.assistentTildeling = at;
+    }
     if(!entry[schema.fields[0].key]){
       showToast('Fyll ut ' + schema.fields[0].label.toLowerCase());
       return;
@@ -16375,6 +16456,23 @@
     });
 
     (cache.teachers || []).forEach(t => {
+      if(!t.epost) return;
+      const e = normEpost(t.epost);
+      const tild = Array.isArray(t.assistentTildeling) ? t.assistentTildeling : [];
+      tild.forEach(td => {
+        if(!td.klasse) return;
+        if(!kart.has(e)) kart.set(e, { klasser: new Set(), foresatte: new Set(), navn: t.navn || '', teacherId: t.id, tildeling: [], erAssistent: false });
+        const r = kart.get(e);
+        r.klasser.add(td.klasse);
+        if(!r.tildeling) r.tildeling = [];
+        if(!r.tildeling.some(x => x.klasse === td.klasse && x.fag === (td.fag || ''))){
+          r.tildeling.push({ klasse: td.klasse, fag: td.fag || '' });
+        }
+      });
+      if(erAssistentRolle(t.roller) && kart.has(e)) kart.get(e).erAssistent = true;
+    });
+
+    (cache.teachers || []).forEach(t => {
       if(!t.epost || !t.tildeltKlasse) return;
       const e = normEpost(t.epost);
       if(!kart.has(e)) kart.set(e, { klasser: new Set(), foresatte: new Set(), navn: t.navn || '', teacherId: t.id });
@@ -16413,6 +16511,8 @@
           teacherId: r.teacherId || '',
           klasser: [...r.klasser],
           foresatte: [...r.foresatte],
+          tildeling: r.tildeling || [],
+          erAssistent: r.erAssistent === true,
           oppdatert: new Date().toISOString()
         }, { merge: true });
       }
