@@ -1436,7 +1436,7 @@
      undervisningsdag» rettet i bare én av dem. Klassisk skript, så det
      er ferdig kjørt før modulen under starter.
      ⚠️ Husk å øke ?v= hver gang skoledager.js endres. -->
-<script src="skoledager.js?v=2"></script>
+<script src="skoledager.js?v=3"></script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -5171,13 +5171,25 @@
 
   function calendarEntriesFor(iso){
     const pid = currentProgramId();
+    const progNavn = programForKalender();
     return schoolCalendar.filter(e => {
-      // Tomt programfelt = unntaket gjelder alle programmer.
-      if(e.program && e.program !== pid) return false;
       const fra = e.fraDato || '';
       if(!fra) return false;
       const til = e.tilDato || fra;
-      return iso >= fra && iso <= til;
+      if(iso < fra || iso > til) return false;
+      const liste = Array.isArray(e.programmer) ? e.programmer : null;
+      if(liste){
+        if(liste.length === 0) return true;
+        return liste.includes(pid) || liste.some(id => {
+          const p = programs.find(x => x.id === id);
+          return p && (p.navn === progNavn || p.id === progNavn);
+        });
+      }
+      if(e.program && e.program !== pid){
+        const p = programs.find(x => x.id === e.program || x.navn === e.program);
+        if(!p || (p.id !== pid && p.navn !== progNavn)) return false;
+      }
+      return true;
     });
   }
 

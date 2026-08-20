@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:23:20 -->
+<!-- SIST-ENDRET: 2026-08-20 22:42:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -2967,6 +2967,12 @@
       const fra = k.fraDato || '';
       const til = k.tilDato || fra;
       if(!fra || datoIso < fra || datoIso > til) return false;
+      const liste = Array.isArray(k.programmer) ? k.programmer : null;
+      if(liste){
+        if(liste.length === 0) return true;
+        const pId = (programmer.find(x => (x.navn || '') === programNavn) || {}).id;
+        return liste.some(id => id === programNavn || id === pId || resolveDynProgram(id) === programNavn);
+      }
       const p = (k.program || '').trim();
       if(!p) return true;
       return p === programNavn || resolveDynProgram(p) === programNavn;

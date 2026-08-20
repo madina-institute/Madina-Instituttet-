@@ -59,12 +59,20 @@
 | لوحة الإدارة (`admin.html`) | حذف دائم لأرشيف lærer↔foresatt + Meldingssenter (مجموعة أو م recipient) مع `logDeletion` |
 | `firestore.rules` | قواعد `skjultFor` + حذف broadcast للمستلم |
 
-### Fagplan / Årsplan في بوابة المعلم (قيد الدمج)
+### Fagplan / Årsplan في بوابة المعلم (مدمج)
 
 | المكان | السلوك |
 |--------|--------|
 | `index1.html` | Fagplan + Årsplan للقراءة فقط — نفس محتوى الإدارة، بدون تعديل أو حذف |
 | Undervisning hub | بطاقتا Fagplan و Årsplan — كل المعلمين يرون كل خطط المواد |
+
+### عطلات متعددة البرامج (قيد الدمج)
+
+| المكان | السلوك |
+|--------|--------|
+| `admin.html` | حقل **Gjelder programmer** — checklist مع «Alle programmer» أو اختيار عدة برامج |
+| `skoledager.js` | `programmer[]` — قائمة فارغة = كل البرامج؛ دعم `program` القديم |
+| `index1.html` / `index4.html` | قراءة `programmer[]` في تقويم العطلات |
 
 ### بنية تحتية / عمليات
 

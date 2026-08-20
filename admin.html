@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:23:20 -->
+<!-- SIST-ENDRET: 2026-08-20 22:42:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3515,8 +3515,9 @@
         <b>Ekstra undervisningsdag</b> åpner en dag som ellers ville vært
         stengt — f.eks. en oppsamlingsdag midt i uka.
         <br><br>
-        La <b>Til dato</b> stå tom for én enkelt dag. La <b>Gjelder program</b>
-        stå tom når unntaket gjelder alle programmer.
+        La <b>Gjelder programmer</b> stå på <b>Alle programmer</b> når
+        unntaket gjelder hele skolen (f.eks. Eid eller sommerferie).
+        Huk av ett eller flere programmer når unntaket bare gjelder dem.
         <br><br>
         <b>Merk:</b> gjelder både fri og ekstra dag samme dato, vinner den
         ekstra dagen — en dag lagt inn manuelt regnes som et bevisst vedtak.
@@ -6134,7 +6135,7 @@
          options:['Fri (ingen undervisning)','Ekstra undervisningsdag']},
         {key:'fraDato', label:'Fra dato', type:'date', essential:true},
         {key:'tilDato', label:'Til dato (tom = kun én dag)', type:'date', essential:true},
-        {key:'program', label:'Gjelder program (tom = alle)', type:'dynamic-select', source:'programs'},
+        {key:'programmer', label:'Gjelder programmer', type:'program-checklist', source:'programs', essential:true},
         // ═══════════════════════════════════════════════════════════
         // FEIRING — skolen bestemmer, ikke koden.
         //
@@ -6164,7 +6165,7 @@
         {key:'hilsenUr', label:'Hilsen — urdu', type:'text'},
         {key:'merknad', label:'Merknad', type:'text'}
       ],
-      cols: ['beskrivelse','type','fraDato','tilDato','feiring','program']
+      cols: ['beskrivelse','type','fraDato','tilDato','feiring','programmer']
     },
     classes: {
       label: 'klasse', collectionName: 'classes',
@@ -8796,6 +8797,11 @@
   // timer å finne, fordi begge deler ser riktige ut hver for seg.
   function visFeltverdi(schema, row, c){
     const field = schema.fields.find(f => f.key === c);
+    if(c === 'programmer' || (field && field.type === 'program-checklist')){
+      const liste = Array.isArray(row.programmer) ? row.programmer : (row.program ? [row.program] : []);
+      if(liste.length === 0) return 'Alle programmer';
+      return liste.map(id => resolveDynName('programs', id)).filter(Boolean).join(', ');
+    }
     if(field && field.type === 'dynamic-select') return resolveDynName(field.source, row[c]);
     const v = row[c];
     // Medlemsspørsmålet lagres som ja/nei/usikker. Rått ser «usikker» ut
@@ -15965,6 +15971,50 @@
         if(type === 'lessonPlans' && f.key === 'fag'){
           input.addEventListener('change', () => wireSubjectSpecificFields(container, input.value));
         }
+      } else if(f.type === 'program-checklist'){
+        const boks = document.createElement('div');
+        boks.id = 'field_' + f.key + '_wrap';
+        const eksisterende = Array.isArray(existing.programmer) ? existing.programmer
+          : (existing.program ? [existing.program] : []);
+        const alleValgt = eksisterende.length === 0;
+        const alleLbl = document.createElement('label');
+        alleLbl.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:10px; font-family:Jost,sans-serif; font-size:13px; font-weight:600;';
+        const alleCb = document.createElement('input');
+        alleCb.type = 'checkbox';
+        alleCb.id = 'field_programmer_alle';
+        alleCb.checked = alleValgt;
+        alleLbl.appendChild(alleCb);
+        alleLbl.appendChild(document.createTextNode(' Alle programmer'));
+        boks.appendChild(alleLbl);
+        const liste = document.createElement('div');
+        liste.id = 'field_programmer_liste';
+        liste.style.display = alleValgt ? 'none' : 'block';
+        liste.style.marginTop = '4px';
+        (cache.programs || []).filter(r => r.navn && r.aktiv !== 'Nei').sort((a, b) => a.navn.localeCompare(b.navn, 'no'))
+          .forEach(p => {
+            const lbl = document.createElement('label');
+            lbl.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px; font-family:Jost,sans-serif; font-size:13px;';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = p.id;
+            cb.dataset.progId = p.id;
+            cb.checked = !alleValgt && eksisterende.includes(p.id);
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(' ' + p.navn));
+            liste.appendChild(lbl);
+          });
+        boks.appendChild(liste);
+        alleCb.addEventListener('change', () => { liste.style.display = alleCb.checked ? 'none' : 'block'; });
+        const hjelp = document.createElement('div');
+        hjelp.className = 'hint';
+        hjelp.style.marginTop = '8px';
+        hjelp.textContent = 'Eid, sommerferie og liknende gjelder vanligvis alle programmer.';
+        boks.appendChild(hjelp);
+        wrap.appendChild(boks);
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.id = 'field_' + f.key;
+        input.value = '';
       } else if(f.type === 'dynamic-select'){
         input = document.createElement('select');
         const blank = document.createElement('option');
@@ -16169,6 +16219,7 @@
     }
     schema.fields.forEach(f => {
       if(f.type === 'file') return;
+      if(f.type === 'program-checklist') return;
       if(f.type === 'role-checklist'){
         const checked = [...document.querySelectorAll('#field_' + f.key + ' input:checked')].map(cb => cb.value);
         entry[f.key] = checked.join(', ');
@@ -16179,6 +16230,20 @@
     if(editingType === 'teachers'){
       const at = lesAssistentTildelingFraSkjema();
       if(at !== null) entry.assistentTildeling = at;
+    }
+    if(editingType === 'schoolCalendar'){
+      const alleCb = document.getElementById('field_programmer_alle');
+      if(alleCb && alleCb.checked){
+        entry.programmer = [];
+        entry.program = '';
+      } else {
+        entry.programmer = [...document.querySelectorAll('#field_programmer_liste input[data-prog-id]:checked')].map(cb => cb.value);
+        entry.program = entry.programmer.length === 1 ? entry.programmer[0] : '';
+        if(entry.programmer.length === 0){
+          showToast('Velg minst ett program, eller huk av «Alle programmer».');
+          return;
+        }
+      }
     }
     if(!entry[schema.fields[0].key]){
       showToast('Fyll ut ' + schema.fields[0].label.toLowerCase());
@@ -21576,11 +21641,23 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     // Søknader: samme barn sendt inn to ganger.
     registrations: { felt:['elev_navn','elev_fdato'], navn:'Søknader', hva:'samme navn og fødselsdato' },
 
-    // Skolekalender: samme dato lagt inn to ganger for samme program.
-    schoolCalendar: { felt:['fraDato','program'], navn:'Skolekalender', hva:'samme dato og program' },
+    // Skolekalender: samme dato lagt inn to ganger for samme program(mer).
+    schoolCalendar: { felt:['fraDato','programmer'], navn:'Skolekalender', hva:'samme dato og program' },
   };
 
-  const dubKey = (rad, felt) => felt
+  function dubKey(rad, felt){
+    return felt
+      .map(f => {
+        if(f === 'programmer'){
+          const liste = Array.isArray(rad.programmer) ? rad.programmer : (rad.program ? [rad.program] : []);
+          return liste.length ? [...liste].sort().join(',') : 'alle';
+        }
+        return String(rad[f] || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      })
+      .join('␟');
+  }
+
+  const dubKeyLegacy = (rad, felt) => felt
     .map(f => String(rad[f] || '').trim().toLowerCase().replace(/\s+/g, ' '))
     .join('␟');
 
@@ -21589,8 +21666,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   function dublettGrupper(type, felt){
     const data = cache[type] || [];
     const grupper = {};
+    const keyFn = type === 'schoolCalendar' ? dubKey : dubKeyLegacy;
     data.forEach(r => {
-      const k = dubKey(r, felt);
+      const k = keyFn(r, felt);
       if(!k.replace(/␟/g, '')) return;
       (grupper[k] = grupper[k] || []).push(r);
     });
