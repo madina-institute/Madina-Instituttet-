@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 12:31:04 */
+/* SIST-ENDRET: 2026-08-20 12:45:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -394,13 +394,22 @@ function parseVippsInvalidState(bodyText) {
 
 async function closePendingVippsByReference(reference, newStatus, extra = {}) {
   const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
-  if (!pendingSnap.empty) {
-    await pendingSnap.docs[0].ref.update({
-      status: newStatus,
-      closedAt: new Date().toISOString(),
-      ...extra,
-    });
+  if (pendingSnap.empty) return;
+  const pending = pendingSnap.docs[0].data();
+  const groupId = pending.paymentGroupId || reference;
+  const closedAt = new Date().toISOString();
+  const updatePayload = { status: newStatus, closedAt, ...extra };
+  const groupSnap = await db.collection("pendingVippsPayments")
+    .where("paymentGroupId", "==", groupId)
+    .where("status", "==", "pending")
+    .get();
+  if (!groupSnap.empty) {
+    for (const doc of groupSnap.docs) {
+      await doc.ref.update(updatePayload);
+    }
+    return;
   }
+  await pendingSnap.docs[0].ref.update(updatePayload);
 }
 
 function vippsTerminalPendingStatus(invalidState) {
@@ -1694,6 +1703,19 @@ exports.cancelVippsPayment = onRequest(
         return;
       }
       await closePendingVippsByReference(reference, "cancelled", { vippsState: "CANCELLED" });
+      const pendingData = await hentPendingVippsData(reference);
+      const groupId = pendingData?.paymentGroupId || reference;
+      const groupSnap = await db.collection("pendingVippsPayments").where("paymentGroupId", "==", groupId).get();
+      for (const doc of groupSnap.docs) {
+        const ref = doc.data().reference;
+        if (ref && ref !== reference) {
+          try {
+            await tryCancelVippsPayment(ref, accessToken);
+          } catch (err) {
+            logger.warn("Kunne ikke avbryte søster-Vipps-krav ved admin-avbryt", { reference: ref, err: String(err.message || err) });
+          }
+        }
+      }
       res.status(200).json({ ok: true });
     } catch (err) {
       logger.error("cancelVippsPayment error", err);
