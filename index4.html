@@ -1504,6 +1504,7 @@
   let klasselyttereStartet = false;
   let hoursDeler = [];
   let klasseDocDeler = [];
+  let hoursLytterKeys = new Set();
 
   const sporrPerKlasse = (samling, felt) => () => mineKlasser.length === 0 ? []
     : delOpp(mineKlasser, 30).map(del =>
@@ -1925,6 +1926,41 @@
     return p.includes('Madinabarn') || (p.includes('Søndag') && !p.includes('Lørdag'));
   }
 
+  function erIntegrertLordagProgram(child){
+    if(!child || erMadinabarnProgram(child)) return false;
+    return (child.program || '').includes('Lørdag');
+  }
+
+  // Elevens klasse kan stå som id eller gammelt klassenavn; timeplanen
+  // bruker det samme — men ikke alltid samme format.
+  function elevKlasseKeys(child){
+    if(!child || !child.klasse) return [];
+    const keys = new Set([child.klasse]);
+    const byId = classes.find(x => x.id === child.klasse);
+    if(byId && byId.navn) keys.add(byId.navn);
+    const byName = classes.find(x => (x.navn || '') === child.klasse);
+    if(byName) keys.add(byName.id);
+    return [...keys];
+  }
+
+  function alleBarnasKlasseKeys(){
+    const keys = new Set();
+    myChildren.forEach(b => elevKlasseKeys(b).forEach(k => keys.add(k)));
+    return [...keys];
+  }
+
+  function matchesElevKlasse(klasseRef, child){
+    if(!klasseRef || !child || !child.klasse) return klasseRef === child.klasse;
+    return elevKlasseKeys(child).includes(klasseRef);
+  }
+
+  function timerForElev(child){
+    if(!child || !child.klasse) return [];
+    const keys = new Set(elevKlasseKeys(child));
+    const utelukk = ['Fellestime', 'Felles oppstart', 'Felles avslutning'];
+    return hours.filter(h => keys.has(h.klasse) && h.fag && !utelukk.includes(h.fag));
+  }
+
   function buildFagEntry(fag, larerId){
     const tc = teachers.find(x => x.id === larerId);
     return {
@@ -1936,11 +1972,37 @@
     };
   }
 
+  function standardLordagFag(child){
+    const timer = timerForElev(child);
+    const pickLarer = (fag) => {
+      const h = timer.find(x => x.fag === fag);
+      return h ? h.larer : '';
+    };
+    const list = [
+      buildFagEntry('Koran', pickLarer('Koran')),
+      buildFagEntry('Islam', pickLarer('Islam'))
+    ];
+    const sprak = child && child.sprakvalg;
+    if(sprak === 'Arabisk' || sprak === 'Urdu'){
+      list.push(buildFagEntry(sprak, pickLarer(sprak)));
+    } else {
+      const ar = timer.find(x => x.fag === 'Arabisk');
+      const ur = timer.find(x => x.fag === 'Urdu');
+      if(ar) list.push(buildFagEntry('Arabisk', ar.larer));
+      else if(ur) list.push(buildFagEntry('Urdu', ur.larer));
+      else list.push(buildFagEntry('Arabisk', ''));
+    }
+    return list;
+  }
+
   function fagForElev(child){
-    if(!child || !child.klasse) return [];
-    const utelukk = ['Fellestime', 'Felles oppstart', 'Felles avslutning'];
-    const timer = hours.filter(h => h.klasse === child.klasse && h.fag && !utelukk.includes(h.fag));
-    if(timer.length === 0) return [];
+    if(!child) return [];
+    const timer = timerForElev(child);
+
+    if(timer.length === 0){
+      if(erIntegrertLordagProgram(child)) return standardLordagFag(child);
+      return [];
+    }
 
     if(erMadinabarnProgram(child)){
       const mb = timer.find(h => h.fag === 'Madinabarn') || timer[0];
@@ -1977,11 +2039,14 @@
       }
       add(h.fag, h.larer);
     });
+
+    if(ordered.length === 0 && erIntegrertLordagProgram(child)) return standardLordagFag(child);
     return ordered;
   }
 
   function erFlerfagProgram(child){
     if(erMadinabarnProgram(child)) return false;
+    if(erIntegrertLordagProgram(child)) return true;
     return fagForElev(child).length > 1;
   }
 
@@ -1990,7 +2055,7 @@
     if(!item || !item.larer) return '';
     const child = myChildren[currentChildIndex];
     if(!child) return resolveTeacherFag(item.larer);
-    const matches = hours.filter(h => h.klasse === child.klasse && h.larer === item.larer);
+    const matches = timerForElev(child).filter(h => h.larer === item.larer);
     if(matches.length === 1) return matches[0].fag || '';
     return resolveTeacherFag(item.larer);
   }
@@ -2456,15 +2521,35 @@
     }
   };
 
+  function utvidHoursLyttere(){
+    if(!klasselyttereStartet) return;
+    const keys = [...new Set([...alleBarnasKlasseKeys(), 'Felles oppstart', 'Felles avslutning'])];
+    const mangler = keys.filter(k => k && !hoursLytterKeys.has(k));
+    if(mangler.length === 0) return;
+    mangler.forEach(k => hoursLytterKeys.add(k));
+    delOpp(mangler, 30).forEach((del) => {
+      const idx = hoursDeler.length;
+      hoursDeler[idx] = [];
+      onSnapshot(query(collection(db, 'hours'), where('klasse', 'in', del)), (snap) => {
+        hoursDeler[idx] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        hours = hoursDeler.flat();
+        startLarerlyttere();
+        tegnAktivSkjerm();
+      }, (err) => console.error('hours', err));
+    });
+  }
+
   // Startes når barna er lest inn — først da vet vi hvilke klasser de går
   // i. Kjøres én gang: en ny lytter per gang elevlisten oppdateres ville
   // stablet lyttere oppå hverandre for hver eneste endring.
   function startKlasselyttere(){
     if(klasselyttereStartet) return;
-    const klasser = [...new Set(myChildren.map(b => b.klasse).filter(Boolean))];
+    const klasser = alleBarnasKlasseKeys();
     if(klasser.length === 0) return;   // uten klasse finnes det ingenting å hente
     mineKlasser = klasser;
     klasselyttereStartet = true;
+    hoursLytterKeys = new Set();
+    hoursDeler = [];
 
     const start = (samling, felt, sett) => {
       const sporringer = sporrPerKlasse(samling, felt)();
@@ -2480,7 +2565,8 @@
 
     // Timeplanen for barnas klasser — pluss fellestimene, som står med
     // klassenavn i stedet for klasse-id.
-    const klasserOgFelles = [...klasser, 'Felles oppstart', 'Felles avslutning'];
+    const klasserOgFelles = [...new Set([...klasser, 'Felles oppstart', 'Felles avslutning'])];
+    klasserOgFelles.forEach(k => hoursLytterKeys.add(k));
     delOpp(klasserOgFelles, 30).forEach((del, i) => {
       onSnapshot(query(collection(db, 'hours'), where('klasse', 'in', del)), (snap) => {
         const rader = snap.docs.map(d => ({ ...d.data(), id: d.id }));
@@ -2508,6 +2594,7 @@
       onSnapshot(query(collection(db, 'classes'), where(documentId(), 'in', del)), (snap) => {
         klasseDocDeler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
         classes = klasseDocDeler.flat();
+        utvidHoursLyttere();
         tegnAktivSkjerm();
       }, (err) => console.error('classes', err));
     });
