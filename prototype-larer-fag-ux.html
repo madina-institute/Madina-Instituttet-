@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="no" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROTOTYPE — Lærerportal fag-UX</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17232e; --emerald:#4A8FCB; --emerald-d:#2F6CA0; --paper:#EEF0FB;
+  --line:rgba(40,40,90,0.12); --gold:#b7924a; --red:#a83c3c; --green:#2d6a4f;
+  --shadow:0 10px 26px rgba(40,40,90,0.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);font-family:'Jost',sans-serif;color:var(--ink);min-height:100vh}
+html[dir=rtl] body{font-family:'Tajawal',sans-serif}
+
+.proto-banner{
+  background:linear-gradient(90deg,#7c3aed,#4f46e5); color:#fff; text-align:center;
+  padding:10px 14px; font-size:12px; font-weight:600; letter-spacing:.04em;
+}
+.proto-banner span{opacity:.85;font-weight:400}
+
+.top-bar{
+  max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between
+}
+.top-bar h1{margin:0;font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--emerald-d)}
+.variant-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.variant-tabs button{
+  border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;
+  font-size:12px;font-weight:600;cursor:pointer
+}
+.variant-tabs button.on{background:var(--emerald-d);color:#fff;border-color:var(--emerald-d)}
+.lang-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px}
+
+.shell{max-width:1100px;margin:0 auto;padding:0 16px 40px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.panel-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
+.panel-head h2{margin:0;font-size:16px}
+.panel-head .tag{font-size:11px;background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:999px;font-weight:600}
+.panel-body{padding:18px}
+
+/* Welcome prototype */
+.welcome{display:grid;gap:16px}
+.vk-hilsen{font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.08em}
+.vk-navn{font-family:'Cormorant Garamond',serif;font-size:28px;margin:4px 0 0;color:var(--emerald-d)}
+.day-preview{display:grid;gap:8px}
+.day-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fafbff
+}
+.day-row .fag{font-weight:700}
+.day-row .time{font-size:12px;color:#6b7280}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;background:#fef3c7;color:#92400e}
+.badge.ok{background:#dcfce7;color:#166534}
+.badge.warn{background:#fee2e2;color:#991b1b}
+.choice-grid{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;
+  cursor:pointer;font-weight:600;font-size:13px;min-width:88px;text-align:center
+}
+.chip.on{border-color:var(--emerald-d);background:#eef6ff;color:var(--emerald-d)}
+.chip .sub{display:block;font-size:10px;font-weight:500;color:#6b7280;margin-top:3px}
+.primary{
+  background:var(--emerald-d);color:#fff;border:none;border-radius:12px;
+  padding:12px 18px;font-weight:700;font-size:14px;cursor:pointer;width:100%;margin-top:8px
+}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.note{font-size:12px;color:#6b7280;line-height:1.55}
+
+/* App prototype */
+.app{display:none;grid-gap:14px}
+.app.show{display:grid}
+.ctx-bar{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 14px;
+  background:#fff;border:1px solid var(--line);border-radius:14px
+}
+.ctx-class{font-weight:700}
+.fag-chips{display:flex;flex-wrap:wrap;gap:6px}
+.fag-chip{
+  border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;
+  font-size:12px;font-weight:600;cursor:pointer
+}
+.fag-chip.on{background:var(--emerald-d);color:#fff;border-color:var(--emerald-d)}
+.ctx-link{font-size:12px;color:var(--emerald-d);background:none;border:none;cursor:pointer;text-decoration:underline;margin-inline-start:auto}
+
+.dash{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:720px){.dash{grid-template-columns:1fr}}
+.stat{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+.stat .n{font-size:22px;font-weight:800}
+.stat .l{font-size:11px;color:#6b7280;margin-top:4px}
+.stat.scope-ok{border-color:#86efac;background:#f0fdf4}
+.stat.scope-bad{border-color:#fecaca;background:#fef2f2}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:860px){.grid-2{grid-template-columns:1fr}}
+
+.flat-fag{display:grid;gap:10px}
+.fag-card{
+  border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;cursor:pointer;
+  display:grid;gap:6px
+}
+.fag-card:hover{border-color:var(--emerald-d)}
+.fag-card h3{margin:0;font-size:15px}
+.fag-card p{margin:0;font-size:12px;color:#6b7280}
+.fag-card .row{display:flex;gap:8px;flex-wrap:wrap}
+
+.content-preview{
+  border:1px dashed #c4b5fd;border-radius:14px;padding:14px;background:#faf5ff;min-height:120px
+}
+.content-preview h4{margin:0 0 8px;font-size:14px}
+.content-preview ul{margin:0;padding-inline-start:18px;font-size:13px;line-height:1.6}
+
+.compare{
+  margin-top:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden
+}
+.compare table{width:100%;border-collapse:collapse;font-size:12px}
+.compare th,.compare td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}
+.compare th{background:#f8fafc;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
+.compare tr:last-child td{border-bottom:none}
+.yes{color:var(--green);font-weight:700}
+.no{color:var(--red);font-weight:700}
+</style>
+</head>
+<body>
+<div class="proto-banner">
+  🧪 PROTOTYPE — ikke koblet til Firebase · mock-data · <span>test tre UX-varianter</span>
+</div>
+
+<div class="top-bar">
+  <h1 id="pageTitle">Lærerportal — fag-UX</h1>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div class="variant-tabs" id="variantTabs"></div>
+    <button class="lang-btn" id="langBtn" onclick="toggleLang()">AR</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="panel" id="screenWelcome">
+    <div class="panel-head">
+      <h2 id="welcomeHead">Velkomstskjerm</h2>
+      <span class="tag" id="variantTag">A</span>
+    </div>
+    <div class="panel-body welcome" id="welcomeBody"></div>
+  </div>
+
+  <div class="app" id="screenApp">
+    <div class="ctx-bar" id="ctxBar"></div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h2 id="dashHead">Hjem — aktivt fag</h2></div>
+        <div class="panel-body" id="dashBody"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2 id="contentHead">Innhold i kontekst</h2></div>
+        <div class="panel-body" id="contentBody"></div>
+      </div>
+    </div>
+    <div class="panel" id="flatHubPanel" style="display:none">
+      <div class="panel-head"><h2 id="flatHead">Undervisning — alle fag (flat)</h2></div>
+      <div class="panel-body flat-fag" id="flatBody"></div>
+    </div>
+  </div>
+
+  <div class="compare" style="margin-top:18px">
+    <table>
+      <thead>
+        <tr>
+          <th id="cmpFeature">Funksjon</th>
+          <th>A — Smart velkomst</th>
+          <th>B — Fag-chips</th>
+          <th>C — Flat hub</th>
+        </tr>
+      </thead>
+      <tbody id="compareBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const MOCK = {
+  teacher: { navn: 'Fatima Hassan', epost: 'fatima@example.com' },
+  klasse: { id: 'kl-a', navn: 'Klasse A' },
+  fag: [
+    { id: 'koran', navn: 'Koran', tid: '10:00', prep: false, lekser: 2, fravær: 0 },
+    { id: 'islam', navn: 'Islam', tid: '11:00', prep: true, lekser: 0, fravær: 1 },
+    { id: 'arabisk', navn: 'Arabisk', tid: '12:00', prep: false, lekser: 1, fravær: 0 }
+  ]
+};
+
+const VARIANTS = [
+  { id: 'A', no: 'A — Smart velkomst', ar: 'أ — ترحيب ذكي' },
+  { id: 'B', no: 'B — Fag-chips', ar: 'ب — شرائح المواد' },
+  { id: 'C', no: 'C — Flat hub', ar: 'ج — بطاقات مسطّحة' }
+];
+
+let lang = 'no';
+let variant = localStorage.getItem('protoLarerVariant') || 'B';
+let vkKlasse = MOCK.klasse.id;
+let vkFag = localStorage.getItem('protoLarerFag') || '';
+let valgtFag = vkFag || MOCK.fag[0].id;
+let inApp = false;
+
+function t(no, ar){ return lang === 'ar' ? ar : no; }
+
+function fagById(id){ return MOCK.fag.find(f => f.id === id); }
+
+function toggleLang(){
+  lang = lang === 'no' ? 'ar' : 'no';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.getElementById('langBtn').textContent = lang === 'ar' ? 'NO' : 'AR';
+  renderAll();
+}
+
+function setVariant(v){
+  variant = v;
+  localStorage.setItem('protoLarerVariant', v);
+  inApp = false;
+  renderAll();
+}
+
+function renderVariantTabs(){
+  document.getElementById('variantTabs').innerHTML = VARIANTS.map(v =>
+    `<button class="${v.id===variant?'on':''}" onclick="setVariant('${v.id}')">${lang==='ar'?v.ar:v.no}</button>`
+  ).join('');
+}
+
+function renderWelcome(){
+  const autoSingle = MOCK.fag.length === 1;
+  if(!vkFag && variant === 'A'){
+    const saved = localStorage.getItem('protoLarerFag');
+    if(saved && fagById(saved)) vkFag = saved;
+    else if(MOCK.fag.length === 1) vkFag = MOCK.fag[0].id;
+  }
+
+  document.getElementById('variantTag').textContent = variant;
+  document.getElementById('welcomeHead').textContent = t('Velkomstskjerm', 'شاشة الترحيب');
+  document.getElementById('screenWelcome').style.display = inApp ? 'none' : 'block';
+  document.getElementById('screenApp').classList.toggle('show', inApp);
+
+  const body = document.getElementById('welcomeBody');
+  const dayRows = MOCK.fag.map(f => {
+    const prep = f.prep
+      ? `<span class="badge ok">${t('Klar','جاهز')}</span>`
+      : `<span class="badge warn">${t('Mangler prep','تحضير ناقص')}</span>`;
+    const lek = f.lekser ? `<span class="badge">${f.lekser} ${t('lekser','واجبات')}</span>` : '';
+    return `<div class="day-row">
+      <div><div class="fag">${f.navn}</div><div class="time">${MOCK.klasse.navn} · ${f.tid}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${prep}${lek}</div>
+    </div>`;
+  }).join('');
+
+  const fagChips = MOCK.fag.map(f => {
+    const badges = [];
+    if(!f.prep) badges.push('⚠');
+    if(f.lekser) badges.push('📚');
+    if(f.fravær) badges.push('🚫');
+    const sub = badges.length ? badges.join(' ') : t('ingen varsler','لا تنبيهات');
+    return `<button class="chip ${vkFag===f.id?'on':''}" onclick="velgFag('${f.id}')">
+      ${f.navn}<span class="sub">${sub}</span>
+    </button>`;
+  }).join('');
+
+  let extra = '';
+  if(variant === 'A'){
+    extra = `<p class="note">${t(
+      'Variant A: husker sist valgte fag (localStorage), viser dagens fag med badges før du går inn.',
+      'النسخة أ: تتذكر آخر مادة، وتعرض معاينة اليوم مع تنبيهات قبل الدخول.'
+    )}</p>`;
+  } else if(variant === 'B'){
+    extra = `<p class="note">${t(
+      'Variant B: velg fag her én gang — bytt senere med chips uten full velkomst.',
+      'النسخة ب: اختر المادة مرة — ثم بدّل بشرائح في الأعلى بدون شاشة ترحيب كاملة.'
+    )}</p>`;
+  } else {
+    extra = `<p class="note">${t(
+      'Variant C: hopp rett inn — velg fag fra flat hub inne i Undervisning.',
+      'النسخة ج: ادخل مباشرة — واختر المادة من بطاقات مسطّحة داخل «التدريس».'
+    )}</p>`;
+  }
+
+  body.innerHTML = `
+    <div>
+      <div class="vk-hilsen">${t('Velkommen','أهلاً')}</div>
+      <div class="vk-navn">${MOCK.teacher.navn}</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#64748b">${t('I dag','اليوم')}</div>
+      <div class="day-preview">${dayRows}</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#64748b">${t('Klasse','الصف')}</div>
+      <div class="choice-grid"><span class="chip on">${MOCK.klasse.navn}</span></div>
+    </div>
+    <div id="fagPickBlock" style="${variant==='C' && !vkFag ? 'opacity:.55' : ''}">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#64748b">${t('Fag','المادة')}</div>
+      <div class="choice-grid">${fagChips}</div>
+    </div>
+    ${extra}
+    <button class="primary" id="startBtn" onclick="startArbeid()" ${
+      variant==='C' ? '' : (vkFag ? '' : 'disabled')
+    }>${variant==='C' ? t('Gå inn (velg fag inne','ادخل (اختر المادة داخل') : t('Til arbeidet','ابدأ الشغل')}</button>
+  `;
+}
+
+function velgFag(id){
+  vkFag = id;
+  localStorage.setItem('protoLarerFag', id);
+  renderWelcome();
+}
+
+function startArbeid(){
+  inApp = true;
+  if(variant !== 'C' && vkFag) valgtFag = vkFag;
+  if(variant === 'C' && !vkFag) valgtFag = MOCK.fag[0].id;
+  renderAll();
+}
+
+function visVelkomst(){
+  inApp = false;
+  renderAll();
+}
+
+function byttFag(id){
+  valgtFag = id;
+  localStorage.setItem('protoLarerFag', id);
+  renderApp();
+}
+
+function renderCtxBar(){
+  const el = document.getElementById('ctxBar');
+  const chips = MOCK.fag.map(f =>
+    `<button class="fag-chip ${valgtFag===f.id?'on':''}" onclick="byttFag('${f.id}')">${f.navn}</button>`
+  ).join('');
+
+  if(variant === 'B'){
+    el.innerHTML = `
+      <span class="ctx-class">🏫 ${MOCK.klasse.navn}</span>
+      <div class="fag-chips">${chips}</div>
+      <button class="ctx-link" onclick="visVelkomst()">${t('Bytt klasse','غيّر الصف')}</button>`;
+    el.style.display = 'flex';
+  } else if(variant === 'A'){
+    el.innerHTML = `
+      <span class="ctx-class">🏫 ${MOCK.klasse.navn}</span>
+      <span>📖 <b>${fagById(valgtFag).navn}</b></span>
+      <button class="ctx-link" onclick="visVelkomst()">${t('Bytt klasse/fag','غيّر الصف/المادة')}</button>`;
+    el.style.display = 'flex';
+  } else {
+    el.innerHTML = `
+      <span class="ctx-class">🏫 ${MOCK.klasse.navn}</span>
+      <span>📖 ${t('Velg fag nedenfor','اختر المادة بالأسفل')}</span>
+      <button class="ctx-link" onclick="visVelkomst()">${t('Til velkomst','للترحيب')}</button>`;
+    el.style.display = 'flex';
+  }
+}
+
+function renderDash(){
+  const f = fagById(valgtFag);
+  const scoped = variant !== 'C' || vkFag;
+  document.getElementById('dashHead').textContent = t('Hjem — aktivt fag','الرئيسية — المادة النشطة');
+  document.getElementById('contentHead').textContent = t('Innhold i kontekst','المحتوى حسب السياق');
+
+  const prepOk = f.prep;
+  document.getElementById('dashBody').innerHTML = `
+    <p class="note" style="margin-top:0">${t('Aktivt fag:','المادة النشطة:')} <b>${f.navn}</b></p>
+    <div class="dash">
+      <div class="stat ${scoped?'scope-ok':'scope-bad'}">
+        <div class="n">${prepOk ? '✓' : '!'}</div>
+        <div class="l">${t('Timeforberedelse lørdag','تحضير الحصة')}</div>
+      </div>
+      <div class="stat scope-ok"><div class="n">${f.lekser}</div><div class="l">${t('Lekser (dette faget)','واجبات (هذه المادة)')}</div></div>
+      <div class="stat scope-ok"><div class="n">${f.fravær}</div><div class="l">${t('Fravær klasse','غياب الصف')}</div></div>
+    </div>
+    <p class="note">${scoped
+      ? t('Grønn ramme = tall filtrert på valgt fag (som index4 fagTabBar).','الإطار الأخضر = أرقام مفلترة على المادة (مثل بوابة الولي).')
+      : t('Variant C uten valgt fag: tall er uklare — derfor flat hub.','النسخة ج بدون مادة: الأرقام غير واضحة — لذلك البطاقات المسطّحة.')}</p>`;
+
+  document.getElementById('contentBody').innerHTML = `
+    <div class="content-preview">
+      <h4>${t('Lekser — ','الواجبات — ')}${f.navn}</h4>
+      <ul>
+        <li>${t('Surah Al-Fatiha — lesing','سورة الفاتحة — قراءة')}</li>
+        <li>${t('Grammatikk kap. 3','قواعد فصل ٣')}</li>
+      </ul>
+      <p class="note">${t('Bytter du fag-chip, endres listen (simulert).','عند تبديل شريحة المادة، تتغير القائمة (محاكاة).')}</p>
+    </div>`;
+}
+
+function renderFlatHub(){
+  const show = variant === 'C';
+  document.getElementById('flatHubPanel').style.display = show ? 'block' : 'none';
+  if(!show) return;
+  document.getElementById('flatHead').textContent = t('Undervisning — alle fag','التدريس — كل المواد');
+  document.getElementById('flatBody').innerHTML = MOCK.fag.map(f => `
+    <div class="fag-card" onclick="byttFag('${f.id}'); document.getElementById('contentBody').scrollIntoView({behavior:'smooth'})">
+      <h3>${f.navn}</h3>
+      <p>${MOCK.klasse.navn} · ${f.tid}</p>
+      <div class="row">
+        ${f.prep ? `<span class="badge ok">${t('Prep klar','تحضير جاهز')}</span>` : `<span class="badge warn">${t('Prep mangler','تحضير ناقص')}</span>`}
+        ${f.lekser ? `<span class="badge">${f.lekser} ${t('lekser','واجبات')}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function renderCompare(){
+  const rows = [
+    [t('Bytte fag inne i app','تبديل المادة داخل التطبيق'), 'no', 'yes', 'yes (via kort)'],
+    [t('Husker sist fag','تذكّر آخر مادة'), 'yes', 'yes', 'valgfritt'],
+    [t('Dagens preview med badges','معاينة اليوم مع تنبيهات'), 'yes', 'delvis', 'ja (flat hub)'],
+    [t('Trygghet før skriving','أمان قبل الكتابة'), 'høy', 'høy', 'medium'],
+    [t('Klikk for å bytte fag','نقرات لتبديل المادة'), 'mange (velkomst)', '1', '1–2'],
+    [t('Ligner foreldreportal','يشبه بوابة الولي'), 'lite', 'mye (fagTabBar)', 'mye (flat)']
+  ];
+  document.getElementById('cmpFeature').textContent = t('Funksjon','الميزة');
+  document.getElementById('compareBody').innerHTML = rows.map(r =>
+    `<tr><td>${r[0]}</td><td>${r[1]==='yes'?'<span class="yes">✓</span>':r[1]==='no'?'<span class="no">✗</span>':r[1]}</td><td>${r[2]==='yes'?'<span class="yes">✓</span>':r[2]}</td><td>${r[3]}</td></tr>`
+  ).join('');
+}
+
+function renderApp(){
+  renderCtxBar();
+  renderDash();
+  renderFlatHub();
+}
+
+function renderAll(){
+  document.getElementById('pageTitle').textContent = t('Lærerportal — fag-UX','بوابة المعلم — تجربة المواد');
+  renderVariantTabs();
+  if(inApp) renderApp();
+  else renderWelcome();
+  renderCompare();
+}
+
+renderAll();
+</script>
+</body>
+</html>
