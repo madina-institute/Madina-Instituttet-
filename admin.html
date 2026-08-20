@@ -7272,6 +7272,33 @@
     });
   }
 
+  async function verifiserEierpassord(pw){
+    if(!auth.currentUser){
+      return { ok: false, feil: 'Du må være innlogget for å slette.' };
+    }
+    if(!pw){
+      return { ok: false, feil: 'Passord kreves for å slette.' };
+    }
+    const tempApp = initializeApp(firebaseConfig, 'EierBekreftelse_' + Date.now());
+    const tempAuth = getAuth(tempApp);
+    try{
+      await signInWithEmailAndPassword(tempAuth, NODKONTO, pw);
+      await signOut(tempAuth);
+      await deleteApp(tempApp);
+      return { ok: true };
+    }catch(err){
+      try{ await signOut(tempAuth); }catch(e){}
+      try{ await deleteApp(tempApp); }catch(e){}
+      console.error('Eierbekreftelse feilet', err);
+      return {
+        ok: false,
+        feil: err.code === 'auth/too-many-requests'
+          ? 'For mange forsøk. Vent litt og prøv igjen.'
+          : 'Feil passord for ' + NODKONTO + '. Prøv igjen.'
+      };
+    }
+  }
+
   async function checkAdminPassword(hva){
     if(!auth.currentUser){
       showToast('Du må være innlogget for å slette.', true);
@@ -7282,28 +7309,107 @@
       showToast('Avbrutt — ingen endring.', true);
       return false;
     }
-    if(!pw){
-      showToast('Passord kreves for å slette.', true);
+    const sjekk = await verifiserEierpassord(pw);
+    if(!sjekk.ok){
+      showToast(sjekk.feil, true);
       return false;
     }
-    const tempApp = initializeApp(firebaseConfig, 'EierBekreftelse_' + Date.now());
-    const tempAuth = getAuth(tempApp);
-    try{
-      await signInWithEmailAndPassword(tempAuth, NODKONTO, pw);
-      await signOut(tempAuth);
-      await deleteApp(tempApp);
-      return true;
-    }catch(err){
-      // Instansen rives ned uansett — ellers ville hvert mislykket forsøk
-      // etterlatt en app-instans som aldri blir ryddet bort.
-      try{ await signOut(tempAuth); }catch(e){}
-      try{ await deleteApp(tempApp); }catch(e){}
-      console.error('Eierbekreftelse feilet', err);
-      showToast(err.code === 'auth/too-many-requests'
-        ? 'For mange forsøk. Vent litt og prøv igjen.'
-        : 'Feil passord for eierkontoen. Sletting avbrutt.', true);
-      return false;
-    }
+    return true;
+  }
+
+  /** Én modal med steg 1 (eierpassord) → steg 2 (bekreftelsestekst). Unngår at steg 2 «forsvinner». */
+  function bekreftFarligMedEierpassordOgTekst(opts){
+    const { tittel, hva, forklaring, forventet } = opts;
+    return new Promise(resolve => {
+      const bakgrunn = document.createElement('div');
+      bakgrunn.className = 'pw-overlay';
+      const lukk = (v) => { bakgrunn.remove(); resolve(v); };
+
+      function visFeil(felt, tekst){
+        let el = bakgrunn.querySelector('.pw-feil');
+        if(!el){
+          el = document.createElement('p');
+          el.className = 'pw-feil';
+          el.style.cssText = 'color:#a83c3c; font-size:13px; margin:0 0 12px; line-height:1.45;';
+          felt.parentNode.insertBefore(el, felt.nextSibling);
+        }
+        el.textContent = tekst;
+      }
+
+      function steg1(){
+        bakgrunn.innerHTML = `
+          <div class="pw-boks">
+            <p style="font-size:12px; color:#8a6d1d; margin:0 0 8px;">Steg 1 av 2</p>
+            <h3>🔐 ${escapeHtml(tittel || 'Bekreft med eierkontoen')}</h3>
+            <p>${escapeHtml(hva || 'Denne handlingen')} krever passordet til <b>${escapeHtml(NODKONTO)}</b> —
+               ikke passordet du logget inn med.</p>
+            <label for="eierPwFelt">Passord for ${escapeHtml(NODKONTO)}</label>
+            <input type="password" id="eierPwFelt" autocomplete="off">
+            <div class="pw-knapper">
+              <button type="button" class="btn btn-ghost" data-pw="avbryt">Avbryt</button>
+              <button type="button" class="btn" style="background:#a83c3c; color:#fff;" data-pw="ok">Neste →</button>
+            </div>
+          </div>`;
+        const felt = bakgrunn.querySelector('#eierPwFelt');
+        bakgrunn.querySelector('[data-pw="avbryt"]').onclick = () => lukk(false);
+        bakgrunn.querySelector('[data-pw="ok"]').onclick = async () => {
+          const knapp = bakgrunn.querySelector('[data-pw="ok"]');
+          knapp.disabled = true;
+          knapp.textContent = 'Sjekker …';
+          const sjekk = await verifiserEierpassord(felt.value);
+          if(!sjekk.ok){
+            visFeil(felt, sjekk.feil);
+            knapp.disabled = false;
+            knapp.textContent = 'Neste →';
+            felt.focus();
+            felt.select();
+            return;
+          }
+          steg2();
+        };
+        felt.addEventListener('keydown', e => {
+          if(e.key === 'Enter') bakgrunn.querySelector('[data-pw="ok"]').click();
+          if(e.key === 'Escape') lukk(false);
+        });
+        setTimeout(() => felt.focus(), 50);
+      }
+
+      function steg2(){
+        bakgrunn.innerHTML = `
+          <div class="pw-boks">
+            <p style="font-size:12px; color:#2d6a4f; margin:0 0 8px;">Steg 2 av 2 — passord OK ✓</p>
+            <h3>${escapeHtml(tittel || 'Bekreft sletting')}</h3>
+            <p style="white-space:pre-line; line-height:1.55;">${escapeHtml(forklaring || '')}</p>
+            <label for="bekreftTekstFelt">Skriv «${escapeHtml(forventet)}»</label>
+            <input type="text" id="bekreftTekstFelt" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <div class="pw-knapper">
+              <button type="button" class="btn btn-ghost" data-bt="avbryt">Avbryt</button>
+              <button type="button" class="btn" style="background:#a83c3c; color:#fff;" data-bt="ok">Bekreft sletting</button>
+            </div>
+          </div>`;
+        const felt = bakgrunn.querySelector('#bekreftTekstFelt');
+        bakgrunn.querySelector('[data-bt="avbryt"]').onclick = () => lukk(false);
+        bakgrunn.querySelector('[data-bt="ok"]').onclick = () => {
+          const typed = felt.value.trim();
+          if(typed !== forventet){
+            visFeil(felt, 'Skriv nøyaktig «' + forventet + '» (store bokstaver).');
+            felt.focus();
+            felt.select();
+            return;
+          }
+          lukk(true);
+        };
+        felt.addEventListener('keydown', e => {
+          if(e.key === 'Enter') bakgrunn.querySelector('[data-bt="ok"]').click();
+          if(e.key === 'Escape') lukk(false);
+        });
+        setTimeout(() => felt.focus(), 50);
+      }
+
+      document.body.appendChild(bakgrunn);
+      bakgrunn.addEventListener('click', e => { if(e.target === bakgrunn) lukk(false); });
+      steg1();
+    });
   }
 
   // Safety-net for every hard delete in the admin panel: snapshot the full
@@ -7513,23 +7619,19 @@
     const ekstra = NULLSTILL_SLETT_EKSTRA.filter(c => !NULLSTILL_BEHOLD.has(c));
     const soknader = (cache.registrations || []).length;
 
-    if(!(await checkAdminPassword('Å nullstille alt unntatt søknadene'))) return;
-
     const BEKREFT = 'SLETT TESTDATA';
-    const typed = await bekreftMedTekst(
-      '🔴 Nullstill databasen',
-      'ADVARSEL: Dette sletter PERMANENT alle data UNNTATT:\n' +
-      '  • søknader (registrations) — ' + soknader + ' stk beholdes\n' +
-      '  • innstillinger, roller, admin-brukere og tilgang\n\n' +
-      'Elever, lærere, klasser, timeplan, betalinger og meldinger slettes.',
-      BEKREFT
-    );
-    if(typed === null){
+    const bekreftet = await bekreftFarligMedEierpassordOgTekst({
+      tittel: 'Nullstill databasen',
+      hva: 'Å nullstille alt unntatt søknadene',
+      forklaring:
+        'ADVARSEL: Dette sletter PERMANENT alle data UNNTATT:\n' +
+        '  • søknader (registrations) — ' + soknader + ' stk beholdes\n' +
+        '  • innstillinger, roller, admin-brukere og tilgang\n\n' +
+        'Elever, lærere, klasser, timeplan, betalinger og meldinger slettes.',
+      forventet: BEKREFT
+    });
+    if(!bekreftet){
       showToast('Nullstilling avbrutt.', true);
-      return;
-    }
-    if(typed !== BEKREFT){
-      showToast('Feil bekreftelse — skriv nøyaktig «' + BEKREFT + '».', true);
       return;
     }
 
