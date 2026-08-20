@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-15 01:19:05 */
+/* SIST-ENDRET: 2026-08-20 10:38:39 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
