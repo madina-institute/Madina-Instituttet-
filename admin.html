@@ -15473,7 +15473,7 @@
         const hidden = container.querySelectorAll('.extra-field');
         const nowShow = hidden.length && hidden[0].style.display === 'none';
         hidden.forEach(el => { el.style.display = nowShow ? 'block' : 'none'; });
-        toggleBtn.textContent = nowShow ? 'Vis mer' : 'Vis mindre';
+        toggleBtn.textContent = nowShow ? 'Vis mindre' : 'Vis mer';
       };
       container.appendChild(toggleBtn);
     }
