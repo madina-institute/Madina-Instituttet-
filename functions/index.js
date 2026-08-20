@@ -35,6 +35,13 @@ const crypto = require("crypto");
 admin.initializeApp();
 const db = admin.firestore();
 
+/** Vipps krever Idempotency-Key maks 50 tegn — referansen alene kan være ~46. */
+function vippsIdempotencyKey(prefix, ...parts) {
+  const hash = crypto.createHash("sha256").update(parts.map(String).join("|")).digest("hex").slice(0, 32);
+  const key = `${prefix}-${hash}`;
+  return key.length <= 50 ? key : key.slice(0, 50);
+}
+
 // ---------------------------------------------------------------------
 // PRISER OG SØSKENRABATT — LESES FRA FIRESTORE
 // ---------------------------------------------------------------------
@@ -1090,7 +1097,7 @@ exports.cancelVippsPayment = onRequest(
           "Ocp-Apim-Subscription-Key": VIPPS_SUBSCRIPTION_KEY.value(),
           "Merchant-Serial-Number": VIPPS_MSN.value(),
           "Content-Type": "application/json",
-          "Idempotency-Key": `cancel-${reference}`,
+          "Idempotency-Key": vippsIdempotencyKey("cn", reference),
           "Vipps-System-Name": "madina-skole",
           "Vipps-System-Version": "1.0.0",
         },
@@ -1146,7 +1153,7 @@ exports.refundVippsPayment = onRequest(
           "Ocp-Apim-Subscription-Key": VIPPS_SUBSCRIPTION_KEY.value(),
           "Merchant-Serial-Number": VIPPS_MSN.value(),
           "Content-Type": "application/json",
-          "Idempotency-Key": `refund-${reference}-${Date.now()}`,
+          "Idempotency-Key": vippsIdempotencyKey("rf", reference, amountKr, Date.now()),
           "Vipps-System-Name": "madina-skole",
           "Vipps-System-Version": "1.0.0",
         },
