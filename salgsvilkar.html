@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-20 14:14:25 -->
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  SALGSVILKÅR — kreves av Vipps for ePayment-tilgang
+
+  Vipps krever at siden minst dekker fire ting: betaling, angrerett,
+  retur og klagehåndtering. Alle fire står her, med overskrifter som
+  bruker akkurat de ordene, slik at den som kontrollerer søknaden
+  finner dem uten å lete.
+
+  🔴 INGEN PRISER SKREVET INN HER. Prisene leses fra basen på /priser,
+  og har allerede stått flere steder og glidd fra hverandre — forsiden
+  viste 2 750 da den ekte prisen var 5 500. En vilkårsside med tall i
+  ville blitt det fjerde stedet. Her står strukturen; beløpene står ett
+  sted.
+
+  ⚠️ TO PUNKTER MÅ BEKREFTES AV LEDELSEN FØR SIDEN PUBLISERES:
+
+    1. Refusjon ved oppsigelse underveis — teksten under sier at
+       påbegynt termin ikke refunderes, og at bøker som er utlevert
+       ikke tas i retur. Dette er et FORSLAG, ikke en vedtatt regel.
+
+    2. Depositum — teksten sier at det trekkes fra første termin og
+       refunderes ved oppsigelse før oppstart. Må bekreftes.
+
+  Er noe av dette feil, er det verre enn å mangle: en familie kan holde
+  oss til det som står her.
+
+  Jeg er ikke jurist. Angrerettloven gjelder for avtaler inngått på
+  nett med forbrukere, og ordlyden under bør leses gjennom av noen som
+  kan feltet før den står som skolens vilkår.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<html lang="no" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salgsvilkår — Madina Skole</title>
+<meta name="description" content="Salgsvilkår for Madina Skole: betaling, angrerett, oppsigelse og klagehåndtering.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Madina Skole">
+<meta property="og:title" content="Salgsvilkår — Madina Skole">
+<meta property="og:description" content="Betaling, angrerett, oppsigelse og klagehåndtering.">
+<meta property="og:url" content="https://madinaskole.no/salgsvilkar.html">
+<meta property="og:image" content="https://madinaskole.no/og-forside.jpg">
+<meta property="og:locale" content="nb_NO">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Lora:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --blekk:#0d2033;
+    --dyp:#06195B;
+    --blaa:#1A9BEC;
+    --oransje:#FF771F;
+    --ark:#F0F7FE;
+    --ark-2:#E1EFFB;
+    --linje:rgba(6,25,91,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--ark); color:var(--blekk);
+    font-family:'Lora',serif; line-height:1.72; font-size:17px;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .ark{max-width:720px; margin:0 auto; padding:0 22px 70px;}
+
+  .hjem{display:flex; align-items:center; gap:12px; padding:26px 0 0; text-decoration:none;}
+  .hjem img{height:42px; width:auto; display:block;}
+  .hjem span{font-family:'Jost',sans-serif; font-size:13.5px; font-weight:600; color:var(--blaa);}
+
+  header{padding:26px 0 6px;}
+  .merke{font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600;
+         letter-spacing:.16em; text-transform:uppercase; color:var(--blaa);}
+  h1{font-family:'Cormorant Garamond',serif; font-weight:700;
+     font-size:clamp(34px,7vw,48px); line-height:1.05; color:var(--dyp); margin:10px 0 6px;}
+  .oppdatert{font-family:'Jost',sans-serif; font-size:13px; color:rgba(13,32,51,.6); margin:0 0 8px;}
+
+  h2{font-family:'Cormorant Garamond',serif; font-weight:700;
+     font-size:clamp(22px,4.6vw,28px); color:var(--dyp); margin:38px 0 8px; line-height:1.2;}
+  h3{font-family:'Jost',sans-serif; font-weight:600; font-size:15px;
+     color:var(--dyp); margin:20px 0 4px;}
+  p{margin:0 0 14px;}
+  ul{margin:0 0 14px; padding-inline-start:22px;}
+  li{margin-bottom:7px;}
+  a{color:var(--blaa);}
+
+  .fakta{
+    background:#fff; border:1px solid var(--linje); border-radius:3px;
+    padding:20px 22px; margin:18px 0;
+  }
+  .fakta dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:7px 18px;}
+  .fakta dt{font-family:'Jost',sans-serif; font-size:13px; font-weight:600;
+            color:rgba(13,32,51,.6); white-space:nowrap;}
+  .fakta dd{margin:0;}
+
+  .merk{border-inline-start:3px solid var(--oransje); padding:2px 0 2px 16px; margin:16px 0;}
+
+  footer{margin-top:46px; padding-top:20px; border-top:1px solid var(--linje);
+         font-size:14.5px; color:rgba(13,32,51,.66);}
+  footer strong{color:var(--dyp); font-family:'Cormorant Garamond',serif;
+                font-size:18px; display:block; margin-bottom:4px;}
+
+  @media (max-width:520px){
+    body{font-size:16.5px;}
+    .ark{padding:0 18px 52px;}
+    .fakta dl{grid-template-columns:1fr; gap:2px 0;}
+    .fakta dd{margin-bottom:10px;}
+  }
+  @media print{
+    @page{size:A4; margin:16mm;}
+    body{background:#fff; font-size:11pt; line-height:1.5;}
+    .ark{max-width:none; padding:0;}
+    .hjem span{color:var(--dyp);}
+    .fakta{box-shadow:none; break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="ark">
+
+  <a class="hjem" href="https://madinaskole.no" rel="noopener">
+    <img src="logo-blå.png" alt="Madina Skole"
+         onerror="this.onerror=null; this.src='logo-bla.png';">
+    <span>madinaskole.no</span>
+  </a>
+
+  <header>
+    <div class="merke">Madina Skole</div>
+    <h1>Salgsvilkår</h1>
+    <p class="oppdatert">Sist oppdatert 20. august 2026</p>
+  </header>
+
+  <p>Disse vilkårene gjelder mellom Madina Institute Norway (Madina Skole) og den
+    foresatte som melder på et barn til undervisning ved skolen. Ved å sende inn
+    påmelding aksepterer du vilkårene.</p>
+
+  <div class="fakta">
+    <dl>
+      <dt>Selger</dt><dd>Madina Institute Norway — Madina Skole</dd>
+      <dt>Org. nummer</dt><dd>919674431</dd>
+      <dt>Adresse</dt><dd>Hagelundveien 2B, 0963 Oslo</dd>
+      <dt>E-post</dt><dd><a href="mailto:info@madinaskole.no">info@madinaskole.no</a></dd>
+      <dt>Nettsted</dt><dd><a href="https://madinaskole.no">madinaskole.no</a></dd>
+    </dl>
+  </div>
+
+  <h2>Hva vi selger</h2>
+  <p>Undervisning for barn i Koran, islamsk kunnskap og valgt språk — arabisk
+    eller urdu. Undervisningen går på lørdager gjennom skoleåret. For de yngste
+    (3–6 år) tilbys Madinabarn på søndager.</p>
+  <p>Gjeldende priser, terminer og hva som er inkludert, står på
+    <a href="https://madinaskole.no/priser">madinaskole.no/priser</a>. Prisen som
+    gjelder for en påmelding, er den som står oppført der på påmeldingstidspunktet.</p>
+
+  <h2>Betaling</h2>
+  <p>Betaling skjer med Vipps eller bankoverføring. Skolepenger faktureres
+    terminvis, og bøker og materiell kommer i tillegg til skolepengene.</p>
+  <ul>
+    <li>Påmeldingen er bindende først når skolen har bekreftet plass. En innsendt
+      påmelding er en søknad, ikke en garantert plass.</li>
+    <li>Betalingsfrist oppgis i betalingsvarselet fra skolen.</li>
+    <li>Ved manglende betaling kontakter skolen foresatte før noe annet gjøres.
+      Vi sender ikke inkassovarsel uten å ha tatt kontakt først.</li>
+  </ul>
+
+  <h3>Depositum</h3>
+  <p>Der skolen krever depositum ved tildeling av plass, trekkes beløpet fra
+    første termin. Sies plassen opp før skolestart, refunderes depositumet i sin
+    helhet.</p>
+
+  <h3>Familier som ikke har råd</h3>
+  <p>Skolen har en støtteordning for familier som ikke greier skolepengene. Ta
+    kontakt på <a href="mailto:info@madinaskole.no">info@madinaskole.no</a>.
+    Henvendelsen behandles fortrolig av skolens ledelse.</p>
+
+  <h2>Angrerett</h2>
+  <p>Ved påmelding på nett har du som forbruker angrerett i 14 dager fra du mottok
+    bekreftelsen på påmeldingen, jf. angrerettloven.</p>
+  <p>Du bruker angreretten ved å gi oss beskjed innen fristen — en e-post til
+    <a href="mailto:info@madinaskole.no">info@madinaskole.no</a> er nok. Du kan
+    også bruke Forbrukertilsynets
+    <a href="https://www.forbrukertilsynet.no/angrerettskjema" rel="noopener">angrerettskjema</a>.
+    Beløp du har betalt, refunderes innen 14 dager etter at vi har mottatt meldingen.</p>
+  <p>Har undervisningen startet innenfor angrefristen etter uttrykkelig ønske fra
+    deg, kan vi kreve betaling for den delen som er levert.</p>
+
+  <h2>Retur og oppsigelse</h2>
+
+  <h3>Oppsigelse før skolestart</h3>
+  <p>Sier du opp plassen før første undervisningsdag, refunderes alt du har betalt.</p>
+
+  <h3>Oppsigelse underveis</h3>
+  <p>Sier du opp plassen etter at skoleåret har startet, refunderes ikke terminen
+    som er påbegynt. Terminer som ikke har startet, faktureres ikke, og allerede
+    betalte beløp for slike terminer refunderes.</p>
+
+  <h3>Bøker og materiell</h3>
+  <p>Bøker og materiell er elevens egne og beholdes. Utleverte bøker tas ikke i
+    retur, og materiellavgiften refunderes ikke etter utlevering.</p>
+
+  <div class="merk">
+    <p>Er det særlige grunner — flytting, sykdom eller endret livssituasjon — tar
+      du kontakt med oss. Vi finner en løsning. Disse vilkårene er en ramme, ikke
+      en vegg.</p>
+  </div>
+
+  <h2>Klagehåndtering</h2>
+  <p>Er du misfornøyd med undervisningen, en faktura eller noe annet, tar du
+    kontakt med skolen på <a href="mailto:info@madinaskole.no">info@madinaskole.no</a>.
+    Vi svarer så raskt vi kan, og senest innen 14 dager.</p>
+  <p>Kommer vi ikke til enighet, kan du bringe saken inn for
+    <a href="https://www.forbrukerradet.no" rel="noopener">Forbrukerrådet</a> for
+    mekling. Du kan også bruke EU-kommisjonens
+    <a href="https://ec.europa.eu/odr" rel="noopener">klageportal</a>, som er
+    særlig aktuell for forbrukere bosatt i et annet EØS-land.</p>
+
+  <h2>Personopplysninger</h2>
+  <p>Hvordan vi behandler opplysninger om barnet og familien, står i
+    <a href="https://madinaskole.no/personvern">personvernerklæringen</a>.</p>
+
+  <h2>Endringer</h2>
+  <p>Skolen kan endre disse vilkårene. Endringer gjelder ikke tilbake i tid for
+    påmeldinger som allerede er bekreftet. Vesentlige endringer varsles til
+    foresatte på e-post.</p>
+
+  <footer>
+    <strong>Madina Skole — Madina Institute Norway</strong>
+    Hagelundveien 2B, 0963 Oslo<br>
+    <a href="mailto:info@madinaskole.no">info@madinaskole.no</a> ·
+    <a href="https://madinaskole.no">madinaskole.no</a><br>
+    Org. nummer: 919674431
+  </footer>
+
+</div>
+</body>
+</html>
