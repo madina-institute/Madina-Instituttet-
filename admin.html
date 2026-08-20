@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 04:25:51 -->
+<!-- SIST-ENDRET: 2026-08-20 04:47:17 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4611,9 +4611,9 @@
     addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, setDoc as _setDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    initializeAuth, getAuth, browserLocalPersistence, onAuthStateChanged,
+    getAuth, onAuthStateChanged,
     signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-    authStateReady, sendPasswordResetEmail,
+    sendPasswordResetEmail,
     EmailAuthProvider, reauthenticateWithCredential
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
@@ -4720,18 +4720,55 @@
   // lesemodus» i stedet for å feile før vi vet hva som skulle skjedd.
   const batchCommit = (b) => { sperrIForhandsvisning(); return b.commit(); };
   const storage = getStorage(app);
-  // Sett LOCAL persistence ved init — ikke setPersistence() ved hver F5.
-  // Safari med avansert personvernbeskyttelse kan blokkere IndexedDB; da
-  // henger authStateReady() for alltid. Derfor bruker vi waitForAuthReady()
-  // med tidsavbrudd i stedet for å vente uten grense.
-  const auth = initializeAuth(app, { persistence: browserLocalPersistence });
-  function waitForAuthReady(ms = 10000){
-    return Promise.race([
-      authStateReady(auth).catch(err => {
-        console.error('authStateReady failed:', err);
-      }),
-      new Promise(resolve => setTimeout(resolve, ms))
-    ]);
+  const auth = getAuth(app);
+  // Vent til Firebase har gjenopprettet økten uten authStateReady.
+  // Første onAuthStateChanged(null) kan komme FØR persistence er ferdig —
+  // poll auth.currentUser i inntil maksMs, men minst 1,5 s etter null.
+  function ventPaaAuthRestore(maksMs = 12000){
+    const MIN_NULL_MS = 1500;
+    return new Promise(resolve => {
+      const start = Date.now();
+      let unsub = () => {};
+      let ferdig = false;
+      const finish = () => {
+        if(ferdig) return;
+        ferdig = true;
+        try{ unsub(); }catch(e){}
+        resolve();
+      };
+      const pollEtterNull = () => {
+        const poll = () => {
+          if(auth.currentUser) return finish();
+          const elapsed = Date.now() - start;
+          if(elapsed >= maksMs) return finish();
+          if(elapsed >= MIN_NULL_MS) return finish();
+          setTimeout(poll, 150);
+        };
+        poll();
+      };
+      unsub = onAuthStateChanged(auth, user => {
+        if(user) finish();
+        else pollEtterNull();
+      });
+      setTimeout(finish, maksMs);
+    });
+  }
+  let authRestorePromise = null;
+  function ensureAuthRestore(){
+    if(!authRestorePromise) authRestorePromise = ventPaaAuthRestore(12000);
+    return authRestorePromise;
+  }
+  async function klargjoerFirestoreAuth(user){
+    for(let i = 0; i < 4; i++){
+      try{
+        await user.getIdToken(i > 0);
+        return true;
+      } catch(err){
+        console.error('getIdToken failed:', err);
+        if(i < 3) await new Promise(resolve => setTimeout(resolve, 400 * (i + 1)));
+      }
+    }
+    return false;
   }
 
   // ═════════════════════════════════════════════════════════════════
@@ -4819,16 +4856,18 @@
 
   async function bekreftAdminTilgang(user){
     const e = (user.email || '').trim().toLowerCase();
-    if(e === NODKONTO.toLowerCase()) return true;
+    if(e === NODKONTO.toLowerCase()) return { ok: true, transient: false };
+    let transient = false;
     try{
       const tilgangSnap = await getDoc(doc(db, 'tilgang', e));
       if(tilgangSnap.exists()){
         minTilgangRad = tilgangSnap.data() || null;
         currentUserRoles = (minTilgangRad.roller || '').split(',')
           .map(s => s.trim()).filter(Boolean);
-        if(minTilgang().panel) return true;
+        if(minTilgang().panel) return { ok: true, transient: false };
       }
     } catch(err){
+      transient = true;
       console.error('tilgang/oppslag', err);
     }
     try{
@@ -4846,12 +4885,25 @@
         if(snap.docs.length > 1){
           console.warn('Flere adminUsers-poster på samme e-post:', user.email);
         }
-        return currentUserRoles.length === 0 || minTilgang().panel;
+        const ok = currentUserRoles.length === 0 || minTilgang().panel;
+        return { ok, transient: false };
       }
     } catch(err){
+      transient = true;
       console.error('adminUsers-oppslag', err);
     }
-    return false;
+    return { ok: false, transient };
+  }
+
+  async function bekreftAdminTilgangMedRetry(user){
+    for(let forsok = 0; forsok < 4; forsok++){
+      await klargjoerFirestoreAuth(user);
+      const svar = await bekreftAdminTilgang(user);
+      if(svar.ok) return svar;
+      if(!svar.transient) return svar;
+      if(forsok < 3) await new Promise(resolve => setTimeout(resolve, 700 * (forsok + 1)));
+    }
+    return { ok: false, transient: true };
   }
 
   const MAX_FILE_MB = 10;
@@ -5401,67 +5453,78 @@
 
 
   let authGatedListenersAttached = false;
-  // Venteflaten forsvinner når Firebase svarer «innlogget» eller «ikke
-  // innlogget». Svarer den ALDRI — nettet faller ut i akkurat det
-  // sekundet, eller reCAPTCHA henger — ble skjermen stående for alltid:
-  // en logo som ikke beveget seg, uten knapp, uten beskjed, uten noe å
-  // gjøre. Nøyaktig den stille feilen vi har brukt dagen på å fjerne.
-  //
-  // Etter åtte sekunder gir vi opp å vente og viser innloggingen med en
-  // forklaring. Svarer Firebase likevel etterpå, overtar den som normalt.
+  let authBehandling = 0;
   let authHarSvart = false;
+
+  function visInnlogging(melding){
+    authHarSvart = true;
+    document.getElementById('venteSkjerm').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    const err = document.getElementById('loginError');
+    if(err && melding){
+      err.style.color = '';
+      err.textContent = melding;
+      err.style.display = 'block';
+    }
+  }
+
   setTimeout(() => {
     if(authHarSvart) return;
     const hint = document.getElementById('venteSafariHint');
     if(hint) hint.style.display = 'block';
   }, 5000);
-  setTimeout(async () => {
-    if(authHarSvart) return;
-    // Ikke vent på authStateReady uten grense — den henger i Safari.
-    await waitForAuthReady(1500);
+
+  setTimeout(() => {
     if(authHarSvart) return;
     const vente = document.getElementById('venteSkjerm');
     if(!vente || vente.style.display === 'none') return;
-
     const tekst = document.getElementById('venteTekst');
     if(auth.currentUser){
       if(tekst) tekst.textContent = 'Henter tilgangen din — det tar lengre tid enn vanlig...';
       return;
     }
-    vente.style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-    const err = document.getElementById('loginError');
-    if(err){
-      err.textContent = 'Fikk ikke gjenopprettet økten. Sjekk nettet — i Safari kan personvernbeskyttelse blokkere økten. Logg inn på nytt.';
-      err.style.display = 'block';
-    }
-  }, 8000);
+    visInnlogging('Fikk ikke gjenopprettet økten. Sjekk nettet og logg inn på nytt.');
+  }, 15000);
 
   onAuthStateChanged(auth, async (user) => {
-    await waitForAuthReady(10000);
+    const denne = ++authBehandling;
+    await ensureAuthRestore();
+    if(denne !== authBehandling) return;
     user = auth.currentUser || user;
+
     if(user){
       currentUserEmail = user.email;
-      // Slipp panelet med én gang Firebase har gjenopprettet økten —
-      // tilgangssjekken kan ta tid uten at brukeren tror sesjonen er borte.
       authHarSvart = true;
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('venteSkjerm').style.display = 'none';
       document.getElementById('appRoot').style.display = 'block';
 
-      let isAuthorizedAdmin = false;
+      let tilgang = { ok: false, transient: true };
       try{
-        isAuthorizedAdmin = await bekreftAdminTilgang(user);
+        tilgang = await bekreftAdminTilgangMedRetry(user);
       } catch(err){
         console.error('Kunne ikke bekrefte admin-tilgang:', err);
-        isAuthorizedAdmin = false;
+        tilgang = { ok: false, transient: true };
       }
-      if(!isAuthorizedAdmin){
-        // Check whether this is a legitimate teacher account (just without
-        // an admin-tier role) so we can point them to the right portal
-        // instead of a flat "no access" message that leaves them stuck.
+
+      if(!tilgang.ok){
+        if(tilgang.transient){
+          document.getElementById('appRoot').style.display = 'none';
+          document.getElementById('venteSkjerm').style.display = 'none';
+          document.getElementById('loginScreen').style.display = 'flex';
+          const errEl = document.getElementById('loginError');
+          if(errEl){
+            errEl.style.color = 'var(--red)';
+            errEl.textContent = 'Kunne ikke bekrefte tilgangen akkurat nå. Prøv å logge inn på nytt.';
+            errEl.style.display = 'block';
+          }
+          return;
+        }
+
         let isKnownTeacher = false;
         try{
+          await klargjoerFirestoreAuth(user);
           const tq = query(collection(db, 'teachers'), where('epost', '==', user.email));
           const tsnap = await getDocs(tq);
           isKnownTeacher = !tsnap.empty;
@@ -5527,10 +5590,7 @@
       isLocked = false;
       clearTimeout(inactivityTimer);
       document.getElementById('lockScreen').style.display = 'none';
-      authHarSvart = true;
-      document.getElementById('venteSkjerm').style.display = 'none';
-      document.getElementById('loginScreen').style.display = 'flex';
-      document.getElementById('appRoot').style.display = 'none';
+      visInnlogging('');
     }
   });
 
