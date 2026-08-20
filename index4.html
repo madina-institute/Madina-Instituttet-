@@ -734,6 +734,19 @@
   .fag-tab.active{background:var(--emerald); color:#fff; border-color:var(--emerald);}
   .fag-tab:hover:not(.active){border-color:var(--gold);}
 
+  .home-vipps-cta{cursor:pointer; margin-top:14px; transition:transform .15s, box-shadow .15s;}
+  .home-vipps-cta:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(255,91,36,0.18);}
+  .home-vipps-amt{
+    font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:700; color:var(--vipps);
+    margin:6px 0 2px;
+  }
+  html[dir="rtl"] .home-vipps-amt{font-family:'Tajawal',sans-serif; font-size:24px;}
+  .payment-paid-msg{
+    background:var(--paper-2); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; margin-top:14px; font-family:'Jost',sans-serif; font-size:13px; color:#5a6860;
+  }
+  html[dir="rtl"] .payment-paid-msg{font-family:'Tajawal',sans-serif;}
+
   .menu-card .msg-badge{
     display:none; font-family:'Jost',sans-serif; font-size:9.5px; font-weight:700; padding:3px 9px;
     border-radius:12px; text-transform:uppercase; letter-spacing:0.03em; margin-top:6px;
@@ -977,6 +990,14 @@
           <div class="stat-card stat-yellow stat-click" id="homeCardPay" onclick="openSection('payment')"><span class="stat-ikon">💳</span><div class="n stat-num" id="homeRemaining">0 kr</div><div class="l" data-i18n="sumRemainingLbl">Gjenstår</div></div>
           <div class="stat-card stat-blue stat-click" id="homeCardMsg" onclick="openSection('melding')"><span class="stat-ikon">✉️</span><div class="n stat-num" id="homeUnread">0</div><div class="l" data-i18n="homeUnreadLbl">Uleste meldinger</div></div>
         </div>
+        <div id="homeVippsCta" class="vipps-pay-zone home-vipps-cta" style="display:none;" onclick="openSection('payment')">
+          <div class="vipps-zone-head">
+            <span class="vipps-badge">Vipps</span>
+            <span class="vipps-zone-title" data-i18n="homePayCtaTitle">Betal gjenstående beløp</span>
+          </div>
+          <div class="home-vipps-amt" id="homeVippsAmt">0 kr</div>
+          <div class="sub" data-i18n="homePayCtaSub">Trykk her for å betale med Vipps</div>
+        </div>
       </div>
     </div>
 
@@ -1214,6 +1235,7 @@
             <div class="vipps-card-note" id="vippsCardNote" data-i18n="payCardTestNote">Bankkort (Visa/Mastercard) er kun tilgjengelig i produksjon — Vipps test støtter ikke kortbetaling.</div>
           </div>
         </div>
+        <div class="payment-paid-msg" id="paymentAllPaidMsg" style="display:none;" data-i18n="paymentAllPaid">Ingen utestående beløp — betaling via Vipps vises når det gjenstår noe å betale.</div>
         <div class="empty-msg" id="paymentComingSoon" style="display:none;" data-i18n="paymentComingSoon">Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.</div>
       </div>
     </div>
@@ -1619,6 +1641,8 @@
       howMuchSub: 'Hvor mye ønsker du å betale?', payAllBtn: 'Alt gjenstående', payPartialBtn: 'Annet beløp',
       amountLabel: 'Beløp (kr)', confirmAmountBtn: 'Bekreft beløp', payChoiceSent: 'Takk! Beløpet er registrert. Fullfør betalingen under.',
       invalidAmount: 'Skriv inn et gyldig beløp.', noRemaining: 'Det er ikke noe utestående beløp for dette barnet.',
+      paymentAllPaid: 'Ingen utestående beløp — betaling via Vipps vises når det gjenstår noe å betale.',
+      homePayCtaTitle: 'Betal gjenstående beløp', homePayCtaSub: 'Trykk her for å betale med Vipps',
       contactSub: 'Sendes til administrasjonen for godkjenning', newPhone: 'Ny telefon (valgfritt)', newEmail: 'Ny e-post (valgfritt)',
       messageLabel: 'Melding (valgfritt)', sendContactUpdate: 'Send forespørsel',
       menuTeacherMsg: 'Kontakt lærer', menuTeacherMsgDesc: 'Send og motta meldinger',
@@ -1718,6 +1742,8 @@
       howMuchSub: 'كم تريد أن تدفع؟', payAllBtn: 'كل المبلغ المتبقي', payPartialBtn: 'مبلغ آخر',
       amountLabel: 'المبلغ (كرونة)', confirmAmountBtn: 'تأكيد المبلغ', payChoiceSent: 'شكرًا! تم تسجيل المبلغ. أكمل الدفع بالأسفل.',
       invalidAmount: 'أدخل مبلغًا صحيحًا.', noRemaining: 'لا يوجد مبلغ مستحق لهذا الطالب.',
+      paymentAllPaid: 'لا يوجد مبلغ مستحق — يظهر الدفع عبر Vipps عندما يتبقى مبلغ للدفع.',
+      homePayCtaTitle: 'ادفع المبلغ المتبقي', homePayCtaSub: 'اضغط هنا للدفع عبر Vipps',
       contactSub: 'يُرسل إلى الإدارة للموافقة', newPhone: 'رقم هاتف جديد (اختياري)', newEmail: 'بريد إلكتروني جديد (اختياري)',
       messageLabel: 'رسالة (اختياري)', sendContactUpdate: 'إرسال الطلب',
       menuTeacherMsg: 'التواصل مع المعلم', menuTeacherMsgDesc: 'إرسال واستقبال الرسائل',
@@ -1817,6 +1843,8 @@
       howMuchSub: 'آپ کتنی رقم ادا کرنا چاہتے ہیں؟', payAllBtn: 'تمام باقی رقم', payPartialBtn: 'دوسری رقم',
       amountLabel: 'رقم (کرون)', confirmAmountBtn: 'رقم کی تصدیق کریں', payChoiceSent: 'شکریہ! رقم درج کر لی گئی ہے۔ نیچے ادائیگی مکمل کریں۔',
       invalidAmount: 'ایک درست رقم درج کریں۔', noRemaining: 'اس بچے کے لیے کوئی باقی رقم نہیں ہے۔',
+      paymentAllPaid: 'کوئی باقی رقم نہیں — Vipps ادائیگی تب ظاہر ہوتی ہے جب ادائیگی باقی ہو۔',
+      homePayCtaTitle: 'باقی رقم ادا کریں', homePayCtaSub: 'Vipps سے ادائیگی کے لیے یہاں دبائیں',
       contactSub: 'منظوری کے لیے انتظامیہ کو بھیجا جائے گا', newPhone: 'نیا فون نمبر (اختیاری)', newEmail: 'نیا ای میل (اختیاری)',
       messageLabel: 'پیغام (اختیاری)', sendContactUpdate: 'درخواست بھیجیں',
       menuTeacherMsg: 'استاد سے رابطہ کریں', menuTeacherMsgDesc: 'پیغامات بھیجیں اور وصول کریں',
@@ -2993,6 +3021,8 @@
     if(melView && melView.style.display !== 'none') renderMeldingHub();
     const subView = document.getElementById('view-subject');
     if(subView && subView.style.display !== 'none') renderSubjectMenuView();
+    const payView = document.getElementById('view-payment');
+    if(payView && payView.style.display !== 'none') renderPaymentDetail();
   }
 
   // Hvilket barn familieskjermen viser. Ikke det samme som
@@ -3449,6 +3479,15 @@
     const paid = myChildren.reduce((s, c) => s + toNum(c.belopBetalt), 0);
     remEl.textContent = Math.max(0, total - paid).toLocaleString('no-NO') + ' kr';
     unreadEl.textContent = String(countUnreadMessages());
+    const homeRemaining = Math.max(0, total - paid);
+    const vippsCta = document.getElementById('homeVippsCta');
+    const vippsAmt = document.getElementById('homeVippsAmt');
+    if(vippsCta){
+      vippsCta.style.display = homeRemaining > 0 ? 'block' : 'none';
+      if(vippsAmt) vippsAmt.textContent = homeRemaining.toLocaleString('no-NO') + ' kr';
+    }
+    const payCardLbl = document.querySelector('#homeCardPay .l');
+    if(payCardLbl) payCardLbl.textContent = homeRemaining > 0 ? t('payNowBtn') : t('sumRemainingLbl');
     if(myChildren.length === 0){
       if(hwEl) hwEl.textContent = '—';
       if(fagDash) fagDash.style.display = 'none';
@@ -3496,6 +3535,38 @@
     hwEl.textContent = tekst;
   }
 
+  function renderPaymentChild(){
+    const payInfo = document.getElementById('paymentInfo');
+    if(!payInfo || myChildren.length === 0) return;
+    const child = myChildren[currentChildIndex];
+    const remainingKr = toNum(child.belop) - toNum(child.belopBetalt);
+    payInfo.innerHTML = `
+      <div class="info-row"><span class="lbl">Totalt</span><span>${toNum(child.belop).toLocaleString('no-NO')} kr</span></div>
+      <div class="info-row"><span class="lbl">Betalt</span><span>${toNum(child.belopBetalt).toLocaleString('no-NO')} kr</span></div>
+      <div class="info-row"><span class="lbl">Gjenstår</span><span>${remainingKr.toLocaleString('no-NO')} kr</span></div>
+    `;
+    if(lastPaymentChildId !== child.id){
+      selectedPayAmountKr = 0;
+      lastPaymentChildId = child.id;
+    }
+    const vippsZone = document.getElementById('vippsPayZone');
+    const payWrap = document.getElementById('paymentBtnWrap');
+    const paidMsg = document.getElementById('paymentAllPaidMsg');
+    const comingSoon = document.getElementById('paymentComingSoon');
+    if(remainingKr > 0){
+      if(vippsZone) vippsZone.style.display = 'block';
+      if(payWrap) payWrap.style.display = 'block';
+      if(paidMsg) paidMsg.style.display = 'none';
+      if(comingSoon) comingSoon.style.display = 'none';
+      oppdaterVippsKortKnapp();
+    } else {
+      if(vippsZone) vippsZone.style.display = 'none';
+      if(payWrap) payWrap.style.display = 'none';
+      if(paidMsg) paidMsg.style.display = 'block';
+      if(comingSoon) comingSoon.style.display = 'none';
+    }
+  }
+
   function renderPaymentDetail(){
     const total = myChildren.reduce((s,c) => s + toNum(c.belop), 0);
     const totalBase = myChildren.reduce((s,c) => s + fullPrisFor(c), 0);
@@ -3523,6 +3594,7 @@
       savingsWrap.style.display = 'none';
     }
     if(detailCard) detailCard.style.display = showDetail ? 'block' : 'none';
+    renderPaymentChild();
   }
 
   function renderChildTabs(){
@@ -3547,6 +3619,7 @@
     renderChildTabs();
     renderChild();
     renderHomeDash();
+    renderPaymentDetail();
   };
 
   const SIDEBAR_PARENT = {
@@ -4478,27 +4551,6 @@
       }).join('');
     }
 
-
-    // Betaling
-    document.getElementById('paymentInfo').innerHTML = `
-      <div class="info-row"><span class="lbl">Totalt</span><span>${toNum(child.belop).toLocaleString('no-NO')} kr</span></div>
-      <div class="info-row"><span class="lbl">Betalt</span><span>${toNum(child.belopBetalt).toLocaleString('no-NO')} kr</span></div>
-      <div class="info-row"><span class="lbl">Gjenstår</span><span>${(toNum(child.belop)-toNum(child.belopBetalt)).toLocaleString('no-NO')} kr</span></div>
-    `;
-    const remainingKr = toNum(child.belop) - toNum(child.belopBetalt);
-    if(lastPaymentChildId !== child.id){
-      selectedPayAmountKr = 0;
-      lastPaymentChildId = child.id;
-    }
-    if(remainingKr > 0){
-      document.getElementById('vippsPayZone').style.display = 'block';
-      document.getElementById('paymentBtnWrap').style.display = 'block';
-      document.getElementById('paymentComingSoon').style.display = 'none';
-      oppdaterVippsKortKnapp();
-    } else {
-      document.getElementById('vippsPayZone').style.display = 'none';
-      document.getElementById('paymentComingSoon').style.display = 'none';
-    }
 
     updateBadges();
   }
