@@ -1,22 +1,13 @@
 rules_version = '2';
-/* SIST-ENDRET: 2026-08-20 02:20:00 */
+/* SIST-ENDRET: 2026-08-20 02:44:00 */
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ══════════════════════════════════════════════════════════════
     // TRINN 4 — Myndighet etter nivå, én nødkonto utenfor
     //
-    // ⏸️ DENNE UTGAVEN STRAMMER ALT UNNTATT TRE SAMLINGER.
-    //
-    // students, attendance og studentNotes står fortsatt på loggedIn().
-    // Grunnen står ved hver av dem: lærerportalen laster dem uten
-    // filter, og læreren har ingen rad i 'tilgang'. Strammes de nå,
-    // blir lærerportalen tom — stille, og uten at en prøve med
-    // foresattkonto ville oppdaget det.
-    //
-    // Alt annet er strammet: søknader, e-post, slettelogg, lønn,
-    // regnskap, brukere og møtereferater var lesbare for enhver
-    // innlogget konto. Det er de ikke lenger.
+    // ⏸️ TRINN 5 — Portalene spør nå per klasse/barn/lærer. Reglene
+    // matcher spørringene i index1, index4 og admin.
     //
     // Trinn 1 stengte offentlig lesing. Trinn 2 skilte administrator fra
     // innlogget og la hierarkiet i 'tilgang'. Trinn 3 flyttet eierskapet
@@ -193,6 +184,42 @@ service cloud.firestore {
       allow write: if erAdmin();
     }
 
+    // Lærerportalen spør per klasse. Reglene trenger hvilke klasser og
+    // foresatte som hører til hver lærer — vedlikeholdes av panelet.
+    match /laererTilgang/{epost} {
+      allow read: if erAdmin() || (minEpost() != '' && epost == minEpost());
+      allow write: if erAdmin();
+    }
+
+    function harLaererListe() {
+      return minEpost() != ''
+        && exists(/databases/$(database)/documents/laererTilgang/$(minEpost()))
+        && 'klasser' in get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data;
+    }
+    function erLaererForKlasse(klasseId) {
+      return harLaererListe()
+        && klasseId in get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data.klasser;
+    }
+    function erLaererForForesatt(gid) {
+      return harLaererListe()
+        && gid in get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data.foresatte;
+    }
+    function erForesattForKlasse(klasseId) {
+      return harBarneliste()
+        && 'klasser' in get(/databases/$(database)/documents/foreldreTilgang/$(minEpost())).data
+        && klasseId in get(/databases/$(database)/documents/foreldreTilgang/$(minEpost())).data.klasser;
+    }
+    function erMinGuardianDoc(gid) {
+      return minEpost() != ''
+        && exists(/databases/$(database)/documents/guardians/$(gid))
+        && 'epost' in get(/databases/$(database)/documents/guardians/$(gid)).data
+        && get(/databases/$(database)/documents/guardians/$(gid)).data.epost.lower() == minEpost();
+    }
+    function erLaererForTime(larerId) {
+      return harLaererListe()
+        && get(/databases/$(database)/documents/laererTilgang/$(minEpost())).data.teacherId == larerId;
+    }
+
     // ---------- ENDRINGSLOGG ----------
     // Hvem endret hva, fra hva til hva, og når.
     //
@@ -347,38 +374,41 @@ service cloud.firestore {
     // KREVER INNLOGGING — leses eller skrives av portalene
     // ══════════════════════════════════════════════════════════════
 
-    // ⏸️ VENTER PÅ LÆRERPORTALEN — les dette før du strammer.
-    //
-    // Regelen skal bli:
-    //     allow read: if erAdmin() || erMittBarn(id);
-    //
-    // Foreldreportalen er klar: den spør allerede med
-    // where(documentId(), 'in', barn). Lærerportalen er det IKKE — den
-    // laster hele samlingen uten filter (index1.html, watch('students')).
-    //
-    // Og en lærer har ingen rad i 'tilgang': panelet skriver bare rader
-    // for roller med panel:true, og læreren har det ikke. erAdmin() er
-    // altså usann for henne.
-    //
-    // Strammer vi nå, avviser Firestore HELE spørringen — og fordi
-    // onSnapshot ikke prøver på nytt, blir elevlisten stående tom for
-    // resten av økten. Uten feilmelding, uten konsoll på telefonen.
-    //
-    // 🔴 Og prøven ville ikke avslørt det: man tester med en
-    // foresattkonto, ser at alt virker, og lærerportalen er død til
-    // noen sier fra.
-    //
-    // Rekkefølgen er: lærerportalen skriver om spørringene sine først
-    // (den vet allerede hvilke klasser læreren har — se timeplanen),
-    // deretter strammes denne.
-    match /students/{id}        { allow read, write: if loggedIn(); }
-    match /guardians/{id}       { allow read, write: if loggedIn(); }
-    match /teachers/{id}        { allow read, write: if loggedIn(); }
-    match /classes/{id}         { allow read, write: if loggedIn(); }
+    // ══════════════════════════════════════════════════════════════
+    // TRINN 5 — Portalene spør nå per klasse/barn. Reglene matcher.
+    // ══════════════════════════════════════════════════════════════
 
-    // ⏸️ Samme. Læreren fører oppmøte herfra (index1: to skrivekall),
-    // så skriving må uansett være åpen for innlogget.
-    match /attendance/{id}              { allow read, write: if loggedIn(); }
+    match /students/{id} {
+      allow read: if erAdmin() || erMittBarn(id)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow write: if erAdmin();
+    }
+
+    match /guardians/{id} {
+      allow read: if erAdmin() || erMinGuardianDoc(id) || erLaererForForesatt(id);
+      allow write: if erAdmin();
+    }
+
+    match /teachers/{id} {
+      allow read: if erAdmin()
+        || (minEpost() != '' && resource.data.epost.lower() == minEpost());
+      allow write: if erAdmin();
+    }
+
+    match /classes/{id} {
+      allow read: if erAdmin() || erLaererForKlasse(id) || erForesattForKlasse(id);
+      allow write: if erAdmin();
+    }
+
+    match /attendance/{id} {
+      allow read: if erAdmin() || erMittBarn(resource.data.studentId)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+      allow update: if erAdmin()
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow delete: if erAdmin();
+    }
     // ---------- LÆREPLANEN ----------
     // Selve pensumet: kapitler, mål, vekt, øktene og dua-tråden.
     // Ingen datoer og ingen framdrift — datoene genereres av
@@ -462,31 +492,87 @@ service cloud.firestore {
       allow write: if mittNiva() <= 3;
     }
 
-    match /lessonPlans/{id}             { allow read, write: if loggedIn(); }
-    match /homework/{id}                { allow read, write: if loggedIn(); }
-    match /homeworkSubmissions/{id}     { allow read, write: if loggedIn(); }
-    match /absenceRequests/{id}         { allow read, write: if loggedIn(); }
-    // ⏸️ Samme grunn som students: lærerportalen laster hele samlingen.
-    // Skal bli: read if erAdmin() || erMittBarn(resource.data.studentId)
-    //
-    // ⚠️ Og LESING er det eneste som kan strammes her. Læreren SKRIVER
-    // notater herfra (index1: addDoc studentNotes), så create/update må
-    // fortsatt stå åpen for innlogget — ellers slutter lærerportalen å
-    // kunne lagre, ikke bare å vise.
-    match /studentNotes/{id}            { allow read, write: if loggedIn(); }
-    match /practiceVideos/{id}          { allow read, write: if loggedIn(); }
-    match /dailyPlanTemplates/{id}      { allow read, write: if loggedIn(); }
-    match /monthlyPlanTemplates/{id}    { allow read, write: if loggedIn(); }
-    match /semesterPlanTemplates/{id}   { allow read, write: if loggedIn(); }
-    match /monthlyPlans/{id}            { allow read, write: if loggedIn(); }
-    match /semesterPlans/{id}           { allow read, write: if loggedIn(); }
-    match /hours/{id}                   { allow read, write: if loggedIn(); }
+    match /lessonPlans/{id} {
+      allow read: if erAdmin()
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create, update: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+      allow delete: if erAdmin();
+    }
+    match /homework/{id} {
+      allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create, update: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+      allow delete: if erAdmin();
+    }
+    match /homeworkSubmissions/{id} {
+      allow read: if erAdmin() || erMittBarn(resource.data.studentId)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create: if loggedIn();
+      allow update, delete: if erAdmin();
+    }
+    match /absenceRequests/{id} {
+      allow read: if erAdmin() || erMittBarn(resource.data.studentId)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create: if loggedIn();
+      allow update: if erAdmin()
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow delete: if erAdmin();
+    }
+    match /studentNotes/{id} {
+      allow read: if erAdmin() || erMittBarn(resource.data.studentId)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create, update: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+      allow delete: if erAdmin();
+    }
+    match /practiceVideos/{id}          { allow read: if loggedIn(); allow write: if erAdmin(); }
+    match /dailyPlanTemplates/{id}      { allow read: if loggedIn(); allow write: if erAdmin(); }
+    match /monthlyPlanTemplates/{id}    { allow read: if loggedIn(); allow write: if erAdmin(); }
+    match /semesterPlanTemplates/{id}   { allow read: if loggedIn(); allow write: if erAdmin(); }
+    match /monthlyPlans/{id} {
+      allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create, update: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+      allow delete: if erAdmin();
+    }
+    match /semesterPlans/{id} {
+      allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create, update: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+      allow delete: if erAdmin();
+    }
+    match /hours/{id} {
+      allow read: if erAdmin() || erLaererForTime(resource.data.larer);
+      allow write: if erAdmin();
+    }
 
     // teacherAttendance: læreren fører sine EGNE timer i Lærerportalen.
-    match /teacherAttendance/{id}       { allow read, write: if loggedIn(); }
+    match /teacherAttendance/{id} {
+      allow read: if erAdmin() || erLaererForTime(resource.data.larer);
+      allow create, update: if erAdmin() || erLaererForTime(request.resource.data.larer);
+      allow delete: if erAdmin();
+    }
 
-    match /messages/{id}              { allow read, write: if loggedIn(); }
-    match /messageThreads/{id}        { allow read, write: if loggedIn(); }
+    match /messages/{id} {
+      allow read: if erAdmin()
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse))
+        || (resource.data.studentId != null && erMittBarn(resource.data.studentId))
+        || (resource.data.guardianId != null && erMinGuardianDoc(resource.data.guardianId));
+      allow create: if loggedIn();
+      allow update, delete: if erAdmin();
+    }
+    match /messageThreads/{id} {
+      allow read: if erAdmin()
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse))
+        || (resource.data.studentId != null && erMittBarn(resource.data.studentId))
+        || (resource.data.guardianId != null && erMinGuardianDoc(resource.data.guardianId));
+      allow create: if loggedIn();
+      allow update, delete: if erAdmin();
+    }
     // ---------- MELDINGER FRA ADMINISTRASJONEN ----------
     // 🔴 Sto på loggedIn(). Portalene lastet hele samlingen og filtrerte i
     // nettleseren, så enhver forelder hadde hver eneste families meldinger
@@ -537,13 +623,55 @@ service cloud.firestore {
             && request.resource.data.mottakerEpost == minEpost());
       allow update, delete: if erAdmin();
     }
-    match /classPosts/{id}            { allow read, write: if loggedIn(); }
-    match /classPostComments/{id}     { allow read, write: if loggedIn(); }
-    match /classPollVotes/{id}        { allow read, write: if loggedIn(); }
-    match /eventRSVPs/{id}            { allow read, write: if loggedIn(); }
-    match /announcements/{id}         { allow read, write: if loggedIn(); }
-    match /contactUpdateRequests/{id} { allow read, write: if loggedIn(); }
-    match /paymentRequests/{id}       { allow read, write: if loggedIn(); }
+    match /classPosts/{id} {
+      allow read: if erAdmin() || erForesattForKlasse(resource.data.klasse)
+        || (resource.data.klasse != null && erLaererForKlasse(resource.data.klasse));
+      allow create, update: if erAdmin()
+        || (request.resource.data.klasse != null && erLaererForKlasse(request.resource.data.klasse));
+      allow delete: if erAdmin();
+    }
+    match /classPostComments/{id} {
+      allow read: if erAdmin()
+        || (resource.data.klasse != null && (erForesattForKlasse(resource.data.klasse)
+            || erLaererForKlasse(resource.data.klasse)));
+      allow create: if loggedIn()
+        && request.resource.data.klasse != null
+        && (erForesattForKlasse(request.resource.data.klasse)
+            || erLaererForKlasse(request.resource.data.klasse));
+      allow update, delete: if erAdmin();
+    }
+    match /classPollVotes/{id} {
+      allow read: if erAdmin()
+        || (resource.data.klasse != null && (erForesattForKlasse(resource.data.klasse)
+            || erLaererForKlasse(resource.data.klasse)));
+      allow create: if loggedIn()
+        && request.resource.data.klasse != null
+        && erForesattForKlasse(request.resource.data.klasse);
+      allow update, delete: if erAdmin();
+    }
+    match /eventRSVPs/{id} {
+      allow read: if erAdmin()
+        || (resource.data.klasse != null && (erForesattForKlasse(resource.data.klasse)
+            || erLaererForKlasse(resource.data.klasse)));
+      allow create: if loggedIn()
+        && request.resource.data.klasse != null
+        && erForesattForKlasse(request.resource.data.klasse);
+      allow update: if erAdmin()
+        || (minEpost() != '' && resource.data.guardianId != null
+            && exists(/databases/$(database)/documents/guardians/$(resource.data.guardianId))
+            && get(/databases/$(database)/documents/guardians/$(resource.data.guardianId)).data.epost.lower() == minEpost());
+    }
+    match /announcements/{id}         { allow read: if loggedIn(); allow write: if erAdmin(); }
+    match /contactUpdateRequests/{id} {
+      allow read: if erAdmin() || erMittBarn(resource.data.studentId);
+      allow create: if loggedIn();
+      allow update, delete: if erAdmin();
+    }
+    match /paymentRequests/{id} {
+      allow read: if erAdmin() || erMittBarn(resource.data.studentId);
+      allow create: if loggedIn();
+      allow update, delete: if erAdmin();
+    }
 
     // Ukjente samlinger: nekt alt.
     match /{document=**} {

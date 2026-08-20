@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-16 15:10:28 -->
+<!-- SIST-ENDRET: 2026-08-20 02:44:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1365,6 +1365,7 @@
   let mineKlasser = [];
   let klasselyttereStartet = false;
   let hoursDeler = [];
+  let klasseDocDeler = [];
 
   const sporrPerKlasse = (samling, felt) => () => mineKlasser.length === 0 ? []
     : delOpp(mineKlasser, 30).map(del =>
@@ -1808,10 +1809,8 @@
   let practiceVideos = [];
   let classPosts = [];
   let classPostComments = [];
-  watch('classPostComments', (snap) => {
-    classPostComments = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    tegnAktivSkjerm();
-  });
+  let classPollVotes = [];
+  let eventRSVPs = [];
   watch('announcements', (snap) => {
     announcements = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     tegnAktivSkjerm();
@@ -1823,12 +1822,12 @@
     studentNotes = rader;
     tegnAktivSkjerm();
   });
-  watch('classes', (snap) => {
-    classes = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    tegnAktivSkjerm();
-  });
-  watch('messages', (snap) => {
-    messages = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  // classes, messages og messageThreads — startKlasselyttere() / sporrMineMeldinger().
+  watchQuery('messages', () => {
+    if(!currentGuardian) return [];
+    return [query(collection(db, 'messages'), where('guardianId', '==', currentGuardian.id))];
+  }, (rader) => {
+    messages = rader;
     if(currentGuardian){
       renderChild();
       if(document.getElementById('view-teacherMsg').style.display !== 'none'){
@@ -1838,8 +1837,18 @@
     }
   });
   let messageThreads = [];
-  watch('messageThreads', (snap) => {
-    messageThreads = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  watchQuery('messageThreads', () => {
+    if(!currentGuardian) return [];
+    const sporr = [query(collection(db, 'messageThreads'), where('guardianId', '==', currentGuardian.id))];
+    if(mineBarnIder.length > 0){
+      delOpp(mineBarnIder, 30).forEach(del => {
+        sporr.push(query(collection(db, 'messageThreads'), where('studentId', 'in', del)));
+      });
+    }
+    return sporr;
+  }, (rader) => {
+    const sett = new Set();
+    messageThreads = rader.filter(r => sett.has(r.id) ? false : (sett.add(r.id), true));
     if(currentGuardian){
       updateBadges();
       if(document.getElementById('view-teacherMsg').style.display !== 'none' &&
@@ -1881,16 +1890,7 @@
       if(currentAdminMsgThreadId) renderGuardianAdminMsgHistory();
     }
   });
-  let classPollVotes = [];
-  watch('classPollVotes', (snap) => {
-    classPollVotes = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    tegnAktivSkjerm();
-  });
-  let eventRSVPs = [];
-  watch('eventRSVPs', (snap) => {
-    eventRSVPs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    tegnAktivSkjerm();
-  });
+  // classPollVotes og eventRSVPs — startKlasselyttere().
   // ═══════════════════════════════════════════════════════════════
   // SKOLEÅRET OG KALENDEREN
   //
@@ -2081,7 +2081,18 @@
     start('homework',    'klasse', r => { homework = r; });
     start('lessonPlans', 'klasse', r => { lessonPlans = r.sort((a,b) => (b.dato||'').localeCompare(a.dato||'')); });
     start('classPosts',  'klasse', r => { classPosts = r; });
+    start('classPostComments', 'klasse', r => { classPostComments = r; });
+    start('classPollVotes', 'klasse', r => { classPollVotes = r; });
+    start('eventRSVPs', 'klasse', r => { eventRSVPs = r; });
     start('practiceVideos', 'klasse', r => { practiceVideos = r.sort((a,b) => (b.dato||'').localeCompare(a.dato||'')); });
+
+    delOpp(klasser, 30).forEach((del, i) => {
+      onSnapshot(query(collection(db, 'classes'), where(documentId(), 'in', del)), (snap) => {
+        klasseDocDeler[i] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        classes = klasseDocDeler.flat();
+        tegnAktivSkjerm();
+      }, (err) => console.error('classes', err));
+    });
   }
 
   // 🔴 Lærerne hentes etter TIMEPLANEN, ikke etter tildeltKlasse.
@@ -3157,7 +3168,7 @@
       : classTeachers[0];
     const nowIso = new Date().toISOString();
     const threadRef = await addDoc(collection(db, 'messageThreads'), {
-      klasse: child.klasse, teacherId: teacher ? teacher.id : '', guardianId: currentGuardian.id, title,
+      klasse: child.klasse, studentId: child.id, teacherId: teacher ? teacher.id : '', guardianId: currentGuardian.id, title,
       status: 'open', createdAt: nowIso, lastActivityAt: nowIso
     });
     if(titleInput) titleInput.value = '';
@@ -3241,7 +3252,8 @@
       return;
     }
     await addDoc(collection(db, 'classPollVotes'), {
-      postId, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
+      postId, klasse: (classPosts.find(p => p.id === postId) || {}).klasse || '',
+      guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
       optionIndex: parseInt(checked.value, 10), dato: new Date().toISOString()
     });
   };
@@ -3264,12 +3276,14 @@
   }
 
   window.submitEventRsvp = async function(postId, status){
+    const post = classPosts.find(p => p.id === postId);
     const existing = eventRSVPs.find(r => r.postId === postId && r.guardianId === currentGuardian.id);
     if(existing){
       await updateDoc(doc(db, 'eventRSVPs', existing.id), { status, dato: new Date().toISOString() });
     } else {
       await addDoc(collection(db, 'eventRSVPs'), {
-        postId, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn, status, dato: new Date().toISOString()
+        postId, klasse: post ? post.klasse : '',
+        guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn, status, dato: new Date().toISOString()
       });
     }
   };
@@ -3849,7 +3863,8 @@
     if(!tekst) return;
     try{
       await addDoc(collection(db, 'classPostComments'), {
-        postId, fra: 'Foresatt', guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
+        postId, klasse: (classPosts.find(p => p.id === postId) || {}).klasse || '',
+        fra: 'Foresatt', guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
         avsenderNavn: currentGuardian.navn, tekst,
         dato: new Date().toISOString()
       });
