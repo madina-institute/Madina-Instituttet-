@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:25:00 -->
+<!-- SIST-ENDRET: 2026-08-20 23:45:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1465,7 +1465,7 @@
      undervisningsdag» rettet i bare én av dem. Klassisk skript, så det
      er ferdig kjørt før modulen under starter.
      ⚠️ Husk å øke ?v= hver gang skoledager.js endres. -->
-<script src="skoledager.js?v=3"></script>
+<script src="skoledager.js?v=4"></script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -3689,7 +3689,12 @@
     document.getElementById('chooseView').style.display = 'none';
     document.getElementById('myAttendanceView').style.display = 'block';
     const dateEl = document.getElementById('myAttDato');
-    if(dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+    const allowed = getAllowedWeekdays(valgtKlasse);
+    if(dateEl){
+      if(!dateEl.value || !schoolDayInfo(dateEl.value, allowed).ok){
+        dateEl.value = nearestValidDate(allowed);
+      }
+    }
     if(!myAttendanceListenerAttached){
       myAttendanceListenerAttached = true;
       watchQuery('teacherAttendance', () => currentTeacher
@@ -3709,6 +3714,18 @@
     const status = document.getElementById('myAttStatus').value;
     const timer = document.getElementById('myAttTimer').value;
     if(!dato){ notify('Velg en dato.'); return; }
+    const allowed = getAllowedWeekdays(valgtKlasse);
+    const dayInfo = schoolDayInfo(dato, allowed);
+    if(!dayInfo.ok){
+      notify(currentLang === 'ar'
+        ? (dayInfo.label
+            ? `هذا اليوم ليس يوم دراسة (${dayInfo.label}). اختر تاريخًا آخر.`
+            : 'هذا اليوم ليس يوم دراسة. اختر تاريخًا آخر.')
+        : (dayInfo.label
+            ? `Denne datoen er ikke undervisningsdag (${dayInfo.label}). Velg en annen dato.`
+            : 'Denne datoen er ikke undervisningsdag. Velg en annen dato.'));
+      return;
+    }
     if(timer === '' || parseFloat(timer) < 0){ notify('Skriv inn et gyldig antall timer.'); return; }
     try{
       await addDoc(collection(db, 'teacherAttendance'), {
@@ -5371,11 +5388,16 @@
     let ok = allowed.includes(d.getDay());
     let label = '';
     const entries = calendarEntriesFor(iso);
+    const ekstra = entries.find(e => String(e.type || '').indexOf('Ekstra') === 0);
+    if(ekstra){
+      return { ok: true, label: ekstra.beskrivelse || 'Ekstra undervisningsdag' };
+    }
+    if((skolear.startDato && iso < skolear.startDato) || (skolear.sluttDato && iso > skolear.sluttDato)){
+      const fri = entries.find(e => String(e.type || '').indexOf('Fri') === 0);
+      return { ok: false, label: (fri && fri.beskrivelse) || '' };
+    }
     entries.filter(e => String(e.type || '').indexOf('Fri') === 0).forEach(e => {
       ok = false; label = e.beskrivelse || 'Fri';
-    });
-    entries.filter(e => String(e.type || '').indexOf('Ekstra') === 0).forEach(e => {
-      ok = true; label = e.beskrivelse || 'Ekstra undervisningsdag';
     });
     return { ok, label };
   }
@@ -5587,6 +5609,18 @@
     if(!currentTeacher) return;
     const date = document.getElementById('attDate').value;
     if(!date){ showToast(t('selectDateFirst')); return; }
+    const allowed = getAllowedWeekdays(valgtKlasse);
+    const dayInfo = schoolDayInfo(date, allowed);
+    if(!dayInfo.ok){
+      showToast(currentLang === 'ar'
+        ? (dayInfo.label
+            ? `هذا اليوم ليس يوم دراسة (${dayInfo.label}).`
+            : 'هذا اليوم ليس يوم دراسة.')
+        : (dayInfo.label
+            ? `Denne datoen er ikke undervisningsdag (${dayInfo.label}).`
+            : 'Denne datoen er ikke undervisningsdag.'));
+      return;
+    }
     const rows = [...document.querySelectorAll('#studentList .student-row')];
     if(rows.length === 0){ showToast(t('noStudentsToSave')); return; }
     try{
