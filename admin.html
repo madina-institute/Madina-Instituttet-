@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 03:44:57 -->
+<!-- SIST-ENDRET: 2026-08-20 03:57:18 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -15584,6 +15584,9 @@
       let forrige = null;
 
       // Stopp før lagring hvis e-posten alt tilhører en annen person.
+      if(entry.epost && ['guardians','teachers'].includes(editingType)){
+        entry.epost = normEpost(entry.epost);
+      }
       if(entry.epost && !sjekkDuplikatEpost(editingType, entry.epost, editingId)) return;
 
       // Samme foresatt kan ikke stå som både foresatt 1 og 2 på ett barn.
@@ -15774,15 +15777,16 @@
   // En e-post uten navn er en kopiert rute, ikke en person.
   // ═══════════════════════════════════════════════════════════════════
   function byggForeldreIndeks(){
-    const kart = new Map();   // epost → { barn:Set, klasser:Set, navn }
-    const leggTil = (epost, navn, elevId, klasse) => {
+    const kart = new Map();   // epost → { barn:Set, klasser:Set, navn, guardianId }
+    const leggTil = (epost, navn, elevId, klasse, guardianId) => {
       const e = normEpost(epost);
       if(!e || e.indexOf('@') < 1) return;
-      if(!kart.has(e)) kart.set(e, { barn: new Set(), klasser: new Set(), navn: navn || '' });
+      if(!kart.has(e)) kart.set(e, { barn: new Set(), klasser: new Set(), navn: navn || '', guardianId: guardianId || '' });
       const r = kart.get(e);
       if(elevId) r.barn.add(elevId);
       if(klasse) r.klasser.add(klasse);
       if(!r.navn && navn) r.navn = navn;
+      if(guardianId && !r.guardianId) r.guardianId = guardianId;
     };
 
     const foresattePerId = new Map(
@@ -15792,14 +15796,14 @@
       if(!el.id) return;
       [el.foresatt, el.foresatt2].forEach(id => {
         const g = id ? foresattePerId.get(id) : null;
-        if(g) leggTil(g.epost, g.navn, el.id, el.klasse || '');
+        if(g) leggTil(g.epost, g.navn, el.id, el.klasse || '', g.id);
       });
       if(!el.foresatt2 && String(el.foresatt2_navn || '').trim()){
-        leggTil(el.foresatt2_epost, el.foresatt2_navn, el.id, el.klasse || '');
+        leggTil(el.foresatt2_epost, el.foresatt2_navn, el.id, el.klasse || '', '');
       }
     });
 
-    (cache.guardians || []).forEach(g => leggTil(g.epost, g.navn, null, ''));
+    (cache.guardians || []).forEach(g => leggTil(g.epost, g.navn, null, '', g.id));
 
     return kart;
   }
@@ -15826,6 +15830,7 @@
       for(const [epost, r] of kart){
         await setDoc(doc(db, 'foreldreTilgang', epost), {
           epost, navn: r.navn || '',
+          guardianId: r.guardianId || '',
           barn: [...r.barn],
           klasser: [...r.klasser],
           oppdatert: new Date().toISOString()

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 03:40:12 -->
+<!-- SIST-ENDRET: 2026-08-20 03:57:18 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1968,21 +1968,44 @@
       return;
     }
     let guardian = null;
+    let idxData = null;
     const authEpost = String(auth.currentUser?.email || email).trim().toLowerCase();
     try{
-      // Spør på e-posten fra innloggingen — den som reglene og indeksen
-      // kjenner. Kortet kan ha annen skrivemåte; prøv også det brukeren
-      // skrev inn.
-      const epostKandidater = [...new Set([authEpost, email.trim(), email.trim().toLowerCase()].filter(Boolean))];
-      for(const e of epostKandidater){
-        const snap = await getDocs(query(collection(db, 'guardians'), where('epost', '==', e)));
-        const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-        if(treff.length){ guardian = treff[0]; break; }
-      }
+      // foreldreTilgang kan alltid leses av eieren — bruk den FØRST.
+      // Spørring på guardians feilet stille etter trinn 5-reglene.
+      const idxSnap = await getDoc(doc(db, 'foreldreTilgang', authEpost));
+      if(idxSnap.exists()) idxData = idxSnap.data() || null;
     } catch(err){
-      console.error('guardians-oppslag', err);
+      console.error('foreldreTilgang', err);
+    }
+    if(idxData && idxData.guardianId){
+      try{
+        const gSnap = await getDoc(doc(db, 'guardians', idxData.guardianId));
+        if(gSnap.exists()) guardian = { ...gSnap.data(), id: gSnap.id };
+      } catch(err){
+        console.error('guardians/id', err);
+      }
     }
     if(!guardian){
+      try{
+        const epostKandidater = [...new Set([authEpost, email.trim(), email.trim().toLowerCase()].filter(Boolean))];
+        for(const e of epostKandidater){
+          const snap = await getDocs(query(collection(db, 'guardians'), where('epost', '==', e)));
+          const treff = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+          if(treff.length){ guardian = treff[0]; break; }
+        }
+      } catch(err){
+        console.error('guardians-oppslag', err);
+      }
+    }
+    if(!guardian && idxData && (idxData.navn || idxData.guardianId)){
+      guardian = {
+        id: idxData.guardianId || '',
+        navn: idxData.navn || '',
+        epost: authEpost
+      };
+    }
+    if(!guardian && !idxData){
       await signOut(auth).catch(()=>{});
       errEl.textContent = t('guardianCardMissing');
       errEl.style.display = 'block';
@@ -1994,9 +2017,13 @@
     // ser ut til å virke, men ikke viser noen barn.
     let barn = null;
     try{
-      barn = await hentMineBarnIder(authEpost || String(guardian.epost || '').trim().toLowerCase());
+      if(idxData && Array.isArray(idxData.barn)){
+        barn = idxData.barn.filter(Boolean);
+      } else {
+        barn = await hentMineBarnIder(authEpost || String(guardian.epost || '').trim().toLowerCase());
+      }
     } catch(err){
-      console.error('foreldreTilgang', err);
+      console.error('foreldreTilgang/barn', err);
     }
     if(barn === null){
       await signOut(auth).catch(()=>{});
@@ -2015,8 +2042,10 @@
     mineBarnIder = barn;
     minEpost = String(auth.currentUser?.email || guardian.epost || '').trim().toLowerCase();
     startDataListeners();
-    updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
-    addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
+    if(guardian.id){
+      updateDoc(doc(db, 'guardians', guardian.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
+      addDoc(collection(db, 'loginEvents'), { role: 'guardian', personId: guardian.id, timestamp: new Date().toISOString() }).catch(()=>{});
+    }
     document.getElementById('loginView').style.display = 'none';
     // Velkomstskjermen først — portalen åpnes når et barn er valgt.
     visForeldreVelkomst();
