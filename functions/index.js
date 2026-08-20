@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 10:38:39 */
+/* SIST-ENDRET: 2026-08-20 10:51:19 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -313,6 +313,114 @@ async function getVippsAccessToken() {
   }
   const data = await res.json();
   return data.access_token;
+}
+
+function vippsJsonHeaders(accessToken, idempotencyKey) {
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Ocp-Apim-Subscription-Key": VIPPS_SUBSCRIPTION_KEY.value(),
+    "Merchant-Serial-Number": VIPPS_MSN.value(),
+    "Content-Type": "application/json",
+    "Vipps-System-Name": "madina-skole",
+    "Vipps-System-Version": "1.0.0",
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  return headers;
+}
+
+async function fetchVippsPayment(reference, accessToken) {
+  const res = await fetch(`${vippsApiBase()}/epayment/v1/payments/${encodeURIComponent(reference)}`, {
+    method: "GET",
+    headers: vippsJsonHeaders(accessToken),
+  });
+  const bodyText = await res.text();
+  if (!res.ok) {
+    throw new Error(`Kunne ikke hente betalingsstatus (${res.status}): ${bodyText}`);
+  }
+  return JSON.parse(bodyText);
+}
+
+function vippsAggregateOre(payment) {
+  const agg = payment?.aggregate || {};
+  return {
+    authorized: Number(agg.authorizedAmount?.value || 0),
+    captured: Number(agg.capturedAmount?.value || 0),
+    cancelled: Number(agg.cancelledAmount?.value || 0),
+    refunded: Number(agg.refundedAmount?.value || 0),
+  };
+}
+
+function vippsRefundableOre(agg) {
+  return Math.max(0, agg.captured - agg.refunded);
+}
+
+function vippsCaptureableOre(agg) {
+  return Math.max(0, agg.authorized - agg.captured - agg.cancelled);
+}
+
+function formatVippsApiError(bodyText) {
+  try {
+    const err = JSON.parse(bodyText);
+    const code = err.extraDetails?.[0]?.reason || err.extraDetails?.[0]?.name;
+    const detail = err.detail || err.title || bodyText;
+    if (code === "6150" || /not enough refundable/i.test(String(detail))) {
+      return "Beløpet overstiger det som kan refunderes hos Vipps. Sjekk betalingsloggen — kanskje delvis refundert, eller beløpet er autorisert men ikke capturert ennå.";
+    }
+    if (code === "6180") return "Betalingen er allerede refundert hos Vipps.";
+    if (code === "6020") return "Betalingen er ikke reservert hos Vipps — kan ikke refundere ennå.";
+    return detail;
+  } catch (_) {
+    return bodyText;
+  }
+}
+
+async function captureVippsPayment(reference, amountOre, accessToken) {
+  const res = await fetch(`${vippsApiBase()}/epayment/v1/payments/${encodeURIComponent(reference)}/capture`, {
+    method: "POST",
+    headers: vippsJsonHeaders(accessToken, vippsIdempotencyKey("cp", reference, amountOre)),
+    body: JSON.stringify({
+      modificationAmount: { currency: "NOK", value: Math.round(Number(amountOre)) },
+    }),
+  });
+  const bodyText = await res.text();
+  if (!res.ok) {
+    logger.error("Vipps capture failed", bodyText);
+    throw new Error(formatVippsApiError(bodyText));
+  }
+  try {
+    return JSON.parse(bodyText);
+  } catch (_) {
+    return await fetchVippsPayment(reference, accessToken);
+  }
+}
+
+async function ensureVippsRefundable(reference, amountOre, accessToken) {
+  let payment = await fetchVippsPayment(reference, accessToken);
+  let agg = vippsAggregateOre(payment);
+  let refundable = vippsRefundableOre(agg);
+
+  if (amountOre <= refundable) {
+    return { payment, agg, refundableOre: refundable };
+  }
+
+  const captureable = vippsCaptureableOre(agg);
+  if (captureable > 0) {
+    const toCapture = Math.min(amountOre - refundable, captureable);
+    logger.info(`Capturer ${toCapture} øre før refusjon for ${reference}`);
+    payment = await captureVippsPayment(reference, toCapture, accessToken);
+    agg = vippsAggregateOre(payment);
+    refundable = vippsRefundableOre(agg);
+  }
+
+  if (amountOre > refundable) {
+    const maxKr = refundable / 100;
+    throw new Error(
+      `Kan maks refundere ${maxKr} kr for denne betalingen hos Vipps ` +
+      `(capturert ${agg.captured / 100} kr, allerede refundert ${agg.refunded / 100} kr, status ${payment.state || "?"}).`
+    );
+  }
+
+  return { payment, agg, refundableOre: refundable };
 }
 
 // =======================================================================
@@ -1063,6 +1171,49 @@ exports.vippsWebhook = onRequest(
 });
 
 // =======================================================================
+// getVippsPaymentInfo — KUN for Kasserer (Ledelse): henter capturert/
+// refundert beløp fra Vipps slik refusjonsdialogen viser riktig maks.
+//    POST { reference }
+// =======================================================================
+exports.getVippsPaymentInfo = onRequest(
+  { secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY], cors: true },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
+
+    try {
+      const { reference } = req.body || {};
+      if (!reference) {
+        res.status(400).json({ ok: false, error: "Mangler reference." });
+        return;
+      }
+      const accessToken = await getVippsAccessToken();
+      const payment = await fetchVippsPayment(reference, accessToken);
+      const agg = vippsAggregateOre(payment);
+      res.status(200).json({
+        ok: true,
+        state: payment.state || null,
+        authorizedKr: agg.authorized / 100,
+        capturedKr: agg.captured / 100,
+        refundedKr: agg.refunded / 100,
+        refundableKr: vippsRefundableOre(agg) / 100,
+        captureableKr: vippsCaptureableOre(agg) / 100,
+      });
+    } catch (err) {
+      logger.error("getVippsPaymentInfo error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
 // cancelVippsPayment — KUN for Kasserer (Ledelse): avbryter et sendt
 // Vipps-krav FØR foresatte har betalt det (mens det fortsatt er "CREATED"
 // hos Vipps — Vipps avviser forespørselen med en feil hvis det allerede
@@ -1146,25 +1297,25 @@ exports.refundVippsPayment = onRequest(
         return;
       }
       const accessToken = await getVippsAccessToken();
+      const amountOre = Math.round(Number(amountKr) * 100);
+      try {
+        await ensureVippsRefundable(reference, amountOre, accessToken);
+      } catch (prepErr) {
+        res.status(400).json({ ok: false, error: String(prepErr.message || prepErr) });
+        return;
+      }
+
       const refundRes = await fetch(`${vippsApiBase()}/epayment/v1/payments/${encodeURIComponent(reference)}/refund`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Ocp-Apim-Subscription-Key": VIPPS_SUBSCRIPTION_KEY.value(),
-          "Merchant-Serial-Number": VIPPS_MSN.value(),
-          "Content-Type": "application/json",
-          "Idempotency-Key": vippsIdempotencyKey("rf", reference, amountKr, Date.now()),
-          "Vipps-System-Name": "madina-skole",
-          "Vipps-System-Version": "1.0.0",
-        },
+        headers: vippsJsonHeaders(accessToken, vippsIdempotencyKey("rf", reference, amountKr, Date.now())),
         body: JSON.stringify({
-          modificationAmount: { currency: "NOK", value: Math.round(Number(amountKr) * 100) },
+          modificationAmount: { currency: "NOK", value: amountOre },
         }),
       });
       if (!refundRes.ok) {
         const body = await refundRes.text();
         logger.error("Vipps refund failed", body);
-        res.status(502).json({ ok: false, error: "Vipps avviste refusjonen: " + body });
+        res.status(502).json({ ok: false, error: "Vipps avviste refusjonen: " + formatVippsApiError(body) });
         return;
       }
 

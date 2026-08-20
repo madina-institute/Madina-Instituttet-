@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 10:38:39 -->
+<!-- SIST-ENDRET: 2026-08-20 10:51:19 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -3668,6 +3668,7 @@
       <h3>💸 Refunder Vipps-betaling</h3>
       <div class="field"><label>Elev</label><input type="text" id="ledelseRefundStudentName" disabled></div>
       <div class="field"><label>Beløp å refundere (kr)</label><input type="number" id="ledelseRefundAmount" min="1" step="1"></div>
+      <p id="ledelseRefundVippsHint" class="sub" style="margin:0 0 12px;line-height:1.5;color:#5a6860;"></p>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeCashierOverlay('ledelseRefundOverlay')">Avbryt</button>
         <button class="btn btn-primary" onclick="submitLedelseRefund()">Refunder</button>
@@ -7670,7 +7671,9 @@
         : '<span style="color:#8a9a90;">Ingen ennå</span>';
       const checked = cashierSelectedIds.has(s.id) ? 'checked' : '';
       const pending = (cache.pendingVippsPayments || []).filter(p => p.studentId === s.id);
-      const lastVippsPayment = history.find(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0);
+      const lastVippsPayment = history
+        .filter(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0)
+        .sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
       const pendingHtml = isEier && pending.length
         ? `<div class="cashier-pending">${pending.map(p => `
             <div class="cashier-pending-row">
@@ -8999,6 +9002,7 @@
 
   const CANCEL_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/cancelVippsPayment';
   const REFUND_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/refundVippsPayment';
+  const GET_VIPPS_INFO_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/getVippsPaymentInfo';
 
   // Kontonummeret ligger IKKE i koden lenger. Det settes under
   // Økonomi → Betalingsinnstillinger og leses fra settings/priser.
@@ -9049,7 +9053,9 @@
       const betalt = cashierKr(s.belopBetalt);
       const rest = belop - betalt;
       const history = cache.studentPayments.filter(p => p.studentId === s.id);
-      const lastVippsPayment = history.find(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0);
+      const lastVippsPayment = history
+        .filter(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0)
+        .sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
       const pending = cache.pendingVippsPayments.filter(p => p.studentId === s.id);
 
       const pendingHtml = pending.length === 0
@@ -9114,14 +9120,44 @@
 
   // ---- Refusjon: kaller refundVippsPayment for en allerede betalt innbetaling ----
   let ledelseRefundTargetId = null, ledelseRefundReference = null;
-  window.openLedelseRefundModal = function(studentId, reference, maxAmount){
+  window.openLedelseRefundModal = async function(studentId, reference, maxAmount){
     const student = cache.students.find(s => s.id === studentId);
     if(!student) return;
     ledelseRefundTargetId = studentId;
     ledelseRefundReference = reference;
     document.getElementById('ledelseRefundStudentName').value = student.navn || '';
-    document.getElementById('ledelseRefundAmount').value = maxAmount;
+    const amountInput = document.getElementById('ledelseRefundAmount');
+    const hintEl = document.getElementById('ledelseRefundVippsHint');
+    amountInput.value = maxAmount;
+    amountInput.removeAttribute('max');
+    hintEl.textContent = 'Henter refunderbart beløp fra Vipps...';
     openCashierOverlay('ledelseRefundOverlay');
+    try {
+      const data = await kallVippsFunksjon(GET_VIPPS_INFO_URL, { reference });
+      if(data.ok){
+        const suggested = data.refundableKr > 0
+          ? Math.min(maxAmount, data.refundableKr)
+          : (data.captureableKr > 0 ? Math.min(maxAmount, data.captureableKr) : 0);
+        if(suggested > 0) amountInput.value = suggested;
+        const maxRefundable = data.refundableKr > 0 ? data.refundableKr : data.captureableKr;
+        if(maxRefundable > 0) amountInput.max = maxRefundable;
+        if(data.refundableKr > 0){
+          hintEl.textContent = 'Refunderbart hos Vipps: ' + data.refundableKr.toLocaleString('no-NO') +
+            ' kr (capturert ' + data.capturedKr.toLocaleString('no-NO') + ' kr, refundert ' +
+            data.refundedKr.toLocaleString('no-NO') + ' kr).';
+        } else if(data.captureableKr > 0){
+          hintEl.textContent = 'Betalingen er autorisert men ikke capturert ennå. Ved refusjon captures beløpet først (' +
+            data.captureableKr.toLocaleString('no-NO') + ' kr tilgjengelig).';
+        } else {
+          hintEl.textContent = 'Ingen refunderbart beløp hos Vipps (status: ' + (data.state || 'ukjent') + ').';
+        }
+      } else {
+        hintEl.textContent = 'Kunne ikke hente Vipps-status — bruker beløp fra skolens register.';
+      }
+    } catch(err){
+      console.error(err);
+      hintEl.textContent = 'Kunne ikke hente Vipps-status — bruker beløp fra skolens register.';
+    }
   };
 
   window.submitLedelseRefund = async function(){
@@ -9131,6 +9167,11 @@
     const id = ledelseRefundTargetId, reference = ledelseRefundReference;
     const amount = parseFloat(document.getElementById('ledelseRefundAmount').value);
     if(!amount || amount <= 0){ showToast('Skriv inn et gyldig beløp større enn 0.', true); return; }
+    const vippsMax = parseFloat(document.getElementById('ledelseRefundAmount').getAttribute('max'));
+    if(!isNaN(vippsMax) && amount > vippsMax){
+      showToast('Beløpet overstiger det refunderbare hos Vipps (' + vippsMax.toLocaleString('no-NO') + ' kr).', true);
+      return;
+    }
     if(!confirm('Refundere ' + amount + ' kr via Vipps til foresatte? Dette kan ikke angres.')) return;
     showToast('Sender refusjon til Vipps...');
     try{
