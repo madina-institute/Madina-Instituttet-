@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:23:20 -->
+<!-- SIST-ENDRET: 2026-08-20 22:45:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -386,6 +386,82 @@
   .assistent-modus .plan-les-hint{ display:block !important; }
   .assistent-modus #monthlyPlanView .sub:first-of-type,
   .assistent-modus #semesterPlanView .sub:first-of-type{ display:none; }
+
+  /* Fagplan / årsplan — read-only (same visual language as admin) */
+  .plan-les-kort{background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px; box-shadow:var(--shadow);}
+  .fp-spor{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+  .fp-spor.les{grid-template-columns:1fr;}
+  .fp-sporkol{min-width:0;}
+  .fp-sporhode{display:flex; align-items:baseline; gap:9px; padding:0 0 8px; border-bottom:1px solid var(--line); margin-bottom:8px;}
+  .fp-sporhode h4{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:16px; margin:0; color:var(--emerald-d);}
+  .fp-sporhode .n{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold);}
+  .fp-liste{display:flex; flex-direction:column; gap:8px;}
+  .fp-kap{border:1px solid var(--line); border-radius:9px; background:#fff; overflow:hidden;}
+  .fp-kap-hode{display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer;}
+  .fp-pil{color:var(--gold); flex:none;}
+  .fp-kap-linje{padding:0 14px 11px;}
+  .fp-kap-under{display:flex; justify-content:space-between; gap:10px; font-family:'Jost',sans-serif; font-size:11px; color:#8a9a90;}
+  .fp-kap-navn{font-weight:600; color:var(--emerald-d); flex:1 1 140px; min-width:0;}
+  .fp-merke{font-family:'Jost',sans-serif; font-size:11px; padding:2px 8px; border-radius:999px; background:var(--paper-2); color:#5a6860; white-space:nowrap;}
+  .fp-merke.avvik{background:#f7e3e3; color:#a83c3c;}
+  .fp-okter{border-top:1px solid var(--line); padding:6px 0; display:none;}
+  .fp-kap.apen .fp-okter{display:block;}
+  .fp-okt-rad{display:flex; align-items:center; gap:10px; padding:8px 14px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; border-bottom:1px solid var(--paper-2);}
+  .fp-okt-rad:hover{background:var(--paper);}
+  .fp-okt-nr{min-width:26px; color:var(--gold); font-weight:700;}
+  .fp-okt-tittel{flex:1 1 auto; min-width:0;}
+  .fp-mal{padding:9px 14px; font-family:'Jost',sans-serif; font-size:11.5px; color:#5a6860; background:var(--paper);}
+  .fp-tomt{padding:10px 14px; font-family:'Jost',sans-serif; font-size:12.5px; color:#8a9a90;}
+  .fp-noekkel{display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:10px; margin:14px 0;}
+  .fp-noekkel .t{display:block; font-family:'Cormorant Garamond',serif; font-weight:700; font-size:22px; color:var(--emerald-d);}
+  .fp-noekkel .e{display:block; font-family:'Jost',sans-serif; font-size:10.5px; color:#8a9a90;}
+  .fp-fot{font-family:'Jost',sans-serif; font-size:11.5px; color:#8a9a90; margin:8px 0 0;}
+  .fp-lest{background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-family:'Jost',sans-serif; font-size:12.5px; color:#3c5a4a; white-space:pre-wrap; line-height:1.55;}
+  .bar-track{background:var(--paper-2); border-radius:6px; height:9px; overflow:hidden;}
+  .bar-fill{background:linear-gradient(90deg,var(--emerald),var(--gold)); height:100%; border-radius:6px;}
+  .ap-tab{border-collapse:collapse; width:100%; font-family:'Jost',sans-serif; font-size:12.5px;}
+  .ap-tab th{text-align:start; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:#8a9a90; padding:6px 9px; border-bottom:2px solid var(--line);}
+  .ap-tab td{padding:8px 9px; border-bottom:1px solid var(--paper-2); vertical-align:top;}
+  .ap-tab .ap-dato{white-space:nowrap; color:var(--emerald-d); font-weight:600;}
+  .ap-tab .ap-liten{font-size:11px; color:#8a9a90;}
+  .ap-tab tr.ap-holdt td{background:var(--paper); color:#8a9a90;}
+  .ap-tab tr.ap-ferie td{background:#fdf4f4; color:#8a5a5a;}
+  .ap-tab tr.ap-ekstra td{background:#fbf7ea; color:#7a6a3a;}
+  .ap-valg{display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 4px;}
+  .ap-chip{display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:1px solid var(--line); background:#fff; color:#5a6860; font-family:'Jost',sans-serif; font-size:12.5px; padding:6px 12px; border-radius:999px;}
+  .ap-chip.pa{border-color:var(--emerald); background:#e8f1ec; color:var(--emerald-d); font-weight:600;}
+  .ap-chip .n{font-size:10.5px; color:var(--gold);}
+  .ap-mnd-liste{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .ap-dag{border:1px solid var(--line); border-radius:9px; background:#fff; overflow:hidden;}
+  .ap-dag-hode{padding:9px 14px; background:var(--paper); border-bottom:1px solid var(--line); font-family:'Jost',sans-serif; font-size:12.5px; font-weight:600; color:var(--emerald-d);}
+  .ap-dag-linje{display:flex; gap:12px; padding:10px 14px; border-bottom:1px solid var(--paper-2); font-family:'Jost',sans-serif; font-size:12.5px;}
+  .ap-dag-linje:last-child{border-bottom:none;}
+  .ap-spor{flex:0 0 88px; color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
+  .ap-innhold{flex:1 1 auto; min-width:0; color:#3c5a4a; line-height:1.5;}
+  .ap-innhold .ap-mal{color:#5a6860; font-size:12px; margin-top:3px;}
+  .ap-innhold .ap-lekse{color:#7a6a3a; font-size:12px; margin-top:3px; font-style:italic;}
+  .ok-kort{background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); margin:8px 10px 12px; overflow:hidden;}
+  .ok-hode{display:flex; align-items:flex-start; gap:12px; padding:15px 18px 13px; background:linear-gradient(135deg,#f4f9f6 0%, #eaf2ed 100%); border-bottom:1px solid var(--line);}
+  .ok-nr{flex:none; width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--emerald-d); color:#fff; font-family:'Jost',sans-serif; font-weight:700; font-size:14px;}
+  .ok-tittel{flex:1 1 auto; min-width:0;}
+  .ok-tittel h4{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:17px; color:var(--emerald-d); margin:0 0 2px;}
+  .ok-under{font-family:'Jost',sans-serif; font-size:11.5px; color:var(--gold); text-transform:uppercase; letter-spacing:.04em;}
+  .ok-lukk{flex:none; background:transparent; border:none; cursor:pointer; color:#8a9a90; font-size:16px; padding:4px 6px;}
+  .ok-mal{margin:0; padding:13px 18px; background:#f7fbf8; border-bottom:1px solid var(--paper-2); font-family:'Jost',sans-serif; font-size:13px; color:var(--emerald-d);}
+  .ok-bolk{display:flex; gap:16px; padding:13px 18px; border-bottom:1px solid var(--paper-2);}
+  .ok-etikett{flex:0 0 146px; font-family:'Jost',sans-serif; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--gold); padding-top:2px;}
+  .ok-innhold{flex:1 1 auto; min-width:0; font-family:'Jost',sans-serif; font-size:12.5px; color:#3c5a4a; line-height:1.6;}
+  .ok-innhold p{margin:0 0 8px;}
+  .ok-liste{margin:0; padding-inline-start:18px;}
+  .ok-tid{display:flex; gap:12px; padding:4px 0; border-bottom:1px solid var(--paper-2);}
+  .ok-tid .min{flex:0 0 56px; color:var(--gold); font-weight:600;}
+  .ok-spm{padding:7px 0; border-bottom:1px solid var(--paper-2);}
+  .ok-spm .q{font-weight:600; color:var(--emerald-d);}
+  .ok-spm .a{color:#5a6860; padding-inline-start:14px;}
+  .ok-ord{margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 12px;}
+  .ok-ord dt{font-weight:600; color:var(--emerald-d);}
+  .ok-ord dd{margin:0; color:#5a6860;}
+  @media(max-width:600px){ .ok-bolk{flex-direction:column; gap:5px;} .ok-etikett{flex:none;} .ap-dag-linje{flex-direction:column; gap:3px;} .ap-spor{flex:none;} }
   img, video, canvas{ max-width:100%; height:auto; }
   .home-greeting h2{ margin:0 0 4px; }
   .home-greeting .date{ color:#6b7a72; font-size:14.5px; text-transform:capitalize; }
@@ -876,6 +952,8 @@
         <div class="menu-card" onclick="navTo('lesson', showLesson)"><div class="ic">📅</div><div class="t" data-i18n="menuLessonPrep">Timeforberedelse</div></div>
         <div class="menu-card" onclick="navTo('monthlyPlan', showMonthlyPlan)"><div class="ic">🗂️</div><div class="t" data-i18n="menuMonthlyPlan">Månedsplan</div></div>
         <div class="menu-card" onclick="navTo('semesterPlan', showSemesterPlan)"><div class="ic">🗃️</div><div class="t" data-i18n="menuSemesterPlan">Semesterplan</div></div>
+        <div class="menu-card" onclick="navTo('fagplan', showFagplan)"><div class="ic">📖</div><div class="t" data-i18n="menuFagplan">Fagplan</div></div>
+        <div class="menu-card" onclick="navTo('arsplan', showArsplan)"><div class="ic">📆</div><div class="t" data-i18n="menuArsplan">Årsplan</div></div>
         <div class="menu-card" onclick="navTo('homework', showHomework)"><div class="ic">📚</div><div class="t" data-i18n="menuHomework">Lekser</div></div>
         <div class="menu-card" onclick="navTo('videos', showVideos)"><div class="ic">🎥</div><div class="t" data-i18n="videosLbl">Treningsvideoer</div></div>
         <div class="menu-card" onclick="navTo('studentNotes', showStudentNotes)"><div class="ic">✍️</div><div class="t" data-i18n="menuStudentNotes">Elevnotater</div></div>
@@ -1084,6 +1162,30 @@
       <hr class="divider">
       <h3 style="margin-top:0;">Tidligere innsendte semesterplaner</h3>
       <div id="semesterPlanList"></div>
+    </div>
+
+    <!-- FAGPLAN (read-only) -->
+    <div class="card" id="fagplanView" style="display:none;">
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <h2 data-i18n="menuFagplan">Fagplan</h2>
+      <div class="sub" data-i18n="fagplanSub">Pensum for alle fag — kun lesing</div>
+      <div class="field">
+        <label data-i18n="fagplanSelectLabel">Velg fagplan</label>
+        <select id="lpFpVelger" onchange="lpFpVelg(this.value)"></select>
+      </div>
+      <div id="lpFpInnhold"></div>
+    </div>
+
+    <!-- ÅRSPLAN (read-only) -->
+    <div class="card" id="arsplanView" style="display:none;">
+      <button class="back-link" onclick="history.back()" data-i18n="back">← Tilbake</button>
+      <h2 data-i18n="menuArsplan">Årsplan</h2>
+      <div class="sub" data-i18n="arsplanSub">Skoleårets plan per klasse — kun lesing</div>
+      <div class="field">
+        <label data-i18n="arsplanSelectLabel">Velg klasse</label>
+        <select id="lpApKlasse" onchange="lpApVelgKlasse(this.value)"></select>
+      </div>
+      <div id="lpApInnhold"></div>
     </div>
 
     <!-- HOMEWORK VIEW -->
@@ -1635,6 +1737,9 @@
       menuHome: 'Hjem', menuAttendanceHub: 'Oppmøte', menuTeaching: 'Undervisning', menuMessages: 'Melding',
       menuTakeAttendance: 'Ta oppmøte', menuMyHours: 'Mitt oppmøte/timer', menuAbsenceReview: 'Fraværsmeldinger',
       menuLessonPrep: 'Timeforberedelse', menuMonthlyPlan: 'Månedsplan', menuSemesterPlan: 'Semesterplan',
+      menuFagplan: 'Fagplan', menuArsplan: 'Årsplan',
+      fagplanSub: 'Pensum for alle fag — kun lesing', arsplanSub: 'Skoleårets plan per klasse — kun lesing',
+      fagplanSelectLabel: 'Velg fagplan', arsplanSelectLabel: 'Velg klasse',
       menuHomework: 'Lekser', menuStudentNotes: 'Elevnotater', menuParentMsg: 'Meldinger', menuAdminMsg: 'Fra administrasjonen',
       menuClassPosts: 'Klassemelding', homeAbsenceLbl: 'Fravær til behandling', homeUnreadLbl: 'Uleste meldinger',
       homePrepLbl: 'Neste timeforberedelse', switchClassBtn: '🏫 Bytt klasse'
@@ -1767,6 +1872,9 @@
       menuHome: 'الرئيسية', menuAttendanceHub: 'الحضور', menuTeaching: 'التدريس', menuMessages: 'الرسائل',
       menuTakeAttendance: 'تسجيل الحضور', menuMyHours: 'حضوري/ساعاتي', menuAbsenceReview: 'بلاغات الغياب',
       menuLessonPrep: 'تحضير الحصة', menuMonthlyPlan: 'خطة شهرية', menuSemesterPlan: 'خطة فصلية',
+      menuFagplan: 'خطة المادة', menuArsplan: 'الخطة السنوية',
+      fagplanSub: 'مناهج جميع المواد — للقراءة فقط', arsplanSub: 'خطة السنة لكل صف — للقراءة فقط',
+      fagplanSelectLabel: 'اختر خطة المادة', arsplanSelectLabel: 'اختر الصف',
       menuHomework: 'الواجبات', menuStudentNotes: 'ملاحظات الطلاب', menuParentMsg: 'رسائل', menuAdminMsg: 'من الإدارة',
       menuClassPosts: 'رسالة الصف', homeAbsenceLbl: 'غياب بانتظار المعالجة', homeUnreadLbl: 'رسائل غير مقروءة',
       homePrepLbl: 'تحضير الحصة القادمة', switchClassBtn: '🏫 تغيير الصف'
@@ -2417,6 +2525,18 @@
     if(currentTeacher) tegnVelkomst();
   }, (err) => console.error('settings/skolear', err));
 
+  // Fagplan og årsplan — read-only for lærere (samme data som admin).
+  let fagplanCache = [];
+  let arsplanCache = [];
+  onSnapshot(collection(db, 'fagplan'), (snap) => {
+    fagplanCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if(document.getElementById('fagplanView') && document.getElementById('fagplanView').style.display !== 'none') lpFpRender();
+  }, (err) => console.error('fagplan', err));
+  onSnapshot(collection(db, 'arsplan'), (snap) => {
+    arsplanCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if(document.getElementById('arsplanView') && document.getElementById('arsplanView').style.display !== 'none') lpApRender();
+  }, (err) => console.error('arsplan', err));
+
   watch('schoolCalendar', (snap) => {
     schoolCalendar = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     materSkoledager();
@@ -3012,6 +3132,8 @@
       }
       else if(view === 'monthlyPlan') navTo('monthlyPlan', showMonthlyPlan);
       else if(view === 'semesterPlan') navTo('semesterPlan', showSemesterPlan);
+      else if(view === 'fagplan') navTo('fagplan', showFagplan);
+      else if(view === 'arsplan') navTo('arsplan', showArsplan);
       else if(view === 'homework') navTo('homework', showHomework);
       else if(view === 'homeworkArchive') showHomeworkArchive();
       else if(view === 'absenceReview') navTo('absenceReview', showAbsenceReview);
@@ -3050,6 +3172,8 @@
     document.getElementById('adminMsgsThreadView').style.display = 'none';
     document.getElementById('monthlyPlanView').style.display = 'none';
     document.getElementById('semesterPlanView').style.display = 'none';
+    document.getElementById('fagplanView').style.display = 'none';
+    document.getElementById('arsplanView').style.display = 'none';
     document.getElementById('homeworkView').style.display = 'none';
     document.getElementById('homeworkArchiveView').style.display = 'none';
     document.getElementById('absenceReviewView').style.display = 'none';
@@ -5648,6 +5772,355 @@ ${extraScript || ''}
       console.error(err);
       notify((currentLang === 'ar' ? 'حدث خطأ: ' : 'En feil oppstod: ') + err.message);
     }
+  }
+
+  }
+
+  // ===== FAGPLAN / ÅRSPLAN (read-only — same content as admin, no edit) =====
+  let lpFpValgt = '';
+  let lpFpOkter = [];
+  let lpFpOkterFor = '';
+  let lpFpApneKap = new Set();
+  let lpFpApenOkt = '';
+  let lpApKlasseId = '';
+  let lpApVisning = 'ar';
+  let lpApVisAlle = false;
+  let lpApOkter = [];
+  let lpApOkterFor = '';
+
+  function lpFpSider(s){
+    if(!Array.isArray(s) || s.length === 0) return '';
+    if(s.length === 1 || s[0] === s[1]) return 's. ' + s[0];
+    return 's. ' + s[0] + '–' + s[1];
+  }
+
+  async function lpHentOkter(planId, mal){
+    if(!planId) return [];
+    if(mal && lpFpOkterFor === planId) return lpFpOkter;
+    if(!mal && lpApOkterFor === planId) return lpApOkter;
+    try{
+      const snap = await getDocs(collection(db, 'fagplan', planId, 'okter'));
+      const liste = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      if(mal){ lpFpOkter = liste; lpFpOkterFor = planId; return lpFpOkter; }
+      lpApOkter = liste; lpApOkterFor = planId; return lpApOkter;
+    }catch(err){
+      console.error('lpHentOkter', err);
+      return [];
+    }
+  }
+
+  window.showFagplan = async function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('fagplanView').style.display = 'block';
+    if(!lpFpValgt && fagplanCache.length){
+      const sortert = [...fagplanCache].sort((a, b) => String(a.fag || a.navn || '').localeCompare(String(b.fag || b.navn || ''), 'no'));
+      lpFpValgt = sortert[0].id;
+    }
+    if(lpFpValgt && lpFpOkterFor !== lpFpValgt) await lpHentOkter(lpFpValgt, true);
+    lpFpRender();
+    pushAppView('fagplan');
+  };
+
+  window.showArsplan = async function(){
+    document.getElementById('chooseView').style.display = 'none';
+    document.getElementById('arsplanView').style.display = 'block';
+    if(!lpApKlasseId && valgtKlasse) lpApKlasseId = valgtKlasse;
+    if(lpApKlasseId){
+      const klasse = classes.find(c => c.id === lpApKlasseId);
+      const planId = lpApPlanIdFor(klasse);
+      if(planId && lpApOkterFor !== planId) await lpHentOkter(planId, false);
+    }
+    lpApRender();
+    pushAppView('arsplan');
+  };
+
+  window.lpFpVelg = async function(planId){
+    lpFpValgt = planId || '';
+    lpFpApneKap = new Set();
+    lpFpApenOkt = '';
+    if(planId) await lpHentOkter(planId, true);
+    lpFpRender();
+  };
+
+  window.lpApVelgKlasse = async function(klasseId){
+    lpApKlasseId = klasseId || '';
+    lpApVisning = 'ar';
+    lpApVisAlle = false;
+    if(klasseId){
+      const klasse = classes.find(c => c.id === klasseId);
+      const planId = lpApPlanIdFor(klasse);
+      if(planId) await lpHentOkter(planId, false);
+    }
+    lpApRender();
+  };
+
+  window.lpFpApneKapittel = function(kapId){
+    if(lpFpApneKap.has(kapId)) lpFpApneKap.delete(kapId); else lpFpApneKap.add(kapId);
+    lpFpApenOkt = '';
+    lpFpRender();
+  };
+
+  window.lpFpApneOkt = function(oktId){
+    lpFpApenOkt = lpFpApenOkt === oktId ? '' : oktId;
+    lpFpRender();
+  };
+
+  window.lpApVis = function(hva){ lpApVisning = hva; lpApVisAlle = false; lpApRender(); };
+  window.lpApVisAlt = function(){ lpApVisAlle = !lpApVisAlle; lpApRender(); };
+
+  function lpApDokId(klasseId){
+    const y = skolear.startDato ? parseInt(String(skolear.startDato).slice(0, 4), 10) : new Date().getFullYear();
+    return klasseId + '_' + y + '-' + (y + 1);
+  }
+
+  function lpApPlanIdFor(klasse){
+    const ft = (klasse && klasse.fagtrinn) || {};
+    return Object.values(ft).filter(Boolean)[0] || '';
+  }
+
+  function lpFpRender(){
+    const velger = document.getElementById('lpFpVelger');
+    const el = document.getElementById('lpFpInnhold');
+    if(!velger || !el) return;
+    const planer = [...fagplanCache].sort((a, b) => String(a.fag || a.navn || a.id).localeCompare(String(b.fag || b.navn || b.id), 'no'));
+    if(planer.length === 0){
+      velger.innerHTML = '<option value="">—</option>';
+      el.innerHTML = '<div class="fp-lest">' + (currentLang === 'ar' ? 'لا توجد خطط مواد بعد.' : 'Ingen fagplaner er importert ennå.') + '</div>';
+      return;
+    }
+    velger.innerHTML = '<option value="">— ' + (currentLang === 'ar' ? 'اختر' : 'Velg') + ' —</option>' +
+      planer.map(p => '<option value="' + escapeHtml(p.id) + '">' + escapeHtml((p.fag ? p.fag + ' · ' : '') + (p.navn || p.id)) + '</option>').join('');
+    if(planer.some(p => p.id === lpFpValgt)) velger.value = lpFpValgt;
+    else if(!lpFpValgt && planer.length) lpFpValgt = planer[0].id;
+    if(velger.value !== lpFpValgt && lpFpValgt) velger.value = lpFpValgt;
+    const plan = planer.find(p => p.id === lpFpValgt);
+    if(!plan){ el.innerHTML = ''; return; }
+    el.innerHTML = lpFpPlanHode(plan) + lpFpKapitler(plan);
+  }
+
+  function lpFpPlanHode(plan){
+    const kap = Array.isArray(plan.kapitler) ? plan.kapitler : [];
+    const vil = kap.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
+    const har = lpFpOkter.length;
+    const lordager = Math.max(...['A', 'B'].map(sp =>
+      kap.filter(k => k.spor === sp).reduce((s, k) => s + (Number(k.antallOkter) || 0), 0)), 0);
+    const holdt = (plan.reserverte || []).reduce((s, r) => s + (Number(r.antall) || 0), 0);
+    return `
+      <div class="plan-les-kort">
+        <h3 style="margin:0 0 4px; font-family:'Cormorant Garamond',serif; color:var(--emerald-d);">${escapeHtml(plan.navn || plan.id)}</h3>
+        <div class="sub">${escapeHtml((plan.bok && plan.bok.tittel) || plan.fag || '')}</div>
+        <div class="fp-noekkel">
+          <div><span class="t">${lordager}</span><span class="e">${currentLang === 'ar' ? 'سبت في المنهج' : 'lørdager i pensum'}</span></div>
+          <div><span class="t">${holdt}</span><span class="e">${currentLang === 'ar' ? 'محجوز للمراجعة' : 'holdt av til repetisjon'}</span></div>
+          <div><span class="t">${har}<span style="font-size:16px;color:var(--gold);">/${vil}</span></span><span class="e">${currentLang === 'ar' ? 'حصص مكتوبة' : 'økter skrevet'}</span></div>
+        </div>
+        <p class="fp-fot">${currentLang === 'ar' ? 'للقراءة فقط — لا يمكن التعديل من بوابة المعلمين.' : 'Kun lesing — kan ikke endres fra lærerportalen.'}</p>
+      </div>`;
+  }
+
+  function lpFpKapitler(plan){
+    const kap = Array.isArray(plan.kapitler) ? plan.kapitler : [];
+    const rk = plan.rekkefolge || {};
+    const spor = (plan.spor || []).length ? plan.spor : [{ id: 'A', navn: 'Spor A' }, { id: 'B', navn: 'Spor B' }];
+    const kolonner = spor.map(sp => {
+      const ids = rk[sp.id] || kap.filter(k => k.spor === sp.id).map(k => k.id);
+      const mine = ids.map(id => kap.find(k => k.id === id)).filter(Boolean);
+      const sum = mine.reduce((s, k) => s + (Number(k.antallOkter) || 0), 0);
+      return `<div class="fp-sporkol"><div class="fp-sporhode"><h4>${escapeHtml(sp.navn || sp.id)}</h4><span class="n">${sum} ${currentLang === 'ar' ? 'حصة' : 'økter'}</span></div><div class="fp-liste">${mine.map(k => lpFpKapittelkort(k, sum)).join('')}</div></div>`;
+    }).join('');
+    return '<div class="fp-spor' + (lpFpApenOkt ? ' les' : '') + '" style="margin-top:16px;">' + kolonner + '</div>';
+  }
+
+  function lpFpKapittelkort(k, sporSum){
+    const mine = lpFpOkter.filter(o => o.kapittel === k.id).sort((a, b) => (a.nr || 0) - (b.nr || 0));
+    const vil = Number(k.antallOkter) || 0;
+    const apen = lpFpApneKap.has(k.id);
+    const andel = sporSum > 0 ? Math.round((vil / sporSum) * 100) : 0;
+    return `
+      <div class="fp-kap${apen ? ' apen' : ''}">
+        <div class="fp-kap-hode" onclick="lpFpApneKapittel('${escapeHtml(k.id)}')">
+          <span class="fp-pil">${apen ? '▾' : '▸'}</span>
+          <span class="fp-kap-navn">${escapeHtml(k.tittel || k.id)}</span>
+          <span class="fp-merke${mine.length !== vil ? ' avvik' : ''}">${mine.length}/${vil}</span>
+        </div>
+        <div class="fp-kap-linje"><div class="bar-track"><div class="bar-fill" style="width:${andel}%;"></div></div>
+          <div class="fp-kap-under"><span>${escapeHtml(lpFpSider(k.sider))}</span><span>${vil} økter</span></div></div>
+        <div class="fp-okter">
+          ${k.mal && k.mal.length ? `<div class="fp-mal">🎯 ${(k.mal || []).map(m => escapeHtml(m)).join(' · ')}</div>` : ''}
+          ${mine.length === 0 ? '<div class="fp-tomt">—</div>' : mine.map(o => lpFpApenOkt === o.id ? lpFpOktKort(o) : `
+            <div class="fp-okt-rad" onclick="lpFpApneOkt('${escapeHtml(o.id)}')">
+              <span class="fp-okt-nr">${o.nr}</span><span class="fp-okt-tittel">${escapeHtml(o.tittel || '')}</span>
+              <span class="fp-merke">${escapeHtml(lpFpSider(o.sider))}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  function lpFpOktKort(o){
+    const bolk = (etikett, innhold) => innhold ? `<div class="ok-bolk"><div class="ok-etikett">${etikett}</div><div class="ok-innhold">${innhold}</div></div>` : '';
+    const liste = (v) => (Array.isArray(v) && v.length) ? '<ul class="ok-liste">' + v.map(x => '<li>' + escapeHtml(String(x)) + '</li>').join('') + '</ul>' : '';
+    const avsnitt = (v) => (Array.isArray(v) && v.length) ? v.map(x => '<p>' + escapeHtml(String(x)) + '</p>').join('') : '';
+    const timeplan = (o.timeplan || []).map(l => {
+      const m = String(l).match(/^\s*([\d\u2013\u2014-]+)\s+(.*)$/);
+      return m ? `<div class="ok-tid"><span class="min">${escapeHtml(m[1])}</span><span>${escapeHtml(m[2])}</span></div>`
+               : `<div class="ok-tid"><span class="min"></span><span>${escapeHtml(String(l))}</span></div>`;
+    }).join('');
+    const sp = (o.sporsmal || []).map(p => {
+      const spm = Array.isArray(p) ? p[0] : (p && p.spm);
+      const svar = Array.isArray(p) ? p[1] : (p && p.svar);
+      return `<div class="ok-spm"><div class="q">${escapeHtml(spm || '')}</div><div class="a">${escapeHtml(svar || '')}</div></div>`;
+    }).join('');
+    const nk = Object.entries(o.nokkelord || {});
+    return `
+      <div class="ok-kort">
+        <div class="ok-hode">
+          <span class="ok-nr">${o.nr}</span>
+          <div class="ok-tittel"><h4>${escapeHtml(o.tittel || '')}</h4>
+            <div class="ok-under">${escapeHtml(o.kapittelTittel || o.kapittel || '')}${o.sider ? ' · ' + escapeHtml(lpFpSider(o.sider)) : ''}</div></div>
+          <button class="ok-lukk" onclick="lpFpApneOkt('${escapeHtml(o.id)}')" title="Lukk">✕</button>
+        </div>
+        ${o.mal ? `<div class="ok-mal">🎯 ${escapeHtml(o.mal)}</div>` : ''}
+        ${timeplan ? bolk(currentLang === 'ar' ? 'سير الحصة' : 'Slik går timen', timeplan) : ''}
+        ${bolk('Bakgrunn', avsnitt(o.bakgrunn))}
+        ${bolk('Kjernen', liste(o.kjerne))}
+        ${sp ? bolk(currentLang === 'ar' ? 'أسئلة' : 'Spørsmål', sp) : ''}
+        ${bolk('Aktivitet', o.aktivitet ? '<p>' + escapeHtml(o.aktivitet) + '</p>' : '')}
+        ${bolk('Lekser', o.lekser ? '<p>' + escapeHtml(o.lekser) + '</p>' : '')}
+        ${nk.length ? bolk('Nøkkelord', '<dl class="ok-ord">' + nk.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(String(v))}</dd>`).join('') + '</dl>') : ''}
+      </div>`;
+  }
+
+  function lpApRender(){
+    const velger = document.getElementById('lpApKlasse');
+    const el = document.getElementById('lpApInnhold');
+    if(!velger || !el) return;
+    const klasser = [...classes].filter(c => c.navn).sort((a, b) => String(a.navn).localeCompare(String(b.navn), 'no'));
+    velger.innerHTML = '<option value="">— ' + (currentLang === 'ar' ? 'اختر صفاً' : 'Velg klasse') + ' —</option>' +
+      klasser.map(c => '<option value="' + escapeHtml(c.id) + '">' + escapeHtml(c.navn) + '</option>').join('');
+    if(klasser.some(c => c.id === lpApKlasseId)) velger.value = lpApKlasseId;
+    else if(!lpApKlasseId && klasser.length === 1){ lpApKlasseId = klasser[0].id; velger.value = lpApKlasseId; }
+    const klasse = klasser.find(c => c.id === lpApKlasseId);
+    if(!klasse){ el.innerHTML = ''; return; }
+    const lagret = arsplanCache.find(a => a.id === lpApDokId(lpApKlasseId) || a.klasseId === lpApKlasseId) || null;
+    if(!lagret){
+      el.innerHTML = `<div class="plan-les-kort"><div class="fp-lest">${currentLang === 'ar'
+        ? 'لا توجد خطة سنوية مجمدة لهذا الصف بعد. تواصل مع الإدارة.'
+        : 'Ingen årsplan er frosset for denne klassen ennå. Kontakt administrasjonen.'}</div></div>`;
+      return;
+    }
+    const plan = fagplanCache.find(p => p.id === (lagret.fagplanId || lpApPlanIdFor(klasse)));
+    el.innerHTML = lpApStatuskort(klasse, plan, lagret) + lpApTabell(lagret);
+  }
+
+  function lpApStatuskort(klasse, plan, lagret){
+    return `
+      <div class="plan-les-kort">
+        <h3 style="margin:0 0 4px; font-family:'Cormorant Garamond',serif;">${escapeHtml(klasse.navn)}</h3>
+        <div class="sub">${escapeHtml((plan && plan.navn) || lagret.fagplanNavn || '')}</div>
+        <div class="fp-noekkel">
+          <div><span class="t">${lagret.antallUndervisning || 0}</span><span class="e">${currentLang === 'ar' ? 'أيام تدريس' : 'med pensum'}</span></div>
+          <div><span class="t">${lagret.antallReservert || 0}</span><span class="e">${currentLang === 'ar' ? 'محجوز' : 'holdt av'}</span></div>
+        </div>
+        <p class="fp-fot">${currentLang === 'ar' ? 'للقراءة فقط.' : 'Kun lesing — frosset ' + (lagret.generertDato ? new Date(lagret.generertDato).toLocaleDateString('no-NO') : '—') + '.'}</p>
+      </div>`;
+  }
+
+  function lpApType(r){
+    if(r.type) return r.type;
+    return r.reservert ? 'reservert' : 'undervisning';
+  }
+
+  function lpApSporIder(rader){
+    return [...new Set((rader || []).flatMap(r => Object.keys(r).filter(k => /^[A-Z]$/.test(k))))];
+  }
+
+  function lpApDatoKort(iso){
+    const d = new Date(String(iso) + 'T00:00:00');
+    if(isNaN(d)) return String(iso);
+    return d.toLocaleDateString(currentLang === 'ar' ? 'ar' : 'no-NO', { day: 'numeric', month: 'short' });
+  }
+
+  function lpApDatoLang(iso){
+    const d = new Date(String(iso) + 'T00:00:00');
+    if(isNaN(d)) return String(iso);
+    const n = d.toLocaleDateString(currentLang === 'ar' ? 'ar' : 'no-NO', { weekday: 'long', day: 'numeric', month: 'long' });
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+
+  function lpApMndNokkel(iso){ return String(iso).slice(0, 7); }
+
+  function lpApMaaneder(p){
+    const ut = [];
+    ((p && p.dager) || []).forEach(r => {
+      const n = lpApMndNokkel(r.dato);
+      let m = ut.find(x => x.nokkel === n);
+      if(!m){ m = { nokkel: n, navn: lpApDatoLang(r.dato).replace(/^\w+\s/, ''), kort: lpApDatoKort(r.dato).split(' ').pop() || n, dager: [], undervisning: 0 }; ut.push(m); }
+      m.dager.push(r);
+      if(lpApType(r) === 'undervisning') m.undervisning++;
+    });
+    return ut.sort((a, b) => a.nokkel.localeCompare(b.nokkel));
+  }
+
+  function lpApOktDetalj(o){
+    if(!o) return null;
+    const full = lpApOkter.find(x => x.id === o.oktId);
+    return {
+      nr: o.nr, kapittel: o.kapittelTittel || o.kapittel || '',
+      tittel: (full && full.tittel) || o.tittel || '',
+      mal: (full && full.mal) || '', lekser: (full && full.lekser) || '',
+      sider: full ? lpFpSider(full.sider) : ''
+    };
+  }
+
+  function lpApTabell(p){
+    const rader = p.dager || [];
+    const mnd = lpApMaaneder(p);
+    const valgt = mnd.find(m => m.nokkel === lpApVisning) || null;
+    return `
+      <div class="plan-les-kort" style="margin-top:16px;">
+        <div class="ap-valg">
+          <button type="button" class="ap-chip${!valgt ? ' pa' : ''}" onclick="lpApVis('ar')">${currentLang === 'ar' ? 'السنة كاملة' : 'Hele året'}</button>
+          ${mnd.map(m => `<button type="button" class="ap-chip${valgt && valgt.nokkel === m.nokkel ? ' pa' : ''}" onclick="lpApVis('${m.nokkel}')">${escapeHtml(m.kort)}<span class="n">${m.undervisning}</span></button>`).join('')}
+        </div>
+        ${valgt ? lpApMaanedVisning(p, valgt) : lpApAarVisning(rader)}
+      </div>`;
+  }
+
+  function lpApAarVisning(rader){
+    const vis = lpApVisAlle ? rader : rader.slice(0, 12);
+    const sporIder = lpApSporIder(rader);
+    return `
+      <div style="overflow-x:auto; margin-top:12px;">
+      <table class="ap-tab"><thead><tr><th>${currentLang === 'ar' ? 'التاريخ' : 'Dato'}</th>${sporIder.map(id => '<th>Spor ' + id + '</th>').join('')}<th>Dua</th></tr></thead><tbody>
+        ${vis.map(r => {
+          const t = lpApType(r);
+          if(t === 'ferie' || t === 'ekstra') return `<tr class="ap-${t}"><td class="ap-dato">${escapeHtml(lpApDatoKort(r.dato))}</td><td colspan="${sporIder.length + 1}"><b>${escapeHtml(r.label || '')}</b></td></tr>`;
+          if(t === 'reservert') return `<tr class="ap-holdt"><td class="ap-dato">${escapeHtml(lpApDatoKort(r.dato))}</td><td colspan="${sporIder.length + 1}"><i>${escapeHtml(r.reservert)}</i></td></tr>`;
+          return `<tr><td class="ap-dato">${escapeHtml(lpApDatoKort(r.dato))}</td>${sporIder.map(id => {
+            const o = r[id]; return '<td>' + (o ? '<b>' + escapeHtml(o.kapittelTittel || '') + '</b> ' + o.nr + '<br><span class="ap-liten">' + escapeHtml(o.tittel || '') + '</span>' : '—') + '</td>';
+          }).join('')}<td class="ap-liten">${r.dua ? escapeHtml(r.dua.tittel || '') : '—'}</td></tr>`;
+        }).join('')}
+      </tbody></table></div>
+      ${rader.length > 12 ? `<button type="button" class="btn btn-ghost" style="width:auto; margin-top:12px;" onclick="lpApVisAlt()">${lpApVisAlle ? (currentLang === 'ar' ? 'عرض أقل' : 'Vis færre') : (currentLang === 'ar' ? 'عرض الكل' : 'Vis alle ' + rader.length + ' dagene')}</button>` : ''}`;
+  }
+
+  function lpApMaanedVisning(p, m){
+    const sporIder = lpApSporIder(p.dager);
+    return '<div class="ap-mnd-liste">' + m.dager.map(r => {
+      const t = lpApType(r);
+      if(t === 'ferie' || t === 'ekstra') return `<div class="ap-dag ${t}"><div class="ap-dag-hode">${escapeHtml(lpApDatoLang(r.dato))}</div><div class="ap-dag-linje"><b>${escapeHtml(r.label || '')}</b></div></div>`;
+      if(t === 'reservert') return `<div class="ap-dag holdt"><div class="ap-dag-hode">${escapeHtml(lpApDatoLang(r.dato))}</div><div class="ap-dag-linje"><i>${escapeHtml(r.reservert)}</i></div></div>`;
+      return `<div class="ap-dag"><div class="ap-dag-hode">${escapeHtml(lpApDatoLang(r.dato))}</div>
+        ${sporIder.map(id => {
+          const d = lpApOktDetalj(r[id]); if(!d) return '';
+          return `<div class="ap-dag-linje"><div class="ap-spor">Spor ${id}${d.sider ? '<span class="s">' + escapeHtml(d.sider) + '</span>' : ''}</div>
+            <div class="ap-innhold"><b>${escapeHtml(d.kapittel)} ${d.nr} — ${escapeHtml(d.tittel)}</b>
+            ${d.mal ? '<div class="ap-mal">' + escapeHtml(d.mal) + '</div>' : ''}
+            ${d.lekser ? '<div class="ap-lekse">Lekse: ' + escapeHtml(d.lekser) + '</div>' : ''}</div></div>`;
+        }).join('')}
+        ${r.dua ? `<div class="ap-dag-linje"><div class="ap-spor">Dua</div><div class="ap-innhold">${escapeHtml(r.dua.tittel || '')}</div></div>` : ''}
+      </div>`;
+    }).join('') + '</div>';
   }
 
   // Init
