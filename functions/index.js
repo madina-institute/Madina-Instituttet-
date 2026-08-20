@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 11:56:08 */
+/* SIST-ENDRET: 2026-08-20 12:04:04 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -487,6 +487,48 @@ async function loadGuardianDoc(guardianId) {
   return snap.exists ? { id: snap.id, ...snap.data() } : null;
 }
 
+async function tryCancelVippsPayment(reference, accessToken) {
+  const cancelRes = await fetch(`${vippsApiBase()}/epayment/v1/payments/${encodeURIComponent(reference)}/cancel`, {
+    method: "POST",
+    headers: vippsJsonHeaders(accessToken, vippsIdempotencyKey("cn", reference)),
+  });
+  if (cancelRes.ok) return { ok: true };
+  const body = await cancelRes.text();
+  const invalidState = parseVippsInvalidState(body);
+  if (invalidState) return { ok: true, alreadyTerminal: true, state: invalidState };
+  return { ok: false, body };
+}
+
+async function finalizeVippsPaymentGroup(reference, accessToken) {
+  const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
+  if (pendingSnap.empty) return;
+  const pending = pendingSnap.docs[0].data();
+  const groupId = pending.paymentGroupId || reference;
+  await pendingSnap.docs[0].ref.update({
+    status: "completed",
+    completedAt: new Date().toISOString(),
+  });
+  const groupSnap = await db.collection("pendingVippsPayments")
+    .where("paymentGroupId", "==", groupId)
+    .where("status", "==", "pending")
+    .get();
+  for (const doc of groupSnap.docs) {
+    if (doc.data().reference === reference) continue;
+    await doc.ref.update({
+      status: "superseded",
+      supersededBy: reference,
+      closedAt: new Date().toISOString(),
+    });
+    if (accessToken) {
+      try {
+        await tryCancelVippsPayment(doc.data().reference, accessToken);
+      } catch (err) {
+        logger.warn("Kunne ikke avbryte søster-Vipps-krav", { reference: doc.data().reference, err: String(err.message || err) });
+      }
+    }
+  }
+}
+
 async function hentPendingVippsData(reference) {
   const pendingSnap = await db.collection("pendingVippsPayments")
     .where("reference", "==", reference).limit(1).get();
@@ -920,7 +962,56 @@ exports.createVippsPayment = onRequest(
       }
 
       const paymentData = attempt.paymentData || {};
-      const redirectUrl = await resolveVippsRedirectUrl(reference, accessToken, paymentData, userFlow);
+      let redirectUrl = await resolveVippsRedirectUrl(reference, accessToken, paymentData, userFlow);
+      const paymentGroupId = reference;
+      let emailReference = reference;
+      let dualPayment = false;
+
+      // PUSH gir push i appen men ikke redirectUrl — opprett stille WEB-krav for e-post-lenke.
+      if (!redirectUrl && !erForesatt && userFlow === "PUSH_MESSAGE" && method === "WALLET") {
+        emailReference = `${reference}w`;
+        logger.info("PUSH uten redirectUrl — oppretter WEB_REDIRECT for e-post-lenke", { reference, emailReference });
+        const webAttempt = await postVippsPayment(accessToken, {
+          reference: emailReference,
+          normalizedPhone,
+          amountKr,
+          paymentDescription,
+          userFlow: "WEB_REDIRECT",
+          returnUrl: VIPPS_RETURN_URL,
+          paymentMethodType: method,
+        });
+        if (webAttempt.ok) {
+          const webRedirect = await resolveVippsRedirectUrl(
+            emailReference, accessToken, webAttempt.paymentData || {}, "WEB_REDIRECT"
+          );
+          if (webRedirect) {
+            redirectUrl = webRedirect;
+            dualPayment = true;
+            await db.collection("pendingVippsPayments").add({
+              reference: emailReference,
+              linkedReference: reference,
+              paymentGroupId,
+              paymentRole: "email_link",
+              type,
+              targetId,
+              studentId: type === "balance" ? targetId : null,
+              elevNavn,
+              amountKr: Number(amountKr),
+              phoneNumber: normalizedPhone,
+              userFlow: "WEB_REDIRECT",
+              redirectUrl: webRedirect,
+              status: "pending",
+              createdAt: new Date().toISOString(),
+              createdBy: bruker.epost || null,
+              initiatedBy: "admin",
+            });
+          } else {
+            logger.warn("WEB-ledd uten redirectUrl", { emailReference });
+          }
+        } else {
+          logger.warn("WEB-ledd for e-post feilet", webAttempt.bodyText);
+        }
+      }
 
       await sourceRef.update({
         vippsReference: reference,
@@ -931,6 +1022,9 @@ exports.createVippsPayment = onRequest(
 
       await db.collection("pendingVippsPayments").add({
         reference,
+        linkedReference: dualPayment ? emailReference : null,
+        paymentGroupId,
+        paymentRole: dualPayment ? "push" : null,
         type,
         targetId,
         studentId: type === "balance" ? targetId : null,
@@ -938,7 +1032,7 @@ exports.createVippsPayment = onRequest(
         amountKr: Number(amountKr),
         phoneNumber: normalizedPhone,
         userFlow,
-        redirectUrl: redirectUrl || null,
+        redirectUrl: dualPayment ? null : (redirectUrl || null),
         status: "pending",
         createdAt: new Date().toISOString(),
         createdBy: bruker.epost || null,
@@ -950,9 +1044,15 @@ exports.createVippsPayment = onRequest(
         ok: true,
         redirectUrl: redirectUrl || null,
         reference,
+        emailReference,
+        dualPayment,
         userFlow,
         vippsEnv,
-        pushNote: vippsPushNote(userFlow, Boolean(redirectUrl)),
+        pushNote: dualPayment
+          ? (VIPPS_ENV.value() === "test"
+            ? "Test-miljø: push-varsel er sendt til Vipps-appen. Betalingslenken i e-posten er backup."
+            : "Push-varsel er sendt til Vipps-appen. Foresatt kan også bruke betalingslenken i e-posten.")
+          : vippsPushNote(userFlow, Boolean(redirectUrl)),
         usedFallback,
       });
     } catch (err) {
@@ -1077,6 +1177,13 @@ exports.vippsWebhook = onRequest(
         return;
       }
       const student = studentSnap.data();
+      const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
+      const pendingData = pendingSnap.empty ? null : pendingSnap.docs[0].data();
+      const paymentGroupId = pendingData?.paymentGroupId || reference;
+      if (student.vippsLastPaymentGroup === paymentGroupId) {
+        res.status(200).send("OK (allerede behandlet)");
+        return;
+      }
       if (student.vippsLastReference === reference) {
         res.status(200).send("OK (allerede behandlet)");
         return;
@@ -1088,10 +1195,9 @@ exports.vippsWebhook = onRequest(
         betalt: newPaid >= Number(student.belop || 0) ? "Ja" : "Delvis",
         vippsStatus: "AUTHORIZED",
         vippsLastReference: reference,
+        vippsLastPaymentGroup: paymentGroupId,
         vippsBetaltDato: new Date().toISOString(),
       });
-      const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
-      const pendingData = pendingSnap.empty ? null : pendingSnap.docs[0].data();
       let betaler = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—" };
       try {
         const accessToken = await getVippsAccessToken();
@@ -1118,7 +1224,13 @@ exports.vippsWebhook = onRequest(
         changedBy: "Vipps-betaling (automatisk)",
       });
       if (!pendingSnap.empty) {
-        await pendingSnap.docs[0].ref.update({ status: "completed", completedAt: new Date().toISOString() });
+        try {
+          const accessToken = await getVippsAccessToken();
+          await finalizeVippsPaymentGroup(reference, accessToken);
+        } catch (err) {
+          logger.warn("Kunne ikke avslutte Vipps-betalingsgruppe (balance)", err);
+          await pendingSnap.docs[0].ref.update({ status: "completed", completedAt: new Date().toISOString() });
+        }
       }
       try {
         await sendVippsBetalingVarsel({
@@ -1222,9 +1334,11 @@ exports.vippsWebhook = onRequest(
 
       if (pendingRef) {
         try {
-          await pendingRef.update({ status: "completed", completedAt: new Date().toISOString() });
+          const accessToken = await getVippsAccessToken();
+          await finalizeVippsPaymentGroup(reference, accessToken);
         } catch (e) {
           logger.error("Kunne ikke merke Vipps-kravet som betalt", e);
+          await pendingRef.update({ status: "completed", completedAt: new Date().toISOString() });
         }
       }
 
@@ -1392,12 +1506,14 @@ exports.vippsWebhook = onRequest(
     // Kasserer (Ledelse) tilbød å avbryte et krav som alt var gjort opp.
     if (pendingRef) {
       try {
+        const accessToken = await getVippsAccessToken();
+        await finalizeVippsPaymentGroup(reference, accessToken);
+      } catch (e) {
+        logger.error("Kunne ikke merke Vipps-kravet som betalt", e);
         await pendingRef.update({
           status: "completed",
           completedAt: new Date().toISOString(),
         });
-      } catch (e) {
-        logger.error("Kunne ikke merke Vipps-kravet som betalt", e);
       }
     } else {
       logger.warn(`Fant ingen utestående Vipps-forespørsel for ${reference} — ` +
