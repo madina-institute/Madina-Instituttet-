@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-18 00:58:21 */
+/* SIST-ENDRET: 2026-08-20 22:42:00 */
 /* ═══════════════════════════════════════════════════════════════════
    skoledager.js — ÉN kilde for spørsmålet «er dette en skoledag?»
 
@@ -44,11 +44,12 @@
 
    ── PROGRAM: TRE UTFALL, IKKE TO ─────────────────────────────────
    Feltet 'program' på en kalenderrad kan være en id ELLER et navn.
-   index4 tålte begge, index1 bare id — så en rad lagret med navnet
-   ble respektert hos foreldrene og var USYNLIG hos læreren.
+   Feltet 'programmer' er en liste med id-er — raden gjelder alle i
+   listen. Tom liste (eller begge feltene tomme) = alle programmer.
      treff   raden gjelder dette programmet
-     alle    feltet er tomt — gjelder alle programmer
-     ukjent  feltet har en verdi som ikke er noe program
+     alle    ingen programmer valgt — gjelder alle programmer
+     annet   raden gjelder andre programmer enn dette
+     ukjent  enkelt 'program'-felt peker på noe ukjent (legacy)
 
    'ukjent' gjelder INGEN — det er dagens oppførsel og beholdes. Men
    det finnes ingen trygg retning her: en ferierad som ikke treffer
@@ -107,6 +108,21 @@ window.Skoledager = (function () {
     return rad.id === mitt.id ? 'treff' : 'annet';
   }
 
+  function gjelderProgram(rad, program) {
+    var liste = rad && rad.programmer;
+    if (Array.isArray(liste)) {
+      if (liste.length === 0) return 'alle';
+      var mitt = finnProgram(program);
+      if (!mitt) return 'ukjent';
+      var treff = liste.some(function (id) {
+        var p = finnProgram(id);
+        return p && p.id === mitt.id;
+      });
+      return treff ? 'treff' : 'annet';
+    }
+    return programTreff(rad.program, program);
+  }
+
   function ukedagerFor(program) {
     var p = finnProgram(program);
     var d = p && p.dager;
@@ -126,7 +142,7 @@ window.Skoledager = (function () {
       if (!fra) return;
       var til = k.tilDato || fra;
       if (datoIso < fra || datoIso > til) return;
-      var t = programTreff(k.program, program);
+      var t = gjelderProgram(k, program);
       if (t !== 'treff' && t !== 'alle') return;
       var type = String(k.type || '');
       if (type.indexOf('Fri') === 0) fri = k;
