@@ -59,6 +59,13 @@
 | لوحة الإدارة (`admin.html`) | حذف دائم لأرشيف lærer↔foresatt + Meldingssenter (مجموعة أو م recipient) مع `logDeletion` |
 | `firestore.rules` | قواعد `skjultFor` + حذف broadcast للمستلم |
 
+### Fagplan / Årsplan في بوابة المعلم (قيد الدمج)
+
+| المكان | السلوك |
+|--------|--------|
+| `index1.html` | Fagplan + Årsplan للقراءة فقط — نفس محتوى الإدارة، بدون تعديل أو حذف |
+| Undervisning hub | بطاقتا Fagplan و Årsplan — كل المعلمين يرون كل خطط المواد |
+
 ### بنية تحتية / عمليات
 
 | PR | العمل |
