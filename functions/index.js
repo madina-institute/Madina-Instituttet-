@@ -474,15 +474,18 @@ function vippsPushNote(userFlow) {
   return "Test-miljø: betalingslenken åpner Vipps test-appen direkte på mobilen.";
 }
 
-async function postVippsPayment(accessToken, { reference, normalizedPhone, amountKr, paymentDescription, userFlow, returnUrl }) {
+async function postVippsPayment(accessToken, { reference, normalizedPhone, amountKr, paymentDescription, userFlow, returnUrl, paymentMethodType }) {
+  const method = paymentMethodType === "CARD" ? "CARD" : "WALLET";
   const payload = {
     amount: { currency: "NOK", value: Math.round(Number(amountKr) * 100) },
-    paymentMethod: { type: "WALLET" },
-    customer: { phoneNumber: normalizedPhone },
+    paymentMethod: { type: method },
     reference,
     userFlow,
     paymentDescription,
   };
+  if (method === "WALLET" && normalizedPhone) {
+    payload.customer = { phoneNumber: normalizedPhone };
+  }
   if (userFlow === "WEB_REDIRECT") {
     payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
   }
@@ -522,8 +525,9 @@ exports.createVippsPayment = onRequest(
     if (!bruker) return;
 
     try {
-      const { type, targetId, amountKr, phoneNumber, initiatedBy } = req.body || {};
+      const { type, targetId, amountKr, phoneNumber, initiatedBy, paymentMethodType } = req.body || {};
       const erForesatt = initiatedBy === "guardian";
+      const method = paymentMethodType === "CARD" ? "CARD" : "WALLET";
 
       if (erForesatt) {
         if (!(await krevForesattTilgang(bruker, type, targetId, res))) return;
@@ -531,8 +535,12 @@ exports.createVippsPayment = onRequest(
         return;
       }
 
-      if (!type || !targetId || !amountKr || !phoneNumber) {
-        res.status(400).json({ ok: false, error: "Mangler type, targetId, amountKr eller phoneNumber." });
+      if (!type || !targetId || !amountKr) {
+        res.status(400).json({ ok: false, error: "Mangler type, targetId eller amountKr." });
+        return;
+      }
+      if (method === "WALLET" && !phoneNumber) {
+        res.status(400).json({ ok: false, error: "Mangler phoneNumber for Vipps-betaling." });
         return;
       }
       if (type !== "registration" && type !== "balance") {
@@ -555,7 +563,7 @@ exports.createVippsPayment = onRequest(
       const typeCode = type === "registration" ? "reg" : "bal";
       const reference = `madina-${typeCode}-${targetId}-${Date.now()}`;
 
-      let normalizedPhone = String(phoneNumber).replace(/\D/g, "");
+      let normalizedPhone = String(phoneNumber || "").replace(/\D/g, "");
       if (normalizedPhone.length === 8) normalizedPhone = "47" + normalizedPhone;
 
       const paymentDescription = type === "registration"
@@ -564,7 +572,8 @@ exports.createVippsPayment = onRequest(
 
       // Admin sender fra kontor → PUSH_MESSAGE (krever MSN-godkjenning hos Vipps).
       // Foresatt betaler fra egen telefon → WEB_REDIRECT (anbefalt av Vipps).
-      let userFlow = erForesatt ? "WEB_REDIRECT" : "PUSH_MESSAGE";
+      // CARD = freestanding kort (Visa/Mastercard) uten Vipps-app.
+      let userFlow = method === "CARD" ? "WEB_REDIRECT" : (erForesatt ? "WEB_REDIRECT" : "PUSH_MESSAGE");
       let attempt = await postVippsPayment(accessToken, {
         reference,
         normalizedPhone,
@@ -572,6 +581,7 @@ exports.createVippsPayment = onRequest(
         paymentDescription,
         userFlow,
         returnUrl: VIPPS_RETURN_URL,
+        paymentMethodType: method,
       });
 
       // MSN uten PUSH_MESSAGE-godkjenning: fall tilbake til lenke i e-post.
