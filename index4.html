@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 04:22:00 -->
+<!-- SIST-ENDRET: 2026-08-20 04:58:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -1085,10 +1085,10 @@
               <span class="vipps-mark">Vipps</span>
               <span data-i18n="payVippsBtn">Betal med Vipps</span>
             </button>
-            <button class="btn btn-vipps-outline" id="paymentLinkCard" onclick="payViaVippsNow('CARD')">
+            <button class="btn btn-vipps-outline" id="paymentLinkCard" style="display:none;" onclick="payViaVippsNow('CARD')">
               <span data-i18n="payCardBtn">💳 Betal med bankkort</span>
             </button>
-            <div class="vipps-card-note" data-i18n="payCardNote">Visa, Mastercard og andre kort — via Vipps betalingsside.</div>
+            <div class="vipps-card-note" id="vippsCardNote" data-i18n="payCardTestNote">Bankkort (Visa/Mastercard) er kun tilgjengelig i produksjon — Vipps test støtter ikke kortbetaling.</div>
           </div>
         </div>
         <div class="empty-msg" id="paymentComingSoon" style="display:none;" data-i18n="paymentComingSoon">Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.</div>
@@ -1487,6 +1487,8 @@
       vippsZoneTitle: 'Trygg betaling via Vipps',
       payVippsBtn: 'Betal med Vipps', payCardBtn: '💳 Betal med bankkort',
       payCardNote: 'Visa, Mastercard og andre kort — via Vipps betalingsside.',
+      payCardTestNote: 'Bankkort er kun tilgjengelig i produksjon — Vipps test støtter ikke kortbetaling. Bruk Vipps-knappen over.',
+      payCardNote: 'Visa, Mastercard og andre kort — via Vipps betalingsside.',
       howMuchSub: 'Hvor mye ønsker du å betale?', payAllBtn: 'Alt gjenstående', payPartialBtn: 'Annet beløp',
       amountLabel: 'Beløp (kr)', confirmAmountBtn: 'Bekreft beløp', payChoiceSent: 'Takk! Beløpet er registrert. Fullfør betalingen under.',
       invalidAmount: 'Skriv inn et gyldig beløp.', noRemaining: 'Det er ikke noe utestående beløp for dette barnet.',
@@ -1574,6 +1576,8 @@
       payNowBtn: 'ادفع الآن', paymentComingSoon: 'وسيلة الدفع الإلكتروني قادمة قريبًا. تواصل مع المدرسة لمعرفة طريقة الدفع.',
       vippsZoneTitle: 'دفع آمن عبر Vipps',
       payVippsBtn: 'ادفع عبر Vipps', payCardBtn: '💳 ادفع بالبطاقة البنكية',
+      payCardNote: 'Visa وMastercard — عبر صفحة Vipps للدفع.',
+      payCardTestNote: 'البطاقة البنكية متاحة في الإنتاج فقط — بيئة Vipps التجريبية لا تدعم الدفع بالبطاقة. استخدم زر Vipps أعلاه.',
       payCardNote: 'Visa وMastercard وبطاقات أخرى — عبر صفحة Vipps للدفع.',
       howMuchSub: 'كم تريد أن تدفع؟', payAllBtn: 'كل المبلغ المتبقي', payPartialBtn: 'مبلغ آخر',
       amountLabel: 'المبلغ (كرونة)', confirmAmountBtn: 'تأكيد المبلغ', payChoiceSent: 'شكرًا! تم تسجيل المبلغ. أكمل الدفع بالأسفل.',
@@ -1662,6 +1666,8 @@
       payNowBtn: 'ابھی ادائیگی کریں', paymentComingSoon: 'آن لائن ادائیگی جلد آ رہی ہے۔ ادائیگی کی معلومات کے لیے سکول سے رابطہ کریں۔',
       vippsZoneTitle: 'Vipps کے ذریعے محفوظ ادائیگی',
       payVippsBtn: 'Vipps سے ادائیگی کریں', payCardBtn: '💳 بینک کارڈ سے ادائیگی',
+      payCardNote: 'Visa، Mastercard — Vipps ادائیگی صفحے کے ذریعے۔',
+      payCardTestNote: 'بینک کارڈ صرف پروڈکشن میں — Vipps ٹیسٹ کارڈ سپورٹ نہیں کرتا۔ اوپر Vipps بٹن استعمال کریں۔',
       payCardNote: 'Visa، Mastercard اور دیگر کارڈ — Vipps ادائیگی صفحے کے ذریعے۔',
       howMuchSub: 'آپ کتنی رقم ادا کرنا چاہتے ہیں؟', payAllBtn: 'تمام باقی رقم', payPartialBtn: 'دوسری رقم',
       amountLabel: 'رقم (کرون)', confirmAmountBtn: 'رقم کی تصدیق کریں', payChoiceSent: 'شکریہ! رقم درج کر لی گئی ہے۔ نیچے ادائیگی مکمل کریں۔',
@@ -2009,6 +2015,7 @@
   });
   watchDoc('settings', 'priser', (snap) => {
     prisOppsett = snap.exists() ? (snap.data() || {}) : {};
+    oppdaterVippsKortKnapp();
     if(currentGuardian){ renderSummary(); tegnVelkomstForelder(); }
   }, (err) => console.error('settings/priser', err));
 
@@ -3734,6 +3741,7 @@
       document.getElementById('vippsPayZone').style.display = 'block';
       document.getElementById('paymentBtnWrap').style.display = 'block';
       document.getElementById('paymentComingSoon').style.display = 'none';
+      oppdaterVippsKortKnapp();
     } else {
       document.getElementById('vippsPayZone').style.display = 'none';
       document.getElementById('paymentComingSoon').style.display = 'none';
@@ -3911,6 +3919,18 @@
   // uten å opprette noen ny elev.
   const VIPPS_CREATE_PAYMENT_URL = 'https://createvippspayment-qgyf6x4aba-uc.a.run.app';
 
+  function oppdaterVippsKortKnapp(){
+    const btn = document.getElementById('paymentLinkCard');
+    const note = document.getElementById('vippsCardNote');
+    const aktiv = prisOppsett.vippsKortAktiv === true;
+    if(btn) btn.style.display = aktiv ? 'block' : 'none';
+    if(note){
+      const key = aktiv ? 'payCardNote' : 'payCardTestNote';
+      note.setAttribute('data-i18n', key);
+      note.textContent = t(key);
+    }
+  }
+
   window.payViaVippsNow = async function(paymentMethodType){
     paymentMethodType = paymentMethodType === 'CARD' ? 'CARD' : 'WALLET';
     if(myChildren.length === 0 || !currentGuardian) return;
@@ -3956,7 +3976,12 @@
       });
       const data = await res.json();
       if(!data.ok){
-        notify('Vipps-feil: ' + (data.error || 'Ukjent feil'));
+        const msg = data.cardNotInTest
+          ? (currentLang === 'ar'
+            ? 'الدفع بالبطاقة غير متاح في بيئة Vipps التجريبية. استخدم زر Vipps.'
+            : 'Kortbetaling er ikke tilgjengelig i Vipps test-miljø. Bruk Vipps-knappen.')
+          : ('Vipps-feil: ' + (data.error || 'Ukjent feil'));
+        notify(msg);
         if(btnV) btnV.style.pointerEvents = '';
         if(btnC) btnC.style.pointerEvents = '';
         return;
