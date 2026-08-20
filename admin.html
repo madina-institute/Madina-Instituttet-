@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 11:02:39 -->
+<!-- SIST-ENDRET: 2026-08-20 11:15:40 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2529,7 +2529,7 @@
 
     <div data-ov="varsler" class="report-card" style="margin-top:20px;">
       <h3>🔔 Varslinger</h3>
-      <div class="sub">Hvem skal få e-post når det kommer inn en ny påmelding</div>
+      <div class="sub">Hvem skal få e-post ved ny påmelding og ved mottatt Vipps-betaling</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px; line-height:1.6;">
         Listen bygges av de ansatte som har en e-post registrert. Kryss av for
         dem som skal varsles — endringen gjelder med én gang, uten at noe må
@@ -21263,7 +21263,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     }
     el.innerHTML = 'Ved ny påmelding varsles <strong>' + valgte.length + ' person' +
       (valgte.length === 1 ? '' : 'er') + '</strong>: ' +
-      valgte.map(e => escapeHtml(e)).join(', ') + kvitteringLinje();
+      valgte.map(e => escapeHtml(e)).join(', ') +
+      '. <strong>Samme mottakere</strong> får også e-post når en Vipps-betaling er mottatt.' + kvitteringLinje();
   };
 
   // Kvitteringen går til en HELT annen mottaker enn varselet — foresatte,
@@ -22435,6 +22436,21 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     return true;
   }
 
+  function epostTilBeggeForesatteForElev(student){
+    const out = new Set();
+    const leggTil = e => {
+      const s = String(e || '').trim();
+      if(s.includes('@')) out.add(s);
+    };
+    const g1 = cache.guardians.find(g => g.id === student.foresatt);
+    const g2 = cache.guardians.find(g => g.id === student.foresatt2);
+    leggTil(g1 && g1.epost);
+    leggTil(g2 && g2.epost);
+    leggTil(student.foresatt1_epost);
+    leggTil(student.foresatt2_epost);
+    return [...out];
+  }
+
   window.sendRealVippsRequest = async function(id){
     if(!kanSendePengekrav('ADM-VIP-06')) return;
     if(!krevOpptaksrolle()) return;
@@ -22542,24 +22558,25 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         showToast('Vipps-feil: ' + (data.error || 'Ukjent feil'));
         return;
       }
-      // Sender også betalingslenken på e-post automatisk, i tillegg til at
-      // foresatte får push-varsel direkte i Vipps-appen sin.
-      const guardianEmail = (guardian && guardian.epost) || '';
-      if(guardianEmail){
+      // Sender betalingslenken på e-post til begge foresatte (som depositum).
+      const eposter = epostTilBeggeForesatteForElev(student);
+      if(eposter.length){
+        const epostTekst = 'Hei,\n\nDu har et utestående beløp på ' + remainingKr + ' kr for ' + (student.navn || 'ditt barn') + '.\n\n' +
+          'Vipps-varsel (push) er sendt til foresatt 1. Denne e-posten er sendt til alle registrerte foresatte.\n\n' +
+          (data.pushNote ? data.pushNote + '\n\n' : '') +
+          (data.redirectUrl ? 'Du kan også bruke denne betalingslenken:\n' + data.redirectUrl + '\n\n' : '') +
+          'Beløpet registreres automatisk når betalingen er gjennomført.\n\nMed vennlig hilsen,\nMadina Skole';
         await addDoc(collection(db, 'mail'), {
           from: MAIL_FROM,
-          to: [guardianEmail],
+          to: eposter,
           message: {
             subject: '[Madina Skole] Betaling for ' + (student.navn || 'ditt barn'),
-            text: 'Hei,\n\nDu har et utestående beløp på ' + remainingKr + ' kr for ' + (student.navn || 'ditt barn') +
-              '.\n\n' + (data.pushNote ? data.pushNote + '\n\n' : '') +
-              (data.redirectUrl ? 'Betalingslenke:\n' + data.redirectUrl + '\n\n' : '') +
-              'Med vennlig hilsen,\nMadina Skole'
+            text: epostTekst
           }
         });
       }
-      showToast('✓ Ekte Vipps-krav sendt! Beløpet registreres automatisk når foresatte betaler.');
-      visVippsSendtResultat(data, { epostAntall: guardianEmail ? 1 : 0 });
+      showToast('✓ Vipps-krav sendt' + (eposter.length > 1 ? ' — e-post til ' + eposter.length + ' foresatte' : eposter.length ? ' — e-post sendt' : '') + '.');
+      visVippsSendtResultat(data, { epostAntall: eposter.length });
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
