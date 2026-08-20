@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 11:30:13 -->
+<!-- SIST-ENDRET: 2026-08-20 11:41:58 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8994,7 +8994,14 @@
         ? 'Du kan også bruke denne betalingslenken:\n'
         : 'Betalingslenke:\n') + data.redirectUrl + '\n\n';
     }
-    return 'Åpne Vipps-appen → Betalinger for å finne kravet.\n\n';
+    return '';
+  }
+
+  function vippsEpostLenkeHtml(data){
+    if(!data.redirectUrl) return '';
+    const url = escapeHtml(data.redirectUrl);
+    return '<p style="margin:16px 0;"><a href="' + url + '" style="display:inline-block;background:#ff5b24;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med Vipps</a></p>' +
+      '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Eller kopier lenken: <a href="' + url + '">' + url + '</a></p>';
   }
 
   function vippsEpostVarselLinje(data, opts){
@@ -9004,6 +9011,34 @@
       return 'Vipps-varsel (push) er sendt til foresatt 1' + navn + '. Denne e-posten er sendt til alle registrerte foresatte.\n\n';
     }
     return 'Betal via lenken under (åpnes best på mobil med Vipps-appen installert). Denne e-posten er sendt til alle registrerte foresatte.\n\n';
+  }
+
+  async function sendVippsBetalingEpost(eposter, data, opts){
+    opts = opts || {};
+    if(!eposter.length) return { sent: false, reason: 'ingen-epost' };
+    if(!data.redirectUrl){
+      return { sent: false, reason: 'mangler-lenke', eposter: eposter };
+    }
+    const intro = opts.intro || '';
+    const outro = opts.outro || '';
+    const subject = opts.subject || '[Madina Skole] Vipps-betaling';
+    const note = (data.pushNote && data.redirectUrl) ? data.pushNote + '\n\n' : '';
+    const text = intro + vippsEpostVarselLinje(data, opts) + note + vippsEpostLenkeTekst(data) + outro;
+    const htmlIntro = escapeHtml(intro).replace(/\n/g, '<br>');
+    const htmlOutro = escapeHtml(outro).replace(/\n/g, '<br>');
+    const html = '<div style="font-family:sans-serif;line-height:1.6;color:#1a2e24;max-width:560px;">' +
+      htmlIntro +
+      '<p>' + escapeHtml(vippsEpostVarselLinje(data, opts)).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>' +
+      (note ? '<p style="color:#5a6860;">' + escapeHtml(note.trim()) + '</p>' : '') +
+      vippsEpostLenkeHtml(data) +
+      htmlOutro +
+      '</div>';
+    await addDoc(collection(db, 'mail'), {
+      from: MAIL_FROM,
+      to: eposter,
+      message: { subject, text, html }
+    });
+    return { sent: true, eposter: eposter };
   }
 
   function visVippsSendtResultat(data, opts){
@@ -9025,8 +9060,9 @@
       '<p style="margin:0 0 8px;line-height:1.6;">' + escapeHtml(note) + '</p>' +
       fallback +
       linkHtml +
-      (opts.epostAntall > 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til ' + opts.epostAntall + ' foresatte.</p>' : '') +
-      (opts.epostAntall === 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til foresatt.</p>' : ''),
+      (opts.epostAntall > 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til ' + opts.epostAntall + ' adresser (samme innhold og lenke til alle).</p>' : '') +
+      (opts.epostAntall === 1 ? '<p style="margin-top:10px;color:#5a6860;">E-post sendt til foresatt.</p>' : '') +
+      (opts.eposter && opts.eposter.length ? '<p style="margin-top:6px;font-size:12px;color:#8a9690;">Mottakere: ' + opts.eposter.map(e => escapeHtml(e)).join(', ') + '</p>' : ''),
       'vipps · userFlow=' + (data.userFlow || '—') + ' · env=' + (data.vippsEnv || '—'));
   }
 
@@ -22513,24 +22549,20 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       const eposter = [...new Set([reg.foresatt1_epost, reg.foresatt2_epost]
         .filter(e => e && String(e).includes('@'))
         .map(e => String(e).trim()))];
-      if(eposter.length){
-        const epostTekst = 'Hei,\n\nFor å bekrefte skoleplassen til ' + (reg.elev_navn || 'ditt barn') +
-          ', vennligst betal depositum på ' + dep + ' kr via Vipps innen ' + frist + ' dager.\n\n' +
-          vippsEpostVarselLinje(data, { foresatt1Navn: reg.foresatt1_navn || 'primær foresatt' }) +
-          (data.pushNote ? data.pushNote + '\n\n' : '') +
-          vippsEpostLenkeTekst(data) +
-          'Betalingen trekkes fra totalbeløpet for skoleåret. Så snart betalingen er gjennomført, oppdateres status automatisk.\n\nMed vennlig hilsen,\nMadina Skole';
-        await addDoc(collection(db, 'mail'), {
-          from: MAIL_FROM,
-          to: eposter,
-          message: {
-            subject: '[Madina Skole] Betal depositum for ' + (reg.elev_navn || 'ditt barn'),
-            text: epostTekst
-          }
-        });
+      const mailResult = await sendVippsBetalingEpost(eposter, data, {
+        foresatt1Navn: reg.foresatt1_navn || 'primær foresatt',
+        subject: '[Madina Skole] Betal depositum for ' + (reg.elev_navn || 'ditt barn'),
+        intro: 'Hei,\n\nFor å bekrefte skoleplassen til ' + (reg.elev_navn || 'ditt barn') +
+          ', vennligst betal depositum på ' + dep + ' kr via Vipps innen ' + frist + ' dager.\n\n',
+        outro: 'Betalingen trekkes fra totalbeløpet for skoleåret. Så snart betalingen er gjennomført, oppdateres status automatisk.\n\nMed vennlig hilsen,\nMadina Skole'
+      });
+      if(mailResult.reason === 'mangler-lenke'){
+        showToast('Vipps-krav opprettet, men ingen betalingslenke — e-post IKKE sendt. Hard-oppdater siden (Ctrl+Shift+R) og prøv igjen.', true);
+        visVippsSendtResultat(data, { epostAntall: 0, eposter: mailResult.eposter });
+        return;
       }
-      showToast('✓ Vipps-krav sendt til foresatt 1' + (eposter.length > 1 ? ' — e-post til ' + eposter.length + ' foresatte' : '') + '.');
-      visVippsSendtResultat(data, { epostAntall: eposter.length });
+      showToast('✓ Vipps-krav sendt til foresatt 1' + (mailResult.sent && eposter.length > 1 ? ' — e-post til ' + eposter.length + ' adresser' : '') + '.');
+      visVippsSendtResultat(data, { epostAntall: mailResult.sent ? eposter.length : 0, eposter: eposter });
       if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
     } catch(err){
       console.error(err);
@@ -22577,23 +22609,18 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       }
       // Sender betalingslenken på e-post til begge foresatte (som depositum).
       const eposter = epostTilBeggeForesatteForElev(student);
-      if(eposter.length){
-        const epostTekst = 'Hei,\n\nDu har et utestående beløp på ' + remainingKr + ' kr for ' + (student.navn || 'ditt barn') + '.\n\n' +
-          vippsEpostVarselLinje(data) +
-          (data.pushNote ? data.pushNote + '\n\n' : '') +
-          vippsEpostLenkeTekst(data) +
-          'Beløpet registreres automatisk når betalingen er gjennomført.\n\nMed vennlig hilsen,\nMadina Skole';
-        await addDoc(collection(db, 'mail'), {
-          from: MAIL_FROM,
-          to: eposter,
-          message: {
-            subject: '[Madina Skole] Betaling for ' + (student.navn || 'ditt barn'),
-            text: epostTekst
-          }
-        });
+      const mailResult = await sendVippsBetalingEpost(eposter, data, {
+        subject: '[Madina Skole] Betaling for ' + (student.navn || 'ditt barn'),
+        intro: 'Hei,\n\nDu har et utestående beløp på ' + remainingKr + ' kr for ' + (student.navn || 'ditt barn') + '.\n\n',
+        outro: 'Beløpet registreres automatisk når betalingen er gjennomført.\n\nMed vennlig hilsen,\nMadina Skole'
+      });
+      if(mailResult.reason === 'mangler-lenke'){
+        showToast('Vipps-krav opprettet, men ingen betalingslenke — e-post IKKE sendt. Hard-oppdater siden (Ctrl+Shift+R) og prøv igjen.', true);
+        visVippsSendtResultat(data, { epostAntall: 0, eposter: mailResult.eposter });
+        return;
       }
-      showToast('✓ Vipps-krav sendt' + (eposter.length > 1 ? ' — e-post til ' + eposter.length + ' foresatte' : eposter.length ? ' — e-post sendt' : '') + '.');
-      visVippsSendtResultat(data, { epostAntall: eposter.length });
+      showToast('✓ Vipps-krav sendt' + (mailResult.sent && eposter.length > 1 ? ' — e-post til ' + eposter.length + ' adresser' : mailResult.sent ? ' — e-post sendt' : '') + '.');
+      visVippsSendtResultat(data, { epostAntall: mailResult.sent ? eposter.length : 0, eposter: eposter });
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
