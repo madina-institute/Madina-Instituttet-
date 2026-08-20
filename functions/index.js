@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 11:15:40 */
+/* SIST-ENDRET: 2026-08-20 11:30:13 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -742,17 +742,33 @@ async function krevForesattTilgang(bruker, type, targetId, res) {
 
 const VIPPS_RETURN_URL = "https://madinaskole.no/foreldre?vipps=return";
 
-function vippsPushNote(userFlow) {
+function vippsPushNote(userFlow, hasRedirectUrl) {
   if (VIPPS_ENV.value() !== "test") {
     if (userFlow === "PUSH_MESSAGE") {
-      return "Push-varsel er sendt til Vipps-appen. Foresatt kan også bruke betalingslenken i e-posten.";
+      return hasRedirectUrl
+        ? "Push-varsel er sendt til Vipps-appen. Foresatt kan også bruke betalingslenken i e-posten."
+        : "Push-varsel er sendt til Vipps-appen. Foresatt finner kravet under Betalinger i Vipps-appen.";
     }
     return "Betalingslenke er klar. Foresatt åpner lenken på mobilen for å betale i Vipps.";
   }
   if (userFlow === "PUSH_MESSAGE") {
-    return "Test-miljø: push-varsler er ofte ustabile hos Vipps. Be foresatt åpne Vipps test-appen → Betalinger → dra ned for å oppdatere. Betalingslenken i e-posten fungerer alltid som backup.";
+    return hasRedirectUrl
+      ? "Test-miljø: push-varsler er ofte ustabile hos Vipps. Be foresatt åpne Vipps test-appen → Betalinger → dra ned for å oppdatere. Betalingslenken i e-posten fungerer alltid som backup."
+      : "Test-miljø: push-varsler er ofte ustabile hos Vipps. Be foresatt åpne Vipps test-appen → Betalinger → dra ned for å oppdatere.";
   }
   return "Test-miljø: betalingslenken åpner Vipps test-appen direkte på mobilen.";
+}
+
+async function resolveVippsRedirectUrl(reference, accessToken, paymentData, userFlow) {
+  let redirectUrl = paymentData?.redirectUrl || null;
+  if (redirectUrl || userFlow !== "PUSH_MESSAGE") return redirectUrl;
+  try {
+    const fetched = await fetchVippsPayment(reference, accessToken);
+    redirectUrl = fetched.redirectUrl || null;
+  } catch (err) {
+    logger.warn("Kunne ikke hente redirectUrl etter PUSH_MESSAGE", { reference, err: String(err.message || err) });
+  }
+  return redirectUrl;
 }
 
 async function postVippsPayment(accessToken, { reference, normalizedPhone, amountKr, paymentDescription, userFlow, returnUrl, paymentMethodType }) {
@@ -767,9 +783,9 @@ async function postVippsPayment(accessToken, { reference, normalizedPhone, amoun
   if (method === "WALLET" && normalizedPhone) {
     payload.customer = { phoneNumber: normalizedPhone };
   }
-  if (userFlow === "WEB_REDIRECT") {
-    payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
-  }
+  // returnUrl trengs for WEB_REDIRECT, men sendes også ved PUSH_MESSAGE slik at
+  // Vipps kan returnere redirectUrl som backup-lenke i e-post til foresatte.
+  payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
   payload.profile = { scope: "phoneNumber name" };
 
   const paymentRes = await fetch(`${vippsApiBase()}/epayment/v1/payments`, {
@@ -862,10 +878,11 @@ exports.createVippsPayment = onRequest(
         ? `Depositum — ${elevNavn} (Madina Skole)`
         : `Skolepenger — ${elevNavn} (Madina Skole)`;
 
-      // Admin sender fra kontor → PUSH_MESSAGE (krever MSN-godkjenning hos Vipps).
+      // Admin sender fra kontor → WEB_REDIRECT (gir alltid redirectUrl til e-post).
       // Foresatt betaler fra egen telefon → WEB_REDIRECT (anbefalt av Vipps).
+      // PUSH_MESSAGE gir push uten redirectUrl — e-posten mangler da betalingslenke.
       // CARD = freestanding kort (Visa/Mastercard) uten Vipps-app.
-      let userFlow = method === "CARD" ? "WEB_REDIRECT" : (erForesatt ? "WEB_REDIRECT" : "PUSH_MESSAGE");
+      let userFlow = "WEB_REDIRECT";
       let attempt = await postVippsPayment(accessToken, {
         reference,
         normalizedPhone,
@@ -900,6 +917,7 @@ exports.createVippsPayment = onRequest(
       }
 
       const paymentData = attempt.paymentData || {};
+      const redirectUrl = await resolveVippsRedirectUrl(reference, accessToken, paymentData, userFlow);
 
       await sourceRef.update({
         vippsReference: reference,
@@ -917,6 +935,7 @@ exports.createVippsPayment = onRequest(
         amountKr: Number(amountKr),
         phoneNumber: normalizedPhone,
         userFlow,
+        redirectUrl: redirectUrl || null,
         status: "pending",
         createdAt: new Date().toISOString(),
         createdBy: bruker.epost || null,
@@ -926,11 +945,11 @@ exports.createVippsPayment = onRequest(
       const vippsEnv = VIPPS_ENV.value() === "prod" ? "prod" : "test";
       res.status(200).json({
         ok: true,
-        redirectUrl: paymentData.redirectUrl || null,
+        redirectUrl: redirectUrl || null,
         reference,
         userFlow,
         vippsEnv,
-        pushNote: vippsPushNote(userFlow),
+        pushNote: vippsPushNote(userFlow, Boolean(redirectUrl)),
         usedFallback: userFlow === "WEB_REDIRECT" && !erForesatt,
       });
     } catch (err) {
