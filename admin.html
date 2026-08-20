@@ -7242,8 +7242,11 @@
       bakgrunn.innerHTML = `
         <div class="pw-boks">
           <h3>🔐 Bekreft med eierkontoen</h3>
-          <p>${escapeHtml(hva)} krever passordet til skolens egen konto —
-             ikke ditt eget. Den brukes ikke til daglig.</p>
+          <p>${escapeHtml(hva)} krever passordet til <b>${escapeHtml(NODKONTO)}</b> —
+             ikke passordet du logget inn med (med mindre det er samme konto).</p>
+          <p style="font-size:12px; color:#8a6d1d; margin:0 0 12px; line-height:1.5;">
+            🔴 Skriv passordet til kontoen over — ikke din private admin-e-post.
+          </p>
           <label>Konto</label>
           <input type="text" value="${escapeHtml(NODKONTO)}" disabled
                  style="background:#eef1f6; color:#5a6860; margin-bottom:14px;">
@@ -7274,7 +7277,10 @@
       return false;
     }
     const pw = await spørOmEierpassord(hva || 'Denne slettingen');
-    if(pw === null) return false;
+    if(pw === null){
+      showToast('Avbrutt — ingen endring.', true);
+      return false;
+    }
     if(!pw){
       showToast('Passord kreves for å slette.', true);
       return false;
@@ -7470,6 +7476,35 @@
     return n;
   }
 
+  function bekreftMedTekst(tittel, forklaring, forventet){
+    return new Promise(resolve => {
+      const bakgrunn = document.createElement('div');
+      bakgrunn.className = 'pw-overlay';
+      bakgrunn.innerHTML = `
+        <div class="pw-boks">
+          <h3>${escapeHtml(tittel)}</h3>
+          <p style="white-space:pre-line; line-height:1.55;">${escapeHtml(forklaring)}</p>
+          <label for="bekreftTekstFelt">Skriv «${escapeHtml(forventet)}»</label>
+          <input type="text" id="bekreftTekstFelt" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <div class="pw-knapper">
+            <button type="button" class="btn btn-ghost" data-bt="avbryt">Avbryt</button>
+            <button type="button" class="btn" style="background:#a83c3c; color:#fff;" data-bt="ok">Bekreft sletting</button>
+          </div>
+        </div>`;
+      document.body.appendChild(bakgrunn);
+      const felt = bakgrunn.querySelector('#bekreftTekstFelt');
+      const lukk = (v) => { bakgrunn.remove(); resolve(v); };
+      bakgrunn.querySelector('[data-bt="avbryt"]').onclick = () => lukk(null);
+      bakgrunn.querySelector('[data-bt="ok"]').onclick = () => lukk(felt.value.trim());
+      bakgrunn.addEventListener('click', e => { if(e.target === bakgrunn) lukk(null); });
+      felt.addEventListener('keydown', e => {
+        if(e.key === 'Enter') lukk(felt.value.trim());
+        if(e.key === 'Escape') lukk(null);
+      });
+      setTimeout(() => felt.focus(), 50);
+    });
+  }
+
   window.clearTestDataKeepRegistrations = async function(){
     if(!krevEier('ADM-FAR-03', 'Å nullstille data')) return;
 
@@ -7479,19 +7514,25 @@
 
     if(!(await checkAdminPassword('Å nullstille alt unntatt søknadene'))) return;
 
-    const typed = prompt(
-      'ADVARSEL: Dette sletter PERMANENT alle data i databasen UNNTATT:\n' +
+    const BEKREFT = 'SLETT TESTDATA';
+    const typed = await bekreftMedTekst(
+      '🔴 Nullstill databasen',
+      'ADVARSEL: Dette sletter PERMANENT alle data UNNTATT:\n' +
       '  • søknader (registrations) — ' + soknader + ' stk beholdes\n' +
-      '  • innstillinger (settings), roller, admin-brukere og tilgang\n\n' +
-      'Elever, lærere, klasser, timeplan, betalinger, meldinger, indekser m.m. slettes.\n\n' +
-      'Ta sikkerhetskopi først hvis du er usikker.\n\n' +
-      'Skriv «SLETT TESTDATA» (med store bokstaver) for å bekrefte:'
+      '  • innstillinger, roller, admin-brukere og tilgang\n\n' +
+      'Elever, lærere, klasser, timeplan, betalinger og meldinger slettes.',
+      BEKREFT
     );
-    if(typed !== 'SLETT TESTDATA'){
-      showToast('Sletting avbrutt.');
+    if(typed === null){
+      showToast('Nullstilling avbrutt.', true);
+      return;
+    }
+    if(typed !== BEKREFT){
+      showToast('Feil bekreftelse — skriv nøyaktig «' + BEKREFT + '».', true);
       return;
     }
 
+    showToast('Sletter data — vent …');
     const rapport = [];
     let total = 0;
     try{
