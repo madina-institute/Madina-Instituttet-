@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:45:00 -->
+<!-- SIST-ENDRET: 2026-08-21 22:18:00 -->
 <html lang="no" dir="ltr" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -200,11 +200,11 @@
   .btn-primary{background:var(--emerald); color:#fff;}
   .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink); margin-top:10px;}
 
-  /* ── Vipps betalingsområde ── */
+  /* ── Betalingsflyt (Foreldreportalen) ── */
   .vipps-pay-zone{
-    margin-top:18px; padding:18px 16px 16px; border-radius:12px;
-    background:var(--vipps-bg); border:2px solid var(--vipps);
-    box-shadow:0 4px 16px rgba(255,91,36,0.12);
+    margin-top:18px; padding:18px 16px 16px; border-radius:var(--radius-card);
+    background:var(--paper); border:1px solid var(--line);
+    box-shadow:var(--shadow);
   }
   .vipps-zone-head{
     display:flex; align-items:center; gap:10px; margin-bottom:14px;
@@ -217,20 +217,59 @@
   }
   html[dir="rtl"] .vipps-badge{font-family:'Tajawal',sans-serif;}
   .vipps-zone-title{
-    font-family:'Jost',sans-serif; font-size:13px; font-weight:600; color:#b33a00;
+    font-family:'Jost',sans-serif; font-size:14px; font-weight:700; color:var(--ink);
   }
   html[dir="rtl"] .vipps-zone-title{font-family:'Tajawal',sans-serif;}
-  .vipps-pay-zone .sub{color:#8a4a30;}
-  .vipps-pay-zone .btn-ghost{
-    margin-top:0; border-color:rgba(255,91,36,0.35); color:#b33a00;
+  .vipps-pay-zone .sub{color:#5a6860;}
+  .pay-step{
+    padding:14px 0 0; border-top:1px solid var(--line); margin-top:14px;
   }
-  .vipps-pay-zone .btn-ghost.vipps-selected{
-    background:var(--vipps); color:#fff; border-color:var(--vipps);
+  .pay-step:first-of-type{border-top:none; margin-top:0; padding-top:0;}
+  .pay-step-head{
+    display:flex; align-items:center; gap:10px; margin-bottom:12px;
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:700; color:var(--ink);
   }
+  html[dir="rtl"] .pay-step-head{font-family:'Tajawal',sans-serif;}
+  .pay-step-num{
+    width:24px; height:24px; border-radius:50%; background:var(--emerald); color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;
+    flex:0 0 auto;
+  }
+  .pay-step-num.done{background:#2e7d52;}
+  .pay-amount-choices{display:flex; gap:8px; flex-wrap:wrap;}
+  .pay-amount-choices .btn-ghost{
+    margin-top:0; flex:1 1 140px; border-color:var(--line); color:var(--ink);
+    font-weight:600;
+  }
+  .pay-amount-choices .btn-ghost.vipps-selected{
+    background:var(--emerald); color:#fff; border-color:var(--emerald);
+  }
+  .pay-amount-hint{
+    font-size:12.5px; color:#5a6860; line-height:1.5; margin:0 0 12px;
+    padding:10px 12px; background:#f7f8fc; border-radius:8px; border:1px dashed rgba(40,40,90,0.14);
+  }
+  html[dir="rtl"] .pay-amount-hint{font-family:'Tajawal',sans-serif;}
+  .pay-amount-confirmed{
+    display:none; margin:12px 0 0; padding:14px 12px; border-radius:10px;
+    background:#e8f5ef; border:1px solid rgba(46,125,82,0.25); text-align:center;
+  }
+  .pay-amount-confirmed.visible{display:block;}
+  .pay-amount-confirmed .lbl{
+    font-size:12px; color:#2e7d52; font-weight:600; margin-bottom:4px;
+  }
+  .pay-amount-confirmed .amt{
+    font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:700; color:#1f4a3a;
+  }
+  html[dir="rtl"] .pay-amount-confirmed .amt{font-family:'Tajawal',sans-serif; font-size:24px;}
+  .pay-methods-block{margin-top:14px;}
+  .pay-methods-label{
+    font-size:12px; font-weight:700; color:#5a6860; margin:0 0 10px; letter-spacing:.02em;
+  }
+  html[dir="rtl"] .pay-methods-label{font-family:'Tajawal',sans-serif;}
   .btn-vipps{
     background:var(--vipps); color:#fff; border:none;
     display:flex; align-items:center; justify-content:center; gap:8px;
-    margin-top:10px;
+    margin-top:0; box-shadow:0 4px 14px rgba(255,91,36,0.28);
   }
   .btn-vipps:hover{background:var(--vipps-dark);}
   .btn-vipps .vipps-mark{
@@ -238,31 +277,45 @@
     padding:2px 8px; border-radius:999px; font-size:12px;
   }
   html[dir="rtl"] .btn-vipps .vipps-mark{font-family:'Tajawal',sans-serif;}
-  .btn-vipps-outline{
-    background:#fff; color:var(--vipps); border:2px solid var(--vipps);
-    margin-top:8px;
+  .btn-pay-card{
+    background:linear-gradient(135deg, #1a1f71 0%, #252525 52%, #eb001b 100%);
+    color:#fff; border:none; margin-top:10px;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    box-shadow:0 4px 14px rgba(26,31,113,0.22);
   }
-  .btn-vipps-outline:hover{background:#fff5f0;}
+  .btn-pay-card:hover{filter:brightness(1.05);}
+  .card-brands{display:inline-flex; align-items:center; gap:6px;}
+  .brand-visa,.brand-mc{
+    display:inline-flex; align-items:center; justify-content:center;
+    background:#fff; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:900;
+    letter-spacing:.04em; line-height:1.2;
+  }
+  .brand-visa{color:#1a1f71;}
+  .brand-mc{color:#eb001b; font-size:9px; text-transform:lowercase;}
   .vipps-card-note{
-    font-family:'Jost',sans-serif; font-size:11.5px; color:#8a4a30;
+    font-family:'Jost',sans-serif; font-size:11.5px; color:#5a6860;
     margin-top:8px; line-height:1.45; text-align:center;
   }
   html[dir="rtl"] .vipps-card-note{font-family:'Tajawal',sans-serif;}
   .vipps-pay-zone .btn-vipps-confirm{
-    background:var(--vipps); color:#fff; border:none; margin-top:10px;
+    background:var(--emerald); color:#fff; border:none; margin-top:10px; width:100%;
   }
   .admin-vipps-pending{
-    margin-bottom:16px; padding:16px; border-radius:12px;
-    background:#fff8f4; border:2px solid var(--vipps);
+    margin-bottom:16px; padding:16px; border-radius:var(--radius-card);
+    background:#fff; border:2px solid var(--emerald);
+    box-shadow:0 4px 16px rgba(74,143,203,0.12);
   }
+  .admin-vipps-pending .vipps-badge{background:var(--emerald);}
+  .admin-vipps-pending .vipps-zone-title{color:var(--emerald-d);}
   .admin-vipps-pending .pending-amt{
-    font-family:'Jost',sans-serif; font-size:22px; font-weight:800; color:#b33a00;
+    font-family:'Jost',sans-serif; font-size:22px; font-weight:800; color:var(--emerald-d);
     margin:8px 0 4px;
   }
   html[dir="rtl"] .admin-vipps-pending .pending-amt{font-family:'Tajawal',sans-serif;}
   .admin-vipps-pending .pending-meta{
-    font-size:12.5px; color:#8a4a30; margin-bottom:12px;
+    font-size:12.5px; color:#5a6860; margin-bottom:12px;
   }
+  .admin-vipps-pending .sub{color:#5a6860;}
   .payment-history-wrap{margin-top:20px;}
   .payment-history-wrap h3{
     font-family:'Jost',sans-serif; font-size:14px; font-weight:700; margin:0 0 10px;
@@ -1240,25 +1293,42 @@
             <span class="vipps-badge">Vipps</span>
             <span class="vipps-zone-title" data-i18n="vippsZoneTitle">Trygg betaling via Vipps</span>
           </div>
-          <div class="sub" style="margin-bottom:10px;" data-i18n="howMuchSub">Hvor mye ønsker du å betale?</div>
-          <div class="field" style="display:flex; gap:8px; margin-bottom:10px;">
-            <button class="btn btn-ghost" id="payChoiceAllBtn" style="margin-top:0;" onclick="choosePayAmount('Alt')" data-i18n="payAllBtn">Alt gjenstående</button>
-            <button class="btn btn-ghost" id="payChoicePartialBtn" style="margin-top:0;" onclick="choosePayAmount('Delvis')" data-i18n="payPartialBtn">Annet beløp</button>
-          </div>
-          <div class="field" id="payAmountFieldWrap" style="display:none;">
-            <label data-i18n="amountLabel">Beløp (kr)</label>
-            <input type="number" id="payAmountInput" min="1">
-          </div>
-          <button class="btn btn-vipps-confirm" id="payChoiceSubmitBtn" style="display:none;" onclick="submitPaymentChoice()" data-i18n="confirmAmountBtn">Bekreft beløp</button>
-          <div class="empty-msg" id="payChoiceSentMsg" style="display:none;" data-i18n="payChoiceSent">Takk! Beløpet er registrert. Fullfør betalingen under.</div>
 
-          <div id="paymentBtnWrap" style="margin-top:14px; display:none;">
+          <div class="pay-step" id="payStepAmount">
+            <div class="pay-step-head">
+              <span class="pay-step-num" id="payStepNum1">1</span>
+              <span data-i18n="payStep1Title">Velg beløp og bekreft</span>
+            </div>
+            <p class="pay-amount-hint" data-i18n="payAmountHint">Du må velge beløp og trykke «Bekreft beløp» før betalingsknappene aktiveres. Standard er hele restbeløpet hvis du velger «Alt gjenstående».</p>
+            <div class="sub" style="margin-bottom:10px;" data-i18n="howMuchSub">Hvor mye ønsker du å betale?</div>
+            <div class="pay-amount-choices">
+              <button class="btn btn-ghost" id="payChoiceAllBtn" onclick="choosePayAmount('Alt')" data-i18n="payAllBtn">Alt gjenstående</button>
+              <button class="btn btn-ghost" id="payChoicePartialBtn" onclick="choosePayAmount('Delvis')" data-i18n="payPartialBtn">Annet beløp</button>
+            </div>
+            <div class="field" id="payAmountFieldWrap" style="display:none; margin-top:10px;">
+              <label data-i18n="amountLabel">Beløp (kr)</label>
+              <input type="number" id="payAmountInput" min="1">
+            </div>
+            <button class="btn btn-vipps-confirm" id="payChoiceSubmitBtn" style="display:none;" onclick="submitPaymentChoice()" data-i18n="confirmAmountBtn">Bekreft beløp</button>
+            <div id="payConfirmedBanner" class="pay-amount-confirmed">
+              <div class="lbl" data-i18n="payConfirmedLbl">Beløp bekreftet — klar til betaling</div>
+              <div class="amt" id="payConfirmedAmt">0 kr</div>
+            </div>
+          </div>
+
+          <div id="paymentBtnWrap" class="pay-step pay-methods-block" style="display:none;">
+            <div class="pay-step-head">
+              <span class="pay-step-num" id="payStepNum2">2</span>
+              <span data-i18n="payStep2Title">Velg betalingsmåte</span>
+            </div>
+            <p class="pay-methods-label" data-i18n="payMethodsSub">Betal det bekreftede beløpet med én av metodene under:</p>
             <button class="btn btn-vipps" id="paymentLinkVipps" onclick="payViaVippsNow('WALLET')">
               <span class="vipps-mark">Vipps</span>
-              <span data-i18n="payVippsBtn">Betal med Vipps</span>
+              <span id="paymentLinkVippsLabel" data-i18n="payVippsBtn">Betal med Vipps</span>
             </button>
-            <button class="btn btn-vipps-outline" id="paymentLinkCard" style="display:none;" onclick="payViaVippsNow('CARD')">
-              <span data-i18n="payCardBtn">💳 Betal med bankkort</span>
+            <button class="btn btn-pay-card" id="paymentLinkCard" style="display:none;" onclick="payViaVippsNow('CARD')">
+              <span class="card-brands" aria-hidden="true"><span class="brand-visa">VISA</span><span class="brand-mc">mastercard</span></span>
+              <span id="paymentLinkCardLabel" data-i18n="payCardBtn">Betal med bankkort</span>
             </button>
             <div class="vipps-card-note" id="vippsCardNote" data-i18n="payCardTestNote">Bankkort (Visa/Mastercard) er kun tilgjengelig i produksjon — Vipps test støtter ikke kortbetaling.</div>
           </div>
@@ -1668,12 +1738,19 @@
       notesSub: 'Fremgangsnotater om barnet ditt',
       payNowBtn: 'Betal nå', paymentComingSoon: 'Betalingsløsning kommer snart. Kontakt skolen for betalingsinformasjon.',
       vippsZoneTitle: 'Trygg betaling via Vipps',
-      payVippsBtn: 'Betal med Vipps', payCardBtn: '💳 Betal med bankkort',
+      payVippsBtn: 'Betal med Vipps', payCardBtn: 'Betal med bankkort',
       payCardNote: 'Visa, Mastercard og andre kort — via Vipps betalingsside.',
       payCardTestNote: 'Bankkort er kun tilgjengelig i produksjon — Vipps test støtter ikke kortbetaling. Bruk Vipps-knappen over.',
-      payCardNote: 'Visa, Mastercard og andre kort — via Vipps betalingsside.',
+      payStep1Title: 'Velg beløp og bekreft',
+      payStep2Title: 'Velg betalingsmåte',
+      payAmountHint: 'Du må velge beløp og trykke «Bekreft beløp» før betalingsknappene aktiveres. Velger du «Alt gjenstående», betaler du hele restbeløpet.',
+      payMethodsSub: 'Betal det bekreftede beløpet med én av metodene under:',
+      payConfirmedLbl: 'Beløp bekreftet — klar til betaling',
+      payMustConfirmFirst: 'Velg beløp og trykk «Bekreft beløp» før du betaler.',
+      payVippsBtnAmt: 'Betal {amt} med Vipps',
+      payCardBtnAmt: 'Betal {amt} med bankkort',
       howMuchSub: 'Hvor mye ønsker du å betale?', payAllBtn: 'Alt gjenstående', payPartialBtn: 'Annet beløp',
-      amountLabel: 'Beløp (kr)', confirmAmountBtn: 'Bekreft beløp', payChoiceSent: 'Takk! Beløpet er registrert. Fullfør betalingen under.',
+      amountLabel: 'Beløp (kr)', confirmAmountBtn: 'Bekreft beløp', payChoiceSent: 'Beløpet er bekreftet. Velg betalingsmåte under.',
       invalidAmount: 'Skriv inn et gyldig beløp.', noRemaining: 'Det er ikke noe utestående beløp for dette barnet.',
       paymentAllPaid: 'Ingen utestående beløp — betaling via Vipps vises når det gjenstår noe å betale.',
       homePayCtaTitle: 'Betal gjenstående beløp', homePayCtaSub: 'Trykk her for å betale med Vipps',
@@ -1789,12 +1866,19 @@
       notesSub: 'ملاحظات تقدّم عن طالبك',
       payNowBtn: 'ادفع الآن', paymentComingSoon: 'وسيلة الدفع الإلكتروني قادمة قريبًا. تواصل مع المدرسة لمعرفة طريقة الدفع.',
       vippsZoneTitle: 'دفع آمن عبر Vipps',
-      payVippsBtn: 'ادفع عبر Vipps', payCardBtn: '💳 ادفع بالبطاقة البنكية',
-      payCardNote: 'Visa وMastercard — عبر صفحة Vipps للدفع.',
-      payCardTestNote: 'البطاقة البنكية متاحة في الإنتاج فقط — بيئة Vipps التجريبية لا تدعم الدفع بالبطاقة. استخدم زر Vipps أعلاه.',
+      payVippsBtn: 'ادفع عبر Vipps', payCardBtn: 'ادفع ببطاقة بنكية',
       payCardNote: 'Visa وMastercard وبطاقات أخرى — عبر صفحة Vipps للدفع.',
+      payCardTestNote: 'البطاقة البنكية متاحة في الإنتاج فقط — بيئة Vipps التجريبية لا تدعم الدفع بالبطاقة. استخدم زر Vipps.',
+      payStep1Title: 'اختر المبلغ وأكّده',
+      payStep2Title: 'اختر طريقة الدفع',
+      payAmountHint: 'يجب اختيار المبلغ والضغط على «تأكيد المبلغ» قبل تفعيل أزرار الدفع. عند اختيار «كل المبلغ المتبقي» سيتم دفع كامل المتبقي.',
+      payMethodsSub: 'ادفع المبلغ المؤكّد بإحدى الطريقتين:',
+      payConfirmedLbl: 'تم تأكيد المبلغ — جاهز للدفع',
+      payMustConfirmFirst: 'اختر المبلغ واضغط «تأكيد المبلغ» قبل الدفع.',
+      payVippsBtnAmt: 'ادفع {amt} عبر Vipps',
+      payCardBtnAmt: 'ادفع {amt} ببطاقة بنكية',
       howMuchSub: 'كم تريد أن تدفع؟', payAllBtn: 'كل المبلغ المتبقي', payPartialBtn: 'مبلغ آخر',
-      amountLabel: 'المبلغ (كرونة)', confirmAmountBtn: 'تأكيد المبلغ', payChoiceSent: 'شكرًا! تم تسجيل المبلغ. أكمل الدفع بالأسفل.',
+      amountLabel: 'المبلغ (كرونة)', confirmAmountBtn: 'تأكيد المبلغ', payChoiceSent: 'تم تأكيد المبلغ. اختر طريقة الدفع بالأسفل.',
       invalidAmount: 'أدخل مبلغًا صحيحًا.', noRemaining: 'لا يوجد مبلغ مستحق لهذا الطالب.',
       paymentAllPaid: 'لا يوجد مبلغ مستحق — يظهر الدفع عبر Vipps عندما يتبقى مبلغ للدفع.',
       homePayCtaTitle: 'ادفع المبلغ المتبقي', homePayCtaSub: 'اضغط هنا للدفع عبر Vipps',
@@ -1910,12 +1994,19 @@
       notesSub: 'آپ کے بچے کے بارے میں پیش رفت کے نوٹس',
       payNowBtn: 'ابھی ادائیگی کریں', paymentComingSoon: 'آن لائن ادائیگی جلد آ رہی ہے۔ ادائیگی کی معلومات کے لیے سکول سے رابطہ کریں۔',
       vippsZoneTitle: 'Vipps کے ذریعے محفوظ ادائیگی',
-      payVippsBtn: 'Vipps سے ادائیگی کریں', payCardBtn: '💳 بینک کارڈ سے ادائیگی',
-      payCardNote: 'Visa، Mastercard — Vipps ادائیگی صفحے کے ذریعے۔',
-      payCardTestNote: 'بینک کارڈ صرف پروڈکشن میں — Vipps ٹیسٹ کارڈ سپورٹ نہیں کرتا۔ اوپر Vipps بٹن استعمال کریں۔',
+      payVippsBtn: 'Vipps سے ادا کریں', payCardBtn: 'بینک کارڈ سے ادا کریں',
       payCardNote: 'Visa، Mastercard اور دیگر کارڈ — Vipps ادائیگی صفحے کے ذریعے۔',
+      payCardTestNote: 'بینک کارڈ صرف پروڈکشن میں — Vipps ٹیسٹ کارڈ سپورٹ نہیں کرتا۔ Vipps بٹن استعمال کریں۔',
+      payStep1Title: 'رقم منتخب کریں اور تصدیق کریں',
+      payStep2Title: 'ادائیگی کا طریقہ منتخب کریں',
+      payAmountHint: 'ادائیگی کے بٹن فعال ہونے سے پہلے رقم منتخب کریں اور «تصدیق» دبائیں۔ «تمام باقی رقم» سے پوری باقی رقم ادا ہوگی۔',
+      payMethodsSub: 'تصدیق شدہ رقم درج ذیل طریقوں سے ادا کریں:',
+      payConfirmedLbl: 'رقم تصدیق شدہ — ادائیگی کے لیے تیار',
+      payMustConfirmFirst: 'ادائیگی سے پہلے رقم منتخب کریں اور «تصدیق» دبائیں۔',
+      payVippsBtnAmt: 'Vipps سے {amt} ادا کریں',
+      payCardBtnAmt: 'کارڈ سے {amt} ادا کریں',
       howMuchSub: 'آپ کتنی رقم ادا کرنا چاہتے ہیں؟', payAllBtn: 'تمام باقی رقم', payPartialBtn: 'دوسری رقم',
-      amountLabel: 'رقم (کرون)', confirmAmountBtn: 'رقم کی تصدیق کریں', payChoiceSent: 'شکریہ! رقم درج کر لی گئی ہے۔ نیچے ادائیگی مکمل کریں۔',
+      amountLabel: 'رقم (کرون)', confirmAmountBtn: 'رقم کی تصدیق کریں', payChoiceSent: 'رقم تصدیق ہو گئی۔ نیچے ادائیگی کا طریقہ منتخب کریں۔',
       invalidAmount: 'ایک درست رقم درج کریں۔', noRemaining: 'اس بچے کے لیے کوئی باقی رقم نہیں ہے۔',
       paymentAllPaid: 'کوئی باقی رقم نہیں — Vipps ادائیگی تب ظاہر ہوتی ہے جب ادائیگی باقی ہو۔',
       homePayCtaTitle: 'باقی رقم ادا کریں', homePayCtaSub: 'Vipps سے ادائیگی کے لیے یہاں دبائیں',
@@ -3816,7 +3907,7 @@
         <div class="pending-meta">${escapeHtml(t('adminVippsPendingDate'))}: ${escapeHtml(betalingsDatoTekst(krav.createdAt))}</div>
         ${krav.hasPush ? `<div class="sub" style="margin-bottom:10px;">${escapeHtml(t('adminVippsPushNote'))}</div>` : ''}
         <button type="button" class="btn btn-vipps" data-pay-admin="wallet"><span class="vipps-mark">Vipps</span><span>${escapeHtml(t('adminVippsPayBtn'))}</span></button>
-        ${cardSynlig ? `<button type="button" class="btn btn-vipps-outline" data-pay-admin="card">${escapeHtml(t('adminVippsCardBtn'))}</button>` : ''}
+        ${cardSynlig ? `<button type="button" class="btn btn-pay-card" data-pay-admin="card"><span class="card-brands" aria-hidden="true"><span class="brand-visa">VISA</span><span class="brand-mc">mastercard</span></span><span>${escapeHtml(t('adminVippsCardBtn'))}</span></button>` : ''}
       </div>`;
     zone.querySelector('[data-pay-admin="wallet"]')?.addEventListener('click', () => {
       payAdminVippsKrav(krav.paymentGroupId, 'WALLET');
@@ -3934,10 +4025,12 @@
     const comingSoon = document.getElementById('paymentComingSoon');
     if(remainingKr > 0){
       if(vippsZone) vippsZone.style.display = 'block';
-      if(payWrap) payWrap.style.display = 'block';
       if(paidMsg) paidMsg.style.display = 'none';
       if(comingSoon) comingSoon.style.display = 'none';
       oppdaterVippsKortKnapp();
+      updatePayMethodLabels();
+      updatePayConfirmedBanner();
+      updatePaymentStepUI();
     } else {
       if(vippsZone) vippsZone.style.display = 'none';
       if(payWrap) payWrap.style.display = 'none';
@@ -5162,17 +5255,66 @@
   };
 
   let selectedPayType = null;
+  let selectedPayAmountKr = 0;
+  let lastPaymentChildId = null;
+
+  function formatPayAmtKr(kr){
+    return Math.round(toNum(kr)).toLocaleString('no-NO') + ' kr';
+  }
+
+  function updatePayMethodLabels(){
+    const amtTxt = selectedPayAmountKr > 0 ? formatPayAmtKr(selectedPayAmountKr) : '';
+    const vippsLbl = document.getElementById('paymentLinkVippsLabel');
+    const cardLbl = document.getElementById('paymentLinkCardLabel');
+    if(vippsLbl){
+      vippsLbl.textContent = amtTxt
+        ? t('payVippsBtnAmt').replace('{amt}', amtTxt)
+        : t('payVippsBtn');
+    }
+    if(cardLbl){
+      cardLbl.textContent = amtTxt
+        ? t('payCardBtnAmt').replace('{amt}', amtTxt)
+        : t('payCardBtn');
+    }
+  }
+
+  function updatePayConfirmedBanner(){
+    const banner = document.getElementById('payConfirmedBanner');
+    const amtEl = document.getElementById('payConfirmedAmt');
+    const stepNum = document.getElementById('payStepNum1');
+    if(selectedPayAmountKr > 0){
+      if(amtEl) amtEl.textContent = formatPayAmtKr(selectedPayAmountKr);
+      banner?.classList.add('visible');
+      stepNum?.classList.add('done');
+    } else {
+      banner?.classList.remove('visible');
+      if(amtEl) amtEl.textContent = '0 kr';
+      stepNum?.classList.remove('done');
+    }
+  }
+
+  function updatePaymentStepUI(){
+    const payWrap = document.getElementById('paymentBtnWrap');
+    if(payWrap) payWrap.style.display = selectedPayAmountKr > 0 ? 'block' : 'none';
+  }
+
   function resetPaymentChoiceUI(){
     selectedPayType = null;
+    selectedPayAmountKr = 0;
+    const amountInput = document.getElementById('payAmountInput');
+    if(amountInput) amountInput.value = '';
     document.getElementById('payAmountFieldWrap').style.display = 'none';
     document.getElementById('payChoiceSubmitBtn').style.display = 'none';
-    document.getElementById('payChoiceSentMsg').style.display = 'none';
     document.getElementById('payChoiceAllBtn')?.classList.remove('vipps-selected');
     document.getElementById('payChoicePartialBtn')?.classList.remove('vipps-selected');
+    updatePayConfirmedBanner();
+    updatePaymentStepUI();
+    updatePayMethodLabels();
   }
+
   window.choosePayAmount = function(payType){
     selectedPayType = payType;
-    document.getElementById('payChoiceSentMsg').style.display = 'none';
+    selectedPayAmountKr = 0;
     document.getElementById('payChoiceSubmitBtn').style.display = 'block';
     document.getElementById('payChoiceAllBtn')?.classList.toggle('vipps-selected', payType === 'Alt');
     document.getElementById('payChoicePartialBtn')?.classList.toggle('vipps-selected', payType === 'Delvis');
@@ -5183,12 +5325,17 @@
     } else {
       document.getElementById('payAmountFieldWrap').style.display = 'none';
     }
+    updatePayConfirmedBanner();
+    updatePaymentStepUI();
+    updatePayMethodLabels();
   };
 
-  let selectedPayAmountKr = 0;
-  let lastPaymentChildId = null;
   window.submitPaymentChoice = async function(){
     if(myChildren.length === 0 || !currentGuardian) return;
+    if(!selectedPayType){
+      notify(t('payMustConfirmFirst'), true);
+      return;
+    }
     const child = myChildren[currentChildIndex];
     const remaining = toNum(child.belop) - toNum(child.belopBetalt);
     let belop;
@@ -5204,6 +5351,10 @@
         notify(t('invalidAmount'));
         return;
       }
+      if(belop > remaining){
+        notify(t('invalidAmount'));
+        return;
+      }
     }
     selectedPayAmountKr = belop;
     try{
@@ -5211,11 +5362,17 @@
         studentId: child.id, elevNavn: child.navn, guardianId: currentGuardian.id, guardianNavn: currentGuardian.navn,
         belop: String(belop), type: selectedPayType, status: 'Ny', dato: todayISO()
       });
-      document.getElementById('payChoiceSentMsg').style.display = 'block';
       document.getElementById('payChoiceSubmitBtn').style.display = 'none';
       document.getElementById('payAmountFieldWrap').style.display = 'none';
+      updatePayConfirmedBanner();
+      updatePaymentStepUI();
+      updatePayMethodLabels();
     } catch(err){
       console.error(err);
+      selectedPayAmountKr = 0;
+      updatePayConfirmedBanner();
+      updatePaymentStepUI();
+      updatePayMethodLabels();
       notify(t('errorOccurred') + err.message);
     }
   };
@@ -5243,9 +5400,12 @@
   window.payViaVippsNow = async function(paymentMethodType){
     paymentMethodType = paymentMethodType === 'CARD' ? 'CARD' : 'WALLET';
     if(myChildren.length === 0 || !currentGuardian) return;
+    if(selectedPayAmountKr <= 0){
+      notify(t('payMustConfirmFirst'), true);
+      return;
+    }
     const child = myChildren[currentChildIndex];
-    const remaining = toNum(child.belop) - toNum(child.belopBetalt);
-    const amountToPay = selectedPayAmountKr > 0 ? selectedPayAmountKr : remaining;
+    const amountToPay = selectedPayAmountKr;
     if(!amountToPay || amountToPay <= 0){
       notify(t('invalidAmount'));
       return;
