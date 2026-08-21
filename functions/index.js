@@ -607,10 +607,10 @@ async function identifiserVippsBetaler({ student, reg, event, pending, accessTok
 
   const matchCandidate = (label, navn, tlf, epost) => {
     if (payerPhone && normalizePhone8(tlf) === payerPhone) {
-      return { betalerRolle: label, betalerNavn: payerName || navn || label, betalerTelefon: payerPhone };
+      return { betalerRolle: label, betalerNavn: payerName || navn || label, betalerTelefon: payerPhone, betalerEpost: payerEmail || String(epost || "").trim().toLowerCase() };
     }
     if (payerEmail && epost && String(epost).trim().toLowerCase() === payerEmail) {
-      return { betalerRolle: label, betalerNavn: payerName || navn || label, betalerTelefon: payerPhone || normalizePhone8(tlf) };
+      return { betalerRolle: label, betalerNavn: payerName || navn || label, betalerTelefon: payerPhone || normalizePhone8(tlf), betalerEpost: payerEmail };
     }
     return null;
   };
@@ -622,7 +622,7 @@ async function identifiserVippsBetaler({ student, reg, event, pending, accessTok
       || matchCandidate("Foresatt 2", g2?.navn || student.foresatt2_navn, g2?.telefon || student.foresatt2_tlf, g2?.epost || student.foresatt2_epost);
     if (hit) return hit;
     if (pending?.initiatedBy === "guardian") {
-      return { betalerRolle: "Foresatt (via portal)", betalerNavn: payerName || "Ukjent", betalerTelefon: payerPhone || "—" };
+      return { betalerRolle: "Foresatt (via portal)", betalerNavn: payerName || "Ukjent", betalerTelefon: payerPhone || "—", betalerEpost: payerEmail || "" };
     }
   }
 
@@ -637,14 +637,23 @@ async function identifiserVippsBetaler({ student, reg, event, pending, accessTok
     betalerRolle: payerPhone ? etiketter.betalerViaLenke : "Ukjent betaler",
     betalerNavn: payerName || "—",
     betalerTelefon: payerPhone || "—",
+    betalerEpost: payerEmail || "",
   };
+}
+
+async function hentVarselOppsett() {
+  try {
+    const doc = await db.collection("settings").doc("varsler").get();
+    return doc.exists ? doc.data() : {};
+  } catch (err) {
+    logger.warn("Kunne ikke lese varsel-oppsett", err);
+    return {};
+  }
 }
 
 async function hentVippsBetalingMottakere() {
   try {
-    const doc = await db.collection("settings").doc("varsler").get();
-    const oppsett = doc.exists ? doc.data() : {};
-    if (oppsett.vippsBetalingAktiv === false) return [];
+    const oppsett = await hentVarselOppsett();
     const mottakere = Array.isArray(oppsett.nySoknadMottakere)
       ? oppsett.nySoknadMottakere.map((e) => String(e || "").trim()).filter((e) => e.includes("@"))
       : [];
@@ -655,38 +664,123 @@ async function hentVippsBetalingMottakere() {
   }
 }
 
-async function sendVippsBetalingVarsel({ elevNavn, amountKr, reference, betaler, paymentTypeLabel, isCard }) {
-  const mottakere = await hentVippsBetalingMottakere();
-  if (!mottakere.length) return;
+async function samleForesattEposter({ student, reg, payerEmail }) {
+  const emails = new Set();
+  const add = (raw) => {
+    const e = String(raw || "").trim().toLowerCase();
+    if (e.includes("@")) emails.add(e);
+  };
+  if (student) {
+    const g1 = await loadGuardianDoc(student.foresatt);
+    const g2 = await loadGuardianDoc(student.foresatt2);
+    add(g1?.epost);
+    add(g2?.epost);
+    add(student.foresatt1_epost);
+    add(student.foresatt2_epost);
+  }
+  if (reg) {
+    add(reg.foresatt1_epost);
+    add(reg.foresatt2_epost);
+  }
+  add(payerEmail);
+  return [...emails];
+}
 
+async function sendBetalingEposter({
+  elevNavn, amountKr, reference, betaler, paymentTypeLabel, isCard,
+  student, reg, pendingRef, pendingData, payerEmail,
+}) {
+  const etiketter = betalingKanalEtiketter(isCard);
   const belop = amountKr != null ? `${amountKr} kr` : "—";
   const betalerTekst = `${betaler.betalerRolle}${betaler.betalerNavn && betaler.betalerNavn !== "—" ? ` (${betaler.betalerNavn})` : ""}`;
-  const etiketter = betalingKanalEtiketter(isCard);
+  const kanalTekst = isCard ? "bankkort (Visa/Mastercard)" : "Vipps";
+  const tidspunkt = new Date().toLocaleString("no-NO", { timeZone: "Europe/Oslo" });
+  const epostPay = payerEmail || betaler.betalerEpost || "";
 
-  await db.collection("mail").add({
-    from: "Madina Skole <post@madinaskole.no>",
-    to: mottakere,
-    message: {
-      subject: etiketter.mottattSubject(elevNavn, belop),
-      html: `
-        <p>${etiketter.mottattIntro}</p>
-        <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
-          <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Elev</th><td style="padding:5px 0;">${elevNavn || "—"}</td></tr>
-          <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Beløp</th><td style="padding:5px 0;">${belop}</td></tr>
-          <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Betaler</th><td style="padding:5px 0;">${betalerTekst}</td></tr>
-          <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">${etiketter.telefonLabel}</th><td style="padding:5px 0;">${betaler.betalerTelefon || "—"}</td></tr>
-          <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Type</th><td style="padding:5px 0;">${paymentTypeLabel}</td></tr>
-          <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Referanse</th><td style="padding:5px 0;">${reference}</td></tr>
-          <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Tidspunkt</th><td style="padding:5px 0;">${new Date().toLocaleString("no-NO", { timeZone: "Europe/Oslo" })}</td></tr>
-        </table>
-        <p style="margin-top:18px;">
-          <a href="https://madinaskole.no/admin.html#fane=cashier">Åpne Kasserer</a>
-        </p>
-        <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
-          Du får denne e-posten fordi du står som mottaker under «Varslinger» i panelet.
-        </p>`,
-    },
-  });
+  if (!pendingData?.adminVarselSendtAt) {
+    const mottakere = await hentVippsBetalingMottakere();
+    if (!mottakere.length) {
+      logger.warn(`Ingen admin-mottakere konfigurert for betaling ${reference}.`);
+    } else {
+      await db.collection("mail").add({
+        from: "Madina Skole <post@madinaskole.no>",
+        to: mottakere,
+        message: {
+          subject: etiketter.mottattSubject(elevNavn, belop),
+          html: `
+            <p>${etiketter.mottattIntro}</p>
+            <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Elev</th><td style="padding:5px 0;">${elevNavn || "—"}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Beløp</th><td style="padding:5px 0;">${belop}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Betaler</th><td style="padding:5px 0;">${betalerTekst}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">${etiketter.telefonLabel}</th><td style="padding:5px 0;">${betaler.betalerTelefon || "—"}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Type</th><td style="padding:5px 0;">${paymentTypeLabel}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Referanse</th><td style="padding:5px 0;">${reference}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Tidspunkt</th><td style="padding:5px 0;">${tidspunkt}</td></tr>
+            </table>
+            <p style="margin-top:18px;">
+              <a href="https://madinaskole.no/admin.html#fane=cashier">Åpne Kasserer</a>
+            </p>
+            <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+              Du får denne e-posten fordi du står som mottaker under «Varslinger» i panelet.
+            </p>`,
+        },
+      });
+      if (pendingRef) {
+        await pendingRef.update({ adminVarselSendtAt: new Date().toISOString() });
+      }
+      logger.info(`Admin-varsel for betaling ${reference} sendt til ${mottakere.length} mottaker(e).`);
+    }
+  }
+
+  if (!pendingData?.foresattKvitteringSendtAt) {
+    const foresattEposter = await samleForesattEposter({ student, reg, payerEmail: epostPay });
+    if (!foresattEposter.length) {
+      logger.info(`Ingen foresatt-e-post funnet for betalingskvittering ${reference}.`);
+    } else {
+      const mottakerNavn = reg?.foresatt1_navn || student?.foresatt1_navn || "Hei";
+      await db.collection("mail").add({
+        from: "Madina Skole <post@madinaskole.no>",
+        to: foresattEposter,
+        message: {
+          subject: `Betalingsbekreftelse — ${elevNavn || "elev"} (${belop})`,
+          html: `
+            <p>${mottakerNavn},</p>
+            <p>Vi bekrefter at betalingen er mottatt og registrert.</p>
+            <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;margin:14px 0;">
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Elev</th><td style="padding:5px 0;">${elevNavn || "—"}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Beløp</th><td style="padding:5px 0;">${belop}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Betalt via</th><td style="padding:5px 0;">${kanalTekst}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Type</th><td style="padding:5px 0;">${paymentTypeLabel}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Referanse</th><td style="padding:5px 0;">${reference}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Tidspunkt</th><td style="padding:5px 0;">${tidspunkt}</td></tr>
+            </table>
+            <p>Beløpet er trukket fra restsaldoen i skolens system. Har du spørsmål, svar gjerne på denne e-posten.</p>
+            <p style="margin-top:22px;">Med vennlig hilsen,<br><b>Madina Skole</b></p>
+            <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+              Dette er en automatisk betalingsbekreftelse — ikke et vedtak om skoleplass.
+            </p>`,
+        },
+      });
+      if (pendingRef) {
+        await pendingRef.update({ foresattKvitteringSendtAt: new Date().toISOString() });
+      }
+      logger.info(`Betalingskvittering for ${reference} sendt til ${foresattEposter.length} foresatt(e).`);
+    }
+  }
+}
+
+/** Ved webhook-gjenkalling: send e-post som manglet første gang. */
+async function ensureBetalingEposterSendt(ctx) {
+  try {
+    await sendBetalingEposter(ctx);
+  } catch (err) {
+    logger.error("Kunne ikke sende/gjenopprett betalings-e-post", { reference: ctx.reference, err });
+  }
+}
+
+async function sendVippsBetalingVarsel(ctx) {
+  await sendBetalingEposter(ctx);
 }
 
 // =======================================================================
@@ -1327,14 +1421,31 @@ exports.vippsWebhook = onRequest(
       const student = studentSnap.data();
       const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
       const pendingData = pendingSnap.empty ? null : pendingSnap.docs[0].data();
+      const pendingRef = pendingSnap.empty ? null : pendingSnap.docs[0].ref;
       const isCard = erBankkortBetaling({ pending: pendingData, reference, event });
       const kanalEtiketter = betalingKanalEtiketter(isCard);
       const paymentGroupId = pendingData?.paymentGroupId || reference;
-      if (student.vippsLastPaymentGroup === paymentGroupId) {
-        res.status(200).send("OK (allerede behandlet)");
-        return;
-      }
-      if (student.vippsLastReference === reference) {
+      if (student.vippsLastPaymentGroup === paymentGroupId || student.vippsLastReference === reference) {
+        let betalerRetry = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
+        try {
+          const accessToken = await getVippsAccessToken();
+          betalerRetry = await identifiserVippsBetaler({ student, event, pending: pendingData, accessToken, reference, isCard });
+        } catch (err) {
+          logger.warn("Kunne ikke identifisere Vipps-betaler (balance retry)", err);
+        }
+        await ensureBetalingEposterSendt({
+          elevNavn: student.navn,
+          amountKr: paidAmountKr,
+          reference,
+          betaler: betalerRetry,
+          paymentTypeLabel: "Restbeløp (elev)",
+          isCard,
+          student,
+          reg: null,
+          pendingRef,
+          pendingData,
+          payerEmail: betalerRetry.betalerEpost,
+        });
         res.status(200).send("OK (allerede behandlet)");
         return;
       }
@@ -1348,7 +1459,7 @@ exports.vippsWebhook = onRequest(
         vippsLastPaymentGroup: paymentGroupId,
         vippsBetaltDato: new Date().toISOString(),
       });
-      let betaler = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—" };
+      let betaler = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
       try {
         const accessToken = await getVippsAccessToken();
         betaler = await identifiserVippsBetaler({ student, event, pending: pendingData, accessToken, reference, isCard });
@@ -1390,6 +1501,11 @@ exports.vippsWebhook = onRequest(
           betaler,
           paymentTypeLabel: "Restbeløp (elev)",
           isCard,
+          student,
+          reg: null,
+          pendingRef,
+          pendingData,
+          payerEmail: betaler.betalerEpost,
         });
       } catch (err) {
         logger.error("Kunne ikke sende Vipps-betalingsvarsel (balance)", err);
@@ -1451,7 +1567,15 @@ exports.vippsWebhook = onRequest(
       const pendingData = await hentPendingVippsData(reference);
       const isCard = erBankkortBetaling({ pending: pendingData, reference, event });
       const kanalEtiketter = betalingKanalEtiketter(isCard);
-      let betaler = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—" };
+      let pendingRef = null;
+      try {
+        const pendSnap = await db.collection("pendingVippsPayments")
+          .where("reference", "==", reference).limit(1).get();
+        if (!pendSnap.empty) pendingRef = pendSnap.docs[0].ref;
+      } catch (e) {
+        logger.warn("Fant ikke pending Vipps-krav for depositum", e);
+      }
+      let betaler = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
       try {
         const accessToken = await getVippsAccessToken();
         betaler = await identifiserVippsBetaler({ student, reg, event, pending: pendingData, accessToken, reference, isCard });
@@ -1469,15 +1593,6 @@ exports.vippsWebhook = onRequest(
         betalerNavn: betaler.betalerNavn,
         betalerTelefon: betaler.betalerTelefon,
       });
-
-      let pendingRef = null;
-      try {
-        const pendSnap = await db.collection("pendingVippsPayments")
-          .where("reference", "==", reference).limit(1).get();
-        if (!pendSnap.empty) pendingRef = pendSnap.docs[0].ref;
-      } catch (e) {
-        logger.warn("Fant ikke pending Vipps-krav for depositum", e);
-      }
 
       await regDoc.update({
         depositumBetalt: "Ja",
@@ -1503,6 +1618,11 @@ exports.vippsWebhook = onRequest(
           betaler,
           paymentTypeLabel: "Depositum",
           isCard,
+          student,
+          reg,
+          pendingRef,
+          pendingData,
+          payerEmail: betaler.betalerEpost,
         });
       } catch (err) {
         logger.error("Kunne ikke sende Vipps-betalingsvarsel (depositum)", err);
@@ -1601,7 +1721,7 @@ exports.vippsWebhook = onRequest(
     const pendingDataLegacy = await hentPendingVippsData(reference);
     const isCardLegacy = erBankkortBetaling({ pending: pendingDataLegacy, reference, event });
     const kanalEtiketterLegacy = betalingKanalEtiketter(isCardLegacy);
-    let betalerLegacy = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—" };
+    let betalerLegacy = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
     try {
       const accessToken = await getVippsAccessToken();
       betalerLegacy = await identifiserVippsBetaler({ reg, event, pending: pendingDataLegacy, accessToken, reference, isCard: isCardLegacy });
@@ -1684,6 +1804,11 @@ exports.vippsWebhook = onRequest(
         betaler: betalerLegacy,
         paymentTypeLabel: "Depositum (ny søknad)",
         isCard: isCardLegacy,
+        student: studentRecord,
+        reg,
+        pendingRef,
+        pendingData: pendingDataLegacy,
+        payerEmail: betalerLegacy.betalerEpost,
       });
     } catch (err) {
       logger.error("Kunne ikke sende Vipps-betalingsvarsel (legacy)", err);
