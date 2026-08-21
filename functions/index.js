@@ -1140,47 +1140,83 @@ function verifyVippsWebhookSignature(req) {
   try {
     const authHeader = req.headers["authorization"] || "";
     const xMsDate = req.headers["x-ms-date"];
-    const host = req.headers["host"];
-    const rawBody = req.rawBody; // Buffer — lagt til automatisk av Firebase Functions
+    const rawBody = req.rawBody;
 
-    if (!authHeader || !xMsDate || !host || !rawBody) {
-      logger.warn("Webhook mangler nødvendige headere for signaturverifisering.");
+    if (!authHeader || !xMsDate || !rawBody) {
+      logger.warn("Webhook mangler nødvendige headere.");
       return false;
     }
 
-    const match = authHeader.match(/Signature=([^&\s]+)$/);
+    const match = authHeader.match(/Signature=([^&\s]+)/);
     if (!match) {
       logger.warn("Fant ikke Signature i Authorization-headeren.");
       return false;
     }
-    const receivedSignature = decodeURIComponent(match[1]);
+    const received = decodeURIComponent(match[1]);
 
-    const contentHash = crypto.createHash("sha256").update(rawBody).digest("base64");
-    const pathAndQuery = req.originalUrl || req.url;
-    const signatureText = `POST\n${pathAndQuery}\n${xMsDate};${host};${contentHash}`;
+    // Hashen vi selv regner ut av kroppen.
+    const egenHash = crypto.createHash("sha256").update(rawBody).digest("base64");
+    const sendtHash = req.headers["x-ms-content-sha256"];
+    if (sendtHash && sendtHash !== egenHash) {
+      logger.warn("Innholdshash stemmer ikke — kroppen er endret underveis.");
+      return false;
+    }
+    // Bruk Vipps sin egen verdi når den finnes: da signerer vi over
+    // nøyaktig samme streng som de gjorde.
+    const contentHash = sendtHash || egenHash;
 
-    // VIKTIG: hemmeligheten skal brukes SOM DEN ER (som en vanlig UTF-8
-    // streng) i HMAC-nøkkelen — IKKE base64-dekodes først. Dette var
-    // årsaken til at signaturverifiseringen alltid feilet: Vipps sin egen
-    // offisielle kodeeksempel bruker secret direkte i crypto.createHmac,
-    // selv om strengen ser ut som base64.
-    const expectedSignature = crypto
-      .createHmac("sha256", VIPPS_WEBHOOK_SECRET.value())
-      .update(signatureText)
-      .digest("base64");
+    // ── Kjernen i rettelsen ──────────────────────────────────────────
+    // Firebase Functions v2 kjører på Cloud Run. Funksjonsnavnet fjernes
+    // fra stien før koden ser den, og Google bytter ut host-headeren med
+    // sin interne .run.app-adresse. Vipps signerte over den PUBLIKE stien
+    // og verten. Vi prøver derfor kandidatene, ikke bare det vi ser.
+    const stier = [...new Set([
+      "/vippsWebhook",
+      req.originalUrl,
+      req.url,
+      req.path,
+      String(req.originalUrl || "").split("?")[0],
+    ].filter(Boolean))];
 
-    const ok = crypto.timingSafeEqual(
-      Buffer.from(receivedSignature),
-      Buffer.from(expectedSignature)
-    );
-    if (!ok) logger.warn("Webhook-signatur stemmer ikke — avviser forespørselen.");
-    return ok;
+    const verter = [...new Set([
+      req.headers["x-forwarded-host"],
+      req.headers["host"],
+      "us-central1-madina-instituttet.cloudfunctions.net",
+    ].filter(Boolean))];
+
+    const hemmelighet = VIPPS_WEBHOOK_SECRET.value();
+    const mottatt = Buffer.from(received);
+
+    for (const sti of stier) {
+      for (const vert of verter) {
+        const tekst = `POST\n${sti}\n${xMsDate};${vert};${contentHash}`;
+        const forventet = crypto
+          .createHmac("sha256", hemmelighet)
+          .update(tekst)
+          .digest("base64");
+        const forventetBuf = Buffer.from(forventet);
+        if (forventetBuf.length !== mottatt.length) continue;
+        if (crypto.timingSafeEqual(mottatt, forventetBuf)) {
+          logger.info("Webhook-signatur OK", { sti, vert });
+          return true;
+        }
+      }
+    }
+
+    // Ingen traff. Loggfør hva vi FAKTISK så, slik at neste feilsøking
+    // ikke starter på null. Hemmeligheten logges aldri.
+    logger.warn("Webhook-signatur stemmer ikke — ingen kandidat traff.", {
+      provdeStier: stier,
+      provdeVerter: verter,
+      harContentHashHeader: Boolean(sendtHash),
+      signaturLengde: received.length,
+    });
+    return false;
   } catch (err) {
     logger.error("Feil under signaturverifisering", err);
     return false;
   }
 }
-
 exports.vippsWebhook = onRequest(
   { secrets: [VIPPS_WEBHOOK_SECRET, VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY] },
   async (req, res) => {
