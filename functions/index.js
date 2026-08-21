@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-20 12:45:00 */
+/* SIST-ENDRET: 2026-08-21 20:05:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -2046,6 +2046,130 @@ function feltrad(etikett, verdi) {
          `<td style="padding:5px 0;">${verdi || "—"}</td></tr>`;
 }
 
+function hentVarselMottakereFraOppsett(oppsett) {
+  let mottakere = Array.isArray(oppsett.nySoknadMottakere)
+    ? oppsett.nySoknadMottakere.map((e) => String(e || "").trim()).filter((e) => e.includes("@"))
+    : [];
+  if (!mottakere.length) mottakere = [BACKUP_EMAIL];
+  return mottakere;
+}
+
+async function sendForsteInnloggingVarselEpost({ portal, navn, epost, rolle, ekstraRader }, mottakere) {
+  const portalNavn = portal === "admin" ? "Administrativt panel"
+    : portal === "assistent" ? "Lærerportalen (assistent)"
+    : "Lærerportalen";
+  const tid = new Date().toLocaleString("no-NO", { timeZone: "Europe/Oslo" });
+  const rader = (ekstraRader || []).map(([etikett, verdi]) => feltrad(etikett, verdi)).join("");
+  const lenke = portal === "admin"
+    ? "https://madinaskole.no/admin.html"
+    : "https://madinaskole.no/admin.html#fane=teachers";
+
+  await db.collection("mail").add({
+    from: "Madina Skole <post@madinaskole.no>",
+    to: mottakere,
+    message: {
+      subject: `Første innlogging — ${portalNavn} — ${navn || epost || "Ukjent"}`,
+      html: `
+        <p><strong>${navn || epost || "Ukjent"}</strong> har logget inn for første gang i ${portalNavn.toLowerCase()}.</p>
+        <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+          ${feltrad("Navn", navn)}
+          ${feltrad("E-post", epost)}
+          ${feltrad("Rolle", rolle)}
+          ${rader}
+          ${feltrad("Tidspunkt", tid)}
+        </table>
+        <p style="margin-top:14px;">Dette er første gang denne kontoen brukes etter at tilgangen ble opprettet.</p>
+        <p style="margin-top:18px;"><a href="${lenke}">Åpne panelet</a></p>
+        <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+          Du får denne e-posten fordi du står som mottaker under «Varslinger» i panelet.
+        </p>`,
+    },
+  });
+}
+
+async function erForsteInnloggingEvent(data, docId) {
+  if (!data.timestamp) return false;
+  let snap;
+  if (data.role === "admin") {
+    const ep = String(data.epost || "").trim().toLowerCase();
+    if (!ep) return false;
+    snap = await db.collection("loginEvents").where("role", "==", "admin").where("epost", "==", ep).get();
+  } else if (data.personId && (data.role === "teacher" || data.role === "assistent")) {
+    snap = await db.collection("loginEvents")
+      .where("role", "==", data.role)
+      .where("personId", "==", data.personId)
+      .get();
+  } else {
+    return false;
+  }
+  const sorted = snap.docs.sort((a, b) =>
+    String(a.data().timestamp || "").localeCompare(String(b.data().timestamp || ""))
+  );
+  return sorted.length > 0 && sorted[0].id === docId;
+}
+
+async function kjorForsteInnloggingVarsler(oppsett) {
+  if (oppsett.forsteInnloggingAktiv === false) return;
+
+  if (oppsett.forsteInnloggingInitiert !== true) {
+    const alle = await db.collection("loginEvents").get();
+    for (let i = 0; i < alle.docs.length; i += 400) {
+      const batch = db.batch();
+      alle.docs.slice(i, i + 400).forEach((d) => batch.update(d.ref, { forsteInnloggingVarslet: true }));
+      await batch.commit();
+    }
+    await db.collection("settings").doc("varsler").set({
+      forsteInnloggingInitiert: true,
+      forsteInnloggingInitiertDato: new Date().toISOString(),
+    }, { merge: true });
+    logger.info("Første kjøring: eksisterende loginEvents merket uten utsending.");
+    return;
+  }
+
+  const snap = await db.collection("loginEvents")
+    .where("forsteInnloggingVarslet", "==", false)
+    .limit(20)
+    .get();
+  if (snap.empty) return;
+
+  const mottakere = hentVarselMottakereFraOppsett(oppsett);
+
+  for (const d of snap.docs) {
+    try {
+      const data = d.data();
+      const erForste = await erForsteInnloggingEvent(data, d.id);
+      if (erForste) {
+        let navn = data.navn || "";
+        let epost = data.epost || "";
+        let rolle = data.roller || "";
+        const ekstra = [];
+        if ((data.role === "teacher" || data.role === "assistent") && data.personId) {
+          const tDoc = await db.collection("teachers").doc(data.personId).get();
+          if (tDoc.exists) {
+            const t = tDoc.data() || {};
+            navn = navn || t.navn || "";
+            epost = epost || t.epost || "";
+            rolle = data.role === "assistent" ? "Assistent" : "Lærer";
+            if (t.tildeltKlasse) ekstra.push(["Klasse", t.tildeltKlasse]);
+          }
+        } else if (data.role === "admin") {
+          rolle = rolle || "Admin";
+        }
+        await sendForsteInnloggingVarselEpost({
+          portal: data.role === "admin" ? "admin" : data.role === "assistent" ? "assistent" : "teacher",
+          navn,
+          epost,
+          rolle,
+          ekstraRader: ekstra,
+        }, mottakere);
+      }
+      await d.ref.update({ forsteInnloggingVarslet: true });
+    } catch (err) {
+      logger.error(`Første-innlogging-varsel feilet for ${d.id} — prøves igjen`, err);
+    }
+  }
+}
+
 async function sendVarslerForSoknad(reg, id, oppsett) {
   const navn = reg.elev_navn || "Ukjent navn";
 
@@ -2223,6 +2347,10 @@ exports.varsleNySoknad = onSchedule(
     } catch (err) {
       logger.warn("Kunne ikke oppdatere feilmerke", err);
     }
+
+    await kjorForsteInnloggingVarsler(oppsett).catch((err) =>
+      logger.error("Første-innlogging-varsler feilet", err)
+    );
   }
 );
 

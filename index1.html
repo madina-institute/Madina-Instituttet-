@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 22:45:00 -->
+<!-- SIST-ENDRET: 2026-08-21 20:05:00 -->
 <html lang="no" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
@@ -3072,8 +3072,26 @@
     laererTilgangMangler = await sjekkLaererIndeks(minEpost);
     startDataListeners();
     currentTeacher = teacher;
+    const erForsteInnlogging = !teacher.sisteInnlogging;
     updateDoc(doc(db, 'teachers', teacher.id), { sisteInnlogging: new Date().toISOString() }).catch(()=>{});
-    addDoc(collection(db, 'loginEvents'), { role: erAssistent() ? 'assistent' : 'teacher', personId: teacher.id, timestamp: new Date().toISOString() }).catch(()=>{});
+    let forsteInnloggingVarslet = true;
+    if(erForsteInnlogging){
+      const erAss = erAssistent();
+      const ekstra = teacher.tildeltKlasse ? [['Klasse', teacher.tildeltKlasse]] : [];
+      forsteInnloggingVarslet = await sendForsteInnloggingVarsel({
+        portal: erAss ? 'assistent' : 'teacher',
+        navn: teacher.navn || '',
+        epost: teacher.epost || email,
+        rolle: erAss ? 'Assistent' : 'Lærer',
+        ekstraRader: ekstra
+      });
+    }
+    addDoc(collection(db, 'loginEvents'), {
+      role: erAssistent() ? 'assistent' : 'teacher',
+      personId: teacher.id,
+      timestamp: new Date().toISOString(),
+      forsteInnloggingVarslet: forsteInnloggingVarslet
+    }).catch(()=>{});
 
     // Mangler opplysninger på kortet, må de fylles ut før portalen åpnes.
     // Innloggingen er allerede godkjent — dette er ikke en ny sperre, men
@@ -4799,6 +4817,49 @@
       await addDoc(collection(db, 'mail'), { to: [g.epost], message: { subject, text: fullText } });
     } catch(err){
       console.error('E-postvarsling til foresatt feilet:', err);
+    }
+  }
+
+  async function sendForsteInnloggingVarsel({ portal, navn, epost, rolle, ekstraRader }){
+    try{
+      const snap = await getDoc(doc(db, 'settings', 'varsler'));
+      const oppsett = snap.exists() ? (snap.data() || {}) : {};
+      if(oppsett.forsteInnloggingAktiv === false) return false;
+      let mottakere = Array.isArray(oppsett.nySoknadMottakere)
+        ? oppsett.nySoknadMottakere.map(e => String(e || '').trim()).filter(e => e.includes('@'))
+        : [];
+      if(!mottakere.length) mottakere = ['post@madinaskole.no'];
+      const portalNavn = portal === 'assistent' ? 'Lærerportalen (assistent)' : 'Lærerportalen';
+      const tid = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
+      const rader = (ekstraRader || []).map(([etikett, verdi]) =>
+        `<tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">${escapeHtml(etikett)}</th>` +
+        `<td style="padding:5px 0;">${escapeHtml(verdi || '—')}</td></tr>`
+      ).join('');
+      await addDoc(collection(db, 'mail'), {
+        from: 'Madina Skole <post@madinaskole.no>',
+        to: mottakere,
+        message: {
+          subject: `Første innlogging — ${portalNavn} — ${navn || epost || 'Ukjent'}`,
+          html: `
+            <p><strong>${escapeHtml(navn || epost || 'Ukjent')}</strong> har logget inn for første gang i ${escapeHtml(portalNavn.toLowerCase())}.</p>
+            <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Navn</th><td style="padding:5px 0;">${escapeHtml(navn || '—')}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">E-post</th><td style="padding:5px 0;">${escapeHtml(epost || '—')}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Rolle</th><td style="padding:5px 0;">${escapeHtml(rolle || '—')}</td></tr>
+              ${rader}
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Tidspunkt</th><td style="padding:5px 0;">${escapeHtml(tid)}</td></tr>
+            </table>
+            <p style="margin-top:14px;">Dette er første gang denne kontoen brukes etter at tilgangen ble opprettet.</p>
+            <p style="margin-top:18px;"><a href="https://madinaskole.no/admin.html#fane=teachers">Se læreroversikt</a></p>
+            <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+              Du får denne e-posten fordi du står som mottaker under «Varslinger» i panelet.
+            </p>`
+        }
+      });
+      return true;
+    } catch(err){
+      console.error('Første-innlogging-varsel feilet:', err);
+      return false;
     }
   }
 
