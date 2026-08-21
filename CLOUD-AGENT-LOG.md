@@ -3,7 +3,7 @@
 > **الغرض:** توثيق كل ما نفّذه الوكيل السحابي (Cloud Agent) — أعمال، أخطاء، إصلاحات، نصائح، ومهام متبقية.  
 > **المستودع:** `madina-institute/Madina-Instituttet-`  
 > **آخر تحديث يدوي:** 2026-08-20 11:30 (Oslo)  
-> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-21T03:31:55.078Z -->
+> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-21T11:02:45.158Z -->
 
 ---
 
@@ -220,6 +220,7 @@
 ## 6. سجل التحديثات الآلية (commits)
 
 <!-- AUTO-LOG-ENTRIES-BEGIN -->
+- `2026-08-21T03:31:55Z` · `6a91086` · chore: auto-update CLOUD-AGENT-LOG (10h sync)
 - `2026-08-21T00:36:19+02:00` · `3c65ab3` · fix(portals): restore page after refresh in teacher and parent portals (#78)
 - `2026-08-21T00:27:03+02:00` · `c5b3890` · fix(admin): restore tab after page refresh (#77)
 - `2026-08-20T23:59:06+02:00` · `c9f7fc0` · fix(teacher): class students as main sidebar tab (#76)
