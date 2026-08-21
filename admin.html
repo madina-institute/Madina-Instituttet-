@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:30:00 -->
+<!-- SIST-ENDRET: 2026-08-21 20:05:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2542,7 +2542,7 @@
 
     <div data-ov="varsler" class="report-card" style="margin-top:20px;">
       <h3>🔔 Varslinger</h3>
-      <div class="sub">Hvem skal få e-post ved ny påmelding og ved mottatt Vipps-betaling</div>
+      <div class="sub">Hvem skal få e-post ved ny påmelding, første innlogging og mottatt Vipps-betaling</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px; line-height:1.6;">
         Listen bygges av de ansatte som har en e-post registrert. Kryss av for
         dem som skal varsles — endringen gjelder med én gang, uten at noe må
@@ -2552,10 +2552,15 @@
         <input type="checkbox" id="varselNySoknadAktiv" onchange="oppdaterVarselOppsummering()" style="width:17px; height:17px; flex:0 0 auto;">
         <span>Send varsel ved ny påmelding</span>
       </label>
-      <label style="display:flex; align-items:flex-start; gap:9px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
+      <label style="display:flex; align-items:flex-start; gap:9px; margin-bottom:14px; font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
         <input type="checkbox" id="varselKvitteringAktiv" onchange="oppdaterVarselOppsummering()" style="width:17px; height:17px; flex:0 0 auto; margin-top:1px;">
         <span>Send kvittering til foresatte<br>
         <span style="font-size:12px; color:#8a9a90;">De får en e-post om at påmeldingen er mottatt. Kvitteringen lover ikke plass — den bekrefter kun at søknaden er registrert.</span></span>
+      </label>
+      <label style="display:flex; align-items:flex-start; gap:9px; margin-bottom:16px; font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
+        <input type="checkbox" id="varselForsteInnloggingAktiv" onchange="oppdaterVarselOppsummering()" style="width:17px; height:17px; flex:0 0 auto; margin-top:1px;">
+        <span>Send varsel ved første innlogging<br>
+        <span style="font-size:12px; color:#8a9a90;">Når en lærer, assistent eller admin logger inn for første gang etter at tilgangen ble opprettet.</span></span>
       </label>
 
       <div style="font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; color:var(--emerald); margin-bottom:6px; letter-spacing:.02em;">HVEM I ADMINISTRASJONEN SKAL VARSLES</div>
@@ -4680,7 +4685,7 @@
 <script type="module">
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query, where, deleteField,
+    getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query, where, limit, deleteField,
     writeBatch,
     addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, setDoc as _setDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -5238,6 +5243,32 @@
 
     oktStart = new Date();
     sistePuls = Date.now();
+    const adminEpost = (currentUserEmail || '').trim().toLowerCase();
+    let erForsteInnlogging = false;
+    if(adminEpost){
+      try{
+        const prev = await getDocs(query(
+          collection(db, 'loginEvents'),
+          where('role', '==', 'admin'),
+          where('epost', '==', adminEpost),
+          limit(1)
+        ));
+        erForsteInnlogging = prev.empty;
+      } catch(err){
+        console.warn('Kunne ikke sjekke tidligere admin-innlogginger', err);
+      }
+    }
+    const adminNavn = (cache.teachers || []).find(t => (t.epost||'').toLowerCase() === adminEpost)?.navn || '';
+    let forsteInnloggingVarslet = true;
+    if(erForsteInnlogging){
+      forsteInnloggingVarslet = await sendForsteInnloggingVarsel({
+        portal: 'admin',
+        navn: adminNavn,
+        epost: currentUserEmail || '',
+        rolle: currentUserRoles.join(', ') || 'Admin',
+        ekstraRader: []
+      });
+    }
     try{
       // 🔴 _addDoc, ikke addDoc.
       //
@@ -5254,11 +5285,12 @@
       const doc = await _addDoc(collection(db, 'loginEvents'), {
         role: 'admin',
         epost: currentUserEmail || '',
-        navn: (cache.teachers || []).find(t => (t.epost||'').toLowerCase() === (currentUserEmail||'').toLowerCase())?.navn || '',
+        navn: adminNavn,
         roller: currentUserRoles.join(', '),
         timestamp: oktStart.toISOString(),
         sisteAktivitet: oktStart.toISOString(),
-        varighetMin: 0
+        varighetMin: 0,
+        forsteInnloggingVarslet: forsteInnloggingVarslet
       });
       oktRef = doc;
       try{
@@ -7230,6 +7262,7 @@
       const d = snap.exists() ? (snap.data() || {}) : {};
       varselOppsett.nySoknadAktiv = d.nySoknadAktiv !== false;
       varselOppsett.kvitteringAktiv = d.kvitteringAktiv !== false;
+      varselOppsett.forsteInnloggingAktiv = d.forsteInnloggingAktiv !== false;
       varselOppsett.nySoknadMottakere = Array.isArray(d.nySoknadMottakere) ? d.nySoknadMottakere : [];
       fyllVarselInnstillinger();
     }, (err) => console.error('settings/varsler', err));
@@ -21757,7 +21790,56 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   // varselet å virke selv om et personkort slettes og opprettes på nytt,
   // og Cloud Function-en slipper å slå opp noe for å vite hvor den skal
   // sende.
-  const varselOppsett = { nySoknadAktiv: true, kvitteringAktiv: true, nySoknadMottakere: [] };
+  const varselOppsett = { nySoknadAktiv: true, kvitteringAktiv: true, forsteInnloggingAktiv: true, nySoknadMottakere: [] };
+
+  // Varsler administrasjonen når en konto brukes for første gang i et portal.
+  async function sendForsteInnloggingVarsel({ portal, navn, epost, rolle, ekstraRader }){
+    try{
+      const snap = await getDoc(doc(db, 'settings', 'varsler'));
+      const oppsett = snap.exists() ? (snap.data() || {}) : {};
+      if(oppsett.forsteInnloggingAktiv === false) return false;
+      let mottakere = Array.isArray(oppsett.nySoknadMottakere)
+        ? oppsett.nySoknadMottakere.map(e => String(e || '').trim()).filter(e => e.includes('@'))
+        : [];
+      if(!mottakere.length) mottakere = ['post@madinaskole.no'];
+      const portalNavn = portal === 'admin' ? 'Administrativt panel'
+        : portal === 'assistent' ? 'Lærerportalen (assistent)'
+        : 'Lærerportalen';
+      const tid = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
+      const rader = (ekstraRader || []).map(([etikett, verdi]) =>
+        `<tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">${escapeHtml(etikett)}</th>` +
+        `<td style="padding:5px 0;">${escapeHtml(verdi || '—')}</td></tr>`
+      ).join('');
+      const lenke = portal === 'admin'
+        ? 'https://madinaskole.no/admin.html'
+        : 'https://madinaskole.no/admin.html#fane=teachers';
+      await _addDoc(collection(db, 'mail'), {
+        from: MAIL_FROM,
+        to: mottakere,
+        message: {
+          subject: `Første innlogging — ${portalNavn} — ${navn || epost || 'Ukjent'}`,
+          html: `
+            <p><strong>${escapeHtml(navn || epost || 'Ukjent')}</strong> har logget inn for første gang i ${escapeHtml(portalNavn.toLowerCase())}.</p>
+            <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Navn</th><td style="padding:5px 0;">${escapeHtml(navn || '—')}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">E-post</th><td style="padding:5px 0;">${escapeHtml(epost || '—')}</td></tr>
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Rolle</th><td style="padding:5px 0;">${escapeHtml(rolle || '—')}</td></tr>
+              ${rader}
+              <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Tidspunkt</th><td style="padding:5px 0;">${escapeHtml(tid)}</td></tr>
+            </table>
+            <p style="margin-top:14px;">Dette er første gang denne kontoen brukes etter at tilgangen ble opprettet.</p>
+            <p style="margin-top:18px;"><a href="${lenke}">Åpne panelet</a></p>
+            <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
+              Du får denne e-posten fordi du står som mottaker under «Varslinger» i panelet.
+            </p>`
+        }
+      });
+      return true;
+    } catch(err){
+      console.error('Første-innlogging-varsel feilet:', err);
+      return false;
+    }
+  }
 
   function renderVarselMottakere(){
     const el = document.getElementById('varselMottakerListe');
@@ -21847,19 +21929,27 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(!el || !aktiv) return;
     const valgte = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
     if(!aktiv.checked){
-      el.innerHTML = '⚠️ Varsling er slått AV — ingen i administrasjonen får beskjed når en påmelding kommer inn.' + kvitteringLinje();
+      el.innerHTML = '⚠️ Varsling ved ny påmelding er slått AV.' + kvitteringLinje() + forsteInnloggingLinje();
       return;
     }
     if(valgte.length === 0){
       el.innerHTML = 'Ingen valgt — varselet går til <strong>post@madinaskole.no</strong> ' +
-        'slik at en påmelding aldri kommer inn uten at noen ser den.' + kvitteringLinje();
+        'slik at en påmelding aldri kommer inn uten at noen ser den.' + kvitteringLinje() + forsteInnloggingLinje();
       return;
     }
     el.innerHTML = 'Ved ny påmelding varsles <strong>' + valgte.length + ' person' +
       (valgte.length === 1 ? '' : 'er') + '</strong>: ' +
       valgte.map(e => escapeHtml(e)).join(', ') +
-      '. <strong>Samme mottakere</strong> får også e-post når en Vipps-betaling er mottatt.' + kvitteringLinje();
+      '. <strong>Samme mottakere</strong> får også e-post ved Vipps-betaling og ved første innlogging i portalene.' + kvitteringLinje() +
+      forsteInnloggingLinje();
   };
+
+  function forsteInnloggingLinje(){
+    const f = document.getElementById('varselForsteInnloggingAktiv');
+    return '<br>' + (f && f.checked
+      ? 'Første innlogging i lærerportalen eller panelet varsles de samme mottakerne.'
+      : '⚠️ Ingen varsles ved <strong>første innlogging</strong> i portalene.');
+  }
 
   // Kvitteringen går til en HELT annen mottaker enn varselet — foresatte,
   // ikke ansatte. Den fortjener sin egen setning, ikke å bli antatt.
@@ -21875,6 +21965,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(aktiv) aktiv.checked = varselOppsett.nySoknadAktiv;
     const kvitt = document.getElementById('varselKvitteringAktiv');
     if(kvitt) kvitt.checked = varselOppsett.kvitteringAktiv;
+    const forste = document.getElementById('varselForsteInnloggingAktiv');
+    if(forste) forste.checked = varselOppsett.forsteInnloggingAktiv;
     renderVarselMottakere();
   }
 
@@ -21885,6 +21977,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       await setDoc(doc(db, 'settings', 'varsler'), {
         nySoknadAktiv: aktiv,
         kvitteringAktiv: document.getElementById('varselKvitteringAktiv').checked,
+        forsteInnloggingAktiv: document.getElementById('varselForsteInnloggingAktiv').checked,
         nySoknadMottakere: mottakere,
         sistEndretAv: currentUserEmail || '',
         sistEndretDato: new Date().toISOString()
@@ -22178,6 +22271,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       punkter: [
         { h: 'Varsel til administrasjonen', t: v.nySoknadAktiv ? 'på' : '⚠️ av' },
         { h: 'Kvittering til foresatte', t: v.kvitteringAktiv ? 'på' : '⚠️ av' },
+        { h: 'Første innlogging', t: v.forsteInnloggingAktiv ? 'på' : '⚠️ av' },
         { h: 'Mottakere (' + (v.nySoknadMottakere || []).length + ')',
           t: (v.nySoknadMottakere || []).join(' · ') || '⚠️ ingen valgt — varselet går til skolens hovedadresse' },
         { h: 'Forsinkelse', t: F('varsler.forsinkelse') },
