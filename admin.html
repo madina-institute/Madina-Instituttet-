@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 01:12:00 -->
+<!-- SIST-ENDRET: 2026-08-22 01:25:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9744,8 +9744,20 @@
     if(data.pushNote) linjer.push(data.pushNote);
     if(data.usedFallback || data.pushFailReason){
       linjer.push('⚠️ PUSH til appen feilet — kun e-postlenke er aktiv.');
-      if(data.pushFailReason) linjer.push('Vipps svarte: ' + data.pushFailReason.slice(0, 280));
-      linjer.push('Kontakt Vipps for PUSH_MESSAGE-godkjenning av MSN, eller sjekk at telefonnummeret er riktig i Vipps test-appen.');
+      const feil = String(data.pushFailReason || '');
+      const pushIkkeGodkjent = /5080|PUSH_MESSAGE not allowed|not allowed to use PUSH/i.test(feil);
+      if(pushIkkeGodkjent){
+        linjer.push('Vipps har IKKE godkjent PUSH_MESSAGE for deres salgsenhet (MSN). Dette er ikke en feil i systemet — det må aktiveres hos Vipps.');
+        linjer.push('Kontakt Vipps (kontoansvarlig / kundeservice) og be om PUSH_MESSAGE-godkjenning for ePayment. Oppgi MSN og at dere sender betalingskrav fra skolekontor til foresatte.');
+        if(data.vippsEnv === 'prod'){
+          linjer.push('Inntil godkjenning: foresatte betaler via lenken i e-posten (fungerer som nå).');
+        }
+      } else {
+        if(data.pushFailReason) linjer.push('Vipps svarte: ' + feil.slice(0, 280));
+        linjer.push(data.vippsEnv === 'prod'
+          ? 'Kontakt Vipps for PUSH_MESSAGE-godkjenning av MSN, eller sjekk at telefonnummeret matcher Vipps-appen til foresatt 1.'
+          : 'Kontakt Vipps for PUSH_MESSAGE-godkjenning av MSN, eller sjekk at telefonnummeret er riktig i Vipps test-appen.');
+      }
     } else if(data.pushInAppExpected || data.dualPayment){
       linjer.push('✓ Krav sendt til Vipps-appen under «Betalinger».');
       if(data.pushPaymentState) linjer.push('Vipps-status: ' + data.pushPaymentState);
