@@ -3,7 +3,7 @@
 > **الغرض:** توثيق كل ما نفّذه الوكيل السحابي (Cloud Agent) — أعمال، أخطاء، إصلاحات، نصائح، ومهام متبقية.  
 > **المستودع:** `madina-institute/Madina-Instituttet-`  
 > **آخر تحديث يدوي:** 2026-08-20 11:30 (Oslo)  
-> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-21T11:02:45.158Z -->
+> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-21T20:55:32.904Z -->
 
 ---
 
@@ -220,6 +220,15 @@
 ## 6. سجل التحديثات الآلية (commits)
 
 <!-- AUTO-LOG-ENTRIES-BEGIN -->
+- `2026-08-21T22:47:09+02:00` · `f434b79` · Enhance webhook signature verification process
+- `2026-08-21T18:16:28Z` · `2acbb60` · Merge pull request #81 from madina-institute/cursor/varsel-duplikat-rydd-c9a0
+- `2026-08-21T18:16:00Z` · `b14e794` · Fix duplicate recipients in Varslinger settings list
+- `2026-08-21T18:08:16Z` · `e95a9d9` · Merge pull request #80 from madina-institute/cursor/first-login-varsel-c9a0
+- `2026-08-21T18:03:53Z` · `c43dfcd` · Add first-login email notification for admin and teacher portals
+- `2026-08-21T18:37:42+02:00` · `32258c6` · Oppdater madinabarn-arsplan-2026-2027-tospraklig.html via publiseringsverktøy
+- `2026-08-21T18:18:58+02:00` · `6f34cb9` · Oppdater madinabarn-arsplan-2026-2027-tospraklig.html via publiseringsverktøy
+- `2026-08-21T18:04:53+02:00` · `76ac671` · Oppdater madinabarn-arsplan-2026-2027-tospraklig.html via publiseringsverktøy
+- `2026-08-21T11:02:45Z` · `0be1128` · chore: auto-update CLOUD-AGENT-LOG (10h sync)
 - `2026-08-21T03:31:55Z` · `6a91086` · chore: auto-update CLOUD-AGENT-LOG (10h sync)
 - `2026-08-21T00:36:19+02:00` · `3c65ab3` · fix(portals): restore page after refresh in teacher and parent portals (#78)
 - `2026-08-21T00:27:03+02:00` · `c5b3890` · fix(admin): restore tab after page refresh (#77)
