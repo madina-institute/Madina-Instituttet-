@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-21 23:25:00 */
+/* SIST-ENDRET: 2026-08-21 23:52:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1186,15 +1186,18 @@ exports.createVippsPayment = onRequest(
       }
 
       const paymentData = attempt.paymentData || {};
-      let redirectUrl = await resolveVippsRedirectUrl(reference, accessToken, paymentData, userFlow);
       const paymentGroupId = reference;
       let emailReference = reference;
       let dualPayment = false;
+      let redirectUrl = null;
 
-      // PUSH gir push i appen men ikke redirectUrl — opprett stille WEB-krav for e-post-lenke.
-      if (!redirectUrl && !erForesatt && userFlow === "PUSH_MESSAGE" && method === "WALLET") {
+      // Admin PUSH: alltid eget WEB-krav til e-post. PUSH-kravet (reference) skal
+      // vises under Betalinger i Vipps-appen uten at foresatt må åpne e-postlenken først.
+      // Tidligere ble WEB kun opprettet når PUSH manglet redirectUrl — men Vipps test
+      // kan returnere redirectUrl på PUSH, og da forsvant kravet fra app-listen.
+      if (!erForesatt && userFlow === "PUSH_MESSAGE" && method === "WALLET") {
         emailReference = `${reference}w`;
-        logger.info("PUSH uten redirectUrl — oppretter WEB_REDIRECT for e-post-lenke", { reference, emailReference });
+        logger.info("Admin PUSH — oppretter WEB_REDIRECT for e-post-lenke", { reference, emailReference });
         const webAttempt = await postVippsPayment(accessToken, {
           reference: emailReference,
           normalizedPhone,
@@ -1236,6 +1239,14 @@ exports.createVippsPayment = onRequest(
         } else {
           logger.warn("WEB-ledd for e-post feilet", webAttempt.bodyText);
         }
+        if (!redirectUrl) {
+          redirectUrl = await resolveVippsRedirectUrl(reference, accessToken, paymentData, userFlow);
+          if (redirectUrl) {
+            logger.warn("E-post bruker PUSH redirectUrl som fallback (WEB-ledd feilet)", { reference });
+          }
+        }
+      } else {
+        redirectUrl = await resolveVippsRedirectUrl(reference, accessToken, paymentData, userFlow);
       }
 
       let cardRedirectUrl = null;

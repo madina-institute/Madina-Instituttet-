@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-21 23:35:00 -->
+<!-- SIST-ENDRET: 2026-08-21 23:52:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9671,7 +9671,10 @@
     if(data.usedFallback){
       linjer.push('Push er ikke godkjent for MSN — betalingslenke i e-post brukes i stedet.');
     } else if(data.dualPayment){
-      linjer.push('Push-varsel sendt til Vipps-appen + betalingslenke på e-post.');
+      linjer.push('Push-krav sendt til Vipps-appen (Betalinger) + betalingslenke på e-post.');
+      if(data.vippsEnv === 'test'){
+        linjer.push('Test: åpne Vipps test-appen → Betalinger → dra ned for å oppdatere. E-postlenken er backup.');
+      }
     } else if(data.userFlow === 'PUSH_MESSAGE'){
       linjer.push('Push-varsel er sendt til Vipps-appen.');
     }
