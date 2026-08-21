@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-21 20:15:00 -->
+<!-- SIST-ENDRET: 2026-08-21 23:10:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -4427,13 +4427,16 @@
         <label>Vipps betalingslenke</label>
         <input type="text" id="vippsLinkInput" placeholder="https://vipps.no/...">
       </div>
-      <div class="field" style="margin-top:14px;">
-        <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-weight:500;">
+      <div class="field" style="margin-top:14px;" id="vippsKortFeltWrap">
+        <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-weight:500;" id="vippsKortLabel">
           <input type="checkbox" id="vippsKortAktivInput" style="width:17px; height:17px; flex:0 0 auto; margin-top:2px;">
           <span>Tillat betaling med bankkort (Visa/Mastercard) i Foreldreportalen og i Vipps-e-post</span>
         </label>
         <div class="hint" style="margin-top:8px;">
           Krever <strong>VIPPS_ENV=prod</strong>, CARD aktivert på MSN hos Vipps, og at Functions er deployet med produksjonsnøkler. I test-miljø vises ikke kortknappen.
+        </div>
+        <div class="hint" id="vippsKortRolleHint" style="display:none; margin-top:8px; color:#8a6d1d;">
+          🔒 Kun <strong>øverste leder</strong> (nivå 1) kan slå bankkort av/på. Du kan se status, men ikke endre den.
         </div>
       </div>
       <button class="btn btn-primary" style="width:auto;" onclick="saveBetalingSettings()">Lagre</button>
@@ -5678,6 +5681,7 @@
       const tabCashierLedelse = document.getElementById('tabCashierLedelse');
       if(tabCashierLedelse) tabCashierLedelse.style.display = '';
       oppdaterOpprettKnapper();
+      oppdaterVippsKortInnstillingUI();
       resetInactivityTimer();
       // meetings/finances require request.auth != null in the Firestore
       // rules — attaching their listeners before login used to leave them
@@ -20754,6 +20758,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     try{ buildSidebar(); }catch(e){}
     try{ selectSide(currentSideForBack || 'personale'); }catch(e){}
     try{ renderRoller(); }catch(e){}
+    oppdaterVippsKortInnstillingUI();
   };
 
   window.avsluttForhandsvisning = function(){
@@ -20765,6 +20770,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     try{ buildSidebar(); }catch(e){}
     try{ selectSide(currentSideForBack || 'personale'); }catch(e){}
     try{ renderRoller(); }catch(e){}
+    oppdaterVippsKortInnstillingUI();
     showToast('Forhåndsvisning avsluttet.');
   };
 
@@ -20800,6 +20806,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     document.querySelectorAll('#innstNav .innst-chip').forEach(b => {
       b.classList.toggle('active', b.dataset.seksjon === navn);
     });
+    if(navn === 'vipps') oppdaterVippsKortInnstillingUI();
   };
 
   window.merkUlagret = function(seksjon){
@@ -20916,6 +20923,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     if(kn && document.activeElement !== kn) kn.value = formatKontonummer(fakturaOppsett.kontonummer);
     const vk = document.getElementById('vippsKortAktivInput');
     if(vk && document.activeElement !== vk) vk.checked = prisOppsett.vippsKortAktiv === true;
+    oppdaterVippsKortInnstillingUI();
     visKontoStatus();
     visFakturaEffekt();
     visRabattForhandsvisning();
@@ -22668,14 +22676,25 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   window.saveBetalingSettings = async function(){
     const lenke = document.getElementById('vippsLinkInput').value.trim();
     const kortEl = document.getElementById('vippsKortAktivInput');
-    const vippsKortAktiv = kortEl ? kortEl.checked : false;
+    const onsketKort = kortEl ? kortEl.checked : false;
+    if(kortEl && onsketKort !== (prisOppsett.vippsKortAktiv === true) && !kanEndreVippsKortInnstilling()){
+      melding('ADM-VIP-KORT', '🔒 Kun øverste leder',
+        'Å slå bankkortbetaling av/på er forbeholdt øverste leder (nivå 1).\n\n' +
+        'Vipps-lenken kan lagres som vanlig. Be øverste leder om å endre bankkort-innstillingen.',
+        'saveBetalingSettings · vippsKortAktiv');
+      return;
+    }
+    const vippsKortAktiv = kanEndreVippsKortInnstilling()
+      ? onsketKort
+      : (prisOppsett.vippsKortAktiv === true);
     try{
       await setDoc(doc(db, 'settings', 'betaling'), { lenke });
-      await setDoc(doc(db, 'settings', 'priser'), {
-        vippsKortAktiv,
+      const priserPatch = {
         sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
         sistEndretDato: new Date().toISOString()
-      }, { merge: true });
+      };
+      if(kanEndreVippsKortInnstilling()) priserPatch.vippsKortAktiv = vippsKortAktiv;
+      await setDoc(doc(db, 'settings', 'priser'), priserPatch, { merge: true });
       showToast('Vipps-innstillinger lagret.');
     } catch(err){
       console.error(err);
@@ -23233,6 +23252,23 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   // Sperren står først i funksjonen, før beløp og telefonnummer spørres
   // om. En sperre som slår inn ETTER at man har fylt ut, oppleves som en
   // feil — ikke som en grense.
+  function kanEndreVippsKortInnstilling(){
+    return erOversteLeder();
+  }
+
+  function oppdaterVippsKortInnstillingUI(){
+    const inp = document.getElementById('vippsKortAktivInput');
+    const label = document.getElementById('vippsKortLabel');
+    const hint = document.getElementById('vippsKortRolleHint');
+    const lov = kanEndreVippsKortInnstilling();
+    if(inp){
+      inp.disabled = !lov;
+      if(!lov && document.activeElement === inp) inp.blur();
+    }
+    if(label) label.style.opacity = lov ? '1' : '0.72';
+    if(hint) hint.style.display = lov ? 'none' : 'block';
+  }
+
   function kanSendePengekrav(kode){
     if(forhandsvisRoller){
       melding(kode, '👁️ Forhåndsvisning',
