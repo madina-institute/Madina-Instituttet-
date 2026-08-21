@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-20 23:30:00 -->
+<!-- SIST-ENDRET: 2026-08-21 08:45:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2377,7 +2377,9 @@
         Søsken i samme familie får <b>samme telefonnummer</b> — det er slik
         godkjenningen kjenner dem igjen som én familie.<br><br>
         Alt merkes <code>erTestdata: true</code>. Å slette etter navn ville før
-        eller siden truffet en ekte elev som het noe liknende.
+        eller siden truffet en ekte elev som het noe liknende.<br><br>
+        <b>Vipps-innbetalinger slettes ikke</b> — de beholdes som regnskapsbilag
+        selv om testeleven slettes.
       </p>
       <div class="innst-rad">
         <div class="field">
@@ -6876,6 +6878,16 @@
   //   3. Rapporterer per samling. «Noe gikk galt» er ikke et svar man
   //      kan handle på; det var derfor eneste utvei ble å slette for
   //      hånd i Firebase Console.
+  function parseBelopKr(v){
+    return parseFloat(String(v || '0').replace(/[^\d.-]/g, '')) || 0;
+  }
+
+  function erEkteVippsBetaling(data){
+    if(!data) return false;
+    if(data.reference) return true;
+    return /vipps/i.test(String(data.kilde || ''));
+  }
+
   window.slettTestdata = async function(){
     if(!erOversteLeder()){
       melding('ADM-TST-08', '🔒 Ingen tilgang',
@@ -6890,9 +6902,10 @@
     // etter hver opprydding:
     //   foreldreTilgang — skrives av indeksen, ikke av generatoren
     //   studentPayments — registreres for hånd, uten merke
-    // Resultatet var innbetalinger til elever som ikke finnes, og
-    // foreldrekoblinger til barn som er borte. De ryddes etter elevene:
-    // det er elev-id-ene som avgjør hva som skal bort.
+    //
+    // Vipps-innbetalinger med ekte referanse slettes ALDRI her — de er
+    // regnskapsbilag selv om eleven var merket som test. Manuelle
+    // test-innbetalinger logges til sletteloggen før de fjernes.
     const funnet = {};
     let total = 0;
     try{
@@ -6918,16 +6931,54 @@
       return;
     }
 
+    const slettedeElever = new Set(funnet['students'] || []);
+    const elevNavn = {};
+    const vippsBehold = [];
+    const testBetSlett = [];
+    if(slettedeElever.size){
+      try{
+        for(const id of slettedeElever){
+          const snap = await getDoc(doc(db, 'students', id));
+          if(snap.exists()) elevNavn[id] = snap.data().navn || id;
+        }
+        const bet = await getDocs(collection(db, 'studentPayments'));
+        for(const d of bet.docs){
+          const data = d.data();
+          if(!slettedeElever.has(data.studentId)) continue;
+          const rad = { id: d.id, ...data, elevNavn: elevNavn[data.studentId] || data.studentId };
+          if(erEkteVippsBetaling(data)) vippsBehold.push(rad);
+          else testBetSlett.push(rad);
+        }
+      } catch(err){ console.error('slettTestdata/betalinger', err); }
+    }
+
     const linjer = samlinger.filter(t => funnet[t].length)
       .map(t => '• ' + (TYPE_LABELS[t] || t) + ': ' + funnet[t].length);
+    let betAdvarsel = '';
+    if(vippsBehold.length || testBetSlett.length){
+      const sumVipps = vippsBehold.reduce((a, b) => a + parseBelopKr(b.belop), 0);
+      const sumTest = testBetSlett.reduce((a, b) => a + parseBelopKr(b.belop), 0);
+      betAdvarsel = '\n\nBetalinger knyttet til testelevene:\n';
+      if(vippsBehold.length){
+        betAdvarsel += '• ' + vippsBehold.length + ' Vipps-innbetaling(er) (' +
+          sumVipps.toLocaleString('no-NO') + ' kr) BEHOLDES for regnskap\n';
+      }
+      if(testBetSlett.length){
+        betAdvarsel += '• ' + testBetSlett.length + ' manuelle/test-innbetaling(er) (' +
+          sumTest.toLocaleString('no-NO') + ' kr) slettes (havner i sletteloggen)\n';
+      }
+    }
     if(!confirm('Slette ' + total + ' dokumenter merket som testdata?\n\n' +
-      linjer.join('\n') + '\n\nEkte elever og søknader røres ikke.')) return;
+      linjer.join('\n') + betAdvarsel +
+      '\n\nEkte elever og søknader røres ikke.')) return;
 
     const feilet = [];
     let slettet = 0;
     for(const type of samlinger){
       for(const id of funnet[type]){
         try{
+          const snap = await getDoc(doc(db, type, id));
+          if(snap.exists()) await logDeletion(type, { id, ...snap.data() });
           await deleteDoc(doc(db, type, id));
           slettet++;
         } catch(err){
@@ -6939,16 +6990,34 @@
 
     // Rydd det som peker på de slettede elevene.
     let ekstra = 0;
-    const slettedeElever = new Set(funnet['students'] || []);
+    let beholdtVipps = 0;
     if(slettedeElever.size){
-      try{
-        const bet = await getDocs(collection(db, 'studentPayments'));
-        for(const d of bet.docs){
-          if(!slettedeElever.has(d.data().studentId)) continue;
-          try{ await deleteDoc(doc(db, 'studentPayments', d.id)); ekstra++; }
-          catch(err){ console.error('studentPayments', err); }
-        }
-      } catch(err){ console.error('studentPayments/søk', err); }
+      for(const rad of vippsBehold){
+        try{
+          await updateDoc(doc(db, 'studentPayments', rad.id), {
+            merknad: 'Testelev slettet — Vipps-innbetaling beholdt for regnskap',
+            testElevSlettet: true,
+            testElevNavn: rad.elevNavn || '',
+            testElevId: rad.studentId || ''
+          });
+          await addDoc(collection(db, 'financeLog'), {
+            summary: 'Vipps-innbetaling beholdt etter sletting av testelev: ' +
+              (rad.elevNavn || rad.studentId) + ' — ' +
+              parseBelopKr(rad.belop).toLocaleString('no-NO') + ' kr' +
+              (rad.reference ? ' (ref: ' + rad.reference + ')' : ''),
+            changedAt: new Date().toISOString(),
+            changedBy: currentUserEmail || 'slettTestdata'
+          });
+          beholdtVipps++;
+        } catch(err){ console.error('studentPayments/behold', err); }
+      }
+      for(const rad of testBetSlett){
+        try{
+          await logDeletion('studentPayments', rad);
+          await deleteDoc(doc(db, 'studentPayments', rad.id));
+          ekstra++;
+        } catch(err){ console.error('studentPayments', err); }
+      }
     }
     // Foreldrekoblinger til testadresser. Domenet er markøren her —
     // raden har ikke noe annet som skiller den ut.
@@ -6965,7 +7034,8 @@
     if(feilet.length === 0){
       melding('ADM-TST-06', '✓ Testdata slettet',
             slettet + ' dokumenter slettet' +
-            (ekstra ? ', pluss ' + ekstra + ' betalinger og foreldrekoblinger som pekte på dem' : '') +
+            (beholdtVipps ? ', ' + beholdtVipps + ' Vipps-innbetalinger beholdt for regnskap' : '') +
+            (ekstra ? ', pluss ' + ekstra + ' manuelle betalinger og foreldrekoblinger fjernet' : '') +
             '.\n\n' +
             'Innloggingskontoene på ' + TEST_EPOST_DOMENE + ' ligger i ' +
             'Firebase Authentication og må fjernes der.',
