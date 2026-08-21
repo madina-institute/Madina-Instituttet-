@@ -1956,8 +1956,47 @@
       Tar det lang tid? I Safari kan «Avansert personvernbeskyttelse» blokkere økten.
       Prøv «Reduser beskyttelse» i banneret over, eller logg inn på nytt.
     </p>
+    <button type="button" id="venteSkipBtn" style="display:none; margin-top:16px; font-family:'Jost',sans-serif; font-size:13px; font-weight:600; padding:10px 18px; border-radius:999px; border:1px solid rgba(255,255,255,0.55); background:rgba(255,255,255,0.14); color:#fff; cursor:pointer;">
+      Gå til innlogging
+    </button>
   </div>
 </div>
+
+<script>
+(function(){
+  function visFallbackInnlogging(melding){
+    if(window.__adminAuthKlar) return;
+    var vente = document.getElementById('venteSkjerm');
+    var login = document.getElementById('loginScreen');
+    if(!vente || !login || vente.style.display === 'none') return;
+    vente.style.display = 'none';
+    login.style.display = 'flex';
+    var err = document.getElementById('loginError');
+    if(err && melding){
+      err.style.color = '';
+      err.textContent = melding;
+      err.style.display = 'block';
+    }
+  }
+  window.__adminVisInnloggingFallback = visFallbackInnlogging;
+  var skip = document.getElementById('venteSkipBtn');
+  if(skip){
+    skip.addEventListener('click', function(){
+      visFallbackInnlogging('');
+    });
+  }
+  setTimeout(function(){
+    if(window.__adminAuthKlar) return;
+    var hint = document.getElementById('venteSafariHint');
+    if(hint) hint.style.display = 'block';
+    if(skip) skip.style.display = 'inline-block';
+  }, 4000);
+  setTimeout(function(){
+    if(window.__adminAuthKlar) return;
+    visFallbackInnlogging('Kunne ikke gjenopprettet økten automatisk. Logg inn manuelt.');
+  }, 12000);
+})();
+</script>
 
 <div id="loginScreen" class="mlogin" style="--mlogin-accent:#06195B; display:none;">
   <div class="mlogin-inner">
@@ -4973,13 +5012,21 @@
     return PERSISTENT_SESSION_EMAILS.includes((email || '').trim().toLowerCase());
   }
 
+  function medTimeout(promise, ms, fallback){
+    return Promise.race([
+      promise,
+      new Promise(resolve => setTimeout(() => resolve(fallback), ms))
+    ]);
+  }
+
   async function bekreftAdminTilgang(user){
     const e = (user.email || '').trim().toLowerCase();
     if(e === NODKONTO.toLowerCase()) return { ok: true, transient: false };
     let transient = false;
     try{
-      const tilgangSnap = await getDoc(doc(db, 'tilgang', e));
-      if(tilgangSnap.exists()){
+      const tilgangSnap = await medTimeout(getDoc(doc(db, 'tilgang', e)), 8000, null);
+      if(tilgangSnap === null) transient = true;
+      else if(tilgangSnap.exists()){
         minTilgangRad = tilgangSnap.data() || null;
         currentUserRoles = (minTilgangRad.roller || '').split(',')
           .map(s => s.trim()).filter(Boolean);
@@ -4992,7 +5039,12 @@
     try{
       const kandidater = [...new Set([user.email, e].filter(Boolean))];
       for(const ep of kandidater){
-        const snap = await getDocs(query(collection(db, 'adminUsers'), where('epost', '==', ep)));
+        const snap = await medTimeout(
+          getDocs(query(collection(db, 'adminUsers'), where('epost', '==', ep))),
+          8000,
+          null
+        );
+        if(snap === null){ transient = true; continue; }
         if(snap.empty) continue;
         const alleRoller = new Set();
         snap.docs.forEach(d => {
@@ -5027,7 +5079,7 @@
         : 'Henter tilgangen din…';
     }
     await klargjoerFirestoreAuth(user);
-    const tilgang = await bekreftAdminTilgang(user);
+    const tilgang = await medTimeout(bekreftAdminTilgang(user), 10000, { ok: false, transient: true });
     if(tilgang.ok) return tilgang;
     if(!tilgang.transient || forsok >= maks - 1) return tilgang;
     await new Promise(resolve => setTimeout(resolve, 1200 * (forsok + 1)));
@@ -5612,6 +5664,7 @@
   let authHarSvart = false;
 
   function visInnlogging(melding){
+    window.__adminAuthKlar = true;
     authHarSvart = true;
     document.getElementById('venteSkjerm').style.display = 'none';
     document.getElementById('appRoot').style.display = 'none';
@@ -5625,13 +5678,15 @@
   }
 
   setTimeout(() => {
-    if(authHarSvart) return;
+    if(authHarSvart || window.__adminAuthKlar) return;
     const hint = document.getElementById('venteSafariHint');
     if(hint) hint.style.display = 'block';
-  }, 5000);
+    const skip = document.getElementById('venteSkipBtn');
+    if(skip) skip.style.display = 'inline-block';
+  }, 4000);
 
   setTimeout(() => {
-    if(authHarSvart) return;
+    if(authHarSvart || window.__adminAuthKlar) return;
     const vente = document.getElementById('venteSkjerm');
     if(!vente || vente.style.display === 'none') return;
     const tekst = document.getElementById('venteTekst');
@@ -5640,11 +5695,23 @@
       return;
     }
     visInnlogging('Fikk ikke gjenopprettet økten. Sjekk nettet og logg inn på nytt.');
-  }, 15000);
+  }, 12000);
+
+  const authRestoreStart = ensureAuthRestore();
+
+  setTimeout(async () => {
+    if(window.__adminAuthKlar) return;
+    const vente = document.getElementById('venteSkjerm');
+    if(!vente || vente.style.display === 'none') return;
+    if(auth.currentUser){
+      try{ await signOut(auth); } catch(e){ console.warn('signOut timeout', e); }
+      visInnlogging('Tilgangssjekken tok for lang tid. Logg inn på nytt.');
+    }
+  }, 22000);
 
   onAuthStateChanged(auth, async (user) => {
     const denne = ++authBehandling;
-    await ensureAuthRestore();
+    await authRestoreStart;
     if(denne !== authBehandling) return;
     user = auth.currentUser || user;
 
@@ -5704,6 +5771,7 @@
       }
       document.getElementById('venteSkjerm').style.display = 'none';
       document.getElementById('appRoot').style.display = 'block';
+      window.__adminAuthKlar = true;
       try{ lyttPaaMinTilgang(); }
       catch(err){ console.error('lyttPaaMinTilgang', err); }
       const who = document.getElementById('loggedInAs');
