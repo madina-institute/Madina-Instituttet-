@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-21 20:05:00 */
+/* SIST-ENDRET: 2026-08-21 23:25:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -839,7 +839,10 @@ async function postVippsPayment(accessToken, { reference, normalizedPhone, amoun
   // returnUrl trengs for WEB_REDIRECT, men sendes også ved PUSH_MESSAGE slik at
   // Vipps kan returnere redirectUrl som backup-lenke i e-post til foresatte.
   payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
-  payload.profile = { scope: "phoneNumber name" };
+  // CARD støtter ikke profile.scope — Vipps svarer 400 «Profile.Scope must be null».
+  if (method === "WALLET") {
+    payload.profile = { scope: "phoneNumber name" };
+  }
 
   const paymentRes = await fetch(`${vippsApiBase()}/epayment/v1/payments`, {
     method: "POST",
