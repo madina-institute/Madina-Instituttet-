@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-22 00:15:00 */
+/* SIST-ENDRET: 2026-08-22 01:12:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1197,11 +1197,20 @@ exports.createVippsPayment = onRequest(
 
       const paymentData = attempt.paymentData || {};
       let pushPaymentState = null;
+      let pushHasRedirectUrl = false;
       if (!erForesatt && userFlow === "PUSH_MESSAGE") {
         try {
           const pushInfo = await fetchVippsPayment(reference, accessToken);
           pushPaymentState = pushInfo.state || null;
-          logger.info("PUSH opprettet", { reference, state: pushPaymentState, phone: normalizedPhone });
+          pushHasRedirectUrl = Boolean(pushInfo.redirectUrl);
+          if (pushHasRedirectUrl) {
+            logger.warn("PUSH-betaling har redirectUrl — kan påvirke synlighet i app", {
+              reference, redirectUrl: pushInfo.redirectUrl,
+            });
+          }
+          logger.info("PUSH opprettet", {
+            reference, state: pushPaymentState, phone: normalizedPhone, pushHasRedirectUrl,
+          });
         } catch (err) {
           logger.warn("Kunne ikke verifisere PUSH-betaling etter opprettelse", { reference, err: String(err.message || err) });
         }
@@ -1356,7 +1365,8 @@ exports.createVippsPayment = onRequest(
         userFlow,
         vippsEnv,
         pushPaymentState,
-        pushInAppExpected: userFlow === "PUSH_MESSAGE" && !usedFallback,
+        pushHasRedirectUrl,
+        pushInAppExpected: userFlow === "PUSH_MESSAGE" && !usedFallback && !pushHasRedirectUrl,
         phoneUsed: normalizedPhone,
         pushFailReason: usedFallback ? (pushFailReason || "PUSH avvist — kun e-postlenke") : null,
         pushNote: dualPayment

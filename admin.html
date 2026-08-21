@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-21 23:52:00 -->
+<!-- SIST-ENDRET: 2026-08-22 01:12:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9695,6 +9695,11 @@
 
   function vippsEpostVarselLinje(data, opts){
     opts = opts || {};
+    if(data.dualPayment || (data.pushInAppExpected && data.userFlow === 'PUSH_MESSAGE')){
+      const navn = opts.foresatt1Navn ? ' (' + opts.foresatt1Navn + ')' : '';
+      return 'Betalingskravet ligger i Vipps-appen under «Betalinger»' + navn +
+        ' — åpne Vipps-appen og dra ned for å oppdatere. Lenkene under er backup.\n\n';
+    }
     if(data.userFlow === 'PUSH_MESSAGE'){
       const navn = opts.foresatt1Navn ? ' (' + opts.foresatt1Navn + ')' : '';
       return 'Vipps-varsel (push) er sendt til foresatt 1' + navn + '. Denne e-posten er sendt til alle registrerte foresatte.\n\n';
@@ -9744,6 +9749,9 @@
     } else if(data.pushInAppExpected || data.dualPayment){
       linjer.push('✓ Krav sendt til Vipps-appen under «Betalinger».');
       if(data.pushPaymentState) linjer.push('Vipps-status: ' + data.pushPaymentState);
+      if(data.pushHasRedirectUrl){
+        linjer.push('⚠️ Vipps returnerte redirectUrl på PUSH — kravet kan mangle i app-listen. Kontakt support hvis foresatt ikke ser kravet.');
+      }
       if(data.vippsEnv === 'test'){
         linjer.push('Test: åpne Vipps MT-appen → Betalinger → dra ned for å oppdatere. Push-varsel kommer ofte ikke i test.');
       }
@@ -23665,7 +23673,13 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         visVippsSendtResultat(data, { epostAntall: 0, eposter: mailResult.eposter });
         return;
       }
-      showToast('✓ Vipps-krav sendt til foresatt 1' + (mailResult.sent && eposter.length > 1 ? ' — e-post til ' + eposter.length + ' adresser' : '') + '.');
+      if(data.usedFallback || data.pushFailReason){
+        showToast('⚠️ Vipps PUSH feilet — kun e-postlenke sendt. Sjekk telefonnummer og MSN-godkjenning.', true);
+      } else if(data.pushInAppExpected){
+        showToast('✓ Krav i Vipps-appen (Betalinger) + e-post sendt.');
+      } else {
+        showToast('✓ Vipps-krav sendt til foresatt 1' + (mailResult.sent && eposter.length > 1 ? ' — e-post til ' + eposter.length + ' adresser' : '') + '.');
+      }
       visVippsSendtResultat(data, { epostAntall: mailResult.sent ? eposter.length : 0, eposter: eposter });
       if(typeof __opMaybeRerender === 'function') __opMaybeRerender();
     } catch(err){
