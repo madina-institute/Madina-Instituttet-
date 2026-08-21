@@ -2542,7 +2542,7 @@
 
     <div data-ov="varsler" class="report-card" style="margin-top:20px;">
       <h3>🔔 Varslinger</h3>
-      <div class="sub">Hvem skal få e-post ved ny påmelding, første innlogging og mottatt Vipps-betaling</div>
+      <div class="sub">Hvem skal få e-post ved ny påmelding, første innlogging og mottatt betaling (Vipps/bankkort). Foresatte får også betalingsbekreftelse på e-post.</div>
       <p style="font-family:'Jost',sans-serif; font-size:12.5px; color:#5a6860; margin-bottom:14px; line-height:1.6;">
         Listen bygges av de ansatte som har en e-post registrert. Kryss av for
         dem som skal varsles — endringen gjelder med én gang, uten at noe må
@@ -22079,7 +22079,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     el.innerHTML = 'Ved ny påmelding varsles <strong>' + valgte.length + ' person' +
       (valgte.length === 1 ? '' : 'er') + '</strong>: ' +
       valgte.map(e => escapeHtml(e)).join(', ') +
-      '. <strong>Samme mottakere</strong> får også e-post ved Vipps-betaling og ved første innlogging i portalene.' + kvitteringLinje() +
+      '. <strong>Samme mottakere</strong> får også e-post ved mottatt betaling (Vipps/bankkort) og ved første innlogging i portalene. Foresatte får i tillegg betalingsbekreftelse.' + kvitteringLinje() +
       forsteInnloggingLinje();
   };
 
