@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-21 23:10:00 -->
+<!-- SIST-ENDRET: 2026-08-21 23:35:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -658,6 +658,24 @@
     border-radius:8px; padding:8px 12px; cursor:pointer; flex-shrink:0;
     min-height:36px; display:inline-flex; align-items:center; justify-content:center; gap:4px;
     margin:0;
+  }
+  .btn-pay-attempts{ position:relative; }
+  .pay-attempt-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:18px; height:18px; padding:0 5px; margin-left:4px;
+    border-radius:999px; background:var(--red); color:#fff;
+    font-size:10px; font-weight:800; line-height:1;
+  }
+  .pay-attempts-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;}
+  .pay-attempts-table th,.pay-attempts-table td{
+    padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top;
+  }
+  .pay-attempt-status{font-weight:700;}
+  .pay-attempt-status.pending{color:var(--gold);}
+  .pay-attempt-status.expired,.pay-attempt-status.cancelled{color:var(--red);}
+  .btn-attempt-clean{
+    font-size:11px; padding:5px 8px; background:#fff; color:var(--red);
+    border:1px solid rgba(168,60,60,0.35); border-radius:6px; cursor:pointer;
   }
 
   .count-chip{
@@ -3610,6 +3628,22 @@
       <div id="cashierHistoryBody"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeCashierOverlay('cashierHistoryOverlay')">Lukk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cashier: guardian payment attempts (incomplete / failed) -->
+  <div class="overlay" id="guardianPayAttemptsOverlay">
+    <div class="modal" style="max-width:640px;">
+      <h3 id="guardianPayAttemptsTitle">Betalingsforsøk fra foresatt</h3>
+      <p class="sub" style="margin:0 0 10px; font-size:12.5px; color:#5a6860;">
+        Forsøk startet av foresatt fra Foreldreportalen eller e-postlenke — ikke skolens Vipps-krav.
+        Fullførte betalinger ligger i betalingshistorikken.
+      </p>
+      <div id="guardianPayAttemptsBody"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="guardianPayAttemptsCleanAllBtn" style="display:none;" onclick="cleanupAllGuardianPayAttempts()">Rydd alle</button>
+        <button class="btn btn-ghost" onclick="closeCashierOverlay('guardianPayAttemptsOverlay')">Lukk</button>
       </div>
     </div>
   </div>
@@ -8014,6 +8048,184 @@
     onCashierClassChange();
   };
 
+  function vippsInitiatedByGuardian(p){
+    return String(p?.initiatedBy || '').toLowerCase() === 'guardian';
+  }
+
+  function vippsInitiatedByAdmin(p){
+    return !vippsInitiatedByGuardian(p);
+  }
+
+  function vippsPendingGroupKey(p){
+    return p.paymentGroupId || p.reference || p.id;
+  }
+
+  function dedupeAdminPendingVipps(items){
+    const byGroup = {};
+    for(const p of items){
+      const gid = vippsPendingGroupKey(p);
+      const score = (x) => {
+        if(x.paymentRole === 'push') return 4;
+        if(!x.paymentRole) return 3;
+        if(x.paymentRole === 'email_link') return 2;
+        return 1;
+      };
+      if(!byGroup[gid] || score(p) > score(byGroup[gid])) byGroup[gid] = p;
+    }
+    return Object.values(byGroup).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  }
+
+  function adminPendingVippsForStudent(studentId){
+    const pending = (cache.pendingVippsPayments || []).filter(p =>
+      p.studentId === studentId && String(p.status || 'pending') === 'pending' && vippsInitiatedByAdmin(p)
+    );
+    return dedupeAdminPendingVipps(pending);
+  }
+
+  function guardianPayAttemptsForStudent(studentId){
+    return (cache.pendingVippsPayments || [])
+      .filter(p => p.studentId === studentId && vippsInitiatedByGuardian(p) && String(p.status || 'pending') !== 'completed')
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  }
+
+  function countAdminPendingVipps(){
+    const pending = (cache.pendingVippsPayments || []).filter(p =>
+      String(p.status || 'pending') === 'pending' && vippsInitiatedByAdmin(p)
+    );
+    return new Set(pending.map(vippsPendingGroupKey)).size;
+  }
+
+  function vippsAttemptStatusLabel(status){
+    const st = String(status || 'pending').toLowerCase();
+    if(st === 'pending') return 'Ikke fullført';
+    if(st === 'expired') return 'Utløpt';
+    if(st === 'cancelled') return 'Avbrutt';
+    return st;
+  }
+
+  function vippsAttemptReasonLabel(p){
+    const st = String(p.status || 'pending').toLowerCase();
+    const parts = [];
+    if(st === 'pending'){
+      parts.push('Foresatt startet betaling men fullførte ikke');
+    } else if(st === 'expired'){
+      parts.push('Betalingsfristen utløp hos Vipps');
+    } else if(st === 'cancelled'){
+      parts.push('Betalingen ble avbrutt');
+    }
+    if(p.vippsState) parts.push('Vipps: ' + p.vippsState);
+    const method = p.paymentMethodType === 'CARD' ? 'bankkort' : 'Vipps';
+    const flow = p.userFlow === 'WEB_REDIRECT' ? 'lenke (portal/e-post)' : (p.userFlow === 'PUSH_MESSAGE' ? 'push' : '');
+    if(flow) parts.push(method + ' via ' + flow);
+    else parts.push(method);
+    return parts.join(' · ');
+  }
+
+  let guardianPayAttemptsStudentId = null;
+
+  function renderGuardianPayAttemptsModal(){
+    const body = document.getElementById('guardianPayAttemptsBody');
+    const cleanAllBtn = document.getElementById('guardianPayAttemptsCleanAllBtn');
+    if(!body || !guardianPayAttemptsStudentId) return;
+    const attempts = guardianPayAttemptsForStudent(guardianPayAttemptsStudentId);
+    if(cleanAllBtn) cleanAllBtn.style.display = attempts.length ? 'inline-flex' : 'none';
+    if(attempts.length === 0){
+      body.innerHTML = '<p style="color:#8a9a90; font-family:\'Jost\',sans-serif; font-size:13.5px;">Ingen ufullførte eller feilede betalingsforsøk fra foresatt.</p>';
+      return;
+    }
+    body.innerHTML = `<table class="pay-attempts-table">
+      <thead><tr>
+        <th>Dato</th><th>Beløp</th><th>Status</th><th>Årsak</th><th></th>
+      </tr></thead>
+      <tbody>${attempts.map(p => {
+        const st = String(p.status || 'pending').toLowerCase();
+        return `<tr>
+          <td>${cashierFormatDatoTid(p.createdAt)}</td>
+          <td>${cashierKr(p.amountKr).toLocaleString('no-NO')} kr</td>
+          <td><span class="pay-attempt-status ${escapeHtml(st)}">${escapeHtml(vippsAttemptStatusLabel(st))}</span></td>
+          <td style="font-size:12px; color:#5a6860; max-width:220px;">${escapeHtml(vippsAttemptReasonLabel(p))}</td>
+          <td><button type="button" class="btn-attempt-clean" onclick="cleanupGuardianPayAttempt('${p.id}','${escapeHtml(p.reference || '')}','${escapeHtml(st)}')">Rydd</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
+  window.showGuardianPayAttempts = function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return;
+    guardianPayAttemptsStudentId = studentId;
+    document.getElementById('guardianPayAttemptsTitle').textContent =
+      'Betalingsforsøk fra foresatt — ' + (student.navn || '');
+    renderGuardianPayAttemptsModal();
+    openCashierOverlay('guardianPayAttemptsOverlay');
+  };
+
+  window.cleanupGuardianPayAttempt = async function(pendingId, reference, status){
+    if(!pendingId) return;
+    if(!confirm('Fjerne dette betalingsforsøket fra listen?')) return;
+    showToast('Rydder...');
+    try{
+      if(String(status || '').toLowerCase() === 'pending' && reference){
+        try{
+          await kallVippsFunksjon(CANCEL_VIPPS_URL, { reference });
+        } catch(err){
+          console.warn('cancel ved rydding', err);
+        }
+      }
+      const row = (cache.pendingVippsPayments || []).find(p => p.id === pendingId);
+      const groupId = row ? vippsPendingGroupKey(row) : pendingId;
+      const toDelete = (cache.pendingVippsPayments || []).filter(p =>
+        vippsInitiatedByGuardian(p) && vippsPendingGroupKey(p) === groupId
+      );
+      for(const p of toDelete){
+        await deleteDoc(doc(db, 'pendingVippsPayments', p.id));
+      }
+      showToast('✓ Forsøket er ryddet.');
+      renderGuardianPayAttemptsModal();
+      renderCashierPanel();
+      renderCashierLedelsePanel();
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke rydde: ' + err.message, true);
+    }
+  };
+
+  window.cleanupAllGuardianPayAttempts = async function(){
+    if(!guardianPayAttemptsStudentId) return;
+    const attempts = guardianPayAttemptsForStudent(guardianPayAttemptsStudentId);
+    if(attempts.length === 0) return;
+    if(!confirm('Rydde alle ' + attempts.length + ' betalingsforsøk fra foresatt for denne eleven?')) return;
+    showToast('Rydder alle...');
+    try{
+      for(const p of attempts){
+        const st = String(p.status || 'pending').toLowerCase();
+        if(st === 'pending' && p.reference){
+          try{
+            await kallVippsFunksjon(CANCEL_VIPPS_URL, { reference: p.reference });
+          } catch(err){
+            console.warn('cancel ved masse-rydding', err);
+          }
+        }
+      }
+      const groupIds = new Set(attempts.map(vippsPendingGroupKey));
+      const toDelete = (cache.pendingVippsPayments || []).filter(p =>
+        p.studentId === guardianPayAttemptsStudentId &&
+        vippsInitiatedByGuardian(p) &&
+        groupIds.has(vippsPendingGroupKey(p))
+      );
+      for(const p of toDelete){
+        await deleteDoc(doc(db, 'pendingVippsPayments', p.id));
+      }
+      showToast('✓ Alle forsøk er ryddet.');
+      renderGuardianPayAttemptsModal();
+      renderCashierPanel();
+      renderCashierLedelsePanel();
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke rydde alle: ' + err.message, true);
+    }
+  };
+
   function renderCashierPanel(){
     const tbody = document.getElementById('cashierTableBody');
     if(!tbody) return;
@@ -8048,14 +8260,16 @@
         ? `${cashierFormatDatoTid(last.dato)}<br><span class="tag-pill">${escapeHtml(last.kilde || '')}</span>`
         : '<span style="color:#8a9a90;">Ingen ennå</span>';
       const checked = cashierSelectedIds.has(s.id) ? 'checked' : '';
-      const pending = (cache.pendingVippsPayments || []).filter(p => p.studentId === s.id && p.status === 'pending');
+      const pending = adminPendingVippsForStudent(s.id);
+      const guardianAttempts = guardianPayAttemptsForStudent(s.id);
+      const attemptCount = guardianAttempts.length;
       const lastVippsPayment = history
         .filter(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0)
         .sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
       const pendingHtml = isEier && pending.length
         ? `<div class="cashier-pending">${pending.map(p => `
             <div class="cashier-pending-row">
-              <span style="color:var(--gold); font-weight:600;">${cashierKr(p.amountKr).toLocaleString('no-NO')} kr · ${cashierFormatDatoTid(p.createdAt)}</span>
+              <span style="color:var(--gold); font-weight:600;">${cashierKr(p.amountKr).toLocaleString('no-NO')} kr · ${cashierFormatDatoTid(p.createdAt)} · skolens krav</span>
               <button type="button" class="btn-cancel-vipps" onclick="cancelPendingVippsRequest('${p.id}','${escapeHtml(p.reference)}')">✖ Avbryt</button>
             </div>`).join('')}</div>`
         : '';
@@ -8075,6 +8289,7 @@
           <td data-label="Handlinger" class="actions-col">
             <div class="cashier-actions">
               <button type="button" class="btn-edit" onclick="showCashierHistory('${s.id}')">🕘 Full historikk</button>
+              <button type="button" class="btn-edit btn-pay-attempts" onclick="showGuardianPayAttempts('${s.id}')">🔁 Foresatt-forsøk${attemptCount ? `<span class="pay-attempt-badge">${attemptCount}</span>` : ''}</button>
               <button type="button" class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
               <button type="button" class="btn-edit btn-vipps-mob" onclick="sendStudentVippsRequest('${s.id}')">⚡ Send Vipps-krav</button>
               <button type="button" class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
@@ -9542,13 +9757,14 @@
       const lastVippsPayment = history
         .filter(p => (p.kilde||'').startsWith('Vipps') && p.reference && cashierKr(p.belop) > 0)
         .sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
-      const pending = cache.pendingVippsPayments.filter(p => p.studentId === s.id);
+      const pending = adminPendingVippsForStudent(s.id);
+      const guardianAttempts = guardianPayAttemptsForStudent(s.id);
 
       const pendingHtml = pending.length === 0
         ? '<span style="color:#8a9a90; font-size:12.5px;">Ingen</span>'
         : `<div class="cashier-pending">${pending.map(p => `
             <div class="cashier-pending-row">
-              <span style="color:var(--gold); font-weight:600;">${cashierKr(p.amountKr).toLocaleString('no-NO')} kr · ${cashierFormatDatoTid(p.createdAt)}</span>
+              <span style="color:var(--gold); font-weight:600;">${cashierKr(p.amountKr).toLocaleString('no-NO')} kr · ${cashierFormatDatoTid(p.createdAt)} · skolens krav</span>
               <button type="button" class="btn-cancel-vipps" onclick="cancelPendingVippsRequest('${p.id}','${escapeHtml(p.reference)}')">✖ Avbryt</button>
             </div>`).join('')}</div>`;
 
@@ -9561,6 +9777,7 @@
           <td data-label="Utestående Vipps">${pendingHtml}</td>
           <td data-label="Handlinger" class="actions-col">
             <div class="cashier-actions">
+              <button type="button" class="btn-edit" onclick="showGuardianPayAttempts('${s.id}')">🔁 Foresatt-forsøk${guardianAttempts.length ? `<span class="pay-attempt-badge">${guardianAttempts.length}</span>` : ''}</button>
               <button type="button" class="btn-edit" onclick="openLedelseDiscountModal('${s.id}')">🏷️ Rabatt</button>
               <button type="button" class="btn-edit" onclick="sendGuardianInvoice('${s.id}')">🧾 Send faktura</button>
               ${lastVippsPayment ? `<button type="button" class="btn-edit" onclick="openLedelseRefundModal('${s.id}','${escapeHtml(lastVippsPayment.reference)}',${cashierKr(lastVippsPayment.belop)})">💸 Refunder</button>` : ''}
@@ -13954,7 +14171,7 @@
       { key:'absenceRequests', ic:'🚫', label:'Ubehandlede fraværsmeldinger', count: cache.absenceRequests.filter(r => r.status === 'Ny').length, side:'pedagogisk', tab:'absenceRequests' },
       { key:'contactUpdateRequests', ic:'✏️', label:'Ubehandlede kontaktendringer', count: cache.contactUpdateRequests.filter(r => r.status === 'Ny').length, side:'admin', tab:'contactUpdateRequests' },
       { key:'paymentRequests', ic:'💳', label:'Ubehandlede betalingsforespørsler', count: cache.paymentRequests.filter(r => !r.status || r.status === 'Venter' || r.status === 'Ny').length, side:'okonomi', tab:'paymentRequests' },
-      { key:'vippsPending', ic:'📲', label:'Vipps-krav som venter', count: (cache.pendingVippsPayments || []).filter(p => p.status === 'pending').length, side:'okonomi', tab:'cashier' },
+      { key:'vippsPending', ic:'📲', label:'Vipps-krav som venter', count: countAdminPendingVipps(), side:'okonomi', tab:'cashier' },
       { key:'teacherAttendance', ic:'⏱️', label:'Timelister til godkjenning', count: cache.teacherAttendance.filter(t => (t.godkjenningsstatus || 'Venter godkjenning') === 'Venter godkjenning').length, side:'okonomi', tab:'lonn' },
       { key:'unpaidStudents', ic:'💰', label:'Ubetalte elever', count: activeStudents.filter(s => s.betalt === 'Nei').length, side:'okonomi', tab:'cashier' },
       { key:'noClassStudents', ic:'📭', label:'Elever uten klasse', count: activeStudents.filter(s => !s.klasse).length, side:'admin', tab:'students', folder:'__none__' }
@@ -15601,6 +15818,7 @@
    */
   function apentVippsKrav(type, id){
     return (cache.pendingVippsPayments || []).find(p => {
+      if(vippsInitiatedByGuardian(p)) return false;
       const st = (p.status || 'pending').toLowerCase();
       if(st === 'completed' || st === 'cancelled') return false;
       return p.targetId === id || (type === 'students' && p.studentId === id);
