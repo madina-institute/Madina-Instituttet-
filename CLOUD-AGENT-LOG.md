@@ -3,7 +3,7 @@
 > **الغرض:** توثيق كل ما نفّذه الوكيل السحابي (Cloud Agent) — أعمال، أخطاء، إصلاحات، نصائح، ومهام متبقية.  
 > **المستودع:** `madina-institute/Madina-Instituttet-`  
 > **آخر تحديث يدوي:** 2026-08-20 11:30 (Oslo)  
-> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-20T21:03:37.029Z -->
+> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-21T03:31:55.078Z -->
 
 ---
 
@@ -220,6 +220,21 @@
 ## 6. سجل التحديثات الآلية (commits)
 
 <!-- AUTO-LOG-ENTRIES-BEGIN -->
+- `2026-08-21T00:36:19+02:00` · `3c65ab3` · fix(portals): restore page after refresh in teacher and parent portals (#78)
+- `2026-08-21T00:27:03+02:00` · `c5b3890` · fix(admin): restore tab after page refresh (#77)
+- `2026-08-20T23:59:06+02:00` · `c9f7fc0` · fix(teacher): class students as main sidebar tab (#76)
+- `2026-08-20T23:54:56+02:00` · `4bada07` · Merge pull request #75 from madina-institute/cursor/teacher-class-students-c9a0
+- `2026-08-20T21:39:04Z` · `c6d7180` · feat(teacher): class students tab and homework delete on edit
+- `2026-08-20T21:25:05Z` · `6554477` · fix(teacher): tell riktige uleste meldinger på hjem-skjerm
+- `2026-08-20T21:24:50Z` · `1b7cbed` · Merge pull request #73 from madina-institute/cursor/teacher-hide-old-msgs-c9a0
+- `2026-08-20T21:24:28Z` · `6865eac` · fix(teacher): skjul forgjengerens private meldinger
+- `2026-08-20T21:15:44Z` · `933b2a0` · Merge pull request #72 from madina-institute/cursor/teacher-homework-edit-delete-c9a0
+- `2026-08-20T21:15:23Z` · `50a8e2f` · feat(teacher): rediger og slett egne lekser i portalen
+- `2026-08-20T21:15:23Z` · `5904f8a` · fix(rules): la lærere slette og redigere egne lekser
+- `2026-08-20T21:09:56Z` · `972a338` · fix(teacher): oppdater læreplanregler ved språkbytte
+- `2026-08-20T21:09:40Z` · `dbc31e9` · Merge pull request #71 from madina-institute/cursor/teacher-laereplanregler-c9a0
+- `2026-08-20T21:06:45Z` · `cb0c250` · feat(teacher): vis læreplanregler read-only i lærerportalen
+- `2026-08-20T21:03:37Z` · `f6c18ac` · chore: auto-update CLOUD-AGENT-LOG (10h sync)
 - `2026-08-20T20:59:07Z` · `1c00a67` · docs: logg lærerportal innloggingsfix i CLOUD-AGENT-LOG
 - `2026-08-20T20:59:01Z` · `0925f54` · Merge pull request #70 from madina-institute/cursor/teacher-login-fix-c9a0
 - `2026-08-20T20:58:38Z` · `07d563a` · fix(teacher): reparer syntaksfeil som blokkerte innlogging
