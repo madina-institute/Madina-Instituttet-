@@ -903,14 +903,10 @@ async function krevInnlogget(req, res) {
 }
 
 // Foresatt som betaler fra egen telefon (Foreldreportalen) — ikke admin.
-async function krevForesattTilgang(bruker, type, targetId, res) {
+async function krevForesattTilStudent(studentId, bruker, res) {
   if (!bruker.epost) {
     res.status(403).json({ ok: false, error: "Kontoen mangler e-post." });
-    return false;
-  }
-  if (type !== "balance") {
-    res.status(403).json({ ok: false, error: "Depositum betales via lenke fra skolen." });
-    return false;
+    return null;
   }
   const guardianSnap = await db.collection("guardians")
     .where("epost", "==", bruker.epost)
@@ -918,20 +914,94 @@ async function krevForesattTilgang(bruker, type, targetId, res) {
     .get();
   if (guardianSnap.empty) {
     res.status(403).json({ ok: false, error: "Fant ingen foresatt-konto for denne brukeren." });
-    return false;
+    return null;
   }
   const guardianId = guardianSnap.docs[0].id;
-  const studentSnap = await db.collection("students").doc(targetId).get();
+  const studentSnap = await db.collection("students").doc(studentId).get();
   if (!studentSnap.exists) {
     res.status(404).json({ ok: false, error: "Fant ikke eleven." });
-    return false;
+    return null;
   }
   const student = studentSnap.data();
   if (student.foresatt !== guardianId && student.foresatt2 !== guardianId) {
     res.status(403).json({ ok: false, error: "Du har ikke tilgang til denne eleven." });
+    return null;
+  }
+  return { guardianId, student, studentId };
+}
+
+async function krevForesattTilgang(bruker, type, targetId, res) {
+  if (type !== "balance") {
+    res.status(403).json({ ok: false, error: "Depositum betales via lenke fra skolen." });
     return false;
   }
-  return true;
+  const tilgang = await krevForesattTilStudent(targetId, bruker, res);
+  return Boolean(tilgang);
+}
+
+function mapVippsStateToPendingStatus(state) {
+  const s = String(state || "").toUpperCase();
+  if (s === "CREATED") return null;
+  return vippsTerminalPendingStatus(s) || null;
+}
+
+async function velgPendingReferanseIGruppe(paymentGroupId, paymentMethodType) {
+  const snap = await db.collection("pendingVippsPayments")
+    .where("paymentGroupId", "==", paymentGroupId)
+    .where("status", "==", "pending")
+    .get();
+  const items = snap.docs.map((d) => ({ ref: d.ref, ...d.data() }));
+  if (!items.length) return null;
+  if (paymentMethodType === "CARD") {
+    return items.find((i) => i.paymentRole === "email_card" || i.paymentMethodType === "CARD")
+      || items.find((i) => String(i.reference || "").endsWith("c"))
+      || null;
+  }
+  return items.find((i) => i.paymentRole === "email_link")
+    || items.find((i) => i.redirectUrl && i.paymentRole !== "email_card")
+    || items.find((i) => i.paymentRole === "push" && i.redirectUrl)
+    || items.find((i) => i.paymentRole !== "email_card" && i.paymentMethodType !== "CARD")
+    || items[0];
+}
+
+async function syncPendingVippsGroupWithVipps(paymentGroupId, accessToken) {
+  const groupSnap = await db.collection("pendingVippsPayments")
+    .where("paymentGroupId", "==", paymentGroupId)
+    .get();
+  if (groupSnap.empty) return { changed: false };
+
+  let terminalStatus = null;
+  let terminalState = null;
+  for (const doc of groupSnap.docs) {
+    if (doc.data().status !== "pending") continue;
+    const ref = doc.data().reference;
+    if (!ref) continue;
+    try {
+      const payment = await fetchVippsPayment(ref, accessToken);
+      const st = mapVippsStateToPendingStatus(payment.state);
+      if (st) {
+        terminalStatus = st;
+        terminalState = payment.state;
+        break;
+      }
+    } catch (err) {
+      logger.warn("Kunne ikke synce pending Vipps-gruppe", { reference: ref, err: String(err.message || err) });
+    }
+  }
+
+  if (!terminalStatus) return { changed: false };
+
+  const closedAt = new Date().toISOString();
+  for (const doc of groupSnap.docs) {
+    if (doc.data().status === "pending") {
+      await doc.ref.update({
+        status: terminalStatus,
+        closedAt,
+        vippsState: terminalState,
+      });
+    }
+  }
+  return { changed: true, status: terminalStatus, vippsState: terminalState };
 }
 
 const VIPPS_RETURN_URL = "https://madinaskole.no/foreldre?vipps=return";
@@ -1862,6 +1932,160 @@ exports.getVippsPaymentInfo = onRequest(
       });
     } catch (err) {
       logger.error("getVippsPaymentInfo error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
+// openPendingVippsPayment — Foreldreportalen: henter fersk betalingslenke
+// for et admin-sendt Vipps-krav (stored redirectUrl utløper hos Vipps).
+//    POST { paymentGroupId, paymentMethodType: 'WALLET'|'CARD' }
+// =======================================================================
+exports.openPendingVippsPayment = onRequest(
+  { secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY], cors: true },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+
+    try {
+      const { paymentGroupId, paymentMethodType } = req.body || {};
+      if (!paymentGroupId) {
+        res.status(400).json({ ok: false, error: "Mangler paymentGroupId." });
+        return;
+      }
+      const method = paymentMethodType === "CARD" ? "CARD" : "WALLET";
+
+      const groupPeek = await db.collection("pendingVippsPayments")
+        .where("paymentGroupId", "==", paymentGroupId).limit(1).get();
+      if (groupPeek.empty) {
+        res.status(404).json({ ok: false, gone: true, error: "Fant ikke betalingskravet." });
+        return;
+      }
+      const studentId = groupPeek.docs[0].data().studentId;
+      if (!studentId) {
+        res.status(400).json({ ok: false, error: "Mangler studentId på kravet." });
+        return;
+      }
+      const tilgang = await krevForesattTilStudent(studentId, bruker, res);
+      if (!tilgang) return;
+
+      const accessToken = await getVippsAccessToken();
+      const sync = await syncPendingVippsGroupWithVipps(paymentGroupId, accessToken);
+      if (sync.changed) {
+        const alreadyPaid = sync.status === "completed";
+        const expired = sync.status === "expired";
+        res.status(200).json({
+          ok: false,
+          gone: true,
+          alreadyPaid,
+          expired,
+          message: alreadyPaid
+            ? "Betalingen er allerede registrert."
+            : vippsCleanupMessage(sync.vippsState || sync.status),
+        });
+        return;
+      }
+
+      const pending = await velgPendingReferanseIGruppe(paymentGroupId, method);
+      if (!pending?.reference) {
+        res.status(404).json({ ok: false, gone: true, error: "Betalingkravet er ikke lenger aktivt." });
+        return;
+      }
+
+      const payment = await fetchVippsPayment(pending.reference, accessToken);
+      const terminal = mapVippsStateToPendingStatus(payment.state);
+      if (terminal) {
+        await closePendingVippsByReference(pending.reference, terminal, { vippsState: payment.state });
+        res.status(200).json({
+          ok: false,
+          gone: true,
+          alreadyPaid: terminal === "completed",
+          expired: terminal === "expired",
+          message: vippsCleanupMessage(payment.state),
+        });
+        return;
+      }
+
+      const redirectUrl = await resolveVippsRedirectUrl(
+        pending.reference, accessToken, payment, pending.userFlow || "WEB_REDIRECT"
+      );
+      if (!redirectUrl) {
+        if (pending.paymentRole === "push" || pending.userFlow === "PUSH_MESSAGE") {
+          res.status(200).json({
+            ok: false,
+            pushOnly: true,
+            error: "Åpne Vipps-appen under Betalinger for å betale dette kravet.",
+          });
+          return;
+        }
+        res.status(502).json({ ok: false, error: "Kunne ikke hente betalingslenke fra Vipps." });
+        return;
+      }
+
+      if (pending.ref) {
+        await pending.ref.update({
+          redirectUrl,
+          redirectFetchedAt: new Date().toISOString(),
+        });
+      }
+
+      res.status(200).json({ ok: true, redirectUrl });
+    } catch (err) {
+      logger.error("openPendingVippsPayment error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
+// syncPendingVippsForStudent — Foreldreportalen: synkroniser utløpte/betalte
+// admin-krav mot Vipps slik utestående-listen oppdateres i portalen.
+//    POST { studentId }
+// =======================================================================
+exports.syncPendingVippsForStudent = onRequest(
+  { secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY], cors: true },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+
+    try {
+      const { studentId } = req.body || {};
+      if (!studentId) {
+        res.status(400).json({ ok: false, error: "Mangler studentId." });
+        return;
+      }
+      const tilgang = await krevForesattTilStudent(studentId, bruker, res);
+      if (!tilgang) return;
+
+      const accessToken = await getVippsAccessToken();
+      const pendingSnap = await db.collection("pendingVippsPayments")
+        .where("studentId", "==", studentId)
+        .where("status", "==", "pending")
+        .get();
+      const groupIds = [...new Set(
+        pendingSnap.docs.map((d) => d.data().paymentGroupId || d.data().reference).filter(Boolean)
+      )];
+      let changed = 0;
+      for (const gid of groupIds) {
+        const sync = await syncPendingVippsGroupWithVipps(gid, accessToken);
+        if (sync.changed) changed += 1;
+      }
+      res.status(200).json({ ok: true, synced: groupIds.length, changed });
+    } catch (err) {
+      logger.error("syncPendingVippsForStudent error", err);
       res.status(500).json({ ok: false, error: String(err.message || err) });
     }
   }
