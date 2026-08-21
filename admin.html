@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-21 20:05:00 -->
+<!-- SIST-ENDRET: 2026-08-21 20:15:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -2564,7 +2564,8 @@
       </label>
 
       <div style="font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; color:var(--emerald); margin-bottom:6px; letter-spacing:.02em;">HVEM I ADMINISTRASJONEN SKAL VARSLES</div>
-      <div id="varselMottakerListe" style="display:flex; flex-direction:column; gap:2px; max-height:340px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--paper);"></div>
+      <div id="varselListeInfo" class="sub" style="margin-bottom:8px; font-size:12px;"></div>
+      <div id="varselMottakerListe" style="display:flex; flex-direction:column; gap:2px; max-height:420px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--paper);"></div>
 
       <div class="field" style="margin-top:14px;">
         <label>Legg til en e-post manuelt</label>
@@ -2577,7 +2578,10 @@
       </div>
 
       <div id="varselOppsummering" class="sub" style="margin:12px 0 0;"></div>
-      <button class="btn btn-primary" style="width:auto; margin-top:12px;" onclick="saveVarselInnstillinger()">Lagre</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+        <button class="btn btn-ghost" style="width:auto;" onclick="ryddVarselMottakereUI()">Rydd duplikater</button>
+        <button class="btn btn-primary" style="width:auto;" onclick="saveVarselInnstillinger()">Lagre</button>
+      </div>
     </div>
 
     <div data-ov="fare" class="report-card danger-zone" style="margin-top:20px;">
@@ -7263,7 +7267,8 @@
       varselOppsett.nySoknadAktiv = d.nySoknadAktiv !== false;
       varselOppsett.kvitteringAktiv = d.kvitteringAktiv !== false;
       varselOppsett.forsteInnloggingAktiv = d.forsteInnloggingAktiv !== false;
-      varselOppsett.nySoknadMottakere = Array.isArray(d.nySoknadMottakere) ? d.nySoknadMottakere : [];
+      const raw = Array.isArray(d.nySoknadMottakere) ? d.nySoknadMottakere : [];
+      varselOppsett.nySoknadMottakere = ryddVarselMottakereList(raw);
       fyllVarselInnstillinger();
     }, (err) => console.error('settings/varsler', err));
 
@@ -21841,34 +21846,138 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     }
   }
 
-  function renderVarselMottakere(){
-    const el = document.getElementById('varselMottakerListe');
-    if(!el) return;
-
-    // Alle med e-post — både ansatte (teachers) og oppføringer som bare
-    // finnes i tilgangslisten. Samme e-post vises én gang.
-    const sett = new Map();
+  function byggVarselPersonIndex(){
+    const epostTilNavn = new Map();
+    const navnTilKanoniEpost = new Map();
+    const ansatte = [];
     (cache.teachers || []).forEach(t => {
-      const e = (t.epost || '').trim().toLowerCase();
-      if(e) sett.set(e, { epost: t.epost.trim(), navn: t.navn || '', roller: t.roller || '' });
+      const lc = normEpost(t.epost);
+      const n = normNavn(t.navn);
+      if(!lc) return;
+      ansatte.push({ lc, normNavn: n, epost: (t.epost || '').trim(), navn: t.navn || '', roller: t.roller || '' });
+      if(n){
+        epostTilNavn.set(lc, n);
+        navnTilKanoniEpost.set(n, (t.epost || '').trim());
+      }
     });
     adminUsersCache.forEach(u => {
-      const e = (u.epost || '').trim().toLowerCase();
-      if(e && !sett.has(e)) sett.set(e, { epost: u.epost.trim(), navn: u.navn || '', roller: u.roller || u.rolle || '' });
+      const lc = normEpost(u.epost);
+      const n = normNavn(u.navn);
+      if(!lc || epostTilNavn.has(lc)) return;
+      ansatte.push({ lc, normNavn: n, epost: (u.epost || '').trim(), navn: u.navn || '', roller: u.roller || u.rolle || '', fraAdmin: true });
+      if(n && !navnTilKanoniEpost.has(n)) navnTilKanoniEpost.set(n, (u.epost || '').trim());
+      if(n) epostTilNavn.set(lc, n);
+    });
+    return { epostTilNavn, navnTilKanoniEpost, ansatte };
+  }
+
+  function manuellEpostErDuplikatAvAnsatt(epost, index){
+    const lc = normEpost(epost);
+    if(!lc.includes('@')) return true;
+    if(index.epostTilNavn.has(lc)) return true;
+    const local = lc.split('@')[0] || '';
+    if(!local) return false;
+    for(const a of index.ansatte){
+      if(a.lc === lc) return true;
+      const fornavn = (a.normNavn || '').split(' ')[0] || '';
+      const kjentLocal = a.lc.split('@')[0] || '';
+      if(fornavn.length >= 3 && local.includes(fornavn)) return true;
+      if(kjentLocal.length >= 4 && (local.includes(kjentLocal) || kjentLocal.includes(local))) return true;
+    }
+    return false;
+  }
+
+  function kanoniserVarselEpostListe(liste){
+    const sett = new Map();
+    (liste || []).forEach(e => {
+      const lc = normEpost(e);
+      if(!lc.includes('@')) return;
+      if(sett.has(lc)) return;
+      const t = (cache.teachers || []).find(x => normEpost(x.epost) === lc);
+      if(t) sett.set(lc, (t.epost || '').trim());
+      else{
+        const u = adminUsersCache.find(x => normEpost(x.epost) === lc);
+        sett.set(lc, u ? (u.epost || '').trim() : String(e || '').trim());
+      }
+    });
+    return [...sett.values()];
+  }
+
+  function ryddVarselMottakereList(liste){
+    const index = byggVarselPersonIndex();
+    const valgt = kanoniserVarselEpostListe(liste);
+    const navnSet = new Set();
+    const result = [];
+    for(const ep of valgt){
+      const lc = normEpost(ep);
+      const navn = index.epostTilNavn.get(lc);
+      if(navn){
+        if(navnSet.has(navn)) continue;
+        navnSet.add(navn);
+        result.push(index.navnTilKanoniEpost.get(navn) || ep);
+        continue;
+      }
+      if(manuellEpostErDuplikatAvAnsatt(ep, index)) continue;
+      result.push(ep);
+    }
+    return kanoniserVarselEpostListe(result);
+  }
+
+  function byggVarselMottakerListe(){
+    const index = byggVarselPersonIndex();
+    const perPerson = new Map();
+
+    index.ansatte.forEach(a => {
+      const nokkel = a.normNavn || a.lc;
+      if(!perPerson.has(nokkel) || !perPerson.get(nokkel).navn){
+        perPerson.set(nokkel, {
+          epost: a.epost,
+          navn: a.navn,
+          roller: a.roller,
+          normNavn: a.normNavn,
+          manuell: false
+        });
+      }
     });
 
-    // Lagrede mottakere som IKKE finnes som ansatt lenger — enten lagt
-    // inn manuelt, eller en ansatt som er slettet siden. De må fortsatt
-    // vises, ellers ville de forsvunnet stille fra listen mens de
-    // fremdeles fikk e-post.
-    varselOppsett.nySoknadMottakere.forEach(e => {
-      const lc = (e || '').trim().toLowerCase();
-      if(lc && !sett.has(lc)) sett.set(lc, { epost: e.trim(), navn: '', roller: '', manuell: true });
+    kanoniserVarselEpostListe(varselOppsett.nySoknadMottakere).forEach(e => {
+      const lc = normEpost(e);
+      if(!lc.includes('@')) return;
+      if(manuellEpostErDuplikatAvAnsatt(e, index)) return;
+      const finnesSomAnsatt = [...perPerson.values()].some(p => normEpost(p.epost) === lc);
+      if(finnesSomAnsatt) return;
+      const key = 'manual:' + lc;
+      if(!perPerson.has(key)){
+        perPerson.set(key, { epost: e.trim(), navn: '', roller: '', normNavn: key, manuell: true });
+      }
     });
 
-    const folk = [...sett.values()].sort((a,b) => (a.navn || a.epost).localeCompare(b.navn || b.epost));
+    return [...perPerson.values()].sort((a, b) => (a.navn || a.epost).localeCompare(b.navn || b.epost, 'no'));
+  }
+
+  function erVarselMottakerValgt(person, valgtLcSet, index){
+    if(valgtLcSet.has(normEpost(person.epost))) return true;
+    if(!person.normNavn || person.manuell) return false;
+    for(const lc of valgtLcSet){
+      if(index.epostTilNavn.get(lc) === person.normNavn) return true;
+      if(manuellEpostErDuplikatAvAnsatt(lc, index)){
+        const kanonisk = index.navnTilKanoniEpost.get(person.normNavn);
+        if(kanonisk && normEpost(kanonisk) === normEpost(person.epost)) return true;
+      }
+    }
+    return false;
+  }
+
+  function renderVarselMottakere(){
+    const el = document.getElementById('varselMottakerListe');
+    const info = document.getElementById('varselListeInfo');
+    if(!el) return;
+
+    const index = byggVarselPersonIndex();
+    const folk = byggVarselMottakerListe();
+    const valgtLcSet = new Set(varselOppsett.nySoknadMottakere.map(e => normEpost(e)));
+
     if(folk.length === 0){
-      // Sier hvorfor listen er tom, ikke bare AT den er det.
       const antallAnsatte = (cache.teachers || []).length + adminUsersCache.length;
       el.innerHTML = '<div class="report-empty" style="box-shadow:none; border:none; background:transparent;">' +
         (antallAnsatte === 0
@@ -21876,25 +21985,41 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
           : antallAnsatte + ' ansatte funnet, men ingen av dem har en e-post registrert. ' +
             'Legg inn e-post på personkortet under «Ansatte», eller skriv en adresse i feltet under.') +
         '</div>';
+      if(info) info.textContent = '';
       oppdaterVarselOppsummering();
       return;
     }
 
-    const valgt = new Set(varselOppsett.nySoknadMottakere.map(e => e.toLowerCase()));
+    const antallValgt = folk.filter(p => erVarselMottakerValgt(p, valgtLcSet, index)).length;
+    if(info){
+      info.textContent = folk.length + ' person' + (folk.length === 1 ? '' : 'er') +
+        ' i listen · ' + antallValgt + ' valgt';
+    }
+
     el.innerHTML = folk.map(p => `
       <label style="display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid rgba(40,40,90,.06); font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
         <input type="checkbox" class="varsel-mottaker" value="${escapeHtml(p.epost)}"
-               ${valgt.has(p.epost.toLowerCase()) ? 'checked' : ''}
+               ${erVarselMottakerValgt(p, valgtLcSet, index) ? 'checked' : ''}
                onchange="oppdaterVarselOppsummering()" style="width:16px; height:16px; flex:0 0 auto;">
         <span style="flex:1; min-width:0;">
           <strong>${escapeHtml(p.navn || p.epost)}</strong>
           ${p.navn ? `<span style="color:#8a9a90;"> — ${escapeHtml(p.epost)}</span>` : ''}
-          ${p.manuell ? '<span style="font-size:11px; color:var(--gold);"> · lagt til manuelt</span>' : ''}
+          ${p.manuell ? '<span style="font-size:11px; color:var(--gold);"> · felles postkasse / ekstern</span>' : ''}
           ${p.roller ? `<br><span style="font-size:11px; color:#8a9a90;">${escapeHtml(p.roller)}</span>` : ''}
         </span>
       </label>`).join('');
     oppdaterVarselOppsummering();
   }
+
+  window.ryddVarselMottakereUI = function(){
+    const antallFor = varselOppsett.nySoknadMottakere.length;
+    varselOppsett.nySoknadMottakere = ryddVarselMottakereList(varselOppsett.nySoknadMottakere);
+    const antallEtter = varselOppsett.nySoknadMottakere.length;
+    renderVarselMottakere();
+    showToast(antallEtter < antallFor
+      ? 'Fjernet ' + (antallFor - antallEtter) + ' duplikat-e-post(er). Trykk «Lagre» for å bekrefte.'
+      : 'Ingen duplikater funnet i mottakerlisten.');
+  };
 
   // En adresse lagt til her lagres først når man trykker «Lagre» — den
   // legges bare inn i listen som avkrysset, slik at man ser hva man er i
@@ -21907,15 +22032,21 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       showToast('Det ser ikke ut som en gyldig e-postadresse.', true);
       return;
     }
-    if(varselOppsett.nySoknadMottakere.some(x => x.toLowerCase() === e.toLowerCase())){
+    if(varselOppsett.nySoknadMottakere.some(x => normEpost(x) === normEpost(e))){
       showToast('Denne adressen står allerede i listen.');
+      felt.value = '';
+      return;
+    }
+    const index = byggVarselPersonIndex();
+    if(manuellEpostErDuplikatAvAnsatt(e, index)){
+      showToast('Denne adressen tilhører allerede en ansatt i listen — velg personkortet i stedet.', true);
       felt.value = '';
       return;
     }
     // Ta med det som allerede er krysset av, så et valg ikke går tapt
     // når listen tegnes på nytt.
     const alleredeValgt = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
-    varselOppsett.nySoknadMottakere = [...new Set([...alleredeValgt, e])];
+    varselOppsett.nySoknadMottakere = ryddVarselMottakereList([...alleredeValgt, e]);
     felt.value = '';
     renderVarselMottakere();
     showToast('Lagt til i listen — trykk «Lagre» for å bekrefte.');
@@ -21972,7 +22103,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
 
   window.saveVarselInnstillinger = async function(){
     const aktiv = document.getElementById('varselNySoknadAktiv').checked;
-    const mottakere = [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value);
+    const mottakere = ryddVarselMottakereList(
+      [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value)
+    );
     try{
       await setDoc(doc(db, 'settings', 'varsler'), {
         nySoknadAktiv: aktiv,
