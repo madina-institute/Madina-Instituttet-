@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 01:25:00 -->
+<!-- SIST-ENDRET: 2026-08-22 02:15:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8471,6 +8471,229 @@
   // notification (a broadcastThread they'll see in Foreldreportalen, same
   // mechanism as Meldingssenter) AND as an e-post — so it's guaranteed to
   // reach them even if they don't check the portal.
+  const BETALINGSRAPPORT_STEMPEL = 'assets/stempel-madina-fullt.svg';
+  let html2pdfLastPromise = null;
+
+  function loadHtml2PdfLib(){
+    if(window.html2pdf) return Promise.resolve();
+    if(html2pdfLastPromise) return html2pdfLastPromise;
+    html2pdfLastPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Kunne ikke laste PDF-bibliotek'));
+      document.head.appendChild(s);
+    });
+    return html2pdfLastPromise;
+  }
+
+  function filnavnSafe(s){
+    return String(s || 'elev').trim()
+      .replace(/[^\w\u00C0-\u024F\-]+/gi, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 48) || 'elev';
+  }
+
+  function blobToBase64(blob){
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result || '').split(',')[1] || '');
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  }
+
+  async function hentBetalingsrapportStempelUri(){
+    if(window._betalingsrapportStempelUri) return window._betalingsrapportStempelUri;
+    try{
+      const r = await fetch(BETALINGSRAPPORT_STEMPEL);
+      if(!r.ok) throw new Error('stempel fetch');
+      const txt = await r.text();
+      window._betalingsrapportStempelUri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(txt)));
+    } catch(_e){
+      window._betalingsrapportStempelUri = BETALINGSRAPPORT_STEMPEL;
+    }
+    return window._betalingsrapportStempelUri;
+  }
+
+  function waitForPdfImages(container){
+    const imgs = [...container.querySelectorAll('img')];
+    if(!imgs.length) return Promise.resolve();
+    return Promise.all(imgs.map(img => new Promise(resolve => {
+      if(img.complete && img.naturalWidth) return resolve();
+      const done = () => resolve();
+      img.onload = done;
+      img.onerror = done;
+      setTimeout(done, 4000);
+    })));
+  }
+
+  function byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc }){
+    const elevNavn = student.navn || 'Elev';
+    const foresattNavn = guardian.navn || 'Foresatt';
+    const klasseNavn = resolveDynName('classes', student.klasse) || student.klasse || '—';
+    const utstedt = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
+    const ref = 'BR-' + String(student.id || '').slice(-6).toUpperCase() + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
+    const historikkHtml = historikkRader.length
+      ? historikkRader.map(p => {
+          const bel = cashierKr(p.belop);
+          const neg = bel < 0;
+          return `<tr>
+            <td>${escapeHtml(cashierFormatDatoTid(p.dato))}</td>
+            <td class="tall${neg ? ' neg' : ''}">${escapeHtml(bel.toLocaleString('no-NO'))} kr</td>
+            <td>${escapeHtml(p.kilde || '—')}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="3" class="tom">Ingen registrerte betalinger ennå.</td></tr>';
+
+    return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        *{ box-sizing:border-box; }
+        body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; background:#fff; }
+        .ark{ width:190mm; min-height:267mm; margin:0 auto; padding:14mm 16mm 18mm; position:relative; }
+        .topp{
+          background:linear-gradient(135deg,#eef6fd 0%,#d8e9f8 100%);
+          border-bottom:3px solid #b9d5ee; padding:18px 20px 16px; text-align:center;
+          border-radius:8px 8px 0 0;
+        }
+        .topp img.logo{ height:36px; width:auto; margin-bottom:6px; }
+        .topp .aar{ font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:#6f93b6; }
+        .topp h1{
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:26px; margin:4px 0 2px;
+          color:#1c5490; font-weight:700;
+        }
+        .topp .under{ font-size:11.5px; color:#4a7099; }
+        .meta{
+          display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+          font-size:10.5px; color:#5a6b7d; padding:10px 4px 14px; border-bottom:1px solid #e4edf6;
+        }
+        .meta b{ color:#1c5490; font-weight:600; }
+        .intro{ font-size:12.5px; line-height:1.65; margin:16px 0 18px; }
+        .summary{
+          display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px;
+        }
+        .sum-kort{
+          border:1px solid #cfe0ef; border-radius:8px; padding:12px 14px; background:#f8fbfe;
+        }
+        .sum-kort.rest{ border-color:#e8c89a; background:#fdf8ec; }
+        .sum-kort .lbl{
+          font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#6f93b6;
+          margin-bottom:4px; font-weight:600;
+        }
+        .sum-kort .val{
+          font-size:20px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
+        }
+        .sum-kort.rest .val{ color:#9a6b1a; }
+        h2{
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:17px; color:#1c5490;
+          margin:0 0 8px; padding-bottom:4px; border-bottom:2px solid #e4edf6;
+        }
+        table{ border-collapse:collapse; width:100%; font-size:11px; margin-bottom:18px; }
+        th{
+          background:#eef4fa; color:#1c5490; font-weight:600; font-size:9.5px;
+          letter-spacing:.06em; text-transform:uppercase; padding:7px 8px; text-align:left;
+          border-bottom:2px solid #cfe0ef;
+        }
+        td{ padding:7px 8px; border-bottom:1px solid #e4edf6; vertical-align:top; }
+        td.tall{ text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        td.tall.neg{ color:#a83c3c; }
+        td.tom{ color:#8a9a90; font-style:italic; text-align:center; }
+        .signatur{
+          margin-top:28px; min-height:120px; position:relative; padding-top:8px;
+          border-top:1px dashed #cfe0ef;
+        }
+        .signatur .tekst{ font-size:11.5px; line-height:1.6; max-width:58%; }
+        .stempel{
+          position:absolute; right:0; bottom:0; width:118px; height:118px; opacity:.92;
+        }
+        .bunn{
+          margin-top:22px; padding-top:10px; border-top:1px solid #e4edf6;
+          font-size:9.5px; color:#7b8a93; display:flex; justify-content:space-between; gap:10px;
+        }
+        .kvittering-badge{
+          display:inline-block; font-size:9px; letter-spacing:.12em; text-transform:uppercase;
+          background:#1c5490; color:#fff; padding:3px 10px; border-radius:20px; margin-bottom:8px;
+        }
+      </style></head><body>
+      <div class="ark">
+        <div class="topp">
+          <img class="logo" src="${LOGO_UTSKRIFT}" alt="Madina Skole">
+          <div class="aar">Skoleåret ${escapeHtml(SKOLEAR)}</div>
+          <h1>Betalingsoversikt</h1>
+          <div class="under">Offisiell kvittering / payment statement</div>
+        </div>
+        <div class="meta">
+          <span><b>Dokument:</b> ${escapeHtml(ref)}</span>
+          <span><b>Utstedt:</b> ${escapeHtml(utstedt)}</span>
+        </div>
+        <div class="kvittering-badge">Betalingsrapport</div>
+        <p class="intro">Hei ${escapeHtml(foresattNavn)},<br><br>
+          Her er en oppdatert betalingsoversikt for <b>${escapeHtml(elevNavn)}</b>
+          (${escapeHtml(klasseNavn)}).</p>
+        <div class="summary">
+          <div class="sum-kort">
+            <div class="lbl">Totalt beløp</div>
+            <div class="val">${escapeHtml(belop.toLocaleString('no-NO'))} kr</div>
+          </div>
+          <div class="sum-kort">
+            <div class="lbl">Betalt så langt</div>
+            <div class="val">${escapeHtml(betalt.toLocaleString('no-NO'))} kr</div>
+          </div>
+          <div class="sum-kort rest">
+            <div class="lbl">Restbeløp</div>
+            <div class="val">${escapeHtml(rest.toLocaleString('no-NO'))} kr</div>
+          </div>
+        </div>
+        <h2>Betalingshistorikk</h2>
+        <table>
+          <thead><tr><th>Dato</th><th style="text-align:right">Beløp</th><th>Kilde</th></tr></thead>
+          <tbody>${historikkHtml}</tbody>
+        </table>
+        <div class="signatur">
+          <div class="tekst">
+            Dokumentet er utstedt elektronisk av Madina Skole og gjelder per dato ovenfor.<br>
+            <b>Med vennlig hilsen,</b><br>Madina Skole
+          </div>
+          <img class="stempel" src="${stempelSrc || BETALINGSRAPPORT_STEMPEL}" alt="Madina Skole stempel">
+        </div>
+        <div class="bunn">
+          <span>Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</span>
+          <span>${escapeHtml(ref)}</span>
+        </div>
+      </div>
+      </body></html>`;
+  }
+
+  async function genererBetalingsrapportPdf({ student, guardian, belop, betalt, rest, history }){
+    await loadHtml2PdfLib();
+    const stempelSrc = await hentBetalingsrapportStempelUri();
+    const html = byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc });
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;';
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const element = host.querySelector('.ark') || host;
+    try{
+      await waitForPdfImages(host);
+      const blob = await window.html2pdf().set({
+        margin: [8, 8, 10, 8],
+        filename: 'Betalingsoversikt.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(element).outputPdf('blob');
+      const filnavn = 'Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf';
+      const base64 = await blobToBase64(blob);
+      return { blob, filnavn, base64 };
+    } finally {
+      host.remove();
+    }
+  }
+
   async function sendCashierReportToStudent(studentId){
     const student = cache.students.find(s => s.id === studentId);
     if(!student) return false;
@@ -8479,41 +8702,79 @@
 
     const belop = cashierKr(student.belop), betalt = cashierKr(student.belopBetalt), rest = belop - betalt;
     const history = cache.studentPayments.filter(p => p.studentId === studentId);
+    const elevNavn = student.navn || 'ditt barn';
+    const subject = 'Betalingsoversikt — ' + elevNavn;
 
-    const lines = [
-      'Hei ' + (guardian.navn || '') + ',', '',
-      'Her er en oppdatert betalingsoversikt for ' + (student.navn || 'ditt barn') + ':', '',
+    let pdf;
+    try{
+      pdf = await genererBetalingsrapportPdf({ student, guardian, belop, betalt, rest, history });
+    } catch(err){
+      console.error('PDF-generering feilet', err);
+      showToast('Kunne ikke lage PDF-rapport: ' + err.message, true);
+      return false;
+    }
+
+    const oppsummering = [
       'Totalt beløp: ' + belop.toLocaleString('no-NO') + ' kr',
       'Betalt så langt: ' + betalt.toLocaleString('no-NO') + ' kr',
-      'Restbeløp: ' + rest.toLocaleString('no-NO') + ' kr', ''
-    ];
-    if(history.length > 0){
-      lines.push('Betalingshistorikk:');
-      history.forEach(p => lines.push('• ' + cashierFormatDatoTid(p.dato) + ' — ' + cashierKr(p.belop).toLocaleString('no-NO') + ' kr (' + (p.kilde || '') + ')'));
-      lines.push('');
-    }
-    lines.push('Med vennlig hilsen,\nMadina Skole');
-    const text = lines.join('\n');
-    const subject = 'Betalingsoversikt — ' + (student.navn || 'ditt barn');
+      'Restbeløp: ' + rest.toLocaleString('no-NO') + ' kr'
+    ].join('\n');
+
+    const portalTekst = [
+      'Hei ' + (guardian.navn || '') + ',', '',
+      'Vi har sendt deg en oppdatert betalingsoversikt for ' + elevNavn + ' som PDF vedlagt e-posten din.', '',
+      'Oppsummert:', oppsummering, '',
+      'Åpne vedlagte PDF i e-posten for full historikk og offisiell kvittering med stempel.', '',
+      'Med vennlig hilsen,', 'Madina Skole'
+    ].join('\n');
+
+    const emailText = [
+      'Hei ' + (guardian.navn || '') + ',', '',
+      'Vedlagt finner du en oppdatert betalingsoversikt for ' + elevNavn + ' som PDF.', '',
+      'Oppsummert:', oppsummering, '',
+      'Med vennlig hilsen,', 'Madina Skole'
+    ].join('\n');
+
+    const emailHtml = '<p>Hei ' + escapeHtml(guardian.navn || '') + ',</p>' +
+      '<p>Vedlagt finner du en oppdatert <b>betalingsoversikt</b> for <b>' + escapeHtml(elevNavn) + '</b> som PDF.</p>' +
+      '<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;margin:14px 0;">' +
+      '<tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;">Totalt beløp</th><td style="padding:5px 0;">' + escapeHtml(belop.toLocaleString('no-NO')) + ' kr</td></tr>' +
+      '<tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;">Betalt så langt</th><td style="padding:5px 0;">' + escapeHtml(betalt.toLocaleString('no-NO')) + ' kr</td></tr>' +
+      '<tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;">Restbeløp</th><td style="padding:5px 0;">' + escapeHtml(rest.toLocaleString('no-NO')) + ' kr</td></tr>' +
+      '</table><p>Med vennlig hilsen,<br><b>Madina Skole</b></p>';
 
     const utfall = await sendBroadcast({
       recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '', epost: guardian.epost || '' }],
-      title: subject, groupLabel: 'Betalingsrapport', tekst: text
+      title: subject, groupLabel: 'Betalingsrapport', tekst: portalTekst
     });
     if(utfall.sendt === 0){
       showToast('⚠️ ' + (guardian.navn || 'Foresatt') + ' har ingen e-post — rapporten ble ikke lagt i Foreldreportalen.', true);
     }
     if(guardian.epost){
-      await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+      await addDoc(collection(db, 'mail'), {
+        from: MAIL_FROM,
+        to: [guardian.epost],
+        message: {
+          subject: '[Madina Skole] ' + subject,
+          text: emailText,
+          html: emailHtml,
+          attachments: [{
+            filename: pdf.filnavn,
+            content: pdf.base64,
+            encoding: 'base64',
+            contentType: 'application/pdf'
+          }]
+        }
+      });
     }
     return true;
   }
 
   window.sendCashierReport = async function(studentId){
-    showToast('Sender rapport...');
+    showToast('Lager og sender PDF-rapport...');
     try{
       const ok = await sendCashierReportToStudent(studentId);
-      if(ok) showToast('✓ Rapport sendt (e-post + Foreldreportal).');
+      if(ok) showToast('✓ PDF-rapport sendt (e-post + Foreldreportal).');
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
@@ -8522,13 +8783,13 @@
 
   window.sendCashierReportBulk = async function(){
     if(cashierSelectedIds.size === 0){ showToast('Velg minst én elev først.'); return; }
-    showToast('Sender rapporter til ' + cashierSelectedIds.size + ' elev(er)...');
+    showToast('Lager og sender PDF-rapporter til ' + cashierSelectedIds.size + ' elev(er)...');
     let sent = 0;
     for(const id of cashierSelectedIds){
       try{ if(await sendCashierReportToStudent(id)) sent++; }
       catch(err){ console.error(err); }
     }
-    showToast('✓ Rapport sendt til ' + sent + ' elev(er).');
+    showToast('✓ PDF-rapport sendt til ' + sent + ' elev(er).');
   };
 
   window.exportCashierCSV = function(selectedOnly){
