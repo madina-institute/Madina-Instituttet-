@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-21 23:52:00 */
+/* SIST-ENDRET: 2026-08-22 00:15:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -1047,11 +1047,14 @@ async function postVippsPayment(accessToken, { reference, normalizedPhone, amoun
   if (method === "WALLET" && normalizedPhone) {
     payload.customer = { phoneNumber: normalizedPhone };
   }
-  // returnUrl trengs for WEB_REDIRECT, men sendes også ved PUSH_MESSAGE slik at
-  // Vipps kan returnere redirectUrl som backup-lenke i e-post til foresatte.
-  payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
-  // CARD støtter ikke profile.scope — Vipps svarer 400 «Profile.Scope must be null».
-  if (method === "WALLET") {
+  // returnUrl skal KUN sendes for WEB/NATIVE — ikke for PUSH_MESSAGE.
+  // Med returnUrl på PUSH kan Vipps returnere redirectUrl og kravet
+  // vises ikke under Betalinger i appen (kun via e-postlenke).
+  if (userFlow === "WEB_REDIRECT" || userFlow === "NATIVE_REDIRECT") {
+    payload.returnUrl = returnUrl || VIPPS_RETURN_URL;
+  }
+  // profile.scope kun for WEB — unngå ekstra felt på PUSH.
+  if (method === "WALLET" && userFlow === "WEB_REDIRECT") {
     payload.profile = { scope: "phoneNumber name" };
   }
 
@@ -1162,8 +1165,10 @@ exports.createVippsPayment = onRequest(
       });
 
       // MSN uten PUSH_MESSAGE-godkjenning: fall tilbake til lenke i e-post.
+      let pushFailReason = null;
       if (!attempt.ok && !erForesatt && userFlow === "PUSH_MESSAGE") {
-        const pushAvvist = /PUSH_MESSAGE/i.test(attempt.bodyText);
+        pushFailReason = attempt.bodyText || "Ukjent feil";
+        const pushAvvist = /PUSH_MESSAGE|not allowed|not approved|not enabled|userFlow/i.test(String(attempt.bodyText || ""));
         if (pushAvvist) {
           logger.warn("PUSH_MESSAGE avvist — prøver WEB_REDIRECT", { reference, body: attempt.bodyText });
           usedFallback = true;
@@ -1181,11 +1186,26 @@ exports.createVippsPayment = onRequest(
 
       if (!attempt.ok) {
         logger.error("Vipps create payment failed", attempt.bodyText);
-        res.status(502).json({ ok: false, error: "Vipps avviste betalingen: " + attempt.bodyText });
+        res.status(502).json({
+          ok: false,
+          error: "Vipps avviste betalingen: " + attempt.bodyText,
+          pushFailReason,
+          userFlowAttempted: usedFallback ? "PUSH_MESSAGE→WEB_REDIRECT" : userFlow,
+        });
         return;
       }
 
       const paymentData = attempt.paymentData || {};
+      let pushPaymentState = null;
+      if (!erForesatt && userFlow === "PUSH_MESSAGE") {
+        try {
+          const pushInfo = await fetchVippsPayment(reference, accessToken);
+          pushPaymentState = pushInfo.state || null;
+          logger.info("PUSH opprettet", { reference, state: pushPaymentState, phone: normalizedPhone });
+        } catch (err) {
+          logger.warn("Kunne ikke verifisere PUSH-betaling etter opprettelse", { reference, err: String(err.message || err) });
+        }
+      }
       const paymentGroupId = reference;
       let emailReference = reference;
       let dualPayment = false;
@@ -1335,6 +1355,10 @@ exports.createVippsPayment = onRequest(
         dualPayment,
         userFlow,
         vippsEnv,
+        pushPaymentState,
+        pushInAppExpected: userFlow === "PUSH_MESSAGE" && !usedFallback,
+        phoneUsed: normalizedPhone,
+        pushFailReason: usedFallback ? (pushFailReason || "PUSH avvist — kun e-postlenke") : null,
         pushNote: dualPayment
           ? (VIPPS_ENV.value() === "test"
             ? "Test-miljø: push-varsel er sendt til Vipps-appen. Betalingslenken i e-posten er backup."
