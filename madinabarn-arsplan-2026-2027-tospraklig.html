@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-21 18:04:52 -->
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Madinabarn — Årsplan 2026/2027 · الخطة السنوية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;600&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@700&display=swap" rel="stylesheet">
+<style>
+/* ──────────────────────────────────────────────────────────────
+   Madinabarn — tospråklig årsplan. Norsk er hovedspråket; arabisk
+   følger under hver enhet, aldri inne i samme setning.
+   Fargene A/B/C/D viser sanserytmen: en lærer ser på ett blikk at
+   samme aktivitetstype ikke gjentar seg oftere enn én gang i måneden.
+   ────────────────────────────────────────────────────────────── */
+:root{
+  --blekk:#16304a; --gronn:#2f6b4f; --papir:#fff; --bakgrunn:#e9edf1;
+  --linje:#d3dae1; --dempet:#5d6f7f; --arfarge:#3d5a72;
+  --a:#c0592a; --b:#9a7a1f; --c:#2f6b4f; --d:#584a80;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--bakgrunn); color:var(--blekk);
+  font-family:'Source Sans 3',system-ui,sans-serif; font-size:15px; line-height:1.55}
+.ark{max-width:1060px; margin:0 auto; background:var(--papir); padding:0 0 64px}
+
+/* Arabisk får egen farge og eget snitt, så øyet skiller lagene
+   uten å lese — og aldri på samme linje som den norske teksten. */
+.ar{display:block; font-family:'Amiri',serif; color:var(--arfarge);
+    direction:rtl; text-align:right; line-height:1.75}
+p.ar{font-size:16.5px; margin:-6px 0 16px; max-width:74ch; margin-left:auto}
+
+header{padding:56px 48px 40px; border-bottom:3px solid var(--blekk)}
+.merke{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--gronn); margin:0 0 18px}
+h1{font-family:'Fraunces',Georgia,serif; font-weight:700;
+  font-size:clamp(40px,7vw,68px); line-height:.98; margin:0; letter-spacing:-.02em}
+h1 .ar{font-family:'Aref Ruqaa',serif; font-size:.62em; color:var(--gronn);
+  margin-top:6px; line-height:1.3}
+.undertittel{font-family:'Fraunces',Georgia,serif; font-weight:500;
+  font-size:clamp(18px,2.6vw,24px); color:var(--dempet); margin:12px 0 0; font-style:italic}
+.undertittel .ar{font-style:normal; font-size:.85em; margin-top:2px}
+.fakta{display:flex; flex-wrap:wrap; gap:0 34px; margin-top:26px;
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dempet)}
+.fakta b{color:var(--blekk); font-weight:600}
+
+section{padding:44px 48px 0}
+h2{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:27px;
+  margin:0 0 2px; letter-spacing:-.01em}
+h2 .nr{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--gronn);
+  margin-right:12px; vertical-align:.28em; font-weight:600}
+h2 .ar{font-family:'Aref Ruqaa',serif; font-size:.72em; color:var(--gronn); margin-top:4px}
+h3{font-weight:700; font-size:15px; letter-spacing:.04em; text-transform:uppercase;
+  margin:30px 0 8px; color:var(--gronn)}
+h3 .ar{font-family:'Amiri',serif; font-size:17px; letter-spacing:0;
+  text-transform:none; font-weight:700; margin-top:1px}
+p{margin:0 0 6px; max-width:74ch}
+.ingress{color:var(--dempet); max-width:66ch}
+.ingress + p.ar{margin-bottom:24px}
+
+table{border-collapse:collapse; width:100%; margin:6px 0 8px; table-layout:fixed}
+th{font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--dempet); text-align:left; font-weight:600;
+  padding:8px 10px; border-bottom:2px solid var(--blekk)}
+th .ar{font-family:'Amiri',serif; font-size:12.5px; letter-spacing:0;
+  text-transform:none; margin-top:1px}
+td{padding:9px 10px; border-bottom:1px solid var(--linje); vertical-align:top; font-size:14px}
+td .ar{font-size:15px; margin-top:2px}
+td .no{display:block}
+tbody tr:nth-child(even){background:#f7f9fa}
+
+td.uke{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:14px;
+  width:96px; border-left:5px solid var(--linje); padding-left:12px}
+tr.t-a td.uke{border-left-color:var(--a)} tr.t-b td.uke{border-left-color:var(--b)}
+tr.t-c td.uke{border-left-color:var(--c)} tr.t-d td.uke{border-left-color:var(--d)}
+td.uke .type{display:block; font-size:9.5px; letter-spacing:.09em;
+  text-transform:uppercase; font-weight:400; margin-top:2px}
+td.uke .type em{display:block; font-family:'Amiri',serif; font-style:normal;
+  font-size:13px; letter-spacing:0; text-transform:none; margin-top:1px}
+tr.t-a td.uke .type{color:var(--a)} tr.t-b td.uke .type{color:var(--b)}
+tr.t-c td.uke .type{color:var(--c)} tr.t-d td.uke .type{color:var(--d)}
+
+tr.milepael td{background:var(--blekk); color:#fff; border-bottom:1px solid var(--blekk)}
+tr.milepael td.uke{border-left-color:var(--blekk); color:#fff}
+tr.milepael td.uke .type,tr.milepael td.uke .type em{color:#9fb6c9}
+tr.milepael .ar{color:#c8d8e4}
+
+/* Arabisk bokstav som egen visuell enhet, aldri inne i løpende tekst */
+.bokstav{font-family:'Amiri',serif; font-size:23px; line-height:1; color:var(--gronn);
+  margin-right:8px; vertical-align:-.12em; display:inline-block}
+.ar .bokstav{margin-right:0; margin-left:8px; font-size:21px}
+.bokstav + .bokstav{margin-right:8px; margin-left:-4px}
+.ar .bokstav + .bokstav{margin-left:8px; margin-right:-4px}
+
+.kort-rad{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:20px 0 6px}
+.kort{border:1px solid var(--linje); border-top:4px solid var(--gronn); padding:20px 22px}
+.kort h4{font-family:'Fraunces',Georgia,serif; font-size:21px; margin:0; font-weight:700}
+.kort h4 .ar{font-family:'Aref Ruqaa',serif; font-size:.8em; color:var(--gronn); margin-top:3px}
+.kort .alder{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--dempet);
+  letter-spacing:.08em; margin:8px 0 14px}
+.kort p{font-size:14px; margin:0 0 4px}
+.kort p.ar{font-size:15px; margin:0 0 12px}
+.kort .ikke{border-top:1px solid var(--linje); padding-top:10px; color:var(--dempet)}
+
+.rytme{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:16px 0 4px}
+.rytme div{border-left:5px solid; padding:8px 0 8px 12px}
+.rytme b{display:block; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em}
+.rytme span.t{display:block; font-size:13.5px; color:var(--dempet)}
+.rytme .ar{font-size:14.5px; margin-top:2px}
+.r-a{border-color:var(--a)} .r-a b{color:var(--a)}
+.r-b{border-color:var(--b)} .r-b b{color:var(--b)}
+.r-c{border-color:var(--c)} .r-c b{color:var(--c)}
+.r-d{border-color:var(--d)} .r-d b{color:var(--d)}
+
+.merknad{border-left:3px solid var(--gronn); background:#f2f6f3;
+  padding:14px 18px; margin:18px 0; font-size:14px}
+.merknad p{margin:0 0 4px}
+.merknad p.ar{margin:0; font-size:15.5px}
+.merknad b{color:var(--gronn)}
+
+footer{margin-top:52px; padding:24px 48px 0; border-top:1px solid var(--linje);
+  font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dempet); letter-spacing:.05em}
+footer .ar{font-family:'Amiri',serif; font-size:14px; letter-spacing:0; margin-top:6px}
+
+@media (max-width:820px){
+  header{padding:36px 22px 28px} section{padding:32px 22px 0} footer{padding:20px 22px 0}
+  .kort-rad{grid-template-columns:1fr} .rytme{grid-template-columns:1fr 1fr}
+  td,th{font-size:13px; padding:8px 7px} td .ar{font-size:14px}
+  td.uke{width:74px; padding-left:9px}
+}
+
+@media print{
+  @page{size:A4; margin:13mm 11mm}
+  body{background:#fff; font-size:10pt; line-height:1.35}
+  .ark{max-width:none; padding:0}
+  header{padding:0 0 16px; border-bottom-width:2px} h1{font-size:32pt}
+  section{padding:18px 0 0} h2{font-size:15pt}
+  table{font-size:8.5pt} td,th{padding:4px 6px} td .ar{font-size:9.5pt}
+  .bokstav{font-size:15pt} thead{display:table-header-group} tr{break-inside:avoid}
+  .brekk{break-before:page}
+  tbody tr:nth-child(even){background:#f4f6f7 !important}
+  tbody tr:nth-child(even),tr.milepael td,td.uke,.merknad{
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  footer{padding:12px 0 0}
+}
+</style>
+</head>
+<body>
+<div class="ark">
+
+<header>
+  <p class="merke">Madina Skole · Søndagsprogrammet</p>
+  <h1>Madinabarn<span class="ar" dir="rtl" lang="ar">أطفال مدينة</span></h1>
+  <p class="undertittel">Pedagogisk årsplan 2026/2027
+    <span class="ar" dir="rtl" lang="ar">الخطة التربوية السنوية ٢٠٢٦/٢٠٢٧</span></p>
+  <div class="fakta">
+    <span><b>33</b> søndager · أحدًا</span>
+    <span><b>09:30–11:00</b></span>
+    <span><b>2</b> nivåer · مستويان</span>
+    <span><b>3</b> økter à 30 min · فقرات</span>
+  </div>
+</header>
+
+<!-- ═══ 01 ══════════════════════════════════════════════════ -->
+<section>
+  <h2><span class="nr">01</span>Slik er dagen bygd<span class="ar" dir="rtl" lang="ar">بنية اليوم</span></h2>
+  <p class="ingress">Rammen er fast, innholdet varierer. Barn i denne alderen trenger å vite hva som kommer etter hva — derfor endres verken øktene eller klokkeslettene gjennom året. Det som endres, er formen aktiviteten tar.</p>
+  <p class="ar" dir="rtl" lang="ar">الإطار ثابت والمحتوى متغيّر. الطفل في هذا السنّ يحتاج أن يعرف ما بعد ما، فلا تتغيّر الفقرات ولا مواقيتها طوال السنة. المتغيّر هو شكل النشاط داخلها.</p>
+
+  <table>
+    <thead><tr>
+      <th style="width:96px">Tid<span class="ar" dir="rtl" lang="ar">الوقت</span></th>
+      <th style="width:26%">Økt<span class="ar" dir="rtl" lang="ar">الفقرة</span></th>
+      <th>Innhold<span class="ar" dir="rtl" lang="ar">المحتوى</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="uke">09:30</td>
+        <td><span class="no"><b>Koranstund</b></span><span class="ar" dir="rtl" lang="ar"><b>حلقة القرآن</b></span></td>
+        <td><span class="no">Åpningssang · ukens sure med gjentakelse i kor · kortlek med versene · individuell fremsigelse (kun 5–6 år)</span><span class="ar" dir="rtl" lang="ar">نشيد البداية · سورة الأسبوع بالترديد الجماعي · لعبة الآية بالبطاقات · التسميع الفردي (للكبار فقط)</span></td></tr>
+      <tr><td class="uke">10:00</td>
+        <td><span class="no"><b>Bokstav og lyd</b></span><span class="ar" dir="rtl" lang="ar"><b>الحرف والصوت</b></span></td>
+        <td><span class="no">Bevegelsesovergang · ukens bokstav med riktig uttale · lek som skiller like lyder · sporing med finger, deig eller blyant</span><span class="ar" dir="rtl" lang="ar">انتقال حركي · حرف الأسبوع بالنطق الصحيح · لعبة تمييز الأصوات المتقاربة · التتبّع بالإصبع أو العجين أو القلم</span></td></tr>
+      <tr><td class="uke">10:30</td>
+        <td><span class="no"><b>Fortelling og forming</b></span><span class="ar" dir="rtl" lang="ar"><b>القصة والعمل</b></span></td>
+        <td><span class="no">Kort fortelling eller ukens dua · formingsaktivitet · praktisk øving på ukens adab · avslutningsdua</span><span class="ar" dir="rtl" lang="ar">قصة قصيرة أو دعاء الأسبوع · العمل اليدوي · التطبيق العملي لأدب الأسبوع · دعاء الختام</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Sanserytmen gjennom året<span class="ar" dir="rtl" lang="ar">دورة الحواس عبر السنة</span></h3>
+  <p>Hver uke har én hovedform. Formen roterer i fire trinn, slik at barnet som lærer med kroppen og barnet som lærer med hendene begge finner sin uke hver måned — i stedet for at én form betjenes hele året.</p>
+  <p class="ar" dir="rtl" lang="ar">لكل أسبوع نمط رئيس واحد، والأنماط تدور في أربع خطوات: فالطفل الذي يتعلّم بالحركة والطفل الذي يتعلّم باليد كلاهما يجد أسبوعه في كل شهر، بدل أن يُخدَم نمط واحد طوال السنة.</p>
+  <div class="rytme">
+    <div class="r-a"><b>A</b><span class="t">Bevegelse — løping, hopping, bokstavjakt</span><span class="ar" dir="rtl" lang="ar">حركي كبير — جري وقفز وصيد الحرف</span></div>
+    <div class="r-b"><b>B</b><span class="t">Sansing — sand, deig, vann, berøring</span><span class="ar" dir="rtl" lang="ar">حسّي — رمل وعجين وماء ولمس</span></div>
+    <div class="r-c"><b>C</b><span class="t">Lytting — kort, matching, å skille lyder</span><span class="ar" dir="rtl" lang="ar">سمعي بصري — بطاقات ومطابقة وتمييز</span></div>
+    <div class="r-d"><b>D</b><span class="t">Forming — klipping, liming, farging, bygging</span><span class="ar" dir="rtl" lang="ar">فنّي بنائي — قصّ ولصق وتلوين وتركيب</span></div>
+  </div>
+
+  <div class="merknad">
+    <p><b>Én regel over alle andre:</b> ingen sammenhengende sitting utover sju minutter hos 3–4 år, ti minutter hos 5–6 år. Hver stillesittende aktivitet følges av en stående.</p>
+    <p class="ar" dir="rtl" lang="ar"><b>قاعدة فوق كل القواعد:</b> لا جلوس متصل يزيد على سبع دقائق في ٣–٤ سنوات، ولا على عشر في ٥–٦. كل نشاط جالس يتبعه نشاط واقف.</p>
+  </div>
+</section>
+
+<!-- ═══ 02 ══════════════════════════════════════════════════ -->
+<section>
+  <h2><span class="nr">02</span>De to nivåene<span class="ar" dir="rtl" lang="ar">المستويان</span></h2>
+  <p class="ingress">Nivåene deler åpning, avslutning, ukens sure og ukens adab. Det som skiller dem, er hva som kreves av barnet — ikke hva det handler om. Søsken hjemme snakker da om det samme.</p>
+  <p class="ar" dir="rtl" lang="ar">المستويان يشتركان في الاستقبال والختام وسورة الأسبوع وأدبه. الفارق بينهما في <b>ما يُطلَب من الطفل</b>، لا في الموضوع — فالإخوة في البيت يتكلّمون عن الشيء نفسه.</p>
+
+  <div class="kort-rad">
+    <div class="kort">
+      <h4>Øret før øyet<span class="ar" dir="rtl" lang="ar">الأذن قبل العين</span></h4>
+      <p class="alder">3–4 ÅR · سنوات</p>
+      <p><b>Mål for året:</b> at barnet blir fortrolig med koranlyden, uttaler bokstavene riktig gjennom lytting og gjentakelse, og kjenner igjen omkring femten bokstaver som kjente former.</p>
+      <p class="ar" dir="rtl" lang="ar"><b>هدف السنة:</b> أن تألف أذن الطفل صوت القرآن، وينطق الحروف نطقًا سليمًا سماعًا وترديدًا، ويتعرّف بصريًا على نحو خمسة عشر حرفًا كصور مألوفة.</p>
+      <p><b>Resultat:</b> 6 surer · 15 bokstaver · 8 adab og duaer.</p>
+      <p class="ar" dir="rtl" lang="ar"><b>الحصيلة:</b> ٦ سور · ١٥ حرفًا · ٨ آداب وأدعية.</p>
+      <p class="ikke">Kreves ikke i år: individuell fremsigelse, skriving, vokaltegn, vurdering av noe slag.</p>
+      <p class="ar ikke" dir="rtl" lang="ar">لا يُطلَب هذه السنة: تسميع فردي، كتابة، حركات، تقييم من أي نوع.</p>
+    </div>
+    <div class="kort">
+      <h4>Fra lyd til lesing<span class="ar" dir="rtl" lang="ar">من الصوت إلى القراءة</span></h4>
+      <p class="alder">5–6 ÅR · سنوات</p>
+      <p><b>Mål for året:</b> alle 28 bokstavene uttalt riktig fra sitt artikulasjonssted, evnen til å skille like lyder ved lytting, og en muntlig start på de korte vokaltegnene gjennom lek.</p>
+      <p class="ar" dir="rtl" lang="ar"><b>هدف السنة:</b> الحروف الثمانية والعشرون نطقًا صحيحًا بمخارجها، وتمييز المتشابهات سمعًا، وبداية شفهية للحركات القصيرة عن طريق اللعب.</p>
+      <p><b>Resultat:</b> 10 surer · 28 bokstaver · lydskille · 10 adab og duaer.</p>
+      <p class="ar" dir="rtl" lang="ar"><b>الحصيلة:</b> ١٠ سور · ٢٨ حرفًا · تمييز الأصوات · ١٠ آداب وأدعية.</p>
+      <p class="ikke">Kreves ikke i år: lesing av hele ord, bokstavens former inne i ordet, tanwin og madd. Det er neste års arbeid.</p>
+      <p class="ar ikke" dir="rtl" lang="ar">لا يُطلَب هذه السنة: قراءة الكلمات، وأشكال الحرف داخل الكلمة، والتنوين والمدّ. هذه سنة ثانية.</p>
+    </div>
+  </div>
+
+  <div class="merknad">
+    <p>Bokstavene læres for koranlesingens skyld, ikke for skrivingens. Riktig uttale fra første dag er poenget — en vane som settes feil i år, må avlæres senere.</p>
+    <p class="ar" dir="rtl" lang="ar">الحروف تُعلَّم من أجل قراءة القرآن لا من أجل الكتابة. النطق الصحيح من اليوم الأول هو المقصود — والعادة التي تُغرَس خطأً هذه السنة تحتاج إلى نقض لاحقًا.</p>
+  </div>
+</section>
+
+<!-- ═══ 03 ══════════════════════════════════════════════════ -->
+<section>
+  <h2><span class="nr">03</span>Bemanning og gruppedeling<span class="ar" dir="rtl" lang="ar">الطاقم وتقسيم المجموعات</span></h2>
+  <p class="ingress">Planen forutsetter to rom som går parallelt, med 20 barn fordelt på begge nivåene.</p>
+  <p class="ar" dir="rtl" lang="ar">الخطة تفترض غرفتين تعملان بالتوازي، وعشرين طفلًا موزّعين على المستويين.</p>
+
+  <table>
+    <thead><tr>
+      <th style="width:26%">Rom<span class="ar" dir="rtl" lang="ar">الغرفة</span></th>
+      <th>Voksne<span class="ar" dir="rtl" lang="ar">البالغون</span></th>
+      <th style="width:22%">Barn<span class="ar" dir="rtl" lang="ar">الأطفال</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><span class="no">3–4 år</span><span class="ar" dir="rtl" lang="ar">٣–٤ سنوات</span></td>
+          <td><span class="no">Faglærer + assistent</span><span class="ar" dir="rtl" lang="ar">معلّم متخصّص + مساعدة</span></td>
+          <td><span class="no">inntil 10</span><span class="ar" dir="rtl" lang="ar">حتى ١٠</span></td></tr>
+      <tr><td><span class="no">5–6 år</span><span class="ar" dir="rtl" lang="ar">٥–٦ سنوات</span></td>
+          <td><span class="no">Faglærer + fast organisator</span><span class="ar" dir="rtl" lang="ar">معلّم متخصّص + منظّم ثابت</span></td>
+          <td><span class="no">inntil 10</span><span class="ar" dir="rtl" lang="ar">حتى ١٠</span></td></tr>
+      <tr><td><span class="no">Mottak og henting</span><span class="ar" dir="rtl" lang="ar">الاستقبال والتسليم</span></td>
+          <td><span class="no">Organisator eller veileder</span><span class="ar" dir="rtl" lang="ar">منظّم أو مشرف</span></td>
+          <td><span class="no">alle</span><span class="ar" dir="rtl" lang="ar">الجميع</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>To forutsetninger<span class="ar" dir="rtl" lang="ar">شرطان لا مفرّ منهما</span></h3>
+  <p><b>Assistenten står fast hos de yngste.</b> En lærer alene med treåringer kan ikke lede samlingen og følge et barn på toalettet samtidig. I det øyeblikket læreren forlater rommet, er samlingen over.</p>
+  <p class="ar" dir="rtl" lang="ar"><b>المساعدة ثابتة في غرفة الصغار.</b> المعلّم وحده مع أبناء الثالثة لا يستطيع أن يدير الحلقة ويخرج مع طفل إلى دورة المياه في الوقت نفسه. لحظة خروجه من الغرفة تنتهي الحلقة.</p>
+  <p><b>En organisator står fast hos de eldste.</b> Rommet med én lærer bryter sammen i én bestemt økt: den individuelle fremsigelsen. Læreren sitter med ett barn i åtte minutter — hvem er hos resten? Svaret er ikke å droppe fremsigelsen, men å ha en voksen i rommet som driver en rolig stasjon imens. Det krever tilstedeværelse, ikke fagkunnskap.</p>
+  <p class="ar" dir="rtl" lang="ar"><b>منظّم ثابت في غرفة الكبار.</b> الغرفة بمعلّم واحد تنهار في فقرة واحدة بالذات: التسميع الفردي. المعلّم يجلس مع طفل ثماني دقائق، فمَن مع البقية؟ الحلّ ليس إلغاء التسميع، بل وجود بالغ في الغرفة يدير محطة هادئة أثناءها. هو يحتاج حضورًا لا تخصّصًا.</p>
+
+  <h3>Vekststige<span class="ar" dir="rtl" lang="ar">سلّم النموّ</span></h3>
+  <table>
+    <thead><tr>
+      <th style="width:30%">Grense<span class="ar" dir="rtl" lang="ar">الحدّ</span></th>
+      <th>Tiltak<span class="ar" dir="rtl" lang="ar">الإجراء</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><span class="no">Inntil 20 barn</span><span class="ar" dir="rtl" lang="ar">حتى ٢٠ طفلًا</span></td>
+          <td><span class="no">Dagens bemanning + fast organisator</span><span class="ar" dir="rtl" lang="ar">الطاقم الحالي + منظّم ثابت</span></td></tr>
+      <tr><td><span class="no">Ett nivå over 12</span><span class="ar" dir="rtl" lang="ar">تجاوز مستوى واحد ١٢</span></td>
+          <td><span class="no">Ny assistent til det rommet</span><span class="ar" dir="rtl" lang="ar">مساعدة ثانية لتلك الغرفة</span></td></tr>
+      <tr><td><span class="no">Ett nivå over 16</span><span class="ar" dir="rtl" lang="ar">تجاوز مستوى واحد ١٦</span></td>
+          <td><span class="no">Nivået deles i to grupper — og det som mangler er en <b>faglærer</b>, ikke en assistent</span><span class="ar" dir="rtl" lang="ar">يُقسَم المستوى إلى مجموعتين — والناقص <b>معلّم متخصّص</b> لا مساعدة</span></td></tr>
+      <tr><td><span class="no">Over 30 totalt</span><span class="ar" dir="rtl" lang="ar">تجاوز المجموع ٣٠</span></td>
+          <td><span class="no">Tredje rom og full gjennomgang av timeplanen</span><span class="ar" dir="rtl" lang="ar">غرفة ثالثة ومراجعة الجدول كاملًا</span></td></tr>
+    </tbody>
+  </table>
+  <p>Tredje rad er den viktigste. Fylles gapet med en assistent, får skolen en gruppe som passes på i stedet for å undervises — og forskjellen viser seg først etter et helt semester.</p>
+  <p class="ar" dir="rtl" lang="ar">الصفّ الثالث هو الأهمّ. لو سُدّت الفجوة بمساعدة، صارت عندك مجموعة تُروَّض ولا تُعلَّم — والفرق لا يظهر إلا بعد فصل كامل.</p>
+
+  <div class="merknad">
+    <p><b>Til sammenlikning:</b> bemanningsnormen i norske barnehager er én ansatt per seks barn over tre år, lovfestet i barnehageloven § 26 siden 2018. Den er ikke bindende for en helgeskole, men er et nyttig mål overfor administrasjonen: 20 barn tilsvarer omtrent 3,5 voksne. Tre setter dere på grensen; fire gir margin ved sykdom og fravær.</p>
+    <p class="ar" dir="rtl" lang="ar"><b>للمقارنة:</b> المعيار النرويجي للروضات بالغ واحد لكل ستة أطفال فوق الثالثة، مثبّت في قانون الروضات منذ ٢٠١٨. هو غير ملزم لمدرسة نهاية أسبوع، لكنه مرجع مفيد أمام الإدارة: عشرون طفلًا تعني نحو ٣٫٥ بالغين. ثلاثة يضعونك على الحافة، وأربعة يعطونك هامشًا عند الغياب والمرض.</p>
+  </div>
+
+  <h3>Et sannsynlig scenario<span class="ar" dir="rtl" lang="ar">احتمال واقعي</span></h3>
+  <p>De tjue fordeler seg neppe ti og ti. Vekten heller trolig mot 5–6 år, fordi foreldre melder på den yngste etter den eldste og ikke omvendt. Kommer det 6 små og 14 store, er det store rommet over grensen fra første dag. Løsningen er klar: assistenten flyttes til de eldste, og seks små klarer én lærer. Men avgjørelsen tas <b>etter at påmeldingen stenger og før første søndag</b> — ikke midt i første økt.</p>
+  <p class="ar" dir="rtl" lang="ar">العشرون لن ينقسموا عشرة وعشرة. الأغلب أن يميل الميزان إلى ٥–٦ سنوات، لأن الأهل يسجّلون الأصغر تبعًا للأكبر لا العكس. فلو جاء ٦ صغار و١٤ كبيرًا، فغرفة الكبار فوق الحدّ من اليوم الأول. الحلّ جاهز: تنتقل المساعدة إلى الكبار، وستة صغار تكفيهم معلّمة واحدة. لكن القرار يُتَّخذ <b>بعد إغلاق التسجيل وقبل الأحد الأول</b>، لا في منتصف الفقرة الأولى.</p>
+
+  <h3>Uttale gjelder også assistenten<span class="ar" dir="rtl" lang="ar">نطق المساعدة يُختبَر أيضًا</span></h3>
+  <p>Assistenten kommer til å lede gjentakelsen halve tiden. Er uttalen hennes feil, arver barna feilen. Gjør det til et kriterium ved ansettelse, ikke en detalj som oppdages i november.</p>
+  <p class="ar" dir="rtl" lang="ar">المساعدة ستقود الترديد نصف الوقت. فإن كان في نطقها خلل ورثه الأطفال. اجعله معيارًا في الاختيار، لا تفصيلًا يُكتشَف في نوفمبر.</p>
+
+  <h3>Døren tilhører organisatorene<span class="ar" dir="rtl" lang="ar">الباب ملك المنظّمين</span></h3>
+  <p>Mottak 09:20–09:35 og henting 10:50–11:05: tjue foreldre i en smal gang. Læreren som står i døren, mister begynnelsen og slutten av samlingen hver eneste søndag.</p>
+  <p class="ar" dir="rtl" lang="ar">الاستقبال ٠٩:٢٠–٠٩:٣٥ والتسليم ١٠:٥٠–١١:٠٥: عشرون وليّ أمر في ممرّ ضيّق. المعلّم الذي يقف عند الباب يخسر بداية الحلقة ونهايتها كل أحد.</p>
+</section>
+
+<!-- ═══ 04 ══════════════════════════════════════════════════ -->
+<section class="brekk">
+  <h2><span class="nr">04</span>Årsplan · 3–4 år<span class="ar" dir="rtl" lang="ar">الخطة السنوية · ٣–٤ سنوات</span></h2>
+  <p class="ingress">33 søndager. Bokstavene er ikke valgt alfabetisk, men fordi de forekommer oftest i surene barna gjentar, og fordi formene deres er lette å skille fra hverandre. Barnet ser bokstaven det faktisk uttaler.</p>
+  <p class="ar" dir="rtl" lang="ar">٣٣ أحدًا. الحروف ليست مختارة هجائيًا، بل لأنها الأكثر ورودًا في السور المحفوظة ولأن أشكالها متباعدة يسهل تمييزها. الطفل يرى الحرف الذي ينطقه فعلًا.</p>
+
+  <table>
+    <thead><tr>
+      <th style="width:96px">Uke<span class="ar" dir="rtl" lang="ar">الأسبوع</span></th>
+      <th style="width:26%">Koran<span class="ar" dir="rtl" lang="ar">القرآن</span></th>
+      <th style="width:27%">Bokstav og lyd<span class="ar" dir="rtl" lang="ar">الحرف والصوت</span></th>
+      <th>Forming og praksis<span class="ar" dir="rtl" lang="ar">العمل والتطبيق</span></th>
+    </tr></thead>
+    <tbody>
+      <tr class="t-a"><td class="uke">01<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Fatiha — lytting og bli kjent</span><span class="ar" dir="rtl" lang="ar">الفاتحة — استماع وتعارف</span></td><td><span class="no"><span class="bokstav">ا</span>kortstafett med lyden</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ا</span>سباق البطاقات</span></td><td><span class="no">Bli kjent i rommet · navneskilt · dua ved inngang</span><span class="ar" dir="rtl" lang="ar">جولة الغرفة · لافتة الاسم · دعاء الدخول</span></td></tr>
+      <tr class="t-b"><td class="uke">02<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Fatiha — første del</span><span class="ar" dir="rtl" lang="ar">الفاتحة — المقطع الأول</span></td><td><span class="no"><span class="bokstav">ا</span>i sand</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ا</span>في الرمل</span></td><td><span class="no">Deig: forme bokstaven</span><span class="ar" dir="rtl" lang="ar">عجين: تشكيل الحرف</span></td></tr>
+      <tr class="t-c"><td class="uke">03<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Fatiha — andre del</span><span class="ar" dir="rtl" lang="ar">الفاتحة — المقطع الثاني</span></td><td><span class="no"><span class="bokstav">ب</span>bildematching</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ب</span>مطابقة الصور</span></td><td><span class="no">Navnekort · salam og svar</span><span class="ar" dir="rtl" lang="ar">بطاقة الاسم · السلام وردّه</span></td></tr>
+      <tr class="t-d"><td class="uke">04<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Fatiha — hele</span><span class="ar" dir="rtl" lang="ar">الفاتحة كاملة</span></td><td><span class="no"><span class="bokstav">ب</span>lim og farge</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ب</span>لصق وتلوين</span></td><td><span class="no">Felles veggbilde · månedsavslutning</span><span class="ar" dir="rtl" lang="ar">لوحة جماعية · ختام الشهر</span></td></tr>
+      <tr class="t-a"><td class="uke">05<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">an-Nas — introduksjon</span><span class="ar" dir="rtl" lang="ar">الناس — تقديم</span></td><td><span class="no"><span class="bokstav">ا</span><span class="bokstav">ب</span>repetisjon med hopping</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ا</span><span class="bokstav">ب</span>مراجعة بالقفز</span></td><td><span class="no">Stor lek · bismillah før måltid</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · التسمية قبل الأكل</span></td></tr>
+      <tr class="t-b"><td class="uke">06<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">an-Nas — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الناس — ترديد</span></td><td><span class="no"><span class="bokstav">ت</span>i sand</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ت</span>في الرمل</span></td><td><span class="no">Deig: forme bokstaven</span><span class="ar" dir="rtl" lang="ar">عجين: تشكيل الحرف</span></td></tr>
+      <tr class="t-c"><td class="uke">07<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">an-Nas — festing</span><span class="ar" dir="rtl" lang="ar">الناس — تثبيت</span></td><td><span class="no"><span class="bokstav">ت</span>lyd og matching</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ت</span>الصوت والمطابقة</span></td><td><span class="no">Felles bildebok</span><span class="ar" dir="rtl" lang="ar">كتاب الصور الجماعي</span></td></tr>
+      <tr class="t-d"><td class="uke">08<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">an-Nas — hele</span><span class="ar" dir="rtl" lang="ar">الناس كاملة</span></td><td><span class="no"><span class="bokstav">م</span>klipp og lim</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">م</span>قصّ ولصق</span></td><td><span class="no">Månedens plakat · alhamdulillah etter måltid</span><span class="ar" dir="rtl" lang="ar">لوحة الشهر · الحمد بعد الأكل</span></td></tr>
+      <tr class="t-a"><td class="uke">09<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Falaq — introduksjon</span><span class="ar" dir="rtl" lang="ar">الفلق — تقديم</span></td><td><span class="no"><span class="bokstav">م</span>bokstavjakt</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">م</span>صيد الحرف</span></td><td><span class="no">Stor lek · salam og svar</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · السلام وردّه</span></td></tr>
+      <tr class="t-b"><td class="uke">10<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Falaq — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الفلق — ترديد</span></td><td><span class="no"><span class="bokstav">ن</span>i deig</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ن</span>في العجين</span></td><td><span class="no">Stjerne av bokstaven</span><span class="ar" dir="rtl" lang="ar">نجمة الحرف</span></td></tr>
+      <tr class="t-c"><td class="uke">11<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Falaq — festing</span><span class="ar" dir="rtl" lang="ar">الفلق — تثبيت</span></td><td><span class="no"><span class="bokstav">ن</span>kortlek</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ن</span>لعبة البطاقات</span></td><td><span class="no">Plakat med de tre surene</span><span class="ar" dir="rtl" lang="ar">لوحة السور الثلاث</span></td></tr>
+      <tr class="t-d"><td class="uke">12<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Falaq — hele</span><span class="ar" dir="rtl" lang="ar">الفلق كاملة</span></td><td><span class="no"><span class="bokstav">ل</span>farging</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ل</span>تلوين</span></td><td><span class="no">Månedens plakat · dua før leggetid</span><span class="ar" dir="rtl" lang="ar">لوحة الشهر · دعاء النوم</span></td></tr>
+      <tr class="t-a"><td class="uke">13<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">Repetisjon: de tre surene</span><span class="ar" dir="rtl" lang="ar">مراجعة السور الثلاث</span></td><td><span class="no"><span class="bokstav">ر</span>i bevegelse</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ر</span>في الحركة</span></td><td><span class="no">Bokstavløype på gulvet</span><span class="ar" dir="rtl" lang="ar">مسار الحروف على الأرض</span></td></tr>
+      <tr class="t-b"><td class="uke">14<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">Repetisjon</span><span class="ar" dir="rtl" lang="ar">مراجعة</span></td><td><span class="no"><span class="bokstav">و</span>sand og deig</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">و</span>رمل وعجين</span></td><td><span class="no">Forberede utstillingen</span><span class="ar" dir="rtl" lang="ar">تجهيز المعرض</span></td></tr>
+      <tr class="milepael"><td class="uke">15<span class="type">Milepæl<em dir="rtl" lang="ar">محطة</em></span></td><td colspan="3"><span class="no"><b>Halvårsavslutning</b> — felles fremføring for foreldrene og utstilling av barnas arbeider</span><span class="ar" dir="rtl" lang="ar"><b>حفل الفصل الأول</b> — ترديد جماعي أمام الأهل ومعرض أعمال الأطفال</span></td></tr>
+      <tr class="t-a"><td class="uke">16<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Ikhlas — introduksjon</span><span class="ar" dir="rtl" lang="ar">الإخلاص — تقديم</span></td><td><span class="no">Repetisjon med bokstavjakt</span><span class="ar" dir="rtl" lang="ar">مراجعة بصيد الحرف</span></td><td><span class="no">Stor lek · dua før leggetid</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · دعاء النوم</span></td></tr>
+      <tr class="t-b"><td class="uke">17<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Ikhlas — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الإخلاص — ترديد</span></td><td><span class="no"><span class="bokstav">ي</span>i sand</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ي</span>في الرمل</span></td><td><span class="no">Deig: forme bokstaven</span><span class="ar" dir="rtl" lang="ar">عجين: تشكيل الحرف</span></td></tr>
+      <tr class="t-c"><td class="uke">18<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Ikhlas — festing</span><span class="ar" dir="rtl" lang="ar">الإخلاص — تثبيت</span></td><td><span class="no"><span class="bokstav">ي</span>matching</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ي</span>مطابقة</span></td><td><span class="no">Ny felles bildebok</span><span class="ar" dir="rtl" lang="ar">كتاب صور جديد</span></td></tr>
+      <tr class="t-d"><td class="uke">19<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Ikhlas — hele</span><span class="ar" dir="rtl" lang="ar">الإخلاص كاملة</span></td><td><span class="no"><span class="bokstav">س</span>liming</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">س</span>لصق</span></td><td><span class="no">Månedens plakat</span><span class="ar" dir="rtl" lang="ar">لوحة الشهر</span></td></tr>
+      <tr class="t-a"><td class="uke">20<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">Repetisjon</span><span class="ar" dir="rtl" lang="ar">مراجعة</span></td><td><span class="no"><span class="bokstav">س</span>hoppelek</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">س</span>لعبة القفز</span></td><td><span class="no">Stor lek · å takke</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · الشكر</span></td></tr>
+      <tr class="t-b"><td class="uke">21<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Kawthar — introduksjon</span><span class="ar" dir="rtl" lang="ar">الكوثر — تقديم</span></td><td><span class="no"><span class="bokstav">ح</span>i deig</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ح</span>في العجين</span></td><td><span class="no">Forme bokstaven</span><span class="ar" dir="rtl" lang="ar">تشكيل الحرف</span></td></tr>
+      <tr class="t-c"><td class="uke">22<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Kawthar — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الكوثر — ترديد</span></td><td><span class="no"><span class="bokstav">ح</span>lydlek</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ح</span>لعبة الأصوات</span></td><td><span class="no">Lyd til bilde</span><span class="ar" dir="rtl" lang="ar">الصوت والصورة</span></td></tr>
+      <tr class="t-d"><td class="uke">23<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Kawthar — festing</span><span class="ar" dir="rtl" lang="ar">الكوثر — تثبيت</span></td><td><span class="no"><span class="bokstav">د</span>farging</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">د</span>تلوين</span></td><td><span class="no">Månedens plakat</span><span class="ar" dir="rtl" lang="ar">لوحة الشهر</span></td></tr>
+      <tr class="t-a"><td class="uke">24<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Kawthar — hele</span><span class="ar" dir="rtl" lang="ar">الكوثر كاملة</span></td><td><span class="no"><span class="bokstav">د</span>bokstavjakt</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">د</span>صيد الحرف</span></td><td><span class="no">Stor lek · å takke</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · الشكر</span></td></tr>
+      <tr class="t-b"><td class="uke">25<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">Repetisjon</span><span class="ar" dir="rtl" lang="ar">مراجعة</span></td><td><span class="no"><span class="bokstav">ك</span>i sand</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ك</span>في الرمل</span></td><td><span class="no">Deig: forme bokstaven</span><span class="ar" dir="rtl" lang="ar">عجين: تشكيل الحرف</span></td></tr>
+      <tr class="t-c"><td class="uke">26<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Masad — introduksjon</span><span class="ar" dir="rtl" lang="ar">المسد — تقديم</span></td><td><span class="no"><span class="bokstav">ك</span>kortlek</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ك</span>لعبة البطاقات</span></td><td><span class="no">Felles bildebok</span><span class="ar" dir="rtl" lang="ar">كتاب الصور الجماعي</span></td></tr>
+      <tr class="t-d"><td class="uke">27<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Masad — gjentakelse</span><span class="ar" dir="rtl" lang="ar">المسد — ترديد</span></td><td><span class="no"><span class="bokstav">ف</span>klipp og lim</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ف</span>قصّ ولصق</span></td><td><span class="no">Månedens plakat · respekt for foreldrene</span><span class="ar" dir="rtl" lang="ar">لوحة الشهر · برّ الوالدين</span></td></tr>
+      <tr class="t-a"><td class="uke">28<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Masad — festing</span><span class="ar" dir="rtl" lang="ar">المسد — تثبيت</span></td><td><span class="no"><span class="bokstav">ع</span>i bevegelse</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ع</span>في الحركة</span></td><td><span class="no">Stor lek</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة</span></td></tr>
+      <tr class="t-b"><td class="uke">29<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Masad — hele</span><span class="ar" dir="rtl" lang="ar">المسد كاملة</span></td><td><span class="no"><span class="bokstav">ه</span><span class="bokstav">ـ</span>i deig</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ه</span><span class="bokstav">ـ</span>في العجين</span></td><td><span class="no">Forme bokstaven</span><span class="ar" dir="rtl" lang="ar">تشكيل الحرف</span></td></tr>
+      <tr class="t-c"><td class="uke">30<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">Repetisjon</span><span class="ar" dir="rtl" lang="ar">مراجعة</span></td><td><span class="no"><span class="bokstav">ط</span>kortlek</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ط</span>لعبة البطاقات</span></td><td><span class="no">Plakat med alle seks surene</span><span class="ar" dir="rtl" lang="ar">لوحة السور الستّ</span></td></tr>
+      <tr class="t-d"><td class="uke">31<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">Repetisjon, hele året</span><span class="ar" dir="rtl" lang="ar">مراجعة السنة كلها</span></td><td><span class="no">Alle 15 bokstavene — stor lek</span><span class="ar" dir="rtl" lang="ar">الحروف الخمسة عشر — لعبة كبرى</span></td><td><span class="no">Forberede utstillingen</span><span class="ar" dir="rtl" lang="ar">تجهيز المعرض</span></td></tr>
+      <tr class="t-a"><td class="uke">32<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">Generalprøve</span><span class="ar" dir="rtl" lang="ar">بروفة عامة</span></td><td><span class="no">Bokstavløypa</span><span class="ar" dir="rtl" lang="ar">مسار الحروف</span></td><td><span class="no">Forberedelser</span><span class="ar" dir="rtl" lang="ar">تجهيزات</span></td></tr>
+      <tr class="milepael"><td class="uke">33<span class="type">Milepæl<em dir="rtl" lang="ar">محطة</em></span></td><td colspan="3"><span class="no"><b>Årsavslutning</b> — fremføring og utstilling</span><span class="ar" dir="rtl" lang="ar"><b>الحفل الختامي</b> — عرض ومعرض</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══ 05 ══════════════════════════════════════════════════ -->
+<section class="brekk">
+  <h2><span class="nr">05</span>Årsplan · 5–6 år<span class="ar" dir="rtl" lang="ar">الخطة السنوية · ٥–٦ سنوات</span></h2>
+  <p class="ingress">33 søndager. Rekkefølgen følger alfabetet, fordi barnet hører alfabetet hjemme og kjenner det igjen — men hver fjerde uke er en skilleuke som samler bokstavene med nære artikulasjonssteder blant dem som har vært gjennomgått.</p>
+  <p class="ar" dir="rtl" lang="ar">٣٣ أحدًا. الترتيب هجائي لأن الطفل يسمع الأبجدية في البيت فيألفها — لكن كل أسبوع رابع أسبوع تمييز يجمع الحروف المتقاربة مخرجًا مما مضى.</p>
+
+  <table>
+    <thead><tr>
+      <th style="width:96px">Uke<span class="ar" dir="rtl" lang="ar">الأسبوع</span></th>
+      <th style="width:26%">Koran<span class="ar" dir="rtl" lang="ar">القرآن</span></th>
+      <th style="width:27%">Bokstav og lyd<span class="ar" dir="rtl" lang="ar">الحرف والصوت</span></th>
+      <th>Forming og praksis<span class="ar" dir="rtl" lang="ar">العمل والتطبيق</span></th>
+    </tr></thead>
+    <tbody>
+      <tr class="t-a"><td class="uke">01<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Fatiha — introduksjon og bli kjent</span><span class="ar" dir="rtl" lang="ar">الفاتحة — تقديم وتعارف</span></td><td><span class="no"><span class="bokstav">ا</span><span class="bokstav">ب</span>uttale og artikulasjonssted, stafett</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ا</span><span class="bokstav">ب</span>النطق والمخرج، سباق</span></td><td><span class="no">Navnekort · dua ved inngang</span><span class="ar" dir="rtl" lang="ar">بطاقة الاسم · دعاء الدخول</span></td></tr>
+      <tr class="t-b"><td class="uke">02<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Fatiha — gjentakelse i deler</span><span class="ar" dir="rtl" lang="ar">الفاتحة — ترديد مقسّم</span></td><td><span class="no"><span class="bokstav">ت</span><span class="bokstav">ث</span>sand og sporing</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ت</span><span class="bokstav">ث</span>رمل وتتبّع</span></td><td><span class="no">Sporing med blyant</span><span class="ar" dir="rtl" lang="ar">التتبّع بالقلم</span></td></tr>
+      <tr class="t-c"><td class="uke">03<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Fatiha — første fremsigelse</span><span class="ar" dir="rtl" lang="ar">الفاتحة — أول تسميع</span></td><td><span class="no">Repetisjon i tilfeldig rekkefølge</span><span class="ar" dir="rtl" lang="ar">مراجعة بترتيب مبعثر</span></td><td><span class="no">Den personlige bokstavboka påbegynnes</span><span class="ar" dir="rtl" lang="ar">بدء كتيّب الحروف الشخصي</span></td></tr>
+      <tr class="t-d"><td class="uke">04<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">an-Nas — introduksjon</span><span class="ar" dir="rtl" lang="ar">الناس — تقديم</span></td><td><span class="no"><span class="bokstav">ج</span><span class="bokstav">ح</span>lim og tegning</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ج</span><span class="bokstav">ح</span>لصق ورسم</span></td><td><span class="no">Bokstavside i boka</span><span class="ar" dir="rtl" lang="ar">صفحة الحرف في الكتيّب</span></td></tr>
+      <tr class="t-a"><td class="uke">05<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">an-Nas — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الناس — ترديد</span></td><td><span class="no"><span class="bokstav">خ</span>bokstavjakt</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">خ</span>صيد الحرف</span></td><td><span class="no">Stor lek · bismillah og alhamdulillah</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · التسمية والحمد</span></td></tr>
+      <tr class="t-b"><td class="uke">06<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">an-Nas — individuell fremsigelse</span><span class="ar" dir="rtl" lang="ar">الناس — تسميع فردي</span></td><td><span class="no"><span class="bokstav">د</span><span class="bokstav">ذ</span>i sand</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">د</span><span class="bokstav">ذ</span>في الرمل</span></td><td><span class="no">Sporing</span><span class="ar" dir="rtl" lang="ar">تتبّع</span></td></tr>
+      <tr class="t-c"><td class="uke">07<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Falaq — introduksjon</span><span class="ar" dir="rtl" lang="ar">الفلق — تقديم</span></td><td><span class="no"><span class="bokstav">د</span><span class="bokstav">ذ</span>å skille de to lydene</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">د</span><span class="bokstav">ذ</span>تمييز الصوتين</span></td><td><span class="no">Plakat: lyder som likner</span><span class="ar" dir="rtl" lang="ar">لوحة الحروف المتشابهة</span></td></tr>
+      <tr class="t-d"><td class="uke">08<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Falaq — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الفلق — ترديد</span></td><td><span class="no"><span class="bokstav">ر</span><span class="bokstav">ز</span>farging</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ر</span><span class="bokstav">ز</span>تلوين</span></td><td><span class="no">Bokstavboka · <b>observasjonspunkt 1</b></span><span class="ar" dir="rtl" lang="ar">الكتيّب · <b>نقطة ملاحظة ١</b></span></td></tr>
+      <tr class="t-a"><td class="uke">09<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Falaq — fremsigelse</span><span class="ar" dir="rtl" lang="ar">الفلق — تسميع</span></td><td><span class="no"><span class="bokstav">س</span><span class="bokstav">ش</span>hoppelek</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">س</span><span class="bokstav">ش</span>لعبة القفز</span></td><td><span class="no">Stor lek · salam og svar</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · السلام وردّه</span></td></tr>
+      <tr class="t-b"><td class="uke">10<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Ikhlas — introduksjon</span><span class="ar" dir="rtl" lang="ar">الإخلاص — تقديم</span></td><td><span class="no"><span class="bokstav">ص</span><span class="bokstav">ض</span>i deig</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ص</span><span class="bokstav">ض</span>في العجين</span></td><td><span class="no">Forming</span><span class="ar" dir="rtl" lang="ar">تشكيل</span></td></tr>
+      <tr class="t-c"><td class="uke">11<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Ikhlas — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الإخلاص — ترديد</span></td><td><span class="no"><span class="bokstav">س</span><span class="bokstav">ص</span>å skille de to lydene</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">س</span><span class="bokstav">ص</span>تمييز الصوتين</span></td><td><span class="no">Lyttematching</span><span class="ar" dir="rtl" lang="ar">مطابقة سمعية</span></td></tr>
+      <tr class="t-d"><td class="uke">12<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Ikhlas — fremsigelse</span><span class="ar" dir="rtl" lang="ar">الإخلاص — تسميع</span></td><td><span class="no"><span class="bokstav">ط</span><span class="bokstav">ظ</span>liming</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ط</span><span class="bokstav">ظ</span>لصق</span></td><td><span class="no">Bokstavboka</span><span class="ar" dir="rtl" lang="ar">الكتيّب</span></td></tr>
+      <tr class="t-a"><td class="uke">13<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">Repetisjon: de fire surene</span><span class="ar" dir="rtl" lang="ar">مراجعة السور الأربع</span></td><td><span class="no"><span class="bokstav">ت</span><span class="bokstav">ط</span><span class="bokstav">ذ</span><span class="bokstav">ظ</span>å skille de nære lydene</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ت</span><span class="bokstav">ط</span><span class="bokstav">ذ</span><span class="bokstav">ظ</span>تمييز المتشابهات</span></td><td><span class="no">Bokstavløype</span><span class="ar" dir="rtl" lang="ar">مسار الحروف</span></td></tr>
+      <tr class="t-b"><td class="uke">14<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">Repetisjon</span><span class="ar" dir="rtl" lang="ar">مراجعة</span></td><td><span class="no">Tilfeldig lesing av alt så langt</span><span class="ar" dir="rtl" lang="ar">قراءة مبعثرة لما مضى</span></td><td><span class="no">Forberede utstillingen</span><span class="ar" dir="rtl" lang="ar">تجهيز المعرض</span></td></tr>
+      <tr class="milepael"><td class="uke">15<span class="type">Milepæl<em dir="rtl" lang="ar">محطة</em></span></td><td colspan="3"><span class="no"><b>Halvårsavslutning</b> — individuell fremsigelse for foreldrene og utstilling</span><span class="ar" dir="rtl" lang="ar"><b>حفل الفصل الأول</b> — تسميع فردي أمام الأهل ومعرض</span></td></tr>
+      <tr class="t-a"><td class="uke">16<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Masad — introduksjon</span><span class="ar" dir="rtl" lang="ar">المسد — تقديم</span></td><td><span class="no"><span class="bokstav">ع</span><span class="bokstav">غ</span>i bevegelse</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ع</span><span class="bokstav">غ</span>في الحركة</span></td><td><span class="no">Stor lek · dua for reise</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · دعاء الركوب</span></td></tr>
+      <tr class="t-b"><td class="uke">17<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Masad — gjentakelse</span><span class="ar" dir="rtl" lang="ar">المسد — ترديد</span></td><td><span class="no"><span class="bokstav">ف</span><span class="bokstav">ق</span>i sand</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ف</span><span class="bokstav">ق</span>في الرمل</span></td><td><span class="no">Sporing</span><span class="ar" dir="rtl" lang="ar">تتبّع</span></td></tr>
+      <tr class="t-c"><td class="uke">18<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Masad — fremsigelse</span><span class="ar" dir="rtl" lang="ar">المسد — تسميع</span></td><td><span class="no"><span class="bokstav">ق</span><span class="bokstav">ك</span>å skille de to lydene</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ق</span><span class="bokstav">ك</span>تمييز الصوتين</span></td><td><span class="no">Lyttematching</span><span class="ar" dir="rtl" lang="ar">مطابقة سمعية</span></td></tr>
+      <tr class="t-d"><td class="uke">19<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">an-Nasr — introduksjon</span><span class="ar" dir="rtl" lang="ar">النصر — تقديم</span></td><td><span class="no"><span class="bokstav">ك</span><span class="bokstav">ل</span>liming</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ك</span><span class="bokstav">ل</span>لصق</span></td><td><span class="no">Bokstavboka</span><span class="ar" dir="rtl" lang="ar">الكتيّب</span></td></tr>
+      <tr class="t-a"><td class="uke">20<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">an-Nasr — gjentakelse</span><span class="ar" dir="rtl" lang="ar">النصر — ترديد</span></td><td><span class="no"><span class="bokstav">م</span><span class="bokstav">ن</span>bokstavjakt</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">م</span><span class="bokstav">ن</span>صيد الحرف</span></td><td><span class="no">Stor lek · adab i moskeen</span><span class="ar" dir="rtl" lang="ar">لعبة كبيرة · آداب المسجد</span></td></tr>
+      <tr class="t-b"><td class="uke">21<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">an-Nasr — fremsigelse</span><span class="ar" dir="rtl" lang="ar">النصر — تسميع</span></td><td><span class="no">Repetisjon av de siste åtte</span><span class="ar" dir="rtl" lang="ar">مراجعة الحروف الثمانية الأخيرة</span></td><td><span class="no">Sporing · <b>observasjonspunkt 2</b></span><span class="ar" dir="rtl" lang="ar">تتبّع · <b>نقطة ملاحظة ٢</b></span></td></tr>
+      <tr class="t-c"><td class="uke">22<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Kafirun — introduksjon</span><span class="ar" dir="rtl" lang="ar">الكافرون — تقديم</span></td><td><span class="no"><span class="bokstav">ه</span><span class="bokstav">ـ</span><span class="bokstav">و</span>kortlek</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ه</span><span class="bokstav">ـ</span><span class="bokstav">و</span>لعبة البطاقات</span></td><td><span class="no">Felles bildebok</span><span class="ar" dir="rtl" lang="ar">كتاب الصور الجماعي</span></td></tr>
+      <tr class="t-d"><td class="uke">23<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Kafirun — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الكافرون — ترديد</span></td><td><span class="no"><span class="bokstav">ي</span><span class="bokstav">ء</span>farging</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ي</span><span class="bokstav">ء</span>تلوين</span></td><td><span class="no">Bokstavboka</span><span class="ar" dir="rtl" lang="ar">الكتيّب</span></td></tr>
+      <tr class="t-a"><td class="uke">24<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Kafirun — fremsigelse</span><span class="ar" dir="rtl" lang="ar">الكافرون — تسميع</span></td><td><span class="no">Alle bokstavene — stor lek</span><span class="ar" dir="rtl" lang="ar">الحروف كلها — لعبة كبرى</span></td><td><span class="no">Bokstavløype</span><span class="ar" dir="rtl" lang="ar">مسار الحروف</span></td></tr>
+      <tr class="t-b"><td class="uke">25<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Kawthar — introduksjon</span><span class="ar" dir="rtl" lang="ar">الكوثر — تقديم</span></td><td><span class="no"><span class="bokstav">ح</span><span class="bokstav">ه</span><span class="bokstav">ـ</span><span class="bokstav">خ</span>å skille de nære lydene</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ح</span><span class="bokstav">ه</span><span class="bokstav">ـ</span><span class="bokstav">خ</span>تمييز المتقاربة</span></td><td><span class="no">Matching</span><span class="ar" dir="rtl" lang="ar">مطابقة</span></td></tr>
+      <tr class="t-c"><td class="uke">26<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">al-Kawthar — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الكوثر — ترديد</span></td><td><span class="no"><span class="bokstav">ع</span><span class="bokstav">غ</span><span class="bokstav">ء</span>å skille de nære lydene</span><span class="ar" dir="rtl" lang="ar"><span class="bokstav">ع</span><span class="bokstav">غ</span><span class="bokstav">ء</span>تمييز المتقاربة</span></td><td><span class="no">Plakat: lyder som likner</span><span class="ar" dir="rtl" lang="ar">لوحة الحروف المتشابهة</span></td></tr>
+      <tr class="t-d"><td class="uke">27<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">al-Kawthar — fremsigelse</span><span class="ar" dir="rtl" lang="ar">الكوثر — تسميع</span></td><td><span class="no">Tilfeldig lesing av alle 28</span><span class="ar" dir="rtl" lang="ar">قراءة مبعثرة للحروف الثمانية والعشرين</span></td><td><span class="no">Bokstavboka · <b>observasjonspunkt 3</b></span><span class="ar" dir="rtl" lang="ar">الكتيّب · <b>نقطة ملاحظة ٣</b></span></td></tr>
+      <tr class="t-a"><td class="uke">28<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">al-Maun — introduksjon</span><span class="ar" dir="rtl" lang="ar">الماعون — تقديم</span></td><td><span class="no">Vokalleken: fatha</span><span class="ar" dir="rtl" lang="ar">لعبة الحركات: الفتحة</span></td><td><span class="no">Stor bevegelseslek med lyder</span><span class="ar" dir="rtl" lang="ar">لعبة حركية بالأصوات</span></td></tr>
+      <tr class="t-b"><td class="uke">29<span class="type">Sansing<em dir="rtl" lang="ar">حواس</em></span></td><td><span class="no">al-Maun — gjentakelse</span><span class="ar" dir="rtl" lang="ar">الماعون — ترديد</span></td><td><span class="no">Vokalleken: damma</span><span class="ar" dir="rtl" lang="ar">لعبة الحركات: الضمة</span></td><td><span class="no">Deig</span><span class="ar" dir="rtl" lang="ar">عجين</span></td></tr>
+      <tr class="t-c"><td class="uke">30<span class="type">Lytting<em dir="rtl" lang="ar">سمع</em></span></td><td><span class="no">Quraysh — introduksjon</span><span class="ar" dir="rtl" lang="ar">قريش — تقديم</span></td><td><span class="no">Vokalleken: kasra</span><span class="ar" dir="rtl" lang="ar">لعبة الحركات: الكسرة</span></td><td><span class="no">Vokalkort</span><span class="ar" dir="rtl" lang="ar">بطاقات الحركات</span></td></tr>
+      <tr class="t-d"><td class="uke">31<span class="type">Forming<em dir="rtl" lang="ar">تشكيل</em></span></td><td><span class="no">Quraysh — gjentakelse</span><span class="ar" dir="rtl" lang="ar">قريش — ترديد</span></td><td><span class="no">De tre vokalene blandet</span><span class="ar" dir="rtl" lang="ar">الحركات الثلاث مخلوطة</span></td><td><span class="no">Bokstavboka fullføres</span><span class="ar" dir="rtl" lang="ar">إتمام الكتيّب</span></td></tr>
+      <tr class="t-a"><td class="uke">32<span class="type">Bevegelse<em dir="rtl" lang="ar">حركة</em></span></td><td><span class="no">Repetisjon, hele året</span><span class="ar" dir="rtl" lang="ar">مراجعة السنة كلها</span></td><td><span class="no">Tilfeldig lesing med vokaler</span><span class="ar" dir="rtl" lang="ar">قراءة مبعثرة بالحركات</span></td><td><span class="no">Generalprøve</span><span class="ar" dir="rtl" lang="ar">بروفة عامة</span></td></tr>
+      <tr class="milepael"><td class="uke">33<span class="type">Milepæl<em dir="rtl" lang="ar">محطة</em></span></td><td colspan="3"><span class="no"><b>Årsavslutning</b> — individuell fremsigelse og utstilling</span><span class="ar" dir="rtl" lang="ar"><b>الحفل الختامي</b> — تسميع فردي ومعرض</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="merknad">
+    <p>Ukene 28–31 er frøet til neste år og presenteres som en lydlek, ikke som en leksjon: «bokstaven beveget seg — hvilken vei?» Den som fanger det, har fått et forsprang; den som ikke gjør det, har ikke tapt noe.</p>
+    <p class="ar" dir="rtl" lang="ar">الأسابيع ٢٨–٣١ بذرة السنة القادمة، وتُقدَّم كلعبة أصوات لا كدرس: «الحرف تحرّك — إلى أين مال؟» من يلتقطها فقد سبق، ومن لم يلتقطها لم يخسر شيئًا.</p>
+  </div>
+</section>
+
+<!-- ═══ 06 ══════════════════════════════════════════════════ -->
+<section>
+  <h2><span class="nr">06</span>Observasjon<span class="ar" dir="rtl" lang="ar">الملاحظة</span></h2>
+  <p class="ingress">Kun for 5–6 år, i ukene 8, 21 og 27. To linjer per barn — ingen prøve, ingen karakter.</p>
+  <p class="ar" dir="rtl" lang="ar">للمستوى ٥–٦ فقط، في الأسابيع ٨ و٢١ و٢٧. سطران لكل طفل — لا اختبار ولا درجة.</p>
+  <table>
+    <thead><tr>
+      <th style="width:38%">Spørsmål<span class="ar" dir="rtl" lang="ar">السؤال</span></th>
+      <th>Hva læreren ser etter<span class="ar" dir="rtl" lang="ar">ما يبحث عنه المعلّم</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><span class="no"><b>Skiller barnet lyder som likner?</b></span><span class="ar" dir="rtl" lang="ar"><b>هل يميّز الأصوات المتقاربة؟</b></span></td>
+          <td><span class="no">Hører forskjell på de nære artikulasjonsstedene uten å se bokstaven</span><span class="ar" dir="rtl" lang="ar">يسمع الفرق بين المخارج المتقاربة دون أن يرى الحرف</span></td></tr>
+      <tr><td><span class="no"><b>Leser barnet bokstaven utenfor rekkefølgen?</b></span><span class="ar" dir="rtl" lang="ar"><b>هل يقرأ الحرف خارج ترتيبه؟</b></span></td>
+          <td><span class="no">Kjenner igjen bokstaven når den kommer tilfeldig — ikke bare i alfabetets orden</span><span class="ar" dir="rtl" lang="ar">يتعرّف على الحرف حين يأتي مبعثرًا، لا في ترتيب الأبجدية وحده</span></td></tr>
+      <tr><td><span class="no"><b>Sier barnet fram uten frykt?</b></span><span class="ar" dir="rtl" lang="ar"><b>هل يسمّع دون خوف؟</b></span></td>
+          <td><span class="no">Det viktigste av de tre. Et barn som gruer seg til fremsigelsen, mister året</span><span class="ar" dir="rtl" lang="ar">أهمّ الثلاثة. الطفل الذي يخاف لحظة التسميع يخسر السنة</span></td></tr>
+    </tbody>
+  </table>
+  <p>For 3–4 år skrives ingen observasjoner overhodet. Den eneste indikatoren er oppmøtet: kommer barnet glad hver søndag, virker programmet.</p>
+  <p class="ar" dir="rtl" lang="ar">أما ٣–٤ سنوات فلا تُكتَب فيها ملاحظات إطلاقًا. المؤشّر الوحيد هو الحضور: الطفل الذي يأتي فرحًا كل أحد، البرنامج ناجح معه.</p>
+</section>
+
+<!-- ═══ 07 ══════════════════════════════════════════════════ -->
+<section>
+  <h2><span class="nr">07</span>Tre merknader til gjennomføringen<span class="ar" dir="rtl" lang="ar">ثلاث ملاحظات للتنفيذ</span></h2>
+
+  <h3>Uke 14 og 32 er verneuker<span class="ar" dir="rtl" lang="ar">الأسبوعان ١٤ و٣٢ حماية مقصودة</span></h3>
+  <p>Blir noe forsinket, eller faller en søndag bort i en ferie, er disse to støtdemperen. De fylles ikke med nytt stoff.</p>
+  <p class="ar" dir="rtl" lang="ar">لو تأخّر شيء أو ضاع أحد في عطلة، فهما وسادة الامتصاص. لا تُملآن بمحتوى جديد.</p>
+
+  <h3>Bokstavboka er halve verdien utad<span class="ar" dir="rtl" lang="ar">كتيّب الحروف نصف القيمة عند الأهل</span></h3>
+  <p>Én side per bokstav, bygget av barnet selv gjennom året, båret hjem på årsavslutningen. Det er den foreldrene ser. Årsplanen ser de aldri.</p>
+  <p class="ar" dir="rtl" lang="ar">صفحة لكل حرف، يبنيه الطفل بيده على مدار السنة، ويخرج به في الحفل الختامي. هذا ما يراه الأهل، أما الخطة فلا يرونها أبدًا.</p>
+
+  <h3>Halvårsavslutningen i uke 15 er ikke pynt<span class="ar" dir="rtl" lang="ar">حفل الأسبوع ١٥ ليس ترفًا</span></h3>
+  <p>Det er den som fornyer påmeldingen til vårsemesteret. Sett den i kalenderen nå.</p>
+  <p class="ar" dir="rtl" lang="ar">هو الذي يجدّد التسجيل للفصل الثاني. ضعه في التقويم من الآن.</p>
+
+  <div class="merknad">
+    <p><b>Fast gjennom hele året:</b> mottak og avslutning skjer i ett rom for alle. Ukens sure er den samme for begge nivåene — de yngste gjentar det de eldste sier fram. Formingsarbeidet går hjem med barnet hver søndag og er dermed en ukerapport til foreldrene uten papirer.</p>
+    <p class="ar" dir="rtl" lang="ar"><b>ثابت طوال السنة:</b> الاستقبال والختام في قاعة واحدة للجميع. سورة الأسبوع واحدة للمستويين — الصغار يردّدون ما يسمّعه الكبار. والعمل اليدوي يخرج مع الطفل كل أحد، فيصير تقريرًا أسبوعيًا للأهل بلا ورق.</p>
+  </div>
+</section>
+
+<footer>
+  Madinabarn · Årsplan 2026/2027 · Madina Skole — søndag 09:30–11:00 · 3–6 år
+  <span class="ar" dir="rtl" lang="ar">أطفال مدينة · الخطة السنوية ٢٠٢٦/٢٠٢٧ · مدرسة مدينة — الأحد ٠٩:٣٠–١١:٠٠ · ٣–٦ سنوات</span>
+</footer>
+
+</div>
+</body>
+</html>
