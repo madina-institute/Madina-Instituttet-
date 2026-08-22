@@ -8459,7 +8459,20 @@
         kilde: 'Manuell (' + method + ') — registrert av ' + (currentUserEmail || 'ukjent')
       });
       await logFinanceChange(`Manuell betaling registrert: ${amount} kr (${method}) for ${student.navn || 'elev'}, av ${currentUserEmail || 'ukjent'}`);
-      showToast('✓ Betaling registrert.');
+      try{
+        const kvitt = await sendBetalingKvitteringTilForesatt({
+          student,
+          belop: amount,
+          kanal: method,
+          type: 'Manuell registrering',
+          referanse: 'MAN-' + id.slice(-6).toUpperCase() + '-' + Date.now().toString(36).slice(-4).toUpperCase()
+        });
+        if(kvitt.sendt) showToast('✓ Betaling registrert — PDF-kvittering sendt til ' + kvitt.epost + '.');
+        else showToast('✓ Betaling registrert (ingen e-post til foresatt).');
+      } catch(mailErr){
+        console.error('Kvittering-e-post feilet', mailErr);
+        showToast('✓ Betaling registrert, men kvittering på e-post feilet.');
+      }
       closeCashierOverlay('cashierPayOverlay');
     } catch(err){
       console.error(err);
@@ -8472,6 +8485,7 @@
   // mechanism as Meldingssenter) AND as an e-post — so it's guaranteed to
   // reach them even if they don't check the portal.
   const BETALINGSRAPPORT_STEMPEL = 'assets/stempel-madina-fullt.svg';
+  const BETALING_PDF_STEMPEL = BETALINGSRAPPORT_STEMPEL;
   let html2pdfLastPromise = null;
 
   function loadHtml2PdfLib(){
@@ -8611,6 +8625,112 @@
   function historikkKroppHtml(rader){
     if(!rader.length) return '';
     return rader.map(historikkRadHtml).join('');
+  }
+
+  async function hentBetalingPdfStempelUri(){
+    return hentBetalingsrapportStempelUri();
+  }
+
+  function byggBetalingKvitteringPdfHtml({ mottakerNavn, elevNavn, belop, kanal, type, referanse, tidspunkt, stempelSrc }){
+    const ref = referanse || ('KV-' + Date.now().toString(36).toUpperCase());
+    const utstedt = tidspunkt || new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
+    const belopTxt = (typeof belop === 'number' ? belop : parseFloat(belop) || 0).toLocaleString('no-NO') + ' kr';
+    return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        *{ box-sizing:border-box; }
+        html,body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
+        .ark{ width:186mm; max-width:186mm; margin:0; padding:10mm 12mm 12mm; position:relative; page-break-inside:avoid; }
+        .topp{ background:linear-gradient(135deg,#eef6fd 0%,#d8e9f8 100%); border-bottom:3px solid #b9d5ee; padding:14px 16px 12px; text-align:center; border-radius:8px 8px 0 0; }
+        .topp h1{ font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; margin:2px 0; color:#1c5490; font-weight:700; }
+        .topp .under{ font-size:10px; color:#4a7099; }
+        .meta{ display:flex; justify-content:space-between; font-size:9.5px; color:#5a6b7d; padding:8px 2px 10px; border-bottom:1px solid #e4edf6; }
+        .meta b{ color:#1c5490; }
+        .kvittering-badge{ display:inline-block; font-size:8px; letter-spacing:.1em; text-transform:uppercase; background:#1c5490; color:#fff; padding:2px 8px; border-radius:20px; margin:10px 0 8px; }
+        .intro{ font-size:11px; line-height:1.55; margin:0 0 12px; }
+        .belop-kort{ border:1px solid #cfe0ef; border-radius:8px; padding:14px 16px; background:#f8fbfe; margin-bottom:12px; text-align:center; }
+        .belop-kort .lbl{ font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:#6f93b6; margin-bottom:4px; font-weight:600; }
+        .belop-kort .val{ font-size:24px; font-weight:700; color:#1c5490; }
+        .detaljer{ border:1px solid #e4edf6; border-radius:8px; overflow:hidden; margin-bottom:12px; font-size:10px; }
+        .detaljer .rad{ display:flex; border-bottom:1px solid #e4edf6; }
+        .detaljer .rad:last-child{ border-bottom:none; }
+        .detaljer .lbl{ width:34%; background:#f8fbfe; padding:8px 10px; font-weight:600; color:#5a6860; }
+        .detaljer .val{ flex:1; padding:8px 10px; color:#16283a; }
+        .signatur{ margin-top:12px; min-height:88px; position:relative; padding-top:6px; border-top:1px dashed #cfe0ef; }
+        .signatur .tekst{ font-size:10px; line-height:1.5; max-width:58%; }
+        .stempel{ position:absolute; right:0; bottom:0; width:96px; height:96px; opacity:.92; }
+        .bunn{ margin-top:10px; padding-top:6px; border-top:1px solid #e4edf6; font-size:8px; color:#7b8a93; display:flex; justify-content:space-between; }
+      </style></head><body><div class="ark">
+        <div class="topp"><h1>Betalingskvittering</h1><div class="under">Offisiell kvittering / payment receipt</div></div>
+        <div class="meta"><span><b>Dokument:</b> ${escapeHtml(ref)}</span><span><b>Utstedt:</b> ${escapeHtml(utstedt)}</span></div>
+        <div class="kvittering-badge">Kvittering</div>
+        <p class="intro">Hei ${escapeHtml(mottakerNavn || '')},<br><br>Vi bekrefter at betalingen er mottatt og registrert.</p>
+        <div class="belop-kort"><div class="lbl">Betalt beløp</div><div class="val">${escapeHtml(belopTxt)}</div></div>
+        <div class="detaljer">
+          <div class="rad"><div class="lbl">Elev</div><div class="val">${escapeHtml(elevNavn || '—')}</div></div>
+          <div class="rad"><div class="lbl">Betalt via</div><div class="val">${escapeHtml(kanal || '—')}</div></div>
+          <div class="rad"><div class="lbl">Type</div><div class="val">${escapeHtml(type || '—')}</div></div>
+          <div class="rad"><div class="lbl">Referanse</div><div class="val">${escapeHtml(ref)}</div></div>
+          <div class="rad"><div class="lbl">Tidspunkt</div><div class="val">${escapeHtml(utstedt)}</div></div>
+        </div>
+        <div class="signatur">
+          <div class="tekst">Beløpet er trukket fra restsaldoen i skolens system.<br><b>Med vennlig hilsen,</b><br>Madina Skole</div>
+          <img class="stempel" src="${stempelSrc || BETALING_PDF_STEMPEL}" alt="Madina Skole stempel">
+        </div>
+        <div class="bunn"><span>Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</span><span>${escapeHtml(ref)}</span></div>
+      </div></body></html>`;
+  }
+
+  async function genererBetalingKvitteringPdf(opts){
+    await loadHtml2PdfLib();
+    const stempelSrc = await hentBetalingPdfStempelUri();
+    const html = byggBetalingKvitteringPdfHtml({ ...opts, stempelSrc });
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;width:186mm;background:#fff;';
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const element = host.querySelector('.ark') || host;
+    try{
+      await waitForPdfImages(host);
+      const blob = await window.html2pdf().set({
+        margin: [6, 6, 8, 6],
+        filename: 'Betaling-kvittering.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true, scrollY: 0, windowWidth: element.scrollWidth || 700 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      }).from(element).outputPdf('blob');
+      const filnavn = 'Betaling-kvittering-' + filnavnSafe(opts.elevNavn) + '.pdf';
+      const base64 = await blobToBase64(blob);
+      return { blob, filnavn, base64 };
+    } finally {
+      host.remove();
+    }
+  }
+
+  async function sendBetalingKvitteringTilForesatt({ student, belop, kanal, type, referanse }){
+    const guardian = cache.guardians.find(g => g.id === student.foresatt);
+    if(!guardian?.epost) return { sendt: false, grunn: 'ingen e-post' };
+    const pdf = await genererBetalingKvitteringPdf({
+      mottakerNavn: guardian.navn || 'Hei',
+      elevNavn: student.navn || 'elev',
+      belop, kanal, type, referanse,
+      tidspunkt: new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' })
+    });
+    const belopTxt = (typeof belop === 'number' ? belop : parseFloat(belop) || 0).toLocaleString('no-NO') + ' kr';
+    const subject = 'Betalingsbekreftelse — ' + (student.navn || 'elev') + ' (' + belopTxt + ')';
+    const text = 'Hei ' + (guardian.navn || '') + ',\n\nVi bekrefter at betalingen er mottatt og registrert.\n\nFullstendig kvittering finner du vedlagt som PDF.\n\nMed vennlig hilsen,\nMadina Skole';
+    await addDoc(collection(db, 'mail'), {
+      from: MAIL_FROM,
+      to: [guardian.epost],
+      message: {
+        subject: '[Madina Skole] ' + subject,
+        text,
+        html: '<p>Hei ' + escapeHtml(guardian.navn || '') + ',</p><p>Vi bekrefter at betalingen er mottatt og registrert.</p><p><b>Fullstendig kvittering finner du vedlagt som PDF.</b></p><p>Med vennlig hilsen,<br><b>Madina Skole</b></p>',
+        attachments: [{ filename: pdf.filnavn, content: pdf.base64, encoding: 'base64', contentType: 'application/pdf' }]
+      }
+    });
+    return { sendt: true, epost: guardian.epost };
   }
 
   function byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc, logoSrc }){
