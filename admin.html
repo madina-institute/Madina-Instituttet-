@@ -8649,10 +8649,10 @@
 
   function historikkKolonneBlokkHtml(rader){
     if(!rader.length) return '';
-    return '<div class="hist-kol">' +
+    return '<td class="hist-kol" valign="top">' +
       '<table class="hist-tabell"><thead><tr>' +
       '<th class="dato">Dato</th><th class="tall-h">Beløp</th><th class="kilde-h">Kilde</th>' +
-      '</tr></thead><tbody>' + historikkKroppHtml(rader) + '</tbody></table></div>';
+      '</tr></thead><tbody>' + historikkKroppHtml(rader) + '</tbody></table></td>';
   }
 
   async function hentBetalingPdfStempelUri(){
@@ -8826,9 +8826,9 @@
     const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
     const historikkKolonner = delHistorikkIKolonner(historikkRader, 12, 2);
     const historikkSeksjon = historikkRader.length
-      ? '<div class="hist-wrap">' +
+      ? '<table class="hist-grid"><tr>' +
         historikkKolonner.map(historikkKolonneBlokkHtml).join('') +
-        '</div>'
+        '</tr></table>'
       : '<p class="hist-tom">Ingen registrerte betalinger ennå.</p>';
 
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
@@ -8838,7 +8838,7 @@
         html,body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
         .ark{
           width:186mm; max-width:186mm; margin:0; padding:10mm 12mm 12mm;
-          position:relative; page-break-inside:avoid; break-inside:avoid;
+          position:relative;
         }
         .topp{
           background:linear-gradient(135deg,#eef6fd 0%,#d8e9f8 100%);
@@ -8879,18 +8879,17 @@
         .summary-tabell td.rest .val{ color:#9a6b1a; }
         h2{
           font-family:'Cormorant Garamond',Georgia,serif; font-size:13px; color:#1c5490;
-          margin:0 0 5px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
+          margin:0 0 4px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
         }
-        .hist-wrap{
-          width:100%; margin-bottom:8px; page-break-inside:avoid; break-inside:avoid;
-          font-size:0;
+        .hist-grid{
+          width:100%; border-collapse:collapse; table-layout:fixed;
+          margin:0 0 8px;
         }
-        .hist-kol{
-          display:inline-block; vertical-align:top; width:49.5%;
-          font-size:8px; box-sizing:border-box;
+        .hist-grid td.hist-kol{
+          vertical-align:top; width:50%; padding:0 5px 0 0;
         }
-        .hist-kol + .hist-kol{ margin-left:1%; }
-        .hist-wrap .hist-kol:only-child{ width:100%; margin-left:0; }
+        .hist-grid td.hist-kol + td.hist-kol{ padding:0 0 0 5px; }
+        .hist-grid td.hist-kol:only-child{ width:100%; padding:0; }
         .hist-tabell{
           border-collapse:collapse; width:100%; table-layout:fixed;
         }
@@ -8912,12 +8911,16 @@
         .hist-tabell td.tall.neg{ color:#a83c3c; }
         .hist-tom{ color:#8a9a90; font-style:italic; font-size:10px; margin:8px 0 12px; }
         .signatur{
-          margin-top:10px; min-height:88px; position:relative; padding-top:6px;
-          border-top:1px dashed #cfe0ef; page-break-inside:avoid; break-inside:avoid;
+          margin-top:8px; padding-top:6px; border-top:1px dashed #cfe0ef;
         }
-        .signatur .tekst{ font-size:9.5px; line-height:1.5; max-width:58%; }
-        .stempel{
-          position:absolute; right:4px; bottom:0; width:92px; height:92px; opacity:.95;
+        .signatur-tabell{ width:100%; border-collapse:collapse; }
+        .signatur-tabell td{ vertical-align:bottom; padding:0; }
+        .signatur-tabell .signatur-tekst{
+          font-size:9.5px; line-height:1.5; width:62%; padding-right:8px;
+        }
+        .signatur-tabell .signatur-stempel{ width:38%; text-align:right; }
+        .signatur-tabell .signatur-stempel img{
+          width:92px; height:92px; opacity:.95; display:inline-block;
         }
         .bunn{
           margin-top:8px; padding-top:5px; border-top:1px solid #e4edf6;
@@ -8961,13 +8964,15 @@
         </tr></table>
         <h2>Betalingshistorikk</h2>
         ${historikkSeksjon}
-        <div class="signatur">
-          <div class="tekst">
+        <table class="signatur-tabell signatur"><tr>
+          <td class="signatur-tekst">
             Dokumentet er utstedt elektronisk av Madina Skole og gjelder per dato ovenfor.<br>
             <b>Med vennlig hilsen,</b><br>Madina Skole
-          </div>
-          <img class="stempel" src="${stempelSrc || BETALINGSRAPPORT_STEMPEL}" alt="Madina Skole stempel">
-        </div>
+          </td>
+          <td class="signatur-stempel">
+            <img src="${stempelSrc || BETALINGSRAPPORT_STEMPEL}" alt="Madina Skole stempel">
+          </td>
+        </tr></table>
         <table class="bunn"><tr>
           <td>Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</td>
           <td>${escapeHtml(ref)}</td>
@@ -9003,7 +9008,7 @@
           windowWidth: element.scrollWidth || 700
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'] }
       }).from(element).outputPdf('blob');
       const filnavn = 'Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf';
       const base64 = await blobToBase64(blob);
