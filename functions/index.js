@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-22 02:30:00 */
+/* SIST-ENDRET: 2026-08-22 10:45:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -2874,7 +2874,7 @@ exports.createFakturaExternalPayment = onRequest(
 
       const accessToken = await getVippsAccessToken();
       const reference = `madina-faktura-${studentId.slice(-8)}-${Date.now()}`;
-      const returnUrl = `${SITE_BASE_URL.value()}/betale?vipps=return&t=${encodeURIComponent(token)}`;
+      const returnUrl = `${SITE_BASE_URL.value()}/betale?vipps=return&t=${encodeURIComponent(token)}&ref=${encodeURIComponent(reference)}`;
       const paymentDescription = `Skolepenger — ${info.elevNavn} (Madina Skole)`;
 
       const attempt = await postVippsPayment(accessToken, {
@@ -2923,6 +2923,82 @@ exports.createFakturaExternalPayment = onRequest(
       res.status(200).json({ ok: true, redirectUrl, reference, amountKr: amount });
     } catch (err) {
       logger.error("createFakturaExternalPayment error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
+// checkFakturaExternalPaymentReturn — Offentlig: sjekk Vipps-status etter retur
+//    POST { token, reference }
+// =======================================================================
+exports.checkFakturaExternalPaymentReturn = onRequest(
+  {
+    cors: true,
+    secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY, VIPPS_WEBHOOK_SECRET],
+  },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+    try {
+      const { token, reference } = req.body || {};
+      const studentId = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
+      if (!studentId) {
+        res.status(403).json({ ok: false, error: "Ugyldig eller utløpt betalingslenke." });
+        return;
+      }
+      if (!reference) {
+        res.status(400).json({ ok: false, error: "Mangler betalingsreferanse." });
+        return;
+      }
+
+      const pendingSnap = await db.collection("pendingVippsPayments")
+        .where("reference", "==", reference).limit(1).get();
+      if (pendingSnap.empty) {
+        res.status(404).json({ ok: false, error: "Fant ikke betalingen." });
+        return;
+      }
+      const pendingDoc = pendingSnap.docs[0];
+      const pending = pendingDoc.data();
+      if (pending.studentId !== studentId || pending.initiatedBy !== "faktura_email") {
+        res.status(403).json({ ok: false, error: "Ugyldig betalingsreferanse." });
+        return;
+      }
+
+      if (pending.status === "completed") {
+        res.status(200).json({
+          ok: true,
+          status: "completed",
+          vippsState: pending.vippsState || "CAPTURED",
+        });
+        return;
+      }
+      if (pending.status === "cancelled" || pending.status === "expired") {
+        res.status(200).json({
+          ok: true,
+          status: pending.status,
+          vippsState: pending.vippsState || null,
+        });
+        return;
+      }
+
+      const accessToken = await getVippsAccessToken();
+      const payment = await fetchVippsPayment(reference, accessToken);
+      const terminal = mapVippsStateToPendingStatus(payment.state);
+      if (terminal) {
+        await closePendingVippsByReference(reference, terminal, { vippsState: payment.state });
+      }
+
+      res.status(200).json({
+        ok: true,
+        status: terminal || "pending",
+        vippsState: payment.state || null,
+      });
+    } catch (err) {
+      logger.error("checkFakturaExternalPaymentReturn error", err);
       res.status(500).json({ ok: false, error: String(err.message || err) });
     }
   }
