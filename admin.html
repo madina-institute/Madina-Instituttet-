@@ -2296,6 +2296,7 @@
   <div class="tab" data-tab="okonomiHub" data-side="okonomi">Økonomioversikt</div>
   <div class="tab" data-tab="cashier" data-side="okonomi">Kasserer</div>
   <div class="tab" data-tab="paymentRequests" data-side="okonomi">Betalingsforespørsler</div>
+  <div class="tab" data-tab="fakturaOversikt" data-side="okonomi">Fakturaoversikt</div>
   <div class="tab" data-tab="finances" data-side="okonomi">Kassebok</div>
   <div class="tab" data-tab="financeLog" data-side="okonomi">Betalingslogg</div>
   <div class="tab" data-tab="lonn" data-side="okonomi personale">Lønn</div>
@@ -3781,6 +3782,37 @@
     </div>
   </div>
 
+  <!-- Faktura send modal -->
+  <div class="overlay" id="fakturaSendOverlay">
+    <div class="modal" style="max-width:520px;">
+      <h3>Send faktura (online betaling)</h3>
+      <div class="sub" id="fakturaSendElevLine"></div>
+      <div class="field">
+        <label>Post / hva gjelder fakturaen?</label>
+        <select id="fakturaSendKategori">
+          <option value="skoleavgift">Skoleavgift</option>
+          <option value="materiell">Materiell</option>
+          <option value="boker">Bøker</option>
+          <option value="depositum">Depositum (skoleplass)</option>
+          <option value="annet">Annet</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Beløp (kr)</label>
+        <input type="number" id="fakturaSendBelop" min="1" step="1">
+        <div class="hint" id="fakturaSendRestHint"></div>
+      </div>
+      <div class="field">
+        <label>Betalingsfrist (dager fra i dag)</label>
+        <input type="number" id="fakturaSendFristDager" min="1" max="90" step="1">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeCashierOverlay('fakturaSendOverlay')">Avbryt</button>
+        <button class="btn btn-primary" onclick="submitFakturaSend()">Send faktura</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CASHIER LEDELSE (kun synlig/tilgjengelig for Eier) -->
   <div class="panel" id="panel-cashierLedelse">
     <div class="report-card" style="border:2px solid var(--gold);">
@@ -4335,6 +4367,29 @@
     </div>
   </div>
 
+  <!-- FAKTURAOVERSIKT -->
+  <div class="panel" id="panel-fakturaOversikt">
+    <div class="report-card">
+      <div class="innst-topp">
+        <h3>🧾 Fakturaoversikt</h3>
+        <span class="innst-meta" id="fakturaOversiktMeta"></span>
+      </div>
+      <div class="sub">Alle sendte online-fakturaer — betalingsfrist, status og påminnelser. Kun digital betaling (ingen bankoverføring).</div>
+      <div class="stat-grid" id="fakturaOversiktStats" style="margin:12px 0;"></div>
+      <div class="toolbar" style="margin-bottom:12px;">
+        <input class="search" id="fakturaOversiktSearch" placeholder="Søk elev, foresatt, referanse…" oninput="renderFakturaOversikt()">
+        <select id="fakturaOversiktFilter" onchange="renderFakturaOversikt()" style="max-width:180px;">
+          <option value="">Alle statuser</option>
+          <option value="ok">Innen frist (grønn)</option>
+          <option value="snart">Snart frist (gul)</option>
+          <option value="forfalt">Forfalt (rød)</option>
+          <option value="betalt">Betalt</option>
+        </select>
+      </div>
+      <div id="fakturaOversiktList"></div>
+    </div>
+  </div>
+
   <!-- MESSAGES ARCHIVE -->
   <div class="panel" id="panel-messages">
     <div class="toolbar">
@@ -4670,15 +4725,20 @@
     <div class="innst-seksjon" data-seksjon="faktura" style="display:none;">
     <div class="report-card innst-kort">
       <div class="innst-topp">
-        <h3>🧾 Fakturering</h3>
+        <h3>🧾 Fakturering (online)</h3>
         <span class="innst-meta" id="fakturaMeta"></span>
       </div>
-      <div class="sub">Opplysningene som står på fakturaen foresatte får på e-post.</div>
+      <div class="sub">Fakturaer sendes kun med digital betaling (Vipps / bankkort). Ingen kontonummer.</div>
       <div class="field">
-        <label>Skolens kontonummer</label>
-        <input type="text" id="kontonummerInput" placeholder="11 siffer"
-               oninput="merkUlagret('faktura'); visKontoStatus()">
-        <div class="hint" id="kontonummerStatus"></div>
+        <label>Standard betalingsfrist (dager)</label>
+        <input type="number" id="fakturaDefaultFristInput" min="1" max="90" step="1" placeholder="14"
+               oninput="merkUlagret('faktura')">
+        <div class="hint">Antall dager foresatt har på seg å betale etter utsendelse.</div>
+      </div>
+      <div class="field">
+        <label>Gul varsling (dager før frist)</label>
+        <input type="number" id="fakturaGulVarselInput" min="1" max="30" step="1" placeholder="3"
+               oninput="merkUlagret('faktura')">
       </div>
       <div class="innst-effekt" id="fakturaEffekt"></div>
       <button class="btn btn-primary" style="width:auto; margin-top:12px;" onclick="saveFakturainnstillinger()">Lagre</button>
@@ -4834,7 +4894,8 @@
   import {
     getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query, where, limit, deleteField,
     writeBatch,
-    addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, setDoc as _setDoc
+    addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, setDoc as _setDoc,
+    arrayUnion
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged,
@@ -7406,13 +7467,18 @@
 
     onSnapshot(doc(db, 'settings', 'faktura'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
-      // Reserven er tom streng, ikke et gammelt nummer. Svarer ikke basen,
-      // skal fakturaen stoppe — ikke gå ut med et nummer ingen har bekreftet.
-      fakturaOppsett.kontonummer = typeof d.kontonummer === 'string' ? d.kontonummer : '';
+      fakturaOppsett.defaultFristDager = Number(d.defaultFristDager) > 0 ? Number(d.defaultFristDager) : 14;
+      fakturaOppsett.gulVarselDager = Number(d.gulVarselDager) > 0 ? Number(d.gulVarselDager) : 3;
       innstMeta('fakturaMeta', d);
-      fyllPrisinnstillinger();
+      fyllFakturaInnstillinger();
       renderOkonomiHub();
     }, (err) => console.error('settings/faktura', err));
+
+    onSnapshot(collection(db, 'fakturaInvoices'), (snap) => {
+      cache.fakturaInvoices = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => String(b.sistSendtAt || b.opprettetAt || '').localeCompare(String(a.sistSendtAt || a.opprettetAt || '')));
+      renderFakturaOversikt();
+    }, (err) => console.error('fakturaInvoices', err));
 
     onSnapshot(doc(db, 'settings', 'lonn'), (snap) => {
       const d = snap.exists() ? (snap.data() || {}) : {};
@@ -7966,7 +8032,7 @@
   };
 
   // Local live cache, kept in sync by Firestore onSnapshot listeners
-  const cache = { teachers: [], guardians: [], students: [], classes: [], programs: [], schoolCalendar: [], hours: [], attendance: [], teacherAttendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [], salaryPayments: [] };
+  const cache = { teachers: [], guardians: [], students: [], classes: [], programs: [], schoolCalendar: [], hours: [], attendance: [], teacherAttendance: [], lessonPlans: [], meetings: [], finances: [], registrations: [], homework: [], homeworkSubmissions: [], absenceRequests: [], announcements: [], studentNotes: [], contactUpdateRequests: [], paymentRequests: [], messages: [], financeLog: [], studentPayments: [], pendingVippsPayments: [], salaryPayments: [], fakturaInvoices: [] };
   let adminUsersCache = [];
   let messageThreadsCache = [];
   let broadcastThreadsCache = [];
@@ -8633,6 +8699,7 @@
   const GENERATE_KVITTERING_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingKvitteringPdf';
   const GENERATE_FAKTURA_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingFakturaPdf';
   const GENERATE_FAKTURA_PAY_TOKEN_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateFakturaPayToken';
+  const PREPARE_FAKTURA_INVOICE_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/prepareFakturaInvoice';
 
   async function kallPdfCloudFunction(url, payload){
     const bruker = auth.currentUser;
@@ -8914,11 +8981,16 @@
     const data = await kallPdfCloudFunction(GENERATE_FAKTURA_PDF_URL, {
       mottakerNavn: opts.mottakerNavn || 'Hei',
       elevNavn: opts.elevNavn || 'elev',
-      restKr: opts.rest,
-      kontonummer: opts.kontonummer || '—',
-      iban: opts.iban || '—',
-      studentId: opts.studentId || '',
-      tidspunkt: opts.tidspunkt || new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' })
+      belopKr: opts.belopKr ?? opts.rest,
+      dokumentRef: opts.dokumentRef,
+      utstedtDato: opts.utstedtDato,
+      betalingsfrist: opts.betalingsfrist,
+      kategori: opts.kategori,
+      kategoriLabel: opts.kategoriLabel,
+      opprettetAvNavn: opts.opprettetAvNavn,
+      sistSendtAvNavn: opts.sistSendtAvNavn,
+      payUrl: opts.payUrl || '',
+      studentId: opts.studentId || ''
     });
     const filnavn = data.filnavn || ('Faktura-' + filnavnSafe(opts.elevNavn) + '.pdf');
     const blob = pdfBase64ToBlob(data.base64);
@@ -10545,43 +10617,267 @@
   function fakturaEpostBetalingKnappHtml(url, cardAktiv){
     if(!url) return '';
     const urlEsc = escapeHtml(url);
-    const kortCelle = cardAktiv
-      ? '<td style="background:#1a1f71;color:#fff;text-align:center;padding:18px 10px;font-size:15px;font-weight:800;width:50%;letter-spacing:0.02em;">Visa / kort</td>'
-      : '<td style="background:#5a6860;color:#fff;text-align:center;padding:18px 10px;font-size:13px;font-weight:700;width:50%;">Kun Vipps i test</td>';
-    return '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:380px;margin:18px auto 0;border-collapse:separate;border-radius:14px;overflow:hidden;border:2px solid #cfe0ef;box-shadow:0 4px 14px rgba(28,84,144,0.12);">' +
-      '<tr>' +
-      '<td style="background:#ff5b24;color:#fff;text-align:center;padding:18px 10px;font-size:17px;font-weight:800;width:50%;">Vipps</td>' +
-      kortCelle +
-      '</tr>' +
-      '<tr><td colspan="2" style="background:#1c5490;text-align:center;padding:24px 20px;">' +
-      '<a href="' + urlEsc + '" style="color:#fff;font-size:24px;font-weight:700;text-decoration:none;display:block;line-height:1.25;">Betal online →</a>' +
-      '<span style="color:rgba(255,255,255,0.88);font-size:14px;display:block;margin-top:8px;">Velg beløp · Vipps eller bankkort · uten innlogging</span>' +
+    const metoder = cardAktiv
+      ? '<span style="display:inline-block;background:#ff5b24;color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:6px;margin:2px;">Vipps</span>' +
+        '<span style="display:inline-block;background:#1a1f71;color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:6px;margin:2px;">Visa</span>' +
+        '<span style="display:inline-block;background:#252525;color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:6px;margin:2px;">Mastercard</span>'
+      : '<span style="display:inline-block;background:#ff5b24;color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:6px;margin:2px;">Vipps</span>' +
+        '<span style="display:inline-block;background:#5a6860;color:#fff;font-weight:700;font-size:10px;padding:4px 8px;border-radius:6px;margin:2px;">Kort i prod</span>';
+    return '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:400px;margin:18px auto 0;border-collapse:separate;border-radius:14px;overflow:hidden;border:2px solid #cfe0ef;box-shadow:0 4px 14px rgba(28,84,144,0.12);">' +
+      '<tr><td style="background:#f8fbfe;text-align:center;padding:14px 12px 8px;">' +
+      '<div style="margin-bottom:8px;">' + metoder + '</div>' +
+      '<span style="font-size:12px;color:#5a6860;">Tilgjengelig på betalingssiden</span></td></tr>' +
+      '<tr><td style="background:#1c5490;text-align:center;padding:22px 18px;">' +
+      '<a href="' + urlEsc + '" style="color:#fff;font-size:22px;font-weight:700;text-decoration:none;display:block;line-height:1.25;">Betal faktura online →</a>' +
+      '<span style="color:rgba(255,255,255,0.88);font-size:13px;display:block;margin-top:8px;">Trykk her — velg Vipps eller bankkort</span>' +
       '</td></tr></table>';
   }
 
-  function fakturaEpostBetalingBlokk(payUrl, restKr){
+  function fakturaEpostBetalingBlokk(payUrl, belopKr, meta){
+    meta = meta || {};
     const url = payUrl || '';
-    const restTxt = Number(restKr || 0).toLocaleString('no-NO') + ' kr';
+    const belopTxt = Number(belopKr || 0).toLocaleString('no-NO') + ' kr';
     const cardAktiv = prisOppsett.vippsKortAktiv === true;
-    const text = '\nDu kan betale digitalt uten å logge inn i Foreldreportalen:\n' +
-      'Gjenstående beløp: ' + restTxt + '\n' +
-      'Velg hele beløpet eller et annet beløp, bekreft, og betal med Vipps' +
-      (cardAktiv ? ' eller bankkort (Visa/Mastercard)' : '') + '.\n\n' +
+    const frist = meta.betalingsfrist ? ('Betalingsfrist: ' + meta.betalingsfrist + '. ') : '';
+    const ref = meta.dokumentRef ? ('Referanse: ' + meta.dokumentRef + '. ') : '';
+    const text = '\n' + ref + frist + '\nBeløp på fakturaen: ' + belopTxt + '\n' +
+      'Betaling skjer kun digitalt (Vipps eller bankkort) — ikke bankoverføring.\n\n' +
       (url ? url + '\n' : '');
     let html = '<div style="margin:20px 0;padding:18px 16px;background:#f8fbfe;border:1px solid #cfe0ef;border-radius:10px;">' +
-      '<p style="margin:0 0 8px;font-weight:600;font-size:15px;">Du kan også betale digitalt — uten innlogging</p>' +
-      '<p style="margin:0 0 4px;font-size:14px;color:#5a6860;">Gjenstående: <b>' + escapeHtml(restTxt) + '</b>. Velg <b>alt gjenstående</b> eller <b>et annet beløp</b>.</p>';
-    if(url){
-      html += fakturaEpostBetalingKnappHtml(url, cardAktiv);
-    }
+      '<p style="margin:0 0 8px;font-weight:600;font-size:15px;">Betal fakturaen online</p>' +
+      '<p style="margin:0 0 4px;font-size:14px;color:#5a6860;">Beløp: <b>' + escapeHtml(belopTxt) + '</b>' +
+      (meta.kategoriLabel ? ' · ' + escapeHtml(meta.kategoriLabel) : '') + '</p>' +
+      (meta.betalingsfrist ? '<p style="margin:0 0 4px;font-size:13px;color:#8a2a2a;"><b>Betalingsfrist:</b> ' + escapeHtml(meta.betalingsfrist) + '</p>' : '') +
+      (meta.dokumentRef ? '<p style="margin:0 0 8px;font-size:12px;color:#5a6860;">Ref: ' + escapeHtml(meta.dokumentRef) + '</p>' : '');
+    if(url) html += fakturaEpostBetalingKnappHtml(url, cardAktiv);
     html += '</div>';
     return { text, html };
   }
 
-  async function genererFakturaPayToken(studentId){
-    const data = await kallPdfCloudFunction(GENERATE_FAKTURA_PAY_TOKEN_URL, { studentId });
-    return { payUrl: data.payUrl || '', token: data.token || '' };
+  function fakturaStatusFargeClient(inv){
+    if(inv.status === 'betalt' || inv.status === 'delvis_betalt') return 'betalt';
+    if(inv.status === 'kansellert') return 'kansellert';
+    const gul = fakturaOppsett.gulVarselDager || 3;
+    const frist = inv.betalingsfrist || '';
+    if(!frist) return 'ok';
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+    if(today > frist || inv.status === 'forfalt') return 'forfalt';
+    const daysLeft = Math.round((new Date(frist + 'T23:59:59').getTime() - Date.now()) / 86400000);
+    if(daysLeft <= gul) return 'snart';
+    return 'ok';
   }
+
+  function fakturaStatusDot(farge){
+    const map = { ok: '#2e7d52', snart: '#c9a227', forfalt: '#c0392b', betalt: '#2e7d52', kansellert: '#8a9690' };
+    return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + (map[farge] || '#8a9690') + ';margin-right:6px;vertical-align:middle;"></span>';
+  }
+
+  window.renderFakturaOversikt = function(){
+    const el = document.getElementById('fakturaOversiktList');
+    const statsEl = document.getElementById('fakturaOversiktStats');
+    const metaEl = document.getElementById('fakturaOversiktMeta');
+    if(!el) return;
+    const q = (document.getElementById('fakturaOversiktSearch')?.value || '').toLowerCase().trim();
+    const filter = document.getElementById('fakturaOversiktFilter')?.value || '';
+    let rows = [...(cache.fakturaInvoices || [])];
+    if(q){
+      rows = rows.filter(r =>
+        (r.elevNavn||'').toLowerCase().includes(q) ||
+        (r.guardianNavn||'').toLowerCase().includes(q) ||
+        (r.dokumentRef||'').toLowerCase().includes(q));
+    }
+    if(filter){
+      rows = rows.filter(r => filter === 'betalt'
+        ? (r.status === 'betalt' || r.status === 'delvis_betalt')
+        : fakturaStatusFargeClient(r) === filter);
+    }
+    const tell = { ok: 0, snart: 0, forfalt: 0, betalt: 0 };
+    (cache.fakturaInvoices || []).forEach(r => {
+      const f = fakturaStatusFargeClient(r);
+      if(f === 'betalt' || r.status === 'betalt') tell.betalt++;
+      else if(f === 'forfalt') tell.forfalt++;
+      else if(f === 'snart') tell.snart++;
+      else tell.ok++;
+    });
+    if(statsEl){
+      statsEl.innerHTML = [
+        ['ok', 'Innen frist', tell.ok],
+        ['snart', 'Snart frist', tell.snart],
+        ['forfalt', 'Forfalt', tell.forfalt],
+        ['betalt', 'Betalt', tell.betalt]
+      ].map(([k,l,n]) => '<div class="stat-card"><span class="lbl">' + fakturaStatusDot(k) + l + '</span><span class="n">' + n + '</span></div>').join('');
+    }
+    if(metaEl) metaEl.textContent = rows.length + ' vist · ' + (cache.fakturaInvoices||[]).length + ' totalt';
+    if(!rows.length){
+      el.innerHTML = '<p class="sub">Ingen fakturaer ennå. Send fra Kasserer → Mer → Send faktura.</p>';
+      return;
+    }
+    el.innerHTML = '<table class="data-table mob-stack-table"><thead><tr>' +
+      '<th></th><th>Elev</th><th>Foresatt</th><th>Beløp</th><th>Post</th><th>Sendt</th><th>Frist</th><th>Påminn.</th><th>Status</th><th></th></tr></thead><tbody>' +
+      rows.map(r => {
+        const f = fakturaStatusFargeClient(r);
+        const statusTxt = r.status === 'betalt' ? 'Betalt' : r.status === 'delvis_betalt' ? 'Delvis betalt' :
+          f === 'forfalt' ? 'Forfalt' : f === 'snart' ? 'Snart frist' : 'Utestående';
+        const pam = Array.isArray(r.paminnelser) ? r.paminnelser.length : 0;
+        return '<tr><td data-label="">' + fakturaStatusDot(f) + '</td>' +
+          '<td data-label="Elev"><strong>' + escapeHtml(r.elevNavn||'—') + '</strong><br><span style="font-size:11px;color:#5a6860;">' + escapeHtml(r.dokumentRef||'') + '</span></td>' +
+          '<td data-label="Foresatt">' + escapeHtml(r.guardianNavn||'—') + '</td>' +
+          '<td data-label="Beløp">' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</td>' +
+          '<td data-label="Post">' + escapeHtml(r.kategoriLabel||'—') + '</td>' +
+          '<td data-label="Sendt">' + cashierFormatDatoTid(r.sistSendtAt||r.opprettetAt) + '<br><span style="font-size:11px;">' + escapeHtml(r.sistSendtAvNavn||r.opprettetAvNavn||'') + '</span></td>' +
+          '<td data-label="Frist">' + escapeHtml(r.betalingsfrist||'—') + '</td>' +
+          '<td data-label="Påminn.">' + pam + '</td>' +
+          '<td data-label="Status">' + statusTxt + '</td>' +
+          '<td data-label="" class="actions-col">' +
+          (r.status !== 'betalt' ? '<button type="button" class="btn-edit" onclick="sendFakturaPaminnelse(\'' + r.id + '\')">🔔 Påminn</button> ' : '') +
+          (r.status !== 'betalt' ? '<button type="button" class="btn-edit" onclick="resendFakturaInvoice(\'' + r.id + '\')">↻ Send igjen</button>' : '') +
+          '</td></tr>';
+      }).join('') + '</tbody></table>';
+  };
+
+  let fakturaSendStudentId = null;
+
+  window.sendGuardianInvoice = function(studentId){
+    fakturaSendStudentId = studentId;
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student) return;
+    const guardian = cache.guardians.find(g => g.id === student.foresatt);
+    if(!guardian){ showToast('Fant ingen registrert foresatt.'); return; }
+    const rest = cashierKr(student.belop) - cashierKr(student.belopBetalt);
+    if(rest <= 0){ showToast('Ingen restbeløp å fakturere.'); return; }
+    document.getElementById('fakturaSendElevLine').textContent =
+      (student.navn || 'Elev') + ' · restbeløp ' + rest.toLocaleString('no-NO') + ' kr';
+    document.getElementById('fakturaSendBelop').value = String(Math.round(rest));
+    document.getElementById('fakturaSendFristDager').value = String(fakturaOppsett.defaultFristDager || 14);
+    document.getElementById('fakturaSendRestHint').textContent = 'Maks ' + rest.toLocaleString('no-NO') + ' kr (restbeløp)';
+    document.getElementById('fakturaSendKategori').value = 'skoleavgift';
+    openCashierOverlay('fakturaSendOverlay');
+  };
+
+  window.resendFakturaInvoice = function(invoiceId){
+    const inv = (cache.fakturaInvoices || []).find(i => i.id === invoiceId);
+    if(!inv) return;
+    fakturaSendStudentId = inv.studentId;
+    document.getElementById('fakturaSendElevLine').textContent = (inv.elevNavn || '') + ' · gjenutsendelse av ' + (inv.dokumentRef || '');
+    document.getElementById('fakturaSendBelop').value = String(Math.round(inv.belopKr || 0));
+    document.getElementById('fakturaSendFristDager').value = String(inv.betalingsfristDager || fakturaOppsett.defaultFristDager || 14);
+    document.getElementById('fakturaSendKategori').value = inv.kategori || 'skoleavgift';
+    document.getElementById('fakturaSendRestHint').textContent = 'Gjenutsendelse — oppretter ikke ny referanse';
+    fakturaSendStudentId = inv.studentId;
+    fakturaSendResendId = invoiceId;
+    openCashierOverlay('fakturaSendOverlay');
+  };
+  let fakturaSendResendId = null;
+
+  window.submitFakturaSend = async function(){
+    const studentId = fakturaSendStudentId;
+    if(!studentId) return;
+    const student = cache.students.find(s => s.id === studentId);
+    const guardian = cache.guardians.find(g => g.id === student?.foresatt);
+    if(!student || !guardian){ showToast('Fant ikke elev/foresatt.'); return; }
+    const belop = parseFloat(document.getElementById('fakturaSendBelop').value);
+    const kategori = document.getElementById('fakturaSendKategori').value;
+    const fristDager = parseInt(document.getElementById('fakturaSendFristDager').value, 10);
+    if(!belop || belop <= 0){ showToast('Ugyldig beløp.', true); return; }
+    if(!fristDager || fristDager < 1){ showToast('Ugyldig frist.', true); return; }
+    closeCashierOverlay('fakturaSendOverlay');
+    showToast('Forbereder faktura…');
+    try{
+      const prep = await kallPdfCloudFunction(PREPARE_FAKTURA_INVOICE_URL, {
+        studentId,
+        belopKr: belop,
+        kategori,
+        betalingsfristDager: fristDager,
+        adminNavn: currentUserEmail || 'admin',
+        resendInvoiceId: fakturaSendResendId || null
+      });
+      fakturaSendResendId = null;
+      if(!prep.ok) throw new Error(prep.error || 'Kunne ikke opprette faktura');
+      const inv = prep.invoice || {};
+      const payUrl = prep.payUrl || '';
+      const elevNavn = student.navn || 'elev';
+      const pdf = await genererBetalingFakturaPdf({
+        mottakerNavn: guardian.navn || 'Hei',
+        elevNavn,
+        belopKr: belop,
+        dokumentRef: inv.dokumentRef,
+        utstedtDato: inv.utstedtDato,
+        betalingsfrist: inv.betalingsfrist,
+        kategori,
+        kategoriLabel: inv.kategoriLabel,
+        opprettetAvNavn: inv.opprettetAvNavn,
+        sistSendtAvNavn: inv.sistSendtAvNavn,
+        payUrl,
+        studentId
+      });
+      const betalingBlokk = fakturaEpostBetalingBlokk(payUrl, belop, {
+        dokumentRef: inv.dokumentRef,
+        betalingsfrist: inv.betalingsfrist,
+        kategoriLabel: inv.kategoriLabel
+      });
+      const subject = 'Faktura ' + (inv.dokumentRef || '') + ' — ' + elevNavn;
+      const emailText = ['Hei ' + (guardian.navn || '') + ',', '',
+        'Vedlagt er faktura for ' + elevNavn + ' (' + (inv.kategoriLabel||'') + ').',
+        'Beløp: ' + belop.toLocaleString('no-NO') + ' kr. Frist: ' + (inv.betalingsfrist||'') + '.',
+        betalingBlokk.text, '', 'Med vennlig hilsen,', 'Madina Skole'].join('\n');
+      const emailHtml = '<div style="font-family:sans-serif;line-height:1.6;max-width:560px;">' +
+        '<p>Hei ' + escapeHtml(guardian.navn||'') + ',</p>' +
+        '<p>Faktura for <b>' + escapeHtml(elevNavn) + '</b> (' + escapeHtml(inv.kategoriLabel||'') + ').</p>' +
+        betalingBlokk.html + '<p>Med vennlig hilsen,<br><b>Madina Skole</b></p></div>';
+      const portalTekst = emailText;
+      await sendBroadcast({
+        recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn||'', epost: guardian.epost||'' }],
+        title: subject, groupLabel: 'Faktura', tekst: portalTekst
+      });
+      const eposter = epostTilBeggeForesatteForElev(student);
+      if(eposter.length){
+        await addDoc(collection(db, 'mail'), {
+          from: MAIL_FROM, to: eposter,
+          message: {
+            subject: '[Madina Skole] ' + subject,
+            text: emailText, html: emailHtml,
+            attachments: [{ filename: pdf.filnavn, content: pdf.base64, encoding: 'base64', contentType: 'application/pdf' }]
+          }
+        });
+      }
+      showToast('✓ Faktura sendt — ' + (inv.dokumentRef||''));
+    } catch(err){
+      console.error(err);
+      showToast('Faktura feilet: ' + err.message, true);
+    }
+  };
+
+  window.sendFakturaPaminnelse = async function(invoiceId){
+    const inv = (cache.fakturaInvoices || []).find(i => i.id === invoiceId);
+    if(!inv || inv.status === 'betalt') return;
+    const student = cache.students.find(s => s.id === inv.studentId);
+    const guardian = cache.guardians.find(g => g.id === student?.foresatt);
+    if(!student || !guardian){ showToast('Fant ikke elev/foresatt.'); return; }
+    if(!confirm('Send betalingspåminnelse for ' + (inv.dokumentRef||'') + '?')) return;
+    showToast('Sender påminnelse…');
+    try{
+      const payUrl = inv.payUrl || '';
+      const belop = Number(inv.belopKr||0);
+      const betalingBlokk = fakturaEpostBetalingBlokk(payUrl, belop, {
+        dokumentRef: inv.dokumentRef, betalingsfrist: inv.betalingsfrist, kategoriLabel: inv.kategoriLabel
+      });
+      const subject = 'Påminnelse — faktura ' + (inv.dokumentRef||'') + ' (' + (inv.elevNavn||'') + ')';
+      const text = 'Hei,\n\nDette er en påminnelse om utestående faktura.\nFrist: ' + (inv.betalingsfrist||'') + '.\n' + betalingBlokk.text;
+      const html = '<div style="font-family:sans-serif;line-height:1.6;max-width:560px;"><p>Hei,</p><p><b>Påminnelse</b> — faktura for ' + escapeHtml(inv.elevNavn||'') + '.</p>' + betalingBlokk.html + '</div>';
+      const eposter = epostTilBeggeForesatteForElev(student);
+      if(eposter.length){
+        await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: eposter, message: { subject: '[Madina Skole] ' + subject, text, html } });
+      }
+      await updateDoc(doc(db, 'fakturaInvoices', invoiceId), {
+        paminnelser: arrayUnion({ sendtAt: new Date().toISOString(), sendtAv: currentUserEmail || '' }),
+        sistEndretAt: new Date().toISOString()
+      });
+      showToast('✓ Påminnelse sendt.');
+    } catch(err){
+      console.error(err);
+      showToast('Påminnelse feilet: ' + err.message, true);
+    }
+  };
 
   async function sendVippsBetalingEpost(eposter, data, opts){
     opts = opts || {};
@@ -10676,10 +10972,6 @@
   const CANCEL_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/cancelVippsPayment';
   const REFUND_VIPPS_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/refundVippsPayment';
   const GET_VIPPS_INFO_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/getVippsPaymentInfo';
-
-  // Kontonummeret ligger IKKE i koden lenger. Det settes under
-  // Økonomi → Betalingsinnstillinger og leses fra settings/priser.
-  // Er det ikke satt, sendes ingen faktura — se sendGuardianInvoice().
 
   let cashierLedelseSelectedClass = '';
 
@@ -10884,128 +11176,6 @@
       melding('ADM-VIP-04', '⛔ Ingen kontakt med Vipps',
         'Kunne ikke koble til avbrytelsestjenesten. Ingenting ble endret.',
         'avbryt · nettverk/funksjon svarte ikke');
-    }
-  };
-
-  // ---- Faktura til foresatte (e-post + Foreldreportal-varsel) ----
-  window.sendGuardianInvoice = async function(studentId){
-    const student = cache.students.find(s => s.id === studentId);
-    if(!student) return;
-    const guardian = cache.guardians.find(g => g.id === student.foresatt);
-    if(!guardian){ showToast('Fant ingen registrert foresatt for ' + (student.navn || 'eleven') + '.'); return; }
-    const belop = cashierKr(student.belop), betalt = cashierKr(student.belopBetalt), rest = belop - betalt;
-    if(rest <= 0){ showToast('Ingen restbeløp å fakturere for ' + (student.navn || 'eleven') + '.'); return; }
-
-    // Ingen faktura uten et ekte kontonummer. Et tomt felt stopper her og
-    // sier fra; et gjettet nummer hadde gått ut til foresatte uten et lyd.
-    const konto = (fakturaOppsett.kontonummer || '').trim();
-    if(!erGyldigKontonummer(konto)){
-      showToast('Kontonummer er ikke satt. Økonomi → Betalingsinnstillinger.');
-      melding('ADM-FAK-01', '⛔ Fakturaen ble ikke sendt',
-        'Skolens kontonummer er ikke registrert, og en faktura uten ' +
-        'kontonummer kan ikke betales.\n\n' +
-        'Sett det under Økonomi → Betalingsinnstillinger, og send fakturaen på nytt.',
-        'sendGuardianInvoice · settings/faktura · kontonummer mangler');
-      return;
-    }
-
-    const elevNavn = student.navn || 'ditt barn';
-    const kontoFmt = formatKontonummer(konto);
-    const ibanFmt = ibanFraKontonummer(konto);
-    const subject = 'Faktura — ' + elevNavn;
-
-    let pdf;
-    try{
-      showToast('Lager faktura-PDF...');
-      pdf = await genererBetalingFakturaPdf({
-        mottakerNavn: guardian.navn || 'Hei',
-        elevNavn,
-        rest,
-        kontonummer: kontoFmt,
-        iban: ibanFmt,
-        studentId: student.id
-      });
-    } catch(err){
-      console.error('Faktura-PDF feilet', err);
-      showToast('Kunne ikke lage faktura-PDF: ' + err.message, true);
-      return;
-    }
-
-    const oppsummering = 'Gjenstående beløp: ' + rest.toLocaleString('no-NO') + ' kr';
-    const betalingsinfo = [
-      'Kontonummer: ' + kontoFmt,
-      'IBAN: ' + ibanFmt,
-      'Merk betalingen med elevens fulle navn.'
-    ].join('\n');
-
-    let payUrl = '';
-    try{
-      const payToken = await genererFakturaPayToken(student.id);
-      payUrl = payToken.payUrl || '';
-    } catch(payErr){
-      console.warn('Faktura-betalingslenke feilet', payErr);
-    }
-    const betalingBlokk = fakturaEpostBetalingBlokk(payUrl, rest);
-
-    const portalTekst = [
-      'Hei ' + (guardian.navn || '') + ',', '',
-      'Vi har sendt deg en faktura for ' + elevNavn + ' som PDF vedlagt e-posten din.', '',
-      oppsummering, '',
-      'Betalingsopplysninger:', betalingsinfo, '',
-      'Åpne vedlagte PDF i e-posten for full faktura med stempel.', '',
-      betalingBlokk.text.trim(), '',
-      'Med vennlig hilsen,', 'Madina Skole'
-    ].join('\n');
-
-    const emailText = [
-      'Hei ' + (guardian.navn || '') + ',', '',
-      'Vedlagt finner du en faktura for ' + elevNavn + ' som PDF.', '',
-      oppsummering, '',
-      'Betalingsopplysninger:', betalingsinfo, '',
-      betalingBlokk.text.trim(), '',
-      'Med vennlig hilsen,', 'Madina Skole'
-    ].join('\n');
-
-    const emailHtml = '<div style="font-family:sans-serif;line-height:1.6;color:#1a2e24;max-width:560px;">' +
-      '<p>Hei ' + escapeHtml(guardian.navn || '') + ',</p>' +
-      '<p>Vedlagt finner du en <b>faktura</b> for <b>' + escapeHtml(elevNavn) + '</b> som PDF.</p>' +
-      '<p><b>' + escapeHtml(oppsummering) + '</b></p>' +
-      '<p style="white-space:pre-line">' + escapeHtml(betalingsinfo) + '</p>' +
-      betalingBlokk.html +
-      '<p>Med vennlig hilsen,<br><b>Madina Skole</b></p></div>';
-
-    const eposter = epostTilBeggeForesatteForElev(student);
-    try{
-      const utfall = await sendBroadcast({
-        recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '', epost: guardian.epost || '' }],
-        title: subject, groupLabel: 'Faktura', tekst: portalTekst
-      });
-      if(utfall.sendt === 0){
-        showToast('⚠️ ' + (guardian.navn || 'Foresatt') + ' har ingen e-post — fakturaen ble ikke lagt i Foreldreportalen.', true);
-      }
-      if(eposter.length){
-        await addDoc(collection(db, 'mail'), {
-          from: MAIL_FROM,
-          to: eposter,
-          message: {
-            subject: '[Madina Skole] ' + subject,
-            text: emailText,
-            html: emailHtml,
-            attachments: [{
-              filename: pdf.filnavn,
-              content: pdf.base64,
-              encoding: 'base64',
-              contentType: 'application/pdf'
-            }]
-          }
-        });
-        showToast('✓ Faktura sendt med PDF' + (payUrl ? ' og betalingslenke' : '') + ' (e-post + Foreldreportal).');
-      } else {
-        showToast('⚠️ Ingen e-post registrert for foresatte — kun Foreldreportal.', true);
-      }
-    } catch(err){
-      console.error(err);
-      showToast('Noe gikk galt: ' + err.message);
     }
   };
 
@@ -16907,7 +17077,7 @@
   // innlogging) — skolens kontonummer skal ikke være det.
   // Tom streng er med vilje: et gjettet nummer ser riktig ut og blir
   // sendt ut; et tomt felt stopper fakturaen og sier fra.
-  const fakturaOppsett = { kontonummer: '' };
+  const fakturaOppsett = { defaultFristDager: 14, gulVarselDager: 3 };
 
   // ---------- Lønnssatser ----------
   // Reserven er null, ikke 200/150. Svarer ikke basen, skal satsen mangle
@@ -18363,10 +18533,19 @@
     const legg = (alvor, tekst, detalj, knapp, side, fane, handling) =>
       rader.push({ alvor, tekst, detalj, knapp, side, fane, handling });
 
-    if(!erGyldigKontonummer(fakturaOppsett.kontonummer)){
-      legg('stopp', 'Kontonummer mangler',
-        'Ingen faktura kan sendes før det er registrert.',
-        'Sett nå', 'okonomi', 'betaling');
+    const forfaltFaktura = (cache.fakturaInvoices || []).filter(r =>
+      r.status !== 'betalt' && r.status !== 'kansellert' && fakturaStatusFargeClient(r) === 'forfalt');
+    if(forfaltFaktura.length){
+      legg('stopp', forfaltFaktura.length + ' forfalt' + (forfaltFaktura.length === 1 ? ' faktura' : 'e fakturaer'),
+        'Send påminnelse eller oppfølg fra Fakturaoversikt.',
+        'Åpne oversikt', 'okonomi', 'fakturaOversikt');
+    }
+    const snartFaktura = (cache.fakturaInvoices || []).filter(r =>
+      r.status !== 'betalt' && r.status !== 'kansellert' && fakturaStatusFargeClient(r) === 'snart');
+    if(snartFaktura.length){
+      legg('folg', snartFaktura.length + ' faktura' + (snartFaktura.length === 1 ? '' : 'er') + ' nær frist',
+        'Gul varsling — betalingsfristen nærmer seg.',
+        'Se oversikt', 'okonomi', 'fakturaOversikt');
     }
     if(lonnOppsett.larer === null && lonnOppsett.assistent === null){
       legg('stopp', 'Timesats mangler',
@@ -22155,10 +22334,20 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       const rest = cashierKr(s.belop) - cashierKr(s.belopBetalt);
       return rest > 0;
     });
-    el.innerHTML = ubetalte.length === 0
+    const apne = (cache.fakturaInvoices || []).filter(r => r.status !== 'betalt' && r.status !== 'kansellert').length;
+    el.innerHTML = ubetalte.length === 0 && apne === 0
       ? 'Ingen elever har utestående beløp akkurat nå.'
       : '<b>' + ubetalte.length + ' elev' + (ubetalte.length === 1 ? '' : 'er') +
-        '</b> har utestående beløp. Kontonummeret over står på fakturaen de får.';
+        '</b> har utestående beløp' +
+        (apne ? ' · <b>' + apne + ' åpen' + (apne === 1 ? '' : 'e') + ' online-faktura' + (apne === 1 ? '' : 'er') + '</b> i oversikten' : '') + '.';
+  }
+
+  function fyllFakturaInnstillinger(){
+    const df = document.getElementById('fakturaDefaultFristInput');
+    const gv = document.getElementById('fakturaGulVarselInput');
+    if(df && document.activeElement !== df) df.value = fakturaOppsett.defaultFristDager || 14;
+    if(gv && document.activeElement !== gv) gv.value = fakturaOppsett.gulVarselDager || 3;
+    visFakturaEffekt();
   }
 
   // ---------- Betalingsinnstillinger ----------
@@ -22179,13 +22368,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       const el = document.getElementById(id);
       if(el && document.activeElement !== el) el.value = prisOppsett[nokkel];
     });
-    const kn = document.getElementById('kontonummerInput');
-    if(kn && document.activeElement !== kn) kn.value = formatKontonummer(fakturaOppsett.kontonummer);
     const vk = document.getElementById('vippsKortAktivInput');
     if(vk && document.activeElement !== vk) vk.checked = prisOppsett.vippsKortAktiv === true;
     oppdaterVippsKortInnstillingUI();
-    visKontoStatus();
-    visFakturaEffekt();
     visRabattForhandsvisning();
   }
 
@@ -23659,10 +23844,9 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
           ' · egen sats i personkortet går foran'
     });
     prisPunkter.push({
-      h: 'Kontonummer på faktura',
-      t: erGyldigKontonummer(fakturaOppsett.kontonummer)
-        ? formatKontonummer(fakturaOppsett.kontonummer) + ' · IBAN ' + ibanFraKontonummer(fakturaOppsett.kontonummer)
-        : '🔴 ikke satt — fakturaer blir ikke sendt før det er registrert under Betalingsinnstillinger'
+      h: 'Online-fakturaer',
+      t: 'Standard frist ' + (fakturaOppsett.defaultFristDager || 14) + ' dager · gul varsling ' +
+        (fakturaOppsett.gulVarselDager || 3) + ' dager før frist · kun digital betaling (Vipps / bankkort)'
     });
     ['pris.tak','pris.dyreste','pris.medlemskap','pris.blandet','pris.skjema'].forEach(k =>
       prisPunkter.push({ h: '', t: F(k) }));
@@ -23854,28 +24038,30 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   };
 
   window.saveFakturainnstillinger = async function(){
-    const raa = (document.getElementById('kontonummerInput').value || '').trim();
-    const siffer = raa.replace(/\D/g, '');
-    // Tomt er lov — da stopper fakturaen og sier fra. Feil er ikke lov:
-    // et nummer som ser ferdig ut, men ikke er det, går rett ut i posten.
-    if(raa && !erGyldigKontonummer(siffer)){
-      showToast('Kontonummeret er ikke gyldig — det ble ikke lagret.');
+    const df = parseInt(document.getElementById('fakturaDefaultFristInput').value, 10);
+    const gv = parseInt(document.getElementById('fakturaGulVarselInput').value, 10);
+    if(!df || df < 1 || df > 90){
+      showToast('Standard betalingsfrist må være mellom 1 og 90 dager.');
+      return;
+    }
+    if(!gv || gv < 1 || gv > 30){
+      showToast('Gul varsling må være mellom 1 og 30 dager.');
       return;
     }
     if(!confirm(
-      'Endre fakturaopplysningene?\n\n' +
-      'Kontonummer: ' + (formatKontonummer(fakturaOppsett.kontonummer) || '(ikke satt)') +
-        ' → ' + (formatKontonummer(siffer) || '(ikke satt)') + '\n\n' +
-      'Dette nummeret står på alle fakturaer som sendes til foresatte.'
+      'Endre fakturainnstillingene?\n\n' +
+      'Standard frist: ' + (fakturaOppsett.defaultFristDager || 14) + ' → ' + df + ' dager\n' +
+      'Gul varsling: ' + (fakturaOppsett.gulVarselDager || 3) + ' → ' + gv + ' dager før frist'
     )) return;
     try{
       await setDoc(doc(db, 'settings', 'faktura'), {
-        kontonummer: siffer,
+        defaultFristDager: df,
+        gulVarselDager: gv,
         sistEndretAv: (auth.currentUser && auth.currentUser.email) || '',
         sistEndretDato: new Date().toISOString()
       }, { merge: true });
       ryddUlagret('faktura');
-      showToast('Fakturaopplysninger lagret.');
+      showToast('Fakturainnstillinger lagret.');
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt under lagring.');
@@ -24671,6 +24857,12 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     // går utenom Firestore, fanget verken lesemodus eller forhåndsvisning
     // den opp.
     if(!kanSendePengekrav('ADM-VIP-07')) return;
+    if(!confirm(
+      '⚡ Vipps-krav utløper etter ca. 10 minutter.\n\n' +
+      'For vanlige betalingsfrister (dager/uker): bruk «Send faktura» i stedet — ' +
+      'da får foresatte PDF, betalingsfrist og lenke som varer lenger.\n\n' +
+      'Vipps-krav er kun for akutte betalinger. Fortsette likevel?'
+    )) return;
     const student = cache.students.find(s => s.id === id);
     if(!student){ showToast('Fant ikke eleven.'); return; }
     const computedRemaining = (parseFloat((student.belop||'0').replace(/[^\d.-]/g,'')) || 0)
