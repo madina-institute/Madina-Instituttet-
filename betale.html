@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-22 10:45:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -271,10 +272,13 @@ h1 {
 <script>
 const GET_INFO_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/getFakturaBetalingInfo';
 const CREATE_PAY_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/createFakturaExternalPayment';
+const CHECK_RETURN_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/checkFakturaExternalPaymentReturn';
+const FAKTURA_PAY_REF_KEY = 'fakturaPayRef';
 
 const params = new URLSearchParams(location.search);
 const token = params.get('t') || '';
 const vippsReturn = params.get('vipps') === 'return';
+const returnRef = params.get('ref') || '';
 
 let pageInfo = null;
 let selectedPayType = null;
@@ -293,6 +297,58 @@ function showMsg(text, kind) {
 
 function hideMsg() {
   document.getElementById('statusMsg').classList.add('hidden');
+}
+
+function returnStatusMessage(status) {
+  if (status === 'completed') {
+    return {
+      kind: 'ok',
+      text: 'Takk! Betalingen er registrert. Elevens saldo oppdateres innen kort tid.',
+    };
+  }
+  if (status === 'cancelled') {
+    return {
+      kind: 'info',
+      text: 'Betalingen ble avbrutt. Ingen beløp er trukket — du kan prøve igjen.',
+    };
+  }
+  if (status === 'expired') {
+    return {
+      kind: 'info',
+      text: 'Betalingen utløp hos Vipps. Velg beløp og prøv igjen.',
+    };
+  }
+  return {
+    kind: 'info',
+    text: 'Betalingen er ikke fullført. Velg beløp og prøv igjen.',
+  };
+}
+
+async function handleVippsReturn() {
+  const reference = returnRef || sessionStorage.getItem(FAKTURA_PAY_REF_KEY) || '';
+  if (!reference) {
+    showMsg('Du er tilbake fra betalingssiden. Sjekk om betalingen gikk gjennom, eller prøv igjen.', 'info');
+    return;
+  }
+  showMsg('Sjekker betalingsstatus…', 'info');
+  try {
+    const res = await fetch(CHECK_RETURN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, reference }),
+    });
+    const data = await res.json();
+    sessionStorage.removeItem(FAKTURA_PAY_REF_KEY);
+    if (!data.ok) {
+      showMsg(data.error || 'Kunne ikke sjekke betalingsstatus.', 'info');
+      return;
+    }
+    const msg = returnStatusMessage(data.status);
+    showMsg(msg.text, msg.kind);
+  } catch (err) {
+    console.error(err);
+    showMsg('Kunne ikke sjekke betalingsstatus — prøv igjen.', 'info');
+  }
 }
 
 async function loadInfo() {
@@ -315,7 +371,7 @@ async function loadInfo() {
     pageInfo = data;
     hideMsg();
     if (vippsReturn) {
-      showMsg('Takk! Hvis betalingen ble fullført hos Vipps, oppdateres elevens saldo automatisk innen kort tid.', 'ok');
+      await handleVippsReturn();
     }
     if (data.restKr <= 0) {
       showMsg('Ingen utestående beløp — takk!', 'ok');
@@ -435,6 +491,9 @@ async function payNow(paymentMethodType) {
       document.getElementById('paymentLinkVipps').disabled = false;
       document.getElementById('paymentLinkCard').disabled = false;
       return;
+    }
+    if (data.reference) {
+      sessionStorage.setItem(FAKTURA_PAY_REF_KEY, data.reference);
     }
     location.href = data.redirectUrl;
   } catch (err) {
