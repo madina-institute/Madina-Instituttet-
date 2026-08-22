@@ -3129,7 +3129,7 @@ exports.createFakturaExternalPayment = onRequest(
 
       const accessToken = await getVippsAccessToken();
       const reference = `madina-bal-${studentId}-${Date.now()}`;
-      const returnUrl = `${SITE_BASE_URL.value()}/betale?vipps=return&t=${encodeURIComponent(token)}&ref=${encodeURIComponent(reference)}`;
+      const returnUrl = `${SITE_BASE_URL.value()}/betale-fullfort.html?t=${encodeURIComponent(token)}&ref=${encodeURIComponent(reference)}`;
       const paymentDescription = `Skolepenger — ${info.elevNavn} (Madina Skole)`;
 
       const attempt = await postVippsPayment(accessToken, {
@@ -3254,6 +3254,7 @@ exports.checkFakturaExternalPaymentReturn = onRequest(
           ok: true,
           status: "completed",
           vippsState: pending.vippsState || "CAPTURED",
+          amountKr: pending.amountKr ?? null,
         });
         return;
       }
@@ -3294,6 +3295,9 @@ exports.checkFakturaExternalPaymentReturn = onRequest(
         ok: true,
         status: terminal || "pending",
         vippsState: payment.state || null,
+        amountKr: terminal === "completed"
+          ? (pending.amountKr ?? (payment.amount?.value != null ? payment.amount.value / 100 : null))
+          : null,
       });
     } catch (err) {
       logger.error("checkFakturaExternalPaymentReturn error", err);

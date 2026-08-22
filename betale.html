@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 12:05:00 -->
+<!-- SIST-ENDRET: 2026-08-22 17:35:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -9,338 +9,159 @@
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --vipps: #ff5b24;
-  --vipps-dark: #e04e1a;
-  --ink: #28285a;
-  --line: rgba(40,40,90,0.12);
+  --ink: #1a2e24;
+  --line: rgba(26,46,36,0.14);
   --paper: #fff;
-  --emerald: #1c5490;
+  --muted: #5a6860;
+  --brand: #1c5490;
+  --vipps: #ff5b24;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Jost', sans-serif;
-  background: #f3f4f8;
+  background: #f6f7f9;
   color: var(--ink);
-  line-height: 1.55;
+  line-height: 1.5;
   min-height: 100vh;
-  padding: 20px 16px 40px;
+  padding: 20px 16px 32px;
 }
-.wrap { max-width: 520px; margin: 0 auto; }
-.logo {
-  text-align: center;
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #6f93b6;
-  margin-bottom: 8px;
-}
-h1 {
-  text-align: center;
-  font-size: 22px;
-  margin-bottom: 18px;
-  color: var(--emerald);
-}
+.wrap { max-width: 440px; margin: 0 auto; }
+.top { text-align: center; margin-bottom: 18px; }
+.top img { width: min(160px, 48vw); height: auto; margin-bottom: 8px; }
+.top h1 { font-size: 20px; color: var(--brand); font-weight: 700; }
 .card {
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px 16px;
-  box-shadow: 0 4px 12px rgba(40,40,90,0.06);
+  border-radius: 18px;
+  padding: 20px 18px;
+  box-shadow: 0 6px 18px rgba(26,46,36,0.05);
 }
-.sub { color: #5a6860; font-size: 13px; }
-.summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 12px;
-  margin: 14px 0;
-  font-size: 13px;
+.hero { text-align: center; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.hero .elev { font-size: 15px; color: var(--muted); margin-bottom: 4px; }
+.hero .ref { font-size: 12px; color: #8a9690; letter-spacing: 0.02em; }
+.hero .amt {
+  font-size: 36px; font-weight: 800; color: var(--brand);
+  margin: 8px 0 4px; line-height: 1.1;
 }
-.summary .lbl { color: #5a6860; }
-.summary .val { font-weight: 700; text-align: right; }
-.summary .val.rest { color: var(--emerald); font-size: 18px; }
-.invoice-banner {
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  line-height: 1.5;
-  background: #f8fbfe;
-  border: 1px solid #cfe0ef;
+.hero .meta { font-size: 13px; color: var(--muted); }
+.hero.forfalt .amt { color: #8a2a2a; }
+.hero.forfalt .badge {
+  display: inline-block; margin-top: 8px; padding: 4px 10px;
+  border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: #fdecea; color: #8a2a2a;
 }
-.invoice-banner.forfalt {
-  background: #fdecea;
-  border-color: #f5c6c6;
-  color: #8a2a2a;
+.section-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #8a9690; margin-bottom: 10px;
 }
-.invoice-banner .ref { font-weight: 700; font-size: 14px; color: var(--emerald); }
-.invoice-banner.forfalt .ref { color: #8a2a2a; }
-.invoice-locked-note {
-  margin: 0 0 10px;
-  font-size: 12.5px;
-  color: #5a6860;
+.amount-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.btn-choice {
+  flex: 1; padding: 12px 10px; border-radius: 12px;
+  border: 1px solid var(--line); background: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--ink); cursor: pointer;
 }
-.vipps-pay-zone { margin-top: 4px; }
-.pay-methods-banner {
-  margin-bottom: 16px;
-  padding: 16px 14px;
-  background: #f8fbfe;
-  border: 1px solid #cfe0ef;
-  border-radius: 12px;
-  text-align: center;
-}
-.pay-methods-banner-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--emerald);
-  margin-bottom: 10px;
-}
-.pay-method-pills {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: stretch;
-  margin-bottom: 8px;
-}
-.pill-vipps,
-.pill-card {
-  flex: 1;
-  max-width: 150px;
-  border: none;
-  font-family: inherit;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-.pill-vipps:active,
-.pill-card:active:not(:disabled) {
-  transform: scale(0.98);
-}
-.pill-vipps {
-  background: var(--vipps);
-  color: #fff;
-  font-weight: 800;
-  font-size: 17px;
-  padding: 14px 12px;
-  border-radius: 10px;
-  line-height: 1.1;
-  box-shadow: 0 4px 12px rgba(255, 91, 36, 0.28);
-}
-.pill-vipps:hover { background: var(--vipps-dark); }
-.pill-card {
-  background: linear-gradient(135deg, #1a1f71 0%, #252525 52%, #eb001b 100%);
-  color: #fff;
-  font-weight: 800;
-  font-size: 14px;
-  padding: 14px 10px;
-  border-radius: 10px;
-  line-height: 1.2;
-  box-shadow: 0 4px 12px rgba(26, 31, 113, 0.22);
-}
-.pill-card.dim {
-  background: #8a9690;
-  font-size: 12px;
-  font-weight: 700;
-  box-shadow: none;
-  cursor: not-allowed;
-  opacity: 0.85;
-}
-.pay-inline-error {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
-  color: #8a2a2a;
-  background: #fdecea;
-  border: 1px solid #f5c6c6;
-  animation: payErrorIn 0.2s ease;
-}
-@keyframes payErrorIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.pay-methods-banner-sub {
-  font-size: 12.5px;
-  color: #5a6860;
-  line-height: 1.45;
-}
-.vipps-zone-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.vipps-badge {
-  background: var(--vipps);
-  color: #fff;
-  font-weight: 800;
-  font-size: 14px;
-  padding: 5px 14px;
-  border-radius: 999px;
-}
-.vipps-zone-title { font-size: 14px; font-weight: 700; }
-.pay-step { padding-top: 14px; border-top: 1px solid var(--line); margin-top: 14px; }
-.pay-step:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
-.pay-step-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  font-weight: 700;
-}
-.pay-step-num {
-  width: 24px; height: 24px; border-radius: 50%;
-  background: var(--emerald); color: #fff;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 800;
-}
-.pay-amount-hint {
-  font-size: 12.5px; color: #5a6860; line-height: 1.5;
-  margin: 0 0 12px; padding: 10px 12px;
-  background: #f7f8fc; border-radius: 8px;
-  border: 1px dashed rgba(40,40,90,0.14);
-}
-.pay-amount-choices { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn {
-  padding: 12px 16px; border-radius: 12px; font-size: 14px;
-  font-weight: 600; cursor: pointer; font-family: inherit;
-}
-.btn-ghost {
-  background: transparent; border: 1px solid var(--line);
-  color: var(--ink); flex: 1 1 140px;
-}
-.btn-ghost.selected {
-  border-color: var(--emerald);
-  background: #eef6fd;
-  color: var(--emerald);
-}
-.btn-vipps-confirm {
-  margin-top: 12px; width: 100%;
-  background: var(--emerald); color: #fff; border: none;
-}
-.field { margin-top: 10px; }
-.field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #5a6860; }
+.btn-choice.selected { border-color: var(--brand); background: #eef6fd; color: var(--brand); }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
 .field input {
-  width: 100%; padding: 11px 12px; border-radius: 10px;
-  border: 1px solid var(--line); font-size: 15px; font-family: inherit;
+  width: 100%; padding: 12px; border-radius: 12px;
+  border: 1px solid var(--line); font-size: 16px; font-family: inherit;
 }
-.field input.input-error {
-  border-color: #d64545;
-  background: #fff8f8;
-  box-shadow: 0 0 0 2px rgba(214, 69, 69, 0.15);
+.field input.input-error { border-color: #d64545; background: #fff8f8; }
+.field-error { margin-top: 6px; font-size: 12px; font-weight: 600; color: #8a2a2a; }
+.pay-actions { display: grid; gap: 10px; margin-top: 4px; }
+.btn-pay {
+  width: 100%; padding: 15px 16px; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
 }
-.field label.label-error { color: #8a2a2a; }
-.field-error-msg {
-  margin-top: 6px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #8a2a2a;
-  line-height: 1.4;
+.btn-vipps { background: var(--vipps); color: #fff; }
+.btn-vipps:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-vipps .mark {
+  background: #fff; color: var(--vipps); font-size: 11px; font-weight: 800;
+  padding: 2px 7px; border-radius: 999px; margin-right: 6px;
 }
-.pay-amount-confirmed {
-  margin: 12px 0 0; padding: 14px 12px; border-radius: 10px;
-  background: #e8f5ef; border: 1px solid rgba(46,125,82,0.25); text-align: center;
+.btn-card {
+  background: var(--brand); color: #fff;
 }
-.pay-amount-confirmed .lbl { font-size: 12px; color: #2e7d52; font-weight: 600; }
-.pay-amount-confirmed .amt { font-size: 28px; font-weight: 700; color: #1f4a3a; }
-.pay-methods-label { font-size: 12px; font-weight: 700; color: #5a6860; margin: 0 0 10px; }
-.btn-vipps {
-  background: var(--vipps); color: #fff; border: none;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 14px 20px; border-radius: 12px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(255,91,36,0.28);
+.btn-card:disabled { opacity: 0.55; cursor: not-allowed; }
+.note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 10px; }
+.account-toggle {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12px; color: var(--muted);
 }
-.btn-vipps:hover { background: var(--vipps-dark); }
-.btn-vipps .vipps-mark {
-  background: #fff; color: var(--vipps); font-weight: 800;
-  padding: 2px 8px; border-radius: 999px; font-size: 12px;
+.account-toggle summary { cursor: pointer; font-weight: 600; color: var(--brand); }
+.account-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px;
+  margin-top: 10px; font-size: 13px;
 }
-.btn-pay-card {
-  background: linear-gradient(135deg, #1a1f71 0%, #252525 52%, #eb001b 100%);
-  color: #fff; border: none; margin-top: 10px;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; padding: 14px 20px; border-radius: 12px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-}
-.vipps-card-note { font-size: 11.5px; color: #5a6860; margin-top: 8px; text-align: center; }
+.account-grid .lbl { color: var(--muted); }
+.account-grid .val { text-align: right; font-weight: 600; }
 .msg {
-  padding: 14px; border-radius: 10px; font-size: 14px; margin-bottom: 16px;
+  padding: 12px 14px; border-radius: 12px; font-size: 14px;
+  margin-bottom: 14px; border: 1px solid var(--line);
 }
-.msg.error { background: #fdecea; color: #8a2a2a; border: 1px solid #f5c6c6; }
-.msg.ok { background: #e8f5ef; color: #1f4a3a; border: 1px solid #b8dfc8; }
-.msg.info { background: #eef6fd; color: #1c5490; border: 1px solid #cfe0ef; }
+.msg.error { background: #fdecea; color: #8a2a2a; border-color: #f5c6c6; }
+.msg.info { background: #eef6fd; color: var(--brand); border-color: #cfe0ef; }
 .hidden { display: none !important; }
-.footer { text-align: center; margin-top: 20px; font-size: 12px; color: #8a9690; }
+.footer { text-align: center; margin-top: 18px; font-size: 12px; color: #8a9690; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="logo">Madina Skole</div>
-  <h1 id="pageTitle">Betale faktura</h1>
+  <div class="top">
+    <img src="logo-bla.png" alt="Madina Skole">
+    <h1>Betale faktura</h1>
+  </div>
   <div id="statusMsg" class="msg info hidden"></div>
   <div id="mainCard" class="card hidden">
-    <div class="sub" id="elevLine"></div>
-    <div id="invoiceBanner" class="invoice-banner hidden"></div>
-    <div class="summary">
-      <div class="lbl">Totalt</div><div class="val" id="sumTotal">—</div>
-      <div class="lbl">Betalt</div><div class="val" id="sumPaid">—</div>
-      <div class="lbl">Gjenstår</div><div class="val rest" id="sumRest">—</div>
+    <div class="hero" id="heroBlock">
+      <div class="elev" id="elevLine">—</div>
+      <div class="ref" id="refLine"></div>
+      <div class="amt" id="payAmountDisplay">—</div>
+      <div class="meta" id="metaLine"></div>
     </div>
-    <div class="vipps-pay-zone">
-      <div class="pay-methods-banner">
-        <div class="pay-methods-banner-title">Digital betaling</div>
-        <div id="payInlineError" class="pay-inline-error hidden" role="alert" aria-live="assertive"></div>
-        <div class="pay-method-pills">
-          <button type="button" class="pill-vipps" id="pillVippsBtn">Vipps</button>
-          <button type="button" class="pill-card" id="pillCardBtn">Visa / kort</button>
-        </div>
-        <div class="pay-methods-banner-sub">Velg beløp — betal med Vipps eller bankkort (Visa/Mastercard)</div>
+
+    <div id="amountSection" class="hidden">
+      <div class="section-title">Beløp</div>
+      <div class="amount-row">
+        <button type="button" class="btn-choice" id="payChoicePrimary">Betal nå</button>
+        <button type="button" class="btn-choice" id="payChoicePartial">Annet beløp</button>
       </div>
-      <div class="pay-step" id="payStepAmount">
-        <div class="pay-step-head"><span class="pay-step-num">1</span><span>Velg beløp og bekreft</span></div>
-        <p class="pay-amount-hint" id="payAmountHint">Velg hele restbeløpet eller skriv inn et annet beløp. Trykk «Bekreft beløp» før du betaler.</p>
-        <div class="sub" style="margin-bottom:10px;">Hvor mye ønsker du å betale?</div>
-        <div class="pay-amount-choices">
-          <button type="button" class="btn btn-ghost" id="payChoiceAllBtn">Alt gjenstående</button>
-          <button type="button" class="btn btn-ghost" id="payChoicePartialBtn">Annet beløp</button>
-        </div>
-        <div class="field hidden" id="payAmountFieldWrap">
-          <label for="payAmountInput">Beløp (kr)</label>
-          <input type="number" id="payAmountInput" min="1" step="1" inputmode="decimal">
-        </div>
-        <button type="button" class="btn btn-vipps-confirm hidden" id="payChoiceSubmitBtn">Bekreft beløp</button>
-        <div id="payConfirmedBanner" class="pay-amount-confirmed hidden">
-          <div class="lbl">Beløp bekreftet — klar til betaling</div>
-          <div class="amt" id="payConfirmedAmt">0 kr</div>
-        </div>
-      </div>
-      <div id="paymentBtnWrap" class="pay-step hidden">
-        <div class="pay-step-head"><span class="pay-step-num">2</span><span>Velg betalingsmåte</span></div>
-        <p class="pay-methods-label">Betal det bekreftede beløpet med én av metodene under:</p>
-        <div class="field" id="phoneFieldWrap">
-          <label for="phoneInput" id="phoneInputLabel">Mobilnummer (8 siffer, for Vipps)</label>
-          <input type="tel" id="phoneInput" maxlength="8" inputmode="numeric" placeholder="f.eks. 91234567" autocomplete="tel-national">
-          <div id="phoneFieldError" class="field-error-msg hidden" role="alert"></div>
-        </div>
-        <button type="button" class="btn btn-vipps" id="paymentLinkVipps">
-          <span class="vipps-mark">Vipps</span>
-          <span id="paymentLinkVippsLabel">Betal med Vipps</span>
-        </button>
-        <button type="button" class="btn btn-pay-card hidden" id="paymentLinkCard">
-          <span>Betal med bankkort</span>
-        </button>
-        <div class="vipps-card-note" id="vippsCardNote"></div>
+      <div class="field hidden" id="partialField">
+        <label for="payAmountInput">Skriv beløp (kr)</label>
+        <input type="number" id="payAmountInput" min="1" step="1" inputmode="decimal">
       </div>
     </div>
+
+    <div class="section-title">Betalingsmåte</div>
+    <div class="field" id="phoneFieldWrap">
+      <label for="phoneInput">Mobilnummer (kun for Vipps, 8 siffer)</label>
+      <input type="tel" id="phoneInput" maxlength="8" inputmode="numeric" placeholder="91234567" autocomplete="tel-national">
+      <div id="phoneFieldError" class="field-error hidden"></div>
+    </div>
+    <div class="pay-actions">
+      <button type="button" class="btn-pay btn-vipps" id="paymentLinkVipps" disabled>
+        <span class="mark">Vipps</span><span id="paymentLinkVippsLabel">Betal med Vipps</span>
+      </button>
+      <button type="button" class="btn-pay btn-card hidden" id="paymentLinkCard" disabled>Betal med bankkort</button>
+    </div>
+    <div class="note" id="payNote">Visa og Mastercard via Vipps.</div>
+
+    <details class="account-toggle" id="accountDetails">
+      <summary>Se hele saldoen til eleven</summary>
+      <div class="account-grid">
+        <div class="lbl">Totalt</div><div class="val" id="sumTotal">—</div>
+        <div class="lbl">Betalt</div><div class="val" id="sumPaid">—</div>
+        <div class="lbl">Gjenstår</div><div class="val" id="sumRest">—</div>
+      </div>
+    </details>
   </div>
   <div class="footer">Madina Skole · post@madinaskole.no</div>
 </div>
 <script>
 const GET_INFO_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/getFakturaBetalingInfo';
 const CREATE_PAY_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/createFakturaExternalPayment';
-const CHECK_RETURN_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/checkFakturaExternalPaymentReturn';
 const FAKTURA_PAY_REF_KEY = 'fakturaPayRef';
 
 const params = new URLSearchParams(location.search);
@@ -350,9 +171,8 @@ const returnRef = params.get('ref') || '';
 
 let pageInfo = null;
 let invoiceLocked = false;
-let selectedPayType = null;
-let selectedPayAmountKr = 0;
-let payInlineErrorTimer = null;
+let payAmountKr = 0;
+let payMode = null;
 
 function fmtKr(n) {
   return Number(n || 0).toLocaleString('no-NO') + ' kr';
@@ -369,213 +189,122 @@ function hideMsg() {
   document.getElementById('statusMsg').classList.add('hidden');
 }
 
-function showPhoneFieldError(text) {
-  const input = document.getElementById('phoneInput');
-  const label = document.getElementById('phoneInputLabel');
-  const err = document.getElementById('phoneFieldError');
-  input.classList.add('input-error');
-  label.classList.add('label-error');
-  err.textContent = text;
-  err.classList.remove('hidden');
-  input.focus({ preventScroll: true });
-  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function clearPhoneFieldError() {
-  const input = document.getElementById('phoneInput');
-  const label = document.getElementById('phoneInputLabel');
-  const err = document.getElementById('phoneFieldError');
-  input.classList.remove('input-error');
-  label.classList.remove('label-error');
-  err.textContent = '';
-  err.classList.add('hidden');
-}
-
-function showPayInlineError(text) {
-  const el = document.getElementById('payInlineError');
-  if (!el) return;
-  if (payInlineErrorTimer) {
-    clearTimeout(payInlineErrorTimer);
-    payInlineErrorTimer = null;
-  }
-  el.textContent = text;
-  el.classList.remove('hidden');
-  document.getElementById('payStepAmount')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  payInlineErrorTimer = setTimeout(() => {
-    el.classList.add('hidden');
-    el.textContent = '';
-    payInlineErrorTimer = null;
-  }, 5000);
-}
-
-function hidePayInlineError() {
-  const el = document.getElementById('payInlineError');
-  if (!el) return;
-  if (payInlineErrorTimer) {
-    clearTimeout(payInlineErrorTimer);
-    payInlineErrorTimer = null;
-  }
-  el.classList.add('hidden');
-  el.textContent = '';
-}
-
-function returnStatusMessage(status) {
-  if (status === 'completed') {
-    return {
-      kind: 'ok',
-      text: 'Takk! Betalingen er registrert. Elevens saldo oppdateres innen kort tid.',
-    };
-  }
-  if (status === 'cancelled') {
-    return {
-      kind: 'error',
-      text: 'Betalingen ble avbrutt. Ingen beløp er trukket — du kan prøve igjen.',
-    };
-  }
-  if (status === 'expired') {
-    return {
-      kind: 'error',
-      text: 'Betalingen utløp hos Vipps. Velg beløp og prøv igjen.',
-    };
-  }
-  return {
-    kind: 'error',
-    text: 'Betalingen er ikke fullført. Velg beløp og prøv igjen.',
-  };
-}
-
-async function handleVippsReturn() {
-  const reference = returnRef || sessionStorage.getItem(FAKTURA_PAY_REF_KEY) || '';
-  if (!reference) {
-    showMsg('Du er tilbake fra betalingssiden. Sjekk om betalingen gikk gjennom, eller prøv igjen.', 'info');
-    return;
-  }
-  showMsg('Sjekker betalingsstatus…', 'info');
-  try {
-    const res = await fetch(CHECK_RETURN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, reference }),
-    });
-    const data = await res.json();
-    sessionStorage.removeItem(FAKTURA_PAY_REF_KEY);
-    if (!data.ok) {
-      showMsg(data.error || 'Kunne ikke sjekke betalingsstatus.', 'info');
-      return;
-    }
-    const msg = returnStatusMessage(data.status);
-    showMsg(msg.text, msg.kind);
-  } catch (err) {
-    console.error(err);
-    showMsg('Kunne ikke sjekke betalingsstatus — prøv igjen.', 'info');
-  }
-}
-
-function applyInvoiceLockUI() {
-  const f = pageInfo && pageInfo.faktura;
-  invoiceLocked = !!(f && f.lockAmount);
-  const partialBtn = document.getElementById('payChoicePartialBtn');
-  const hint = document.getElementById('payAmountHint');
-  const banner = document.getElementById('invoiceBanner');
-  if (!f) {
-    banner.classList.add('hidden');
-    banner.innerHTML = '';
-    partialBtn.classList.remove('hidden');
-    if (hint) hint.textContent = 'Velg hele restbeløpet eller skriv inn et annet beløp. Trykk «Bekreft beløp» før du betaler.';
-    return;
-  }
-  const forfalt = f.status === 'forfalt';
-  banner.classList.remove('hidden');
-  banner.classList.toggle('forfalt', forfalt);
-  banner.innerHTML =
-    '<div class="ref">' + escapeHtml(f.dokumentRef || 'Faktura') + '</div>' +
-    (f.kategoriLabel ? '<div>Post: <b>' + escapeHtml(f.kategoriLabel) + '</b></div>' : '') +
-    (f.betalingsfrist ? '<div>Betalingsfrist: <b>' + escapeHtml(f.betalingsfrist) + '</b>' +
-      (forfalt ? ' — <b>forfalt</b>' : '') + '</div>' : '') +
-    '<div>Fakturabeløp: <b>' + fmtKr(f.belopKr) + '</b></div>';
-  if (invoiceLocked) {
-    partialBtn.classList.add('hidden');
-    if (hint) hint.textContent = 'Beløpet er låst til fakturaen. Trykk «Bekreft beløp» for å gå videre til betaling.';
-    const payAmt = Math.min(Number(f.belopKr || 0), pageInfo.restKr);
-    if (payAmt > 0) {
-      choosePayAmount('Alt');
-      selectedPayAmountKr = payAmt;
-      document.getElementById('payChoiceSubmitBtn').classList.add('hidden');
-      document.getElementById('payAmountFieldWrap').classList.add('hidden');
-      document.getElementById('payConfirmedAmt').textContent = fmtKr(payAmt);
-      document.getElementById('payConfirmedBanner').classList.remove('hidden');
-      document.getElementById('paymentBtnWrap').classList.remove('hidden');
-      document.getElementById('paymentLinkVippsLabel').textContent = 'Betal ' + fmtKr(payAmt) + ' med Vipps';
-    }
-  } else {
-    partialBtn.classList.remove('hidden');
-    if (hint) hint.textContent = 'Velg hele restbeløpet eller skriv inn et annet beløp. Trykk «Bekreft beløp» før du betaler.';
-  }
-}
-
 function escapeHtml(str) {
   const d = document.createElement('div');
   d.textContent = str || '';
   return d.innerHTML;
 }
 
+function updatePayButtons() {
+  const ready = payAmountKr > 0;
+  document.getElementById('paymentLinkVipps').disabled = !ready;
+  document.getElementById('paymentLinkCard').disabled = !ready;
+  document.getElementById('paymentLinkVippsLabel').textContent = ready
+    ? ('Betal ' + fmtKr(payAmountKr) + ' med Vipps')
+    : 'Velg beløp først';
+}
+
+function setPayAmount(kr) {
+  payAmountKr = Math.round(Number(kr) || 0);
+  document.getElementById('payAmountDisplay').textContent = fmtKr(payAmountKr);
+  updatePayButtons();
+}
+
+function showPhoneError(text) {
+  document.getElementById('phoneInput').classList.add('input-error');
+  const err = document.getElementById('phoneFieldError');
+  err.textContent = text;
+  err.classList.remove('hidden');
+}
+
+function clearPhoneError() {
+  document.getElementById('phoneInput').classList.remove('input-error');
+  document.getElementById('phoneFieldError').classList.add('hidden');
+}
+
+function applyPageData(data) {
+  pageInfo = data;
+  invoiceLocked = !!(data.faktura && data.faktura.lockAmount);
+  const f = data.faktura;
+
+  document.getElementById('elevLine').textContent = data.elevNavn || 'Elev';
+  document.getElementById('sumTotal').textContent = fmtKr(data.belopKr);
+  document.getElementById('sumPaid').textContent = fmtKr(data.betaltKr);
+  document.getElementById('sumRest').textContent = fmtKr(data.restKr);
+
+  const hero = document.getElementById('heroBlock');
+  const amountSection = document.getElementById('amountSection');
+  const primaryBtn = document.getElementById('payChoicePrimary');
+  const partialBtn = document.getElementById('payChoicePartial');
+
+  if (f) {
+    hero.classList.toggle('forfalt', f.status === 'forfalt');
+    document.getElementById('refLine').textContent = f.dokumentRef || '';
+    const meta = [];
+    if (f.kategoriLabel) meta.push(f.kategoriLabel);
+    if (f.betalingsfrist) meta.push('Frist ' + f.betalingsfrist);
+    document.getElementById('metaLine').innerHTML = meta.map(escapeHtml).join(' · ');
+    if (f.status === 'forfalt') {
+      document.getElementById('metaLine').innerHTML += ' <span class="badge">Forfalt</span>';
+    }
+    amountSection.classList.toggle('hidden', invoiceLocked);
+    document.getElementById('accountDetails').open = false;
+    const invAmt = Math.min(Number(f.belopKr || 0), data.restKr);
+    setPayAmount(invAmt);
+  } else {
+    hero.classList.remove('forfalt');
+    document.getElementById('refLine').textContent = 'Utestående skolepenger';
+    document.getElementById('metaLine').textContent = 'Velg beløp du vil betale nå';
+    amountSection.classList.remove('hidden');
+    partialBtn.classList.remove('hidden');
+    primaryBtn.textContent = 'Betal alt (' + fmtKr(data.restKr) + ')';
+    setPayAmount(0);
+  }
+
+  const cardBtn = document.getElementById('paymentLinkCard');
+  const note = document.getElementById('payNote');
+  if (data.cardAvailable) {
+    cardBtn.classList.remove('hidden');
+    note.textContent = 'Bankkort (Visa/Mastercard) via Vipps.';
+  } else if (data.vippsEnv === 'test') {
+    cardBtn.classList.add('hidden');
+    note.textContent = 'Bankkort er kun tilgjengelig i produksjon — bruk Vipps i test.';
+  } else {
+    cardBtn.classList.add('hidden');
+    note.textContent = 'Kun Vipps er tilgjengelig akkurat nå.';
+  }
+}
+
 async function loadInfo() {
+  if (vippsReturn && returnRef && token) {
+    location.replace('betale-fullfort.html?t=' + encodeURIComponent(token) + '&ref=' + encodeURIComponent(returnRef));
+    return;
+  }
   if (!token) {
     showMsg('Mangler betalingslenke. Åpne lenken fra faktura-e-posten.', 'error');
     return;
   }
-  showMsg('Laster betalingsinfo…', 'info');
+  showMsg('Laster…', 'info');
   try {
     const res = await fetch(GET_INFO_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token }),
     });
     const data = await res.json();
     if (!data.ok) {
       showMsg(data.error || 'Kunne ikke laste betalingsinfo.', 'error');
       return;
     }
-    pageInfo = data;
-    hideMsg();
-    if (vippsReturn) {
-      await handleVippsReturn();
-    }
     if (data.restKr <= 0) {
-      showMsg('Ingen utestående beløp — takk!', 'ok');
+      showMsg('Ingen utestående beløp — takk!', 'info');
       return;
     }
+    hideMsg();
     document.getElementById('mainCard').classList.remove('hidden');
-    document.getElementById('elevLine').textContent = 'Faktura for ' + (data.elevNavn || 'elev');
-    document.getElementById('sumTotal').textContent = fmtKr(data.belopKr);
-    document.getElementById('sumPaid').textContent = fmtKr(data.betaltKr);
-    document.getElementById('sumRest').textContent = fmtKr(data.restKr);
-    applyInvoiceLockUI();
-    const cardBtn = document.getElementById('paymentLinkCard');
-    const cardNote = document.getElementById('vippsCardNote');
-    const pillCardBtn = document.getElementById('pillCardBtn');
-    if (data.cardAvailable) {
-      cardBtn.classList.remove('hidden');
-      if (pillCardBtn) {
-        pillCardBtn.classList.remove('dim');
-        pillCardBtn.textContent = 'Visa / kort';
-        pillCardBtn.disabled = false;
-      }
-      cardNote.textContent = 'Bankkort (Visa/Mastercard) via Vipps.';
-    } else if (data.vippsEnv === 'test') {
-      if (pillCardBtn) {
-        pillCardBtn.classList.add('dim');
-        pillCardBtn.textContent = 'Kort i prod';
-        pillCardBtn.disabled = true;
-      }
-      cardNote.textContent = 'Bankkort er kun tilgjengelig i produksjon — bruk Vipps i test-miljø.';
-    } else {
-      if (pillCardBtn) {
-        pillCardBtn.classList.add('dim');
-        pillCardBtn.textContent = 'Kort av';
-        pillCardBtn.disabled = true;
-      }
-      cardNote.textContent = '';
+    applyPageData(data);
+    if (!(data.faktura && data.faktura.lockAmount)) {
+      document.getElementById('payChoicePrimary').click();
     }
   } catch (err) {
     console.error(err);
@@ -583,147 +312,84 @@ async function loadInfo() {
   }
 }
 
-function resetChoiceUI() {
-  selectedPayType = null;
-  selectedPayAmountKr = 0;
-  document.getElementById('payAmountInput').value = '';
-  document.getElementById('payAmountFieldWrap').classList.add('hidden');
-  document.getElementById('payChoiceSubmitBtn').classList.add('hidden');
-  document.getElementById('payConfirmedBanner').classList.add('hidden');
-  document.getElementById('paymentBtnWrap').classList.add('hidden');
-  document.getElementById('payChoiceAllBtn').classList.remove('selected');
-  document.getElementById('payChoicePartialBtn').classList.remove('selected');
-}
-
-function choosePayAmount(payType) {
-  selectedPayType = payType;
-  selectedPayAmountKr = 0;
-  document.getElementById('payChoiceSubmitBtn').classList.remove('hidden');
-  document.getElementById('payChoiceAllBtn').classList.toggle('selected', payType === 'Alt');
-  document.getElementById('payChoicePartialBtn').classList.toggle('selected', payType === 'Delvis');
-  const wrap = document.getElementById('payAmountFieldWrap');
-  if (payType === 'Delvis') {
-    wrap.classList.remove('hidden');
-    document.getElementById('payAmountInput').focus();
-  } else {
-    wrap.classList.add('hidden');
-  }
-  document.getElementById('payConfirmedBanner').classList.add('hidden');
-  document.getElementById('paymentBtnWrap').classList.add('hidden');
-}
-
-function submitPaymentChoice() {
+function choosePrimary() {
   if (!pageInfo) return;
-  if (!selectedPayType) {
-    showMsg('Velg beløp først.', 'error');
-    return;
-  }
-  let belop;
-  if (selectedPayType === 'Alt') {
-    belop = invoiceLocked && pageInfo.faktura
-      ? Math.min(Number(pageInfo.faktura.belopKr || 0), pageInfo.restKr)
-      : pageInfo.restKr;
-  } else {
-    belop = parseFloat(document.getElementById('payAmountInput').value);
-    if (!belop || belop <= 0) {
-      showMsg('Skriv inn et gyldig beløp.', 'error');
-      return;
-    }
-    if (belop > pageInfo.restKr) {
-      showMsg('Beløpet kan ikke overstige restbeløpet (' + fmtKr(pageInfo.restKr) + ').', 'error');
-      return;
-    }
-    if (invoiceLocked && pageInfo.faktura) {
-      const maxInv = Number(pageInfo.faktura.belopKr || 0);
-      if (belop > maxInv) {
-        showMsg('Beløpet kan ikke overstige fakturabeløpet (' + fmtKr(maxInv) + ').', 'error');
-        return;
-      }
-    }
-  }
-  selectedPayAmountKr = belop;
-  document.getElementById('payChoiceSubmitBtn').classList.add('hidden');
-  document.getElementById('payAmountFieldWrap').classList.add('hidden');
-  document.getElementById('payConfirmedAmt').textContent = fmtKr(belop);
-  document.getElementById('payConfirmedBanner').classList.remove('hidden');
-  document.getElementById('paymentBtnWrap').classList.remove('hidden');
-  document.getElementById('paymentLinkVippsLabel').textContent = 'Betal ' + fmtKr(belop) + ' med Vipps';
-  clearPhoneFieldError();
-  hideMsg();
-  hidePayInlineError();
+  payMode = 'primary';
+  document.getElementById('payChoicePrimary').classList.add('selected');
+  document.getElementById('payChoicePartial').classList.remove('selected');
+  document.getElementById('partialField').classList.add('hidden');
+  const amt = pageInfo.faktura
+    ? Math.min(Number(pageInfo.faktura.belopKr || 0), pageInfo.restKr)
+    : pageInfo.restKr;
+  setPayAmount(amt);
 }
 
-function handlePayMethodClick(paymentMethodType) {
-  if (!pageInfo) return;
-  if (paymentMethodType === 'CARD') {
-    if (!pageInfo.cardAvailable) {
-      const cardMsg = pageInfo.vippsEnv === 'test'
-        ? 'Bankkort er kun tilgjengelig i produksjon — bruk Vipps i test-miljø.'
-        : 'Bankkortbetaling er ikke tilgjengelig akkurat nå.';
-      showPayInlineError(cardMsg);
-      return;
-    }
-  }
-  if (selectedPayAmountKr <= 0) {
-    showPayInlineError('Velg beløp og trykk «Bekreft beløp» før du betaler.');
-    return;
-  }
-  hidePayInlineError();
-  payNow(paymentMethodType);
+function choosePartial() {
+  payMode = 'partial';
+  document.getElementById('payChoicePartial').classList.add('selected');
+  document.getElementById('payChoicePrimary').classList.remove('selected');
+  document.getElementById('partialField').classList.remove('hidden');
+  const input = document.getElementById('payAmountInput');
+  input.focus();
+  const val = parseFloat(input.value);
+  if (val > 0) setPayAmount(val);
+  else setPayAmount(0);
 }
 
 async function payNow(paymentMethodType) {
-  if (!pageInfo || selectedPayAmountKr <= 0) {
-    showMsg('Bekreft beløp først (steg 1).', 'error');
+  if (!pageInfo || payAmountKr <= 0) {
+    showMsg('Velg beløp først.', 'error');
+    return;
+  }
+  if (payAmountKr > pageInfo.restKr) {
+    showMsg('Beløpet kan ikke overstige ' + fmtKr(pageInfo.restKr) + '.', 'error');
     return;
   }
   const phone = document.getElementById('phoneInput').value.replace(/\D/g, '').slice(-8);
   if (paymentMethodType === 'WALLET' && phone.length !== 8) {
-    showPhoneFieldError('Oppgi mobilnummer (8 siffer) for å betale med Vipps.');
+    showPhoneError('Oppgi 8 siffer for Vipps.');
     return;
   }
-  clearPhoneFieldError();
-  showMsg('Forbereder betaling…', 'info');
+  clearPhoneError();
   document.getElementById('paymentLinkVipps').disabled = true;
   document.getElementById('paymentLinkCard').disabled = true;
+  showMsg('Sender deg til betaling…', 'info');
   try {
     const res = await fetch(CREATE_PAY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token,
-        amountKr: selectedPayAmountKr,
+        amountKr: payAmountKr,
         phoneNumber: phone,
-        paymentMethodType
-      })
+        paymentMethodType,
+      }),
     });
     const data = await res.json();
     if (!data.ok || !data.redirectUrl) {
       showMsg(data.error || 'Kunne ikke starte betaling.', 'error');
-      document.getElementById('paymentLinkVipps').disabled = false;
-      document.getElementById('paymentLinkCard').disabled = false;
+      updatePayButtons();
       return;
     }
-    if (data.reference) {
-      sessionStorage.setItem(FAKTURA_PAY_REF_KEY, data.reference);
-    }
+    if (data.reference) sessionStorage.setItem(FAKTURA_PAY_REF_KEY, data.reference);
     location.href = data.redirectUrl;
   } catch (err) {
     console.error(err);
     showMsg('Nettverksfeil — prøv igjen.', 'error');
-    document.getElementById('paymentLinkVipps').disabled = false;
-    document.getElementById('paymentLinkCard').disabled = false;
+    updatePayButtons();
   }
 }
 
-document.getElementById('payChoiceAllBtn').addEventListener('click', () => choosePayAmount('Alt'));
-document.getElementById('payChoicePartialBtn').addEventListener('click', () => choosePayAmount('Delvis'));
-document.getElementById('payChoiceSubmitBtn').addEventListener('click', submitPaymentChoice);
-document.getElementById('pillVippsBtn').addEventListener('click', () => handlePayMethodClick('WALLET'));
-document.getElementById('pillCardBtn').addEventListener('click', () => handlePayMethodClick('CARD'));
-document.getElementById('paymentLinkVipps').addEventListener('click', () => handlePayMethodClick('WALLET'));
-document.getElementById('paymentLinkCard').addEventListener('click', () => handlePayMethodClick('CARD'));
-document.getElementById('phoneInput').addEventListener('input', clearPhoneFieldError);
+document.getElementById('payChoicePrimary').addEventListener('click', choosePrimary);
+document.getElementById('payChoicePartial').addEventListener('click', choosePartial);
+document.getElementById('payAmountInput').addEventListener('input', () => {
+  if (payMode !== 'partial') return;
+  const val = parseFloat(document.getElementById('payAmountInput').value);
+  setPayAmount(val > 0 ? val : 0);
+});
+document.getElementById('paymentLinkVipps').addEventListener('click', () => payNow('WALLET'));
+document.getElementById('paymentLinkCard').addEventListener('click', () => payNow('CARD'));
+document.getElementById('phoneInput').addEventListener('input', clearPhoneError);
 
 loadInfo();
 </script>
