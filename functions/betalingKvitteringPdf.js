@@ -131,4 +131,4 @@ async function genererBetalingKvitteringPdf({
   return { buffer, base64: buffer.toString("base64"), filnavn };
 }
 
-module.exports = { genererBetalingKvitteringPdf, fmtBelop, filnavnSafe };
+module.exports = { genererBetalingKvitteringPdf, fmtBelop, filnavnSafe, hentStempelPng };
