@@ -8359,6 +8359,7 @@
               <button type="button" class="btn-edit" onclick="showCashierHistory('${s.id}')">🕘 Full historikk</button>
               <button type="button" class="btn-edit btn-pay-attempts" onclick="showGuardianPayAttempts('${s.id}')">🔁 Foresatt-forsøk${attemptCount ? `<span class="pay-attempt-badge">${attemptCount}</span>` : ''}</button>
               <button type="button" class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
+              <button type="button" class="btn-edit" onclick="sendSisteBetalingKvittering('${s.id}')">📄 Send kvittering</button>
               <button type="button" class="btn-edit btn-vipps-mob" onclick="sendStudentVippsRequest('${s.id}')">⚡ Send Vipps-krav</button>
               <button type="button" class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
               ${eierActions}
@@ -9008,6 +9009,35 @@
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  window.sendSisteBetalingKvittering = async function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student){ showToast('Fant ikke eleven.'); return; }
+    const history = cache.studentPayments.filter(p => p.studentId === studentId);
+    if(!history.length){ showToast('Ingen registrerte betalinger for denne eleven.'); return; }
+    const last = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
+    const kilde = String(last.kilde || '');
+    let kanal = 'Betaling';
+    if(kilde.includes('Vipps-refusjon')) kanal = 'Vipps-refusjon';
+    else if(kilde.includes('Vipps')) kanal = 'Vipps';
+    else if(kilde.includes('Bankkort')) kanal = 'Bankkort';
+    else if(kilde.includes('Manuell')) kanal = kilde.match(/^Manuell\s*\([^)]+\)/i)?.[0] || 'Manuell';
+    showToast('Lager og sender PDF-kvittering...');
+    try{
+      const kvitt = await sendBetalingKvitteringTilForesatt({
+        student,
+        belop: cashierKr(last.belop),
+        kanal,
+        type: kilde || 'Betaling',
+        referanse: last.reference || ('KV-' + String(studentId).slice(-6).toUpperCase())
+      });
+      if(kvitt.sendt) showToast('✓ PDF-kvittering sendt til ' + kvitt.epost + '.');
+      else showToast('Fant ingen e-post registrert for foresatte.', true);
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke sende kvittering: ' + err.message, true);
     }
   };
 
