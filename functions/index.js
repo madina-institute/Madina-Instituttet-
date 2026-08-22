@@ -666,25 +666,60 @@ async function hentVippsBetalingMottakere() {
 }
 
 async function samleForesattEposter({ student, reg, payerEmail }) {
-  const emails = new Set();
-  const add = (raw) => {
-    const e = String(raw || "").trim().toLowerCase();
-    if (e.includes("@")) emails.add(e);
+  const norm = (raw) => String(raw || "").trim().toLowerCase();
+  const seen = new Set();
+  const addUnique = (raw) => {
+    const e = norm(raw);
+    if (!e.includes("@") || seen.has(e)) return null;
+    seen.add(e);
+    return e;
   };
+
+  // Prefer the person who paid — avoids duplicate mail to g1 + payer when same inbox.
+  const payer = addUnique(payerEmail);
+  if (payer) return [payer];
+
   if (student) {
     const g1 = await loadGuardianDoc(student.foresatt);
-    const g2 = await loadGuardianDoc(student.foresatt2);
-    add(g1?.epost);
-    add(g2?.epost);
-    add(student.foresatt1_epost);
-    add(student.foresatt2_epost);
+    const primary = addUnique(g1?.epost) || addUnique(student.foresatt1_epost);
+    if (primary) return [primary];
   }
   if (reg) {
-    add(reg.foresatt1_epost);
-    add(reg.foresatt2_epost);
+    const primary = addUnique(reg.foresatt1_epost);
+    if (primary) return [primary];
   }
-  add(payerEmail);
-  return [...emails];
+  return [];
+}
+
+async function revertForesattKvitteringClaim(pendingRef) {
+  if (!pendingRef) return;
+  try {
+    await pendingRef.update({
+      foresattKvitteringPdfSendtAt: admin.firestore.FieldValue.delete(),
+    });
+  } catch (err) {
+    logger.warn("Kunne ikke tilbakestille kvittering-reservasjon", err);
+  }
+}
+
+async function claimForesattKvitteringSend({ pendingRef, pendingData, reference }) {
+  if (pendingData?.foresattKvitteringPdfSendtAt) return false;
+  if (!pendingRef) return true;
+  try {
+    return await db.runTransaction(async (tx) => {
+      const snap = await tx.get(pendingRef);
+      const data = snap.data() || {};
+      if (data.foresattKvitteringPdfSendtAt) return false;
+      tx.update(pendingRef, {
+        foresattKvitteringPdfSendtAt: new Date().toISOString(),
+        foresattKvitteringSendtAt: data.foresattKvitteringSendtAt || new Date().toISOString(),
+      });
+      return true;
+    });
+  } catch (err) {
+    logger.warn(`Kunne ikke reservere kvittering-send for ${reference}`, err);
+    return !pendingData?.foresattKvitteringPdfSendtAt;
+  }
 }
 
 async function sendBetalingEposter({
@@ -737,10 +772,12 @@ async function sendBetalingEposter({
   // Send guardian receipt WITH PDF. Uses a separate flag so payments that
   // already got a text-only confirmation (before PDF support) can still
   // receive the PDF attachment on webhook retry or admin resend.
-  if (!pendingData?.foresattKvitteringPdfSendtAt) {
+  const kanSendeKvittering = await claimForesattKvitteringSend({ pendingRef, pendingData, reference });
+  if (kanSendeKvittering) {
     const foresattEposter = await samleForesattEposter({ student, reg, payerEmail: epostPay });
     if (!foresattEposter.length) {
       logger.info(`Ingen foresatt-e-post funnet for betalingskvittering ${reference}.`);
+      await revertForesattKvitteringClaim(pendingRef);
     } else {
       const mottakerNavn = reg?.foresatt1_navn || student?.foresatt1_navn || "Hei";
       let pdf;
@@ -755,6 +792,7 @@ async function sendBetalingEposter({
           tidspunkt,
         });
       } catch (pdfErr) {
+        await revertForesattKvitteringClaim(pendingRef);
         logger.error(`PDF-generering feilet for betalingskvittering ${reference}`, pdfErr);
         throw pdfErr;
       }
@@ -796,12 +834,6 @@ async function sendBetalingEposter({
           }],
         },
       });
-      if (pendingRef) {
-        await pendingRef.update({
-          foresattKvitteringSendtAt: pendingData?.foresattKvitteringSendtAt || new Date().toISOString(),
-          foresattKvitteringPdfSendtAt: new Date().toISOString(),
-        });
-      }
       logger.info(`Betalingskvittering PDF for ${reference} sendt til ${foresattEposter.length} foresatt(e).`);
     }
   }
