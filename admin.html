@@ -10521,12 +10521,6 @@
       const cardUrl = escapeHtml(data.cardRedirectUrl);
       html += '<p style="margin:16px 0;"><a href="' + cardUrl + '" style="display:inline-block;background:#1f4a3a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med bankkort</a></p>';
     }
-    if(data.redirectUrl){
-      html += '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Vipps-lenke: <a href="' + escapeHtml(data.redirectUrl) + '">' + escapeHtml(data.redirectUrl) + '</a></p>';
-    }
-    if(data.cardRedirectUrl){
-      html += '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Kort-lenke: <a href="' + escapeHtml(data.cardRedirectUrl) + '">' + escapeHtml(data.cardRedirectUrl) + '</a></p>';
-    }
     html += '<p style="margin:14px 0 0;font-size:13px;color:#5a6860;">Eller <a href="' + portalUrl + '">logg inn i Foreldreportalen → Betaling</a> for å velge Vipps eller bankkort.</p>';
     if(data.vippsEnv === 'test' && !data.cardRedirectUrl){
       html += '<p style="margin:8px 0 0;font-size:12px;color:#8a9690;">Bankkort er kun tilgjengelig i produksjon.</p>';
