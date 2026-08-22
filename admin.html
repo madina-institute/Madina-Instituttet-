@@ -719,6 +719,45 @@
   }
   .faktura-elev-kort.forfalt{ border-color:#f5c6c6; background:#fffafa; }
   .faktura-elev-kort.snart{ border-color:#f0e4b8; background:#fffdf5; }
+  .faktura-oversikt-wrap{
+    overflow-x:auto; -webkit-overflow-scrolling:touch; margin-top:8px;
+    border:1px solid var(--tabell-linje); border-radius:12px; background:#fff;
+  }
+  .faktura-oversikt-table{
+    width:100%; min-width:980px; border-collapse:collapse; font-size:13px;
+  }
+  .faktura-oversikt-table th{
+    text-align:left; padding:10px 12px; font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.04em; color:#5a6860;
+    background:var(--paper-2); border-bottom:1px solid var(--tabell-linje);
+    white-space:nowrap;
+  }
+  .faktura-oversikt-table td{
+    padding:11px 12px; border-bottom:1px solid var(--tabell-linje);
+    vertical-align:middle;
+  }
+  .faktura-oversikt-table tbody tr:last-child td{ border-bottom:0; }
+  .faktura-oversikt-table tr.row-forfalt{ background:#fffafa; }
+  .faktura-oversikt-table tr.row-snart{ background:#fffdf5; }
+  .faktura-oversikt-table tr.row-betalt{ opacity:.92; }
+  .faktura-cell-link{
+    display:inline; padding:0; border:none; background:none; cursor:pointer;
+    font:inherit; color:var(--emerald-d); font-weight:700; text-decoration:underline;
+    text-underline-offset:2px; text-align:left;
+  }
+  .faktura-cell-link:hover{ color:var(--emerald); }
+  .faktura-cell-link.subtle{ font-weight:600; font-size:12px; color:var(--emerald); }
+  .faktura-cell-link.kasserer{
+    display:inline-flex; align-items:center; gap:4px; padding:6px 10px;
+    border-radius:8px; border:1px solid rgba(31,74,58,0.22);
+    background:#f7faf8; text-decoration:none; font-size:12px; font-weight:700;
+  }
+  .faktura-cell-link.kasserer:hover{ background:#eef6ef; }
+  .faktura-sammendrag{
+    font-size:12px; line-height:1.45; color:#5a6860; max-width:170px;
+  }
+  .faktura-sammendrag b{ color:var(--ink); }
+  .faktura-ref-sub{ font-size:11px; color:#8a9690; margin-top:2px; }
   /* Kasserer alternativ 1: Vipps + Historikk + Mer */
   .cashier-actions.cashier-actions-compact{
     display:flex; flex-wrap:wrap; gap:6px; align-items:stretch;
@@ -10864,6 +10903,80 @@
     }, 250);
   };
 
+  function fakturaStudentMeta(studentId){
+    const st = cache.students.find(s => s.id === studentId);
+    if(!st) return { klasseNavn:'—', klasseId:'', belop:0, betalt:0, rest:0, payCount:0 };
+    const belop = cashierKr(st.belop), betalt = cashierKr(st.belopBetalt);
+    return {
+      klasseNavn: resolveDynName('classes', st.klasse) || '—',
+      klasseId: st.klasse || '',
+      belop, betalt, rest: belop - betalt,
+      payCount: cache.studentPayments.filter(p => p.studentId === studentId).length
+    };
+  }
+
+  window.openFakturaElevKort = function(studentId){
+    showPersonDetail('students', studentId);
+  };
+
+  window.openFakturaElevSammendrag = function(studentId){
+    showCashierHistory(studentId);
+  };
+
+  window.openFakturaElevKlasse = function(studentId){
+    const meta = fakturaStudentMeta(studentId);
+    if(!meta.klasseId){ showToast('Eleven har ingen klasse.'); return; }
+    goToTask('okonomi', 'cashier');
+    setTimeout(function(){
+      cashierSelectedClass = meta.klasseId;
+      const sel = document.getElementById('cashierClassSelect');
+      if(sel) sel.value = meta.klasseId;
+      renderCashierPanel();
+      setTimeout(function(){
+        const row = document.querySelector('#cashierTableBody tr[data-student-id="' + studentId + '"]');
+        if(row){
+          row.classList.add('cashier-row-focus');
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+    }, 250);
+  };
+
+  window.openFakturaElevKasserer = function(studentId){
+    openCashierForStudent(studentId, {});
+  };
+
+  function renderFakturaOversiktRow(r){
+    const f = fakturaStatusFargeClient(r);
+    const meta = fakturaStudentMeta(r.studentId);
+    const statusTxt = r.status === 'betalt' ? 'Betalt' : r.status === 'delvis_betalt' ? 'Delvis betalt' :
+      f === 'forfalt' ? 'Forfalt' : f === 'snart' ? 'Snart frist' : 'Utestående';
+    const pam = Array.isArray(r.paminnelser) ? r.paminnelser.length : 0;
+    const rowCls = f === 'forfalt' ? 'row-forfalt' : f === 'snart' ? 'row-snart' : (r.status === 'betalt' ? 'row-betalt' : '');
+    const sid = escapeHtml(r.studentId);
+    return '<tr class="' + rowCls + '">' +
+      '<td>' + fakturaStatusDot(f) + '</td>' +
+      '<td><button type="button" class="faktura-cell-link" onclick="openFakturaElevKort(\'' + sid + '\')">' + escapeHtml(r.elevNavn||'—') + '</button></td>' +
+      '<td>' + (meta.klasseId
+        ? '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevKlasse(\'' + sid + '\')">' + escapeHtml(meta.klasseNavn) + '</button>'
+        : escapeHtml(meta.klasseNavn)) + '</td>' +
+      '<td><button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevSammendrag(\'' + sid + '\')" style="text-align:left;">' +
+        '<span class="faktura-sammendrag"><b>' + meta.rest.toLocaleString('no-NO') + ' kr</b> rest<br>' +
+        meta.betalt.toLocaleString('no-NO') + ' / ' + meta.belop.toLocaleString('no-NO') + ' kr · ' + meta.payCount + ' betal.</span></button></td>' +
+      '<td><strong>' + escapeHtml(r.dokumentRef||'—') + '</strong><div class="faktura-ref-sub">' + escapeHtml(r.kategoriLabel||'') + '</div></td>' +
+      '<td><strong>' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</strong></td>' +
+      '<td>' + escapeHtml(r.betalingsfrist||'—') + '</td>' +
+      '<td style="font-size:12px;">' + escapeHtml(r.guardianNavn||'—') + '</td>' +
+      '<td style="font-size:12px;color:#5a6860;">' + cashierFormatDatoTid(r.sistSendtAt||r.opprettetAt) + '</td>' +
+      '<td>' + pam + '</td>' +
+      '<td>' + statusTxt + '</td>' +
+      '<td><button type="button" class="faktura-cell-link kasserer" onclick="openFakturaElevKasserer(\'' + sid + '\')">→ Kasserer</button></td>' +
+      '<td class="actions-col" style="white-space:nowrap;">' +
+      (r.status !== 'betalt' ? '<button type="button" class="btn-edit btn-mini" onclick="sendFakturaPaminnelse(\'' + r.id + '\')">🔔</button> ' : '') +
+      (r.status !== 'betalt' ? '<button type="button" class="btn-edit btn-mini" onclick="resendFakturaInvoice(\'' + r.id + '\')">↻</button>' : '') +
+      '</td></tr>';
+  }
+
   window.openFakturaNyElevModal = function(){
     document.getElementById('fakturaNyElevSearch').value = '';
     renderFakturaNyElevList();
@@ -10956,31 +11069,11 @@
       el.innerHTML = '<p class="sub">Ingen fakturaer ennå. Send fra Kasserer → Mer → Send faktura.</p>';
       return;
     }
-    el.innerHTML = '<table class="data-table mob-stack-table"><thead><tr>' +
-      '<th></th><th>Elev</th><th>Foresatt</th><th>Beløp</th><th>Post</th><th>Sendt</th><th>Frist</th><th>Påminn.</th><th>Status</th><th></th></tr></thead><tbody>' +
-      rows.map(r => {
-        const f = fakturaStatusFargeClient(r);
-        const statusTxt = r.status === 'betalt' ? 'Betalt' : r.status === 'delvis_betalt' ? 'Delvis betalt' :
-          f === 'forfalt' ? 'Forfalt' : f === 'snart' ? 'Snart frist' : 'Utestående';
-        const pam = Array.isArray(r.paminnelser) ? r.paminnelser.length : 0;
-        return '<tr><td data-label="">' + fakturaStatusDot(f) + '</td>' +
-          '<td data-label="Elev"><button type="button" class="faktura-elev-link" onclick="openCashierForStudent(\'' + r.studentId + '\',{openHistory:true})"><strong>' + escapeHtml(r.elevNavn||'—') + '</strong></button><br><span style="font-size:11px;color:#5a6860;">' + escapeHtml(r.dokumentRef||'') + '</span></td>' +
-          '<td data-label="Foresatt">' + escapeHtml(r.guardianNavn||'—') + '</td>' +
-          '<td data-label="Beløp">' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr<br><span style="font-size:11px;color:#5a6860;">Rest ' + (function(){
-            const st = cache.students.find(s => s.id === r.studentId);
-            if(!st) return '—';
-            return (cashierKr(st.belop)-cashierKr(st.belopBetalt)).toLocaleString('no-NO') + ' kr';
-          })() + '</span></td>' +
-          '<td data-label="Post">' + escapeHtml(r.kategoriLabel||'—') + '</td>' +
-          '<td data-label="Sendt">' + cashierFormatDatoTid(r.sistSendtAt||r.opprettetAt) + '<br><span style="font-size:11px;">' + escapeHtml(r.sistSendtAvNavn||r.opprettetAvNavn||'') + '</span></td>' +
-          '<td data-label="Frist">' + escapeHtml(r.betalingsfrist||'—') + '</td>' +
-          '<td data-label="Påminn.">' + pam + '</td>' +
-          '<td data-label="Status">' + statusTxt + '</td>' +
-          '<td data-label="" class="actions-col">' +
-          (r.status !== 'betalt' ? '<button type="button" class="btn-edit" onclick="sendFakturaPaminnelse(\'' + r.id + '\')">🔔 Påminn</button> ' : '') +
-          (r.status !== 'betalt' ? '<button type="button" class="btn-edit" onclick="resendFakturaInvoice(\'' + r.id + '\')">↻ Send igjen</button>' : '') +
-          '</td></tr>';
-      }).join('') + '</tbody></table>';
+    el.innerHTML = '<div class="faktura-oversikt-wrap"><table class="faktura-oversikt-table"><thead><tr>' +
+      '<th></th><th>Elev</th><th>Klasse</th><th>Sammendrag</th><th>Faktura</th><th>Beløp</th><th>Frist</th><th>Foresatt</th><th>Sendt</th><th>Påm.</th><th>Status</th><th>Kasserer</th><th></th>' +
+      '</tr></thead><tbody>' +
+      rows.map(r => renderFakturaOversiktRow(r)).join('') +
+      '</tbody></table></div>';
   };
 
   function renderFakturaOversiktPerElev(rows, el){
@@ -10995,30 +11088,35 @@
       return;
     }
     el.innerHTML = groups.map(g => {
-      const st = cache.students.find(s => s.id === g.studentId);
-      const rest = st ? cashierKr(st.belop) - cashierKr(st.belopBetalt) : 0;
+      const meta = fakturaStudentMeta(g.studentId);
       const worst = studentWorstFakturaStatus(g.studentId);
-      const apne = g.invoices.filter(i => i.status !== 'betalt' && i.status !== 'kansellert');
-      const apneSum = apne.reduce((s,i) => s + Number(i.belopKr||0), 0);
-      return '<div class="faktura-elev-kort' + (worst === 'forfalt' ? ' forfalt' : worst === 'snart' ? ' snart' : '') + '">' +
-        '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;">' +
-        '<div><button type="button" class="faktura-elev-link" onclick="openCashierForStudent(\'' + g.studentId + '\',{openHistory:true})"><strong style="font-size:15px;">' + escapeHtml(g.elevNavn||'—') + '</strong></button><br>' +
-        '<span class="sub">' + escapeHtml(g.guardianNavn||'') + ' · restsaldo <b>' + rest.toLocaleString('no-NO') + ' kr</b>' +
-        (apne.length ? ' · ' + apne.length + ' åpen faktura (' + apneSum.toLocaleString('no-NO') + ' kr)' : '') + '</span>' +
-        (worst ? '<br>' + fakturaStatusBadgeHtml(worst) : '') + '</div>' +
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
-        '<button type="button" class="btn-edit" onclick="openCashierForStudent(\'' + g.studentId + '\',{openHistory:true})">📋 Kasserer</button>' +
-        '<button type="button" class="btn-edit" onclick="sendGuardianInvoice(\'' + g.studentId + '\')">🧾 Ny faktura</button>' +
-        '</div></div>' +
-        '<table class="data-table" style="margin-top:12px;font-size:13px;"><thead><tr><th></th><th>Ref</th><th>Beløp</th><th>Frist</th><th></th></tr></thead><tbody>' +
+      const sid = escapeHtml(g.studentId);
+      return '<div class="faktura-elev-kort' + (worst === 'forfalt' ? ' forfalt' : worst === 'snart' ? ' snart' : '') + '" style="margin-bottom:14px;">' +
+        '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px;">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;">' +
+        '<button type="button" class="faktura-cell-link" onclick="openFakturaElevKort(\'' + sid + '\')"><strong style="font-size:15px;">' + escapeHtml(g.elevNavn||'—') + '</strong></button>' +
+        (meta.klasseId ? '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevKlasse(\'' + sid + '\')">' + escapeHtml(meta.klasseNavn) + '</button>' : '') +
+        '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevSammendrag(\'' + sid + '\')">Sammendrag</button>' +
+        '<button type="button" class="faktura-cell-link kasserer" onclick="openFakturaElevKasserer(\'' + sid + '\')">→ Kasserer</button>' +
+        (worst ? fakturaStatusBadgeHtml(worst) : '') +
+        '</div>' +
+        '<button type="button" class="btn-edit" onclick="sendGuardianInvoice(\'' + sid + '\')">🧾 Ny faktura</button></div>' +
+        '<div class="faktura-oversikt-wrap"><table class="faktura-oversikt-table"><thead><tr>' +
+        '<th></th><th>Faktura</th><th>Beløp</th><th>Frist</th><th>Status</th><th></th></tr></thead><tbody>' +
         g.invoices.map(r => {
           const f = fakturaStatusFargeClient(r);
-          return '<tr><td>' + fakturaStatusDot(f) + '</td><td>' + escapeHtml(r.dokumentRef||'') + '<br><span style="font-size:11px;color:#8a9690;">' + escapeHtml(r.kategoriLabel||'') + '</span></td>' +
-            '<td>' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</td><td>' + escapeHtml(r.betalingsfrist||'—') + '</td><td>' +
+          const statusTxt = r.status === 'betalt' ? 'Betalt' : f === 'forfalt' ? 'Forfalt' : f === 'snart' ? 'Snart frist' : 'Utestående';
+          return '<tr class="' + (f === 'forfalt' ? 'row-forfalt' : f === 'snart' ? 'row-snart' : '') + '">' +
+            '<td>' + fakturaStatusDot(f) + '</td>' +
+            '<td><strong>' + escapeHtml(r.dokumentRef||'') + '</strong><div class="faktura-ref-sub">' + escapeHtml(r.kategoriLabel||'') + '</div></td>' +
+            '<td>' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</td>' +
+            '<td>' + escapeHtml(r.betalingsfrist||'—') + '</td>' +
+            '<td>' + statusTxt + '</td>' +
+            '<td>' +
             (r.status !== 'betalt' ? '<button type="button" class="btn-edit btn-mini" onclick="sendFakturaPaminnelse(\'' + r.id + '\')">🔔</button> ' : '') +
             (r.status !== 'betalt' ? '<button type="button" class="btn-edit btn-mini" onclick="resendFakturaInvoice(\'' + r.id + '\')">↻</button>' : '') +
             '</td></tr>';
-        }).join('') + '</tbody></table></div>';
+        }).join('') + '</tbody></table></div></div>';
     }).join('');
   };
 
