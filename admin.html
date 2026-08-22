@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 20:53:50 -->
+<!-- SIST-ENDRET: 2026-08-22 21:41:15 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -719,27 +719,57 @@
   }
   .faktura-elev-kort.forfalt{ border-color:#f5c6c6; background:#fffafa; }
   .faktura-elev-kort.snart{ border-color:#f0e4b8; background:#fffdf5; }
-  .faktura-oversikt-wrap{
-    overflow-x:auto; -webkit-overflow-scrolling:touch; margin-top:8px;
-    border:1px solid var(--tabell-linje); border-radius:12px; background:#fff;
+  /* Fakturaoversikt — vertikale kort (mobil + desktop), ikke bred tabell */
+  .faktura-hub-body{ margin-top:4px; }
+  .faktura-elev-block{
+    border:1px solid var(--tabell-linje); border-radius:14px; padding:14px 16px 12px;
+    margin-bottom:16px; background:#fff; box-shadow:var(--shadow);
   }
-  .faktura-oversikt-table{
-    width:100%; min-width:980px; border-collapse:collapse; font-size:13px;
+  .faktura-elev-block.forfalt{ border-color:#f0b4b4; background:#fffafa; }
+  .faktura-elev-block.snart{ border-color:#ead896; background:#fffdf5; }
+  .faktura-elev-block-head{
+    display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    align-items:flex-start; margin-bottom:12px; padding-bottom:12px;
+    border-bottom:1px solid var(--tabell-linje);
   }
-  .faktura-oversikt-table th{
-    text-align:left; padding:10px 12px; font-size:11px; font-weight:700;
-    text-transform:uppercase; letter-spacing:.04em; color:#5a6860;
-    background:var(--paper-2); border-bottom:1px solid var(--tabell-linje);
-    white-space:nowrap;
+  .faktura-elev-block-title{
+    font-size:17px; font-weight:800; color:var(--ink); line-height:1.3;
   }
-  .faktura-oversikt-table td{
-    padding:11px 12px; border-bottom:1px solid var(--tabell-linje);
-    vertical-align:middle;
+  .faktura-elev-block-meta{
+    font-size:13px; color:#5a6860; margin-top:4px; line-height:1.45;
   }
-  .faktura-oversikt-table tbody tr:last-child td{ border-bottom:0; }
-  .faktura-oversikt-table tr.row-forfalt{ background:#fffafa; }
-  .faktura-oversikt-table tr.row-snart{ background:#fffdf5; }
-  .faktura-oversikt-table tr.row-betalt{ opacity:.92; }
+  .faktura-elev-block-actions{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  }
+  .faktura-inv-list{ display:flex; flex-direction:column; gap:10px; }
+  .faktura-inv-card{
+    border:1px solid var(--tabell-linje); border-radius:12px; padding:12px 14px;
+    background:#fff;
+  }
+  .faktura-inv-card.forfalt{ border-color:#f0b4b4; background:#fffafa; }
+  .faktura-inv-card.snart{ border-color:#ead896; background:#fffdf5; }
+  .faktura-inv-card.betalt{ opacity:.95; }
+  .faktura-inv-card-top{
+    display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+    margin-bottom:8px;
+  }
+  .faktura-inv-card-ref{
+    font-size:15px; font-weight:800; color:var(--ink); line-height:1.25;
+  }
+  .faktura-inv-card-kat{ font-size:12px; color:#5a6860; margin-top:2px; }
+  .faktura-inv-card-amt{
+    font-size:18px; font-weight:800; color:var(--emerald-d); white-space:nowrap;
+  }
+  .faktura-inv-card-grid{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px 14px;
+    font-size:12.5px; color:#5a6860; margin-bottom:10px;
+  }
+  .faktura-inv-card-grid b{ color:var(--ink); font-weight:600; }
+  .faktura-inv-card-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+  .faktura-inv-card-actions .btn-edit{ flex:1 1 auto; min-height:40px; }
+  .faktura-inv-flat .faktura-inv-card-elev{
+    font-size:13px; font-weight:700; color:var(--emerald-d); margin-bottom:6px;
+  }
   .faktura-cell-link{
     display:inline; padding:0; border:none; background:none; cursor:pointer;
     font:inherit; color:var(--emerald-d); font-weight:700; text-decoration:underline;
@@ -778,16 +808,14 @@
     flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
     padding:16px 18px 28px;
   }
-  .faktura-fullskjerm-overlay .faktura-elev-kort{
-    margin-bottom:16px; padding:16px 18px;
+  .faktura-fullskjerm-overlay .faktura-elev-block{
+    margin-bottom:18px; padding:16px 18px 14px;
   }
-  .faktura-fullskjerm-overlay .faktura-oversikt-table{
-    min-width:760px; font-size:14px;
-  }
-  .faktura-fullskjerm-overlay .faktura-oversikt-table th,
-  .faktura-fullskjerm-overlay .faktura-oversikt-table td{
-    padding:12px 14px;
-  }
+  .faktura-fullskjerm-overlay .faktura-elev-block-title{ font-size:19px; }
+  .faktura-fullskjerm-overlay .faktura-inv-card{ padding:14px 16px; }
+  .faktura-fullskjerm-overlay .faktura-inv-card-ref{ font-size:16px; }
+  .faktura-fullskjerm-overlay .faktura-inv-card-amt{ font-size:20px; }
+  .faktura-fullskjerm-overlay .faktura-inv-card-grid{ font-size:13.5px; }
   .faktura-fullskjerm-summary{
     margin-bottom:14px; padding:12px 14px; background:#fff;
     border:1px solid var(--tabell-linje); border-radius:10px; line-height:1.55; font-size:13px;
@@ -4491,12 +4519,12 @@
 
   <!-- FAKTURAOVERSIKT -->
   <div class="panel" id="panel-fakturaOversikt">
-    <div class="report-card">
+    <div class="report-card faktura-hub-card">
       <div class="innst-topp">
         <h3>🧾 Fakturaoversikt</h3>
         <span class="innst-meta" id="fakturaOversiktMeta"></span>
       </div>
-      <div class="sub">Horisontal liste — klikk <b>Elev</b> for elevkort, <b>Sammendrag</b> for betalingshistorikk, <b>Klasse</b> eller <b>→ Kasserer</b> for kasserer-posten. Bruk <b>Vis i full skjerm</b> for alle elever med fakturaer under hverandre.</div>
+      <div class="sub">Alle elever med fakturaer under hverandre — vertikale kort som fungerer på mobil og desktop. Klikk elev for elevkort, sammendrag for betalingshistorikk, eller kasserer for posten.</div>
       <div id="fakturaOversiktSummary" class="sub" style="margin:10px 0 12px; padding:12px 14px; background:var(--paper-2); border-radius:10px; line-height:1.55;"></div>
       <div class="stat-grid" id="fakturaOversiktStats" style="margin:12px 0;"></div>
       <div class="toolbar" style="margin-bottom:12px; flex-wrap:wrap;">
@@ -4508,35 +4536,15 @@
           <option value="forfalt">Forfalt (rød)</option>
           <option value="betalt">Betalt</option>
         </select>
-        <select id="fakturaOversiktView" onchange="renderFakturaOversikt()" style="max-width:160px;">
-          <option value="faktura">Vis fakturaer</option>
-          <option value="elev">Vis per elev</option>
+        <select id="fakturaOversiktView" onchange="renderFakturaOversikt()" style="max-width:180px;">
+          <option value="elev" selected>Vis per elev</option>
+          <option value="faktura">Vis alle fakturaer</option>
         </select>
         <button type="button" class="btn btn-primary" style="width:auto;" onclick="openFakturaNyElevModal()">🧾 Ny faktura</button>
         <button type="button" class="btn btn-ghost" style="width:auto;" onclick="openFakturaFullskjerm()">⛶ Vis i full skjerm</button>
       </div>
-      <div id="fakturaOversiktList"></div>
+      <div id="fakturaOversiktList" class="faktura-hub-body"></div>
     </div>
-  </div>
-
-  <!-- Fakturaoversikt — full skjerm -->
-  <div class="faktura-fullskjerm-overlay" id="fakturaFullskjermOverlay" aria-hidden="true">
-    <div class="faktura-fullskjerm-head">
-      <h3>🧾 Fakturaoversikt — full skjerm</h3>
-      <div class="faktura-fullskjerm-toolbar">
-        <input class="search" id="fakturaFullskjermSearch" placeholder="Søk elev, foresatt, referanse…" oninput="renderFakturaFullskjerm()">
-        <select id="fakturaFullskjermFilter" onchange="renderFakturaFullskjerm()" style="max-width:180px;">
-          <option value="">Alle statuser</option>
-          <option value="ok">Innen frist (grønn)</option>
-          <option value="snart">Snart frist (gul)</option>
-          <option value="forfalt">Forfalt (rød)</option>
-          <option value="betalt">Betalt</option>
-        </select>
-        <span class="faktura-fullskjerm-meta" id="fakturaFullskjermMeta"></span>
-      </div>
-      <button type="button" class="btn btn-ghost" style="width:auto;" onclick="closeFakturaFullskjerm()">✕ Lukk</button>
-    </div>
-    <div class="faktura-fullskjerm-body" id="fakturaFullskjermBody"></div>
   </div>
 
   <!-- Velg elev for ny faktura fra oversikten -->
@@ -4915,6 +4923,25 @@
 </div><!-- app-workspace -->
 </div><!-- app-body -->
 
+<!-- Fakturaoversikt — full skjerm (direkte under body, ikke inne i panel) -->
+<div class="faktura-fullskjerm-overlay" id="fakturaFullskjermOverlay" aria-hidden="true">
+  <div class="faktura-fullskjerm-head">
+    <h3>🧾 Fakturaoversikt — full skjerm</h3>
+    <div class="faktura-fullskjerm-toolbar">
+      <input class="search" id="fakturaFullskjermSearch" placeholder="Søk elev, foresatt, referanse…" oninput="renderFakturaFullskjerm()">
+      <select id="fakturaFullskjermFilter" onchange="renderFakturaFullskjerm()" style="max-width:180px;">
+        <option value="">Alle statuser</option>
+        <option value="ok">Innen frist (grønn)</option>
+        <option value="snart">Snart frist (gul)</option>
+        <option value="forfalt">Forfalt (rød)</option>
+        <option value="betalt">Betalt</option>
+      </select>
+      <span class="faktura-fullskjerm-meta" id="fakturaFullskjermMeta"></span>
+    </div>
+    <button type="button" class="btn btn-ghost" style="width:auto;" onclick="closeFakturaFullskjerm()">✕ Lukk</button>
+  </div>
+  <div class="faktura-fullskjerm-body" id="fakturaFullskjermBody"></div>
+</div>
 
 <!-- EKSPORT -->
 <div class="overlay" id="eksportOverlay">
@@ -11004,35 +11031,97 @@
     openCashierForStudent(studentId, {});
   };
 
-  function renderFakturaOversiktRow(r){
-    const f = fakturaStatusFargeClient(r);
-    const meta = fakturaStudentMeta(r.studentId);
-    const statusTxt = r.status === 'betalt' ? 'Betalt' : r.status === 'delvis_betalt' ? 'Delvis betalt' :
+  function fakturaInvoiceStatusTxt(r, f){
+    return r.status === 'betalt' ? 'Betalt' : r.status === 'delvis_betalt' ? 'Delvis betalt' :
       f === 'forfalt' ? 'Forfalt' : f === 'snart' ? 'Snart frist' : 'Utestående';
+  }
+
+  function fakturaJsStr(val){
+    return String(val || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  }
+
+  function renderFakturaInvoiceCardHtml(r, opts){
+    opts = opts || {};
+    const f = fakturaStatusFargeClient(r);
+    const statusTxt = fakturaInvoiceStatusTxt(r, f);
     const pam = Array.isArray(r.paminnelser) ? r.paminnelser.length : 0;
-    const rowCls = f === 'forfalt' ? 'row-forfalt' : f === 'snart' ? 'row-snart' : (r.status === 'betalt' ? 'row-betalt' : '');
-    const sid = escapeHtml(r.studentId);
-    return '<tr class="' + rowCls + '">' +
-      '<td>' + fakturaStatusDot(f) + '</td>' +
-      '<td><button type="button" class="faktura-cell-link" onclick="openFakturaElevKort(\'' + sid + '\')">' + escapeHtml(r.elevNavn||'—') + '</button></td>' +
-      '<td>' + (meta.klasseId
-        ? '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevKlasse(\'' + sid + '\')">' + escapeHtml(meta.klasseNavn) + '</button>'
-        : escapeHtml(meta.klasseNavn)) + '</td>' +
-      '<td><button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevSammendrag(\'' + sid + '\')" style="text-align:left;">' +
-        '<span class="faktura-sammendrag"><b>' + meta.rest.toLocaleString('no-NO') + ' kr</b> rest<br>' +
-        meta.betalt.toLocaleString('no-NO') + ' / ' + meta.belop.toLocaleString('no-NO') + ' kr · ' + meta.payCount + ' betal.</span></button></td>' +
-      '<td><strong>' + escapeHtml(r.dokumentRef||'—') + '</strong><div class="faktura-ref-sub">' + escapeHtml(r.kategoriLabel||'') + '</div></td>' +
-      '<td><strong>' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</strong></td>' +
-      '<td>' + escapeHtml(r.betalingsfrist||'—') + '</td>' +
-      '<td style="font-size:12px;">' + escapeHtml(r.guardianNavn||'—') + '</td>' +
-      '<td style="font-size:12px;color:#5a6860;">' + cashierFormatDatoTid(r.sistSendtAt||r.opprettetAt) + '</td>' +
-      '<td>' + pam + '</td>' +
-      '<td>' + statusTxt + '</td>' +
-      '<td><button type="button" class="faktura-cell-link kasserer" onclick="openFakturaElevKasserer(\'' + sid + '\')">→ Kasserer</button></td>' +
-      '<td class="actions-col" style="white-space:nowrap;">' +
-      (r.status !== 'betalt' ? '<button type="button" class="btn-edit btn-mini" onclick="sendFakturaPaminnelse(\'' + r.id + '\')">🔔</button> ' : '') +
-      (r.status !== 'betalt' ? '<button type="button" class="btn-edit btn-mini" onclick="resendFakturaInvoice(\'' + r.id + '\')">↻</button>' : '') +
-      '</td></tr>';
+    const rid = fakturaJsStr(r.id);
+    const sid = fakturaJsStr(r.studentId);
+    const cardCls = 'faktura-inv-card' +
+      (f === 'forfalt' ? ' forfalt' : f === 'snart' ? ' snart' : r.status === 'betalt' ? ' betalt' : '');
+    const actions = (r.status !== 'betalt'
+      ? '<button type="button" class="btn-edit" onclick="sendFakturaPaminnelse(\'' + rid + '\')">🔔 Påminn</button>'
+      : '') +
+      (r.status !== 'betalt'
+        ? '<button type="button" class="btn-edit" onclick="resendFakturaInvoice(\'' + rid + '\')">↻ Send igjen</button>'
+        : '');
+    const elevLine = opts.showElev
+      ? '<button type="button" class="faktura-cell-link faktura-inv-card-elev" onclick="openFakturaElevKort(\'' + sid + '\')">' + escapeHtml(r.elevNavn||'—') + '</button>'
+      : '';
+    return '<div class="' + cardCls + (opts.showElev ? ' faktura-inv-flat' : '') + '">' +
+      elevLine +
+      '<div class="faktura-inv-card-top">' +
+      '<div>' + fakturaStatusDot(f) +
+      '<div class="faktura-inv-card-ref">' + escapeHtml(r.dokumentRef||'—') + '</div>' +
+      (r.kategoriLabel ? '<div class="faktura-inv-card-kat">' + escapeHtml(r.kategoriLabel) + '</div>' : '') +
+      '</div>' +
+      '<div class="faktura-inv-card-amt">' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</div>' +
+      '</div>' +
+      '<div class="faktura-inv-card-grid">' +
+      '<span>Frist</span><span><b>' + escapeHtml(r.betalingsfrist||'—') + '</b></span>' +
+      '<span>Status</span><span><b>' + statusTxt + '</b></span>' +
+      '<span>Foresatt</span><span><b>' + escapeHtml(r.guardianNavn||'—') + '</b></span>' +
+      '<span>Sendt</span><span><b>' + escapeHtml(cashierFormatDatoTid(r.sistSendtAt||r.opprettetAt)) + '</b></span>' +
+      (pam ? '<span>Påminn.</span><span><b>' + pam + '</b></span>' : '') +
+      '</div>' +
+      (actions ? '<div class="faktura-inv-card-actions">' + actions + '</div>' : '') +
+      '</div>';
+  }
+
+  function renderFakturaElevBlockHtml(g){
+    const meta = fakturaStudentMeta(g.studentId);
+    const worst = studentWorstFakturaStatus(g.studentId);
+    const sid = fakturaJsStr(g.studentId);
+    const invoices = (g.invoices || []).slice().sort((a,b) =>
+      String(b.sistSendtAt || b.opprettetAt || '').localeCompare(String(a.sistSendtAt || a.opprettetAt || '')));
+    return '<div class="faktura-elev-block' + (worst === 'forfalt' ? ' forfalt' : worst === 'snart' ? ' snart' : '') + '">' +
+      '<div class="faktura-elev-block-head">' +
+      '<div style="flex:1; min-width:0;">' +
+      '<button type="button" class="faktura-cell-link faktura-elev-block-title" onclick="openFakturaElevKort(\'' + sid + '\')">' + escapeHtml(g.elevNavn||'—') + '</button>' +
+      '<div class="faktura-elev-block-meta">' +
+      (meta.klasseId
+        ? '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevKlasse(\'' + sid + '\')">' + escapeHtml(meta.klasseNavn) + '</button> · '
+        : escapeHtml(meta.klasseNavn) + ' · ') +
+      '<b>' + meta.rest.toLocaleString('no-NO') + ' kr</b> rest · ' +
+      meta.betalt.toLocaleString('no-NO') + ' / ' + meta.belop.toLocaleString('no-NO') + ' kr' +
+      (worst ? ' · ' + fakturaStatusBadgeHtml(worst) : '') +
+      '</div></div>' +
+      '<div class="faktura-elev-block-actions">' +
+      '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevSammendrag(\'' + sid + '\')">Sammendrag</button>' +
+      '<button type="button" class="faktura-cell-link kasserer" onclick="openFakturaElevKasserer(\'' + sid + '\')">→ Kasserer</button>' +
+      '<button type="button" class="btn-edit" onclick="sendGuardianInvoice(\'' + sid + '\')">🧾 Ny faktura</button>' +
+      '</div></div>' +
+      '<div class="faktura-inv-list">' +
+      (invoices.length
+        ? invoices.map(r => renderFakturaInvoiceCardHtml(r)).join('')
+        : '<p class="sub">Ingen fakturaer for denne eleven.</p>') +
+      '</div></div>';
+  }
+
+  function renderFakturaHubHtml(rows, opts){
+    opts = opts || {};
+    if(!rows.length){
+      return '<p class="sub">Ingen fakturaer matcher søk eller filter.</p>';
+    }
+    if(opts.view === 'faktura'){
+      const sorted = rows.slice().sort((a,b) =>
+        String(b.sistSendtAt || b.opprettetAt || '').localeCompare(String(a.sistSendtAt || a.opprettetAt || '')));
+      return '<div class="faktura-inv-list faktura-inv-flat">' +
+        sorted.map(r => renderFakturaInvoiceCardHtml(r, { showElev: true })).join('') +
+        '</div>';
+    }
+    const groups = buildFakturaOversiktGroups(rows);
+    return groups.map(g => renderFakturaElevBlockHtml(g)).join('');
   }
 
   window.openFakturaNyElevModal = function(){
@@ -11094,61 +11183,6 @@
     return Object.values(byStudent).sort((a,b) => (a.elevNavn||'').localeCompare(b.elevNavn||''));
   }
 
-  function renderFakturaElevGroupHtml(g, opts){
-    opts = opts || {};
-    const meta = fakturaStudentMeta(g.studentId);
-    const worst = studentWorstFakturaStatus(g.studentId);
-    const sid = escapeHtml(g.studentId);
-    const invoiceCols = opts.compact
-      ? '<th></th><th>Faktura</th><th>Beløp</th><th>Frist</th><th>Status</th><th></th>'
-      : '<th></th><th>Faktura</th><th>Beløp</th><th>Frist</th><th>Foresatt</th><th>Sendt</th><th>Påm.</th><th>Status</th><th></th>';
-    const invoiceRows = g.invoices.map(r => {
-      const f = fakturaStatusFargeClient(r);
-      const statusTxt = r.status === 'betalt' ? 'Betalt' : r.status === 'delvis_betalt' ? 'Delvis betalt' :
-        f === 'forfalt' ? 'Forfalt' : f === 'snart' ? 'Snart frist' : 'Utestående';
-      const pam = Array.isArray(r.paminnelser) ? r.paminnelser.length : 0;
-      const actions = (r.status !== 'betalt'
-        ? '<button type="button" class="btn-edit btn-mini" onclick="sendFakturaPaminnelse(\'' + r.id + '\')">🔔</button> '
-        : '') +
-        (r.status !== 'betalt'
-          ? '<button type="button" class="btn-edit btn-mini" onclick="resendFakturaInvoice(\'' + r.id + '\')">↻</button>'
-          : '');
-      if(opts.compact){
-        return '<tr class="' + (f === 'forfalt' ? 'row-forfalt' : f === 'snart' ? 'row-snart' : (r.status === 'betalt' ? 'row-betalt' : '')) + '">' +
-          '<td>' + fakturaStatusDot(f) + '</td>' +
-          '<td><strong>' + escapeHtml(r.dokumentRef||'') + '</strong><div class="faktura-ref-sub">' + escapeHtml(r.kategoriLabel||'') + '</div></td>' +
-          '<td><strong>' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</strong></td>' +
-          '<td>' + escapeHtml(r.betalingsfrist||'—') + '</td>' +
-          '<td>' + statusTxt + '</td>' +
-          '<td>' + actions + '</td></tr>';
-      }
-      return '<tr class="' + (f === 'forfalt' ? 'row-forfalt' : f === 'snart' ? 'row-snart' : (r.status === 'betalt' ? 'row-betalt' : '')) + '">' +
-        '<td>' + fakturaStatusDot(f) + '</td>' +
-        '<td><strong>' + escapeHtml(r.dokumentRef||'') + '</strong><div class="faktura-ref-sub">' + escapeHtml(r.kategoriLabel||'') + '</div></td>' +
-        '<td><strong>' + Number(r.belopKr||0).toLocaleString('no-NO') + ' kr</strong></td>' +
-        '<td>' + escapeHtml(r.betalingsfrist||'—') + '</td>' +
-        '<td style="font-size:12px;">' + escapeHtml(r.guardianNavn||'—') + '</td>' +
-        '<td style="font-size:12px;color:#5a6860;">' + cashierFormatDatoTid(r.sistSendtAt||r.opprettetAt) + '</td>' +
-        '<td>' + pam + '</td>' +
-        '<td>' + statusTxt + '</td>' +
-        '<td>' + actions + '</td></tr>';
-    }).join('');
-    return '<div class="faktura-elev-kort' + (worst === 'forfalt' ? ' forfalt' : worst === 'snart' ? ' snart' : '') + '" style="margin-bottom:14px;">' +
-      '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px;">' +
-      '<div style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;">' +
-      '<button type="button" class="faktura-cell-link" onclick="openFakturaElevKort(\'' + sid + '\')"><strong style="font-size:15px;">' + escapeHtml(g.elevNavn||'—') + '</strong></button>' +
-      (meta.klasseId ? '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevKlasse(\'' + sid + '\')">' + escapeHtml(meta.klasseNavn) + '</button>' : '<span class="sub">' + escapeHtml(meta.klasseNavn) + '</span>') +
-      '<button type="button" class="faktura-cell-link subtle" onclick="openFakturaElevSammendrag(\'' + sid + '\')">' +
-      '<span class="faktura-sammendrag" style="max-width:none;"><b>' + meta.rest.toLocaleString('no-NO') + ' kr</b> rest · ' +
-      meta.betalt.toLocaleString('no-NO') + ' / ' + meta.belop.toLocaleString('no-NO') + ' kr</span></button>' +
-      '<button type="button" class="faktura-cell-link kasserer" onclick="openFakturaElevKasserer(\'' + sid + '\')">→ Kasserer</button>' +
-      (worst ? fakturaStatusBadgeHtml(worst) : '') +
-      '</div>' +
-      '<button type="button" class="btn-edit" onclick="sendGuardianInvoice(\'' + sid + '\')">🧾 Ny faktura</button></div>' +
-      '<div class="faktura-oversikt-wrap"><table class="faktura-oversikt-table"><thead><tr>' +
-      invoiceCols + '</tr></thead><tbody>' + invoiceRows + '</tbody></table></div></div>';
-  }
-
   window.openFakturaFullskjerm = function(){
     const search = document.getElementById('fakturaOversiktSearch');
     const filter = document.getElementById('fakturaOversiktFilter');
@@ -11158,6 +11192,7 @@
     if(fsFilter && filter) fsFilter.value = filter.value;
     const overlay = document.getElementById('fakturaFullskjermOverlay');
     if(!overlay) return;
+    if(overlay.parentElement !== document.body) document.body.appendChild(overlay);
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
@@ -11181,7 +11216,7 @@
     const rows = getFakturaOversiktRows({ q: q, filter: filter });
     const groups = buildFakturaOversiktGroups(rows);
     if(metaEl) metaEl.textContent = groups.length + ' elever · ' + rows.length + ' fakturaer';
-    if(!groups.length){
+    if(!rows.length){
       body.innerHTML = '<p class="sub">Ingen fakturaer matcher søk eller filter.</p>';
       return;
     }
@@ -11189,7 +11224,7 @@
     const apneBelop = apne.reduce((s,r) => s + Number(r.belopKr||0), 0);
     body.innerHTML = '<div class="faktura-fullskjerm-summary"><b>Samlet:</b> ' + groups.length + ' elever · ' + rows.length + ' fakturaer · ' +
       apne.length + ' åpne (' + apneBelop.toLocaleString('no-NO') + ' kr)</div>' +
-      groups.map(g => renderFakturaElevGroupHtml(g, { compact: false })).join('');
+      renderFakturaHubHtml(rows, { view: 'elev' });
   };
 
   window.renderFakturaOversikt = function(){
@@ -11230,30 +11265,12 @@
         elevMedApne + ' elever · total restsaldo ' + totalRest.toLocaleString('no-NO') + ' kr';
     }
 
-    const view = document.getElementById('fakturaOversiktView')?.value || 'faktura';
-    if(view === 'elev'){
-      renderFakturaOversiktPerElev(rows, el);
-      return;
-    }
-
-    if(!rows.length){
+    const view = document.getElementById('fakturaOversiktView')?.value || 'elev';
+    if(!rows.length && !(cache.fakturaInvoices||[]).length){
       el.innerHTML = '<p class="sub">Ingen fakturaer ennå. Send fra Kasserer → Mer → Send faktura.</p>';
       return;
     }
-    el.innerHTML = '<div class="faktura-oversikt-wrap"><table class="faktura-oversikt-table"><thead><tr>' +
-      '<th></th><th>Elev</th><th>Klasse</th><th>Sammendrag</th><th>Faktura</th><th>Beløp</th><th>Frist</th><th>Foresatt</th><th>Sendt</th><th>Påm.</th><th>Status</th><th>Kasserer</th><th></th>' +
-      '</tr></thead><tbody>' +
-      rows.map(r => renderFakturaOversiktRow(r)).join('') +
-      '</tbody></table></div>';
-  };
-
-  function renderFakturaOversiktPerElev(rows, el){
-    const groups = buildFakturaOversiktGroups(rows);
-    if(!groups.length){
-      el.innerHTML = '<p class="sub">Ingen fakturaer matcher filteret.</p>';
-      return;
-    }
-    el.innerHTML = groups.map(g => renderFakturaElevGroupHtml(g, { compact: true })).join('');
+    el.innerHTML = renderFakturaHubHtml(rows, { view: view });
   };
 
   let fakturaSendStudentId = null;
