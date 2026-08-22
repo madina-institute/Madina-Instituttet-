@@ -22,14 +22,14 @@ for (const [name, ok] of checks) {
 
 function returnStatusMessage(status) {
   if (status === 'completed') return { kind: 'ok' };
-  if (status === 'cancelled' || status === 'expired') return { kind: 'info' };
-  return { kind: 'info' };
+  if (status === 'cancelled' || status === 'expired') return { kind: 'error' };
+  return { kind: 'error' };
 }
 
 const msgChecks = [
   ['completed is ok', returnStatusMessage('completed').kind === 'ok'],
-  ['cancelled is info not ok', returnStatusMessage('cancelled').kind === 'info'],
-  ['pending is info not ok', returnStatusMessage('pending').kind === 'info'],
+  ['cancelled is error', returnStatusMessage('cancelled').kind === 'error'],
+  ['pending is error', returnStatusMessage('pending').kind === 'error'],
 ];
 for (const [name, ok] of msgChecks) {
   console.log(ok ? '✓' : '✗', name);
