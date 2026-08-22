@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 02:20:00 -->
+<!-- SIST-ENDRET: 2026-08-22 07:16:30 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -671,6 +671,50 @@
     border-radius:999px; background:var(--red); color:#fff;
     font-size:10px; font-weight:800; line-height:1;
   }
+  /* Kasserer alternativ 1: Vipps + Historikk + Mer */
+  .cashier-actions.cashier-actions-compact{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:stretch;
+    min-width:220px;
+  }
+  .cashier-actions.cashier-actions-compact > .btn-edit{
+    margin-right:0;
+  }
+  .cashier-actions.cashier-actions-compact > .btn-vipps-mob{
+    background:var(--vipps); color:#fff; border-color:var(--vipps);
+    flex:1 1 100%;
+  }
+  .cashier-actions.cashier-actions-compact > .btn-cashier-hist,
+  .cashier-actions.cashier-actions-compact > .btn-cashier-mer{
+    flex:1 1 calc(50% - 3px);
+  }
+  .cashier-actions.cashier-actions-compact > .btn-cashier-mer[aria-expanded="true"]{
+    background:var(--paper-2); border-color:var(--emerald);
+    color:var(--emerald-d); font-weight:700;
+  }
+  .cashier-mer-sheet{
+    display:none;
+    flex:1 1 100%;
+    flex-direction:column;
+    gap:6px;
+    margin-top:2px;
+    padding:8px;
+    border:1px dashed var(--line);
+    border-radius:10px;
+    background:var(--paper);
+  }
+  .cashier-mer-sheet.open{ display:flex; }
+  .cashier-mer-sheet .cashier-mer-label{
+    font-family:'Jost',sans-serif; font-size:10px; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; color:#6a7a88;
+    margin:0 0 2px;
+  }
+  .cashier-mer-sheet .btn-edit{
+    display:flex; width:100%; margin:0; justify-content:center;
+    box-sizing:border-box;
+  }
+  .cashier-mer-sheet .btn-edit.btn-danger-soft{
+    color:var(--red); border-color:rgba(168,60,60,0.35); background:#fff;
+  }
   .pay-attempts-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;}
   .pay-attempts-table th,.pay-attempts-table td{
     padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top;
@@ -1152,6 +1196,9 @@
       display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px;
       width:100%; min-width:0 !important;
     }
+    .mob-stack-table .cashier-actions.cashier-actions-compact{
+      display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px;
+    }
     .mob-stack-table .cashier-actions .btn-edit{
       display:flex; align-items:center; justify-content:center; gap:8px;
       width:100%; margin:0; box-sizing:border-box;
@@ -1163,6 +1210,17 @@
     .mob-stack-table .cashier-actions .btn-edit.btn-vipps-mob{
       grid-column:1 / -1;
       background:var(--vipps); color:#fff; border-color:var(--vipps);
+    }
+    .mob-stack-table .cashier-actions-compact > .btn-cashier-hist,
+    .mob-stack-table .cashier-actions-compact > .btn-cashier-mer{
+      flex:unset;
+    }
+    .mob-stack-table .cashier-mer-sheet{
+      grid-column:1 / -1;
+      gap:8px; padding:10px;
+    }
+    .mob-stack-table .cashier-mer-sheet .btn-edit{
+      min-height:44px;
     }
     .mob-stack-table .cashier-pending{
       margin-top:8px; padding:10px 12px; border-radius:10px;
@@ -1180,6 +1238,7 @@
     @media (max-width:380px){
       .mob-stack-table .cashier-actions{ grid-template-columns:1fr; }
       .mob-stack-table .cashier-actions .btn-edit.btn-vipps-mob{ grid-column:auto; }
+      .mob-stack-table .cashier-actions-compact{ grid-template-columns:1fr; }
     }
     #panel-cashier #cashierStats .stat-card,
     #panel-cashierLedelse #cashierLedelseStats .stat-card{
@@ -8353,7 +8412,7 @@
       const eierActions = isEier ? `
               <button type="button" class="btn-edit" onclick="openLedelseDiscountModal('${s.id}')">🏷️ Rabatt</button>
               <button type="button" class="btn-edit" onclick="sendGuardianInvoice('${s.id}')">🧾 Send faktura</button>
-              ${lastVippsPayment ? `<button type="button" class="btn-edit" onclick="openLedelseRefundModal('${s.id}','${escapeHtml(lastVippsPayment.reference)}',${cashierKr(lastVippsPayment.belop)})">💸 Refunder</button>` : ''}` : '';
+              ${lastVippsPayment ? `<button type="button" class="btn-edit btn-danger-soft" onclick="openLedelseRefundModal('${s.id}','${escapeHtml(lastVippsPayment.reference)}',${cashierKr(lastVippsPayment.belop)})">💸 Refunder</button>` : ''}` : '';
       return `
         <tr>
           <td class="cashier-check" data-label=""><input type="checkbox" class="cashier-row-check" data-id="${escapeHtml(s.id)}" ${checked} onchange="onCashierRowCheck('${s.id}', this.checked)"></td>
@@ -8364,16 +8423,20 @@
           <td data-label="Siste betaling" style="font-size:12.5px;">${lastHtml}</td>
           <td data-label="Antall">${history.length}</td>
           <td data-label="Handlinger" class="actions-col">
-            <div class="cashier-actions">
-              <button type="button" class="btn-edit" onclick="showCashierHistory('${s.id}')">🕘 Full historikk</button>
-              <button type="button" class="btn-edit btn-pay-attempts" onclick="showGuardianPayAttempts('${s.id}')">🔁 Foresatt-forsøk${attemptCount ? `<span class="pay-attempt-badge">${attemptCount}</span>` : ''}</button>
-              <button type="button" class="btn-edit" onclick="visBetalingRapport('${s.id}')">👁 Vis rapport</button>
-              <button type="button" class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
-              <button type="button" class="btn-edit" onclick="visSisteBetalingKvittering('${s.id}')">👁 Vis kvittering</button>
-              <button type="button" class="btn-edit" onclick="sendSisteBetalingKvittering('${s.id}')">📄 Send kvittering</button>
+            <div class="cashier-actions cashier-actions-compact">
               <button type="button" class="btn-edit btn-vipps-mob" onclick="sendStudentVippsRequest('${s.id}')">⚡ Send Vipps-krav</button>
-              <button type="button" class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
-              ${eierActions}
+              <button type="button" class="btn-edit btn-cashier-hist" onclick="showCashierHistory('${s.id}')">🕘 Historikk</button>
+              <button type="button" class="btn-edit btn-cashier-mer" aria-expanded="false" onclick="toggleCashierMer(this)">⋯ Mer</button>
+              <div class="cashier-mer-sheet" hidden>
+                <div class="cashier-mer-label">Flere handlinger</div>
+                <button type="button" class="btn-edit" onclick="visBetalingRapport('${s.id}')">👁 Vis rapport</button>
+                <button type="button" class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
+                <button type="button" class="btn-edit" onclick="visSisteBetalingKvittering('${s.id}')">👁 Vis kvittering</button>
+                <button type="button" class="btn-edit" onclick="sendSisteBetalingKvittering('${s.id}')">📄 Send kvittering</button>
+                <button type="button" class="btn-edit btn-pay-attempts" onclick="showGuardianPayAttempts('${s.id}')">🔁 Foresatt-forsøk${attemptCount ? `<span class="pay-attempt-badge">${attemptCount}</span>` : ''}</button>
+                <button type="button" class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
+                ${eierActions}
+              </div>
             </div>
           </td>
         </tr>`;
@@ -8400,6 +8463,25 @@
     const boxes = document.querySelectorAll('#cashierTableBody .cashier-row-check');
     const selectAllEl = document.getElementById('cashierSelectAll');
     if(selectAllEl) selectAllEl.checked = boxes.length > 0 && cashierSelectedIds.size === boxes.length;
+  };
+
+  window.toggleCashierMer = function(btn){
+    if(!btn) return;
+    const wrap = btn.closest('.cashier-actions');
+    const sheet = wrap && wrap.querySelector('.cashier-mer-sheet');
+    if(!sheet) return;
+    const willOpen = !sheet.classList.contains('open');
+    // Lukk andre åpne Mer-paneler i Kasserer
+    document.querySelectorAll('#cashierTableBody .cashier-mer-sheet.open').forEach(el => {
+      if(el === sheet) return;
+      el.classList.remove('open');
+      el.hidden = true;
+      const otherBtn = el.closest('.cashier-actions')?.querySelector('.btn-cashier-mer');
+      if(otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+    });
+    sheet.classList.toggle('open', willOpen);
+    sheet.hidden = !willOpen;
+    btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   };
 
   window.toggleCashierSelectAll = function(checked){
