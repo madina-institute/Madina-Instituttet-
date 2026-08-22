@@ -668,27 +668,28 @@ async function hentVippsBetalingMottakere() {
 async function samleForesattEposter({ student, reg, payerEmail }) {
   const norm = (raw) => String(raw || "").trim().toLowerCase();
   const seen = new Set();
+  const result = [];
   const addUnique = (raw) => {
     const e = norm(raw);
-    if (!e.includes("@") || seen.has(e)) return null;
+    if (!e.includes("@") || seen.has(e)) return;
     seen.add(e);
-    return e;
+    result.push(e);
   };
-
-  // Prefer the person who paid — avoids duplicate mail to g1 + payer when same inbox.
-  const payer = addUnique(payerEmail);
-  if (payer) return [payer];
 
   if (student) {
     const g1 = await loadGuardianDoc(student.foresatt);
-    const primary = addUnique(g1?.epost) || addUnique(student.foresatt1_epost);
-    if (primary) return [primary];
+    const g2 = await loadGuardianDoc(student.foresatt2);
+    addUnique(g1?.epost);
+    addUnique(g2?.epost);
+    addUnique(student.foresatt1_epost);
+    addUnique(student.foresatt2_epost);
   }
   if (reg) {
-    const primary = addUnique(reg.foresatt1_epost);
-    if (primary) return [primary];
+    addUnique(reg.foresatt1_epost);
+    addUnique(reg.foresatt2_epost);
   }
-  return [];
+  addUnique(payerEmail);
+  return result;
 }
 
 async function revertForesattKvitteringClaim(pendingRef) {
