@@ -357,6 +357,9 @@ service cloud.firestore {
       allow read: if erMittBarn(resource.data.studentId);
       allow write: if erAdmin();
     }
+    match /fakturaInvoices/{id} {
+      allow read, write: if erAdmin();
+    }
 
     match /adminUsers/{id}    { allow read, write: if erAdmin(); }
     match /ledelse/{id}       { allow read, write: if erAdmin(); }

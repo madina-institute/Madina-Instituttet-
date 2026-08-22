@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-22 08:10:00 */
+/* SIST-ENDRET: 2026-08-22 16:45:00 */
 /**
  * Signerte tokens for ekstern faktura-betaling (uten innlogging i Foreldreportalen).
  */
@@ -6,8 +6,12 @@ const crypto = require("crypto");
 
 const TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
-function signFakturaPayToken(studentId, secret) {
-  const payload = { sid: String(studentId || ""), exp: Date.now() + TTL_MS };
+function signFakturaPayToken(studentId, secret, invoiceId = null) {
+  const payload = {
+    sid: String(studentId || ""),
+    exp: Date.now() + TTL_MS,
+  };
+  if (invoiceId) payload.inv = String(invoiceId);
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const sig = crypto.createHmac("sha256", secret).update(payloadB64).digest("base64url");
   return payloadB64 + "." + sig;
@@ -29,7 +33,10 @@ function verifyFakturaPayToken(token, secret) {
     return null;
   }
   if (!payload.sid || !payload.exp || Date.now() > Number(payload.exp)) return null;
-  return payload.sid;
+  return {
+    studentId: payload.sid,
+    invoiceId: payload.inv ? String(payload.inv) : null,
+  };
 }
 
 module.exports = { signFakturaPayToken, verifyFakturaPayToken };
