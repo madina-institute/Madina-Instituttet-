@@ -52,7 +52,7 @@
         "//6": "og det stemte: filen LÅ ute. Det var nettleseren som ikke spurte.",
         "//7": "Derfor listes rutene her, én for én. De er de samme som i",
         "//8": "rewrites over — endres den listen, må denne følge med.",
-        "source": "/@(datoer|program|priser|om-oss|team|portaler|påmelding|pamelding|lærer|laerer|foreldre|timeplan|kunngjøringer|kunngjoringer|personvern|brosjyre|medlemskap|laremidler|læremidler|kontor|ledelse|larerinnsyn|lærerinnsyn|foreldreinnsyn|slettelogg|statistikk|helsesjekk|publiser)",
+        "source": "/@(datoer|program|priser|om-oss|team|portaler|påmelding|pamelding|lærer|laerer|foreldre|timeplan|kunngjøringer|kunngjoringer|personvern|brosjyre|medlemskap|laremidler|læremidler|kontor|ledelse|larerinnsyn|lærerinnsyn|foreldreinnsyn|slettelogg|statistikk|helsesjekk|publiser|betale)",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
         ]
@@ -197,6 +197,10 @@
       {
         "source": "/publiser",
         "destination": "/publish-tool.html"
+      },
+      {
+        "source": "/betale",
+        "destination": "/betale.html"
       }
     ]
   }

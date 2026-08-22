@@ -8632,6 +8632,7 @@
   const GENERATE_RAPPORT_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingRapportPdf';
   const GENERATE_KVITTERING_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingKvitteringPdf';
   const GENERATE_FAKTURA_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingFakturaPdf';
+  const GENERATE_FAKTURA_PAY_TOKEN_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateFakturaPayToken';
 
   async function kallPdfCloudFunction(url, payload){
     const bruker = auth.currentUser;
@@ -10520,12 +10521,6 @@
       const cardUrl = escapeHtml(data.cardRedirectUrl);
       html += '<p style="margin:16px 0;"><a href="' + cardUrl + '" style="display:inline-block;background:#1f4a3a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med bankkort</a></p>';
     }
-    if(data.redirectUrl){
-      html += '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Vipps-lenke: <a href="' + escapeHtml(data.redirectUrl) + '">' + escapeHtml(data.redirectUrl) + '</a></p>';
-    }
-    if(data.cardRedirectUrl){
-      html += '<p style="margin:8px 0;font-size:13px;color:#5a6860;word-break:break-all;">Kort-lenke: <a href="' + escapeHtml(data.cardRedirectUrl) + '">' + escapeHtml(data.cardRedirectUrl) + '</a></p>';
-    }
     html += '<p style="margin:14px 0 0;font-size:13px;color:#5a6860;">Eller <a href="' + portalUrl + '">logg inn i Foreldreportalen → Betaling</a> for å velge Vipps eller bankkort.</p>';
     if(data.vippsEnv === 'test' && !data.cardRedirectUrl){
       html += '<p style="margin:8px 0 0;font-size:12px;color:#8a9690;">Bankkort er kun tilgjengelig i produksjon.</p>';
@@ -10547,80 +10542,30 @@
     return 'Betal via lenkene under (Vipps-app eller bankkort der tilgjengelig). Denne e-posten er sendt til alle registrerte foresatte.\n\n';
   }
 
-  function fakturaEpostBetalingFallbackHtml(){
-    const portalUrl = escapeHtml(FORELDRE_PORTAL_BETALING_URL);
-    let html = '<p style="margin:20px 0 8px;font-weight:600;">Du kan også betale via Foreldreportalen:</p>' +
-      '<p style="margin:8px 0;">' +
-      '<a href="' + portalUrl + '" style="display:inline-block;background:#ff5b24;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;margin-right:8px;">Betal med Vipps</a>';
-    if(prisOppsett.vippsKortAktiv){
-      html += '<a href="' + portalUrl + '" style="display:inline-block;background:#1f4a3a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Betal med bankkort</a>';
+  function fakturaEpostBetalingBlokk(payUrl, restKr){
+    const url = payUrl || '';
+    const restTxt = Number(restKr || 0).toLocaleString('no-NO') + ' kr';
+    const urlEsc = escapeHtml(url);
+    const text = '\nDu kan betale digitalt uten å logge inn i Foreldreportalen:\n' +
+      'Gjenstående beløp: ' + restTxt + '\n' +
+      'Velg hele beløpet eller et annet beløp, bekreft, og betal med Vipps' +
+      (prisOppsett.vippsKortAktiv ? ' eller bankkort' : '') + '.\n\n' +
+      (url ? url + '\n' : '');
+    let html = '<div style="margin:20px 0;padding:16px;background:#f8fbfe;border:1px solid #cfe0ef;border-radius:8px;">' +
+      '<p style="margin:0 0 8px;font-weight:600;">Du kan også betale digitalt — uten innlogging</p>' +
+      '<p style="margin:0 0 10px;font-size:14px;color:#5a6860;">Gjenstående: <b>' + escapeHtml(restTxt) + '</b>. Velg <b>alt gjenstående</b> eller <b>et annet beløp</b>, bekreft, og betal med <b>Vipps</b>';
+    if(prisOppsett.vippsKortAktiv) html += ' eller <b>bankkort</b>';
+    html += '.</p>';
+    if(url){
+      html += '<p style="margin:0;"><a href="' + urlEsc + '" style="display:inline-block;background:#ff5b24;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Betal online</a></p>';
     }
-    html += '</p><p style="margin:8px 0;font-size:13px;color:#5a6860;">Logg inn i Foreldreportalen → Betaling for å velge beløp og betalingsmetode.</p>';
-    return html;
+    html += '</div>';
+    return { text, html };
   }
 
-  function fakturaEpostBetalingFallbackTekst(){
-    let out = 'Du kan også betale via Foreldreportalen (logg inn → Betaling):\n' + FORELDRE_PORTAL_BETALING_URL + '\n';
-    if(prisOppsett.vippsKortAktiv) out += 'Der kan du velge Vipps eller bankkort (Visa/Mastercard).\n';
-    else out += 'Der kan du betale med Vipps.\n';
-    return out;
-  }
-
-  function fakturaEpostBetalingBlokk(vippsData){
-    if(vippsData && (vippsData.redirectUrl || vippsData.cardRedirectUrl || vippsData.userFlow === 'PUSH_MESSAGE')){
-      return {
-        text: '\nDu kan også betale enkelt via knappene under:\n\n' + vippsEpostLenkeTekst(vippsData),
-        html: '<p style="margin:20px 0 8px;font-weight:600;">Du kan også betale enkelt via knappene under:</p>' + vippsEpostLenkeHtml(vippsData)
-      };
-    }
-    return {
-      text: '\n' + fakturaEpostBetalingFallbackTekst(),
-      html: fakturaEpostBetalingFallbackHtml()
-    };
-  }
-
-  async function skaffVippsLenkerForFaktura(student, restKr){
-    const pending = adminPendingVippsForStudent(student.id);
-    if(pending.length){
-      const groupId = vippsPendingGroupKey(pending[0]);
-      const groupItems = (cache.pendingVippsPayments || []).filter(p =>
-        vippsPendingGroupKey(p) === groupId && String(p.status || 'pending') === 'pending'
-      );
-      const wallet = groupItems.find(i => i.paymentRole === 'email_link')
-        || groupItems.find(i => i.redirectUrl && i.paymentRole !== 'email_card')
-        || groupItems.find(i => i.paymentMethodType !== 'CARD' && i.redirectUrl);
-      const card = groupItems.find(i => i.paymentRole === 'email_card')
-        || groupItems.find(i => i.paymentMethodType === 'CARD' && i.redirectUrl);
-      if(wallet?.redirectUrl || card?.redirectUrl){
-        return {
-          redirectUrl: wallet?.redirectUrl || null,
-          cardRedirectUrl: card?.redirectUrl || null,
-          portalPaymentUrl: FORELDRE_PORTAL_BETALING_URL,
-          reused: true
-        };
-      }
-    }
-    const guardian = cache.guardians.find(g => g.id === student.foresatt);
-    const phone = String((guardian && guardian.telefon) || student.foresatt1_tlf || '').replace(/\D/g, '').slice(-8);
-    if(!/^\d{8}$/.test(phone)) return null;
-    try{
-      const data = await kallVippsFunksjon(VIPPS_CREATE_PAYMENT_URL, {
-        type: 'balance', targetId: student.id, amountKr: restKr, phoneNumber: phone
-      });
-      if(!data.ok) return null;
-      return {
-        redirectUrl: data.redirectUrl || null,
-        cardRedirectUrl: data.cardRedirectUrl || null,
-        portalPaymentUrl: data.portalPaymentUrl || FORELDRE_PORTAL_BETALING_URL,
-        vippsEnv: data.vippsEnv,
-        userFlow: data.userFlow,
-        dualPayment: data.dualPayment,
-        pushInAppExpected: data.pushInAppExpected
-      };
-    } catch(err){
-      console.warn('Vipps-lenker for faktura feilet', err);
-      return null;
-    }
+  async function genererFakturaPayToken(studentId){
+    const data = await kallPdfCloudFunction(GENERATE_FAKTURA_PAY_TOKEN_URL, { studentId });
+    return { payUrl: data.payUrl || '', token: data.token || '' };
   }
 
   async function sendVippsBetalingEpost(eposter, data, opts){
@@ -10971,20 +10916,21 @@
       return;
     }
 
-    const oppsummering = 'Beløp å betale: ' + rest.toLocaleString('no-NO') + ' kr';
+    const oppsummering = 'Gjenstående beløp: ' + rest.toLocaleString('no-NO') + ' kr';
     const betalingsinfo = [
       'Kontonummer: ' + kontoFmt,
       'IBAN: ' + ibanFmt,
       'Merk betalingen med elevens fulle navn.'
     ].join('\n');
 
-    let vippsData = null;
+    let payUrl = '';
     try{
-      vippsData = await skaffVippsLenkerForFaktura(student, rest);
-    } catch(vippsErr){
-      console.warn('Kunne ikke hente Vipps-lenker for faktura', vippsErr);
+      const payToken = await genererFakturaPayToken(student.id);
+      payUrl = payToken.payUrl || '';
+    } catch(payErr){
+      console.warn('Faktura-betalingslenke feilet', payErr);
     }
-    const betalingBlokk = fakturaEpostBetalingBlokk(vippsData);
+    const betalingBlokk = fakturaEpostBetalingBlokk(payUrl, rest);
 
     const portalTekst = [
       'Hei ' + (guardian.navn || '') + ',', '',
@@ -11038,7 +10984,7 @@
             }]
           }
         });
-        showToast('✓ Faktura sendt med PDF og betalingsknapper (e-post + Foreldreportal).');
+        showToast('✓ Faktura sendt med PDF' + (payUrl ? ' og betalingslenke' : '') + ' (e-post + Foreldreportal).');
       } else {
         showToast('⚠️ Ingen e-post registrert for foresatte — kun Foreldreportal.', true);
       }

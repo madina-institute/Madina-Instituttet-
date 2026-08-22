@@ -34,6 +34,7 @@ const crypto = require("crypto");
 const { genererBetalingKvitteringPdf } = require("./betalingKvitteringPdf");
 const { genererBetalingRapportPdf } = require("./betalingRapportPdf");
 const { genererBetalingFakturaPdf } = require("./betalingFakturaPdf");
+const { signFakturaPayToken, verifyFakturaPayToken } = require("./fakturaPayToken");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -2705,6 +2706,223 @@ exports.generateBetalingFakturaPdf = onRequest(
       res.status(200).json({ ok: true, base64: pdf.base64, filnavn: pdf.filnavn });
     } catch (err) {
       logger.error("generateBetalingFakturaPdf error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+function parseStudentKr(val) {
+  const n = parseFloat(String(val || "0").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function hentStudentRestKr(studentId) {
+  const snap = await db.collection("students").doc(studentId).get();
+  if (!snap.exists) return null;
+  const s = snap.data();
+  const belopKr = parseStudentKr(s.belop);
+  const betaltKr = parseStudentKr(s.belopBetalt);
+  return {
+    elevNavn: s.navn || "elev",
+    belopKr,
+    betaltKr,
+    restKr: Math.max(0, belopKr - betaltKr),
+  };
+}
+
+function fakturaPayUrl(token) {
+  return `${SITE_BASE_URL.value()}/betale?t=${encodeURIComponent(token)}`;
+}
+
+// =======================================================================
+// generateFakturaPayToken — Kasserer (Ledelse): signert lenke til ekstern betaling
+//    POST { studentId }
+// =======================================================================
+exports.generateFakturaPayToken = onRequest(
+  { cors: true, secrets: [VIPPS_WEBHOOK_SECRET] },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
+    try {
+      const { studentId } = req.body || {};
+      if (!studentId) {
+        res.status(400).json({ ok: false, error: "Mangler studentId." });
+        return;
+      }
+      const info = await hentStudentRestKr(studentId);
+      if (!info) {
+        res.status(404).json({ ok: false, error: "Fant ikke eleven." });
+        return;
+      }
+      if (info.restKr <= 0) {
+        res.status(400).json({ ok: false, error: "Ingen restbeløp å betale." });
+        return;
+      }
+      const token = signFakturaPayToken(studentId, VIPPS_WEBHOOK_SECRET.value());
+      res.status(200).json({ ok: true, token, payUrl: fakturaPayUrl(token) });
+    } catch (err) {
+      logger.error("generateFakturaPayToken error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
+// getFakturaBetalingInfo — Offentlig: info for ekstern betalingsside (token)
+//    POST { token }
+// =======================================================================
+exports.getFakturaBetalingInfo = onRequest(
+  { cors: true, secrets: [VIPPS_WEBHOOK_SECRET] },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+    try {
+      const { token } = req.body || {};
+      const studentId = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
+      if (!studentId) {
+        res.status(403).json({ ok: false, error: "Ugyldig eller utløpt betalingslenke." });
+        return;
+      }
+      const info = await hentStudentRestKr(studentId);
+      if (!info) {
+        res.status(404).json({ ok: false, error: "Fant ikke eleven." });
+        return;
+      }
+      const prisOppsett = await hentPrisoppsett();
+      res.status(200).json({
+        ok: true,
+        elevNavn: info.elevNavn,
+        belopKr: info.belopKr,
+        betaltKr: info.betaltKr,
+        restKr: info.restKr,
+        cardAvailable: prisOppsett.vippsKortAktiv === true && VIPPS_ENV.value() === "prod",
+        vippsEnv: VIPPS_ENV.value() === "prod" ? "prod" : "test",
+      });
+    } catch (err) {
+      logger.error("getFakturaBetalingInfo error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
+// createFakturaExternalPayment — Offentlig: Vipps/kort fra faktura-lenke (token)
+//    POST { token, amountKr, phoneNumber, paymentMethodType: 'WALLET'|'CARD' }
+// =======================================================================
+exports.createFakturaExternalPayment = onRequest(
+  {
+    cors: true,
+    secrets: [VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY, VIPPS_WEBHOOK_SECRET],
+  },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+    try {
+      const { token, amountKr, phoneNumber, paymentMethodType } = req.body || {};
+      const studentId = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
+      if (!studentId) {
+        res.status(403).json({ ok: false, error: "Ugyldig eller utløpt betalingslenke." });
+        return;
+      }
+      const method = paymentMethodType === "CARD" ? "CARD" : "WALLET";
+      const amount = Number(amountKr);
+      if (!amount || amount <= 0) {
+        res.status(400).json({ ok: false, error: "Ugyldig beløp." });
+        return;
+      }
+      const info = await hentStudentRestKr(studentId);
+      if (!info) {
+        res.status(404).json({ ok: false, error: "Fant ikke eleven." });
+        return;
+      }
+      if (info.restKr <= 0) {
+        res.status(400).json({ ok: false, error: "Ingen restbeløp å betale." });
+        return;
+      }
+      if (amount > info.restKr + 0.001) {
+        res.status(400).json({ ok: false, error: "Beløpet overstiger restsaldoen." });
+        return;
+      }
+      if (method === "CARD" && VIPPS_ENV.value() !== "prod") {
+        res.status(400).json({
+          ok: false,
+          error: "Bankkort er kun tilgjengelig i produksjon. Bruk Vipps i test-miljø.",
+          cardNotInTest: true,
+        });
+        return;
+      }
+      let normalizedPhone = String(phoneNumber || "").replace(/\D/g, "");
+      if (method === "WALLET") {
+        if (normalizedPhone.length === 8) normalizedPhone = "47" + normalizedPhone;
+        if (normalizedPhone.length !== 10 || !normalizedPhone.startsWith("47")) {
+          res.status(400).json({ ok: false, error: "Oppgi norsk mobilnummer (8 siffer) for Vipps." });
+          return;
+        }
+      }
+
+      const accessToken = await getVippsAccessToken();
+      const reference = `madina-faktura-${studentId.slice(-8)}-${Date.now()}`;
+      const returnUrl = `${SITE_BASE_URL.value()}/betale?vipps=return&t=${encodeURIComponent(token)}`;
+      const paymentDescription = `Skolepenger — ${info.elevNavn} (Madina Skole)`;
+
+      const attempt = await postVippsPayment(accessToken, {
+        reference,
+        normalizedPhone: method === "WALLET" ? normalizedPhone : null,
+        amountKr: amount,
+        paymentDescription,
+        userFlow: "WEB_REDIRECT",
+        returnUrl,
+        paymentMethodType: method,
+      });
+
+      if (!attempt.ok) {
+        logger.error("Faktura ekstern betaling feilet", attempt.bodyText);
+        res.status(502).json({ ok: false, error: "Vipps avviste betalingen: " + attempt.bodyText });
+        return;
+      }
+
+      const redirectUrl = await resolveVippsRedirectUrl(
+        reference, accessToken, attempt.paymentData || {}, "WEB_REDIRECT"
+      );
+      if (!redirectUrl) {
+        res.status(502).json({ ok: false, error: "Kunne ikke hente betalingslenke fra Vipps." });
+        return;
+      }
+
+      await db.collection("pendingVippsPayments").add({
+        reference,
+        paymentGroupId: reference,
+        paymentRole: method === "CARD" ? "email_card" : "email_link",
+        paymentMethodType: method,
+        type: "balance",
+        targetId: studentId,
+        studentId,
+        elevNavn: info.elevNavn,
+        amountKr: amount,
+        phoneNumber: method === "WALLET" ? normalizedPhone.slice(-8) : null,
+        userFlow: "WEB_REDIRECT",
+        redirectUrl,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        createdBy: null,
+        initiatedBy: "faktura_email",
+      });
+
+      res.status(200).json({ ok: true, redirectUrl, reference, amountKr: amount });
+    } catch (err) {
+      logger.error("createFakturaExternalPayment error", err);
       res.status(500).json({ ok: false, error: String(err.message || err) });
     }
   }
