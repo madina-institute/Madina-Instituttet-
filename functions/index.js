@@ -33,6 +33,7 @@ const admin = require("firebase-admin");
 const crypto = require("crypto");
 const { genererBetalingKvitteringPdf } = require("./betalingKvitteringPdf");
 const { genererBetalingRapportPdf } = require("./betalingRapportPdf");
+const { genererBetalingFakturaPdf } = require("./betalingFakturaPdf");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -2651,6 +2652,59 @@ exports.generateBetalingRapportPdf = onRequest(
       res.status(200).json({ ok: true, base64: pdf.base64, filnavn: pdf.filnavn, dokumentRef: docRef });
     } catch (err) {
       logger.error("generateBetalingRapportPdf error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
+// generateBetalingFakturaPdf — Kasserer (Ledelse): lager faktura-PDF
+//    med PDFKit (samme motor som betalingskvittering).
+//    POST { mottakerNavn, elevNavn, restKr, kontonummer, iban, studentId, tidspunkt }
+// =======================================================================
+exports.generateBetalingFakturaPdf = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
+
+    try {
+      const body = req.body || {};
+      const {
+        mottakerNavn,
+        elevNavn,
+        restKr,
+        kontonummer,
+        iban,
+        studentId,
+        tidspunkt,
+      } = body;
+
+      if (!elevNavn && !studentId) {
+        res.status(400).json({ ok: false, error: "Mangler elev." });
+        return;
+      }
+
+      const pdf = await genererBetalingFakturaPdf({
+        mottakerNavn: mottakerNavn || "Hei",
+        elevNavn: elevNavn || "—",
+        restKr: Number(restKr) || 0,
+        kontonummer: kontonummer || "—",
+        iban: iban || "—",
+        studentId: studentId || "",
+        tidspunkt: tidspunkt || new Date().toLocaleString("no-NO", { timeZone: "Europe/Oslo" }),
+      });
+
+      res.status(200).json({ ok: true, base64: pdf.base64, filnavn: pdf.filnavn });
+    } catch (err) {
+      logger.error("generateBetalingFakturaPdf error", err);
       res.status(500).json({ ok: false, error: String(err.message || err) });
     }
   }
