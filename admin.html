@@ -655,8 +655,44 @@
   .btn-edit.btn-mini{ padding:4px 8px; font-size:10.5px; margin:0 4px 4px 0; white-space:nowrap; }
   .cashier-hist-actions{ white-space:nowrap; min-width:140px; }
   .cashier-hist-actions .btn-edit.btn-mini:last-child{ margin-right:0; }
-  #cashierHistoryBody table{ width:100%; font-size:12.5px; }
-  #cashierHistoryBody th:last-child, #cashierHistoryBody td:last-child{ text-align:right; }
+  #cashierHistoryBody{ max-height:min(62vh,520px); overflow:auto; }
+  .pay-hist-summary{
+    display:flex; flex-wrap:wrap; gap:10px 16px; margin-bottom:14px; padding:12px 14px;
+    background:var(--paper-2); border-radius:10px; font-size:13px; line-height:1.45;
+  }
+  .pay-hist-summary b{ color:var(--emerald-d); }
+  .pay-hist-list{ display:flex; flex-direction:column; gap:10px; }
+  .pay-hist-card{
+    border:1px solid var(--tabell-linje); border-radius:12px; background:#fff; overflow:hidden;
+    transition:box-shadow .15s ease, border-color .15s ease;
+  }
+  .pay-hist-card.open{ box-shadow:0 4px 14px rgba(31,74,58,0.08); border-color:rgba(31,74,58,0.22); }
+  .pay-hist-card.refund{ border-color:#f0c8c8; background:#fffafa; }
+  .pay-hist-card-head{
+    width:100%; text-align:left; padding:14px 16px; background:transparent; border:none;
+    cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:12px;
+  }
+  .pay-hist-card-head:hover{ background:rgba(31,74,58,0.03); }
+  .pay-hist-card-amt{ font-size:20px; font-weight:800; color:var(--emerald-d); min-width:76px; flex-shrink:0; }
+  .pay-hist-card-amt.neg{ color:var(--red); }
+  .pay-hist-card-main{ flex:1; min-width:0; }
+  .pay-hist-card-date{ font-size:13.5px; font-weight:600; color:var(--ink); }
+  .pay-hist-card-kanal{ font-size:12px; color:#5a6860; margin-top:3px; }
+  .pay-hist-chevron{ color:#8a9690; font-size:11px; flex-shrink:0; transition:transform .15s ease; }
+  .pay-hist-card.open .pay-hist-chevron{ transform:rotate(180deg); }
+  .pay-hist-card-body{ display:none; padding:0 16px 14px; border-top:1px dashed var(--tabell-linje); font-size:13px; }
+  .pay-hist-card.open .pay-hist-card-body{ display:block; padding-top:12px; }
+  .pay-hist-detail-grid{ display:grid; grid-template-columns:minmax(88px,auto) 1fr; gap:6px 12px; margin-bottom:12px; }
+  .pay-hist-detail-grid .lbl{ color:#5a6860; font-weight:600; }
+  .pay-hist-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+  .pay-hist-kanal-pill{
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;
+    background:#eef6fd; color:var(--emerald); margin-top:4px;
+  }
+  .pay-hist-kanal-pill.vipps{ background:#fff0ea; color:#c44a12; }
+  .pay-hist-kanal-pill.card{ background:#eef0ff; color:#1a1f71; }
+  .pay-hist-kanal-pill.refund{ background:#fdecea; color:#8a2a2a; }
+  .pay-hist-kanal-pill.manual{ background:#f4f6f4; color:#5a6860; }
   .cashier-pending-row .btn-cancel-vipps{
     font-family:'Jost',sans-serif; font-size:12px; font-weight:600;
     background:#fff; color:var(--red); border:1px solid rgba(168,60,60,0.35);
@@ -3741,6 +3777,7 @@
   <div class="overlay" id="cashierHistoryOverlay">
     <div class="modal" style="max-width:720px;">
       <h3 id="cashierHistoryTitle">Betalingshistorikk</h3>
+      <div id="cashierHistorySummary" class="pay-hist-summary hidden"></div>
       <div id="cashierHistoryBody"></div>
       <div class="modal-actions" style="flex-wrap:wrap; gap:8px;">
         <button type="button" class="btn btn-ghost" id="cashierHistoryVisRapportBtn" onclick="visBetalingRapport(cashierHistoryStudentId)">👁 Vis rapport</button>
@@ -8594,6 +8631,81 @@
   function openCashierOverlay(id){ document.getElementById(id).classList.add('open'); }
   window.closeCashierOverlay = function(id){ document.getElementById(id).classList.remove('open'); };
 
+  function payHistKanalPill(kanal){
+    const k = String(kanal || '').toLowerCase();
+    let cls = 'manual';
+    if(k.includes('refusjon')) cls = 'refund';
+    else if(k.includes('vipps')) cls = 'vipps';
+    else if(k.includes('bankkort') || k.includes('kort')) cls = 'card';
+    return '<span class="pay-hist-kanal-pill ' + cls + '">' + escapeHtml(kanal || 'Betaling') + '</span>';
+  }
+
+  function payHistLinkedFaktura(p, studentId){
+    const ref = String(p?.reference || '');
+    const inv = (cache.fakturaInvoices || []).find(i =>
+      i.studentId === studentId && (
+        (ref && i.dokumentRef && ref.includes(String(i.dokumentRef).replace(/-/g,''))) ||
+        (Math.abs(Number(i.belopKr||0) - cashierKr(p.belop)) < 0.01 &&
+          String(i.sistSendtAt||i.opprettetAt||'').slice(0,10) === String(p.dato||'').slice(0,10))
+      ));
+    return inv || null;
+  }
+
+  window.togglePayHistCard = function(cardId){
+    const card = document.getElementById(cardId);
+    if(!card) return;
+    const willOpen = !card.classList.contains('open');
+    document.querySelectorAll('#cashierHistoryBody .pay-hist-card.open').forEach(c => {
+      if(c !== card) c.classList.remove('open');
+    });
+    card.classList.toggle('open', willOpen);
+  };
+
+  function renderCashierHistoryCards(student, history){
+    const summaryEl = document.getElementById('cashierHistorySummary');
+    const belop = cashierKr(student.belop);
+    const betalt = cashierKr(student.belopBetalt);
+    const rest = belop - betalt;
+    const openFakt = studentOpenFakturaer(student.id);
+    if(summaryEl){
+      summaryEl.classList.remove('hidden');
+      summaryEl.innerHTML =
+        '<span>Totalt <b>' + belop.toLocaleString('no-NO') + ' kr</b></span>' +
+        '<span>Betalt <b>' + betalt.toLocaleString('no-NO') + ' kr</b></span>' +
+        '<span>Gjenstår <b style="color:' + (rest > 0 ? 'var(--red)' : 'var(--emerald)') + ';">' + rest.toLocaleString('no-NO') + ' kr</b></span>' +
+        '<span>' + history.length + ' betaling' + (history.length === 1 ? '' : 'er') + '</span>' +
+        (openFakt.length ? '<span>' + openFakt.length + ' åpen faktura</span>' : '');
+    }
+    return '<div class="pay-hist-list">' + history.map((p, idx) => {
+      const meta = paymentMetaFromRecord(p, student.id);
+      const neg = meta.belop < 0;
+      const cardId = 'payHistCard-' + idx;
+      const inv = payHistLinkedFaktura(p, student.id);
+      const betaler = [p.betalerRolle, p.betalerNavn].filter(x => x && x !== '—').join(' · ');
+      return '<div class="pay-hist-card' + (neg ? ' refund' : '') + '" id="' + cardId + '">' +
+        '<button type="button" class="pay-hist-card-head" onclick="togglePayHistCard(\'' + cardId + '\')">' +
+        '<span class="pay-hist-card-amt' + (neg ? ' neg' : '') + '">' + meta.belop.toLocaleString('no-NO') + ' kr</span>' +
+        '<span class="pay-hist-card-main">' +
+        '<div class="pay-hist-card-date">' + escapeHtml(meta.tidspunkt) + '</div>' +
+        '<div class="pay-hist-card-kanal">' + payHistKanalPill(meta.kanal) + '</div>' +
+        '</span><span class="pay-hist-chevron">▼</span></button>' +
+        '<div class="pay-hist-card-body">' +
+        '<div class="pay-hist-detail-grid">' +
+        '<span class="lbl">Kilde</span><span>' + escapeHtml(meta.type) + '</span>' +
+        '<span class="lbl">Referanse</span><span style="word-break:break-all;">' + escapeHtml(meta.referanse) + '</span>' +
+        (betaler ? '<span class="lbl">Betaler</span><span>' + escapeHtml(betaler) + '</span>' : '') +
+        (p.betalerTelefon && p.betalerTelefon !== '—' ? '<span class="lbl">Telefon</span><span>' + escapeHtml(p.betalerTelefon) + '</span>' : '') +
+        (inv ? '<span class="lbl">Faktura</span><span>' + escapeHtml(inv.dokumentRef||'') +
+          (inv.kategoriLabel ? ' · ' + escapeHtml(inv.kategoriLabel) : '') +
+          (inv.betalingsfrist ? ' · frist ' + escapeHtml(inv.betalingsfrist) : '') + '</span>' : '') +
+        '</div>' +
+        '<div class="pay-hist-actions">' +
+        '<button type="button" class="btn-edit" onclick="event.stopPropagation();visBetalingKvittering(\'' + student.id + '\',\'' + p.id + '\')">👁 Vis kvittering</button>' +
+        '<button type="button" class="btn-edit" onclick="event.stopPropagation();sendBetalingKvitteringForPayment(\'' + student.id + '\',\'' + p.id + '\')">📄 Send kvittering</button>' +
+        '</div></div></div>';
+    }).join('') + '</div>';
+  }
+
   window.showCashierHistory = function(studentId){
     const student = cache.students.find(s => s.id === studentId);
     if(!student) return;
@@ -8601,23 +8713,16 @@
     document.getElementById('cashierHistoryTitle').textContent = 'Betalingshistorikk — ' + (student.navn || '');
     const history = cache.studentPayments.filter(p => p.studentId === studentId);
     const body = document.getElementById('cashierHistoryBody');
+    const summaryEl = document.getElementById('cashierHistorySummary');
     const visRapportBtn = document.getElementById('cashierHistoryVisRapportBtn');
     const sendRapportBtn = document.getElementById('cashierHistorySendRapportBtn');
     if(visRapportBtn) visRapportBtn.style.display = history.length ? '' : 'none';
     if(sendRapportBtn) sendRapportBtn.style.display = history.length ? '' : 'none';
     if(history.length === 0){
+      if(summaryEl) summaryEl.classList.add('hidden');
       body.innerHTML = '<p style="color:#8a9a90; font-family:\'Jost\',sans-serif; font-size:13.5px;">Ingen registrerte betalinger ennå.</p>';
     } else {
-      body.innerHTML = '<table><thead><tr><th>Dato/tid</th><th>Beløp</th><th>Kilde</th><th>Handlinger</th></tr></thead><tbody>' +
-        history.map(p => `<tr>
-          <td>${cashierFormatDatoTid(p.dato)}</td>
-          <td>${cashierKr(p.belop).toLocaleString('no-NO')} kr</td>
-          <td>${escapeHtml(p.kilde || '—')}</td>
-          <td class="cashier-hist-actions">
-            <button type="button" class="btn-edit btn-mini" onclick="sendBetalingKvitteringForPayment('${studentId}','${p.id}')">📄 Send</button>
-            <button type="button" class="btn-edit btn-mini" onclick="visBetalingKvittering('${studentId}','${p.id}')">👁 Vis</button>
-          </td>
-        </tr>`).join('') + '</tbody></table>';
+      body.innerHTML = renderCashierHistoryCards(student, history);
     }
     openCashierOverlay('cashierHistoryOverlay');
   };
