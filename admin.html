@@ -652,6 +652,11 @@
   .btn-ghost{background:#fff; border:1px solid var(--line); color:var(--ink);}
   .btn-danger{background:transparent; color:var(--red); border:1px solid rgba(168,60,60,0.3); padding:6px 10px; font-size:11px;}
   .btn-edit{background:transparent; color:var(--emerald); border:1px solid rgba(31,74,58,0.25); padding:6px 10px; font-size:11px; margin-right:6px;}
+  .btn-edit.btn-mini{ padding:4px 8px; font-size:10.5px; margin:0 4px 4px 0; white-space:nowrap; }
+  .cashier-hist-actions{ white-space:nowrap; min-width:140px; }
+  .cashier-hist-actions .btn-edit.btn-mini:last-child{ margin-right:0; }
+  #cashierHistoryBody table{ width:100%; font-size:12.5px; }
+  #cashierHistoryBody th:last-child, #cashierHistoryBody td:last-child{ text-align:right; }
   .cashier-pending-row .btn-cancel-vipps{
     font-family:'Jost',sans-serif; font-size:12px; font-weight:600;
     background:#fff; color:var(--red); border:1px solid rgba(168,60,60,0.35);
@@ -3662,10 +3667,12 @@
 
   <!-- Cashier: full payment history modal -->
   <div class="overlay" id="cashierHistoryOverlay">
-    <div class="modal" style="max-width:560px;">
+    <div class="modal" style="max-width:720px;">
       <h3 id="cashierHistoryTitle">Betalingshistorikk</h3>
       <div id="cashierHistoryBody"></div>
-      <div class="modal-actions">
+      <div class="modal-actions" style="flex-wrap:wrap; gap:8px;">
+        <button type="button" class="btn btn-ghost" id="cashierHistoryVisRapportBtn" onclick="visBetalingRapport(cashierHistoryStudentId)">👁 Vis rapport</button>
+        <button type="button" class="btn btn-ghost" id="cashierHistorySendRapportBtn" onclick="sendCashierReport(cashierHistoryStudentId)">📧 Send rapport</button>
         <button class="btn btn-ghost" onclick="closeCashierOverlay('cashierHistoryOverlay')">Lukk</button>
       </div>
     </div>
@@ -8080,6 +8087,7 @@
   // ===================================================================
   let cashierSelectedClass = '';
   const cashierSelectedIds = new Set();
+  let cashierHistoryStudentId = null;
 
   const cashierKr = v => parseFloat((v||'0').toString().replace(/[^\d.-]/g,'')) || 0;
   function cashierFormatDatoTid(iso){
@@ -8358,7 +8366,9 @@
             <div class="cashier-actions">
               <button type="button" class="btn-edit" onclick="showCashierHistory('${s.id}')">🕘 Full historikk</button>
               <button type="button" class="btn-edit btn-pay-attempts" onclick="showGuardianPayAttempts('${s.id}')">🔁 Foresatt-forsøk${attemptCount ? `<span class="pay-attempt-badge">${attemptCount}</span>` : ''}</button>
+              <button type="button" class="btn-edit" onclick="visBetalingRapport('${s.id}')">👁 Vis rapport</button>
               <button type="button" class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
+              <button type="button" class="btn-edit" onclick="visSisteBetalingKvittering('${s.id}')">👁 Vis kvittering</button>
               <button type="button" class="btn-edit" onclick="sendSisteBetalingKvittering('${s.id}')">📄 Send kvittering</button>
               <button type="button" class="btn-edit btn-vipps-mob" onclick="sendStudentVippsRequest('${s.id}')">⚡ Send Vipps-krav</button>
               <button type="button" class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
@@ -8405,17 +8415,26 @@
   window.showCashierHistory = function(studentId){
     const student = cache.students.find(s => s.id === studentId);
     if(!student) return;
+    cashierHistoryStudentId = studentId;
     document.getElementById('cashierHistoryTitle').textContent = 'Betalingshistorikk — ' + (student.navn || '');
-    const history = cache.studentPayments.filter(p => p.studentId === studentId); // sorted newest-first
+    const history = cache.studentPayments.filter(p => p.studentId === studentId);
     const body = document.getElementById('cashierHistoryBody');
+    const visRapportBtn = document.getElementById('cashierHistoryVisRapportBtn');
+    const sendRapportBtn = document.getElementById('cashierHistorySendRapportBtn');
+    if(visRapportBtn) visRapportBtn.style.display = history.length ? '' : 'none';
+    if(sendRapportBtn) sendRapportBtn.style.display = history.length ? '' : 'none';
     if(history.length === 0){
       body.innerHTML = '<p style="color:#8a9a90; font-family:\'Jost\',sans-serif; font-size:13.5px;">Ingen registrerte betalinger ennå.</p>';
     } else {
-      body.innerHTML = '<table><thead><tr><th>Dato/tid</th><th>Beløp</th><th>Kilde</th></tr></thead><tbody>' +
+      body.innerHTML = '<table><thead><tr><th>Dato/tid</th><th>Beløp</th><th>Kilde</th><th>Handlinger</th></tr></thead><tbody>' +
         history.map(p => `<tr>
           <td>${cashierFormatDatoTid(p.dato)}</td>
           <td>${cashierKr(p.belop).toLocaleString('no-NO')} kr</td>
           <td>${escapeHtml(p.kilde || '—')}</td>
+          <td class="cashier-hist-actions">
+            <button type="button" class="btn-edit btn-mini" onclick="sendBetalingKvitteringForPayment('${studentId}','${p.id}')">📄 Send</button>
+            <button type="button" class="btn-edit btn-mini" onclick="visBetalingKvittering('${studentId}','${p.id}')">👁 Vis</button>
+          </td>
         </tr>`).join('') + '</tbody></table>';
     }
     openCashierOverlay('cashierHistoryOverlay');
@@ -8717,7 +8736,7 @@
     }
   }
 
-  async function sendBetalingKvitteringTilForesatt({ student, belop, kanal, type, referanse }){
+  async function sendBetalingKvitteringTilForesatt({ student, belop, kanal, type, referanse, tidspunkt }){
     const eposter = epostTilBeggeForesatteForElev(student);
     if(!eposter.length) return { sendt: false, grunn: 'ingen e-post' };
     const g1 = cache.guardians.find(g => g.id === student.foresatt);
@@ -8725,7 +8744,7 @@
       mottakerNavn: g1?.navn || 'Hei',
       elevNavn: student.navn || 'elev',
       belop, kanal, type, referanse,
-      tidspunkt: new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' })
+      tidspunkt: tidspunkt || new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' })
     });
     const belopTxt = (typeof belop === 'number' ? belop : parseFloat(belop) || 0).toLocaleString('no-NO') + ' kr';
     const subject = 'Betalingsbekreftelse — ' + (student.navn || 'elev') + ' (' + belopTxt + ')';
@@ -8741,6 +8760,61 @@
       }
     });
     return { sendt: true, epost: eposter.join(', ') };
+  }
+
+  function paymentMetaFromRecord(p, studentId){
+    const kilde = String(p?.kilde || '');
+    let kanal = 'Betaling';
+    if(kilde.includes('Vipps-refusjon')) kanal = 'Vipps-refusjon';
+    else if(kilde.includes('Vipps')) kanal = 'Vipps';
+    else if(kilde.includes('Bankkort')) kanal = 'Bankkort';
+    else if(kilde.includes('Manuell')) kanal = kilde.match(/^Manuell\s*\([^)]+\)/i)?.[0] || 'Manuell';
+    return {
+      belop: cashierKr(p?.belop),
+      kanal,
+      type: kilde || 'Betaling',
+      referanse: p?.reference || ('KV-' + String(studentId || '').slice(-6).toUpperCase() + '-' + String(p?.id || '').slice(-6).toUpperCase()),
+      tidspunkt: cashierFormatDatoTid(p?.dato)
+    };
+  }
+
+  function hentStudentPayment(studentId, paymentId){
+    return cache.studentPayments.find(p => p.id === paymentId && p.studentId === studentId) || null;
+  }
+
+  async function apnePdfBlobForVisning(blob, filnavn){
+    const url = URL.createObjectURL(blob);
+    try{
+      const w = window.open(url, '_blank');
+      if(w){
+        w.addEventListener('load', () => {
+          try{ w.focus(); w.print(); }catch(_){}
+        }, { once: true });
+        showToast('PDF åpnet — velg skriver eller «Lagre som PDF».');
+        setTimeout(() => URL.revokeObjectURL(url), 120000);
+        return;
+      }
+    }catch(_){}
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filnavn;
+    a.click();
+    showToast('PDF lastet ned — åpne filen for å skrive ut.');
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  }
+
+  async function lagKvitteringPdfForPayment(student, payment){
+    const meta = paymentMetaFromRecord(payment, student.id);
+    const g1 = cache.guardians.find(g => g.id === student.foresatt);
+    return genererBetalingKvitteringPdf({
+      mottakerNavn: g1?.navn || 'Hei',
+      elevNavn: student.navn || 'elev',
+      belop: meta.belop,
+      kanal: meta.kanal,
+      type: meta.type,
+      referanse: meta.referanse,
+      tidspunkt: meta.tidspunkt
+    });
   }
 
   function byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc, logoSrc }){
@@ -9032,26 +9106,71 @@
     const history = cache.studentPayments.filter(p => p.studentId === studentId);
     if(!history.length){ showToast('Ingen registrerte betalinger for denne eleven.'); return; }
     const last = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
-    const kilde = String(last.kilde || '');
-    let kanal = 'Betaling';
-    if(kilde.includes('Vipps-refusjon')) kanal = 'Vipps-refusjon';
-    else if(kilde.includes('Vipps')) kanal = 'Vipps';
-    else if(kilde.includes('Bankkort')) kanal = 'Bankkort';
-    else if(kilde.includes('Manuell')) kanal = kilde.match(/^Manuell\s*\([^)]+\)/i)?.[0] || 'Manuell';
+    await sendBetalingKvitteringForPayment(studentId, last.id);
+  };
+
+  window.sendBetalingKvitteringForPayment = async function(studentId, paymentId){
+    const student = cache.students.find(s => s.id === studentId);
+    const payment = hentStudentPayment(studentId, paymentId);
+    if(!student || !payment){ showToast('Fant ikke betalingen.'); return; }
+    const meta = paymentMetaFromRecord(payment, studentId);
     showToast('Lager og sender PDF-kvittering...');
     try{
       const kvitt = await sendBetalingKvitteringTilForesatt({
         student,
-        belop: cashierKr(last.belop),
-        kanal,
-        type: kilde || 'Betaling',
-        referanse: last.reference || ('KV-' + String(studentId).slice(-6).toUpperCase())
+        belop: meta.belop,
+        kanal: meta.kanal,
+        type: meta.type,
+        referanse: meta.referanse,
+        tidspunkt: meta.tidspunkt
       });
       if(kvitt.sendt) showToast('✓ PDF-kvittering sendt til ' + kvitt.epost + '.');
       else showToast('Fant ingen e-post registrert for foresatte.', true);
     } catch(err){
       console.error(err);
       showToast('Kunne ikke sende kvittering: ' + err.message, true);
+    }
+  };
+
+  window.visBetalingKvittering = async function(studentId, paymentId){
+    const student = cache.students.find(s => s.id === studentId);
+    const payment = hentStudentPayment(studentId, paymentId);
+    if(!student || !payment){ showToast('Fant ikke betalingen.'); return; }
+    showToast('Lager PDF-kvittering...');
+    try{
+      const pdf = await lagKvitteringPdfForPayment(student, payment);
+      await apnePdfBlobForVisning(pdf.blob, pdf.filnavn);
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke vise kvittering: ' + err.message, true);
+    }
+  };
+
+  window.visSisteBetalingKvittering = async function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student){ showToast('Fant ikke eleven.'); return; }
+    const history = cache.studentPayments.filter(p => p.studentId === studentId);
+    if(!history.length){ showToast('Ingen registrerte betalinger for denne eleven.'); return; }
+    const last = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
+    await visBetalingKvittering(studentId, last.id);
+  };
+
+  window.visBetalingRapport = async function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student){ showToast('Fant ikke eleven.'); return; }
+    const guardian = cache.guardians.find(g => g.id === student.foresatt);
+    if(!guardian){ showToast('Fant ingen registrert foresatt for ' + (student.navn || 'eleven') + '.', true); return; }
+    const belop = cashierKr(student.belop);
+    const betalt = cashierKr(student.belopBetalt);
+    const rest = belop - betalt;
+    const history = cache.studentPayments.filter(p => p.studentId === studentId);
+    showToast('Lager PDF-rapport...');
+    try{
+      const pdf = await genererBetalingsrapportPdf({ student, guardian, belop, betalt, rest, history });
+      await apnePdfBlobForVisning(pdf.blob, pdf.filnavn);
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke vise rapport: ' + err.message, true);
     }
   };
 
