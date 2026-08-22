@@ -3,7 +3,7 @@
 > **الغرض:** توثيق كل ما نفّذه الوكيل السحابي (Cloud Agent) — أعمال، أخطاء، إصلاحات، نصائح، ومهام متبقية.  
 > **المستودع:** `madina-institute/Madina-Instituttet-`  
 > **آخر تحديث يدوي:** 2026-08-20 11:30 (Oslo)  
-> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-21T20:55:32.904Z -->
+> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-22T03:10:01.843Z -->
 
 ---
 
@@ -220,6 +220,53 @@
 ## 6. سجل التحديثات الآلية (commits)
 
 <!-- AUTO-LOG-ENTRIES-BEGIN -->
+- `2026-08-22T01:48:13Z` · `a552220` · Merge pull request #106 from madina-institute/cursor/kvittering-pdfkit-c9a0
+- `2026-08-22T01:47:49Z` · `2baadae` · Fix payment receipt PDF: use PDFKit server endpoint like Vipps email
+- `2026-08-22T03:42:22+02:00` · `09bd2d5` · Slett madinabarn-arsplan-2026-2027-tospraklig.html via publiseringsverktøy
+- `2026-08-22T01:42:09Z` · `13a86f1` · Merge pull request #105 from madina-institute/cursor/betalingsrapport-pdfkit-c9a0
+- `2026-08-22T01:41:39Z` · `21b20d7` · Generate Betalingsoversikt PDF with PDFKit (same as payment receipt)
+- `2026-08-22T01:34:10Z` · `559b179` · Merge pull request #104 from madina-institute/cursor/betalingsrapport-pdf-fix2-c9a0
+- `2026-08-22T01:33:33Z` · `84e0982` · Fix Betalingsoversikt PDF: embedded stamp, iframe render, no empty pages
+- `2026-08-22T01:24:44Z` · `25a900f` · Merge pull request #103 from madina-institute/cursor/betalingsrapport-stempel-fix-c9a0
+- `2026-08-22T01:24:20Z` · `6812202` · Fix Betalingsoversikt PDF: stamp, date, and page width
+- `2026-08-22T01:15:23Z` · `309b43f` · Merge pull request #102 from madina-institute/cursor/betalingsrapport-one-page-c9a0
+- `2026-08-22T01:14:54Z` · `045f568` · Fix Betalingsoversikt PDF: fit footer on single A4 page
+- `2026-08-22T01:08:04Z` · `d8c019f` · Merge pull request #101 from madina-institute/cursor/betalingsrapport-gap-fix-c9a0
+- `2026-08-22T01:07:42Z` · `d077c56` · Fix Betalingsoversikt PDF middle gap in html2pdf output
+- `2026-08-22T01:00:59Z` · `fabffe4` · Merge pull request #100 from madina-institute/cursor/cashier-historikk-knapper-c9a0
+- `2026-08-22T01:00:36Z` · `cfef1c0` · Add per-payment Send/Vis kvittering and Vis rapport in Kasserer
+- `2026-08-22T00:53:03Z` · `f3fc19f` · Merge pull request #99 from madina-institute/cursor/betalingsrapport-html2pdf-fix-c9a0
+- `2026-08-22T00:52:33Z` · `9af56e0` · Fix Betalingsoversikt PDF layout for html2pdf rendering
+- `2026-08-22T00:47:32Z` · `7095c8c` · Merge pull request #98 from madina-institute/cursor/varsel-betaling-fixes-c9a0
+- `2026-08-22T00:47:25Z` · `8c7dcf7` · Merge main and keep all-guardians email dedup logic
+- `2026-08-22T00:44:17Z` · `68c6206` · Send payment confirmation to all guardians with deduplicated emails
+- `2026-08-22T02:43:37+02:00` · `583f7d4` · Fix varsel checkboxes, duplicate betaling emails, and Betalingsoversikt PDF layout (#97)
+- `2026-08-22T00:42:21Z` · `ee07da3` · Fix varsel checkboxes, duplicate payment emails, and PDF layout
+- `2026-08-22T00:33:06Z` · `dc9ab2b` · Fix missing PDF attachment on payment confirmation emails
+- `2026-08-22T00:25:19Z` · `50ba245` · Merge pull request #94 from madina-institute/cursor/betaling-kvittering-pdf-c9a0
+- `2026-08-22T00:24:58Z` · `0d446d0` · Merge main into betaling-kvittering: combine PDF rapport format fix with per-payment kvittering
+- `2026-08-22T00:23:50Z` · `c96613f` · Merge pull request #95 from madina-institute/cursor/betalingsrapport-format-fix-c9a0
+- `2026-08-22T00:21:05Z` · `e6984fb` · Fix betalingsrapport PDF layout to match agreed format
+- `2026-08-22T00:14:28Z` · `7301b40` · Send PDF betalingskvittering ved hver betaling
+- `2026-08-22T02:12:40+02:00` · `4d92112` · Fix betalingsrapport PDF: én side med flerspalte historikk (#93)
+- `2026-08-22T00:09:22Z` · `e0ebcae` · Merge origin/main into cursor/betalingsrapport-pdf-c9a0
+- `2026-08-22T00:06:37Z` · `77f0af7` · Fix betalingsrapport PDF layout: én side, flerspalte historikk
+- `2026-08-22T01:55:49+02:00` · `db4c4ac` · Send betalingsrapport som PDF med Madina-stempel (#92)
+- `2026-08-21T23:48:49Z` · `c092fa2` · Send betalingsrapport som PDF med Madina-stempel
+- `2026-08-21T23:24:19Z` · `12d80e6` · Admin: tydelig melding når Vipps avviser PUSH_MESSAGE (5080)
+- `2026-08-21T23:13:23Z` · `93baf38` · Fix Vipps PUSH: e-post om Betalinger + diagnostikk redirectUrl
+- `2026-08-21T23:11:33Z` · `c7d3ab3` · Fix Vipps PUSH: ren payload for app + tydelig admin-diagnostikk
+- `2026-08-22T00:58:29+02:00` · `f009659` · Fix admin panel stuck on mobile Safari session loading (#90)
+- `2026-08-22T00:52:36+02:00` · `967d62e` · Fix Vipps test: admin PUSH alltid synlig i app + WEB-lenke til e-post (#89)
+- `2026-08-22T00:36:26+02:00` · `a8e9abb` · Admin Kasserer: skill skolens Vipps-krav fra foresatt-forsøk (#88)
+- `2026-08-22T00:18:46+02:00` · `9ff5ed3` · Foreldreportal: Vipps-krav-fiks + betalings-UX (beløp først, tydelig kort/Vipps) (#87)
+- `2026-08-21T21:49:30Z` · `c207bd6` · Merge pull request #86 from madina-institute/cursor/vipps-payment-emails-fix-c9a0
+- `2026-08-21T21:45:08Z` · `de45226` · Fix payment emails: restore admin notifications and add parent receipts
+- `2026-08-21T21:36:21Z` · `f7b74af` · Merge pull request #85 from madina-institute/cursor/vipps-card-email-label-c9a0
+- `2026-08-21T21:31:20Z` · `6c2fef8` · Fix payment confirmation email: show bankkort instead of Vipps for CARD payments
+- `2026-08-21T23:24:23+02:00` · `ca1cc29` · Fix CARD payment: omit profile.scope for Vipps ePayment (#84)
+- `2026-08-21T23:09:16+02:00` · `c0eb524` · Restrict Vipps card payment toggle to øverste leder only (#83)
+- `2026-08-21T20:55:32Z` · `62c9f5b` · chore: auto-update CLOUD-AGENT-LOG (10h sync)
 - `2026-08-21T22:47:09+02:00` · `f434b79` · Enhance webhook signature verification process
 - `2026-08-21T18:16:28Z` · `2acbb60` · Merge pull request #81 from madina-institute/cursor/varsel-duplikat-rydd-c9a0
 - `2026-08-21T18:16:00Z` · `b14e794` · Fix duplicate recipients in Varslinger settings list
