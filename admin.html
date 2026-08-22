@@ -10542,22 +10542,37 @@
     return 'Betal via lenkene under (Vipps-app eller bankkort der tilgjengelig). Denne e-posten er sendt til alle registrerte foresatte.\n\n';
   }
 
+  function fakturaEpostBetalingKnappHtml(url, cardAktiv){
+    if(!url) return '';
+    const urlEsc = escapeHtml(url);
+    const kortCelle = cardAktiv
+      ? '<td style="background:#1a1f71;color:#fff;text-align:center;padding:18px 10px;font-size:15px;font-weight:800;width:50%;letter-spacing:0.02em;">Visa / kort</td>'
+      : '<td style="background:#5a6860;color:#fff;text-align:center;padding:18px 10px;font-size:13px;font-weight:700;width:50%;">Kun Vipps i test</td>';
+    return '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:380px;margin:18px auto 0;border-collapse:separate;border-radius:14px;overflow:hidden;border:2px solid #cfe0ef;box-shadow:0 4px 14px rgba(28,84,144,0.12);">' +
+      '<tr>' +
+      '<td style="background:#ff5b24;color:#fff;text-align:center;padding:18px 10px;font-size:17px;font-weight:800;width:50%;">Vipps</td>' +
+      kortCelle +
+      '</tr>' +
+      '<tr><td colspan="2" style="background:#1c5490;text-align:center;padding:24px 20px;">' +
+      '<a href="' + urlEsc + '" style="color:#fff;font-size:24px;font-weight:700;text-decoration:none;display:block;line-height:1.25;">Betal online →</a>' +
+      '<span style="color:rgba(255,255,255,0.88);font-size:14px;display:block;margin-top:8px;">Velg beløp · Vipps eller bankkort · uten innlogging</span>' +
+      '</td></tr></table>';
+  }
+
   function fakturaEpostBetalingBlokk(payUrl, restKr){
     const url = payUrl || '';
     const restTxt = Number(restKr || 0).toLocaleString('no-NO') + ' kr';
-    const urlEsc = escapeHtml(url);
+    const cardAktiv = prisOppsett.vippsKortAktiv === true;
     const text = '\nDu kan betale digitalt uten å logge inn i Foreldreportalen:\n' +
       'Gjenstående beløp: ' + restTxt + '\n' +
       'Velg hele beløpet eller et annet beløp, bekreft, og betal med Vipps' +
-      (prisOppsett.vippsKortAktiv ? ' eller bankkort' : '') + '.\n\n' +
+      (cardAktiv ? ' eller bankkort (Visa/Mastercard)' : '') + '.\n\n' +
       (url ? url + '\n' : '');
-    let html = '<div style="margin:20px 0;padding:16px;background:#f8fbfe;border:1px solid #cfe0ef;border-radius:8px;">' +
-      '<p style="margin:0 0 8px;font-weight:600;">Du kan også betale digitalt — uten innlogging</p>' +
-      '<p style="margin:0 0 10px;font-size:14px;color:#5a6860;">Gjenstående: <b>' + escapeHtml(restTxt) + '</b>. Velg <b>alt gjenstående</b> eller <b>et annet beløp</b>, bekreft, og betal med <b>Vipps</b>';
-    if(prisOppsett.vippsKortAktiv) html += ' eller <b>bankkort</b>';
-    html += '.</p>';
+    let html = '<div style="margin:20px 0;padding:18px 16px;background:#f8fbfe;border:1px solid #cfe0ef;border-radius:10px;">' +
+      '<p style="margin:0 0 8px;font-weight:600;font-size:15px;">Du kan også betale digitalt — uten innlogging</p>' +
+      '<p style="margin:0 0 4px;font-size:14px;color:#5a6860;">Gjenstående: <b>' + escapeHtml(restTxt) + '</b>. Velg <b>alt gjenstående</b> eller <b>et annet beløp</b>.</p>';
     if(url){
-      html += '<p style="margin:0;"><a href="' + urlEsc + '" style="display:inline-block;background:#ff5b24;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Betal online</a></p>';
+      html += fakturaEpostBetalingKnappHtml(url, cardAktiv);
     }
     html += '</div>';
     return { text, html };
