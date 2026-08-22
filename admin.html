@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 02:15:00 -->
+<!-- SIST-ENDRET: 2026-08-22 02:20:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -8529,6 +8529,38 @@
     })));
   }
 
+  function delHistorikkIKolonner(rader, raderPerKolonne, maksKolonner){
+    const n = rader.length;
+    if(!n) return [[]];
+    const perKol = raderPerKolonne || 12;
+    const maks = maksKolonner || 3;
+    const kolonner = [];
+    for(let i = 0; i < n && kolonner.length < maks; i += perKol){
+      kolonner.push(rader.slice(i, i + perKol));
+    }
+    const brukt = kolonner.reduce((s, k) => s + k.length, 0);
+    if(brukt < n) kolonner[kolonner.length - 1].push(...rader.slice(brukt));
+    return kolonner;
+  }
+
+  function historikkRadHtml(p){
+    const bel = cashierKr(p.belop);
+    const neg = bel < 0;
+    return `<tr>
+      <td>${escapeHtml(cashierFormatDatoTid(p.dato))}</td>
+      <td class="tall${neg ? ' neg' : ''}">${escapeHtml(bel.toLocaleString('no-NO'))} kr</td>
+      <td>${escapeHtml(p.kilde || '—')}</td>
+    </tr>`;
+  }
+
+  function historikkTabellHtml(rader){
+    if(!rader.length){
+      return '<table class="hist-tabell"><tbody><tr><td colspan="3" class="tom">Ingen registrerte betalinger ennå.</td></tr></tbody></table>';
+    }
+    return '<table class="hist-tabell"><thead><tr><th>Dato</th><th>Beløp</th><th>Kilde</th></tr></thead><tbody>' +
+      rader.map(historikkRadHtml).join('') + '</tbody></table>';
+  }
+
   function byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc }){
     const elevNavn = student.navn || 'Elev';
     const foresattNavn = guardian.navn || 'Foresatt';
@@ -8536,86 +8568,92 @@
     const utstedt = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
     const ref = 'BR-' + String(student.id || '').slice(-6).toUpperCase() + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
-    const historikkHtml = historikkRader.length
-      ? historikkRader.map(p => {
-          const bel = cashierKr(p.belop);
-          const neg = bel < 0;
-          return `<tr>
-            <td>${escapeHtml(cashierFormatDatoTid(p.dato))}</td>
-            <td class="tall${neg ? ' neg' : ''}">${escapeHtml(bel.toLocaleString('no-NO'))} kr</td>
-            <td>${escapeHtml(p.kilde || '—')}</td>
-          </tr>`;
-        }).join('')
-      : '<tr><td colspan="3" class="tom">Ingen registrerte betalinger ennå.</td></tr>';
+    const historikkKolonner = delHistorikkIKolonner(historikkRader, 12, 3);
+    const historikkHtml = historikkKolonner.map(kol => '<div class="hist-kol">' + historikkTabellHtml(kol) + '</div>').join('');
 
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
       <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         *{ box-sizing:border-box; }
-        body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; background:#fff; }
-        .ark{ width:190mm; min-height:267mm; margin:0 auto; padding:14mm 16mm 18mm; position:relative; }
+        html,body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
+        .ark{
+          width:186mm; max-width:186mm; margin:0; padding:10mm 12mm 12mm;
+          position:relative; page-break-inside:avoid; break-inside:avoid;
+        }
         .topp{
           background:linear-gradient(135deg,#eef6fd 0%,#d8e9f8 100%);
-          border-bottom:3px solid #b9d5ee; padding:18px 20px 16px; text-align:center;
+          border-bottom:3px solid #b9d5ee; padding:14px 16px 12px; text-align:center;
           border-radius:8px 8px 0 0;
         }
-        .topp img.logo{ height:36px; width:auto; margin-bottom:6px; }
-        .topp .aar{ font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:#6f93b6; }
+        .topp img.logo{ height:32px; width:auto; margin-bottom:4px; }
+        .topp .aar{ font-size:8px; letter-spacing:.22em; text-transform:uppercase; color:#6f93b6; }
         .topp h1{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:26px; margin:4px 0 2px;
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; margin:2px 0;
           color:#1c5490; font-weight:700;
         }
-        .topp .under{ font-size:11.5px; color:#4a7099; }
+        .topp .under{ font-size:10px; color:#4a7099; }
         .meta{
-          display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
-          font-size:10.5px; color:#5a6b7d; padding:10px 4px 14px; border-bottom:1px solid #e4edf6;
+          display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
+          font-size:9.5px; color:#5a6b7d; padding:8px 2px 10px; border-bottom:1px solid #e4edf6;
         }
         .meta b{ color:#1c5490; font-weight:600; }
-        .intro{ font-size:12.5px; line-height:1.65; margin:16px 0 18px; }
+        .intro{ font-size:11px; line-height:1.55; margin:10px 0 12px; }
         .summary{
-          display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px;
+          display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;
         }
         .sum-kort{
-          border:1px solid #cfe0ef; border-radius:8px; padding:12px 14px; background:#f8fbfe;
+          border:1px solid #cfe0ef; border-radius:6px; padding:8px 10px; background:#f8fbfe;
         }
         .sum-kort.rest{ border-color:#e8c89a; background:#fdf8ec; }
         .sum-kort .lbl{
-          font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#6f93b6;
-          margin-bottom:4px; font-weight:600;
+          font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:#6f93b6;
+          margin-bottom:2px; font-weight:600;
         }
         .sum-kort .val{
-          font-size:20px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
+          font-size:16px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
         }
         .sum-kort.rest .val{ color:#9a6b1a; }
         h2{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:17px; color:#1c5490;
-          margin:0 0 8px; padding-bottom:4px; border-bottom:2px solid #e4edf6;
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:14px; color:#1c5490;
+          margin:0 0 6px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
         }
-        table{ border-collapse:collapse; width:100%; font-size:11px; margin-bottom:18px; }
-        th{
-          background:#eef4fa; color:#1c5490; font-weight:600; font-size:9.5px;
-          letter-spacing:.06em; text-transform:uppercase; padding:7px 8px; text-align:left;
-          border-bottom:2px solid #cfe0ef;
+        .historikk-kolonner{
+          display:flex; gap:6px; align-items:flex-start; margin-bottom:10px;
+          page-break-inside:avoid; break-inside:avoid;
         }
-        td{ padding:7px 8px; border-bottom:1px solid #e4edf6; vertical-align:top; }
-        td.tall{ text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
-        td.tall.neg{ color:#a83c3c; }
-        td.tom{ color:#8a9a90; font-style:italic; text-align:center; }
+        .hist-kol{ flex:1; min-width:0; }
+        .hist-tabell{
+          border-collapse:collapse; width:100%; font-size:8.5px; margin:0; table-layout:fixed;
+        }
+        .hist-tabell th{
+          background:#eef4fa; color:#1c5490; font-weight:600; font-size:7.5px;
+          letter-spacing:.04em; text-transform:uppercase; padding:4px 3px; text-align:left;
+          border-bottom:1.5px solid #cfe0ef;
+        }
+        .hist-tabell th:nth-child(2){ text-align:right; width:18%; }
+        .hist-tabell td{
+          padding:3px 3px; border-bottom:1px solid #e4edf6; vertical-align:top;
+          word-wrap:break-word; overflow-wrap:anywhere; line-height:1.35;
+        }
+        .hist-tabell td:first-child{ width:34%; font-size:8px; }
+        .hist-tabell td.tall{ text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .hist-tabell td.tall.neg{ color:#a83c3c; }
+        .hist-tabell td.tom{ color:#8a9a90; font-style:italic; text-align:center; }
         .signatur{
-          margin-top:28px; min-height:120px; position:relative; padding-top:8px;
-          border-top:1px dashed #cfe0ef;
+          margin-top:12px; min-height:88px; position:relative; padding-top:6px;
+          border-top:1px dashed #cfe0ef; page-break-inside:avoid; break-inside:avoid;
         }
-        .signatur .tekst{ font-size:11.5px; line-height:1.6; max-width:58%; }
+        .signatur .tekst{ font-size:10px; line-height:1.5; max-width:58%; }
         .stempel{
-          position:absolute; right:0; bottom:0; width:118px; height:118px; opacity:.92;
+          position:absolute; right:0; bottom:0; width:96px; height:96px; opacity:.92;
         }
         .bunn{
-          margin-top:22px; padding-top:10px; border-top:1px solid #e4edf6;
-          font-size:9.5px; color:#7b8a93; display:flex; justify-content:space-between; gap:10px;
+          margin-top:10px; padding-top:6px; border-top:1px solid #e4edf6;
+          font-size:8px; color:#7b8a93; display:flex; justify-content:space-between; gap:8px;
         }
         .kvittering-badge{
-          display:inline-block; font-size:9px; letter-spacing:.12em; text-transform:uppercase;
-          background:#1c5490; color:#fff; padding:3px 10px; border-radius:20px; margin-bottom:8px;
+          display:inline-block; font-size:8px; letter-spacing:.1em; text-transform:uppercase;
+          background:#1c5490; color:#fff; padding:2px 8px; border-radius:20px; margin-bottom:6px;
         }
       </style></head><body>
       <div class="ark">
@@ -8648,10 +8686,7 @@
           </div>
         </div>
         <h2>Betalingshistorikk</h2>
-        <table>
-          <thead><tr><th>Dato</th><th style="text-align:right">Beløp</th><th>Kilde</th></tr></thead>
-          <tbody>${historikkHtml}</tbody>
-        </table>
+        <div class="historikk-kolonner">${historikkHtml}</div>
         <div class="signatur">
           <div class="tekst">
             Dokumentet er utstedt elektronisk av Madina Skole og gjelder per dato ovenfor.<br>
@@ -8672,19 +8707,26 @@
     const stempelSrc = await hentBetalingsrapportStempelUri();
     const html = byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc });
     const host = document.createElement('div');
-    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;';
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;width:186mm;background:#fff;';
     host.innerHTML = html;
     document.body.appendChild(host);
     const element = host.querySelector('.ark') || host;
     try{
       await waitForPdfImages(host);
       const blob = await window.html2pdf().set({
-        margin: [8, 8, 10, 8],
+        margin: [6, 6, 8, 6],
         filename: 'Betalingsoversikt.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          letterRendering: true,
+          scrollY: 0,
+          windowWidth: element.scrollWidth || 700
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       }).from(element).outputPdf('blob');
       const filnavn = 'Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf';
       const base64 = await blobToBase64(blob);
