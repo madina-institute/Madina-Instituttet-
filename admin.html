@@ -8631,6 +8631,7 @@
 
   const GENERATE_RAPPORT_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingRapportPdf';
   const GENERATE_KVITTERING_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingKvitteringPdf';
+  const GENERATE_FAKTURA_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingFakturaPdf';
 
   async function kallPdfCloudFunction(url, payload){
     const bruker = auth.currentUser;
@@ -8904,6 +8905,21 @@
       tidspunkt: opts.tidspunkt || new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' })
     });
     const filnavn = data.filnavn || ('Betaling-kvittering-' + filnavnSafe(opts.elevNavn) + '.pdf');
+    const blob = pdfBase64ToBlob(data.base64);
+    return { blob, filnavn, base64: data.base64 };
+  }
+
+  async function genererBetalingFakturaPdf(opts){
+    const data = await kallPdfCloudFunction(GENERATE_FAKTURA_PDF_URL, {
+      mottakerNavn: opts.mottakerNavn || 'Hei',
+      elevNavn: opts.elevNavn || 'elev',
+      restKr: opts.rest,
+      kontonummer: opts.kontonummer || '—',
+      iban: opts.iban || '—',
+      studentId: opts.studentId || '',
+      tidspunkt: opts.tidspunkt || new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' })
+    });
+    const filnavn = data.filnavn || ('Faktura-' + filnavnSafe(opts.elevNavn) + '.pdf');
     const blob = pdfBase64ToBlob(data.base64);
     return { blob, filnavn, base64: data.base64 };
   }
@@ -10857,30 +10873,87 @@
       return;
     }
 
-    const lines = [
+    const elevNavn = student.navn || 'ditt barn';
+    const kontoFmt = formatKontonummer(konto);
+    const ibanFmt = ibanFraKontonummer(konto);
+    const subject = 'Faktura — ' + elevNavn;
+
+    let pdf;
+    try{
+      showToast('Lager faktura-PDF...');
+      pdf = await genererBetalingFakturaPdf({
+        mottakerNavn: guardian.navn || 'Hei',
+        elevNavn,
+        rest,
+        kontonummer: kontoFmt,
+        iban: ibanFmt,
+        studentId: student.id
+      });
+    } catch(err){
+      console.error('Faktura-PDF feilet', err);
+      showToast('Kunne ikke lage faktura-PDF: ' + err.message, true);
+      return;
+    }
+
+    const oppsummering = 'Beløp å betale: ' + rest.toLocaleString('no-NO') + ' kr';
+    const betalingsinfo = [
+      'Kontonummer: ' + kontoFmt,
+      'IBAN: ' + ibanFmt,
+      'Merk betalingen med elevens fulle navn.'
+    ].join('\n');
+
+    const portalTekst = [
       'Hei ' + (guardian.navn || '') + ',', '',
-      'Dette er en faktura for ' + (student.navn || 'ditt barn') + ':', '',
-      'Beløp å betale: ' + rest.toLocaleString('no-NO') + ' kr', '',
-      'Betalingsopplysninger:',
-      'Kontonummer: ' + formatKontonummer(konto),
-      'IBAN: ' + ibanFraKontonummer(konto),
-      'Merk betalingen med elevens fulle navn.', '',
-      'Med vennlig hilsen,\nMadina Skole'
-    ];
-    const text = lines.join('\n');
-    const subject = 'Faktura — ' + (student.navn || 'ditt barn');
+      'Vi har sendt deg en faktura for ' + elevNavn + ' som PDF vedlagt e-posten din.', '',
+      oppsummering, '',
+      'Betalingsopplysninger:', betalingsinfo, '',
+      'Åpne vedlagte PDF i e-posten for full faktura med stempel.', '',
+      'Med vennlig hilsen,', 'Madina Skole'
+    ].join('\n');
+
+    const emailText = [
+      'Hei ' + (guardian.navn || '') + ',', '',
+      'Vedlagt finner du en faktura for ' + elevNavn + ' som PDF.', '',
+      oppsummering, '',
+      'Betalingsopplysninger:', betalingsinfo, '',
+      'Med vennlig hilsen,', 'Madina Skole'
+    ].join('\n');
+
+    const emailHtml = '<p>Hei ' + escapeHtml(guardian.navn || '') + ',</p>' +
+      '<p>Vedlagt finner du en <b>faktura</b> for <b>' + escapeHtml(elevNavn) + '</b> som PDF.</p>' +
+      '<p><b>' + escapeHtml(oppsummering) + '</b></p>' +
+      '<p style="white-space:pre-line">' + escapeHtml(betalingsinfo) + '</p>' +
+      '<p>Med vennlig hilsen,<br><b>Madina Skole</b></p>';
+
+    const eposter = epostTilBeggeForesatteForElev(student);
     try{
       const utfall = await sendBroadcast({
         recipients: [{ type: 'guardian', id: guardian.id, name: guardian.navn || '', epost: guardian.epost || '' }],
-        title: subject, groupLabel: 'Faktura', tekst: text
+        title: subject, groupLabel: 'Faktura', tekst: portalTekst
       });
       if(utfall.sendt === 0){
         showToast('⚠️ ' + (guardian.navn || 'Foresatt') + ' har ingen e-post — fakturaen ble ikke lagt i Foreldreportalen.', true);
       }
-      if(guardian.epost){
-        await addDoc(collection(db, 'mail'), { from: MAIL_FROM, to: [guardian.epost], message: { subject: '[Madina Skole] ' + subject, text } });
+      if(eposter.length){
+        await addDoc(collection(db, 'mail'), {
+          from: MAIL_FROM,
+          to: eposter,
+          message: {
+            subject: '[Madina Skole] ' + subject,
+            text: emailText,
+            html: emailHtml,
+            attachments: [{
+              filename: pdf.filnavn,
+              content: pdf.base64,
+              encoding: 'base64',
+              contentType: 'application/pdf'
+            }]
+          }
+        });
+        showToast('✓ Faktura sendt med PDF (e-post + Foreldreportal).');
+      } else {
+        showToast('⚠️ Ingen e-post registrert for foresatte — kun Foreldreportal.', true);
       }
-      showToast('✓ Faktura sendt (e-post + Foreldreportal).');
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
