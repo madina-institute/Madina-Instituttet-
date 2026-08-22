@@ -734,21 +734,30 @@ async function sendBetalingEposter({
     }
   }
 
-  if (!pendingData?.foresattKvitteringSendtAt) {
+  // Send guardian receipt WITH PDF. Uses a separate flag so payments that
+  // already got a text-only confirmation (before PDF support) can still
+  // receive the PDF attachment on webhook retry or admin resend.
+  if (!pendingData?.foresattKvitteringPdfSendtAt) {
     const foresattEposter = await samleForesattEposter({ student, reg, payerEmail: epostPay });
     if (!foresattEposter.length) {
       logger.info(`Ingen foresatt-e-post funnet for betalingskvittering ${reference}.`);
     } else {
       const mottakerNavn = reg?.foresatt1_navn || student?.foresatt1_navn || "Hei";
-      const pdf = await genererBetalingKvitteringPdf({
-        mottakerNavn,
-        elevNavn: elevNavn || "—",
-        belopFormatted: belop,
-        kanal: kanalTekst,
-        paymentType: paymentTypeLabel,
-        reference,
-        tidspunkt,
-      });
+      let pdf;
+      try {
+        pdf = await genererBetalingKvitteringPdf({
+          mottakerNavn,
+          elevNavn: elevNavn || "—",
+          belopFormatted: belop,
+          kanal: kanalTekst,
+          paymentType: paymentTypeLabel,
+          reference,
+          tidspunkt,
+        });
+      } catch (pdfErr) {
+        logger.error(`PDF-generering feilet for betalingskvittering ${reference}`, pdfErr);
+        throw pdfErr;
+      }
       const emailText =
         `${mottakerNavn},\n\n` +
         `Vi bekrefter at betalingen er mottatt og registrert.\n\n` +
@@ -788,9 +797,12 @@ async function sendBetalingEposter({
         },
       });
       if (pendingRef) {
-        await pendingRef.update({ foresattKvitteringSendtAt: new Date().toISOString() });
+        await pendingRef.update({
+          foresattKvitteringSendtAt: pendingData?.foresattKvitteringSendtAt || new Date().toISOString(),
+          foresattKvitteringPdfSendtAt: new Date().toISOString(),
+        });
       }
-      logger.info(`Betalingskvittering for ${reference} sendt til ${foresattEposter.length} foresatt(e).`);
+      logger.info(`Betalingskvittering PDF for ${reference} sendt til ${foresattEposter.length} foresatt(e).`);
     }
   }
 }
