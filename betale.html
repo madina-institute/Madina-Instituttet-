@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 10:41:07 -->
+<!-- SIST-ENDRET: 2026-08-22 11:14:36 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -369,18 +369,18 @@ function returnStatusMessage(status) {
   }
   if (status === 'cancelled') {
     return {
-      kind: 'info',
+      kind: 'error',
       text: 'Betalingen ble avbrutt. Ingen beløp er trukket — du kan prøve igjen.',
     };
   }
   if (status === 'expired') {
     return {
-      kind: 'info',
+      kind: 'error',
       text: 'Betalingen utløp hos Vipps. Velg beløp og prøv igjen.',
     };
   }
   return {
-    kind: 'info',
+    kind: 'error',
     text: 'Betalingen er ikke fullført. Velg beløp og prøv igjen.',
   };
 }
