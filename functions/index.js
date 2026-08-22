@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-22 01:12:00 */
+/* SIST-ENDRET: 2026-08-22 02:30:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -31,6 +31,7 @@ const { defineString, defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
+const { genererBetalingKvitteringPdf } = require("./betalingKvitteringPdf");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -739,14 +740,32 @@ async function sendBetalingEposter({
       logger.info(`Ingen foresatt-e-post funnet for betalingskvittering ${reference}.`);
     } else {
       const mottakerNavn = reg?.foresatt1_navn || student?.foresatt1_navn || "Hei";
+      const pdf = await genererBetalingKvitteringPdf({
+        mottakerNavn,
+        elevNavn: elevNavn || "—",
+        belopFormatted: belop,
+        kanal: kanalTekst,
+        paymentType: paymentTypeLabel,
+        reference,
+        tidspunkt,
+      });
+      const emailText =
+        `${mottakerNavn},\n\n` +
+        `Vi bekrefter at betalingen er mottatt og registrert.\n\n` +
+        `Elev: ${elevNavn || "—"}\nBeløp: ${belop}\nBetalt via: ${kanalTekst}\n` +
+        `Type: ${paymentTypeLabel}\nReferanse: ${reference}\nTidspunkt: ${tidspunkt}\n\n` +
+        `Fullstendig kvittering finner du vedlagt som PDF.\n\n` +
+        `Beløpet er trukket fra restsaldoen i skolens system.\n\nMed vennlig hilsen,\nMadina Skole`;
       await db.collection("mail").add({
         from: "Madina Skole <post@madinaskole.no>",
         to: foresattEposter,
         message: {
           subject: `Betalingsbekreftelse — ${elevNavn || "elev"} (${belop})`,
+          text: emailText,
           html: `
             <p>${mottakerNavn},</p>
             <p>Vi bekrefter at betalingen er mottatt og registrert.</p>
+            <p><b>Fullstendig kvittering finner du vedlagt som PDF.</b></p>
             <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;margin:14px 0;">
               <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Elev</th><td style="padding:5px 0;">${elevNavn || "—"}</td></tr>
               <tr><th style="text-align:left;padding:5px 12px 5px 0;color:#5a6860;font-weight:600;">Beløp</th><td style="padding:5px 0;">${belop}</td></tr>
@@ -760,6 +779,12 @@ async function sendBetalingEposter({
             <p style="color:#8a9a90;font-size:12px;margin-top:22px;">
               Dette er en automatisk betalingsbekreftelse — ikke et vedtak om skoleplass.
             </p>`,
+          attachments: [{
+            filename: pdf.filnavn,
+            content: pdf.base64,
+            encoding: "base64",
+            contentType: "application/pdf",
+          }],
         },
       });
       if (pendingRef) {
