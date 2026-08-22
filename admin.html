@@ -8601,9 +8601,9 @@
   function delHistorikkIKolonner(rader, raderPerKolonne, maksKolonner){
     const n = rader.length;
     if(!n) return [[]];
-    if(n <= 16) return [rader];
-    const perKol = raderPerKolonne || 16;
-    const maks = maksKolonner || 3;
+    if(n <= 10) return [rader];
+    const perKol = raderPerKolonne || 12;
+    const maks = maksKolonner || 2;
     const kolonner = [];
     for(let i = 0; i < n && kolonner.length < maks; i += perKol){
       kolonner.push(rader.slice(i, i + perKol));
@@ -8617,7 +8617,7 @@
     const bel = cashierKr(p.belop);
     const neg = bel < 0;
     return `<tr>
-      <td>${escapeHtml(cashierFormatDatoTid(p.dato))}</td>
+      <td class="dato">${escapeHtml(cashierFormatDatoTid(p.dato))}</td>
       <td class="tall${neg ? ' neg' : ''}">${escapeHtml(bel.toLocaleString('no-NO'))} kr</td>
       <td class="kilde">${escapeHtml(kildePdfTekst(p.kilde))}</td>
     </tr>`;
@@ -8626,6 +8626,14 @@
   function historikkKroppHtml(rader){
     if(!rader.length) return '';
     return rader.map(historikkRadHtml).join('');
+  }
+
+  function historikkKolonneBlokkHtml(rader){
+    if(!rader.length) return '';
+    return '<div class="hist-kol">' +
+      '<table class="hist-tabell"><thead><tr>' +
+      '<th class="dato">Dato</th><th class="tall-h">Beløp</th><th class="kilde-h">Kilde</th>' +
+      '</tr></thead><tbody>' + historikkKroppHtml(rader) + '</tbody></table></div>';
   }
 
   async function hentBetalingPdfStempelUri(){
@@ -8742,14 +8750,11 @@
     const utstedt = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
     const ref = 'BR-' + String(student.id || '').slice(-6).toUpperCase() + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
-    const historikkKolonner = delHistorikkIKolonner(historikkRader, 16, 3);
+    const historikkKolonner = delHistorikkIKolonner(historikkRader, 12, 2);
     const historikkSeksjon = historikkRader.length
-      ? '<table class="hist-tabell hist-head"><thead><tr><th>Dato</th><th>Beløp</th><th>Kilde</th></tr></thead></table>' +
-        '<table class="hist-kolonner-tabell"><tr>' +
-        historikkKolonner.map(kol =>
-          '<td class="hist-kol"><table class="hist-tabell hist-body"><tbody>' + historikkKroppHtml(kol) + '</tbody></table></td>'
-        ).join('') +
-        '</tr></table>'
+      ? '<div class="hist-wrap">' +
+        historikkKolonner.map(historikkKolonneBlokkHtml).join('') +
+        '</div>'
       : '<p class="hist-tom">Ingen registrerte betalinger ennå.</p>';
 
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
@@ -8774,77 +8779,78 @@
         }
         .topp .under{ font-size:10px; color:#4a7099; }
         .meta{
-          display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
-          font-size:9.5px; color:#5a6b7d; padding:8px 2px 10px; border-bottom:1px solid #e4edf6;
+          width:100%; border-collapse:collapse; font-size:9.5px; color:#5a6b7d;
+          margin:8px 0 10px; border-bottom:1px solid #e4edf6;
         }
+        .meta td{ padding:2px 0 8px; vertical-align:top; }
+        .meta td:last-child{ text-align:right; }
         .meta b{ color:#1c5490; font-weight:600; }
-        .intro{ font-size:11px; line-height:1.55; margin:10px 0 12px; }
-        .summary{
-          display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;
+        .intro{ font-size:11px; line-height:1.55; margin:10px 0 10px; }
+        .summary-tabell{
+          width:100%; border-collapse:separate; border-spacing:6px 0;
+          margin:0 -6px 10px;
         }
-        .sum-kort{
-          border:1px solid #cfe0ef; border-radius:6px; padding:8px 10px; background:#f8fbfe;
+        .summary-tabell td{
+          border:1px solid #cfe0ef; border-radius:6px; padding:7px 8px; background:#f8fbfe;
+          width:33.33%; vertical-align:top;
         }
-        .sum-kort.rest{ border-color:#e8c89a; background:#fdf8ec; }
+        .summary-tabell td.rest{ border-color:#e8c89a; background:#fdf8ec; }
         .sum-kort .lbl{
           font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:#6f93b6;
           margin-bottom:2px; font-weight:600;
         }
         .sum-kort .val{
-          font-size:16px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
+          font-size:15px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
         }
-        .sum-kort.rest .val{ color:#9a6b1a; }
+        .summary-tabell td.rest .val{ color:#9a6b1a; }
         h2{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:14px; color:#1c5490;
-          margin:0 0 6px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:13px; color:#1c5490;
+          margin:0 0 5px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
         }
-        .hist-kolonner-tabell{
-          width:100%; border-collapse:collapse; table-layout:fixed;
-          margin-bottom:10px; page-break-inside:avoid; break-inside:avoid;
+        .hist-wrap{
+          width:100%; margin-bottom:8px; page-break-inside:avoid; break-inside:avoid;
+          font-size:0;
         }
-        .hist-kolonner-tabell td.hist-kol{
-          vertical-align:top; padding:0 5px 0 0;
+        .hist-kol{
+          display:inline-block; vertical-align:top; width:49.5%;
+          font-size:8px; box-sizing:border-box;
         }
-        .hist-kolonner-tabell td.hist-kol:last-child{ padding-right:0; padding-left:5px; }
-        .hist-kolonner-tabell tr td:only-child{ width:100%; }
-        .hist-kolonner-tabell tr td:first-child:nth-last-child(2),
-        .hist-kolonner-tabell tr td:first-child:nth-last-child(2) ~ td{ width:50%; }
-        .hist-kolonner-tabell tr td:first-child:nth-last-child(3),
-        .hist-kolonner-tabell tr td:first-child:nth-last-child(3) ~ td{ width:33.33%; }
+        .hist-kol + .hist-kol{ margin-left:1%; }
+        .hist-wrap .hist-kol:only-child{ width:100%; margin-left:0; }
         .hist-tabell{
-          border-collapse:collapse; width:100%; font-size:9px; margin:0; table-layout:fixed;
+          border-collapse:collapse; width:100%; table-layout:fixed;
         }
-        .hist-tabell.hist-head{ margin-bottom:0; }
-        .hist-tabell.hist-head th{ border-bottom:2px solid #cfe0ef; }
-        .hist-tabell.hist-body td{ border-top:none; }
         .hist-tabell th{
-          background:#eef4fa; color:#1c5490; font-weight:600; font-size:8px;
-          letter-spacing:.04em; text-transform:uppercase; padding:5px 4px; text-align:left;
+          background:#eef4fa; color:#1c5490; font-weight:600; font-size:7.5px;
+          letter-spacing:.04em; text-transform:uppercase; padding:4px 3px; text-align:left;
+          border-bottom:2px solid #cfe0ef;
         }
-        .hist-tabell th:nth-child(1), .hist-tabell.hist-body td:nth-child(1){ width:38%; }
-        .hist-tabell th:nth-child(2), .hist-tabell.hist-body td:nth-child(2){ width:16%; text-align:right; }
-        .hist-tabell th:nth-child(3), .hist-tabell.hist-body td:nth-child(3){ width:46%; }
+        .hist-tabell th.tall-h{ text-align:right; }
         .hist-tabell td{
-          padding:4px 4px; border-bottom:1px solid #e4edf6; vertical-align:top;
-          line-height:1.4;
+          padding:3px 3px; border-bottom:1px solid #e4edf6; vertical-align:top;
+          line-height:1.35; font-size:8px;
         }
-        .hist-tabell td:first-child{ font-size:8.5px; white-space:nowrap; }
-        .hist-tabell td.kilde{ font-size:8.5px; word-break:normal; overflow-wrap:normal; }
-        .hist-tabell td.tall{ text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .hist-tabell td.dato{ width:40%; white-space:nowrap; font-size:7.5px; }
+        .hist-tabell th.dato{ width:40%; }
+        .hist-tabell td.tall, .hist-tabell th.tall-h{ width:18%; text-align:right; }
+        .hist-tabell td.kilde, .hist-tabell th.kilde-h{ width:42%; font-size:7.5px; }
+        .hist-tabell td.tall{ font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
         .hist-tabell td.tall.neg{ color:#a83c3c; }
         .hist-tom{ color:#8a9a90; font-style:italic; font-size:10px; margin:8px 0 12px; }
         .signatur{
-          margin-top:14px; min-height:100px; position:relative; padding-top:8px;
+          margin-top:10px; min-height:88px; position:relative; padding-top:6px;
           border-top:1px dashed #cfe0ef; page-break-inside:avoid; break-inside:avoid;
         }
-        .signatur .tekst{ font-size:10px; line-height:1.55; max-width:55%; }
+        .signatur .tekst{ font-size:9.5px; line-height:1.5; max-width:58%; }
         .stempel{
-          position:absolute; right:4px; bottom:0; width:108px; height:108px; opacity:.95;
+          position:absolute; right:4px; bottom:0; width:92px; height:92px; opacity:.95;
         }
         .bunn{
-          margin-top:10px; padding-top:6px; border-top:1px solid #e4edf6;
-          font-size:8px; color:#7b8a93; display:flex; justify-content:space-between; gap:8px;
+          margin-top:8px; padding-top:5px; border-top:1px solid #e4edf6;
+          font-size:8px; color:#7b8a93; width:100%; border-collapse:collapse;
         }
+        .bunn td{ vertical-align:top; padding:0; }
+        .bunn td:last-child{ text-align:right; white-space:nowrap; }
         .kvittering-badge{
           display:inline-block; font-size:8px; letter-spacing:.1em; text-transform:uppercase;
           background:#1c5490; color:#fff; padding:2px 8px; border-radius:20px; margin-bottom:6px;
@@ -8857,28 +8863,28 @@
           <h1>Betalingsoversikt</h1>
           <div class="under">Offisiell kvittering / payment statement</div>
         </div>
-        <div class="meta">
-          <span><b>Dokument:</b> ${escapeHtml(ref)}</span>
-          <span><b>Utstedt:</b> ${escapeHtml(utstedt)}</span>
-        </div>
+        <table class="meta"><tr>
+          <td><b>Dokument:</b> ${escapeHtml(ref)}</td>
+          <td><b>Utstedt:</b> ${escapeHtml(utstedt)}</td>
+        </tr></table>
         <div class="kvittering-badge">Betalingsrapport</div>
         <p class="intro">Hei ${escapeHtml(foresattNavn)},<br><br>
           Her er en oppdatert betalingsoversikt for <b>${escapeHtml(elevNavn)}</b>
           (${escapeHtml(klasseNavn)}).</p>
-        <div class="summary">
-          <div class="sum-kort">
+        <table class="summary-tabell"><tr>
+          <td class="sum-kort">
             <div class="lbl">Totalt beløp</div>
             <div class="val">${escapeHtml(belop.toLocaleString('no-NO'))} kr</div>
-          </div>
-          <div class="sum-kort">
+          </td>
+          <td class="sum-kort">
             <div class="lbl">Betalt så langt</div>
             <div class="val">${escapeHtml(betalt.toLocaleString('no-NO'))} kr</div>
-          </div>
-          <div class="sum-kort rest">
+          </td>
+          <td class="sum-kort rest">
             <div class="lbl">Restbeløp</div>
             <div class="val">${escapeHtml(rest.toLocaleString('no-NO'))} kr</div>
-          </div>
-        </div>
+          </td>
+        </tr></table>
         <h2>Betalingshistorikk</h2>
         ${historikkSeksjon}
         <div class="signatur">
@@ -8888,10 +8894,10 @@
           </div>
           <img class="stempel" src="${stempelSrc || BETALINGSRAPPORT_STEMPEL}" alt="Madina Skole stempel">
         </div>
-        <div class="bunn">
-          <span>Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</span>
-          <span>${escapeHtml(ref)}</span>
-        </div>
+        <table class="bunn"><tr>
+          <td>Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</td>
+          <td>${escapeHtml(ref)}</td>
+        </tr></table>
       </div>
       </body></html>`;
   }
