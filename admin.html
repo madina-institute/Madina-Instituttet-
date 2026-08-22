@@ -8359,6 +8359,7 @@
               <button type="button" class="btn-edit" onclick="showCashierHistory('${s.id}')">🕘 Full historikk</button>
               <button type="button" class="btn-edit btn-pay-attempts" onclick="showGuardianPayAttempts('${s.id}')">🔁 Foresatt-forsøk${attemptCount ? `<span class="pay-attempt-badge">${attemptCount}</span>` : ''}</button>
               <button type="button" class="btn-edit" onclick="sendCashierReport('${s.id}')">📧 Send rapport</button>
+              <button type="button" class="btn-edit" onclick="sendSisteBetalingKvittering('${s.id}')">📄 Send kvittering</button>
               <button type="button" class="btn-edit btn-vipps-mob" onclick="sendStudentVippsRequest('${s.id}')">⚡ Send Vipps-krav</button>
               <button type="button" class="btn-edit" onclick="openCashierPayModal('${s.id}')">✍️ Registrer betaling</button>
               ${eierActions}
@@ -8741,13 +8742,13 @@
     const ref = 'BR-' + String(student.id || '').slice(-6).toUpperCase() + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
     const historikkKolonner = delHistorikkIKolonner(historikkRader, 16, 3);
-    const kolAnt = historikkKolonner.length;
     const historikkSeksjon = historikkRader.length
       ? '<table class="hist-tabell hist-head"><thead><tr><th>Dato</th><th>Beløp</th><th>Kilde</th></tr></thead></table>' +
-        '<div class="historikk-kolonner' + (kolAnt > 1 ? ' fler' : '') + '">' +
+        '<table class="hist-kolonner-tabell"><tr>' +
         historikkKolonner.map(kol =>
-          '<div class="hist-kol"><table class="hist-tabell hist-body"><tbody>' + historikkKroppHtml(kol) + '</tbody></table></div>'
-        ).join('') + '</div>'
+          '<td class="hist-kol"><table class="hist-tabell hist-body"><tbody>' + historikkKroppHtml(kol) + '</tbody></table></td>'
+        ).join('') +
+        '</tr></table>'
       : '<p class="hist-tom">Ingen registrerte betalinger ennå.</p>';
 
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
@@ -8796,12 +8797,19 @@
           font-family:'Cormorant Garamond',Georgia,serif; font-size:14px; color:#1c5490;
           margin:0 0 6px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
         }
-        .historikk-kolonner{
-          display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;
-          page-break-inside:avoid; break-inside:avoid;
+        .hist-kolonner-tabell{
+          width:100%; border-collapse:collapse; table-layout:fixed;
+          margin-bottom:10px; page-break-inside:avoid; break-inside:avoid;
         }
-        .historikk-kolonner.fler .hist-kol{ flex:1; min-width:0; }
-        .historikk-kolonner:not(.fler) .hist-kol{ width:100%; }
+        .hist-kolonner-tabell td.hist-kol{
+          vertical-align:top; padding:0 5px 0 0;
+        }
+        .hist-kolonner-tabell td.hist-kol:last-child{ padding-right:0; padding-left:5px; }
+        .hist-kolonner-tabell tr td:only-child{ width:100%; }
+        .hist-kolonner-tabell tr td:first-child:nth-last-child(2),
+        .hist-kolonner-tabell tr td:first-child:nth-last-child(2) ~ td{ width:50%; }
+        .hist-kolonner-tabell tr td:first-child:nth-last-child(3),
+        .hist-kolonner-tabell tr td:first-child:nth-last-child(3) ~ td{ width:33.33%; }
         .hist-tabell{
           border-collapse:collapse; width:100%; font-size:9px; margin:0; table-layout:fixed;
         }
@@ -9008,6 +9016,35 @@
     } catch(err){
       console.error(err);
       showToast('Noe gikk galt: ' + err.message);
+    }
+  };
+
+  window.sendSisteBetalingKvittering = async function(studentId){
+    const student = cache.students.find(s => s.id === studentId);
+    if(!student){ showToast('Fant ikke eleven.'); return; }
+    const history = cache.studentPayments.filter(p => p.studentId === studentId);
+    if(!history.length){ showToast('Ingen registrerte betalinger for denne eleven.'); return; }
+    const last = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))[0];
+    const kilde = String(last.kilde || '');
+    let kanal = 'Betaling';
+    if(kilde.includes('Vipps-refusjon')) kanal = 'Vipps-refusjon';
+    else if(kilde.includes('Vipps')) kanal = 'Vipps';
+    else if(kilde.includes('Bankkort')) kanal = 'Bankkort';
+    else if(kilde.includes('Manuell')) kanal = kilde.match(/^Manuell\s*\([^)]+\)/i)?.[0] || 'Manuell';
+    showToast('Lager og sender PDF-kvittering...');
+    try{
+      const kvitt = await sendBetalingKvitteringTilForesatt({
+        student,
+        belop: cashierKr(last.belop),
+        kanal,
+        type: kilde || 'Betaling',
+        referanse: last.reference || ('KV-' + String(studentId).slice(-6).toUpperCase())
+      });
+      if(kvitt.sendt) showToast('✓ PDF-kvittering sendt til ' + kvitt.epost + '.');
+      else showToast('Fant ingen e-post registrert for foresatte.', true);
+    } catch(err){
+      console.error(err);
+      showToast('Kunne ikke sende kvittering: ' + err.message, true);
     }
   };
 
@@ -22768,18 +22805,22 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     return [...perPerson.values()].sort((a, b) => (a.navn || a.epost).localeCompare(b.navn || b.epost, 'no'));
   }
 
-  function erVarselMottakerValgt(person, valgtLcSet, index){
-    if(valgtLcSet.has(normEpost(person.epost))) return true;
-    if(!person.normNavn || person.manuell) return false;
-    for(const lc of valgtLcSet){
-      if(index.epostTilNavn.get(lc) === person.normNavn) return true;
-      if(manuellEpostErDuplikatAvAnsatt(lc, index)){
-        const kanonisk = index.navnTilKanoniEpost.get(person.normNavn);
-        if(kanonisk && normEpost(kanonisk) === normEpost(person.epost)) return true;
-      }
-    }
-    return false;
+  function erVarselMottakerValgt(person, valgtLcSet){
+    return valgtLcSet.has(normEpost(person.epost));
   }
+
+  window.toggleVarselMottaker = function(cb){
+    const lc = normEpost(cb.value);
+    const epost = String(cb.value || '').trim();
+    if(cb.checked){
+      if(!varselOppsett.nySoknadMottakere.some(e => normEpost(e) === lc)){
+        varselOppsett.nySoknadMottakere = ryddVarselMottakereList([...varselOppsett.nySoknadMottakere, epost]);
+      }
+    } else {
+      varselOppsett.nySoknadMottakere = varselOppsett.nySoknadMottakere.filter(e => normEpost(e) !== lc);
+    }
+    oppdaterVarselOppsummering();
+  };
 
   function renderVarselMottakere(){
     const el = document.getElementById('varselMottakerListe');
@@ -22803,7 +22844,7 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
       return;
     }
 
-    const antallValgt = folk.filter(p => erVarselMottakerValgt(p, valgtLcSet, index)).length;
+    const antallValgt = folk.filter(p => erVarselMottakerValgt(p, valgtLcSet)).length;
     if(info){
       info.textContent = folk.length + ' person' + (folk.length === 1 ? '' : 'er') +
         ' i listen · ' + antallValgt + ' valgt';
@@ -22812,8 +22853,8 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
     el.innerHTML = folk.map(p => `
       <label style="display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid rgba(40,40,90,.06); font-family:'Jost',sans-serif; font-size:13px; cursor:pointer;">
         <input type="checkbox" class="varsel-mottaker" value="${escapeHtml(p.epost)}"
-               ${erVarselMottakerValgt(p, valgtLcSet, index) ? 'checked' : ''}
-               onchange="oppdaterVarselOppsummering()" style="width:16px; height:16px; flex:0 0 auto;">
+               ${erVarselMottakerValgt(p, valgtLcSet) ? 'checked' : ''}
+               onchange="toggleVarselMottaker(this)" style="width:16px; height:16px; flex:0 0 auto;">
         <span style="flex:1; min-width:0;">
           <strong>${escapeHtml(p.navn || p.epost)}</strong>
           ${p.navn ? `<span style="color:#8a9a90;"> — ${escapeHtml(p.epost)}</span>` : ''}
@@ -22915,6 +22956,10 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
   }
 
   window.saveVarselInnstillinger = async function(){
+    if(!endringsmodus){
+      showToast('Lesemodus — slå på «Endringsmodus» øverst til venstre for å lagre endringer.', true);
+      return;
+    }
     const aktiv = document.getElementById('varselNySoknadAktiv').checked;
     const mottakere = ryddVarselMottakereList(
       [...document.querySelectorAll('.varsel-mottaker:checked')].map(cb => cb.value)
@@ -22928,13 +22973,24 @@ må du generere den på nytt, og da bør de som har fått den gamle få beskjed.
         sistEndretAv: currentUserEmail || '',
         sistEndretDato: new Date().toISOString()
       }, { merge: true });
+      varselOppsett.nySoknadAktiv = aktiv;
+      varselOppsett.kvitteringAktiv = document.getElementById('varselKvitteringAktiv').checked;
+      varselOppsett.forsteInnloggingAktiv = document.getElementById('varselForsteInnloggingAktiv').checked;
+      varselOppsett.nySoknadMottakere = mottakere;
+      renderVarselMottakere();
       showToast(aktiv
         ? 'Lagret — ' + (mottakere.length || 'ingen valgt, går til post@madinaskole.no') +
           (mottakere.length ? ' mottaker(e) varsles.' : '')
         : 'Lagret — varsling er slått av.');
     } catch(err){
       console.error(err);
-      showToast('Noe gikk galt under lagring.', true);
+      if(err.code === 'lesemodus'){
+        showToast('Lesemodus — slå på «Endringsmodus» øverst til venstre for å lagre endringer.', true);
+      } else if(err.code === 'permission-denied'){
+        showToast('Ingen tilgang til å lagre varsel-innstillinger. Sjekk at du er logget inn som administrator.', true);
+      } else {
+        showToast('Noe gikk galt under lagring.', true);
+      }
     }
   };
 
