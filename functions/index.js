@@ -1,4 +1,4 @@
-/* SIST-ENDRET: 2026-08-22 10:45:00 */
+/* SIST-ENDRET: 2026-08-22 13:30:00 */
 /**
  * Madina Skole — Vipps betalingsintegrasjon (Cloud Functions)
  * ============================================================
@@ -856,6 +856,123 @@ async function sendVippsBetalingVarsel(ctx) {
   await sendBetalingEposter(ctx);
 }
 
+/** Registrerer Vipps/kort-betaling på elevens saldo (idempotent). */
+async function recordStudentBalancePaymentIfNeeded({
+  reference,
+  targetId,
+  paidAmountKr,
+  event,
+  pendingData = null,
+  pendingRef = null,
+}) {
+  const studentRef = db.collection("students").doc(targetId);
+  const studentSnap = await studentRef.get();
+  if (!studentSnap.exists) {
+    logger.warn("Fant ingen elev for Vipps-betaling (balance)", { reference, targetId });
+    return { ok: false, reason: "unknown_student" };
+  }
+  const student = studentSnap.data();
+  const isCard = erBankkortBetaling({ pending: pendingData, reference, event });
+  const kanalEtiketter = betalingKanalEtiketter(isCard);
+  const paymentGroupId = pendingData?.paymentGroupId || reference;
+  const amount = paidAmountKr ?? pendingData?.amountKr ?? 0;
+
+  if (student.vippsLastPaymentGroup === paymentGroupId || student.vippsLastReference === reference) {
+    let betalerRetry = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
+    try {
+      const accessToken = await getVippsAccessToken();
+      betalerRetry = await identifiserVippsBetaler({ student, event, pending: pendingData, accessToken, reference, isCard });
+    } catch (err) {
+      logger.warn("Kunne ikke identifisere Vipps-betaler (balance retry)", err);
+    }
+    await ensureBetalingEposterSendt({
+      elevNavn: student.navn,
+      amountKr: amount,
+      reference,
+      betaler: betalerRetry,
+      paymentTypeLabel: "Restbeløp (elev)",
+      isCard,
+      student,
+      reg: null,
+      pendingRef,
+      pendingData,
+      payerEmail: betalerRetry.betalerEpost,
+    });
+    return { ok: true, alreadyProcessed: true };
+  }
+
+  const currentPaid = Number(student.belopBetalt || 0);
+  const newPaid = currentPaid + (amount || 0);
+  await studentRef.update({
+    belopBetalt: String(newPaid),
+    betalt: newPaid >= Number(student.belop || 0) ? "Ja" : "Delvis",
+    vippsStatus: "AUTHORIZED",
+    vippsLastReference: reference,
+    vippsLastPaymentGroup: paymentGroupId,
+    vippsBetaltDato: new Date().toISOString(),
+  });
+
+  let betaler = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
+  try {
+    const accessToken = await getVippsAccessToken();
+    betaler = await identifiserVippsBetaler({ student, event, pending: pendingData, accessToken, reference, isCard });
+  } catch (err) {
+    logger.warn("Kunne ikke identifisere Vipps-betaler (balance)", err);
+  }
+
+  await db.collection("studentPayments").add({
+    studentId: targetId,
+    belop: amount || 0,
+    dato: new Date().toISOString(),
+    kilde: kanalEtiketter.kilde,
+    reference,
+    betalerRolle: betaler.betalerRolle,
+    betalerNavn: betaler.betalerNavn,
+    betalerTelefon: betaler.betalerTelefon,
+  });
+  await db.collection("financeLog").add({
+    summary: kanalEtiketter.financeSummary(amount || "?", student.navn || "elev", betaler.betalerRolle),
+    changedAt: new Date().toISOString(),
+    changedBy: kanalEtiketter.changedBy,
+  });
+
+  let effectivePendingRef = pendingRef;
+  if (!effectivePendingRef) {
+    const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
+    effectivePendingRef = pendingSnap.empty ? null : pendingSnap.docs[0].ref;
+  }
+  if (effectivePendingRef) {
+    try {
+      const accessToken = await getVippsAccessToken();
+      await finalizeVippsPaymentGroup(reference, accessToken);
+    } catch (err) {
+      logger.warn("Kunne ikke avslutte Vipps-betalingsgruppe (balance)", err);
+      await effectivePendingRef.update({ status: "completed", completedAt: new Date().toISOString() });
+    }
+  }
+
+  try {
+    await sendVippsBetalingVarsel({
+      elevNavn: student.navn,
+      amountKr: amount,
+      reference,
+      betaler,
+      paymentTypeLabel: "Restbeløp (elev)",
+      isCard,
+      student,
+      reg: null,
+      pendingRef: effectivePendingRef,
+      pendingData,
+      payerEmail: betaler.betalerEpost,
+    });
+  } catch (err) {
+    logger.error("Kunne ikke sende Vipps-betalingsvarsel (balance)", err);
+  }
+
+  logger.info(`Elev ${student.navn} — ${isCard ? "Bankkort" : "Vipps"}-betaling på ${amount} kr registrert.`);
+  return { ok: true, recorded: true };
+}
+
 // =======================================================================
 // 1) createVippsPayment
     //    POST { type: 'registration'|'balance', targetId, amountKr, phoneNumber }
@@ -1588,118 +1705,37 @@ exports.vippsWebhook = onRequest(
     // koder fordi Vipps krever at Idempotency-Key er maks 50 tegn totalt.
     const refParts = reference.split("-");
     const typeCode = refParts[1]; // "reg" eller "bal"
-    const paymentType = typeCode === "reg" ? "registration" : (typeCode === "bal" ? "balance" : typeCode);
-    const targetId = refParts[2];
+    let paymentType = typeCode === "reg" ? "registration" : (typeCode === "bal" ? "balance" : typeCode);
+    let targetId = refParts[2];
+    if (paymentType !== "balance" && paymentType !== "registration") {
+      const pendingMeta = await hentPendingVippsData(reference);
+      if (pendingMeta?.type === "balance" && (pendingMeta.studentId || pendingMeta.targetId)) {
+        paymentType = "balance";
+        targetId = pendingMeta.studentId || pendingMeta.targetId;
+        logger.info("Vipps webhook: løst balance-betaling fra pendingVippsPayments", { reference, targetId });
+      }
+    }
     const paidAmountKr = event.amount && typeof event.amount.value === "number"
       ? event.amount.value / 100
       : null;
 
     if (paymentType === "balance") {
-      // ---- Betaling på en ALLEREDE godkjent elevs restbeløp ----
-      // Oppretter INGEN ny elev — oppdaterer bare belopBetalt på den
-      // eksisterende eleven, og logger endringen i financeLog slik admin
-      // allerede er vant til å se betalingsendringer.
-      const studentRef = db.collection("students").doc(targetId);
-      const studentSnap = await studentRef.get();
-      if (!studentSnap.exists) {
-        logger.warn("Fant ingen elev for Vipps-referanse (balance)", reference);
-        res.status(200).send("OK (ukjent elev)");
-        return;
-      }
-      const student = studentSnap.data();
       const pendingSnap = await db.collection("pendingVippsPayments").where("reference", "==", reference).limit(1).get();
       const pendingData = pendingSnap.empty ? null : pendingSnap.docs[0].data();
       const pendingRef = pendingSnap.empty ? null : pendingSnap.docs[0].ref;
-      const isCard = erBankkortBetaling({ pending: pendingData, reference, event });
-      const kanalEtiketter = betalingKanalEtiketter(isCard);
-      const paymentGroupId = pendingData?.paymentGroupId || reference;
-      if (student.vippsLastPaymentGroup === paymentGroupId || student.vippsLastReference === reference) {
-        let betalerRetry = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
-        try {
-          const accessToken = await getVippsAccessToken();
-          betalerRetry = await identifiserVippsBetaler({ student, event, pending: pendingData, accessToken, reference, isCard });
-        } catch (err) {
-          logger.warn("Kunne ikke identifisere Vipps-betaler (balance retry)", err);
-        }
-        await ensureBetalingEposterSendt({
-          elevNavn: student.navn,
-          amountKr: paidAmountKr,
-          reference,
-          betaler: betalerRetry,
-          paymentTypeLabel: "Restbeløp (elev)",
-          isCard,
-          student,
-          reg: null,
-          pendingRef,
-          pendingData,
-          payerEmail: betalerRetry.betalerEpost,
-        });
-        res.status(200).send("OK (allerede behandlet)");
+      const result = await recordStudentBalancePaymentIfNeeded({
+        reference,
+        targetId,
+        paidAmountKr,
+        event,
+        pendingData,
+        pendingRef,
+      });
+      if (result.reason === "unknown_student") {
+        res.status(200).send("OK (ukjent elev)");
         return;
       }
-      const currentPaid = Number(student.belopBetalt || 0);
-      const newPaid = currentPaid + (paidAmountKr || 0);
-      await studentRef.update({
-        belopBetalt: String(newPaid),
-        betalt: newPaid >= Number(student.belop || 0) ? "Ja" : "Delvis",
-        vippsStatus: "AUTHORIZED",
-        vippsLastReference: reference,
-        vippsLastPaymentGroup: paymentGroupId,
-        vippsBetaltDato: new Date().toISOString(),
-      });
-      let betaler = { betalerRolle: "—", betalerNavn: "—", betalerTelefon: "—", betalerEpost: "" };
-      try {
-        const accessToken = await getVippsAccessToken();
-        betaler = await identifiserVippsBetaler({ student, event, pending: pendingData, accessToken, reference, isCard });
-      } catch (err) {
-        logger.warn("Kunne ikke identifisere Vipps-betaler (balance)", err);
-      }
-      // Logger DENNE spesifikke betalingen for seg selv (ikke bare den
-      // oppdaterte totalsummen), slik at administrasjonen kan se hver
-      // enkelt innbetaling med dato/klokkeslett i Betalingsoversikt.
-      await db.collection("studentPayments").add({
-        studentId: targetId,
-        belop: paidAmountKr || 0,
-        dato: new Date().toISOString(),
-        kilde: kanalEtiketter.kilde,
-        reference,
-        betalerRolle: betaler.betalerRolle,
-        betalerNavn: betaler.betalerNavn,
-        betalerTelefon: betaler.betalerTelefon,
-      });
-      await db.collection("financeLog").add({
-        summary: kanalEtiketter.financeSummary(paidAmountKr || "?", student.navn || "elev", betaler.betalerRolle),
-        changedAt: new Date().toISOString(),
-        changedBy: kanalEtiketter.changedBy,
-      });
-      if (!pendingSnap.empty) {
-        try {
-          const accessToken = await getVippsAccessToken();
-          await finalizeVippsPaymentGroup(reference, accessToken);
-        } catch (err) {
-          logger.warn("Kunne ikke avslutte Vipps-betalingsgruppe (balance)", err);
-          await pendingSnap.docs[0].ref.update({ status: "completed", completedAt: new Date().toISOString() });
-        }
-      }
-      try {
-        await sendVippsBetalingVarsel({
-          elevNavn: student.navn,
-          amountKr: paidAmountKr,
-          reference,
-          betaler,
-          paymentTypeLabel: "Restbeløp (elev)",
-          isCard,
-          student,
-          reg: null,
-          pendingRef,
-          pendingData,
-          payerEmail: betaler.betalerEpost,
-        });
-      } catch (err) {
-        logger.error("Kunne ikke sende Vipps-betalingsvarsel (balance)", err);
-      }
-      logger.info(`Elev ${student.navn} — ${isCard ? "Bankkort" : "Vipps"}-betaling på ${paidAmountKr} kr registrert.`);
-      res.status(200).send("OK");
+      res.status(200).send(result.alreadyProcessed ? "OK (allerede behandlet)" : "OK");
       return;
     }
 
@@ -2873,7 +2909,7 @@ exports.createFakturaExternalPayment = onRequest(
       }
 
       const accessToken = await getVippsAccessToken();
-      const reference = `madina-faktura-${studentId.slice(-8)}-${Date.now()}`;
+      const reference = `madina-bal-${studentId}-${Date.now()}`;
       const returnUrl = `${SITE_BASE_URL.value()}/betale?vipps=return&t=${encodeURIComponent(token)}&ref=${encodeURIComponent(reference)}`;
       const paymentDescription = `Skolepenger — ${info.elevNavn} (Madina Skole)`;
 
@@ -2969,6 +3005,29 @@ exports.checkFakturaExternalPaymentReturn = onRequest(
       }
 
       if (pending.status === "completed") {
+        try {
+          const accessToken = await getVippsAccessToken();
+          const payment = await fetchVippsPayment(reference, accessToken);
+          if (mapVippsStateToPendingStatus(payment.state) === "completed") {
+            const paidAmountKr = pending.amountKr
+              ?? (payment.amount?.value != null ? payment.amount.value / 100 : null);
+            await recordStudentBalancePaymentIfNeeded({
+              reference,
+              targetId: pending.studentId || pending.targetId,
+              paidAmountKr,
+              event: {
+                reference,
+                name: payment.state === "CAPTURED" ? "CAPTURED" : "AUTHORIZED",
+                amount: payment.amount || null,
+                paymentMethod: payment.paymentMethod,
+              },
+              pendingData: pending,
+              pendingRef: pendingDoc.ref,
+            });
+          }
+        } catch (err) {
+          logger.warn("checkFakturaExternalPaymentReturn backfill", err);
+        }
         res.status(200).json({
           ok: true,
           status: "completed",
@@ -2988,6 +3047,23 @@ exports.checkFakturaExternalPaymentReturn = onRequest(
       const accessToken = await getVippsAccessToken();
       const payment = await fetchVippsPayment(reference, accessToken);
       const terminal = mapVippsStateToPendingStatus(payment.state);
+      if (terminal === "completed") {
+        const paidAmountKr = pending.amountKr
+          ?? (payment.amount?.value != null ? payment.amount.value / 100 : null);
+        await recordStudentBalancePaymentIfNeeded({
+          reference,
+          targetId: pending.studentId || pending.targetId,
+          paidAmountKr,
+          event: {
+            reference,
+            name: payment.state === "CAPTURED" ? "CAPTURED" : "AUTHORIZED",
+            amount: payment.amount || null,
+            paymentMethod: payment.paymentMethod,
+          },
+          pendingData: pending,
+          pendingRef: pendingDoc.ref,
+        });
+      }
       if (terminal) {
         await closePendingVippsByReference(reference, terminal, { vippsState: payment.state });
       }
