@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 11:05:00 -->
+<!-- SIST-ENDRET: 2026-08-22 12:05:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -80,9 +80,20 @@ h1 {
   align-items: stretch;
   margin-bottom: 8px;
 }
-.pill-vipps {
+.pill-vipps,
+.pill-card {
   flex: 1;
   max-width: 150px;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.pill-vipps:active,
+.pill-card:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.pill-vipps {
   background: var(--vipps);
   color: #fff;
   font-weight: 800;
@@ -90,10 +101,10 @@ h1 {
   padding: 14px 12px;
   border-radius: 10px;
   line-height: 1.1;
+  box-shadow: 0 4px 12px rgba(255, 91, 36, 0.28);
 }
+.pill-vipps:hover { background: var(--vipps-dark); }
 .pill-card {
-  flex: 1;
-  max-width: 150px;
   background: linear-gradient(135deg, #1a1f71 0%, #252525 52%, #eb001b 100%);
   color: #fff;
   font-weight: 800;
@@ -101,11 +112,31 @@ h1 {
   padding: 14px 10px;
   border-radius: 10px;
   line-height: 1.2;
+  box-shadow: 0 4px 12px rgba(26, 31, 113, 0.22);
 }
 .pill-card.dim {
   background: #8a9690;
   font-size: 12px;
   font-weight: 700;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.pay-inline-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #8a2a2a;
+  background: #fdecea;
+  border: 1px solid #f5c6c6;
+  animation: payErrorIn 0.2s ease;
+}
+@keyframes payErrorIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .pay-methods-banner-sub {
   font-size: 12.5px;
@@ -238,9 +269,10 @@ h1 {
     <div class="vipps-pay-zone">
       <div class="pay-methods-banner">
         <div class="pay-methods-banner-title">Digital betaling</div>
+        <div id="payInlineError" class="pay-inline-error hidden" role="alert" aria-live="assertive"></div>
         <div class="pay-method-pills">
-          <span class="pill-vipps">Vipps</span>
-          <span class="pill-card" id="pillCard">Visa / kort</span>
+          <button type="button" class="pill-vipps" id="pillVippsBtn">Vipps</button>
+          <button type="button" class="pill-card" id="pillCardBtn">Visa / kort</button>
         </div>
         <div class="pay-methods-banner-sub">Velg beløp — betal med Vipps eller bankkort (Visa/Mastercard)</div>
       </div>
@@ -297,6 +329,7 @@ const returnRef = params.get('ref') || '';
 let pageInfo = null;
 let selectedPayType = null;
 let selectedPayAmountKr = 0;
+let payInlineErrorTimer = null;
 
 function fmtKr(n) {
   return Number(n || 0).toLocaleString('no-NO') + ' kr';
@@ -333,6 +366,34 @@ function clearPhoneFieldError() {
   label.classList.remove('label-error');
   err.textContent = '';
   err.classList.add('hidden');
+}
+
+function showPayInlineError(text) {
+  const el = document.getElementById('payInlineError');
+  if (!el) return;
+  if (payInlineErrorTimer) {
+    clearTimeout(payInlineErrorTimer);
+    payInlineErrorTimer = null;
+  }
+  el.textContent = text;
+  el.classList.remove('hidden');
+  document.getElementById('payStepAmount')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  payInlineErrorTimer = setTimeout(() => {
+    el.classList.add('hidden');
+    el.textContent = '';
+    payInlineErrorTimer = null;
+  }, 5000);
+}
+
+function hidePayInlineError() {
+  const el = document.getElementById('payInlineError');
+  if (!el) return;
+  if (payInlineErrorTimer) {
+    clearTimeout(payInlineErrorTimer);
+    payInlineErrorTimer = null;
+  }
+  el.classList.add('hidden');
+  el.textContent = '';
 }
 
 function returnStatusMessage(status) {
@@ -420,16 +481,28 @@ async function loadInfo() {
     document.getElementById('sumRest').textContent = fmtKr(data.restKr);
     const cardBtn = document.getElementById('paymentLinkCard');
     const cardNote = document.getElementById('vippsCardNote');
-    const pillCard = document.getElementById('pillCard');
+    const pillCardBtn = document.getElementById('pillCardBtn');
     if (data.cardAvailable) {
       cardBtn.classList.remove('hidden');
-      if (pillCard) { pillCard.classList.remove('dim'); pillCard.textContent = 'Visa / kort'; }
+      if (pillCardBtn) {
+        pillCardBtn.classList.remove('dim');
+        pillCardBtn.textContent = 'Visa / kort';
+        pillCardBtn.disabled = false;
+      }
       cardNote.textContent = 'Bankkort (Visa/Mastercard) via Vipps.';
     } else if (data.vippsEnv === 'test') {
-      if (pillCard) { pillCard.classList.add('dim'); pillCard.textContent = 'Kort i prod'; }
+      if (pillCardBtn) {
+        pillCardBtn.classList.add('dim');
+        pillCardBtn.textContent = 'Kort i prod';
+        pillCardBtn.disabled = true;
+      }
       cardNote.textContent = 'Bankkort er kun tilgjengelig i produksjon — bruk Vipps i test-miljø.';
     } else {
-      if (pillCard) { pillCard.classList.add('dim'); pillCard.textContent = 'Kort av'; }
+      if (pillCardBtn) {
+        pillCardBtn.classList.add('dim');
+        pillCardBtn.textContent = 'Kort av';
+        pillCardBtn.disabled = true;
+      }
       cardNote.textContent = '';
     }
   } catch (err) {
@@ -496,6 +569,26 @@ function submitPaymentChoice() {
   document.getElementById('paymentLinkVippsLabel').textContent = 'Betal ' + fmtKr(belop) + ' med Vipps';
   clearPhoneFieldError();
   hideMsg();
+  hidePayInlineError();
+}
+
+function handlePayMethodClick(paymentMethodType) {
+  if (!pageInfo) return;
+  if (paymentMethodType === 'CARD') {
+    if (!pageInfo.cardAvailable) {
+      const cardMsg = pageInfo.vippsEnv === 'test'
+        ? 'Bankkort er kun tilgjengelig i produksjon — bruk Vipps i test-miljø.'
+        : 'Bankkortbetaling er ikke tilgjengelig akkurat nå.';
+      showPayInlineError(cardMsg);
+      return;
+    }
+  }
+  if (selectedPayAmountKr <= 0) {
+    showPayInlineError('Velg beløp og trykk «Bekreft beløp» før du betaler.');
+    return;
+  }
+  hidePayInlineError();
+  payNow(paymentMethodType);
 }
 
 async function payNow(paymentMethodType) {
@@ -545,8 +638,10 @@ async function payNow(paymentMethodType) {
 document.getElementById('payChoiceAllBtn').addEventListener('click', () => choosePayAmount('Alt'));
 document.getElementById('payChoicePartialBtn').addEventListener('click', () => choosePayAmount('Delvis'));
 document.getElementById('payChoiceSubmitBtn').addEventListener('click', submitPaymentChoice);
-document.getElementById('paymentLinkVipps').addEventListener('click', () => payNow('WALLET'));
-document.getElementById('paymentLinkCard').addEventListener('click', () => payNow('CARD'));
+document.getElementById('pillVippsBtn').addEventListener('click', () => handlePayMethodClick('WALLET'));
+document.getElementById('pillCardBtn').addEventListener('click', () => handlePayMethodClick('CARD'));
+document.getElementById('paymentLinkVipps').addEventListener('click', () => handlePayMethodClick('WALLET'));
+document.getElementById('paymentLinkCard').addEventListener('click', () => handlePayMethodClick('CARD'));
 document.getElementById('phoneInput').addEventListener('input', clearPhoneFieldError);
 
 loadInfo();

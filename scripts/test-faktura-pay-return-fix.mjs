@@ -14,6 +14,12 @@ const checks = [
   ['cancelled message present', betaleHtml.includes('Betalingen ble avbrutt')],
   ['phone field inline error element', betaleHtml.includes('id="phoneFieldError"')],
   ['phone validation uses showPhoneFieldError', betaleHtml.includes('showPhoneFieldError(')],
+  ['inline pay error element', betaleHtml.includes('id="payInlineError"')],
+  ['vipps pill is clickable button', betaleHtml.includes('id="pillVippsBtn"')],
+  ['card pill is clickable button', betaleHtml.includes('id="pillCardBtn"')],
+  ['handlePayMethodClick validates amount', betaleHtml.includes('function handlePayMethodClick')],
+  ['amount-not-selected error text', betaleHtml.includes('Velg beløp og trykk «Bekreft beløp» før du betaler.')],
+  ['showPayInlineError auto-hide', betaleHtml.includes('function showPayInlineError')],
 ];
 
 let failed = 0;
