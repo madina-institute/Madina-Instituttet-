@@ -12,6 +12,12 @@ const checks = [
   ['betale stores reference in sessionStorage', betaleHtml.includes("sessionStorage.setItem(FAKTURA_PAY_REF_KEY")],
   ['no unconditional green Takk on return', !betaleHtml.includes("Hvis betalingen ble fullført hos Vipps")],
   ['cancelled message present', betaleHtml.includes('Betalingen ble avbrutt')],
+  ['inline pay error element', betaleHtml.includes('id="payInlineError"')],
+  ['vipps pill is clickable button', betaleHtml.includes('id="pillVippsBtn"')],
+  ['card pill is clickable button', betaleHtml.includes('id="pillCardBtn"')],
+  ['handlePayMethodClick validates amount', betaleHtml.includes('function handlePayMethodClick')],
+  ['amount-not-selected error text', betaleHtml.includes('Velg beløp og trykk «Bekreft beløp» før du betaler.')],
+  ['showPayInlineError auto-hide', betaleHtml.includes('function showPayInlineError')],
 ];
 
 let failed = 0;
