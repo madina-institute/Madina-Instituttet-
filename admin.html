@@ -8617,19 +8617,20 @@
     return k;
   }
 
-  function delHistorikkIKolonner(rader, raderPerKolonne, maksKolonner){
+  function delHistorikkIKolonner(rader){
     const n = rader.length;
     if(!n) return [[]];
-    if(n <= 10) return [rader];
-    const perKol = raderPerKolonne || 12;
-    const maks = maksKolonner || 2;
-    const kolonner = [];
-    for(let i = 0; i < n && kolonner.length < maks; i += perKol){
-      kolonner.push(rader.slice(i, i + perKol));
+    if(n <= 8) return [rader];
+    if(n <= 16){
+      const half = Math.ceil(n / 2);
+      return [rader.slice(0, half), rader.slice(half)];
     }
-    const brukt = kolonner.reduce((s, k) => s + k.length, 0);
-    if(brukt < n) kolonner[kolonner.length - 1].push(...rader.slice(brukt));
-    return kolonner;
+    const perCol = Math.ceil(n / 3);
+    return [
+      rader.slice(0, perCol),
+      rader.slice(perCol, perCol * 2),
+      rader.slice(perCol * 2)
+    ].filter(k => k.length);
   }
 
   function historikkRadHtml(p){
@@ -8824,9 +8825,10 @@
     const utstedt = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
     const ref = 'BR-' + String(student.id || '').slice(-6).toUpperCase() + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
-    const historikkKolonner = delHistorikkIKolonner(historikkRader, 12, 2);
+    const historikkKolonner = delHistorikkIKolonner(historikkRader);
+    const kolAnt = historikkKolonner.length;
     const historikkSeksjon = historikkRader.length
-      ? '<table class="hist-grid"><tr>' +
+      ? '<table class="hist-grid hist-cols-' + kolAnt + '"><tr>' +
         historikkKolonner.map(historikkKolonneBlokkHtml).join('') +
         '</tr></table>'
       : '<p class="hist-tom">Ingen registrerte betalinger ennå.</p>';
@@ -8837,97 +8839,98 @@
         *{ box-sizing:border-box; }
         html,body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
         .ark{
-          width:186mm; max-width:186mm; margin:0; padding:10mm 12mm 12mm;
+          width:186mm; max-width:186mm; margin:0; padding:7mm 10mm 7mm;
           position:relative;
         }
         .topp{
           background:linear-gradient(135deg,#eef6fd 0%,#d8e9f8 100%);
-          border-bottom:3px solid #b9d5ee; padding:14px 16px 12px; text-align:center;
-          border-radius:8px 8px 0 0;
+          border-bottom:2px solid #b9d5ee; padding:10px 12px 8px; text-align:center;
+          border-radius:6px 6px 0 0;
         }
-        .topp img.logo{ height:32px; width:auto; margin-bottom:4px; }
-        .topp .aar{ font-size:8px; letter-spacing:.22em; text-transform:uppercase; color:#6f93b6; }
+        .topp img.logo{ height:26px; width:auto; margin-bottom:2px; }
+        .topp .aar{ font-size:7px; letter-spacing:.2em; text-transform:uppercase; color:#6f93b6; }
         .topp h1{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; margin:2px 0;
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:19px; margin:1px 0;
           color:#1c5490; font-weight:700;
         }
-        .topp .under{ font-size:10px; color:#4a7099; }
+        .topp .under{ font-size:9px; color:#4a7099; }
         .meta{
-          width:100%; border-collapse:collapse; font-size:9.5px; color:#5a6b7d;
-          margin:8px 0 10px; border-bottom:1px solid #e4edf6;
+          width:100%; border-collapse:collapse; font-size:8.5px; color:#5a6b7d;
+          margin:5px 0 6px; border-bottom:1px solid #e4edf6;
         }
-        .meta td{ padding:2px 0 8px; vertical-align:top; }
+        .meta td{ padding:1px 0 5px; vertical-align:top; }
         .meta td:last-child{ text-align:right; }
         .meta b{ color:#1c5490; font-weight:600; }
-        .intro{ font-size:11px; line-height:1.55; margin:10px 0 10px; }
+        .intro{ font-size:10px; line-height:1.45; margin:5px 0 6px; }
         .summary-tabell{
-          width:100%; border-collapse:separate; border-spacing:6px 0;
-          margin:0 -6px 10px;
+          width:100%; border-collapse:separate; border-spacing:4px 0;
+          margin:0 -4px 6px;
         }
         .summary-tabell td{
-          border:1px solid #cfe0ef; border-radius:6px; padding:7px 8px; background:#f8fbfe;
+          border:1px solid #cfe0ef; border-radius:5px; padding:5px 6px; background:#f8fbfe;
           width:33.33%; vertical-align:top;
         }
         .summary-tabell td.rest{ border-color:#e8c89a; background:#fdf8ec; }
         .sum-kort .lbl{
-          font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:#6f93b6;
-          margin-bottom:2px; font-weight:600;
+          font-size:7px; letter-spacing:.08em; text-transform:uppercase; color:#6f93b6;
+          margin-bottom:1px; font-weight:600;
         }
         .sum-kort .val{
-          font-size:15px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
+          font-size:13px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
         }
         .summary-tabell td.rest .val{ color:#9a6b1a; }
         h2{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:13px; color:#1c5490;
-          margin:0 0 4px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:12px; color:#1c5490;
+          margin:0 0 2px; padding-bottom:2px; border-bottom:1px solid #e4edf6;
         }
         .hist-grid{
           width:100%; border-collapse:collapse; table-layout:fixed;
-          margin:0 0 8px;
+          margin:0 0 4px;
         }
-        .hist-grid td.hist-kol{
-          vertical-align:top; width:50%; padding:0 5px 0 0;
-        }
-        .hist-grid td.hist-kol + td.hist-kol{ padding:0 0 0 5px; }
+        .hist-grid.hist-cols-2 td.hist-kol{ width:50%; vertical-align:top; padding:0 4px 0 0; }
+        .hist-grid.hist-cols-2 td.hist-kol + td.hist-kol{ padding:0 0 0 4px; }
+        .hist-grid.hist-cols-3 td.hist-kol{ width:33.33%; vertical-align:top; padding:0 3px; }
+        .hist-grid.hist-cols-3 td.hist-kol:first-child{ padding-left:0; }
+        .hist-grid.hist-cols-3 td.hist-kol:last-child{ padding-right:0; }
         .hist-grid td.hist-kol:only-child{ width:100%; padding:0; }
         .hist-tabell{
           border-collapse:collapse; width:100%; table-layout:fixed;
         }
         .hist-tabell th{
-          background:#eef4fa; color:#1c5490; font-weight:600; font-size:7.5px;
-          letter-spacing:.04em; text-transform:uppercase; padding:4px 3px; text-align:left;
-          border-bottom:2px solid #cfe0ef;
+          background:#eef4fa; color:#1c5490; font-weight:600; font-size:7px;
+          letter-spacing:.03em; text-transform:uppercase; padding:2px 2px; text-align:left;
+          border-bottom:1px solid #cfe0ef;
         }
         .hist-tabell th.tall-h{ text-align:right; }
         .hist-tabell td{
-          padding:3px 3px; border-bottom:1px solid #e4edf6; vertical-align:top;
-          line-height:1.35; font-size:8px;
+          padding:1px 2px; border-bottom:1px solid #e4edf6; vertical-align:top;
+          line-height:1.25; font-size:7px;
         }
-        .hist-tabell td.dato{ width:40%; white-space:nowrap; font-size:7.5px; }
+        .hist-tabell td.dato{ width:40%; white-space:nowrap; font-size:6.5px; }
         .hist-tabell th.dato{ width:40%; }
         .hist-tabell td.tall, .hist-tabell th.tall-h{ width:18%; text-align:right; }
-        .hist-tabell td.kilde, .hist-tabell th.kilde-h{ width:42%; font-size:7.5px; }
+        .hist-tabell td.kilde, .hist-tabell th.kilde-h{ width:42%; font-size:6.5px; }
         .hist-tabell td.tall{ font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
         .hist-tabell td.tall.neg{ color:#a83c3c; }
         .hist-tom{ color:#8a9a90; font-style:italic; font-size:10px; margin:8px 0 12px; }
         .signatur{
-          margin-top:8px; padding-top:6px; border-top:1px dashed #cfe0ef;
+          margin-top:4px; padding-top:4px; border-top:1px dashed #cfe0ef;
         }
         .signatur-tabell{ width:100%; border-collapse:collapse; }
         .signatur-tabell td{ vertical-align:bottom; padding:0; }
         .signatur-tabell .signatur-tekst{
-          font-size:9.5px; line-height:1.5; width:62%; padding-right:8px;
+          font-size:8.5px; line-height:1.35; width:62%; padding-right:6px;
         }
         .signatur-tabell .signatur-stempel{ width:38%; text-align:right; }
         .signatur-tabell .signatur-stempel img{
-          width:92px; height:92px; opacity:.95; display:inline-block;
+          width:72px; height:72px; max-width:72px; max-height:72px;
+          object-fit:contain; opacity:.95; display:inline-block;
         }
-        .bunn{
-          margin-top:8px; padding-top:5px; border-top:1px solid #e4edf6;
-          font-size:8px; color:#7b8a93; width:100%; border-collapse:collapse;
+        .signatur-tabell .bunn-rad td{
+          padding-top:3px; vertical-align:top; font-size:7px; color:#7b8a93;
+          border-top:1px solid #e4edf6;
         }
-        .bunn td{ vertical-align:top; padding:0; }
-        .bunn td:last-child{ text-align:right; white-space:nowrap; }
+        .signatur-tabell .bunn-rad .bunn-r{ text-align:right; white-space:nowrap; }
         .kvittering-badge{
           display:inline-block; font-size:8px; letter-spacing:.1em; text-transform:uppercase;
           background:#1c5490; color:#fff; padding:2px 8px; border-radius:20px; margin-bottom:6px;
@@ -8970,12 +8973,11 @@
             <b>Med vennlig hilsen,</b><br>Madina Skole
           </td>
           <td class="signatur-stempel">
-            <img src="${stempelSrc || BETALINGSRAPPORT_STEMPEL}" alt="Madina Skole stempel">
+            <img src="${stempelSrc || BETALINGSRAPPORT_STEMPEL}" alt="Madina Skole stempel" width="72" height="72">
           </td>
-        </tr></table>
-        <table class="bunn"><tr>
-          <td>Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</td>
-          <td>${escapeHtml(ref)}</td>
+        </tr><tr class="bunn-rad">
+          <td class="bunn-l">Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</td>
+          <td class="bunn-r">${escapeHtml(ref)}</td>
         </tr></table>
       </div>
       </body></html>`;
@@ -8996,7 +8998,7 @@
     try{
       await waitForPdfImages(host);
       const blob = await window.html2pdf().set({
-        margin: [6, 6, 8, 6],
+        margin: [4, 4, 4, 4],
         filename: 'Betalingsoversikt.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
