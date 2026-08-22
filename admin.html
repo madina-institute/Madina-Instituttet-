@@ -8548,6 +8548,25 @@
   }
 
   const GENERATE_RAPPORT_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingRapportPdf';
+  const GENERATE_KVITTERING_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingKvitteringPdf';
+
+  async function kallPdfCloudFunction(url, payload){
+    const bruker = auth.currentUser;
+    if(!bruker) throw new Error('Du må være innlogget for å lage PDF.');
+    const token = await bruker.getIdToken();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(payload)
+    });
+    if(res.status === 401) throw new Error('Innloggingen er utløpt — logg inn på nytt.');
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error || 'Kunne ikke lage PDF.');
+    return data;
+  }
 
   async function svgTilPngDataUri(svgUrl){
     const r = await fetch(svgUrl);
@@ -8793,11 +8812,18 @@
   }
 
   async function genererBetalingKvitteringPdf(opts){
-    const stempelSrc = await hentBetalingPdfStempelUri();
-    const html = byggBetalingKvitteringPdfHtml({ ...opts, stempelSrc });
-    const filnavn = 'Betaling-kvittering-' + filnavnSafe(opts.elevNavn) + '.pdf';
-    const { blob, base64 } = await genererPdfFraHtmlString(html, { margin: [6, 6, 8, 6], filnavn });
-    return { blob, filnavn, base64 };
+    const data = await kallPdfCloudFunction(GENERATE_KVITTERING_PDF_URL, {
+      mottakerNavn: opts.mottakerNavn || 'Hei',
+      elevNavn: opts.elevNavn || 'elev',
+      belopKr: opts.belop,
+      kanal: opts.kanal || '—',
+      paymentType: opts.type || '—',
+      reference: opts.referanse || '—',
+      tidspunkt: opts.tidspunkt || new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' })
+    });
+    const filnavn = data.filnavn || ('Betaling-kvittering-' + filnavnSafe(opts.elevNavn) + '.pdf');
+    const blob = pdfBase64ToBlob(data.base64);
+    return { blob, filnavn, base64: data.base64 };
   }
 
   async function sendBetalingKvitteringTilForesatt({ student, belop, kanal, type, referanse, tidspunkt }){
@@ -9052,9 +9078,6 @@
   }
 
   async function genererBetalingsrapportPdf({ student, guardian, belop, betalt, rest, history }){
-    const bruker = auth.currentUser;
-    if(!bruker) throw new Error('Du må være innlogget for å lage PDF.');
-    const token = await bruker.getIdToken();
     const klasseNavn = resolveDynName('classes', student.klasse) || student.klasse || '—';
     const historyPayload = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))
       .map(p => ({
@@ -9062,27 +9085,17 @@
         belop: cashierKr(p.belop),
         kilde: String(p.kilde || '')
       }));
-    const res = await fetch(GENERATE_RAPPORT_PDF_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify({
-        foresattNavn: guardian?.navn || 'Hei',
-        elevNavn: student.navn || 'Elev',
-        klasseNavn,
-        skoleaar: SKOLEAR,
-        belopKr: belop,
-        betaltKr: betalt,
-        restKr: rest,
-        history: historyPayload,
-        studentId: student.id
-      })
+    const data = await kallPdfCloudFunction(GENERATE_RAPPORT_PDF_URL, {
+      foresattNavn: guardian?.navn || 'Hei',
+      elevNavn: student.navn || 'Elev',
+      klasseNavn,
+      skoleaar: SKOLEAR,
+      belopKr: belop,
+      betaltKr: betalt,
+      restKr: rest,
+      history: historyPayload,
+      studentId: student.id
     });
-    if(res.status === 401) throw new Error('Innloggingen er utløpt — logg inn på nytt.');
-    const data = await res.json();
-    if(!data.ok) throw new Error(data.error || 'Kunne ikke lage PDF-rapport.');
     const filnavn = data.filnavn || ('Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf');
     const blob = pdfBase64ToBlob(data.base64);
     return { blob, filnavn, base64: data.base64 };

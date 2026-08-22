@@ -2549,6 +2549,54 @@ exports.ukentligSikkerhetskopi = onSchedule(
 );
 
 // =======================================================================
+// generateBetalingKvitteringPdf — Kasserer (Ledelse): lager kvitterings-PDF
+//    med PDFKit (samme motor som Vipps-e-post).
+//    POST { mottakerNavn, elevNavn, belopKr, kanal, paymentType, reference, tidspunkt }
+// =======================================================================
+exports.generateBetalingKvitteringPdf = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
+
+    try {
+      const body = req.body || {};
+      const {
+        mottakerNavn,
+        elevNavn,
+        belopKr,
+        kanal,
+        paymentType,
+        reference,
+        tidspunkt,
+      } = body;
+
+      const pdf = await genererBetalingKvitteringPdf({
+        mottakerNavn: mottakerNavn || "Hei",
+        elevNavn: elevNavn || "—",
+        belopKr: Number(belopKr) || 0,
+        kanal: kanal || "—",
+        paymentType: paymentType || "—",
+        reference: reference || "—",
+        tidspunkt: tidspunkt || new Date().toLocaleString("no-NO", { timeZone: "Europe/Oslo" }),
+      });
+
+      res.status(200).json({ ok: true, base64: pdf.base64, filnavn: pdf.filnavn });
+    } catch (err) {
+      logger.error("generateBetalingKvitteringPdf error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+// =======================================================================
 // generateBetalingRapportPdf — Kasserer (Ledelse): lager Betalingsoversikt-PDF
 //    med PDFKit (samme motor som betalingskvittering).
 //    POST { foresattNavn, elevNavn, klasseNavn, skoleaar, belopKr, betaltKr, restKr, history, studentId }
