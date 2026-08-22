@@ -4767,6 +4767,7 @@
      programmer, kalender eller skoleårets grenser, og svarer «ikke
      undervisningsdag» på alt. Stille.
      ═══════════════════════════════════════════════════════════════════ -->
+<script src="assets/betalingsrapport-stempel.js"></script>
 <script src="skoledager.js"></script>
 
 <script type="module">
@@ -8576,6 +8577,10 @@
 
   async function hentBetalingsrapportStempelUri(){
     if(window._betalingsrapportStempelUri) return window._betalingsrapportStempelUri;
+    if(window.__BETALINGSRAPPORT_STEMPEL_PNG){
+      window._betalingsrapportStempelUri = window.__BETALINGSRAPPORT_STEMPEL_PNG;
+      return window._betalingsrapportStempelUri;
+    }
     try{
       window._betalingsrapportStempelUri = await bildeTilDataUri(BETALINGSRAPPORT_STEMPEL_PNG);
     } catch(_png){
@@ -8608,6 +8613,70 @@
       img.onerror = done;
       setTimeout(done, 4000);
     })));
+  }
+
+  function pdfHtml2CanvasOpts(element){
+    const elW = element.scrollWidth || 718;
+    const elH = element.offsetHeight || element.scrollHeight || 800;
+    return {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      letterRendering: true,
+      scrollY: 0,
+      scrollX: 0,
+      windowWidth: elW,
+      windowHeight: elH,
+      height: elH,
+      width: elW,
+      onclone(clonedDoc){
+        const ark = clonedDoc.querySelector('.ark');
+        if(ark){
+          ark.style.height = 'auto';
+          ark.style.overflow = 'hidden';
+        }
+        clonedDoc.querySelectorAll('.signatur-stempel img, img.stempel').forEach(img => {
+          const px = img.getAttribute('width') || '80';
+          img.style.width = px + 'px';
+          img.style.height = px + 'px';
+          img.style.maxWidth = px + 'px';
+          img.style.maxHeight = px + 'px';
+          img.style.objectFit = 'contain';
+          img.style.display = 'inline-block';
+        });
+      }
+    };
+  }
+
+  async function genererPdfFraHtmlString(html, { margin, filnavn }){
+    await loadHtml2PdfLib();
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.tabIndex = -1;
+    iframe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    try{
+      const element = doc.querySelector('.ark');
+      if(!element) throw new Error('PDF-mal mangler .ark');
+      await waitForPdfImages(doc.body);
+      await new Promise(r => setTimeout(r, 120));
+      const blob = await window.html2pdf().set({
+        margin: margin || [8, 8, 8, 8],
+        filename: filnavn || 'document.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: pdfHtml2CanvasOpts(element),
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css'] }
+      }).from(element).outputPdf('blob');
+      const base64 = await blobToBase64(blob);
+      return { blob, base64 };
+    } finally {
+      iframe.remove();
+    }
   }
 
   function kildePdfTekst(kilde){
@@ -8670,13 +8739,12 @@
     const utstedt = tidspunkt || new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
     const belopTxt = (typeof belop === 'number' ? belop : parseFloat(belop) || 0).toLocaleString('no-NO') + ' kr';
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         *{ box-sizing:border-box; }
-        html,body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
+        html,body{ font-family:Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
         .ark{ width:186mm; max-width:186mm; margin:0; padding:10mm 12mm 12mm; position:relative; page-break-inside:avoid; }
         .topp{ background:linear-gradient(135deg,#eef6fd 0%,#d8e9f8 100%); border-bottom:3px solid #b9d5ee; padding:14px 16px 12px; text-align:center; border-radius:8px 8px 0 0; }
-        .topp h1{ font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; margin:2px 0; color:#1c5490; font-weight:700; }
+        .topp h1{ font-family:Georgia,'Times New Roman',serif; font-size:22px; margin:2px 0; color:#1c5490; font-weight:700; }
         .topp .under{ font-size:10px; color:#4a7099; }
         .meta{ display:flex; justify-content:space-between; font-size:9.5px; color:#5a6b7d; padding:8px 2px 10px; border-bottom:1px solid #e4edf6; }
         .meta b{ color:#1c5490; }
@@ -8709,37 +8777,18 @@
         </div>
         <div class="signatur">
           <div class="tekst">Beløpet er trukket fra restsaldoen i skolens system.<br><b>Med vennlig hilsen,</b><br>Madina Skole</div>
-          <img class="stempel" src="${stempelSrc || BETALING_PDF_STEMPEL}" alt="Madina Skole stempel">
+          <img class="stempel" src="${stempelSrc || BETALINGSRAPPORT_STEMPEL_PNG}" alt="Madina Skole stempel" width="96" height="96">
         </div>
         <div class="bunn"><span>Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</span><span>${escapeHtml(ref)}</span></div>
       </div></body></html>`;
   }
 
   async function genererBetalingKvitteringPdf(opts){
-    await loadHtml2PdfLib();
     const stempelSrc = await hentBetalingPdfStempelUri();
     const html = byggBetalingKvitteringPdfHtml({ ...opts, stempelSrc });
-    const host = document.createElement('div');
-    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;width:186mm;background:#fff;';
-    host.innerHTML = html;
-    document.body.appendChild(host);
-    const element = host.querySelector('.ark') || host;
-    try{
-      await waitForPdfImages(host);
-      const blob = await window.html2pdf().set({
-        margin: [6, 6, 8, 6],
-        filename: 'Betaling-kvittering.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true, scrollY: 0, windowWidth: element.scrollWidth || 700 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      }).from(element).outputPdf('blob');
-      const filnavn = 'Betaling-kvittering-' + filnavnSafe(opts.elevNavn) + '.pdf';
-      const base64 = await blobToBase64(blob);
-      return { blob, filnavn, base64 };
-    } finally {
-      host.remove();
-    }
+    const filnavn = 'Betaling-kvittering-' + filnavnSafe(opts.elevNavn) + '.pdf';
+    const { blob, base64 } = await genererPdfFraHtmlString(html, { margin: [6, 6, 8, 6], filnavn });
+    return { blob, filnavn, base64 };
   }
 
   async function sendBetalingKvitteringTilForesatt({ student, belop, kanal, type, referanse, tidspunkt }){
@@ -8843,10 +8892,9 @@
       : '<p class="hist-tom">Ingen registrerte betalinger ennå.</p>';
 
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         *{ box-sizing:border-box; }
-        html,body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
+        html,body{ font-family:Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
         .ark{
           width:190mm; max-width:190mm; margin:0; padding:8mm 12mm 8mm;
           position:relative;
@@ -8859,7 +8907,7 @@
         .topp img.logo{ height:28px; width:auto; margin-bottom:3px; }
         .topp .aar{ font-size:7.5px; letter-spacing:.2em; text-transform:uppercase; color:#6f93b6; }
         .topp h1{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; margin:2px 0;
+          font-family:Georgia,'Times New Roman',serif; font-size:20px; margin:2px 0;
           color:#1c5490; font-weight:700;
         }
         .topp .under{ font-size:9.5px; color:#4a7099; }
@@ -8891,7 +8939,7 @@
         }
         .summary-tabell td.rest .val{ color:#9a6b1a; }
         h2{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:12px; color:#1c5490;
+          font-family:Georgia,'Times New Roman',serif; font-size:12px; color:#1c5490;
           margin:0 0 2px; padding-bottom:2px; border-bottom:1px solid #e4edf6;
         }
         .hist-grid{
@@ -8995,42 +9043,14 @@
   }
 
   async function genererBetalingsrapportPdf({ student, guardian, belop, betalt, rest, history }){
-    await loadHtml2PdfLib();
     const [stempelSrc, logoSrc] = await Promise.all([
       hentBetalingsrapportStempelUri(),
       hentLogoUtskriftUri()
     ]);
     const html = byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc, logoSrc });
-    const host = document.createElement('div');
-    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;width:190mm;background:#fff;';
-    host.innerHTML = html;
-    document.body.appendChild(host);
-    const element = host.querySelector('.ark') || host;
-    const canvasW = Math.max(Math.round(element.getBoundingClientRect().width), 718);
-    try{
-      await waitForPdfImages(host);
-      const blob = await window.html2pdf().set({
-        margin: [8, 8, 8, 8],
-        filename: 'Betalingsoversikt.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          letterRendering: true,
-          scrollY: 0,
-          windowWidth: canvasW,
-          width: canvasW
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(element).outputPdf('blob');
-      const filnavn = 'Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf';
-      const base64 = await blobToBase64(blob);
-      return { blob, filnavn, base64 };
-    } finally {
-      host.remove();
-    }
+    const filnavn = 'Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf';
+    const { blob, base64 } = await genererPdfFraHtmlString(html, { margin: [8, 8, 8, 8], filnavn });
+    return { blob, filnavn, base64 };
   }
 
   async function sendCashierReportToStudent(studentId){
