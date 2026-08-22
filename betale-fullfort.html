@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<!-- SIST-ENDRET: 2026-08-22 17:35:00 -->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Betaling fullført — Madina Skole</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a2e24;
+  --line: rgba(26,46,36,0.12);
+  --emerald: #1c5490;
+  --ok: #2e7d52;
+  --err: #8a2a2a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Jost', sans-serif;
+  background: #f6f7f9;
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.wrap { width: 100%; max-width: 420px; text-align: center; }
+.logo-wrap { margin-bottom: 24px; }
+.logo-wrap img {
+  width: min(220px, 72vw);
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 28px 22px;
+  box-shadow: 0 8px 24px rgba(26,46,36,0.06);
+}
+.icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 32px; margin-bottom: 16px;
+}
+.icon.ok { background: #e8f5ef; color: var(--ok); }
+.icon.err { background: #fdecea; color: var(--err); }
+.icon.wait { background: #eef6fd; color: var(--emerald); }
+h1 { font-size: 22px; margin-bottom: 10px; color: var(--emerald); }
+.sub { font-size: 14px; color: #5a6860; line-height: 1.55; margin-bottom: 18px; }
+.detail {
+  background: #f8f9fb;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.detail b { color: var(--ink); }
+.btn {
+  display: inline-block;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary { background: var(--emerald); color: #fff; }
+.btn-ghost {
+  background: transparent;
+  color: var(--emerald);
+  border: 1px solid var(--line);
+  margin-top: 10px;
+}
+.footer { margin-top: 20px; font-size: 12px; color: #8a9690; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-wrap">
+    <img src="logo-bla.png" alt="Madina Skole">
+  </div>
+  <div class="card" id="stateLoading">
+    <div class="icon wait">⏳</div>
+    <h1>Sjekker betaling…</h1>
+    <p class="sub">Vent et øyeblikk mens vi bekrefter betalingen hos Vipps.</p>
+  </div>
+  <div class="card hidden" id="stateOk">
+    <div class="icon ok">✓</div>
+    <h1>Takk — betalingen er mottatt!</h1>
+    <p class="sub">Beløpet er registrert. Elevens saldo oppdateres innen kort tid.</p>
+    <div class="detail" id="okDetail"></div>
+  </div>
+  <div class="card hidden" id="stateFail">
+    <div class="icon err">✕</div>
+    <h1 id="failTitle">Betalingen ble ikke fullført</h1>
+    <p class="sub" id="failText"></p>
+    <a class="btn btn-primary" id="retryBtn" href="#">Prøv betaling igjen</a>
+  </div>
+  <div class="footer">Madina Skole · post@madinaskole.no</div>
+</div>
+<script>
+const CHECK_RETURN_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/checkFakturaExternalPaymentReturn';
+const params = new URLSearchParams(location.search);
+const token = params.get('t') || '';
+const reference = params.get('ref') || '';
+
+function fmtKr(n) {
+  return Number(n || 0).toLocaleString('no-NO') + ' kr';
+}
+
+function showState(id) {
+  ['stateLoading', 'stateOk', 'stateFail'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+function failMessage(status) {
+  if (status === 'cancelled') {
+    return {
+      title: 'Betalingen ble avbrutt',
+      text: 'Ingen beløp er trukket. Du kan prøve igjen når du er klar.',
+    };
+  }
+  if (status === 'expired') {
+    return {
+      title: 'Betalingen utløp',
+      text: 'Tidsfristen hos Vipps gikk ut. Start betalingen på nytt.',
+    };
+  }
+  return {
+    title: 'Betalingen er ikke fullført',
+    text: 'Betalingen ble ikke gjennomført. Prøv igjen, eller kontakt skolen hvis problemet vedvarer.',
+  };
+}
+
+async function init() {
+  const retryHref = token ? ('betale.html?t=' + encodeURIComponent(token)) : 'betale.html';
+  document.getElementById('retryBtn').href = retryHref;
+
+  if (!token || !reference) {
+    showState('stateFail');
+    document.getElementById('failTitle').textContent = 'Mangler betalingsinfo';
+    document.getElementById('failText').textContent = 'Lenken er ufullstendig. Åpne betalingslenken fra faktura-e-posten på nytt.';
+    document.getElementById('retryBtn').classList.add('hidden');
+    return;
+  }
+
+  try {
+    const res = await fetch(CHECK_RETURN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, reference }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      showState('stateFail');
+      document.getElementById('failTitle').textContent = 'Kunne ikke bekrefte';
+      document.getElementById('failText').textContent = data.error || 'Prøv igjen om litt.';
+      return;
+    }
+    if (data.status === 'completed') {
+      showState('stateOk');
+      const lines = [];
+      if (data.amountKr) lines.push('<div>Beløp: <b>' + fmtKr(data.amountKr) + '</b></div>');
+      if (reference) lines.push('<div>Referanse: <b>' + reference.replace(/^madina-bal-/, '').slice(0, 24) + '…</b></div>');
+      document.getElementById('okDetail').innerHTML = lines.join('') || '<div>Betalingen er bekreftet.</div>';
+      return;
+    }
+    showState('stateFail');
+    const msg = failMessage(data.status);
+    document.getElementById('failTitle').textContent = msg.title;
+    document.getElementById('failText').textContent = msg.text;
+  } catch (err) {
+    console.error(err);
+    showState('stateFail');
+    document.getElementById('failTitle').textContent = 'Nettverksfeil';
+    document.getElementById('failText').textContent = 'Kunne ikke sjekke betalingsstatus. Prøv igjen.';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
