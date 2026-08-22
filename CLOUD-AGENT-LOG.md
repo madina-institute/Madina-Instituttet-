@@ -3,7 +3,7 @@
 > **الغرض:** توثيق كل ما نفّذه الوكيل السحابي (Cloud Agent) — أعمال، أخطاء، إصلاحات، نصائح، ومهام متبقية.  
 > **المستودع:** `madina-institute/Madina-Instituttet-`  
 > **آخر تحديث يدوي:** 2026-08-20 11:30 (Oslo)  
-> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-22T03:10:01.843Z -->
+> **آخر تحديث آلي:** <!-- AUTO-LOG-LAST-SYNC: 2026-08-22T10:54:18.586Z -->
 
 ---
 
@@ -226,6 +226,17 @@
 ## 6. سجل التحديثات الآلية (commits)
 
 <!-- AUTO-LOG-ENTRIES-BEGIN -->
+- `2026-08-22T09:14:46Z` · `f648b07` · Merge pull request #115 from madina-institute/cursor/faktura-pay-amount-validation-4dff
+- `2026-08-22T09:14:41Z` · `961f47b` · Merge origin/main into cursor/faktura-pay-amount-validation-4dff
+- `2026-08-22T09:13:17Z` · `856ee27` · Fix silent failure on Vipps/Visa pills when amount not confirmed
+- `2026-08-22T10:53:20+02:00` · `63e945d` · Use red error styling for incomplete faktura payment return messages (#114)
+- `2026-08-22T10:38:23+02:00` · `3098bf1` · Fix false success message on /betale after cancelled Vipps/card payment (#113)
+- `2026-08-22T10:20:14+02:00` · `e291da8` · Improve faktura pay CTA: dual Vipps/card branding, larger email button (#112)
+- `2026-08-22T10:06:23+02:00` · `c3c4d0a` · External faktura payment: choose amount and pay via /betale (no portal login) (#111)
+- `2026-08-22T09:56:36+02:00` · `c7dd491` · Add Vipps and bank card payment buttons to faktura email body (#109)
+- `2026-08-22T09:46:59+02:00` · `0eeb3d7` · Add PDFKit faktura PDF attachment for Send faktura email (#108)
+- `2026-08-22T09:28:25+02:00` · `2475b0f` · Simplify Kasserer: Vipps + Historikk + Mer menu (#107)
+- `2026-08-22T03:10:01Z` · `af0f2eb` · chore: auto-update CLOUD-AGENT-LOG (10h sync)
 - `2026-08-22T01:48:13Z` · `a552220` · Merge pull request #106 from madina-institute/cursor/kvittering-pdfkit-c9a0
 - `2026-08-22T01:47:49Z` · `2baadae` · Fix payment receipt PDF: use PDFKit server endpoint like Vipps email
 - `2026-08-22T03:42:22+02:00` · `09bd2d5` · Slett madinabarn-arsplan-2026-2027-tospraklig.html via publiseringsverktøy
@@ -335,9 +346,6 @@
 - `2026-08-20T09:44:48Z` · `9927036` · Merge pull request #54 from madina-institute/cursor/vipps-email-link-guard-c9a0
 - `2026-08-20T09:42:38Z` · `7b38c5d` · Block Vipps parent email when payment link is missing
 - `2026-08-20T11:33:39+02:00` · `eb591b9` · Fix missing Vipps payment link in parent emails (#53)
-- `2026-08-20T09:26:58Z` · `6bfb834` · Merge pull request #52 from madina-institute/cursor/cloud-agent-log-c9a0
-- `2026-08-20T09:26:31Z` · `88189bf` · Add CLOUD-AGENT-LOG with 10h auto-update via GitHub Actions
-_يُملأ تلقائياً كل 10 ساعات من GitHub Actions._
 <!-- AUTO-LOG-ENTRIES-END -->
 
 ---
