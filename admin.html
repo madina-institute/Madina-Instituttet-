@@ -8540,6 +8540,15 @@
     });
   }
 
+  function pdfBase64ToBlob(base64){
+    const bin = atob(base64 || '');
+    const arr = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: 'application/pdf' });
+  }
+
+  const GENERATE_RAPPORT_PDF_URL = 'https://us-central1-madina-instituttet.cloudfunctions.net/generateBetalingRapportPdf';
+
   async function svgTilPngDataUri(svgUrl){
     const r = await fetch(svgUrl);
     if(!r.ok) throw new Error('svg fetch');
@@ -9043,14 +9052,40 @@
   }
 
   async function genererBetalingsrapportPdf({ student, guardian, belop, betalt, rest, history }){
-    const [stempelSrc, logoSrc] = await Promise.all([
-      hentBetalingsrapportStempelUri(),
-      hentLogoUtskriftUri()
-    ]);
-    const html = byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc, logoSrc });
-    const filnavn = 'Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf';
-    const { blob, base64 } = await genererPdfFraHtmlString(html, { margin: [8, 8, 8, 8], filnavn });
-    return { blob, filnavn, base64 };
+    const bruker = auth.currentUser;
+    if(!bruker) throw new Error('Du må være innlogget for å lage PDF.');
+    const token = await bruker.getIdToken();
+    const klasseNavn = resolveDynName('classes', student.klasse) || student.klasse || '—';
+    const historyPayload = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')))
+      .map(p => ({
+        dato: cashierFormatDatoTid(p.dato),
+        belop: cashierKr(p.belop),
+        kilde: String(p.kilde || '')
+      }));
+    const res = await fetch(GENERATE_RAPPORT_PDF_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({
+        foresattNavn: guardian?.navn || 'Hei',
+        elevNavn: student.navn || 'Elev',
+        klasseNavn,
+        skoleaar: SKOLEAR,
+        belopKr: belop,
+        betaltKr: betalt,
+        restKr: rest,
+        history: historyPayload,
+        studentId: student.id
+      })
+    });
+    if(res.status === 401) throw new Error('Innloggingen er utløpt — logg inn på nytt.');
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error || 'Kunne ikke lage PDF-rapport.');
+    const filnavn = data.filnavn || ('Betalingsoversikt-' + filnavnSafe(student.navn) + '.pdf');
+    const blob = pdfBase64ToBlob(data.base64);
+    return { blob, filnavn, base64: data.base64 };
   }
 
   async function sendCashierReportToStudent(studentId){

@@ -32,6 +32,7 @@ const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
 const { genererBetalingKvitteringPdf } = require("./betalingKvitteringPdf");
+const { genererBetalingRapportPdf } = require("./betalingRapportPdf");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -2544,6 +2545,66 @@ exports.ukentligSikkerhetskopi = onSchedule(
       { sikkerhetskopiSiste: new Date().toISOString() },
       { merge: true }
     ).catch((err) => logger.warn("Kunne ikke skrive puls for sikkerhetskopi", err));
+  }
+);
+
+// =======================================================================
+// generateBetalingRapportPdf — Kasserer (Ledelse): lager Betalingsoversikt-PDF
+//    med PDFKit (samme motor som betalingskvittering).
+//    POST { foresattNavn, elevNavn, klasseNavn, skoleaar, belopKr, betaltKr, restKr, history, studentId }
+// =======================================================================
+exports.generateBetalingRapportPdf = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
+
+    try {
+      const body = req.body || {};
+      const {
+        foresattNavn,
+        elevNavn,
+        klasseNavn,
+        skoleaar,
+        belopKr,
+        betaltKr,
+        restKr,
+        history,
+        studentId,
+      } = body;
+
+      if (!elevNavn && !studentId) {
+        res.status(400).json({ ok: false, error: "Mangler elev." });
+        return;
+      }
+
+      const docRef = "BR-" + String(studentId || elevNavn || "X").slice(-6).toUpperCase()
+        + "-" + new Date().toISOString().slice(0, 10).replace(/-/g, "");
+
+      const pdf = await genererBetalingRapportPdf({
+        foresattNavn: foresattNavn || "Hei",
+        elevNavn: elevNavn || "—",
+        klasseNavn: klasseNavn || "—",
+        skoleaar: skoleaar || "",
+        belopKr: Number(belopKr) || 0,
+        betaltKr: Number(betaltKr) || 0,
+        restKr: Number(restKr) || 0,
+        history: Array.isArray(history) ? history : [],
+        dokumentRef: docRef,
+      });
+
+      res.status(200).json({ ok: true, base64: pdf.base64, filnavn: pdf.filnavn, dokumentRef: docRef });
+    } catch (err) {
+      logger.error("generateBetalingRapportPdf error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
   }
 );
 
