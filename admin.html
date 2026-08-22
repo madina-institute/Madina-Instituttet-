@@ -8505,7 +8505,8 @@
   // mechanism as Meldingssenter) AND as an e-post — so it's guaranteed to
   // reach them even if they don't check the portal.
   const BETALINGSRAPPORT_STEMPEL = 'assets/stempel-madina-fullt.svg';
-  const BETALING_PDF_STEMPEL = BETALINGSRAPPORT_STEMPEL;
+  const BETALINGSRAPPORT_STEMPEL_PNG = 'assets/stempel-madina-fullt.png';
+  const BETALING_PDF_STEMPEL = BETALINGSRAPPORT_STEMPEL_PNG;
   let html2pdfLastPromise = null;
 
   function loadHtml2PdfLib(){
@@ -8576,9 +8577,13 @@
   async function hentBetalingsrapportStempelUri(){
     if(window._betalingsrapportStempelUri) return window._betalingsrapportStempelUri;
     try{
-      window._betalingsrapportStempelUri = await svgTilPngDataUri(BETALINGSRAPPORT_STEMPEL);
-    } catch(_e){
-      window._betalingsrapportStempelUri = BETALINGSRAPPORT_STEMPEL;
+      window._betalingsrapportStempelUri = await bildeTilDataUri(BETALINGSRAPPORT_STEMPEL_PNG);
+    } catch(_png){
+      try{
+        window._betalingsrapportStempelUri = await svgTilPngDataUri(BETALINGSRAPPORT_STEMPEL);
+      } catch(_svg){
+        window._betalingsrapportStempelUri = BETALINGSRAPPORT_STEMPEL_PNG;
+      }
     }
     return window._betalingsrapportStempelUri;
   }
@@ -8822,7 +8827,11 @@
     const elevNavn = student.navn || 'Elev';
     const foresattNavn = guardian.navn || 'Foresatt';
     const klasseNavn = resolveDynName('classes', student.klasse) || student.klasse || '—';
-    const utstedt = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
+    const utstedt = new Date().toLocaleString('no-NO', {
+      timeZone: 'Europe/Oslo',
+      day: 'numeric', month: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
     const ref = 'BR-' + String(student.id || '').slice(-6).toUpperCase() + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
     const historikkKolonner = delHistorikkIKolonner(historikkRader);
@@ -8839,35 +8848,37 @@
         *{ box-sizing:border-box; }
         html,body{ font-family:'Jost',Arial,sans-serif; color:#16283a; margin:0; padding:0; background:#fff; }
         .ark{
-          width:186mm; max-width:186mm; margin:0; padding:7mm 10mm 7mm;
+          width:190mm; max-width:190mm; margin:0; padding:8mm 12mm 8mm;
           position:relative;
         }
         .topp{
           background:linear-gradient(135deg,#eef6fd 0%,#d8e9f8 100%);
-          border-bottom:2px solid #b9d5ee; padding:10px 12px 8px; text-align:center;
+          border-bottom:2px solid #b9d5ee; padding:12px 14px 10px; text-align:center;
           border-radius:6px 6px 0 0;
         }
-        .topp img.logo{ height:26px; width:auto; margin-bottom:2px; }
-        .topp .aar{ font-size:7px; letter-spacing:.2em; text-transform:uppercase; color:#6f93b6; }
+        .topp img.logo{ height:28px; width:auto; margin-bottom:3px; }
+        .topp .aar{ font-size:7.5px; letter-spacing:.2em; text-transform:uppercase; color:#6f93b6; }
         .topp h1{
-          font-family:'Cormorant Garamond',Georgia,serif; font-size:19px; margin:1px 0;
+          font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; margin:2px 0;
           color:#1c5490; font-weight:700;
         }
-        .topp .under{ font-size:9px; color:#4a7099; }
+        .topp .under{ font-size:9.5px; color:#4a7099; }
         .meta{
-          width:100%; border-collapse:collapse; font-size:8.5px; color:#5a6b7d;
-          margin:5px 0 6px; border-bottom:1px solid #e4edf6;
+          width:100%; border-collapse:collapse; table-layout:fixed;
+          font-size:9px; color:#5a6b7d;
+          margin:6px 0 8px; border-bottom:1px solid #e4edf6;
         }
-        .meta td{ padding:1px 0 5px; vertical-align:top; }
-        .meta td:last-child{ text-align:right; }
+        .meta td{ padding:2px 0 6px; vertical-align:top; }
+        .meta td.meta-doc{ width:52%; padding-right:8px; word-break:break-word; }
+        .meta td.meta-dato{ width:48%; text-align:right; white-space:nowrap; }
         .meta b{ color:#1c5490; font-weight:600; }
-        .intro{ font-size:10px; line-height:1.45; margin:5px 0 6px; }
+        .intro{ font-size:10.5px; line-height:1.5; margin:6px 0 8px; }
         .summary-tabell{
-          width:100%; border-collapse:separate; border-spacing:4px 0;
-          margin:0 -4px 6px;
+          width:100%; border-collapse:separate; border-spacing:5px 0;
+          margin:0 -5px 8px;
         }
         .summary-tabell td{
-          border:1px solid #cfe0ef; border-radius:5px; padding:5px 6px; background:#f8fbfe;
+          border:1px solid #cfe0ef; border-radius:5px; padding:6px 7px; background:#f8fbfe;
           width:33.33%; vertical-align:top;
         }
         .summary-tabell td.rest{ border-color:#e8c89a; background:#fdf8ec; }
@@ -8876,7 +8887,7 @@
           margin-bottom:1px; font-weight:600;
         }
         .sum-kort .val{
-          font-size:13px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
+          font-size:14px; font-weight:700; color:#1c5490; font-variant-numeric:tabular-nums;
         }
         .summary-tabell td.rest .val{ color:#9a6b1a; }
         h2{
@@ -8921,10 +8932,10 @@
         .signatur-tabell .signatur-tekst{
           font-size:8.5px; line-height:1.35; width:62%; padding-right:6px;
         }
-        .signatur-tabell .signatur-stempel{ width:38%; text-align:right; }
+        .signatur-tabell .signatur-stempel{ width:38%; text-align:right; min-width:80px; }
         .signatur-tabell .signatur-stempel img{
-          width:72px; height:72px; max-width:72px; max-height:72px;
-          object-fit:contain; opacity:.95; display:inline-block;
+          width:80px; height:80px; max-width:80px; max-height:80px;
+          object-fit:contain; opacity:.95; display:inline-block; vertical-align:bottom;
         }
         .signatur-tabell .bunn-rad td{
           padding-top:3px; vertical-align:top; font-size:7px; color:#7b8a93;
@@ -8944,8 +8955,8 @@
           <div class="under">Offisiell kvittering / payment statement</div>
         </div>
         <table class="meta"><tr>
-          <td><b>Dokument:</b> ${escapeHtml(ref)}</td>
-          <td><b>Utstedt:</b> ${escapeHtml(utstedt)}</td>
+          <td class="meta-doc"><b>Dokument:</b> ${escapeHtml(ref)}</td>
+          <td class="meta-dato"><b>Utstedt:</b> ${escapeHtml(utstedt)}</td>
         </tr></table>
         <div class="kvittering-badge">Betalingsrapport</div>
         <p class="intro">Hei ${escapeHtml(foresattNavn)},<br><br>
@@ -8973,7 +8984,7 @@
             <b>Med vennlig hilsen,</b><br>Madina Skole
           </td>
           <td class="signatur-stempel">
-            <img src="${stempelSrc || BETALINGSRAPPORT_STEMPEL}" alt="Madina Skole stempel" width="72" height="72">
+            <img src="${stempelSrc || BETALINGSRAPPORT_STEMPEL_PNG}" alt="Madina Skole stempel" width="80" height="80">
           </td>
         </tr><tr class="bunn-rad">
           <td class="bunn-l">Madina Skole · Hagelundveien 2b, 0963 Oslo · post@madinaskole.no</td>
@@ -8991,14 +9002,15 @@
     ]);
     const html = byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc, logoSrc });
     const host = document.createElement('div');
-    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;width:186mm;background:#fff;';
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;width:190mm;background:#fff;';
     host.innerHTML = html;
     document.body.appendChild(host);
     const element = host.querySelector('.ark') || host;
+    const canvasW = Math.max(Math.round(element.getBoundingClientRect().width), 718);
     try{
       await waitForPdfImages(host);
       const blob = await window.html2pdf().set({
-        margin: [4, 4, 4, 4],
+        margin: [8, 8, 8, 8],
         filename: 'Betalingsoversikt.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
@@ -9007,7 +9019,8 @@
           logging: false,
           letterRendering: true,
           scrollY: 0,
-          windowWidth: element.scrollWidth || 700
+          windowWidth: canvasW,
+          width: canvasW
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
