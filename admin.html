@@ -8504,17 +8504,59 @@
     });
   }
 
+  async function svgTilPngDataUri(svgUrl){
+    const r = await fetch(svgUrl);
+    if(!r.ok) throw new Error('svg fetch');
+    const svgText = await r.text();
+    const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+    const objUrl = URL.createObjectURL(blob);
+    try{
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = objUrl;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 400;
+      canvas.getContext('2d').drawImage(img, 0, 0, 400, 400);
+      return canvas.toDataURL('image/png');
+    } finally {
+      URL.revokeObjectURL(objUrl);
+    }
+  }
+
+  async function bildeTilDataUri(url){
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('bilde fetch');
+    const blob = await r.blob();
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result || ''));
+      fr.onerror = reject;
+      fr.readAsDataURL(blob);
+    });
+  }
+
   async function hentBetalingsrapportStempelUri(){
     if(window._betalingsrapportStempelUri) return window._betalingsrapportStempelUri;
     try{
-      const r = await fetch(BETALINGSRAPPORT_STEMPEL);
-      if(!r.ok) throw new Error('stempel fetch');
-      const txt = await r.text();
-      window._betalingsrapportStempelUri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(txt)));
+      window._betalingsrapportStempelUri = await svgTilPngDataUri(BETALINGSRAPPORT_STEMPEL);
     } catch(_e){
       window._betalingsrapportStempelUri = BETALINGSRAPPORT_STEMPEL;
     }
     return window._betalingsrapportStempelUri;
+  }
+
+  async function hentLogoUtskriftUri(){
+    if(window._logoUtskriftDataUri) return window._logoUtskriftDataUri;
+    try{
+      window._logoUtskriftDataUri = await bildeTilDataUri(LOGO_UTSKRIFT);
+    } catch(_e){
+      window._logoUtskriftDataUri = LOGO_UTSKRIFT;
+    }
+    return window._logoUtskriftDataUri;
   }
 
   function waitForPdfImages(container){
@@ -8529,10 +8571,23 @@
     })));
   }
 
+  function kildePdfTekst(kilde){
+    let k = String(kilde || '—').trim();
+    const manuell = k.match(/^Manuell\s*\([^)]+\)/i);
+    if(manuell) return manuell[0];
+    if(k.includes('Vipps-refusjon')) return 'Vipps-refusjon';
+    if(k.includes('Vipps') && k.includes('depositum')) return 'Vipps — depositum';
+    if(k.includes('Vipps (automatisk)')) return 'Vipps';
+    if(k.includes('Bankkort')) return 'Bankkort';
+    if(k.length > 26) return k.slice(0, 24) + '…';
+    return k;
+  }
+
   function delHistorikkIKolonner(rader, raderPerKolonne, maksKolonner){
     const n = rader.length;
     if(!n) return [[]];
-    const perKol = raderPerKolonne || 12;
+    if(n <= 16) return [rader];
+    const perKol = raderPerKolonne || 16;
     const maks = maksKolonner || 3;
     const kolonner = [];
     for(let i = 0; i < n && kolonner.length < maks; i += perKol){
@@ -8549,27 +8604,31 @@
     return `<tr>
       <td>${escapeHtml(cashierFormatDatoTid(p.dato))}</td>
       <td class="tall${neg ? ' neg' : ''}">${escapeHtml(bel.toLocaleString('no-NO'))} kr</td>
-      <td>${escapeHtml(p.kilde || '—')}</td>
+      <td class="kilde">${escapeHtml(kildePdfTekst(p.kilde))}</td>
     </tr>`;
   }
 
-  function historikkTabellHtml(rader){
-    if(!rader.length){
-      return '<table class="hist-tabell"><tbody><tr><td colspan="3" class="tom">Ingen registrerte betalinger ennå.</td></tr></tbody></table>';
-    }
-    return '<table class="hist-tabell"><thead><tr><th>Dato</th><th>Beløp</th><th>Kilde</th></tr></thead><tbody>' +
-      rader.map(historikkRadHtml).join('') + '</tbody></table>';
+  function historikkKroppHtml(rader){
+    if(!rader.length) return '';
+    return rader.map(historikkRadHtml).join('');
   }
 
-  function byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc }){
+  function byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc, logoSrc }){
     const elevNavn = student.navn || 'Elev';
     const foresattNavn = guardian.navn || 'Foresatt';
     const klasseNavn = resolveDynName('classes', student.klasse) || student.klasse || '—';
     const utstedt = new Date().toLocaleString('no-NO', { timeZone: 'Europe/Oslo' });
     const ref = 'BR-' + String(student.id || '').slice(-6).toUpperCase() + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const historikkRader = [...history].sort((a, b) => String(b.dato || '').localeCompare(String(a.dato || '')));
-    const historikkKolonner = delHistorikkIKolonner(historikkRader, 12, 3);
-    const historikkHtml = historikkKolonner.map(kol => '<div class="hist-kol">' + historikkTabellHtml(kol) + '</div>').join('');
+    const historikkKolonner = delHistorikkIKolonner(historikkRader, 16, 3);
+    const kolAnt = historikkKolonner.length;
+    const historikkSeksjon = historikkRader.length
+      ? '<table class="hist-tabell hist-head"><thead><tr><th>Dato</th><th>Beløp</th><th>Kilde</th></tr></thead></table>' +
+        '<div class="historikk-kolonner' + (kolAnt > 1 ? ' fler' : '') + '">' +
+        historikkKolonner.map(kol =>
+          '<div class="hist-kol"><table class="hist-tabell hist-body"><tbody>' + historikkKroppHtml(kol) + '</tbody></table></div>'
+        ).join('') + '</div>'
+      : '<p class="hist-tom">Ingen registrerte betalinger ennå.</p>';
 
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8">
       <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -8618,34 +8677,40 @@
           margin:0 0 6px; padding-bottom:3px; border-bottom:2px solid #e4edf6;
         }
         .historikk-kolonner{
-          display:flex; gap:6px; align-items:flex-start; margin-bottom:10px;
+          display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;
           page-break-inside:avoid; break-inside:avoid;
         }
-        .hist-kol{ flex:1; min-width:0; }
+        .historikk-kolonner.fler .hist-kol{ flex:1; min-width:0; }
+        .historikk-kolonner:not(.fler) .hist-kol{ width:100%; }
         .hist-tabell{
-          border-collapse:collapse; width:100%; font-size:8.5px; margin:0; table-layout:fixed;
+          border-collapse:collapse; width:100%; font-size:9px; margin:0; table-layout:fixed;
         }
+        .hist-tabell.hist-head{ margin-bottom:0; }
+        .hist-tabell.hist-head th{ border-bottom:2px solid #cfe0ef; }
+        .hist-tabell.hist-body td{ border-top:none; }
         .hist-tabell th{
-          background:#eef4fa; color:#1c5490; font-weight:600; font-size:7.5px;
-          letter-spacing:.04em; text-transform:uppercase; padding:4px 3px; text-align:left;
-          border-bottom:1.5px solid #cfe0ef;
+          background:#eef4fa; color:#1c5490; font-weight:600; font-size:8px;
+          letter-spacing:.04em; text-transform:uppercase; padding:5px 4px; text-align:left;
         }
-        .hist-tabell th:nth-child(2){ text-align:right; width:18%; }
+        .hist-tabell th:nth-child(1), .hist-tabell.hist-body td:nth-child(1){ width:38%; }
+        .hist-tabell th:nth-child(2), .hist-tabell.hist-body td:nth-child(2){ width:16%; text-align:right; }
+        .hist-tabell th:nth-child(3), .hist-tabell.hist-body td:nth-child(3){ width:46%; }
         .hist-tabell td{
-          padding:3px 3px; border-bottom:1px solid #e4edf6; vertical-align:top;
-          word-wrap:break-word; overflow-wrap:anywhere; line-height:1.35;
+          padding:4px 4px; border-bottom:1px solid #e4edf6; vertical-align:top;
+          line-height:1.4;
         }
-        .hist-tabell td:first-child{ width:34%; font-size:8px; }
+        .hist-tabell td:first-child{ font-size:8.5px; white-space:nowrap; }
+        .hist-tabell td.kilde{ font-size:8.5px; word-break:normal; overflow-wrap:normal; }
         .hist-tabell td.tall{ text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
         .hist-tabell td.tall.neg{ color:#a83c3c; }
-        .hist-tabell td.tom{ color:#8a9a90; font-style:italic; text-align:center; }
+        .hist-tom{ color:#8a9a90; font-style:italic; font-size:10px; margin:8px 0 12px; }
         .signatur{
-          margin-top:12px; min-height:88px; position:relative; padding-top:6px;
+          margin-top:14px; min-height:100px; position:relative; padding-top:8px;
           border-top:1px dashed #cfe0ef; page-break-inside:avoid; break-inside:avoid;
         }
-        .signatur .tekst{ font-size:10px; line-height:1.5; max-width:58%; }
+        .signatur .tekst{ font-size:10px; line-height:1.55; max-width:55%; }
         .stempel{
-          position:absolute; right:0; bottom:0; width:96px; height:96px; opacity:.92;
+          position:absolute; right:4px; bottom:0; width:108px; height:108px; opacity:.95;
         }
         .bunn{
           margin-top:10px; padding-top:6px; border-top:1px solid #e4edf6;
@@ -8658,7 +8723,7 @@
       </style></head><body>
       <div class="ark">
         <div class="topp">
-          <img class="logo" src="${LOGO_UTSKRIFT}" alt="Madina Skole">
+          <img class="logo" src="${logoSrc || LOGO_UTSKRIFT}" alt="Madina Skole">
           <div class="aar">Skoleåret ${escapeHtml(SKOLEAR)}</div>
           <h1>Betalingsoversikt</h1>
           <div class="under">Offisiell kvittering / payment statement</div>
@@ -8686,7 +8751,7 @@
           </div>
         </div>
         <h2>Betalingshistorikk</h2>
-        <div class="historikk-kolonner">${historikkHtml}</div>
+        ${historikkSeksjon}
         <div class="signatur">
           <div class="tekst">
             Dokumentet er utstedt elektronisk av Madina Skole og gjelder per dato ovenfor.<br>
@@ -8704,8 +8769,11 @@
 
   async function genererBetalingsrapportPdf({ student, guardian, belop, betalt, rest, history }){
     await loadHtml2PdfLib();
-    const stempelSrc = await hentBetalingsrapportStempelUri();
-    const html = byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc });
+    const [stempelSrc, logoSrc] = await Promise.all([
+      hentBetalingsrapportStempelUri(),
+      hentLogoUtskriftUri()
+    ]);
+    const html = byggBetalingsrapportPdfHtml({ student, guardian, belop, betalt, rest, history, stempelSrc, logoSrc });
     const host = document.createElement('div');
     host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;width:186mm;background:#fff;';
     host.innerHTML = html;
