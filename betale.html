@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SIST-ENDRET: 2026-08-22 10:55:00 -->
+<!-- SIST-ENDRET: 2026-08-22 11:05:00 -->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
@@ -173,6 +173,19 @@ h1 {
   width: 100%; padding: 11px 12px; border-radius: 10px;
   border: 1px solid var(--line); font-size: 15px; font-family: inherit;
 }
+.field input.input-error {
+  border-color: #d64545;
+  background: #fff8f8;
+  box-shadow: 0 0 0 2px rgba(214, 69, 69, 0.15);
+}
+.field label.label-error { color: #8a2a2a; }
+.field-error-msg {
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8a2a2a;
+  line-height: 1.4;
+}
 .pay-amount-confirmed {
   margin: 12px 0 0; padding: 14px 12px; border-radius: 10px;
   background: #e8f5ef; border: 1px solid rgba(46,125,82,0.25); text-align: center;
@@ -253,8 +266,9 @@ h1 {
         <div class="pay-step-head"><span class="pay-step-num">2</span><span>Velg betalingsmåte</span></div>
         <p class="pay-methods-label">Betal det bekreftede beløpet med én av metodene under:</p>
         <div class="field" id="phoneFieldWrap">
-          <label for="phoneInput">Mobilnummer (8 siffer, for Vipps)</label>
-          <input type="tel" id="phoneInput" maxlength="8" inputmode="numeric" placeholder="f.eks. 91234567">
+          <label for="phoneInput" id="phoneInputLabel">Mobilnummer (8 siffer, for Vipps)</label>
+          <input type="tel" id="phoneInput" maxlength="8" inputmode="numeric" placeholder="f.eks. 91234567" autocomplete="tel-national">
+          <div id="phoneFieldError" class="field-error-msg hidden" role="alert"></div>
         </div>
         <button type="button" class="btn btn-vipps" id="paymentLinkVipps">
           <span class="vipps-mark">Vipps</span>
@@ -297,6 +311,28 @@ function showMsg(text, kind) {
 
 function hideMsg() {
   document.getElementById('statusMsg').classList.add('hidden');
+}
+
+function showPhoneFieldError(text) {
+  const input = document.getElementById('phoneInput');
+  const label = document.getElementById('phoneInputLabel');
+  const err = document.getElementById('phoneFieldError');
+  input.classList.add('input-error');
+  label.classList.add('label-error');
+  err.textContent = text;
+  err.classList.remove('hidden');
+  input.focus({ preventScroll: true });
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function clearPhoneFieldError() {
+  const input = document.getElementById('phoneInput');
+  const label = document.getElementById('phoneInputLabel');
+  const err = document.getElementById('phoneFieldError');
+  input.classList.remove('input-error');
+  label.classList.remove('label-error');
+  err.textContent = '';
+  err.classList.add('hidden');
 }
 
 function returnStatusMessage(status) {
@@ -458,6 +494,7 @@ function submitPaymentChoice() {
   document.getElementById('payConfirmedBanner').classList.remove('hidden');
   document.getElementById('paymentBtnWrap').classList.remove('hidden');
   document.getElementById('paymentLinkVippsLabel').textContent = 'Betal ' + fmtKr(belop) + ' med Vipps';
+  clearPhoneFieldError();
   hideMsg();
 }
 
@@ -468,9 +505,10 @@ async function payNow(paymentMethodType) {
   }
   const phone = document.getElementById('phoneInput').value.replace(/\D/g, '').slice(-8);
   if (paymentMethodType === 'WALLET' && phone.length !== 8) {
-    showMsg('Oppgi mobilnummer (8 siffer) for Vipps.', 'error');
+    showPhoneFieldError('Oppgi mobilnummer (8 siffer) for å betale med Vipps.');
     return;
   }
+  clearPhoneFieldError();
   showMsg('Forbereder betaling…', 'info');
   document.getElementById('paymentLinkVipps').disabled = true;
   document.getElementById('paymentLinkCard').disabled = true;
@@ -509,6 +547,7 @@ document.getElementById('payChoicePartialBtn').addEventListener('click', () => c
 document.getElementById('payChoiceSubmitBtn').addEventListener('click', submitPaymentChoice);
 document.getElementById('paymentLinkVipps').addEventListener('click', () => payNow('WALLET'));
 document.getElementById('paymentLinkCard').addEventListener('click', () => payNow('CARD'));
+document.getElementById('phoneInput').addEventListener('input', clearPhoneFieldError);
 
 loadInfo();
 </script>
