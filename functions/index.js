@@ -35,6 +35,13 @@ const { genererBetalingKvitteringPdf } = require("./betalingKvitteringPdf");
 const { genererBetalingRapportPdf } = require("./betalingRapportPdf");
 const { genererBetalingFakturaPdf } = require("./betalingFakturaPdf");
 const { signFakturaPayToken, verifyFakturaPayToken } = require("./fakturaPayToken");
+const {
+  fakturaKategoriLabel,
+  erGyldigFakturaKategori,
+  osloDatoIso,
+  addDaysIso,
+  allocateFakturaDokumentRef,
+} = require("./fakturaInvoice");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -970,7 +977,32 @@ async function recordStudentBalancePaymentIfNeeded({
   }
 
   logger.info(`Elev ${student.navn} — ${isCard ? "Bankkort" : "Vipps"}-betaling på ${amount} kr registrert.`);
+  await markFakturaInvoicePaidFromPayment({ pendingData, reference, paidAmountKr: amount });
   return { ok: true, recorded: true };
+}
+
+async function markFakturaInvoicePaidFromPayment({ pendingData, reference, paidAmountKr }) {
+  const invoiceId = pendingData?.fakturaInvoiceId;
+  if (!invoiceId) return;
+  try {
+    const invRef = db.collection("fakturaInvoices").doc(invoiceId);
+    const invSnap = await invRef.get();
+    if (!invSnap.exists) return;
+    const inv = invSnap.data();
+    if (inv.status === "betalt") return;
+    const paid = Number(paidAmountKr || pendingData?.amountKr || 0);
+    const target = Number(inv.belopKr || 0);
+    const newStatus = paid >= target - 0.01 ? "betalt" : "delvis_betalt";
+    await invRef.update({
+      status: newStatus,
+      betaltKr: paid,
+      betaltAt: new Date().toISOString(),
+      betaltReference: reference,
+      sistEndretAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Kunne ikke oppdatere fakturaInvoices etter betaling", { invoiceId, err: String(err.message || err) });
+  }
 }
 
 // =======================================================================
@@ -2449,6 +2481,7 @@ const BACKUP_COLLECTIONS = [
   "announcements", "contactUpdateRequests",
   "finances", "financeLog", "paymentRequests", "studentPayments",
   "pendingVippsPayments", "salaryPayments", "teacherAttendance",
+  "fakturaInvoices",
   "meetings", "settings", "deletionLog", "loginEvents",
   "stotteSoknader", "kafalaFond", "fagplan", "arsplan",
   "mail", "feillogg", "formAnalytics",
@@ -2696,8 +2729,7 @@ exports.generateBetalingRapportPdf = onRequest(
 
 // =======================================================================
 // generateBetalingFakturaPdf — Kasserer (Ledelse): lager faktura-PDF
-//    med PDFKit (samme motor som betalingskvittering).
-//    POST { mottakerNavn, elevNavn, restKr, kontonummer, iban, studentId, tidspunkt }
+//    POST { mottakerNavn, elevNavn, belopKr, dokumentRef, betalingsfrist, ... }
 // =======================================================================
 exports.generateBetalingFakturaPdf = onRequest(
   { cors: true },
@@ -2714,34 +2746,177 @@ exports.generateBetalingFakturaPdf = onRequest(
 
     try {
       const body = req.body || {};
-      const {
-        mottakerNavn,
-        elevNavn,
-        restKr,
-        kontonummer,
-        iban,
-        studentId,
-        tidspunkt,
-      } = body;
-
-      if (!elevNavn && !studentId) {
+      if (!body.elevNavn && !body.studentId) {
         res.status(400).json({ ok: false, error: "Mangler elev." });
         return;
       }
 
       const pdf = await genererBetalingFakturaPdf({
-        mottakerNavn: mottakerNavn || "Hei",
-        elevNavn: elevNavn || "—",
-        restKr: Number(restKr) || 0,
-        kontonummer: kontonummer || "—",
-        iban: iban || "—",
-        studentId: studentId || "",
-        tidspunkt: tidspunkt || new Date().toLocaleString("no-NO", { timeZone: "Europe/Oslo" }),
+        mottakerNavn: body.mottakerNavn || "Hei",
+        elevNavn: body.elevNavn || "—",
+        belopKr: Number(body.belopKr ?? body.restKr) || 0,
+        dokumentRef: body.dokumentRef,
+        utstedtDato: body.utstedtDato || osloDatoIso(),
+        betalingsfrist: body.betalingsfrist,
+        kategoriLabel: body.kategoriLabel || fakturaKategoriLabel(body.kategori || "skoleavgift"),
+        opprettetAvNavn: body.opprettetAvNavn || bruker.epost || "—",
+        sistSendtAvNavn: body.sistSendtAvNavn || null,
+        payUrl: body.payUrl || "",
+        studentId: body.studentId || "",
       });
 
       res.status(200).json({ ok: true, base64: pdf.base64, filnavn: pdf.filnavn });
     } catch (err) {
       logger.error("generateBetalingFakturaPdf error", err);
+      res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+  }
+);
+
+async function hentFakturaInnstillinger() {
+  const snap = await db.collection("settings").doc("faktura").get();
+  const d = snap.exists ? snap.data() : {};
+  const frist = Number(d.defaultFristDager);
+  const gul = Number(d.gulVarselDager);
+  return {
+    defaultFristDager: Number.isFinite(frist) && frist >= 1 ? frist : 14,
+    gulVarselDager: Number.isFinite(gul) && gul >= 1 ? gul : 3,
+  };
+}
+
+// =======================================================================
+// prepareFakturaInvoice — Opprett/oppdater faktura-post + betalingslenke
+//    POST { studentId, belopKr, kategori, betalingsfristDager?, adminNavn?, resendInvoiceId? }
+// =======================================================================
+exports.prepareFakturaInvoice = onRequest(
+  { cors: true, secrets: [VIPPS_WEBHOOK_SECRET] },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Kun POST er tillatt." });
+      return;
+    }
+    const bruker = await krevInnlogget(req, res);
+    if (!bruker) return;
+    if (!(await krevKassererLedelse(bruker, res))) return;
+    try {
+      const {
+        studentId,
+        belopKr,
+        kategori,
+        betalingsfristDager,
+        adminNavn,
+        resendInvoiceId,
+      } = req.body || {};
+      if (!studentId) {
+        res.status(400).json({ ok: false, error: "Mangler studentId." });
+        return;
+      }
+      const kat = erGyldigFakturaKategori(kategori) ? kategori : "skoleavgift";
+      const amount = Number(belopKr);
+      if (!amount || amount <= 0) {
+        res.status(400).json({ ok: false, error: "Ugyldig fakturabeløp." });
+        return;
+      }
+      const info = await hentStudentRestKr(studentId);
+      if (!info) {
+        res.status(404).json({ ok: false, error: "Fant ikke eleven." });
+        return;
+      }
+      if (amount > info.restKr + 0.001) {
+        res.status(400).json({
+          ok: false,
+          error: `Beløpet (${amount} kr) overstiger restbeløpet (${info.restKr} kr).`,
+        });
+        return;
+      }
+      const innstillinger = await hentFakturaInnstillinger();
+      const fristDager = Number(betalingsfristDager) > 0
+        ? Number(betalingsfristDager)
+        : innstillinger.defaultFristDager;
+      const adminLabel = String(adminNavn || bruker.epost || "admin").trim();
+      const nowIso = new Date().toISOString();
+      const utstedt = osloDatoIso();
+      const frist = addDaysIso(utstedt, fristDager);
+
+      const studentSnap = await db.collection("students").doc(studentId).get();
+      const student = studentSnap.data() || {};
+      let guardianNavn = "—";
+      let guardianId = student.foresatt || "";
+      if (guardianId) {
+        const gSnap = await db.collection("guardians").doc(guardianId).get();
+        if (gSnap.exists) guardianNavn = gSnap.data().navn || guardianNavn;
+      }
+
+      let invoiceRef;
+      let invoiceData;
+
+      if (resendInvoiceId) {
+        invoiceRef = db.collection("fakturaInvoices").doc(String(resendInvoiceId));
+        const existing = await invoiceRef.get();
+        if (!existing.exists) {
+          res.status(404).json({ ok: false, error: "Fant ikke fakturaen." });
+          return;
+        }
+        if (existing.data().studentId !== studentId) {
+          res.status(403).json({ ok: false, error: "Fakturaen tilhører en annen elev." });
+          return;
+        }
+        invoiceData = existing.data();
+        await invoiceRef.update({
+          sistSendtAv: bruker.epost || adminLabel,
+          sistSendtAvNavn: adminLabel,
+          sistSendtAt: nowIso,
+          sendCount: (Number(invoiceData.sendCount) || 1) + 1,
+          betalingsfrist: frist,
+          betalingsfristDager: fristDager,
+          sistEndretAt: nowIso,
+        });
+        invoiceData = { ...invoiceData, ...(await invoiceRef.get()).data() };
+      } else {
+        const dokumentRef = await allocateFakturaDokumentRef(db);
+        invoiceData = {
+          studentId,
+          elevNavn: info.elevNavn,
+          guardianId,
+          guardianNavn,
+          belopKr: amount,
+          elevRestKrVedOpprettelse: info.restKr,
+          kategori: kat,
+          kategoriLabel: fakturaKategoriLabel(kat),
+          erDepositum: kat === "depositum",
+          dokumentRef,
+          utstedtDato: utstedt,
+          betalingsfrist: frist,
+          betalingsfristDager: fristDager,
+          status: "utestaaende",
+          betaltKr: 0,
+          opprettetAv: bruker.epost || adminLabel,
+          opprettetAvNavn: adminLabel,
+          opprettetAt: nowIso,
+          sistSendtAv: bruker.epost || adminLabel,
+          sistSendtAvNavn: adminLabel,
+          sistSendtAt: nowIso,
+          sendCount: 1,
+          paminnelser: [],
+        };
+        invoiceRef = await db.collection("fakturaInvoices").add(invoiceData);
+        invoiceData.id = invoiceRef.id;
+      }
+
+      const invId = invoiceRef.id || resendInvoiceId;
+      const token = signFakturaPayToken(studentId, VIPPS_WEBHOOK_SECRET.value(), invId);
+      const payUrl = fakturaPayUrl(token);
+      await invoiceRef.update({ payUrl, sistEndretAt: nowIso });
+
+      res.status(200).json({
+        ok: true,
+        invoice: { id: invId, ...invoiceData, payUrl, betalingsfrist: frist },
+        token,
+        payUrl,
+      });
+    } catch (err) {
+      logger.error("prepareFakturaInvoice error", err);
       res.status(500).json({ ok: false, error: String(err.message || err) });
     }
   }
@@ -2786,7 +2961,7 @@ exports.generateFakturaPayToken = onRequest(
     if (!bruker) return;
     if (!(await krevKassererLedelse(bruker, res))) return;
     try {
-      const { studentId } = req.body || {};
+      const { studentId, invoiceId } = req.body || {};
       if (!studentId) {
         res.status(400).json({ ok: false, error: "Mangler studentId." });
         return;
@@ -2800,7 +2975,7 @@ exports.generateFakturaPayToken = onRequest(
         res.status(400).json({ ok: false, error: "Ingen restbeløp å betale." });
         return;
       }
-      const token = signFakturaPayToken(studentId, VIPPS_WEBHOOK_SECRET.value());
+      const token = signFakturaPayToken(studentId, VIPPS_WEBHOOK_SECRET.value(), invoiceId || null);
       res.status(200).json({ ok: true, token, payUrl: fakturaPayUrl(token) });
     } catch (err) {
       logger.error("generateFakturaPayToken error", err);
@@ -2823,17 +2998,34 @@ exports.getFakturaBetalingInfo = onRequest(
     }
     try {
       const { token } = req.body || {};
-      const studentId = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
-      if (!studentId) {
+      const tok = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
+      if (!tok) {
         res.status(403).json({ ok: false, error: "Ugyldig eller utløpt betalingslenke." });
         return;
       }
+      const studentId = tok.studentId;
       const info = await hentStudentRestKr(studentId);
       if (!info) {
         res.status(404).json({ ok: false, error: "Fant ikke eleven." });
         return;
       }
       const prisOppsett = await hentPrisoppsett();
+      let faktura = null;
+      if (tok.invoiceId) {
+        const invSnap = await db.collection("fakturaInvoices").doc(tok.invoiceId).get();
+        if (invSnap.exists) {
+          faktura = { id: invSnap.id, ...invSnap.data() };
+          if (faktura.status === "betalt") {
+            res.status(400).json({ ok: false, error: "Fakturaen er allerede betalt.", paid: true });
+            return;
+          }
+          if (faktura.betalingsfrist && osloDatoIso() > faktura.betalingsfrist && faktura.status !== "betalt") {
+            await invSnap.ref.update({ status: "forfalt", sistEndretAt: new Date().toISOString() });
+            faktura.status = "forfalt";
+          }
+        }
+      }
+      const invoiceAmount = faktura ? Number(faktura.belopKr || 0) : null;
       res.status(200).json({
         ok: true,
         elevNavn: info.elevNavn,
@@ -2842,6 +3034,18 @@ exports.getFakturaBetalingInfo = onRequest(
         restKr: info.restKr,
         cardAvailable: prisOppsett.vippsKortAktiv === true && VIPPS_ENV.value() === "prod",
         vippsEnv: VIPPS_ENV.value() === "prod" ? "prod" : "test",
+        faktura: faktura ? {
+          id: faktura.id,
+          dokumentRef: faktura.dokumentRef,
+          belopKr: invoiceAmount,
+          kategoriLabel: faktura.kategoriLabel,
+          betalingsfrist: faktura.betalingsfrist,
+          status: faktura.status,
+          lockAmount: true,
+        } : null,
+        defaultAmountKr: invoiceAmount && invoiceAmount > 0
+          ? Math.min(invoiceAmount, info.restKr)
+          : info.restKr,
       });
     } catch (err) {
       logger.error("getFakturaBetalingInfo error", err);
@@ -2867,10 +3071,17 @@ exports.createFakturaExternalPayment = onRequest(
     }
     try {
       const { token, amountKr, phoneNumber, paymentMethodType } = req.body || {};
-      const studentId = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
-      if (!studentId) {
+      const tok = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
+      if (!tok) {
         res.status(403).json({ ok: false, error: "Ugyldig eller utløpt betalingslenke." });
         return;
+      }
+      const studentId = tok.studentId;
+      let fakturaInvoiceId = tok.invoiceId || null;
+      let fakturaDoc = null;
+      if (fakturaInvoiceId) {
+        const invSnap = await db.collection("fakturaInvoices").doc(fakturaInvoiceId).get();
+        if (invSnap.exists) fakturaDoc = { id: invSnap.id, ...invSnap.data() };
       }
       const method = paymentMethodType === "CARD" ? "CARD" : "WALLET";
       const amount = Number(amountKr);
@@ -2889,6 +3100,14 @@ exports.createFakturaExternalPayment = onRequest(
       }
       if (amount > info.restKr + 0.001) {
         res.status(400).json({ ok: false, error: "Beløpet overstiger restsaldoen." });
+        return;
+      }
+      if (fakturaDoc && fakturaDoc.status === "betalt") {
+        res.status(400).json({ ok: false, error: "Fakturaen er allerede betalt." });
+        return;
+      }
+      if (fakturaDoc && amount > Number(fakturaDoc.belopKr || 0) + 0.001) {
+        res.status(400).json({ ok: false, error: "Beløpet overstiger fakturabeløpet." });
         return;
       }
       if (method === "CARD" && VIPPS_ENV.value() !== "prod") {
@@ -2954,6 +3173,8 @@ exports.createFakturaExternalPayment = onRequest(
         createdAt: new Date().toISOString(),
         createdBy: null,
         initiatedBy: "faktura_email",
+        fakturaInvoiceId: fakturaInvoiceId || null,
+        fakturaDokumentRef: fakturaDoc?.dokumentRef || null,
       });
 
       res.status(200).json({ ok: true, redirectUrl, reference, amountKr: amount });
@@ -2981,11 +3202,12 @@ exports.checkFakturaExternalPaymentReturn = onRequest(
     }
     try {
       const { token, reference } = req.body || {};
-      const studentId = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
-      if (!studentId) {
+      const tok = verifyFakturaPayToken(token, VIPPS_WEBHOOK_SECRET.value());
+      if (!tok) {
         res.status(403).json({ ok: false, error: "Ugyldig eller utløpt betalingslenke." });
         return;
       }
+      const studentId = tok.studentId;
       if (!reference) {
         res.status(400).json({ ok: false, error: "Mangler betalingsreferanse." });
         return;
